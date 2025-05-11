@@ -1,0 +1,6 @@
+services:
+    helldiversbot:
+        # image: elfensky/helldiversbot:latest
+        image: ghcr.io/elfensky/helldivers1api:dev
+        ports:
+            - '58192:3000'
