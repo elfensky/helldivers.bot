@@ -29,7 +29,7 @@ jobs:
               uses: docker/build-push-action@v4
               with:
                   context: .
-                  platforms: linux/amd64,linux/arm64
+                  platforms: linux/amd64 #,linux/arm64
                   push: true
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldivers1api:${{ github.ref_name }}
@@ -38,6 +38,6 @@ jobs:
             - name: Create GitHub Release
               uses: softprops/action-gh-release@v2
               with:
-                  files: CHANGELOG.md
-                  body_path: CHANGELOG.md
+                  # files: CHANGELOG.md
+                  body_path: RELEASE.md
                   token: ${{ secrets.ACCESS_TOKEN }}

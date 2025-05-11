@@ -1,11 +1,11 @@
 {
     "name": "helldivers.bot",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "private": true,
     "scripts": {
         "dev": "next dev --turbopack",
         "build": "next build",
-        "start": "next start",
+        "start": "node .next/standalone/server.js",
         "lint": "next lint",
         "format": "prettier --write .",
         "lint:watch": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npm run lint'",
@@ -13,6 +13,7 @@
         "watch": "npm run lint:watch & npm run format:watch"
     },
     "dependencies": {
+        "@prisma/client": "^6.7.0",
         "next": "15.3.2",
         "react": "^19.0.0",
         "react-dom": "^19.0.0"
@@ -28,7 +29,9 @@
         "eslint-config-next": "15.3.2",
         "prettier": "^3.5.3",
         "prettier-plugin-tailwindcss": "^0.6.11",
+        "prisma": "^6.7.0",
         "tailwindcss": "^4",
+        "tsx": "^4.19.4",
         "typescript": "^5"
     },
     "volta": {
