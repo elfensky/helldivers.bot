@@ -8,7 +8,7 @@ export default async function DashboardLayout({ children }) {
     // console.log(headerList);
 
     if (!session || !session.user) {
-        const currentPath = '/admin';
+        const currentPath = '/dashboard';
         redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(currentPath)}`);
     }
 
