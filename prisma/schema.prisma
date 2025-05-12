@@ -27,13 +27,127 @@ datasource db {
   url      = env("POSTGRES_URL")
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
+// #region Configuration
+model App {
+    id String @id @default(uuid(7))
+    version String
+    is_db_initialized Boolean @default(false)
+    settings Json
+}
+// #endregion
+
+// #region Authentication & Authorization - NextAuth (Auth.js) 
+model User {
+  id            String          @id @default(uuid(7))
+  name          String?
+  username      String?         @unique // take their discord username instead?
+  email         String?         @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  Authenticator Authenticator[] // Optional for WebAuthn support
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  title     String   @db.VarChar(255)
-  content   String?
-  published Boolean  @default(false)
-//   author    User     @relation(fields: [authorId], references: [id])
-//   authorId  Int
+
+  //custom relations 
+  settings Settings?
+  posts Post[]
 }
+ 
+model Account {
+  id                       String  @id @default(uuid(7))
+  userId                   String  @unique
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String? @db.Text
+  access_token             String? @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String? @db.Text
+  session_state            String?
+  refresh_token_expires_in Int?
+  user                     User?   @relation(fields: [userId], references: [id])
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+ 
+model Session {
+  id           String   @id @default(uuid(7))
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  @@index([userId])
+}
+ 
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@unique([identifier, token])
+}
+ 
+// Optional for WebAuthn support
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@id([userId, credentialID])
+}
+
+
+// #endregion
+
+// #region User
+model Settings {
+    // id String @id @default(uuid(7))
+    userId String @id @unique
+    settings Json
+    //relations
+    user User @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id        String     @id @default(uuid(7))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  title     String
+  content   String?
+  published Boolean @default(false)
+  authorId  String
+  author    User @relation(fields: [authorId], references: [id])
+}
+// #endregion
+
+// #region Helldivers Data
+model h1_status {
+  id   String @id @default(uuid(7))
+//   date  DateTime // The day the status was updated - mostly used for human debugging
+  season Int @unique
+  time   Int @unique
+  campaign_status Json
+  defend_event    Json
+  attack_events   Json
+  statistics      Json
+}
+// #endregion
