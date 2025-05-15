@@ -1,10 +1,7 @@
-## 0.3.1 (2025-05-12)
+## 0.3.2 (2025-05-15)
 
-- Validate auth still works in docker
-
-## 0.3.0 (2025-05-12)
-
-- Add dependencies for next-auth
-- Configure [Auth](https://authjs.dev/getting-started/installation?framework=Next.js)
-- Adjust Prisma Schema to support authentication
-- Add pages and components to handle authentication
+- Add nodemailer provider to auth
+- Flesh out Frontend layout
+- Add json-ld to Homepage
+- Create Posts button ("use server")
+- Show Posts

@@ -1,6 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     output: 'standalone', // #1
+    images: {
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'cdn.discordapp.com',
+                pathname: '/avatars/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'avatars.githubusercontent.com',
+                pathname: '/u/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'www.gravatar.com',
+                pathname: '/avatar/**',
+            },
+            // new URL('https://cdn.discordapp.com/avatars/**'),
+            // new URL('https://avatars.githubusercontent.com/u/**'),
+            // new URL('https://www.gravatar.com/avatar/**'),
+        ], //allows external avatars to be loaded
+    },
 };
 
 export default nextConfig;

@@ -36,25 +36,7 @@ model App {
 }
 // #endregion
 
-// #region Authentication & Authorization - NextAuth (Auth.js) 
-model User {
-  id            String          @id @default(uuid(7))
-  name          String?
-  username      String?         @unique // take their discord username instead?
-  email         String?         @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  Authenticator Authenticator[] // Optional for WebAuthn support
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  //custom relations 
-  settings Settings?
-  posts Post[]
-}
- 
+// #region Authentication & Authorization - NextAuth (Auth.js)  
 model Account {
   id                       String  @id @default(uuid(7))
   userId                   String  @unique
@@ -115,7 +97,25 @@ model Authenticator {
   @@id([userId, credentialID])
 }
 
-
+model User {
+  id            String          @id @default(uuid(7))
+  name          String?
+  username      String?         @unique // take their discord username instead?
+  email         String?         @unique
+  emailVerified DateTime?       //verify email
+  image         String?         //show button in dashboard "use gravatar", it will load in the gravatar and they can then save it, which will write to this field.
+  role          String          @default("user")
+  accounts      Account[]
+  sessions      Session[]
+  Authenticator Authenticator[] // Optional for WebAuthn support
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  //custom relations 
+  settings Settings?
+  posts Post[]
+  apiKeys ApiKey[]
+}
 // #endregion
 
 // #region User
@@ -136,6 +136,14 @@ model Post {
   published Boolean @default(false)
   authorId  String
   author    User @relation(fields: [authorId], references: [id])
+}
+
+model ApiKey {
+    id String @id @default(uuid(7)) //also used as the key
+    userId String
+    createdAt DateTime @default(now())
+    //relations
+    user User @relation(fields: [userId], references: [id])
 }
 // #endregion
 

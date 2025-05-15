@@ -1,0 +1,39 @@
+/* .cls-1,
+.cls-2 {
+    stroke: #000;
+    
+}
+
+.cls-1 {
+    fill: #9b9b9b;
+    stroke-width: 5px;
+}
+
+.cls-2 {
+    fill: #fff;
+    stroke-width: 10px;
+} */
+
+.sector {
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.lost {
+    fill: rgba(0, 0, 0, 0.55);
+    stroke: rgba(0, 0, 0, 0.99);
+    z-index: 10;
+}
+
+.active {
+    fill: rgba(255, 213, 0, 0.33);
+    /* fill: none; */
+    stroke: rgba(255, 225, 0, 0.99);
+    z-index: 50;
+    /* box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); */
+}
+.in_progress {
+    fill: rgba(255, 85, 0, 0.77);
+    stroke: rgba(255, 0, 0, 0.99);
+}

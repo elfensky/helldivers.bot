@@ -1,5 +1,6 @@
 import db from '@/db/db';
 import { performance } from 'perf_hooks';
+import { revalidatePath } from 'next/cache';
 
 function getRandomBoolean() {
     return Math.random() < 0.5;
@@ -15,11 +16,16 @@ function getRandomString(length) {
 }
 
 export async function getPosts() {
+    'use server';
     const start = performance.now();
 
     try {
-        const result = await db.post.findMany();
-
+        const result = await db.post.findMany({
+            where: {
+                published: true,
+            },
+        });
+        console.log('getPosts', result);
         const query = {
             data: result,
             time: performance.now() - start,
@@ -33,6 +39,7 @@ export async function getPosts() {
 }
 
 export async function createRandomPost() {
+    'use server';
     const start = performance.now();
 
     try {
@@ -44,7 +51,10 @@ export async function createRandomPost() {
             data: {
                 title: randomTitle,
                 content: randomContent,
-                published: randomPublished,
+                published: true,
+                authorId: '0196c87c-5447-7df1-a89e-799d2cf6e1ce',
+                createdAt: new Date(),
+                updatedAt: new Date(),
             },
         });
 
@@ -52,6 +62,7 @@ export async function createRandomPost() {
             data: newPost,
             time: performance.now() - start,
         };
+        revalidatePath('/front/posts', 'page');
         return query;
     } catch (error) {
         console.error('createRandomPost()');

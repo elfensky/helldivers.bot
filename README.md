@@ -35,6 +35,9 @@ Use `docker compose up` to run the container locally.
 
 ## Prisma
 
+`npx prisma migrate reset`
+reset all data in db
+
 `npx prisma generate`
 reads your Prisma schema and generates the Prisma Client.
 

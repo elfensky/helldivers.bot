@@ -1,6 +1,13 @@
 # TODO
 
-#### 0.4.0
+## 0.4.0 (2025-05-13)
+
+- update.js to fetch data from the official api
+- Working on the Helldivers API & update function
+    - /api/h1/rebroadcast
+    -
+
+#### 0.4.1+
 
 - fully remove font-awesome
 - create a /utils folder. /lib is too confusing
@@ -68,16 +75,16 @@
 
     - export default function Home() {
       return (
-          <main className="flex">
-          <a
-                                                                                                                                                                                                                                                                                                                                                                                                  href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                  title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                              >
-          Satellite icons created by Freepik - Flaticon
-          </a>
-          </main>
-          );
-          }
+      <main className="flex">
+      <a
+                                                                                                                                                                                                                                                                                                                                                                                                      href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                      title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                  >
+      Satellite icons created by Freepik - Flaticon
+      </a>
+      </main>
+      );
+      }
 
 - admin dashboard to manage api key(s)
 

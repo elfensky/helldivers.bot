@@ -6,9 +6,20 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
-## 0.3.0 (2025-05-12)
+## x.x.x (2025-YY-XX)
 
 - To be copied from RELEASE.md
+
+## 0.3.1 (2025-05-12)
+
+- Validate auth still works in docker
+
+## 0.3.0 (2025-05-12)
+
+- Add dependencies for next-auth
+- Configure [Auth](https://authjs.dev/getting-started/installation?framework=Next.js)
+- Adjust Prisma Schema to support authentication
+- Add pages and components to handle authentication
 
 ## 0.2.0 (2025-05-11)
 
