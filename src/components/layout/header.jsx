@@ -12,9 +12,9 @@ import { getGravatarUrl } from '@/utils/gravatar';
 export default async function Header() {
     return (
         <header className="sticky top-0 z-50 flex h-[80px] w-full bg-red-500 xl:relative">
-            <div className="mx-24 flex w-full items-center justify-between">
+            <div className="mx-2 flex w-full items-center justify-between sm:mx-24">
                 <Logo />
-                <div className="flex gap-4">
+                <div className="hidden gap-4 sm:flex">
                     <Navigation />
                     <User />
                 </div>

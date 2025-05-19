@@ -70,21 +70,32 @@
 
 #### 0.7.0 (2025-04-XX)
 
+- Flesh out Admin Dashboards
+
+    - See all users
+    - See all API keys
+    - Activate/Deactivate user
+    - Activate/Deactivate API key
+    - Ban user
+    - Unban user
+
+- https://engineering.udacity.com/mastering-forms-in-next-js-15-and-react-19-e3d2d783946b
+
 - about page
 - attribution page
 
     - export default function Home() {
       return (
-      <main className="flex">
-      <a
-                                                                                                                                                                                                                                                                                                                                                                                                      href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                      title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                  >
-      Satellite icons created by Freepik - Flaticon
-      </a>
-      </main>
-      );
-      }
+        <main className="flex">
+        <a
+                                                                                                                                                                                                                                                                                                                                                                                                        href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                        title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                    >
+        Satellite icons created by Freepik - Flaticon
+        </a>
+        </main>
+        );
+        }
 
 - admin dashboard to manage api key(s)
 

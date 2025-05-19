@@ -139,9 +139,14 @@ model Post {
 }
 
 model ApiKey {
-    id String @id @default(uuid(7)) //also used as the key
-    userId String
-    createdAt DateTime @default(now())
+    id          String @id @default(uuid(7)) //also used as the key
+    hash        String @unique //md5 hash of the key
+    visible     String //last 4 characters of the actual key for display purposes.
+    userId      String
+    description String
+    
+    createdAt   DateTime @default(now())
+    enabled     Boolean @default(true)
     //relations
     user User @relation(fields: [userId], references: [id])
 }

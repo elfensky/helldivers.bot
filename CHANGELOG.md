@@ -6,9 +6,23 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
-## x.x.x (2025-YY-XX)
+## x.x.x (2025-05-16)
 
 - To be copied from RELEASE.md
+
+<!-- ## 0.4.0 (2025-05-15)
+
+- Add sentry
+
+## 0.3.3 (2025-05-15) -->
+
+## 0.3.2 (2025-05-15)
+
+- Add nodemailer provider to auth
+- Flesh out Frontend layout
+- Add json-ld to Homepage
+- Create Posts button ("use server")
+- Show Posts
 
 ## 0.3.1 (2025-05-12)
 

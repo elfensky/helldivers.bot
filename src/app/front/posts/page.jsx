@@ -1,5 +1,5 @@
 import { auth } from '@/auth';
-import { getPosts, createRandomPost } from '@/db/queries/post';
+import { getPosts, createRandomPost, createPost } from '@/db/queries/post';
 
 export default async function PostPage() {
     const session = await auth();
@@ -12,9 +12,9 @@ export default async function PostPage() {
             {loggedIn ?
                 <PostEditor />
             :   null}
-            {loggedIn ?
+            {/* {loggedIn ?
                 <GeneratePost />
-            :   null}
+            :   null} */}
             <ShowPosts />
         </div>
     );
@@ -57,22 +57,17 @@ async function ShowPosts() {
 
 function PostEditor() {
     return (
-        <form action="" className="bg-pink-500">
-            <input type="text" name="title" placeholder="Title" />
-            <textarea name="content" placeholder="Content"></textarea>
-            <button type="submit">Submit</button>
+        <form action={createPost} className="flex flex-col items-start bg-pink-500">
+            <input type="text" name="title" placeholder="Title" required />
+            <textarea name="content" placeholder="Content" required></textarea>
+            <button type="submit" className="bg-amber-700">
+                Submit
+            </button>
         </form>
     );
 }
 
 async function GeneratePost() {
-    // const handleGeneratePost = async (e) => {
-    //     'use server';
-    //     e.preventDefault();
-    //     const result = await createRandomPost();
-    //     console.log(result);
-    // };
-
     return (
         <button onClick={createRandomPost} className="bg-yellow-300" type="submit">
             Generate Post

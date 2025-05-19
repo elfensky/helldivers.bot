@@ -294,7 +294,7 @@ export default function Galaxy() {
                     />
                 </g>
             </svg>
-            <Script src="/scripts/animateMap.js" strategy="lazyOnload" />
+            {/* <Script src="/scripts/animateMap.js" strategy="lazyOnload" /> */}
         </section>
     );
 }

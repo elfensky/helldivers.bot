@@ -1,11 +1,14 @@
 {
     "name": "helldivers.bot",
-    "version": "0.3.2",
+    "version": "0.3.3",
     "private": true,
     "scripts": {
         "dev": "next dev --turbopack",
+        "dev:bun": "bun --bun run dev",
         "build": "next build",
+        "build:bun": "bun --bun run build",
         "start": "node .next/standalone/server.js",
+        "start:bun": "bun --bun .next/standalone/server.js",
         "lint": "next lint",
         "format": "prettier --write .",
         "lint:watch": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npm run lint'",
@@ -14,19 +17,21 @@
     },
     "dependencies": {
         "@auth/prisma-adapter": "^2.9.1",
-        "@prisma/client": "^6.7.0",
+        "@prisma/client": "^6.8.2",
         "next": "15.3.2",
         "next-auth": "^5.0.0-beta.28",
         "nodemailer": "^6.10.1",
         "react": "^19.0.0",
-        "react-dom": "^19.0.0"
+        "react-dom": "^19.0.0",
+        "react-hook-form": "^7.56.4",
+        "zod": "^3.24.4"
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4",
         "chokidar-cli": "^3.0.0",
         "prettier": "^3.5.3",
         "prettier-plugin-tailwindcss": "^0.6.11",
-        "prisma": "^6.7.0",
+        "prisma": "^6.8.2",
         "tailwindcss": "^4"
     },
     "volta": {

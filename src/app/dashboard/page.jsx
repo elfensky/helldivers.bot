@@ -3,8 +3,8 @@ import { redirect } from 'next/navigation';
 //components
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import ApiDashboard from '@/components/dashboard/ApiDashboard';
 import UserDashboard from '@/components/dashboard/UserDashboard';
-import AdminDashboard from '@/components/dashboard/AdminDashboard';
 
 export const metadata = {
     title: 'Dashboard | Helldivers Bot',
@@ -13,23 +13,33 @@ export const metadata = {
 
 export default async function Dashboard() {
     const session = await auth();
-    // const headerList = await headers();
-    // console.log(session);
 
     if (!session || !session.user) {
         const currentPath = '/dashboard';
         redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(currentPath)}`);
     }
 
-    if (session.user.role === 'user') {
-        console.log('role: ', session.user.role);
-        return <UserDashboard />;
+    const user = session.user;
+
+    if (user.role === 'user') {
+        return (
+            <>
+                <ApiDashboard user={user} />
+                {/* <UserDashboard /> */}
+            </>
+        );
     }
 
-    if (session.user.role === 'admin') {
-        console.log('role: ', session.user.role);
-        return <AdminDashboard />;
-    }
+    // if (user.role === 'admin') {
+    //     console.log('role: ', user.role);
+    //     return (
+    //         <>
+    //             <ApiDashboard user={user} />
+    //             {/* <UserDashboard />
+    //             <AdminDashboard />; */}
+    //         </>
+    //     );
+    // }
 
     return null; //this is a fallback, it should theoretically never be reached
 }
