@@ -1,7 +1,7 @@
-## 0.3.3 (2025-05-15)
+## 0.4.0 (2025-05-20)
 
-- Flesh out the Dashboard
-    - Show list of API keys
-    - Create new API key
-    - Delete existing API key
-- Validate works in docker
+- implement Prisma Models for helldivers1 data
+- Working /api/h1/rebroadcast
+- updateStatus.mjs
+- updateSnapshot.mjs
+- validate works in docker

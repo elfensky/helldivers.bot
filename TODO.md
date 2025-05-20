@@ -1,17 +1,36 @@
 # TODO
 
-## 0.4.0 (2025-05-13)
+#### 0.4.1
 
-- update.js to fetch data from the official api
-- Working on the Helldivers API & update function
-    - /api/h1/rebroadcast
-    -
+- add swagger docs
+- make sure /docs works
+- add JSDoc for swagger
 
-#### 0.4.1+
+#### 0.4.2
 
-- fully remove font-awesome
-- create a /utils folder. /lib is too confusing
-- add zod for validation
+- add more api routes
+    - /api/h1/attack/[season]
+    - /api/h1/defend/[season]
+    - /api/h1/statistics/[season]
+
+#### 0.5.0
+
+- add instrumentation.js
+
+    - initialize db (migrations, provider, ...)
+    - initialize sentry
+    - if no data, get current season & snapshot
+
+#### 0.6+
+
+- basic map
+    - show captured regions -> yellow
+    - show contested region -> red
+    - show lost region -> dark
+- stats block
+
+#### 0.7+
+
 - generate "events" timeline
 
     - support "defend events"
@@ -30,6 +49,18 @@
 
 - add "region under attack" to map
 - add "completed" to enemy homeworld
+
+#### 0.8.0 ...
+
+- check for validated email before allow any user action
+- add validate email button + on signup send verification email
+- add /api/auth/verify/[token] or something like that to verify email
+- transform /posts to /reviews
+    - add stars (1-5)
+    - only allow 1 review per user
+- restyle reviews
+    - show Username + Review + Date + Stars + ND-JSON for reviews
+    -
 
 #### 0.5.0 (2025-04-XX)
 
@@ -88,9 +119,9 @@
       return (
         <main className="flex">
         <a
-                                                                                                                                                                                                                                                                                                                                                                                                        href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                        title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                    >
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                >
         Satellite icons created by Freepik - Flaticon
         </a>
         </main>

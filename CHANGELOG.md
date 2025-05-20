@@ -6,15 +6,18 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
-## x.x.x (2025-05-16)
+## x.x.x (YYYY-MM-DD)
 
 - To be copied from RELEASE.md
 
-<!-- ## 0.4.0 (2025-05-15)
+## 0.3.3 (2025-05-19)
 
-- Add sentry
-
-## 0.3.3 (2025-05-15) -->
+- Flesh out the Dashboard
+    - Show list of API keys
+    - Create new API key
+    - Delete existing API key
+- zod for validation
+- Validate works in docker
 
 ## 0.3.2 (2025-05-15)
 

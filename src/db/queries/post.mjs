@@ -27,6 +27,16 @@ export async function getPosts() {
             where: {
                 published: true,
             },
+            include: {
+                author: {
+                    select: {
+                        name: true,
+                        username: true,
+                        email: true,
+                        image: true,
+                    },
+                },
+            },
         });
         // console.log('getPosts', result);
         const query = {

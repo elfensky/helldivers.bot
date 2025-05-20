@@ -8,10 +8,13 @@
 //   provider = "prisma-client-js" 
 //   output   = "../src/generated/prisma" //will be required in future release anyway
 //   binaryTargets = ["native", "darwin-arm64", "linux-musl-arm64-openssl-3.0.x", "linux-musl-openssl-3.0.x"] //read https://www.prisma.io/docs/orm/reference/prisma-schema-reference#binarytargets-options
-
 // }
 
-
+// #region Initialize
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
 generator client {
   provider = "prisma-client"  //read https://www.prisma.io/docs/orm/prisma-schema/overview/generators#prisma-client-early-access
   output   = "../src/generated/prisma"
@@ -21,18 +24,15 @@ generator client {
   //linux-musl-arm64-openssl-3.0.x - for Alpine Linux (on MacOS)
   //linux-musl-openssl-3.0.x - for Alpine Linux (on AMD64)
 }
-
-datasource db {
-  provider = "postgresql"
-  url      = env("POSTGRES_URL")
-}
+// #endregion
 
 // #region Configuration
 model App {
     id String @id @default(uuid(7))
     version String
     is_db_initialized Boolean @default(false)
-    settings Json
+    active_season Int @default(0)
+    // settings Json
 }
 // #endregion
 
@@ -152,15 +152,153 @@ model ApiKey {
 }
 // #endregion
 
-// #region Helldivers Data
+// #region REBROADCAST
+model rebroadcast_status {
+    id   String @id @default(uuid(7))
+    season Int @unique
+    last_updated DateTime @default(now())
+    json Json
+}
+model rebroadcast_snapshot {
+    id   String @id @default(uuid(7))
+    season Int @unique
+    last_updated DateTime @default(now())
+    json Json
+}
+// #endregion
+
+// #region HELLDIVERS
+model h1_season {
+  id                 String              @id @default(uuid(7))
+  is_active          Boolean             @default(false)
+  last_updated       DateTime            @default(now())
+  //data
+  season             Int                 @unique
+  //relationships
+  introduction_order h1_introduction_order? @relation("OneSeasonToOneIntroductionOrder") //a season must have 1 introduction_order, and an introduction_order must always be linked to a season
+  points_max         h1_points_max?         @relation("OneSeasonToOnePointsMax") //a season must have 1 points_max, and a points_max must always be linked to a season
+  status             h1_status?             @relation("OneSeasonToOneStatus")
+  snapshots          h1_snapshot[]          @relation("OneSeasonToManySnapshots")
+  defend_events      h1_defend_events[]     @relation("OneSeasonToManyDefendEvents")
+  attack_events      h1_attack_events[]     @relation("OneSeasonToManyAttackEvents")
+  statistics         h1_statistics[]        @relation("OneSeasonToManyStatistics")
+  //indexes
+  @@index([season])
+}
+
+model h1_introduction_order {
+  id            String @id @default(uuid(7))
+  season        Int    @unique //foreign key //only one introduction_order per season, hence unique. enforces one-to-one relationship
+  order         Int[] //stores the order as a native PostGres Int Array
+  json          Json //stores the order in JSON //raw data from api
+  //relationship
+  linked_season h1_season @relation("OneSeasonToOneIntroductionOrder", fields: [season], references: [season])
+  //indexes
+  @@index([season])
+}
+
+model h1_points_max {
+  id            String @id @default(uuid(7))
+  season        Int    @unique //foreign key //only one points_max per season, hence unique. enforces one-to-one relationship
+  points        Int[] //stores the points_max as a native PostGres Int Array
+  json          Json //original raw data
+  //relationship
+  linked_season h1_season @relation("OneSeasonToOnePointsMax", fields: [season], references: [season])
+  //indexes
+  @@index([season])
+}
+
+model h1_snapshot {
+    id            String @id @default(uuid(7))
+    season        Int    //foreign key //multiple snapshots per season, hence NOT unique. enforces one-to-many relationship
+    time          DateTime //original value 
+    data          Json   //data field
+    json          Json   //original raw data
+    //relationship
+    linked_season h1_season @relation("OneSeasonToManySnapshots", fields: [season], references: [season])
+    //indexes
+    @@index([season])
+}
+
+model h1_defend_events {
+  id               String @id @default(uuid(7))
+  season           Int // foreign key
+  //data
+  event_id         Int @unique
+  start_time       Int
+  end_time         Int
+  region           Int
+  enemy            Int
+  points_max       Int
+  points           Int
+  status           String
+  players_at_start Int?
+  //relationship
+  linked_season h1_season @relation("OneSeasonToManyDefendEvents", fields: [season], references: [season])
+  //indexes
+  @@index([event_id])
+}
+
+model h1_attack_events {
+  id               String @id @default(uuid(7))
+  season           Int //foreign key
+  //data
+  event_id         Int @unique
+  start_time       Int
+  end_time         Int
+  enemy            Int
+  points_max       Int
+  points           Int
+  status           String
+  players_at_start Int?
+  //relationship
+  linked_season h1_season @relation("OneSeasonToManyAttackEvents", fields: [season], references: [season])
+  //indexes
+  @@index([event_id])
+}
+
+model h1_statistics {
+  id                       String @id @default(uuid(7))
+  hash                     String @unique //season+time 
+  time                     Int //foreign key
+  season                   Int //foreign key
+  season_duration          Int
+  enemy                    Int
+  players                  Int
+  total_unique_players     Int
+  missions                 Int
+  successful_missions      Int
+  total_mission_difficulty Int
+  completed_planets        Int
+  defend_events            Int
+  successful_defend_events Int
+  attack_events            Int
+  successful_attack_events Int
+  deaths                   BigInt
+  kills                    BigInt
+  accidentals              BigInt
+  shots                    BigInt
+  hits                     BigInt
+
+  // Define the relationship with Status and SEason
+  linked_season h1_season? @relation("OneSeasonToManyStatistics", fields: [season], references: [season])
+  //indexes
+  @@index([hash])
+  @@index([time])
+  @@index([season])
+}
+
 model h1_status {
   id   String @id @default(uuid(7))
-//   date  DateTime // The day the status was updated - mostly used for human debugging
   season Int @unique
-  time   Int @unique
-  campaign_status Json
-  defend_event    Json
-  attack_events   Json
-  statistics      Json
+  points Int
+  points_taken Int
+  points_max Int
+  status String
+  introduction_order Int
+  //relationship
+  linked_season h1_season @relation("OneSeasonToOneStatus", fields: [season], references: [season])
+  //indexes
+  @@index([season])
 }
 // #endregion

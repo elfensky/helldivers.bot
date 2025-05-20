@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 //next
 import Image from 'next/image';
 //db
-import { updateUser } from '@/db/queries/user';
+// import { updateUser } from '@/db/queries/user';
 //utils
 import { getGravatarUrl } from '@/utils/gravatar';
 
