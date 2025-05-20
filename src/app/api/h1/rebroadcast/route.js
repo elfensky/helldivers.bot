@@ -17,6 +17,46 @@ import {
     query_get_rebroadcast_season,
 } from '@/db/queries/rebroadcast';
 
+/**
+ * @openapi
+ * /api/h1/rebroadcast:
+ *   post:
+ *     summary: Perform a campaign status or snapshot action
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [get_campaign_status, get_snapshot]
+ *                 description: The action to perform.
+ *               season:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: Required if action is get_snapshot.
+ *             required:
+ *               - action
+ *         application/x-www-form-urlencoded:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [get_campaign_status, get_snapshot]
+ *                 description: The action to perform.
+ *               season:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: Required if action is get_snapshot.
+ *             required:
+ *               - action
+ *     responses:
+ *       200:
+ *         description: Success
+ */
 export async function POST(request) {
     //schedule work after response is finished
     //read more at: https://nextjs.org/docs/app/api-reference/functions/after
