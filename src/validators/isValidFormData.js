@@ -1,7 +1,7 @@
 import { z } from 'zod/v4';
 
 //preprocessor to convert to number if string, and check if number
-export const schema_number = z.preprocess(
+export const schemaNumber = z.preprocess(
     (val) => (typeof val === 'string' ? Number(val) : val),
     z.number().int().positive(),
 );
@@ -18,7 +18,7 @@ const schema_get_campaign_status = z
 //required: action, season(int)
 const schema_get_snapshots = z.object({
     action: z.literal('get_snapshots'),
-    season: schema_number,
+    season: schemaNumber,
 });
 
 const schema_get_available_entitlements = z
@@ -34,8 +34,8 @@ const schema_get_available_entitlements = z
 const schema_get_leaderboards = z.object({
     action: z.literal('get_leaderboards'),
     network: z.enum(['steam', 'psn']),
-    season: schema_number,
-    count: schema_number.optional(),
+    season: schemaNumber,
+    count: schemaNumber.optional(),
     users: z.array(z.string()).optional(),
 });
 
@@ -43,7 +43,7 @@ const schema_get_leaderboards = z.object({
 const schema_get_usernames = z.object({
     action: z.literal('get_usernames'),
     network: z.enum(['steam', 'psn']),
-    count: schema_number,
+    count: schemaNumber,
 });
 
 export const isValidFormData = z.discriminatedUnion('action', [

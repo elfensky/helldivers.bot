@@ -10,10 +10,10 @@ It uses:
     - App Router for the frontend
     - API Routes for the backend
 - [ESLint](https://eslint.org) for linting.
-      <!-- - [Vitest](https://vitest.dev) for testing -->
+    <!-- - [Vitest](https://vitest.dev) for testing -->
 - [Prisma](https://prisma.io) for database access.
 - [Sentry](https://sentry.io) for analytics
-      <!-- -   [Docker](https://www.docker.com) for deployment -->
+    <!-- -   [Docker](https://www.docker.com) for deployment -->
 
 ## Running locally
 
@@ -25,11 +25,17 @@ DATABASE_URL="postgresql://user:password@host:port/helldiversbot?schema=public"
 
 ## Docker
 
+docker login ghcr.io
+
+> username: your-github-username
+> password: classic-key-with-correct-permissions
+
 #### Build locally
 
 docker build -t ghcr.io/elfensky/helldivers1api:dev .
 docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldivers1api:dev .
 Use `docker compose up` to run the container locally.
+Use `docker push ghcr.io/elfensky/helldivers1api:dev` to push the image to ghcr.io.
 
 #### Deploy to ghcr.io
 

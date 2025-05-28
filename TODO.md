@@ -1,17 +1,15 @@
 # TODO
 
-#### 0.4.1
+## 0.4.3 (2025-05-21)
 
-- add swagger docs
-- make sure /docs works
-- add JSDoc for swagger
+TODO
 
-#### 0.4.2
-
-- add more api routes
-    - /api/h1/attack/[season]
-    - /api/h1/defend/[season]
-    - /api/h1/statistics/[season]
+- implement more thoughtful updating for rebroadcast
+- store normalized data alongside raw.
+- GET /api/h1/attack/[season]
+- GET /api/h1/defend/[season]
+- GET /api/h1/statistics/[season]
+-
 
 #### 0.5.0
 
@@ -117,16 +115,16 @@
 
     - export default function Home() {
       return (
-        <main className="flex">
-        <a
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                >
-        Satellite icons created by Freepik - Flaticon
-        </a>
-        </main>
-        );
-        }
+          <main className="flex">
+          <a
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      >
+          Satellite icons created by Freepik - Flaticon
+          </a>
+          </main>
+          );
+          }
 
 - admin dashboard to manage api key(s)
 

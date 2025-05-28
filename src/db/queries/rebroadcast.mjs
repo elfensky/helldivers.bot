@@ -67,7 +67,6 @@ export async function query_upsert_rebroadcast_status(data) {
     try {
         const now = new Date();
         const season = Number(data.campaign_status[0].season);
-        console.log('season', season);
 
         const existingRecord = await db.rebroadcast_status.findUnique({
             where: {

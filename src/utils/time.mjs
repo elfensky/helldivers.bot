@@ -35,3 +35,9 @@ export function formatDate(date) {
         pad(date.getSeconds())
     );
 }
+
+export function elapsedSeconds(past) {
+    const now = new Date();
+    const elapsed = now - past;
+    return Math.floor(elapsed / 1000);
+}

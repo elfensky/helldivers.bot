@@ -7,7 +7,7 @@ import { tryCatch } from '@/lib/tryCatch.mjs';
 //fetch
 import { fetchData } from '@/utils/fetchData.mjs';
 //validators
-import { schema_number } from '@/validators/isValidFormData';
+import { schemaNumber } from '@/validators/isValidFormData';
 //db
 import { query_upsert_rebroadcast_status } from '@/db/queries/rebroadcast';
 // import { upsertStatus } from '@/db/queries/upsertSeason';

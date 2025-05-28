@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "private": true,
     "scripts": {
         "dev": "next dev --turbopack",
@@ -9,6 +9,7 @@
         "build:bun": "bun --bun run build",
         "start": "node .next/standalone/server.js",
         "start:bun": "bun --bun .next/standalone/server.js",
+        "docker": "prisma migrate deploy && node server.js",
         "lint": "next lint",
         "format": "prettier --write .",
         "lint:watch": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npm run lint'",
@@ -26,7 +27,7 @@
         "react-dom": "^19.0.0",
         "react-hook-form": "^7.56.4",
         "swagger-jsdoc": "^6.2.8",
-        "swagger-ui-react": "^5.21.0",
+        "swagger-ui-dist": "^5.21.0",
         "zod": "^3.24.4"
     },
     "devDependencies": {
@@ -39,6 +40,6 @@
     },
     "volta": {
         "node": "22.15.0",
-        "npm": "11.3.0"
+        "npm": "11.4.0"
     }
 }

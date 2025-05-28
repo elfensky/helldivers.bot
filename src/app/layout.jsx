@@ -1,5 +1,7 @@
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import Script from 'next/script';
+
+import Header from '@/components/layout2/Header';
+import Footer from '@/components/layout2/Footer';
 
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -24,14 +26,27 @@ export default function RootLayout({ children }) {
     return (
         <html lang="en" className="bg-blue-950">
             <body
+                id="body"
                 className={`${geistSans.variable} ${geistMono.variable} min-w-screen flex min-h-screen flex-col antialiased`}
             >
                 <Header />
-                <main className="flex-grow">{children}</main>
+                <main className="flex h-screen flex-grow items-center justify-center pt-[80px]">
+                    {children}
+                </main>
                 <Footer />
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+                />
+                {/* <script
+                    defer
+                    src="https://umami.lavrenov.io/script.js"
+                    data-website-id="93ee0589-fb24-43f4-ad6c-929c8c0d7644"
+                ></script> */}
+                <Script
+                    src="https://umami.lavrenov.io/script.js"
+                    data-website-id="93ee0589-fb24-43f4-ad6c-929c8c0d7644"
+                    strategy="afterInteractive"
                 />
             </body>
         </html>

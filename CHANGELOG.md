@@ -10,15 +10,6 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 
 - To be copied from RELEASE.md
 
-## 0.3.3 (2025-05-19)
-
-- Flesh out the Dashboard
-    - Show list of API keys
-    - Create new API key
-    - Delete existing API key
-- zod for validation
-- Validate works in docker
-
 ## 0.3.2 (2025-05-15)
 
 - Add nodemailer provider to auth

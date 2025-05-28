@@ -2,7 +2,7 @@ import db from '@/db/db';
 import { z } from 'zod/v4';
 import { tryCatch } from '@/lib/tryCatch';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/utils/time';
+import { performanceTime, elapsedSeconds } from '@/utils/time';
 import { NextResponse, after } from 'next/server';
 //parsers
 import { formDataToObject } from '@/utils/formdata';
@@ -128,13 +128,22 @@ export async function POST(request) {
 
     //4. attempt to get data from db.
     let data = undefined;
+    let elapsed = 0;
     switch (formValues.action) {
         case 'get_campaign_status':
             data = await query_get_rebroadcast_status();
+            elapsed = elapsedSeconds(data?.data?.last_updated);
+            if (elapsed > 10) {
+                update = true;
+            }
             data = data?.data?.json;
             break;
         case 'get_snapshots':
             data = await query_get_rebroadcast_season(formValues.season);
+            elapsed = elapsedSeconds(data?.data?.last_updated);
+            if (elapsed > 300) {
+                update = true;
+            }
             data = data?.data?.json;
             break;
         default:
