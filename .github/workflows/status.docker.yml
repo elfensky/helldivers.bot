@@ -1,0 +1,31 @@
+name: Status Badge
+on:
+    # push:
+    #     branches:
+    #         - main
+    workflow_dispatch:
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v2
+
+            # - name: Extract version from package.json
+            #   id: extract_version
+            #   run: echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Build project
+              run: npm run build

@@ -1,32 +1,17 @@
-## 0.4.2 (2025-05-28)
+## 0.5.0 (2025-05-28)
 
-- migrate openapi generation to instrumentation.js -> npm run build removes all comments from the code, so it cannot be generated live.
-- add umami.js
-- add Galactic Map
-- add Stats
-- Docker fixes
-- Hosted and available at staging.helldivers.bot
+- add instrumentation.js
 
-## 0.4.1 (2025-05-20)
+    - initialize db (migrations, provider, ...)
+    - initialize sentry
+    - if no data, get current season & snapshot
 
-- create `/api/openapi` route.js that uses swagger-jsdoc and the JSDoc comments in `/api/h1/\*\*/\*.js` to generate an OpenAPI spec.
-- create `/docs` page.jsx that uses swagger-ui-dist to render the OpenAPI spec.
+TODO
 
-## 0.4.0 (2025-05-20)
-
-- implement Prisma Models for helldivers1 data
-- POST /api/h1/rebroadcast
-    - get_campaign_status
-    - get_snapshots
-- updateStatus.mjs
-- updateSnapshot.mjs
-- validate works in docker
-
-## 0.3.3 (2025-05-19)
-
-- Flesh out the Dashboard
-    - Show list of API keys
-    - Create new API key
-    - Delete existing API key
-- zod for validation
-- Validate works in docker
+- make openapi.json generation docker-compatible.
+- implement more thoughtful updating for rebroadcast
+- store normalized data alongside raw.
+- GET /api/h1/attack/[season]
+- GET /api/h1/defend/[season]
+- GET /api/h1/statistics/[season]
+-

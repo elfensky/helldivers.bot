@@ -1,24 +1,5 @@
 # TODO
 
-## 0.4.3 (2025-05-21)
-
-TODO
-
-- implement more thoughtful updating for rebroadcast
-- store normalized data alongside raw.
-- GET /api/h1/attack/[season]
-- GET /api/h1/defend/[season]
-- GET /api/h1/statistics/[season]
--
-
-#### 0.5.0
-
-- add instrumentation.js
-
-    - initialize db (migrations, provider, ...)
-    - initialize sentry
-    - if no data, get current season & snapshot
-
 #### 0.6+
 
 - basic map
@@ -115,16 +96,16 @@ TODO
 
     - export default function Home() {
       return (
-          <main className="flex">
-          <a
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      >
-          Satellite icons created by Freepik - Flaticon
-          </a>
-          </main>
-          );
-          }
+      <main className="flex">
+      <a
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          >
+      Satellite icons created by Freepik - Flaticon
+      </a>
+      </main>
+      );
+      }
 
 - admin dashboard to manage api key(s)
 
