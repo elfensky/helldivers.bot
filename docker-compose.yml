@@ -2,7 +2,7 @@ services:
     helldiversbot:
         container_name: helldivers1api
         restart: unless-stopped
-        image: ghcr.io/elfensky/helldivers1api:dev
+        image: ghcr.io/elfensky/helldivers1api:staging
         ports:
             - '58102:3000'
         env_file:

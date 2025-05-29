@@ -1,5 +1,14 @@
 # helldivers.bot
 
+## Code
+
+[![Status Badge](https://github.com/elfensky/helldivers1api/actions/workflows/status.docker.yml/badge.svg?branch=main)](https://github.com/elfensky/helldivers1api/actions/workflows/status.docker.yml)
+
+## Status
+
+![Website](https://img.shields.io/website?url=https%3A%2F%2Fstaging.helldivers.bot&up_message=online&down_message=offline&label=staging)
+![Website](https://img.shields.io/website?url=https%3A%2F%2Fhelldivers.bot&up_message=online&down_message=offline&label=production)
+
 This is an application that consumes the official Helldivers 1 API, caches and rebroadcasts it as to avoid high load on official servers.
 It also stores historic data that the official API discards, and offers account management and api keys for 3rd parties to access the API to build their own apps.
 The frontend also shows various data visualizations and notifies visitors of in-game events.
@@ -10,10 +19,10 @@ It uses:
     - App Router for the frontend
     - API Routes for the backend
 - [ESLint](https://eslint.org) for linting.
-    <!-- - [Vitest](https://vitest.dev) for testing -->
+  <!-- - [Vitest](https://vitest.dev) for testing -->
 - [Prisma](https://prisma.io) for database access.
 - [Sentry](https://sentry.io) for analytics
-    <!-- -   [Docker](https://www.docker.com) for deployment -->
+  <!-- -   [Docker](https://www.docker.com) for deployment -->
 
 ## Running locally
 
@@ -25,19 +34,21 @@ DATABASE_URL="postgresql://user:password@host:port/helldiversbot?schema=public"
 
 ## Docker
 
-docker login ghcr.io
+When using the docker container, the database you are connecting to needs to already exist. It will **not** create it for you.
 
-> username: your-github-username
-> password: classic-key-with-correct-permissions
+- docker login ghcr.io
+    - username: your-github-username
+    - password: classic-key-with-correct-permissions
 
 #### Build locally
 
-docker build -t ghcr.io/elfensky/helldivers1api:dev .
-docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldivers1api:dev .
-Use `docker compose up` to run the container locally.
-Use `docker push ghcr.io/elfensky/helldivers1api:dev` to push the image to ghcr.io.
+- Use `docker build -t ghcr.io/elfensky/helldivers1api:staging --build-arg NODE_ENV=staging .` to build the image locally for local hardware
+- Use `docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldivers1api:staging --build-arg NODE_ENV=staging .` to build the image for standard x32_64 hardware
+- Use `docker compose up` to run the container locally.
 
 #### Deploy to ghcr.io
+
+Use `docker push ghcr.io/elfensky/helldivers1api:staging` to push the image to ghcr.io.
 
 ## Prisma
 

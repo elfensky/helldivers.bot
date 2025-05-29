@@ -1,7 +1,9 @@
 import { performanceTime } from '@/utils/time';
+import { tryCatch } from '@/lib/tryCatch';
 
-export async function getPrismaProvider() {
+async function getPrismaProvider() {
     'use server';
+    //technically I do not need this, as I only support PostGresSQL, and have no plans to support other databases. But I wrote it, so might as well keep it.
     if (process.env.NEXT_RUNTIME === 'nodejs') {
         //dynamic imports
         const path = await import('path');
@@ -36,7 +38,7 @@ export async function getPrismaProvider() {
     }
 }
 
-export async function runMigrations() {
+async function runMigrations() {
     'use server';
     if (process.env.NEXT_RUNTIME === 'nodejs') {
         // dynamic imports
@@ -48,7 +50,7 @@ export async function runMigrations() {
         const start = performance.now();
         const execAsync = promisify(exec);
 
-        console.log('DATABASE - starting migrations...');
+        // console.log('DATABASE - starting migrations...');
 
         try {
             const { stdout, stderr } = await execAsync(`npx prisma migrate deploy`);
@@ -57,10 +59,10 @@ export async function runMigrations() {
             }
 
             const cleanedStdout = stdout.replace(/(\r?\n){3,}/g, '\n');
-            console.log('\n' + cleanedStdout);
-            console.log(
-                `DATABASE - finished migrations in ' + ${performanceTime(start)} ms`,
-            );
+            // console.log('\n' + cleanedStdout);
+            // console.log(
+            //     `DATABASE - finished migrations in ' + ${performanceTime(start)} ms`,
+            // );
             return true;
         } catch (error) {
             // console.error('bla', error);
@@ -71,43 +73,18 @@ export async function runMigrations() {
     }
 }
 
-export async function generateOpenApiSpec() {
+export async function initializeDatabase() {
     'use server';
-    if (process.env.NEXT_RUNTIME === 'nodejs') {
-        //imports
-        const fs = await import('fs/promises');
-        const swaggerJSDoc = await import('swagger-jsdoc');
-        const { performance } = await import('perf_hooks');
+    // console.log('initializeDatabase() start');
+    const provider = await getPrismaProvider();
+    // console.log('initializeDatabase() | provider: ', provider);
 
-        //initialize
-        const start = performance.now();
-        const apisPattern = './src/app/api/h1/**/*.js';
-        const swaggerOptions = {
-            definition: {
-                openapi: '3.0.0',
-                info: {
-                    title: 'Helldivers 1 API',
-                    version: '0.4.1',
-                    description: 'A simple API',
-                },
-            },
-            apis: [apisPattern],
-        };
-
-        //generate
-        const swaggerSpec = swaggerJSDoc(swaggerOptions);
-
-        const file = await fs.writeFile(
-            'src/app/openapi/openapi.json',
-            JSON.stringify(swaggerSpec, null, 2),
-            'utf-8',
-        );
-        console.log('file', file);
-        //save
-        //store spec as json file
-        if (file) {
-            return true;
-        }
+    if (provider === 'postgresql') {
+        //test if database exists and create it if not
+        const { data, error } = await tryCatch(runMigrations());
+        // console.log(data);
+        // console.log(error);
+        return true;
     }
 
     return false;

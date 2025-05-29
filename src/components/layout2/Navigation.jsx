@@ -11,6 +11,7 @@ export default async function Navigation() {
     const links = [
         { href: '/front/bot', label: 'Discord' },
         { href: '/front/reviews', label: 'Reviews' },
+        { href: '/stats', label: 'Stats' },
         { href: '/docs', label: 'Docs' },
         // { href: '/swagger', label: 'API' },
         // { href: '/dashboard', label: 'Dashboard' },

@@ -1,41 +1,34 @@
-import {
-    getPrismaProvider,
-    runMigrations,
-    generateOpenApiSpec,
-} from '@/utils/initialize.mjs';
-import { tryCatch } from '@/lib/tryCatch.mjs';
+import { initializeOpenApiSpec } from '@/utils/initialize.openapi';
+import { initializeDatabase } from '@/utils/initialize.prisma';
+import { initializeData } from '@/utils/initialize.data';
 
-// const isOpenApiSetup = await generateOpenApiSpec();
+async function initializeHelldivers1Api() {
+    'use server';
+    if (process.env.NEXT_RUNTIME === 'nodejs') {
+        // OPEN API - generate spec or check if spec exists
+        const openapi = await initializeOpenApiSpec();
+        if (!openapi) {
+            console.error('instrumentation.js | openapi: ', openapi);
+            process.exit(1);
+        }
+        console.info('instrumentation.js | openapi: ', openapi);
 
-// if (!isOpenApiSetup) {
-//     console.error('OPENAPI - failed to generate spec');
-//     exit(1);
-// }
+        // DATABASE - check if connceted and run migrations
+        const database = await initializeDatabase();
+        if (!database) {
+            console.error('instrumentation.js | database: ', database);
+            process.exit(1);
+        }
+        console.info('instrumentation.js | database: ', database);
 
-//move initializeDB to initialize.mjs and export it instead of getPrismaProvider and runMigrations
-async function initializeDatabase() {
-    // const { data, error } = await tryCatch(getPrismaProvider());
-    // const provider = getPrismaProvider();
-    // console.log('AAAAAAAAAAAAAA', data, error);
-
-    if (true == true) {
-        // provider === 'postgresql'
-        console.log("DATABASE - using 'postgresql' provider");
-        // migrate the database if needed
-        const { data, error } = await tryCatch(runMigrations());
-        console.log(data, error);
-        // await runMigrations();
-        // console.log('DATABASE - completed migrations\n');
-        return true;
+        // DATA - fetch data from the API to populate the database, so the homepage etc will work.
+        const data = await initializeData();
+        if (!data) {
+            console.error('instrumentation.js | data: ', data);
+            process.exit(1);
+        }
+        console.info('instrumentation.js | data: ', data);
     }
-
-    console.error('DATABASE - using unknown provider:', provider);
-    throw new Error('DATABASE - unknown database provider:', provider);
 }
 
-const { initDB, errorDB } = tryCatch(initializeDatabase());
-console.log('initDB', initDB, errorDB);
-if (errorDB) {
-    console.error(errorDB);
-    exit(1);
-}
+initializeHelldivers1Api();

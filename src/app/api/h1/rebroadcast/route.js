@@ -10,8 +10,8 @@ import { formDataToObject } from '@/utils/formdata';
 import { isValidContentType } from '@/validators/isValidContentType';
 import { isValidFormData } from '@/validators/isValidFormData';
 //update
-import { updateStatus } from '@/lib/updateStatus.mjs';
-import { updateSeason } from '@/lib/updateSeason.mjs';
+// import { updateStatus } from '@/lib/updateStatus.mjs';
+// import { updateSeason } from '@/lib/updateSeason.mjs';
 import {
     query_get_rebroadcast_status,
     query_get_rebroadcast_season,
@@ -67,12 +67,12 @@ export async function POST(request) {
         //8. schedule update
         if (update) {
             if (formValues.action === 'get_campaign_status') {
-                const { data, error } = await tryCatch(updateStatus());
+                // const { data, error } = await tryCatch(updateStatus());
                 //log update
                 //trigger websocket update
             }
             if (formValues.action === 'get_snapshots') {
-                const { data, error } = await tryCatch(updateSeason(formValues.season));
+                // const { data, error } = await tryCatch(updateSeason(formValues.season));
                 // if (data) {
                 //     console.log('data1', data);
                 // }

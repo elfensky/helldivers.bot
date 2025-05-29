@@ -16,7 +16,21 @@ const geistMono = Geist_Mono({
     subsets: ['latin'],
 });
 
+function getMetaURL() {
+    switch (process.env.NODE_ENV) {
+        case 'development':
+            return new URL('http://localhost:3000');
+        case 'staging':
+            return new URL('https://staging.helldivers.bot');
+        case 'production':
+            return new URL('https://helldivers.bot');
+        default:
+            throw new Error('Unknown NODE_ENV');
+    }
+}
+
 export const metadata = {
+    metadataBase: getMetaURL(),
     title: 'Home | Helldivers Bot',
     description:
         'Display in-game events and current campaign progress, alongside server as an api',
@@ -30,7 +44,7 @@ export default function RootLayout({ children }) {
                 className={`${geistSans.variable} ${geistMono.variable} min-w-screen flex min-h-screen flex-col antialiased`}
             >
                 <Header />
-                <main className="flex h-screen flex-grow items-center justify-center pt-[80px]">
+                <main className="flex min-w-full flex-grow items-center justify-center pt-[80px]">
                     {children}
                 </main>
                 <Footer />
@@ -38,11 +52,6 @@ export default function RootLayout({ children }) {
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
                 />
-                {/* <script
-                    defer
-                    src="https://umami.lavrenov.io/script.js"
-                    data-website-id="93ee0589-fb24-43f4-ad6c-929c8c0d7644"
-                ></script> */}
                 <Script
                     src="https://umami.lavrenov.io/script.js"
                     data-website-id="93ee0589-fb24-43f4-ad6c-929c8c0d7644"

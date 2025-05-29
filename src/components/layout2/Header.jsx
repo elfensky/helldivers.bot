@@ -68,7 +68,7 @@ function Logo() {
             aria-label="Go to homepage"
         >
             <Image
-                src="/logo.png"
+                src="/images/logo.png"
                 alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
                 width={60}
                 height={60}
