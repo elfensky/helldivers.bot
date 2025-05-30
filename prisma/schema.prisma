@@ -30,8 +30,10 @@ generator client {
 model App {
     id String @id @default(uuid(7))
     version String
-    is_db_initialized Boolean @default(false)
+    // is_db_initialized Boolean @default(false)
     active_season Int @default(0)
+    // last_updated_status  DateTime
+    // last_updated_season  DateTime
     // settings Json
 }
 // #endregion
@@ -177,13 +179,30 @@ model h1_season {
   //relationships
   introduction_order h1_introduction_order? @relation("OneSeasonToOneIntroductionOrder") //a season must have 1 introduction_order, and an introduction_order must always be linked to a season
   points_max         h1_points_max?         @relation("OneSeasonToOnePointsMax") //a season must have 1 points_max, and a points_max must always be linked to a season
-  status             h1_status?             @relation("OneSeasonToOneStatus")
+  campaigns          h1_campaign[]           @relation("OneSeasonToManyCampaigns")
   snapshots          h1_snapshot[]          @relation("OneSeasonToManySnapshots")
-  defend_events      h1_defend_events[]     @relation("OneSeasonToManyDefendEvents")
-  attack_events      h1_attack_events[]     @relation("OneSeasonToManyAttackEvents")
-  statistics         h1_statistics[]        @relation("OneSeasonToManyStatistics")
+  defend_events      h1_defend_event[]     @relation("OneSeasonToManyDefendEvents")
+  attack_events      h1_attack_event[]     @relation("OneSeasonToManyAttackEvents")
+  statistics         h1_statistic[]        @relation("OneSeasonToManyStatistics")
   //indexes
   @@index([season])
+}
+
+model h1_campaign {
+  //get_campaign_status -> "campaign_status"
+  id   String @id @default(uuid(7))
+  season Int //foreign key
+  points Int
+  points_taken Int
+  points_max Int
+  status String
+  introduction_order Int
+  //relationship
+  linked_season h1_season @relation("OneSeasonToManyCampaigns", fields: [season], references: [season])
+  //other
+  @@unique([season, introduction_order]) //unique
+  @@index([season, introduction_order]) //index
+  @@index([season]) //index
 }
 
 model h1_introduction_order {
@@ -211,16 +230,18 @@ model h1_points_max {
 model h1_snapshot {
     id            String @id @default(uuid(7))
     season        Int    //foreign key //multiple snapshots per season, hence NOT unique. enforces one-to-many relationship
-    time          DateTime //original value 
+    time          Int    //original value 
     data          Json   //data field
     json          Json   //original raw data
     //relationship
     linked_season h1_season @relation("OneSeasonToManySnapshots", fields: [season], references: [season])
     //indexes
-    @@index([season])
+    @@unique([season, time]) //unique
+    @@index([season, time]) //index
+    @@index([season]) //index
 }
 
-model h1_defend_events {
+model h1_defend_event {
   id               String @id @default(uuid(7))
   season           Int // foreign key
   //data
@@ -239,7 +260,7 @@ model h1_defend_events {
   @@index([event_id])
 }
 
-model h1_attack_events {
+model h1_attack_event {
   id               String @id @default(uuid(7))
   season           Int //foreign key
   //data
@@ -257,10 +278,8 @@ model h1_attack_events {
   @@index([event_id])
 }
 
-model h1_statistics {
+model h1_statistic {
   id                       String @id @default(uuid(7))
-  hash                     String @unique //season+time 
-  time                     Int //foreign key
   season                   Int //foreign key
   season_duration          Int
   enemy                    Int
@@ -274,31 +293,20 @@ model h1_statistics {
   successful_defend_events Int
   attack_events            Int
   successful_attack_events Int
-  deaths                   BigInt
-  kills                    BigInt
-  accidentals              BigInt
-  shots                    BigInt
-  hits                     BigInt
+  deaths                   Int
+  kills                    Int
+  accidentals              Int
+  shots                    Int
+  hits                     Int
 
-  // Define the relationship with Status and SEason
+  //relations
   linked_season h1_season? @relation("OneSeasonToManyStatistics", fields: [season], references: [season])
-  //indexes
-  @@index([hash])
-  @@index([time])
-  @@index([season])
+  //other
+  @@unique([season, enemy]) //unique
+  @@index([season, enemy]) //index
+  @@index([season]) //index
 }
 
-model h1_status {
-  id   String @id @default(uuid(7))
-  season Int @unique
-  points Int
-  points_taken Int
-  points_max Int
-  status String
-  introduction_order Int
-  //relationship
-  linked_season h1_season @relation("OneSeasonToOneStatus", fields: [season], references: [season])
-  //indexes
-  @@index([season])
-}
+
+
 // #endregion

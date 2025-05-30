@@ -1,6 +1,6 @@
 import { initializeOpenApiSpec } from '@/utils/initialize.openapi';
 import { initializeDatabase } from '@/utils/initialize.prisma';
-import { initializeData } from '@/utils/initialize.data';
+import { initializeWorker } from '@/utils/initialize.worker';
 
 async function initializeHelldivers1Api() {
     'use server';
@@ -22,12 +22,20 @@ async function initializeHelldivers1Api() {
         console.info('instrumentation.js | database: ', database);
 
         // DATA - fetch data from the API to populate the database, so the homepage etc will work.
-        const data = await initializeData();
-        if (!data) {
-            console.error('instrumentation.js | data: ', data);
+        // const data = await initializeData();
+        // if (!data) {
+        //     console.error('instrumentation.js | data: ', data);
+        //     process.exit(1);
+        // }
+        // console.info('instrumentation.js | data: ', data);
+
+        // WORKER - continiously update the database from the official Helldivers API
+        const worker = await initializeWorker();
+        if (!worker) {
+            console.error('instrumentation.js | worker: ', worker);
             process.exit(1);
         }
-        console.info('instrumentation.js | data: ', data);
+        console.info('instrumentation.js | worker: ', worker);
     }
 }
 

@@ -16,8 +16,12 @@ export const config = {
          * - .ico (favicon and other icons)
          * - .png (PNG images)
          * - .jpg (JPEG images)
+         * - .webm (WebM videos)
+         * - .webp (WebP images)
          * - .svg (SVG images)
+         * - .js (JavaScript files)
+         * - .css (CSS files)
          */
-        '/((?!api|_next/static|_next/image|.*\\.ico$|.*\\.png$|.*\\.jpg$|.*\\.svg$).*)',
+        '/((?!api|_next/static|_next/image|.*\\.ico$|.*\\.png$|.*\\.jpg$|.*\\.webm$|.*\\.webp$|.*\\.svg$|.*\\.js$|.*\\.css$).*$)',
     ],
 };

@@ -1,12 +1,28 @@
-## 0.5.1 (2025-05-28)
+## 0.5.2 (2025-05-31)
+
+- adjust instrumentation.js
+    - to make use of the new update functions to initialize the database with the current campaign
+    - to add a node.js worker that will continiously update the database every 20 seconds
+
+## 0.5.1 (2025-05-30)
 
 - rework update functions
+    - add `/api/h1/update` route to test update functionality
     - separate `update` directory
-    - single update.mjs code split into:
-        - update.season.mjs
-        - update.status.mjs
-        - fetch.season.mjs
-        - fetch.status.mjs
+    - code split into:
+        - fetch.mjs -> functions to fetch data from the API
+        - status.mjs -> standalone function to update current status
+        - season.mjs -> standalone function to update specified season
+    - separate upsert queries for each data type
+        - upsertAttackEvents.mjs
+        - upsertCampaigns.mjs
+        - upsertDefendEvent.mjs
+        - upsertDefendEvents.mjs
+        - upsertIntroductionOrder.mjs
+        - upsertPointsMax.mjs
+        - upsertSeason.mjs
+        - upsertSnapshots.mjs
+        - upsertStatistics.mjs
 
 ## 0.5.0 (2025-05-28)
 

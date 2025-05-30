@@ -2,7 +2,8 @@
 
 ## Code
 
-[![Status Badge](https://github.com/elfensky/helldivers1api/actions/workflows/status.docker.yml/badge.svg?branch=main)](https://github.com/elfensky/helldivers1api/actions/workflows/status.docker.yml)
+[![Build](https://github.com/elfensky/helldivers1api/actions/workflows/staging.docker.yml/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/staging.docker.yml)
+[![Time](https://wakapi.lavrenov.io/api/badge/elfensky/interval:any/project:helldivers1api)](https://wakapi.lavrenov.io/leaderboard)
 
 ## Status
 
