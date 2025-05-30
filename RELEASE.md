@@ -1,5 +1,14 @@
-## 0.5.2 (2025-05-31)
+## 0.5.3 (2025-05-31)
 
+1. rebroadcast/get_snapshot (old) gets the data upfront and sends it (long wait) if it's not available locally.
+    1. it will never update itself again unless manually requested somewhere else, because that is past data, and it ownt change.
+    2. new data will update itself from the worker anyway.
+2.  - GET /api/h1/season/ -> complete current/latest season data
+3.  - GET /api/h1/season/[season] -> complete specific season data
+
+## 0.5.2 (2025-05-30)
+
+- add server-side umami tracking to api routes
 - adjust instrumentation.js
     - to make use of the new update functions to initialize the database with the current campaign
     - to add a node.js worker that will continiously update the database every 20 seconds
@@ -39,19 +48,3 @@
         - added manual dispatch option (replaces manual.docker.yml)
     - edited release.docker.yml, added NODE_ENV=production to build-args
     - adjusted Dockerfile to support build-arg "NODE_ENV"
-
-## TODO
-
-- add instrumentation.js
-
-    - initialize db (migrations, provider, ...)
-    - initialize sentry
-    - if no data, get current season & snapshot
-
-- make openapi.json generation docker-compatible.
-- implement more thoughtful updating for rebroadcast
-- store normalized data alongside raw.
-- GET /api/h1/attack/[season]
-- GET /api/h1/defend/[season]
-- GET /api/h1/statistics/[season]
--

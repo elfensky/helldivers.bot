@@ -82,6 +82,8 @@ todo https://daily.dev/blog/github-markdown-badges-explained
 
 #### 0.7.0 (2025-04-XX)
 
+    - initialize sentry
+
 - Flesh out Admin Dashboards
 
     - See all users
@@ -98,16 +100,16 @@ todo https://daily.dev/blog/github-markdown-badges-explained
 
     - export default function Home() {
       return (
-      <main className="flex">
-      <a
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  >
-      Satellite icons created by Freepik - Flaticon
-      </a>
-      </main>
-      );
-      }
+        <main className="flex">
+        <a
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    >
+        Satellite icons created by Freepik - Flaticon
+        </a>
+        </main>
+        );
+        }
 
 - admin dashboard to manage api key(s)
 

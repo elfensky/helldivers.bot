@@ -3,7 +3,7 @@
 
 import './Galaxy.css';
 import Script from 'next/script';
-import { tryCatch } from '@/lib/tryCatch.mjs';
+import { tryCatch } from '@/utils/tryCatch.mjs';
 import { query_get_rebroadcast_status } from '@/db/queries/rebroadcast';
 
 export default async function Galaxy() {

@@ -1,5 +1,5 @@
 import { performanceTime } from '@/utils/time';
-import { tryCatch } from '@/lib/tryCatch';
+import { tryCatch } from '@/utils/tryCatch';
 
 async function getPrismaProvider() {
     'use server';

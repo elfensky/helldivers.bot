@@ -3,7 +3,7 @@ import db from '@/db/db';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
 
-export async function query_get_rebroadcast_status(season) {
+export async function queryGetRebroadcastStatus(season) {
     'use server';
     const start = performance.now();
 
@@ -33,7 +33,7 @@ export async function query_get_rebroadcast_status(season) {
     }
 }
 
-export async function query_get_rebroadcast_season(season) {
+export async function queryGetRebroadcastSeason(season) {
     'use server';
     const start = performance.now();
 

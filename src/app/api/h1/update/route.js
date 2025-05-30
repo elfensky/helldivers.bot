@@ -1,5 +1,5 @@
 'use server';
-import { tryCatch } from '@/lib/tryCatch';
+import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { performanceTime, elapsedSeconds } from '@/utils/time';
 import { NextResponse, after } from 'next/server';

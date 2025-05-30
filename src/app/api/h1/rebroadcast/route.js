@@ -1,6 +1,4 @@
-import db from '@/db/db';
-import { z } from 'zod/v4';
-import { tryCatch } from '@/lib/tryCatch';
+import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { performanceTime, elapsedSeconds } from '@/utils/time';
 import { NextResponse, after } from 'next/server';
@@ -9,13 +7,14 @@ import { formDataToObject } from '@/utils/formdata';
 //validators
 import { isValidContentType } from '@/validators/isValidContentType';
 import { isValidFormData } from '@/validators/isValidFormData';
-//update
-// import { updateStatus } from '@/lib/updateStatus.mjs';
-// import { updateSeason } from '@/lib/updateSeason.mjs';
+//db
 import {
-    query_get_rebroadcast_status,
-    query_get_rebroadcast_season,
+    queryGetRebroadcastStatus,
+    queryGetRebroadcastSeason,
 } from '@/db/queries/rebroadcast';
+import { updateSeason } from '@/update/season';
+//track
+import { umamiTrackPage } from '@/utils/umami';
 
 /**
  * @openapi
@@ -61,34 +60,18 @@ export async function POST(request) {
     //schedule work after response is finished
     //read more at: https://nextjs.org/docs/app/api-reference/functions/after
     after(async () => {
-        //7. log usage
         // console.log('after() ', performanceTime(start));
-
-        //8. schedule update
-        if (update) {
-            if (formValues.action === 'get_campaign_status') {
-                // const { data, error } = await tryCatch(updateStatus());
-                //log update
-                //trigger websocket update
-            }
-            if (formValues.action === 'get_snapshots') {
-                // const { data, error } = await tryCatch(updateSeason(formValues.season));
-                // if (data) {
-                //     console.log('data1', data);
-                // }
-                // if (error) {
-                //     console.log('error1', error.message);
-                // }
-                //log update
-                //trigger websocket update
-            }
-        }
+        await umamiTrackPage('API | Rebroadcast', '/api/h1/rebroadcast');
+        // if (update) {
+        //     //
+        // }
     });
 
     //0. initialize
     const start = performance.now();
     let check = null;
     let update = false;
+    // let elapsed = null;
 
     //1. test if valid POST request
     const contentType = request.headers.get('content-type') || '';
@@ -107,7 +90,10 @@ export async function POST(request) {
     //3. validate FormData object structure using Zod
     check = isValidFormData.safeParse(formValues);
     if (!check.success) {
-        // console.log('ERROR: ', check?.error);
+        // console.error(
+        //     check?.error?.issues[0]?.message,
+        //     '| cause: /src/app/api/h1/rebroadcast/route.js | isValidFormData()',
+        // );
         const code = check?.error?.issues[0]?.code || null;
 
         switch (code) {
@@ -128,41 +114,41 @@ export async function POST(request) {
 
     //4. attempt to get data from db.
     let data = undefined;
-    let elapsed = 0;
+    // let elapsed = 0;
     switch (formValues.action) {
         case 'get_campaign_status':
-            data = await query_get_rebroadcast_status();
-            elapsed = elapsedSeconds(data?.data?.last_updated);
-            if (elapsed > 10) {
-                update = true;
-            }
+            data = await queryGetRebroadcastStatus();
             data = data?.data?.json;
+            //this should theoretically never fail, as the application will fetch the current campaign status from the api on startup.
+            //hence, unlike season, there is no need to live-update the status or check if it's empty
             break;
         case 'get_snapshots':
-            data = await query_get_rebroadcast_season(formValues.season);
-            elapsed = elapsedSeconds(data?.data?.last_updated);
-            if (elapsed > 300) {
-                update = true;
-            }
+            data = await queryGetRebroadcastSeason(formValues.season);
             data = data?.data?.json;
+
+            //fetch from remote if not available locally
+            if (data === undefined || data === null) {
+                const { data: seasonData, error: seasonError } = await tryCatch(
+                    updateSeason(formValues.season),
+                );
+                if (seasonError) {
+                    return errorResponse(4);
+                } else {
+                    data = await queryGetRebroadcastSeason(formValues.season);
+                    data = data?.data?.json;
+                }
+            }
             break;
         default:
             break;
     }
 
-    //5. validate data from DB
+    // //5. validate data from DB
     if (data === undefined || data === null) {
-        update = true;
         return errorResponse(4);
     }
-
     //6. return response
     return NextResponse.json(data);
-    // return NextResponse.json({data
-    //     ms: performanceTime(start),
-    //     time: Math.floor(Date.now() / 1000),
-    //     data: data,
-    // });
 }
 
 // generate the special rebroadcast error messages

@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-// import { tryCatch } from '@/lib/tryCatch.mjs';
+// import { tryCatch } from '@/utils/tryCatch.mjs';
 // import { query_get_rebroadcast_status } from '@/db/queries/rebroadcast';
 import axios from 'axios';
 

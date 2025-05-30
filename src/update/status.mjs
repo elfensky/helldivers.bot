@@ -1,6 +1,6 @@
 'use server';
 
-import { tryCatch } from '@/lib/tryCatch.mjs'; //util
+import { tryCatch } from '@/utils/tryCatch.mjs'; //util
 import { performanceTime } from '@/utils/time'; //util
 import { getCurrentSeason } from '@/utils/getCurrentSeason'; //util
 import { fetchStatus } from '@/update/fetch.mjs'; //fetch

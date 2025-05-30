@@ -1,5 +1,5 @@
 'use server';
-import { tryCatch } from '@/lib/tryCatch'; //util
+import { tryCatch } from '@/utils/tryCatch'; //util
 import { performance } from 'perf_hooks'; //util
 import { performanceTime } from '@/utils/time'; //util
 import { getCurrentSeason } from '@/utils/getCurrentSeason'; //util
