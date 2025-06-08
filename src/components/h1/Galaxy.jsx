@@ -4,10 +4,10 @@
 import './Galaxy.css';
 import Script from 'next/script';
 import { tryCatch } from '@/utils/tryCatch.mjs';
-import { query_get_rebroadcast_status } from '@/db/queries/rebroadcast';
+import { queryGetRebroadcastStatus } from '@/db/queries/rebroadcast';
 
 export default async function Galaxy() {
-    const data = await tryCatch(query_get_rebroadcast_status());
+    const data = await tryCatch(queryGetRebroadcastStatus());
     const json = data?.data?.data?.json;
 
     const bugs = generateScore(
@@ -24,11 +24,6 @@ export default async function Galaxy() {
         json.campaign_status[2].points,
         json.campaign_status[2].points_max,
     );
-
-    // useEffect(() => {
-    //     console.log('getting map data');
-    //     const response = fetch('/api/h1/attack/1');
-    // }, []);
 
     return (
         <section id="map" className="max-w-2/3 z-50 aspect-square max-h-[80vh] w-full">

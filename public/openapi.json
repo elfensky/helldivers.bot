@@ -6,6 +6,99 @@
     "description": "A simple API"
   },
   "paths": {
+    "/api/h1/campaign": {
+      "get": {
+        "summary": "Get campaign data for a specific season or the latest.",
+        "description": "Returns campaign data for a given season if the `season` query parameter is provided and valid.\nIf no season is provided, returns the latest campaign data.\nIf data is not found locally, attempts to fetch and update from a remote source.\n",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "season",
+            "schema": {
+              "type": "integer"
+            },
+            "required": false,
+            "description": "The season number to fetch campaign data for."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaign data found and returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ms": {
+                      "type": "number",
+                      "description": "Time taken to process the request (ms)."
+                    },
+                    "data": {
+                      "type": "object",
+                      "description": "The campaign data object."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid season parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ms": {
+                      "type": "number"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Campaign data not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ms": {
+                      "type": "number"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ms": {
+                      "type": "number"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/h1/rebroadcast": {
       "post": {
         "summary": "Perform a campaign status or snapshot action",
@@ -63,6 +156,80 @@
         "responses": {
           "200": {
             "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/h1/update": {
+      "get": {
+        "summary": "Trigger current campaign status and snapshot updates",
+        "description": "**Internal-use-only.** This endpoint is used by a node (web) worker to continiously trigger status and season updates for the current campaign. It is not intended for external user consumption. Requires a valid `key` query parameter matching the server's `UPDATE_KEY` environment variable.\n",
+        "tags": [
+          "Internal"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Internal API key for authorization."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update successful. Returns the updated status and season data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "statusData": {
+                      "type": "object",
+                      "description": "The updated status data."
+                    },
+                    "seasonData": {
+                      "type": "object",
+                      "description": "The updated season data."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. The provided key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed. Only GET is supported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Method Not Allowed"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

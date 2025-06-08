@@ -77,14 +77,14 @@ export async function POST(request) {
     const contentType = request.headers.get('content-type') || '';
     check = isValidContentType.safeParse(contentType);
     if (!check.success) {
-        return errorResponse(0);
+        return rebroadcastErrorResponse(0);
     }
 
     //2. get FormData and convert it to an object. Test is "action" parameter is present.
     const formData = await request.formData();
     const formValues = formDataToObject(formData);
     if (typeof formValues.action !== 'string') {
-        return errorResponse(1); //no action set
+        return rebroadcastErrorResponse(1); //no action set
     }
 
     //3. validate FormData object structure using Zod
@@ -98,13 +98,13 @@ export async function POST(request) {
 
         switch (code) {
             case 'invalid_union':
-                return errorResponse(2);
+                return rebroadcastErrorResponse(2);
                 break;
             case 'invalid_type':
-                return errorResponse(3);
+                return rebroadcastErrorResponse(3);
                 break;
             default:
-                return errorResponse(null);
+                return rebroadcastErrorResponse(null);
                 break;
         }
     }
@@ -132,7 +132,7 @@ export async function POST(request) {
                     updateSeason(formValues.season),
                 );
                 if (seasonError) {
-                    return errorResponse(4);
+                    return rebroadcastErrorResponse(4);
                 } else {
                     data = await queryGetRebroadcastSeason(formValues.season);
                     data = data?.data?.json;
@@ -145,14 +145,14 @@ export async function POST(request) {
 
     // //5. validate data from DB
     if (data === undefined || data === null) {
-        return errorResponse(4);
+        return rebroadcastErrorResponse(4);
     }
     //6. return response
     return NextResponse.json(data);
 }
 
 // generate the special rebroadcast error messages
-function errorResponse(code) {
+function rebroadcastErrorResponse(code) {
     let message = '';
     let status = 0;
     switch (code) {
@@ -198,7 +198,7 @@ function errorResponse(code) {
 
 // Custom handler for all other methods
 const methodNotAllowed = () => {
-    return errorResponse(5);
+    return rebroadcastErrorResponse(5);
 };
 
 export const GET = methodNotAllowed;

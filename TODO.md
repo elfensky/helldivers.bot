@@ -6,7 +6,7 @@
     - show captured regions -> yellow
     - show contested region -> red
     - show lost region -> dark
-- stats block
+- stats block properly styled
 
 #### 0.7+
 
@@ -100,16 +100,16 @@ todo https://daily.dev/blog/github-markdown-badges-explained
 
     - export default function Home() {
       return (
-        <main className="flex">
-        <a
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    >
-        Satellite icons created by Freepik - Flaticon
-        </a>
-        </main>
-        );
-        }
+      <main className="flex">
+      <a
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  >
+      Satellite icons created by Freepik - Flaticon
+      </a>
+      </main>
+      );
+      }
 
 - admin dashboard to manage api key(s)
 
@@ -137,3 +137,10 @@ todo https://daily.dev/blog/github-markdown-badges-explained
 - web notifications
 - websockets (for bot) (request update + response)
 - move from manual Dockerfile to Github Actions workflow where it automatically builds, deploys and packages the app.
+- working GET /api/h1/campaign?season=[season]&season=[campaign]...
+
+- TESTING
+    - add tests
+    - add e2e tests
+    - fully run app during testing and setup DB, then test api calls and validate responses & errors with zod
+    - ...

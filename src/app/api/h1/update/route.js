@@ -1,39 +1,112 @@
 'use server';
 import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
-import { performanceTime, elapsedSeconds } from '@/utils/time';
-import { NextResponse, after } from 'next/server';
+import { errorResponse, successResponse } from '@/utils/responses';
+import { after } from 'next/server';
+
 //update
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';
+//track
+import { umamiTrackPage } from '@/utils/umami';
 
+/**
+ * @swagger
+ * /api/h1/update:
+ *   get:
+ *     summary: Trigger current campaign status and snapshot updates
+ *     description: >
+ *       **Internal-use-only.**
+ *       This endpoint is used by a node (web) worker to continiously trigger status and season updates for the current campaign.
+ *       It is not intended for external user consumption.
+ *       Requires a valid `key` query parameter matching the server's `UPDATE_KEY` environment variable.
+ *     tags:
+ *       - Internal
+ *     parameters:
+ *       - in: query
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Internal API key for authorization.
+ *     responses:
+ *       200:
+ *         description: Update successful. Returns the updated status and season data.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusData:
+ *                   type: object
+ *                   description: The updated status data.
+ *                 seasonData:
+ *                   type: object
+ *                   description: The updated season data.
+ *       401:
+ *         description: Unauthorized. The provided key is missing or invalid.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Unauthorized
+ *       405:
+ *         description: Method Not Allowed. Only GET is supported.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Method Not Allowed
+ */
 export async function GET(request) {
-    const key = process.env.UPDATE_API;
-    if (request.nextUrl.searchParams.get('key') !== key) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    after(async () => {
+        await umamiTrackPage('API | Update', '/api/h1/update');
+    });
+
+    //INITIALIZE
+    const start = performance.now();
+    const key = request.nextUrl.searchParams.get('key');
+    if (!key) return errorResponse(400, start);
+    const secret = process.env.UPDATE_KEY;
+    if (key !== secret) return errorResponse(401, start);
 
     //STATUS
     const { data: statusData, error: statusError } = await tryCatch(updateStatus());
     if (statusError) {
-        return NextResponse.json(statusError);
+        console.error(statusError?.message, statusError?.cause);
+        return errorResponse(500, start, statusError?.message);
     }
-
     //SEASON
     const { data: seasonData, error: seasonError } = await tryCatch(
-        updateSeason(statusData.season.query.season),
+        updateSeason(statusData.season),
     );
     if (seasonError) {
-        return NextResponse.json(seasonError);
+        console.error(seasonError?.message, seasonError?.cause);
+        return errorResponse(500, start, seasonError?.message);
     }
 
+    // const wait = await new Promise((resolve) => setTimeout(resolve, 3000));
+
     //RESPONSE
-    return NextResponse.json({ statusData, seasonData });
+    return successResponse(200, start, {
+        updated: {
+            status: statusData,
+            season: seasonData,
+            // wait: wait,
+        },
+    });
 }
 
 // Custom handler for all other methods
 const methodNotAllowed = () => {
-    return errorResponse(5);
+    const start = performance.now();
+    return errorResponse(405, start);
 };
 
 export const POST = methodNotAllowed;

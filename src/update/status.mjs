@@ -1,8 +1,7 @@
 'use server';
-
 import { tryCatch } from '@/utils/tryCatch.mjs'; //util
 import { performanceTime } from '@/utils/time'; //util
-import { getCurrentSeason } from '@/utils/getCurrentSeason'; //util
+import { getSeasonFromStatus } from '@/utils/getSeason'; //util
 import { fetchStatus } from '@/update/fetch.mjs'; //fetch
 import { isValidStatus } from '@/validators/isValidStatus'; //validators
 //db
@@ -16,7 +15,7 @@ import { queryUpsertStatistics } from '@/db/queries/upsertStatistics';
 export async function updateStatus() {
     //0. initialize
     const start = performance.now();
-    let check = null;
+    // let check = null;
 
     //1. fetch
     const { data: fetchedData, error: fetchedError } = await tryCatch(fetchStatus());
@@ -27,54 +26,95 @@ export async function updateStatus() {
     }
 
     //2. use zod to validate the response.
-    if (!isValidStatus(fetchedData)) {
-        throw new Error('Invalid status data', {
+    const check = isValidStatus(fetchedData);
+    if (!check.success) {
+        throw new Error(check?.error?.message || 'Invalid status data', {
             cause: `/src/update/status.mjs | isValidStatus(fetchedData)`,
         });
     }
 
-    const season = getCurrentSeason(fetchedData);
+    //3. get season parameter from fetched data
+    const season = getSeasonFromStatus(fetchedData);
 
-    //3. store in db -> /api/rebroadcast
+    //4. store in db -> /api/rebroadcast
     const { data: storedRebroadcastData, error: storedRebroadcastError } = await tryCatch(
-        queryUpsertRebroadcastStatus(fetchedData),
+        queryUpsertRebroadcastStatus(season, fetchedData),
     );
     if (storedRebroadcastError) {
         throw new Error(
             storedRebroadcastError?.message ||
-                'Failed to store rebroadcast status in the database',
+                'Failed to store rebroadcast STATUS in the database',
             {
-                cause: `/src/update/status.mjs | queryUpsertRebroadcastStatus(fetchedData)`,
+                cause: `update/status.mjs | queryUpsertRebroadcastStatus(fetchedData)`,
             },
         );
     }
 
-    //4. store in db -> normalized & historic data
-    try {
-        //4.1 upsertSeason()
-        const newSeason = await queryUpsertSeason(season, false);
-        //4.2 upsertCampaign()
-        const newCampaigns = await queryUpsertCampaigns(fetchedData.campaign_status);
-        //4.3 upsertDefendEvent()
-        const newDefendEvent = await queryUpsertDefendEvent(fetchedData.defend_event);
-        //4.4 upsertAttackEvent()
-        const newAttackEvents = await queryUpsertAttackEvents(fetchedData.attack_events);
-        //4.5 upsertStatistics()
-        const newStatistics = await queryUpsertStatistics(fetchedData.statistics);
-
-        //update last_updated time
-        const last_updated = await queryUpsertSeason(season, true);
-
-        const response = {
-            season: newSeason,
-            campaigns: newCampaigns,
-            defendEvent: newDefendEvent,
-            attackEvents: newAttackEvents,
-            statistics: newStatistics,
-        };
-
-        return response;
-    } catch (error) {
-        throw error;
+    //5. store in db -> normalized & historic data
+    //5.1 create or update season in h1_season
+    const { data: newSeason, error: newSeasonError } = await tryCatch(
+        queryUpsertSeason(season, false),
+    );
+    if (newSeasonError) {
+        throw new Error(
+            newSeasonError?.message ||
+                'Failed to store normalized status (season) in the database',
+        );
     }
+
+    //5.2-5.5 in parallel, create or update normalized data in h1_campaign, h1_defend_event, h1_attack_event, h1_statistics
+    const [
+        { data: newCampaigns, error: newCampaignsError }, //4.2 upsertCampaign()
+        { data: newDefendEvent, error: newDefendEventError }, //4.3 upsertDefendEvent()
+        { data: newAttackEvents, error: newAttackEventsError }, //4.4 upsertAttackEvent()
+        { data: newStatistics, error: newStatisticsError }, //4.5 upsertStatistics()
+    ] = await Promise.all([
+        tryCatch(queryUpsertCampaigns(season, fetchedData.campaign_status)), //4.2 upsertCampaign()
+        tryCatch(queryUpsertDefendEvent(season, fetchedData.defend_event)), //4.3 upsertDefendEvent()
+        tryCatch(queryUpsertAttackEvents(season, fetchedData.attack_events)), //4.4 upsertAttackEvent()
+        tryCatch(queryUpsertStatistics(season, fetchedData.statistics)), //4.5 upsertStatistics()
+    ]);
+
+    if (newCampaignsError)
+        throw new Error(
+            newCampaignsError?.message ||
+                'Failed to store normalized status (campaigns) in the database',
+        );
+    if (newDefendEventError)
+        throw new Error(
+            newDefendEventError?.message ||
+                'Failed to store normalized status (defendEvent) in the database',
+        );
+    if (newAttackEventsError)
+        throw new Error(
+            newAttackEventsError?.message ||
+                'Failed to store normalized status (attackEvents) in the database',
+        );
+    if (newStatisticsError)
+        throw new Error(
+            newStatisticsError?.message ||
+                'Failed to store normalized status (statistics) in the database',
+        );
+
+    // 6. confirm that the normalized data has succesfully been saved by updating the last_updated time in the season table
+    const { data: confirmSeason, error: confirmSeasonError } = await tryCatch(
+        queryUpsertSeason(season, true), //note the "true" parameter
+    );
+    if (confirmSeasonError) {
+        throw new Error(
+            confirmSeasonError?.message ||
+                'Failed to update last_updated time in the database',
+        );
+    }
+
+    //7. return response
+    return {
+        ms: performanceTime(start),
+        season: season,
+        confirmSeason,
+        // newCampaigns,
+        // newDefendEvent,
+        // newAttackEvents,
+        // newStatistics,
+    };
 }

@@ -4,10 +4,15 @@ import { tryCatch } from '@/utils/tryCatch';
 export async function initializeWorker() {
     'use server';
     if (process.env.NEXT_RUNTIME === 'nodejs') {
-        const key = process.env.UPDATE_API;
+        const key = process.env.UPDATE_KEY;
         if (!key) {
-            throw new Error('UPDATE_API is not set');
+            throw new Error('UPDATE_KEY is not set');
         }
+        const interval = process.env.UPDATE_INTERVAL;
+        if (!interval) {
+            throw new Error('UPDATE_INTERVAL is not set');
+        }
+
         //dynamic imports
         //worker threads and path
         const { performance } = await import('perf_hooks');
@@ -24,7 +29,7 @@ export async function initializeWorker() {
             const workerPath = path.resolve(__dirname, '../workers/cron.js');
 
             const worker = new Worker(workerPath);
-            worker.postMessage(key);
+            worker.postMessage({ key: key, interval: interval });
             worker.onmessage = function (e) {
                 if (e.data.error) {
                     console.error('Worker error:', e.data.error, 'at', e.data.time);

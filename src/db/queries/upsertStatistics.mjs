@@ -2,15 +2,24 @@ import db from '@/db/db';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
 
-export async function queryUpsertStatistics(statistics) {
+export async function queryUpsertStatistics(season, statistics) {
     'use server';
     const start = performance.now();
 
-    try {
-        const now = new Date();
+    if (!season) throw new Error('season is missing');
+    if (!statistics) throw new Error('statistics are missing');
 
+    try {
+        let skipped = false;
+        const now = new Date();
         const upsertRecords = [];
+
         for (const statistic of statistics) {
+            if (statistic?.season !== season) {
+                skipped = true;
+                continue; //skip if data is not from current season
+            }
+
             const upsertRecord = await db.h1_statistic.upsert({
                 where: {
                     season_enemy: {
@@ -59,18 +68,20 @@ export async function queryUpsertStatistics(statistics) {
                     hits: statistic.hits,
                 },
             });
+
             upsertRecords.push(upsertRecord);
+            skipped = false;
         }
 
         const response = {
             ms: performanceTime(start),
-            query: upsertRecords,
+            query: upsertRecords || skipped,
         };
 
         return response;
     } catch (error) {
         console.error(error.message, {
-            cause: '/src/db/queries/queryUpsertStatistics.mjs',
+            cause: 'db/queries/queryUpsertStatistics.mjs',
         });
         throw error;
     }

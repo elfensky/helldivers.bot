@@ -1,10 +1,25 @@
+## TODO IN 0.5.4
+
+- update route.js & rebroadcast.mjs for new logic ✅
+    - working POST /api/h1/rebroadcast ✅
+- update route.js & getCampaigns().mjs for new logic
+    - working GET /api/h1/campaign
+    - working GET /api/h1/campaign?season=[season]
+
+## 0.5.4 (2025-06-07)
+
+- rewrite update logic to avoid having to generate complete season list.
+- update worker to use .env variables for key and interval
+
 ## 0.5.3 (2025-05-31)
 
-1. rebroadcast/get_snapshot (old) gets the data upfront and sends it (long wait) if it's not available locally.
-    1. it will never update itself again unless manually requested somewhere else, because that is past data, and it ownt change.
-    2. new data will update itself from the worker anyway.
-2.  - GET /api/h1/season/ -> complete current/latest season data
-3.  - GET /api/h1/season/[season] -> complete specific season data
+- rebroadcast now attempts to fetch data if it's not available locally before erroring out on season (get_snapshots) requests.
+    - it will not fetch data for status (get_campaign_status) requests, because that data is continiously updated by the worker.
+    - it will not longer check last_updated and trigger automatic updates in after().
+        - current campaign's data is continiously updated by the worker.
+        - old data will never change, and an update should thus only be triggered manually.
+- GET /api/h1/campaign/ -> complete current/latest season data
+- GET /api/h1/campaign?season=[season] -> complete specific season data
 
 ## 0.5.2 (2025-05-30)
 

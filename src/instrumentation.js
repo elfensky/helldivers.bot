@@ -13,7 +13,7 @@ async function initializeHelldivers1Api() {
         }
         console.info('instrumentation.js | openapi: ', openapi);
 
-        // DATABASE - check if connceted and run migrations
+        // DATABASE - check if connceted, run migrations and generate empty seasons
         const database = await initializeDatabase();
         if (!database) {
             console.error('instrumentation.js | database: ', database);
@@ -21,13 +21,13 @@ async function initializeHelldivers1Api() {
         }
         console.info('instrumentation.js | database: ', database);
 
-        // WORKER - continiously update the database from the official Helldivers API
-        // const worker = await initializeWorker();
-        // if (!worker) {
-        //     console.error('instrumentation.js | worker: ', worker);
-        //     process.exit(1);
-        // }
-        // console.info('instrumentation.js | worker: ', worker);
+        // WORKER - continiously update current campaign from the official Helldivers API
+        const worker = await initializeWorker();
+        if (!worker) {
+            console.error('instrumentation.js | worker: ', worker);
+            process.exit(1);
+        }
+        console.info('instrumentation.js | worker: ', worker);
     }
 }
 

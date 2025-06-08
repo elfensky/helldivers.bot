@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.5.3",
+    "version": "0.5.4",
     "private": true,
     "scripts": {
         "dev": "next dev --turbopack",
@@ -11,13 +11,12 @@
     },
     "dependencies": {
         "@auth/prisma-adapter": "^2.9.1",
-        "@prisma/client": "^6.8.2",
+        "@prisma/client": "^6.9.0",
         "@vercel/og": "^0.6.8",
         "axios": "^1.9.0",
         "next": "^15.3.2",
         "next-auth": "^5.0.0-beta.28",
         "nodemailer": "^6.10.1",
-        "prisma": "^6.8.2",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
         "react-hook-form": "^7.56.4",
@@ -30,6 +29,7 @@
         "chokidar-cli": "^3.0.0",
         "prettier": "^3.5.3",
         "prettier-plugin-tailwindcss": "^0.6.11",
+        "prisma": "^6.9.0",
         "tailwindcss": "^4"
     },
     "volta": {

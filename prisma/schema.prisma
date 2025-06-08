@@ -171,21 +171,23 @@ model rebroadcast_snapshot {
 
 // #region HELLDIVERS
 model h1_season {
-  id                 String              @id @default(uuid(7))
-  is_active          Boolean             @default(false)
-  last_updated       DateTime            @default(now())
-  //data
-  season             Int                 @unique
+  id                 String     @id @default(uuid(7))
+//   is_active          Boolean    @default(false)
+  last_updated       DateTime?            
+  season             Int        @unique
   //relationships
   introduction_order h1_introduction_order? @relation("OneSeasonToOneIntroductionOrder") //a season must have 1 introduction_order, and an introduction_order must always be linked to a season
   points_max         h1_points_max?         @relation("OneSeasonToOnePointsMax") //a season must have 1 points_max, and a points_max must always be linked to a season
-  campaigns          h1_campaign[]           @relation("OneSeasonToManyCampaigns")
+  campaigns          h1_campaign[]          @relation("OneSeasonToManyCampaigns")
   snapshots          h1_snapshot[]          @relation("OneSeasonToManySnapshots")
-  defend_events      h1_defend_event[]     @relation("OneSeasonToManyDefendEvents")
-  attack_events      h1_attack_event[]     @relation("OneSeasonToManyAttackEvents")
-  statistics         h1_statistic[]        @relation("OneSeasonToManyStatistics")
+  defend_events      h1_defend_event[]      @relation("OneSeasonToManyDefendEvents")
+  attack_events      h1_attack_event[]      @relation("OneSeasonToManyAttackEvents")
+  statistics         h1_statistic[]         @relation("OneSeasonToManyStatistics")
   //indexes
   @@index([season])
+//   @@index([is_active])
+  @@index([last_updated])
+//   @@index([is_active, last_updated])
 }
 
 model h1_campaign {

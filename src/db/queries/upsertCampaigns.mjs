@@ -2,15 +2,20 @@ import db from '@/db/db';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
 
-export async function queryUpsertCampaigns(campaigns) {
+export async function queryUpsertCampaigns(season, campaigns) {
     'use server';
     const start = performance.now();
+
+    if (!season) throw new Error('season is missing');
+    if (!campaigns) throw new Error('campaigns are missing');
 
     try {
         const now = new Date();
 
         const upsertRecords = [];
         for (const campaign of campaigns) {
+            if (campaign?.season !== season) continue; //skip if data is not from current season
+
             const upsertRecord = await db.h1_campaign.upsert({
                 where: {
                     season_introduction_order: {
@@ -43,9 +48,6 @@ export async function queryUpsertCampaigns(campaigns) {
 
         return response;
     } catch (error) {
-        console.error(error.message, {
-            cause: '/src/db/queries/queryUpsertCampaigns.mjs',
-        });
         throw error;
     }
 }

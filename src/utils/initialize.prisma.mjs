@@ -1,3 +1,4 @@
+'use server';
 import { performanceTime } from '@/utils/time';
 import { tryCatch } from '@/utils/tryCatch';
 
@@ -31,10 +32,12 @@ async function getPrismaProvider() {
         if (providerMatch && providerMatch[1]) {
             return providerMatch[1];
         } else {
-            throw new Error('Could not find the provider in datasource db block');
+            throw new Error('Could not extract the provider from schema.prisma');
         }
     } else {
-        return false;
+        throw new Error('Only the Node.js runtime is supported', {
+            cause: '/src/utils/initialize.prisma.mjs | getPrismaProvider()',
+        });
     }
 }
 
@@ -49,8 +52,6 @@ async function runMigrations() {
         //init
         const start = performance.now();
         const execAsync = promisify(exec);
-
-        // console.log('DATABASE - starting migrations...');
 
         try {
             const { stdout, stderr } = await execAsync(`npx prisma migrate deploy`);
@@ -69,23 +70,41 @@ async function runMigrations() {
             throw error;
         }
     } else {
-        return false;
+        throw new Error('Only the Node.js runtime is supported', {
+            cause: '/src/utils/initialize.prisma.mjs | getPrismaProvider()',
+        });
+        // return false;
     }
 }
 
 export async function initializeDatabase() {
     'use server';
-    // console.log('initializeDatabase() start');
-    const provider = await getPrismaProvider();
-    // console.log('initializeDatabase() | provider: ', provider);
+    if (process.env.NEXT_RUNTIME === 'nodejs') {
+        //1. get the provider type
+        const { data: provider, error: proErr } = await tryCatch(getPrismaProvider());
+        if (proErr) {
+            console.error(providerError.message, {
+                cause: '/src/utils/initialize.prisma.mjs | await tryCatch(getPrismaProvider())',
+            });
+            process.exit(1);
+        }
 
-    if (provider === 'postgresql') {
-        //test if database exists and create it if not
-        const { data, error } = await tryCatch(runMigrations());
-        // console.log(data);
-        // console.log(error);
-        return true;
+        //2. run migrations
+        if (provider === 'postgresql') {
+            //test if database exists and create it if not
+            const { data: migrations, error: migErr } = await tryCatch(runMigrations());
+            if (migErr) {
+                console.error(migErr.message, {
+                    cause: '/src/utils/initialize.prisma.mjs | await tryCatch(runMigrations())',
+                });
+                process.exit(1);
+            }
+            return true;
+        } else {
+            // console.error('DATABASE - only postgresql is supported', {});
+            return false;
+        }
+    } else {
+        return false;
     }
-
-    return false;
 }

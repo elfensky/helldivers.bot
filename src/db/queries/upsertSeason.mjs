@@ -1,72 +1,34 @@
 import db from '@/db/db';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
-import { zodIsNumber } from '@/validators/isNumber';
+import { isValidNumber } from '@/validators/isValidNumber';
+import { tryCatch } from '@/utils/tryCatch';
 
-export async function queryUpsertSeason(season, complete) {
+export async function queryUpsertSeason(season, complete = false) {
     'use server';
-    const start = performance.now();
+    //0. initialize variables
+    const start = performance.now(); //start performance metrics
+    const now = new Date(); //current date
+    let seasonCount = null;
 
-    const checkSeason = zodIsNumber.safeParse(season);
+    //1. validate season parameter is a positive integer
+    const checkSeason = isValidNumber.safeParse(season);
     if (!checkSeason.success) {
         throw checkSeason.error;
     }
 
+    //2.
     try {
-        const now = new Date();
-
-        const count = await db.h1_season.count();
-        if (count !== season) {
-            const origin = new Date(0);
-            for (let index = 1; index < season; index++) {
-                const createEmptySeason = await db.h1_season.upsert({
-                    where: {
-                        season: index,
-                    },
-                    update: {},
-                    create: {
-                        is_active: false,
-                        last_updated: origin,
-                        season: index,
-                    },
-                });
-            }
-        }
-
-        //update active/inactive records
-        const activeRecords = await db.h1_season.findMany({
-            where: {
-                is_active: true,
-                season: {
-                    not: season,
-                },
-            },
-        });
-        //set all non-active ones to false
-        for (const record of activeRecords) {
-            await db.h1_season.update({
-                where: {
-                    season: record.season,
-                },
-                data: {
-                    is_active: false,
-                },
-            });
-        }
-
-        if (complete) {
-            //update actual data
+        if (!complete) {
             const upsertRecord = await db.h1_season.upsert({
                 where: {
                     season: season,
                 },
                 update: {
-                    is_active: true,
-                    last_updated: now,
+                    // last_updated: null, //do not (yet) update last_updated date
                 },
                 create: {
-                    is_active: true,
-                    last_updated: now,
+                    // last_updated: null, //do not (yet) create last_updated date
                     season: season,
                 },
             });
@@ -77,18 +39,18 @@ export async function queryUpsertSeason(season, complete) {
             };
 
             return response;
-        } else {
-            //update actual data
+        }
+
+        if (complete) {
             const upsertRecord = await db.h1_season.upsert({
                 where: {
                     season: season,
                 },
                 update: {
-                    is_active: true,
+                    last_updated: now, //update date
                 },
                 create: {
-                    is_active: true,
-                    last_updated: now,
+                    last_updated: now, //update date
                     season: season,
                 },
             });

@@ -20,10 +20,10 @@ It uses:
     - App Router for the frontend
     - API Routes for the backend
 - [ESLint](https://eslint.org) for linting.
-  <!-- - [Vitest](https://vitest.dev) for testing -->
+    <!-- - [Vitest](https://vitest.dev) for testing -->
 - [Prisma](https://prisma.io) for database access.
 - [Sentry](https://sentry.io) for analytics
-  <!-- -   [Docker](https://www.docker.com) for deployment -->
+    <!-- -   [Docker](https://www.docker.com) for deployment -->
 
 ## Running locally
 
@@ -69,3 +69,64 @@ Benefits: This command also includes checks for applying migrations in a control
 Purpose: This command is used to push your current Prisma schema to the database directly. It applies any changes you've made to your schema without creating migration files.
 Use Case: It’s particularly useful during the development phase when you want to quickly sync your database schema with your Prisma schema without worrying about migration history.
 Caution: It can overwrite data if your schema changes affect existing tables or columns, so it’s best for early-stage development or prototyping.
+
+## How it works.
+
+The application is made from 2 large sections:
+
+- the api that serves and updates the data
+- the frontend that consumes the api and visualized it, alongside user-facing features.
+
+### Initialization
+
+On startup, it runs instrumentation.js (once) which will:
+
+1. check if openapi spec exists (or generate it in dev mode)
+2. check if database connection exists and is valid
+3. initialize the database:
+
+    1. run migrations.
+    2. fetch remote currentStatus + currentSeason
+    3. save raw json in the rebroadcast_tables.
+    4. save normalized data in the h1_tables.
+        - option1: generate empty (last_updated = null) seasons in h1_season. This is needed because the official API sometimes includes events from past seasons. This happens when we completely loose, and no attack events were recorded for that campaign. In that case, the api will return the last recorded attack events (instead of leaving them as null). When this happens, that old season needs to exist in the database, so we can save the related events.
+        - option2: we pass along the current season, and if it doesn't match with the event, we ignore and do not save it. Might be a simpler better solution actually.
+
+4. start a worker thread that will continiously update the database from the official Helldivers API. It simply queries the /api/h1/update endpoint every `UPDATE_INTERVAL` seconds using the `UPDATE_KEY` token.
+
+### API
+
+Using next js api routes, this contains various endpoints that provide helldiver data in various formats.
+
+- GET /api/h1/update
+    - Trigger current campaign status and snapshot updates
+    - Requires a valid `key` query parameter matching the server's `UPDATE_KEY` environment variable.
+- GET /api/h1/rebroadcast
+    - Mirrors the official API behavior.
+    - Perform a campaign status or snapshot action
+    - Request body:
+        - action: string
+            - get_campaign_status
+            - get_snapshot
+        - season: integer
+            - Required if action is get_snapshot.
+- GET /api/h1/campaign
+
+    - Custom endpoint with optional `season` query parameter.
+    - Returns combined status and snapshot information of a specific season in one query.
+
+- GET /api/h1/stats (not implemented)
+    - Custom endpoint that returns global stats for the entire game.
+    - Calculated once per day by the worker.
+    - Returns:
+        - total wins
+        - total losses
+        - total attacks
+        - total defends
+        - total kills
+        - total deaths
+        - total assists
+        - total points
+        - average players per event
+        - average players per campaign
+        - ... idk other fun data

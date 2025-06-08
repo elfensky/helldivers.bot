@@ -6,6 +6,9 @@ export async function queryUpsertPointsMax(season, points) {
     'use server';
     const start = performance.now();
 
+    if (!season) throw new Error('season is missing');
+    if (!points) throw new Error('points is missing');
+
     try {
         const now = new Date();
 
@@ -33,7 +36,7 @@ export async function queryUpsertPointsMax(season, points) {
         return response;
     } catch (error) {
         console.error(error.message, {
-            cause: '/src/db/queries/queryUpsertPointsMax.mjs',
+            cause: 'db/queries/queryUpsertPointsMax.mjs',
         });
         throw error;
     }

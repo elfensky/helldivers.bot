@@ -6,6 +6,9 @@ export async function queryUpsertIntroductionOrder(season, order) {
     'use server';
     const start = performance.now();
 
+    if (!season) throw new Error('season is missing');
+    if (!order) throw new Error('order is missing');
+
     try {
         const now = new Date();
 
@@ -33,7 +36,7 @@ export async function queryUpsertIntroductionOrder(season, order) {
         return response;
     } catch (error) {
         console.error(error.message, {
-            cause: '/src/db/queries/queryUpsertIntroductionOrder.mjs',
+            cause: 'db/queries/queryUpsertIntroductionOrder.mjs',
         });
         throw error;
     }

@@ -1,7 +1,6 @@
-//fetch
 import axios from 'axios';
 import https from 'https';
-import { schemaNumber } from '@/validators/isValidFormData';
+import { isValidNumber } from '@/validators/isValidNumber';
 
 function getApiURL() {
     switch (process.env.NODE_ENV) {
@@ -48,7 +47,6 @@ async function fetchInvalidHttps(url, formData) {
 }
 
 export async function fetchStatus() {
-    // const url = 'https://api.helldiversgame.com/1.0/';
     const url = getApiURL();
     const form = new FormData();
     form.append('action', 'get_campaign_status');
@@ -56,14 +54,13 @@ export async function fetchStatus() {
     try {
         return await fetchInvalidHttps(url, form);
     } catch (error) {
-        throw error;
+        console.error(error.message);
+        // throw error;
     }
 }
 
 export async function fetchSeason(season) {
-    if (schemaNumber.safeParse(season).success === false) {
-        throw new Error('Invalid season');
-    }
+    if (!isValidNumber.safeParse(season).success) throw new Error('Invalid season');
 
     const url = getApiURL();
     const form = new FormData();
@@ -73,6 +70,7 @@ export async function fetchSeason(season) {
     try {
         return await fetchInvalidHttps(url, form);
     } catch (error) {
+        console.error(error.message);
         throw error;
     }
 }

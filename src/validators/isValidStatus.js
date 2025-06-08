@@ -18,7 +18,7 @@ const defendEventSchema = z.object({
     enemy: z.number(),
     points_max: z.number(),
     points: z.number(),
-    status: z.enum(['active', 'success', 'failure']),
+    status: z.enum(['active', 'success', 'fail']),
 });
 
 const attackEventSchema = z.object({

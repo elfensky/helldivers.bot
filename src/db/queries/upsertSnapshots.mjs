@@ -1,17 +1,26 @@
 import db from '@/db/db';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
-import { zodIsNumber } from '@/validators/isNumber';
+import { isValidNumber } from '@/validators/isValidNumber';
 
 export async function queryUpsertSnapshots(season, snapshots) {
     'use server';
     const start = performance.now();
 
-    try {
-        const now = new Date();
+    if (!season) throw new Error('season is missing');
+    if (!snapshots) throw new Error('snapshots are missing');
 
+    try {
+        let skipped = false;
+        const now = new Date();
         const upsertRecords = [];
+
         for (const snapshot of snapshots) {
+            if (snapshot?.season !== season) {
+                skipped = true;
+                continue; //skip if data is not from current season
+            }
+
             const upsertRecord = await db.h1_snapshot.upsert({
                 where: {
                     season_time: {
@@ -32,12 +41,14 @@ export async function queryUpsertSnapshots(season, snapshots) {
                     json: snapshot,
                 },
             });
+
             upsertRecords.push(upsertRecord);
+            skipped = false;
         }
 
         const response = {
             ms: performanceTime(start),
-            query: upsertRecords,
+            query: upsertRecords || skipped,
         };
 
         return response;
