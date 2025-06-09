@@ -1,6 +1,7 @@
 services:
     helldiversbot:
         container_name: helldivers1api
+        # init: true
         restart: unless-stopped
         image: ghcr.io/elfensky/helldivers1api:staging
         ports:

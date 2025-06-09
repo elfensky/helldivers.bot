@@ -1,0 +1,10 @@
+#event {
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 2px solid black;
+}
+#event.Attack {
+    border: 2px solid gold;
+}
+#event.Defend {
+    border: 2px solid red;
+}

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
-    const now = new Date();
-    console.log(`middleware.js | ${now}`, request.nextUrl.pathname);
+    // const now = new Date();
+    // console.log(`middleware.js | ${now}`, request.nextUrl.pathname);
 }
 
 export const config = {

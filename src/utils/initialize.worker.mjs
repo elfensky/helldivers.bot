@@ -20,13 +20,37 @@ export async function initializeWorker() {
         const { fileURLToPath } = await import('url');
         const path = await import('path');
         const fs = await import('fs');
+        const { exec } = await import('child_process');
 
         //initialize
         const start = performance.now();
         try {
             const __filename = fileURLToPath(import.meta.url);
             const __dirname = path.dirname(__filename);
-            const workerPath = path.resolve(__dirname, '../workers/cron.js');
+            // console.log(__dirname);
+
+            let workerPath = '';
+            if (process.env.NODE_ENV === 'development') {
+                // path = '../../public/workers/cron.js');
+                workerPath = path.resolve(__dirname, '../../public/workers/cron.js');
+            } else {
+                workerPath = path.resolve('/app/public/workers/cron.js');
+            }
+
+            // const workerPath = path.resolve(__dirname, '../../public/workers/cron.js');
+            // console.log(workerPath);
+
+            // exec('ls -all', (error, stdout, stderr) => {
+            //     if (error) {
+            //         console.error(`Error: ${error.message}`);
+            //         return;
+            //     }
+            //     if (stderr) {
+            //         console.error(`Stderr: ${stderr}`);
+            //         return;
+            //     }
+            //     console.log(`Output:\n${stdout}`);
+            // });
 
             const worker = new Worker(workerPath);
             worker.postMessage({ key: key, interval: interval });

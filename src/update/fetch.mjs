@@ -5,9 +5,11 @@ import { isValidNumber } from '@/validators/isValidNumber';
 function getApiURL() {
     switch (process.env.NODE_ENV) {
         case 'development':
-            return 'https://api-qa.helldiversgame.com/sp-int/1.0/';
+            // return 'https://api-qa.helldiversgame.com/sp-int/1.0/';
+            return 'https://api.helldiversgame.com/1.0/';
         case 'staging':
-            return 'https://api-qa.helldiversgame.com/sp-int/1.0/';
+            // return 'https://api-qa.helldiversgame.com/sp-int/1.0/';
+            return 'https://api.helldiversgame.com/1.0/';
         case 'production':
             return 'https://api.helldiversgame.com/1.0/';
         default:

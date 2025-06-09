@@ -1,4 +1,4 @@
-import Stats from '@/components/h1/Stats';
+import Stats from '@/components/h1/Stats/Stats';
 
 export default function StatsPage() {
     return (

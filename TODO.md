@@ -1,5 +1,20 @@
 # TODO
 
+### 0.6++
+
+- add attack_in_progress and defend_in_progress sample data.
+- rewrite Galaxy.jsx to use getCampaign()
+- using x_in_progress, extend map functionality to
+    - show in_progress regions
+    - show hovering progress bar over in_progress regions
+    - show hovering progress bar over active event region(s).
+    - when enemy world is taken, show "superearth" region instead
+- show superEarth under attack.
+- tooltip shows progress bar for capture progress
+- tooltip shows progress bar for defend progress
+- tooltip shows progress bar for attack progress
+-
+
 #### 0.7+
 
 todo https://daily.dev/blog/github-markdown-badges-explained
@@ -10,10 +25,8 @@ todo https://daily.dev/blog/github-markdown-badges-explained
     - support "attack events"
     - support "region captures"
 
-- add hover tooltip to map
-    - use enums or translation.json for content
-    - check wiki for region names
     -
+
 - fix map: contested region (only color in gold when 100% completed, if not 100% completed, the region needs to be red)
 - add continious updating to map using SetInterval/SetTimeout
 
@@ -92,16 +105,16 @@ todo https://daily.dev/blog/github-markdown-badges-explained
 
     - export default function Home() {
       return (
-      <main className="flex">
-      <a
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      >
-      Satellite icons created by Freepik - Flaticon
-      </a>
-      </main>
-      );
-      }
+          <main className="flex">
+          <a
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  >
+          Satellite icons created by Freepik - Flaticon
+          </a>
+          </main>
+          );
+          }
 
 - admin dashboard to manage api key(s)
 
@@ -132,7 +145,14 @@ todo https://daily.dev/blog/github-markdown-badges-explained
 - working GET /api/h1/campaign?season=[season]&season=[campaign]...
 
 - TESTING
+
     - add tests
     - add e2e tests
     - fully run app during testing and setup DB, then test api calls and validate responses & errors with zod
     - ...
+
+- MOTION
+    - don't load animation script on mobile
+    - check if gyroscope is avaiable and use it on phone/tablet.
+        - button with "3D" icon that will (re)enable motion sensors + (re)set initial position.
+        -

@@ -1,8 +1,6 @@
 FROM node:22-alpine AS base
 # Install tini to avoid zombie processes
 RUN apk add --no-cache tini
-# Set tini as the init system
-ENTRYPOINT ["/sbin/tini", "--"]
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -70,6 +68,7 @@ COPY --from=builder /app/public ./public
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # copy prisma schema and migrations.
 COPY ./prisma ./prisma/
@@ -78,13 +77,22 @@ COPY ./prisma ./prisma/
 RUN npm install -g npm
 RUN npm i prisma 
 
+# copy public folder
+# RUN rm -rf ./public
+# COPY ./public ./public
+# RUN chmod -R 777 ./public
+
 # configure the container to run as non-root user
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+
+# Set tini as the init system
+ENTRYPOINT ["/sbin/tini", "--"]
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
-ENV HOSTNAME="0.0.0.0"
 CMD ["node", "server.js"]
 # CMD ["npm", "run", "docker"]

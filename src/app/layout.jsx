@@ -5,7 +5,7 @@ import Footer from '@/components/layout2/Footer';
 
 // import localFont from 'next/font/local';
 // import { Geist, Geist_Mono } from 'next/font/google';
-import './globals.css';
+import './layout.css';
 
 // const Insignia = localFont({
 //     src: '../../public/fonts/insignia.regular.otf',
@@ -52,7 +52,7 @@ export default function RootLayout({ children }) {
                 className={`min-w-screen flex min-h-screen flex-col antialiased`}
             >
                 <Header />
-                <main className="flex min-h-screen min-w-full flex-grow items-center justify-center pt-[80px]">
+                <main className="flex min-h-screen min-w-full flex-grow flex-col items-center justify-center gap-4 pt-[80px]">
                     {children}
                 </main>
                 <Footer />

@@ -64,22 +64,24 @@ function Logo() {
     return (
         <Link
             href="/"
-            className="flex flex-row items-center justify-center gap-2 text-2xl font-bold"
             aria-label="Go to homepage"
+            className="flex flex-row items-center justify-center gap-2 text-2xl font-bold"
         >
-            <Image
-                src="/images/logo.png"
-                alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
-                width={60}
-                height={60}
-                priority
-            />
-            <h1
-                className="whitespace-nowrap"
-                style={{ fontFamily: 'Insignia, sans-serif' }}
-            >
-                Helldivers Bot
-            </h1>
+            <figure className="m-0 flex flex-row items-center gap-2">
+                <Image
+                    src="/images/logo.png"
+                    alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy satellite"
+                    width={60}
+                    height={60}
+                    priority
+                />
+                <figcaption
+                    className="whitespace-nowrap"
+                    style={{ fontFamily: 'Insignia, sans-serif' }}
+                >
+                    Helldivers Bot
+                </figcaption>
+            </figure>
         </Link>
     );
 }

@@ -29,7 +29,7 @@
     stroke: rgba(0, 0, 0, 0.99);
     z-index: 10;
 }
-.active {
+.captured {
     fill: rgba(255, 213, 0, 0.33);
     /* fill: none; */
     stroke: rgba(255, 225, 0, 0.99);
@@ -37,17 +37,17 @@
     /* box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); */
 }
 
-.in_progress {
+.active {
     stroke: rgba(255, 225, 0, 0.99);
     z-index: 30;
 }
-#bugs .in_progress {
+#bugs .active {
     fill: rgba(25, 218, 12, 0.35);
 }
-#cyborgs .in_progress {
+#cyborgs .active {
     fill: rgba(213, 15, 15, 0.35);
 }
-#illuminate .in_progress {
+#illuminate .active {
     fill: rgba(12, 122, 218, 0.35);
 }
 
