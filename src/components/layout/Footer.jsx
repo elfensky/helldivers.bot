@@ -3,8 +3,8 @@ export default function Footer() {
     const year = now.getFullYear();
 
     return (
-        <footer className="flex flex-col items-center justify-between bg-indigo-950">
-            <div className="flex flex-row flex-wrap gap-8">
+        <footer className="flex h-[20vh] flex-col items-center justify-center bg-black">
+            {/* <div className="flex flex-row flex-wrap gap-8">
                 <ul className="flex flex-col gap-2 text-sm">
                     <li>Cookies</li>
                     <li>Reviews</li>
@@ -22,7 +22,7 @@ export default function Footer() {
                     <li>GitHub</li>
                     <li>Twitter</li>
                 </ul>
-            </div>
+            </div> */}
             <span className="flex items-center justify-center gap-4">
                 © <a href="https://lavrenov.io">Andrei Lavrenov</a> {year}
             </span>

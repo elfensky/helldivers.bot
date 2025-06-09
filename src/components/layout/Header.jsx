@@ -4,8 +4,8 @@ import { auth } from '@/auth';
 import Image from 'next/image';
 import Link from 'next/link';
 //components
-import { SignIn, SignOut } from '@/components/layout2/Auth';
-import Navigation from '@/components/layout2/Navigation';
+import { SignIn, SignOut } from '@/components/layout/Auth';
+import Navigation from '@/components/layout/Navigation';
 //utils
 import { getGravatarUrl } from '@/utils/gravatar';
 //rename component to UpperCAse

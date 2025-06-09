@@ -1,3 +1,10 @@
+## 0.6.2 (2025-06-10)
+
+- remove console.logs
+- fix bug showing 0% Sol System
+- rename layout2 to layout
+- remove footer (temporarily)
+
 ## 0.6.1 (2025-06-09)
 
 - Fixes to get Docker working (again).

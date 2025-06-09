@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import DocsClient from '@/components/layout2/openapi/DocsClient';
+import DocsClient from '@/components/layout/openapi/DocsClient';
 
 export default function DocsPage() {
     const filePath = path.join(process.cwd(), 'public', 'openapi.json');

@@ -4,8 +4,6 @@ import factions from '@/enums/factions';
 export default function War({ data }) {
     if (!data) return null;
 
-    console.log(data?.statistics);
-
     return (
         <section className="flex flex-col gap-4">
             <h2
@@ -20,7 +18,6 @@ export default function War({ data }) {
     );
 }
 function generateGlobalWarStats(statistics) {
-    console.log(statistics);
     let players = 0;
     let deaths = 0;
     let accidentals = 0;

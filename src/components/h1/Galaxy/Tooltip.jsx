@@ -35,6 +35,27 @@ export default function Tooltip({ svgRef, map }) {
     }, []);
 
     if (!hover) return null;
+    if (hover.faction === '3')
+        return (
+            <div
+                id="tooltip"
+                role="tooltip"
+                className={
+                    'pointer-events-none absolute z-50 flex flex-col items-start justify-center gap-1 bg-purple-500 p-2'
+                }
+                style={{ left: mousePos.x + 5, top: mousePos.y - 55 }}
+            >
+                <div className="flex items-center gap-2">
+                    <img
+                        src={`/icons/factions/${hover?.faction}.webp`}
+                        alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
+                        width={20}
+                        height={20}
+                    />
+                    <span>{map[hover?.faction][hover?.id].region}</span>
+                </div>
+            </div>
+        );
 
     return (
         <div

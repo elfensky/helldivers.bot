@@ -1,7 +1,7 @@
 import Script from 'next/script';
 
-import Header from '@/components/layout2/Header';
-import Footer from '@/components/layout2/Footer';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
 // import localFont from 'next/font/local';
 // import { Geist, Geist_Mono } from 'next/font/google';
@@ -55,7 +55,7 @@ export default function RootLayout({ children }) {
                 <main className="flex min-h-screen min-w-full flex-grow flex-col items-center justify-center gap-4 pt-[80px]">
                     {children}
                 </main>
-                <Footer />
+                {/* <Footer /> */}
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}

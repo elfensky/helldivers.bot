@@ -24,7 +24,7 @@ export default async function HomePage() {
         <>
             <h1 className="text-4xl">Season {data.season}</h1>
             <div className="flex min-h-full w-full flex-col-reverse justify-center sm:flex-row">
-                <div className="flex flex-col gap-8 p-4 sm:max-h-[80vh] sm:overflow-y-auto sm:p-0">
+                <div className="flex flex-col gap-8 p-4 sm:max-h-[86vh] sm:overflow-y-auto sm:p-0">
                     <War data={data} />
                     <Timeline data={data} />
                 </div>
