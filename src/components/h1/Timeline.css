@@ -1,0 +1,16 @@
+article {
+    /* background: rgba(255, 255, 255, 0.1); */
+}
+
+article {
+    background-color: rgba(0, 149, 255, 0.55);
+    /* border: 1px solid rgba(0, 0, 0, 0.99); */
+    z-index: 40;
+}
+
+article.attack {
+    /* border: 2px solid red; */
+}
+article.defend {
+    background-color: rgba(0, 149, 255, 0.55);
+}

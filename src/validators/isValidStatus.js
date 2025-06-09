@@ -29,7 +29,7 @@ const attackEventSchema = z.object({
     enemy: z.number(),
     points_max: z.number(),
     points: z.number(),
-    status: z.enum(['active', 'success', 'failure']),
+    status: z.enum(['active', 'success', 'fail']),
     players_at_start: z.number(),
     max_event_id: z.number(),
 });

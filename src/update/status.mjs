@@ -28,6 +28,7 @@ export async function updateStatus() {
     //2. use zod to validate the response.
     const check = isValidStatus(fetchedData);
     if (!check.success) {
+        console.error(check.error);
         throw new Error(check?.error?.message || 'Invalid status data', {
             cause: `/src/update/status.mjs | isValidStatus(fetchedData)`,
         });

@@ -1,13 +1,5 @@
 # TODO
 
-#### 0.6+
-
-- basic map
-    - show captured regions -> yellow
-    - show contested region -> red
-    - show lost region -> dark
-- stats block properly styled
-
 #### 0.7+
 
 todo https://daily.dev/blog/github-markdown-badges-explained
@@ -102,9 +94,9 @@ todo https://daily.dev/blog/github-markdown-badges-explained
       return (
       <main className="flex">
       <a
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  >
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      >
       Satellite icons created by Freepik - Flaticon
       </a>
       </main>

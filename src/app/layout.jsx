@@ -3,18 +3,26 @@ import Script from 'next/script';
 import Header from '@/components/layout2/Header';
 import Footer from '@/components/layout2/Footer';
 
-import { Geist, Geist_Mono } from 'next/font/google';
+// import localFont from 'next/font/local';
+// import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
-const geistSans = Geist({
-    variable: '--font-geist-sans',
-    subsets: ['latin'],
-});
+// const Insignia = localFont({
+//     src: '../../public/fonts/insignia.regular.otf',
+//     display: 'swap',
+//     variable: '--font-insignia', // optional, for CSS variable
+//     subsets: ['latin'],
+// });
 
-const geistMono = Geist_Mono({
-    variable: '--font-geist-mono',
-    subsets: ['latin'],
-});
+// const geistSans = Geist({
+//     variable: '--font-geist-sans',
+//     subsets: ['latin'],
+// });
+
+// const geistMono = Geist_Mono({
+//     variable: '--font-geist-mono',
+//     subsets: ['latin'],
+// });
 
 function getMetaURL() {
     switch (process.env.NODE_ENV) {
@@ -41,10 +49,10 @@ export default function RootLayout({ children }) {
         <html lang="en" className="bg-blue-950">
             <body
                 id="body"
-                className={`${geistSans.variable} ${geistMono.variable} min-w-screen flex min-h-screen flex-col antialiased`}
+                className={`min-w-screen flex min-h-screen flex-col antialiased`}
             >
                 <Header />
-                <main className="flex min-w-full flex-grow items-center justify-center pt-[80px]">
+                <main className="flex min-h-screen min-w-full flex-grow items-center justify-center pt-[80px]">
                     {children}
                 </main>
                 <Footer />
