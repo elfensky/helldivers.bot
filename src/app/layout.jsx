@@ -52,9 +52,8 @@ export default function RootLayout({ children }) {
                 className={`min-w-screen flex min-h-screen flex-col antialiased`}
             >
                 <Header />
-                <main className="flex min-h-screen min-w-full flex-grow flex-col items-center justify-center gap-4 pt-[80px]">
-                    {children}
-                </main>
+                {/* <main className="flex min-h-screen min-w-full flex-grow flex-col items-center justify-center gap-4 pt-[80px]"> */}
+                <main className="min-h-screen w-screen pt-[80px]">{children}</main>
                 {/* <Footer /> */}
                 <script
                     type="application/ld+json"

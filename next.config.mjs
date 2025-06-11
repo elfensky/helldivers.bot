@@ -1,5 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    async rewrites() {
+        return [
+            {
+                source: '/umami.js',
+                destination: 'https://umami.lavrenov.io/script.js',
+            },
+        ];
+    },
     output: 'standalone', // #1
     images: {
         remotePatterns: [

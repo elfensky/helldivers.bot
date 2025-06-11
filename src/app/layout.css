@@ -41,3 +41,8 @@ h6 {
     font-family: 'Insignia', 'Impact', sans-serif;
     text-transform: uppercase;
 }
+
+main {
+    background: url('/images/background.webp') no-repeat center center fixed;
+    background-size: cover;
+}

@@ -47,7 +47,7 @@ export default function Tooltip({ svgRef, map }) {
             >
                 <div className="flex items-center gap-2">
                     <img
-                        src={`/icons/factions/${hover?.faction}.webp`}
+                        src={`/icons/faction${hover?.faction}.webp`}
                         alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
                         width={20}
                         height={20}
@@ -68,7 +68,7 @@ export default function Tooltip({ svgRef, map }) {
         >
             <div className="flex items-center gap-2">
                 <img
-                    src={`/icons/factions/${hover?.faction}.webp`}
+                    src={`/icons/faction${hover?.faction}.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
                     width={20}
                     height={20}

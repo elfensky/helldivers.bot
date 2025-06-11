@@ -7,12 +7,12 @@ export default function Map({ svgRef, map }) {
 
     const superearth = ['active'];
 
+    // console.log(map);
+
     return (
         <>
-            <section
-                id="map"
-                className="sm:max-w-2/3 z-40 aspect-square max-h-[80vh] w-full"
-            >
+            <div id="map" className="max-h-full w-full">
+                {/* right-0 z-40 mt-8 aspect-square max-h-[80vh] w-full */}
                 <svg
                     ref={svgRef}
                     id="Layer_2"
@@ -113,7 +113,7 @@ export default function Map({ svgRef, map }) {
                             d="M804.89,263.66l-110.94-175.61s60.31,84.75,112.98,51.47c0,0-58.88,34.16-2.04,124.14Z"
                         />
                         <image
-                            href="/icons/factions/0.webp"
+                            href="/icons/faction0.webp"
                             className="pointer-events-none"
                             x="710"
                             y="120"
@@ -189,7 +189,7 @@ export default function Map({ svgRef, map }) {
                             d="M118,85.23L0,256.18s54.29-88.73,3.01-124.12c0,0,54.53,40.75,114.98-46.83Z"
                         />
                         <image
-                            href="/icons/factions/1.webp"
+                            href="/icons/faction1.webp"
                             className="pointer-events-none"
                             x="0"
                             y="120"
@@ -265,7 +265,7 @@ export default function Map({ svgRef, map }) {
                             d="M297.82,800.78h207.72s-103.86,5.72-103.86,68.03c0,0,2.56-68.03-103.86-68.03Z"
                         />
                         <image
-                            href="/icons/factions/2.webp"
+                            href="/icons/faction2.webp"
                             className="pointer-events-none"
                             x="354"
                             y="765"
@@ -284,7 +284,7 @@ export default function Map({ svgRef, map }) {
                         />
                         <image
                             className="pointer-events-none"
-                            href="/icons/factions/3.webp"
+                            href="/icons/faction3.webp"
                             x="352"
                             y="334"
                             width="100"
@@ -292,7 +292,7 @@ export default function Map({ svgRef, map }) {
                         />
                     </g>
                 </svg>
-            </section>
+            </div>
         </>
     );
 }

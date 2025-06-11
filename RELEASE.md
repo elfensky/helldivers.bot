@@ -1,9 +1,20 @@
-## 0.6.2 (2025-06-10)
+## 0.6.3 (2025-06-11)
+
+- add human readable time to attack and defend events
+- add progress bar with points and percentage
+- add event type icons
+
+## 0.6.2 (2025-06-11)
 
 - remove console.logs
 - fix bug showing 0% Sol System
 - rename layout2 to layout
 - remove footer (temporarily)
+- add season time
+- track api calls as events instead of page visits.
+- initialize.env.mjs - check if all .env variables are set.
+- add proper favicons
+- fix layout
 
 ## 0.6.1 (2025-06-09)
 

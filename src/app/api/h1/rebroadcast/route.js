@@ -1,6 +1,6 @@
 import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
-import { performanceTime, elapsedSeconds } from '@/utils/time';
+import { roundedPerformanceTime } from '@/utils/time';
 import { NextResponse, after } from 'next/server';
 //parsers
 import { formDataToObject } from '@/utils/formdata';
@@ -14,7 +14,7 @@ import {
 } from '@/db/queries/rebroadcast';
 import { updateSeason } from '@/update/season';
 //track
-import { umamiTrackPage } from '@/utils/umami';
+import { umamiTrackEvent } from '@/utils/umami';
 
 /**
  * @openapi
@@ -57,14 +57,15 @@ import { umamiTrackPage } from '@/utils/umami';
  *         description: Success
  */
 export async function POST(request) {
-    //schedule work after response is finished
-    //read more at: https://nextjs.org/docs/app/api-reference/functions/after
     after(async () => {
-        // console.log('after() ', performanceTime(start));
-        await umamiTrackPage('API | Rebroadcast', '/api/h1/rebroadcast');
-        // if (update) {
-        //     //
-        // }
+        const data = {
+            action: formValues.action,
+            ms: roundedPerformanceTime(start),
+        };
+        if (data?.action === 'get_snapshots') {
+            data.season = formValues.season;
+        }
+        await umamiTrackEvent('API | Rebroadcast', '/api/h1/update', 'rebroadcast', data);
     });
 
     //0. initialize

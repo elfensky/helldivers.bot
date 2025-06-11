@@ -6,19 +6,34 @@ import Tooltip from '@/components/h1/Galaxy/Tooltip';
 //enums
 import factions from '@/enums/factions';
 import map from '@/enums/map';
+//time
+import { elapsedSeasonTime } from '@/utils/time';
 
 export default function Galaxy({ data, rebroadcast }) {
     const svgRef = useRef(null);
     const json = rebroadcast?.data?.data?.json;
 
     processCampaigns(data);
+    const elapsedTime = elapsedSeasonTime(data?.statistics[0]?.season_duration);
+
     // console.log(map);
 
     return (
         <>
-            <Map svgRef={svgRef} map={map} />
-            <Tooltip svgRef={svgRef} data={data} map={map} />
-            <Script src="/scripts/animateMap.js" strategy="lazyOnload" />
+            <section
+                id="galaxy"
+                // flex w-full max-w-[800px] flex-grow flex-col justify-center
+                className="flex flex-grow-[4] flex-col gap-4"
+            >
+                <div className="flex flex-row gap-2 text-3xl uppercase">
+                    <h1>Season {data.season}</h1>
+                    <span>|</span>
+                    <span>Day {elapsedTime.days}</span>
+                </div>
+                <Map svgRef={svgRef} map={map} />
+                <Tooltip svgRef={svgRef} data={data} map={map} />
+                {/* <Script src="/scripts/animateMap.js" strategy="lazyOnload" /> */}
+            </section>
         </>
     );
 }

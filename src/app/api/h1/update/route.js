@@ -1,6 +1,7 @@
 'use server';
 import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
+import { roundedPerformanceTime } from '@/utils/time';
 import { errorResponse, successResponse } from '@/utils/responses';
 import { after } from 'next/server';
 
@@ -8,7 +9,7 @@ import { after } from 'next/server';
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';
 //track
-import { umamiTrackPage } from '@/utils/umami';
+import { umamiTrackEvent } from '@/utils/umami';
 
 /**
  * @swagger
@@ -66,7 +67,12 @@ import { umamiTrackPage } from '@/utils/umami';
  */
 export async function GET(request) {
     after(async () => {
-        await umamiTrackPage('API | Update', '/api/h1/update');
+        const data = {
+            status: statusTime,
+            season: seasonTime,
+            ms: roundedPerformanceTime(start),
+        };
+        await umamiTrackEvent('API | Update', '/api/h1/update', 'update', data);
     });
 
     //INITIALIZE
@@ -82,6 +88,8 @@ export async function GET(request) {
         console.error(statusError?.message, statusError?.cause);
         return errorResponse(500, start, statusError?.message);
     }
+    const statusTime = roundedPerformanceTime(start);
+
     //SEASON
     const { data: seasonData, error: seasonError } = await tryCatch(
         updateSeason(statusData.season),
@@ -90,8 +98,7 @@ export async function GET(request) {
         console.error(seasonError?.message, seasonError?.cause);
         return errorResponse(500, start, seasonError?.message);
     }
-
-    // const wait = await new Promise((resolve) => setTimeout(resolve, 3000));
+    const seasonTime = roundedPerformanceTime(start);
 
     //RESPONSE
     return successResponse(200, start, {

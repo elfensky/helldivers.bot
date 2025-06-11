@@ -1,6 +1,6 @@
 import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
-// import { performanceTime } from '@/utils/time';
+import { roundedPerformanceTime } from '@/utils/time';
 import { errorResponse, successResponse } from '@/utils/responses';
 
 import { NextResponse, after } from 'next/server';
@@ -10,7 +10,7 @@ import { isValidNumber } from '@/validators/isValidNumber';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { updateSeason } from '@/update/season';
 //track
-import { umamiTrackPage } from '@/utils/umami';
+import { umamiTrackEvent } from '@/utils/umami';
 
 /**
  * @swagger
@@ -78,7 +78,11 @@ import { umamiTrackPage } from '@/utils/umami';
  */
 export async function GET(request) {
     after(async () => {
-        await umamiTrackPage(`API | Campaign | ${season}`, '/api/h1/campaign');
+        const data = {
+            ms: roundedPerformanceTime(start),
+        };
+        console.log(data);
+        await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'campaign', data);
     });
 
     //0. initialize

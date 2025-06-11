@@ -1,7 +1,6 @@
 import { performanceTime } from '@/utils/time';
 
 async function generateOpenApiSpec() {
-    'use server';
     if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'development') {
         //imports
         const fs = await import('fs/promises');
@@ -50,7 +49,6 @@ async function generateOpenApiSpec() {
 }
 
 async function checkOpenApiSpec() {
-    'use server';
     if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'production') {
         //imports
         const fs = await import('fs/promises');
@@ -79,8 +77,6 @@ async function checkOpenApiSpec() {
 }
 
 export async function initializeOpenApiSpec() {
-    'use server';
-
     //swagger uses JSDoc comments to generate the OpenAPI spec, so it's only possible to generate it during development.
     //the production build will not have the JSDoc comments available, as it strips out all unneccesary code and contents.
     if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'development') {

@@ -12,8 +12,10 @@ export default function War({ data }) {
             >
                 War Stats
             </h2>
-            {generateGlobalWarStats(data?.statistics)}
-            {data?.statistics?.map((statistic) => generateWarStats(statistic))}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                {generateGlobalWarStats(data?.statistics)}
+                {data?.statistics?.map((statistic) => generateWarStats(statistic))}
+            </div>
         </section>
     );
 }
@@ -31,10 +33,10 @@ function generateGlobalWarStats(statistics) {
     });
 
     return (
-        <article id="war" className="flex flex-col gap-1 px-4">
-            <div className="flex items-center justify-center gap-2 text-xl">
+        <article id="war" className="flex flex-col gap-1 p-4">
+            <div className="flex items-center justify-start gap-2 text-xl">
                 <img
-                    src={`/icons/factions/3.webp`}
+                    src={`/icons/faction3.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
                     width={20}
                     height={20}
@@ -50,10 +52,10 @@ function generateGlobalWarStats(statistics) {
 }
 function generateWarStats(statistic) {
     return (
-        <article id="war" key={statistic.enemy} className="flex flex-col gap-1 px-4">
-            <div className="flex items-center justify-center gap-2 text-xl">
+        <article id="war" key={statistic.enemy} className="flex flex-col gap-1 p-4">
+            <div className="flex items-center justify-start gap-2 text-xl">
                 <img
-                    src={`/icons/factions/${statistic.enemy}.webp`}
+                    src={`/icons/faction${statistic.enemy}.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
                     width={20}
                     height={20}

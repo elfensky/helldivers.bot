@@ -105,16 +105,16 @@ todo https://daily.dev/blog/github-markdown-badges-explained
 
     - export default function Home() {
       return (
-          <main className="flex">
-          <a
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  >
-          Satellite icons created by Freepik - Flaticon
-          </a>
-          </main>
-          );
-          }
+        <main className="flex">
+        <a
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                >
+        Satellite icons created by Freepik - Flaticon
+        </a>
+        </main>
+        );
+        }
 
 - admin dashboard to manage api key(s)
 
@@ -152,7 +152,15 @@ todo https://daily.dev/blog/github-markdown-badges-explained
     - ...
 
 - MOTION
+
     - don't load animation script on mobile
     - check if gyroscope is avaiable and use it on phone/tablet.
         - button with "3D" icon that will (re)enable motion sensors + (re)set initial position.
         -
+
+- PAGES RESTRUCTURE
+- / -> a little bit about everything. Show current/last Defend/Attack Event and map preview (small) in the HERO block, and then scroll down for about etc..
+- /Map -> the current season status + warstats + timeline
+- /History -> Map with timeline (and stats if available) for all campaigns (switch between seasons). + show animated campaign progress (snapshots)
+- /Stats -> restyle SacredSky's stats page + add way more stats & charts.js
+- /Discord -> fill out discord bot info with screenshots, github links etc...

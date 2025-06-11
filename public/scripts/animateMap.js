@@ -1,4 +1,4 @@
-let constrain = 500;
+let constrain = 100;
 let mouseOverContainer = document.getElementById('body');
 let map = document.getElementById('map');
 
