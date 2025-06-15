@@ -1,14 +1,29 @@
 name: Staging
+# on:
+#     workflow_dispatch: # allows requesting workflow manually from the website
+#     push:
+#         branches:
+#             - main
 on:
-    workflow_dispatch: # allows requesting workflow manually from the website
     push:
-        branches:
-            - main
+        tags:
+            - '*.*.*' # Triggers on version tags like v1.0.0
 jobs:
     build:
         runs-on: ubuntu-latest
 
         steps:
+            - name: Cleanup untagged packages (when you create a new :staging, the old one remains available) 
+              uses: snok/container-retention-policy@v3.0.0
+              with:
+                account: user
+                token: ${{ secrets.ACCESS_TOKEN }}
+                image-names: "helldivers1api"
+                tag-selection: untagged # delete all untagged images
+                # image-tags: "test* dev*"  # target any image that has a tag starting with the word test or dev
+                cut-off: 30min
+                dry-run: true
+
             - name: Checkout code
               uses: actions/checkout@v3
 
@@ -21,7 +36,7 @@ jobs:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.ACCESS_TOKEN }} # use personal access token
-
+            
             - name: Extract version from package.json
               id: extract_version
               run: echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
@@ -36,3 +51,16 @@ jobs:
                       ghcr.io/${{ github.repository_owner }}/helldivers1api:staging
                   build-args: |
                       NODE_ENV=staging
+                      
+            - name: Cleanup untagged packages (when you create a new :staging, the old one remains available) 
+              uses: snok/container-retention-policy@v3.0.0
+              with:
+                account: user
+                token: ${{ secrets.ACCESS_TOKEN }}
+                image-names: "helldivers1api"
+                tag-selection: untagged # delete all untagged images
+                # image-tags: "test* dev*"  # target any image that has a tag starting with the word test or dev
+                cut-off: 30min
+                dry-run: false
+
+
