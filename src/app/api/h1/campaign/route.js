@@ -81,7 +81,7 @@ export async function GET(request) {
         const data = {
             ms: roundedPerformanceTime(start),
         };
-        console.log(data);
+        // console.log(data);
         await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'campaign', data);
     });
 

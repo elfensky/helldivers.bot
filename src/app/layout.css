@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-:root {
+/* :root {
     --background: #ffffff;
     --foreground: #171717;
 }
@@ -15,7 +15,7 @@
         --background: #0a0a0a;
         --foreground: #ededed;
     }
-}
+} */
 
 @font-face {
     font-family: 'Insignia';
@@ -26,8 +26,8 @@
 }
 
 body {
-    background: var(--background);
-    color: var(--foreground);
+    /* background: var(--background);
+    color: var(--foreground); */
     font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -42,7 +42,36 @@ h6 {
     text-transform: uppercase;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figcaption {
+    @apply text-white;
+}
+
 main {
     background: url('/images/background.webp') no-repeat center center fixed;
     background-size: cover;
+}
+
+/* BACKGROUND OF PROGRESS */
+progress {
+    background: #ff0000;
+}
+
+progress::-webkit-progress-bar {
+    background: #ff0000;
+}
+
+/* THE ACTUAL PROGRESS */
+progress::-moz-progress-bar {
+    background: #ffd700;
+}
+
+progress::-webkit-progress-value {
+    background: #ffd700;
 }

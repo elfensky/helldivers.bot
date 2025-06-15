@@ -8,8 +8,81 @@ const nextConfig = {
             },
         ];
     },
-    output: 'standalone', // #1
+    async headers() {
+        // 1 day   : 86400    seconds
+        // 7 days  : 604800   seconds
+        // 14 days : 1209600  seconds
+        // 30 days : 2592000  seconds
+        // 365 days: 31536000 seconds
+        return [
+            {
+                source: '/favicons/:slug',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=86400, immutable', //1day
+                    },
+                ],
+            },
+            {
+                source: '/fonts/:slug',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=31536000, immutable', //14days
+                    },
+                ],
+            },
+            {
+                source: '/icons/:slug',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=604800, immutable', //7days
+                    },
+                ],
+            },
+            {
+                source: '/images/:slug',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=604800, immutable', //1week
+                    },
+                ],
+            },
+            {
+                source: '/scripts/:slug',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=86400 seconds, immutable', //1day
+                    },
+                ],
+            },
+            {
+                source: '/svgs/:slug',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=604800 seconds, immutable', //7day
+                    },
+                ],
+            },
+            {
+                source: '/workers/:slug',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=86400 seconds, immutable', //1day
+                    },
+                ],
+            },
+        ];
+    },
+    output: 'standalone', // #3
     images: {
+        //#4
         remotePatterns: [
             {
                 protocol: 'https',
@@ -35,7 +108,7 @@ const nextConfig = {
 
 export default nextConfig;
 
-// #1
+// #3
 
 // Next.js can automatically create a standalone folder that copies only the necessary files for a production deployment including select files in node_modules.
 // To leverage this automatic copying you can enable it in your next.config.js:
@@ -45,3 +118,6 @@ export default nextConfig;
 // This minimal server does not copy the public or .next/static folders by default as these should ideally be handled by a CDN instead,
 // although these folders can be copied to the standalone/public and standalone/.next/static folders manually,
 // after which server.js file will serve these automatically.
+
+// #4
+// allows loading of external urs

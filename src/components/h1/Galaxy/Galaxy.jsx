@@ -11,12 +11,12 @@ import { elapsedSeasonTime } from '@/utils/time';
 
 export default function Galaxy({ data, rebroadcast }) {
     const svgRef = useRef(null);
-    const json = rebroadcast?.data?.data?.json;
 
     processCampaigns(data);
-    const elapsedTime = elapsedSeasonTime(data?.statistics[0]?.season_duration);
+    processDefendEvents(data);
+    processAttackEvents(data);
 
-    // console.log(map);
+    const elapsedTime = elapsedSeasonTime(data?.statistics[0]?.season_duration);
 
     return (
         <>
@@ -25,10 +25,12 @@ export default function Galaxy({ data, rebroadcast }) {
                 // flex w-full max-w-[800px] flex-grow flex-col justify-center
                 className="flex flex-grow-[4] flex-col gap-4"
             >
-                <div className="flex flex-row gap-2 text-3xl uppercase">
-                    <h1>Season {data.season}</h1>
-                    <span>|</span>
-                    <span>Day {elapsedTime.days}</span>
+                <div className="flex flex-row items-start justify-start gap-2 text-3xl uppercase">
+                    <h1>
+                        Season {data.season} | Day {elapsedTime.days}
+                    </h1>
+                    {/* <span>|</span>
+                    <span>Day {elapsedTime.days}</span> */}
                 </div>
                 <Map svgRef={svgRef} map={map} />
                 <Tooltip svgRef={svgRef} data={data} map={map} />
@@ -53,19 +55,23 @@ function processCampaigns(data) {
             const total_points_for_sector = region * points_per_sector;
 
             if (region === '11') {
-                if (campaign.status === 'defeated') {
-                    map[faction][region].status = 'captured';
-                    map[faction][region].percent = 100;
-                } else {
-                    //calculate based on current attack event if any.
-                }
+                //this will later be overwritten by processAttackEvents
+                map[faction][region].status = 'lost';
+                map[faction][region].percent = 0;
+                // if (campaign.status === 'defeated') {
+                //     map[faction][region].status = 'captured';
+                //     map[faction][region].percent = 100;
+                // } else {
+                //     map[faction][region].status = 'lost';
+                //     map[faction][region].percent = 0;
                 //
+                // }
             } else if (region === sectors_in_progress.toString()) {
                 //if in progress, calculate module difference
                 const remaining_points =
                     points - (total_points_for_sector - points_per_sector);
 
-                map[faction][region].status = 'active';
+                map[faction][region].status = 'in_progress';
                 map[faction][region].points = points;
                 map[faction][region].points_max = total_points_for_sector;
                 map[faction][region].points_sector = remaining_points;
@@ -95,6 +101,37 @@ function processCampaigns(data) {
                 //percentage
                 map[faction][region].percent = 0;
             }
+        }
+    });
+}
+
+function processDefendEvents(data) {
+    data?.defend_events?.forEach((event) => {
+        if (event?.status === 'active') {
+            map[event?.enemy][event?.region].event = 'active';
+        } else {
+            map[event?.enemy][event?.region].event = 'idle';
+        }
+    });
+}
+
+function processAttackEvents(data) {
+    data?.attack_events?.forEach((event) => {
+        if (event?.status === 'active') {
+            map[event?.enemy][11].percent = (event?.points / event?.points_max) * 100;
+            map[event?.enemy][11].points = event?.points;
+            map[event?.enemy][11].points_max = event?.points_max;
+            // map[event?.enemy][11].points_sector = event?.points;
+            // map[event?.enemy][11].points_sector_max = event?.points_max;
+            map[event?.enemy][11].status = 'in_progress';
+            map[event?.enemy][11].event = event;
+        }
+        if (event?.status === 'success') {
+            map[event?.enemy][11].percent = (event?.points / event?.points_max) * 100;
+            map[event?.enemy][11].points = event?.points;
+            map[event?.enemy][11].points_max = event?.points_max;
+            map[event?.enemy][11].status = 'captured';
+            map[event?.enemy][11].event = event;
         }
     });
 }

@@ -19,6 +19,7 @@ export function roundedPerformanceTime(start) {
 }
 //endregion
 
+
 //region userTime
 export function timeSince(date) {
     const now = new Date();
@@ -86,36 +87,36 @@ export function elapsedSeasonTime(season_duration) {
 
 //human time
 
-export function timeAgo(from, to = new Date()) {
-    // Convert to Date objects if needed
-    from = new Date(from);
-    to = new Date(to);
+// export function timeAgo(from, to = new Date()) {
+//     // Convert to Date objects if needed
+//     from = new Date(from);
+//     to = new Date(to);
 
-    const sign = Math.floor((to - from) / 1000);
-    const seconds = Math.abs(sign);
+//     const sign = Math.floor((to - from) / 1000);
+//     const seconds = Math.abs(sign);
 
-    if (seconds < 60) {
-        return `${seconds} second${seconds !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
-    }
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) {
-        return `${minutes} minute${minutes !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
-    }
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-        return `${hours} hour${hours !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
-    }
-    const days = Math.floor(hours / 24);
-    if (days < 30) {
-        return `${days} day${days !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
-    }
-    const months = Math.floor(days / 30);
-    if (months < 12) {
-        return `${months} month${months !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
-    }
-    const years = Math.floor(days / 365);
-    return `${years} year${years !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
-}
+//     if (seconds < 60) {
+//         return `${seconds} second${seconds !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
+//     }
+//     const minutes = Math.floor(seconds / 60);
+//     if (minutes < 60) {
+//         return `${minutes} minute${minutes !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
+//     }
+//     const hours = Math.floor(minutes / 60);
+//     if (hours < 24) {
+//         return `${hours} hour${hours !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
+//     }
+//     const days = Math.floor(hours / 24);
+//     if (days < 30) {
+//         return `${days} day${days !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
+//     }
+//     const months = Math.floor(days / 30);
+//     if (months < 12) {
+//         return `${months} month${months !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
+//     }
+//     const years = Math.floor(days / 365);
+//     return `${years} year${years !== 1 ? 's' : ''} ${sign > 0 ? 'ago' : ''}`;
+// }
 
 // export function timeUntil(from, to = new Date()) {
 //     from = new Date(from);

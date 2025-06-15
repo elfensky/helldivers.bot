@@ -112,12 +112,12 @@ const schema = {
                 availability: 'http://schema.org/InStock',
                 url: 'https://helldivers.bot/discord',
             },
-            aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: '0.8',
-                bestRating: '1',
-                ratingCount: '1',
-            },
+            // aggregateRating: {
+            //     '@type': 'AggregateRating',
+            //     ratingValue: '0.8',
+            //     bestRating: '1',
+            //     ratingCount: '1',
+            // },
         },
         {
             '@type': 'WebAPI',

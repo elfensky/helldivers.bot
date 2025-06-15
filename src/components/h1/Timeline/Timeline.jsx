@@ -1,6 +1,8 @@
 // 'use client';
 import './Timeline.css';
-import { timeAgo, timeUntil } from '@/utils/time';
+// import { timeAgo, timeUntil } from '@/utils/time';
+import Image from 'next/image';
+import humanizeDuration from 'humanize-duration';
 
 export default function Timeline({ data }) {
     const events = [...data.defend_events, ...data.attack_events];
@@ -10,7 +12,7 @@ export default function Timeline({ data }) {
         <section
             id="timeline"
             className="flex flex-col gap-4"
-            // className="flex flex-col gap-8 sm:max-h-[86vh] sm:overflow-y-auto sm:p-0"
+        // className="flex flex-col gap-8 sm:max-h-[86vh] sm:overflow-y-auto sm:p-0"
         >
             <h2
                 className="text-3xl uppercase"
@@ -20,10 +22,10 @@ export default function Timeline({ data }) {
             </h2>
             <div className="flex flex-col gap-4 sm:overflow-y-auto">
                 {events ?
-                    <div id="timeline" className="flex flex-col gap-4 overflow-y-auto">
+                    <div className="flex flex-col gap-4 overflow-y-auto">
                         {events.map((event) => generateEvent(event))}
                     </div>
-                :   null}
+                    : null}
             </div>
         </section>
     );
@@ -32,46 +34,62 @@ export default function Timeline({ data }) {
 function generateEvent(event) {
     let type = null;
     if (event?.region) {
-        type = 'Defend';
+        type = 'defend';
     } else {
-        type = 'Attack';
+        type = 'attack';
     }
 
-    const start = timeAgo(event.start_time * 1000);
-    const end = timeAgo(event.end_time * 1000);
-    // const start = new Date(event.start_time * 1000).toLocaleString('en-GB');
-    // const end = new Date(event.end_time * 1000).toLocaleString('en-GB');
+    const remaining = (new Date(event.end_time * 1000) - new Date());
+    const abs_remaining = Math.abs(remaining);
+    let human_remaining = null;
+
+    if (abs_remaining < 3600000) {
+        human_remaining = humanizeDuration(abs_remaining, { units: ["m", "s"], maxDecimalPoints: 0 });
+    }
+    else if (abs_remaining < 86400000) {
+        human_remaining = humanizeDuration(abs_remaining, { units: ["h", "m"], maxDecimalPoints: 0 });
+    } else {
+        human_remaining = humanizeDuration(abs_remaining, { units: ["d", "h"], maxDecimalPoints: 0 });
+    }
+
 
     const percent = (event.points / event.points_max) * 100;
     const progress = util_evaluate_progress(event);
-    // console.log(event, progress);
 
     return (
         <article
-            id="event"
+            id={`event-${event.event_id}`}
             key={event.event_id}
-            className={`relative flex flex-col gap-2 overflow-hidden rounded-sm p-2 ${type} ${event?.status} ${event?.status === 'active' ? 'active' : ''}`}
+            className={`event relative flex flex-col gap-2 overflow-hidden rounded-sm p-2 ${type} ${event.status}`}
         >
             <div className="flex gap-2">
-                <img
+                <Image
                     src={`/icons/faction${event?.enemy}.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
-                    width={20}
-                    height={20}
+                    width={128}
+                    height={128}
+                    className="max-h-6 max-w-6"
+                    priority={true}
                 />
-                <h3>{type} Event</h3>
+                <h3>
+                    {event.status === 'success' ? 'Won ' : null}
+                    {event.status === 'fail' ? 'Failed ' : null}
+                    {event.status === 'active' ? 'Active ' : null}
+                    {type} Event
+                </h3>
             </div>
             <div className="z-20 flex flex-col gap-2 text-sm">
-                <div className="flex justify-between gap-2">
-                    <span>Started {start}</span>
-                    {end.includes('ago') ?
-                        <span>Finished {end}</span>
-                    :   <span>Finishes in {end}</span>}
-                </div>
+                <p className="flex flex-col justify-between gap-2">
 
-                <div>{progress}</div>
+                    {remaining > 0
+                        ? <span>Due in {human_remaining}</span>
+                        : <span>Finished {human_remaining} ago</span>}
+                </p>
+
+                <p>{progress}</p>
 
                 <div className="relative">
+                    {/* <meter value={percent} max="100" className="w-full" title="event progress percentage"></meter> */}
                     <progress value={percent} max="100" className="h-5 w-full"></progress>
                     <span className="absolute left-1 text-black">
                         {event.points} / {event.points_max}
@@ -82,10 +100,13 @@ function generateEvent(event) {
                 </div>
             </div>
 
-            <img
+            <Image
                 src={`/icons/${type}.webp`}
                 alt={`${type} Event Icon`}
-                className="absolute -bottom-5 right-0 z-0 h-[80%] opacity-65"
+                className="absolute -bottom-5 right-0 z-0 h-[80%] w-auto opacity-65"
+                width={256}
+                height={256}
+                priority={true}
             />
         </article>
     );
@@ -134,14 +155,6 @@ function util_evaluate_progress(event) {
         status = 'On track';
     }
 
-    // Determine if the current rate is sufficient
-    // let rateStatus;
-    // if (currentRate >= requiredRate) {
-    //     rateStatus = 'on track to meet your goal';
-    // } else {
-    //     rateStatus = 'need to increase your rate to meet your goal';
-    // }
-
     let pointDifference = Math.abs(expectedPoints - event.points);
 
     const progress = {
@@ -158,11 +171,18 @@ function util_evaluate_progress(event) {
         return `${status} by ${pointDifference.toFixed(0)} points`;
     }
     // if (event.status === 'success') {
-    //     const remaining_minutes = 120 - Math.floor(elapsedTime / 60);
+    //     return `tbd`;
+    // }
+    // if (event.status === 'fail') {
+    //     return `Lost ${pointDifference.toFixed(0)} points`;
+    // }
+
+    // if (event.status === 'success') {
+    //     const remaining_minutes = Math.abs(120 - Math.floor(elapsedTime / 60));
     //     const win_text =
     //         remaining_minutes > 1 ?
     //             `${remaining_minutes} minutes`
-    //         :   `${remaining_minutes} minute`;
+    //             : `${remaining_minutes} minute`;
 
     //     return `Won with ${win_text} to spare.`;
     // }

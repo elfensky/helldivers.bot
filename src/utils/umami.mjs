@@ -1,7 +1,8 @@
 export async function umamiTrackPage(title, url) {
+
     // const agent = `Node.js/${process.versions.node} (${process.platform} ${process.arch})`;
     //use umami or something else to track usage
-    await fetch('https://umami.lavrenov.io/api/send', {
+    await fetch(`https://${process.env.UMAMI_SITE_URL}/api/send`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json', // or 'text/plain' if required
@@ -11,7 +12,7 @@ export async function umamiTrackPage(title, url) {
         body: JSON.stringify({
             type: 'event',
             payload: {
-                website: '93ee0589-fb24-43f4-ad6c-929c8c0d7644',
+                website: process.env.UMAMI_SITE_ID,
                 hostname: getHostname(),
                 screen: '1x1',
                 language: 'en',
@@ -30,8 +31,9 @@ export async function umamiTrackPage(title, url) {
             console.error('Error:', error);
         });
 }
+
 export async function umamiTrackEvent(title, url, name, data = {}) {
-    await fetch('https://umami.lavrenov.io/api/send', {
+    await fetch(`https://${process.env.UMAMI_SITE_URL}/api/send`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json', // or 'text/plain' if required
@@ -41,7 +43,7 @@ export async function umamiTrackEvent(title, url, name, data = {}) {
         body: JSON.stringify({
             type: 'event',
             payload: {
-                website: '93ee0589-fb24-43f4-ad6c-929c8c0d7644',
+                website: process.env.UMAMI_SITE_ID,
                 hostname: getHostname(),
                 screen: '1x1',
                 language: 'en-US',

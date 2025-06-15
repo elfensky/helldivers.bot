@@ -66,7 +66,7 @@ export default function Tooltip({ svgRef, map }) {
             }
             style={{ left: mousePos.x + 5, top: mousePos.y - 55 }}
         >
-            <div className="flex items-center gap-2">
+            <p className="flex items-center gap-2">
                 <img
                     src={`/icons/faction${hover?.faction}.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
@@ -74,7 +74,7 @@ export default function Tooltip({ svgRef, map }) {
                     height={20}
                 />
                 <span>{map[hover?.faction][hover?.id].region}</span>
-            </div>
+            </p>
             <div className="relative">
                 <progress
                     value={map[hover?.faction][hover?.id].percent}
@@ -85,14 +85,14 @@ export default function Tooltip({ svgRef, map }) {
                 </span>
             </div>
 
-            <span>
+            <p>
                 {map[hover?.faction][hover?.id].points}/
                 {map[hover?.faction][hover?.id].points_max} points
-            </span>
-            <span>
+            </p>
+            {/* <span>
                 {map[hover?.faction][hover?.id].points_sector}/
                 {map[hover?.faction][hover?.id].points_sector_max} points
-            </span>
+            </span> */}
         </div>
     );
 }

@@ -1,4 +1,5 @@
 //auth
+import './Header.css';
 import { auth } from '@/auth';
 //next
 import Image from 'next/image';
@@ -8,11 +9,16 @@ import { SignIn, SignOut } from '@/components/layout/Auth';
 import Navigation from '@/components/layout/Navigation';
 //utils
 import { getGravatarUrl } from '@/utils/gravatar';
-//rename component to UpperCAse
+import Script from 'next/script';
+//rename component to UpperCase
 
 export default async function Header() {
     return (
-        <header className="fixed top-0 z-20 flex h-[80px] w-full bg-transparent">
+        <header
+            id="header"
+            className="fixed top-0 z-50 flex h-[80px] w-full text-white"
+            style={{ top: '0px', backgroundColor: 'rgba(0, 0, 0, 0)' }} //will be adjusted on scroll by header.js
+        >
             {/* sticky xl:relative */}
             <div className="mx-2 flex w-full items-center justify-between sm:mx-24">
                 <Logo />
@@ -21,6 +27,7 @@ export default async function Header() {
                     <User />
                 </div>
             </div>
+            <Script src="/scripts/header.js" strategy="afterInteractive" />
         </header>
     );
 }
@@ -53,7 +60,7 @@ async function User() {
                 alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
                 width={40}
                 height={40}
-                priority
+                priority={true}
             />
             <SignOut />
         </div>
@@ -69,11 +76,12 @@ function Logo() {
         >
             <figure className="m-0 flex flex-row items-center gap-2">
                 <Image
-                    src="/images/logo.png"
+                    src="/images/logo.webp"
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy satellite"
-                    width={60}
-                    height={60}
-                    priority
+                    className="max-w-[2rem]"
+                    width={315}
+                    height={403}
+                    priority={true}
                 />
                 <figcaption
                     className="whitespace-nowrap"

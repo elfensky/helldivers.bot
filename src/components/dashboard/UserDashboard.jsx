@@ -65,7 +65,7 @@ function Email({ user }) {
                 <span className="text-green-400">
                     Email was verified on {user.emailVerified}
                 </span>
-            :   <div className="flex flex-row gap-2">
+                : <div className="flex flex-row gap-2">
                     <span className="text-red-400">Not Verified</span>
                     <form action="">
                         <button type="submit" aria-label="Verify email address">
@@ -89,9 +89,9 @@ function Avatar({ user }) {
     const submitData = async (e) => {
         'use server';
         // e.preventDefault();
-        console.log('updateUser', e);
-        console.log(user);
-        console.log(getGravatarUrl(user.email));
+        // console.log('updateUser', e);
+        // console.log(user);
+        // console.log(getGravatarUrl(user.email));
         // const user = await updateUserData(e);
     };
 
@@ -103,6 +103,7 @@ function Avatar({ user }) {
                 alt="User Avatar"
                 width={200}
                 height={200}
+                priority={true}
             />
             <span>{avatarUrl}</span>
             <button type="submit">Update</button>

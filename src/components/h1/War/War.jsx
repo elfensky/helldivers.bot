@@ -43,10 +43,12 @@ function generateGlobalWarStats(statistics) {
                 />
                 <h3>Global Stats</h3>
             </div>
-            <span>Enemies killed: {kills.toLocaleString()}</span>
-            <span>Helldivers Online: {players.toLocaleString()}</span>
-            <span>Helldivers Lost: {deaths.toLocaleString()}</span>
-            <span>Accidentals: {accidentals.toLocaleString()}</span>
+            <p className="flex flex-col gap-1">
+                <span>Enemies killed: {kills.toLocaleString()}</span>
+                <span>Helldivers Online: {players.toLocaleString()}</span>
+                <span>Helldivers Lost: {deaths.toLocaleString()}</span>
+                <span>Accidentals: {accidentals.toLocaleString()}</span>
+            </p>
         </article>
     );
 }
@@ -62,16 +64,17 @@ function generateWarStats(statistic) {
                 />
                 <h3>{factions[statistic.enemy].name}</h3>
             </div>
-
-            <span>Helldivers Online: {statistic.players.toLocaleString()}</span>
-            {/* <span>{statistic.total_unique_players}</span> */}
-            <span>
-                Missions: {statistic.successful_missions.toLocaleString()}/
-                {statistic.missions.toLocaleString()}
-            </span>
-            <span>Deaths: {statistic.deaths.toLocaleString()}</span>
-            {/* <span>Kills: {statistic.kills}</span> */}
-            <span>Accidentals: {statistic.accidentals.toLocaleString()}</span>
+            <p className="flex flex-col gap-1">
+                <span>Helldivers Online: {statistic.players.toLocaleString()}</span>
+                {/* <span>{statistic.total_unique_players}</span> */}
+                <span>
+                    Missions: {statistic.successful_missions.toLocaleString()}/
+                    {statistic.missions.toLocaleString()}
+                </span>
+                <span>Deaths: {statistic.deaths.toLocaleString()}</span>
+                {/* <span>Kills: {statistic.kills}</span> */}
+                <span>Accidentals: {statistic.accidentals.toLocaleString()}</span>
+            </p>
         </article>
     );
 }

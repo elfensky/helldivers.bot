@@ -1,78 +1,89 @@
-#event {
+.event {
     background-color: rgba(0, 0, 0, 0.75);
     border: 2px solid black;
 }
 
-#event.Defend {
+/* .event.defend {
+    progress {
+        background: #ffd700;
+    }
+
     progress::-webkit-progress-bar {
-        background-color: gold;
-        border-radius: 0;
+        background: #ffd700;
+    }
+
+    progress::-moz-progress-bar {
+        background: #ff0000;
     }
 
     progress::-webkit-progress-value {
-        background-color: #f70000;
-        border-radius: 0;
+        background: #ff0000;
     }
-}
-#event.Attack {
+} */
+
+/* .event.attack {
+    progress {
+        background: #ff0000;
+    }
+
     progress::-webkit-progress-bar {
-        background-color: #f70000;
-        border-radius: 0;
+        background: #ff0000;
+    }
+
+    progress::-moz-progress-bar {
+        background: #ffd700;
     }
 
     progress::-webkit-progress-value {
-        background-color: gold;
-        border-radius: 0;
+        background: #ffd700;
     }
-}
+} */
 
-#event.success {
+.event.success {
     /* border-left: 10px solid green; */
-    background-color: rgba(40, 0, 0, 0.8);
-}
-#event.fail {
-    /* border-left: 10px solid red; */
     background-color: rgba(0, 20, 0, 0.8);
 }
 
-#event.active {
-    /* border-left: 10px solid gold; */
-    border: 2px solid gold;
-    animation: pulse-red 6s infinite alternate;
+.event.fail {
+    /* border-left: 10px solid red; */
+
+    background-color: rgba(40, 0, 0, 0.8);
 }
 
-@keyframes pulse-red {
+.event.active {
+    /* border-left: 10px solid gold; */
+    border: 2px solid gold;
+    animation: timeline-pulse-red 3s infinite alternate;
+}
+
+@keyframes timeline-pulse-red {
     0% {
+        border: 2px solid gold;
         background-color: rgba(0, 0, 0, 0.75);
     }
+
     10% {
+        border: 2px solid gold;
         background-color: rgba(0, 0, 0, 0.75);
     }
 
     20% {
+        border: 2px solid red;
         background-color: rgb(200, 0, 0, 0.99);
     }
+
     25% {
+        border: 2px solid red;
         background-color: rgba(200, 0, 0, 0.66);
     }
+
     30% {
+        border: 2px solid red;
         background-color: rgb(200, 0, 0, 0.99);
     }
 
-    /* 30% {
-        background-color: rgba(0, 0, 0, 0.75);
-    } */
     40% {
+        border: 2px solid gold;
         background-color: rgba(0, 0, 0, 0.75);
     }
-
-    /* 50% {
-        background-color: rgb(255, 0, 0, 0.99);
-    }
-    55% {
-        background-color: rgba(255, 0, 0, 0.66);
-    }
-    60% {
-        background-color: rgba(0, 0, 0, 0.75);
-    } */
 }

@@ -10,35 +10,8 @@
         height: 20px;
         border: none;
         background-color: #eee;
-        border-radius: 0; /* Squared corners */
+        border-radius: 0;
+        /* Squared corners */
         overflow: hidden;
     }
-    progress::-webkit-progress-bar {
-        background-color: #f70000;
-        border-radius: 0;
-    }
-
-    progress::-webkit-progress-value {
-        background-color: gold;
-        border-radius: 0;
-    }
-}
-
-/* Webkit browsers (Chrome, Safari, Edge) */
-
-/* Firefox */
-progress::-moz-progress-bar {
-    background-color: gold;
-    border-radius: 0;
-}
-
-/* IE/Edge (old) */
-progress::-ms-fill {
-    background-color: gold;
-    border-radius: 0;
-}
-
-/* Optional: Remove border in Firefox */
-progress {
-    box-shadow: none;
 }

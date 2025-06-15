@@ -9,7 +9,9 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '', //active, captured, lost
+            event: '', //defend, attack
+            // event: '' //active || idle
         },
         2: {
             region: 'Kruger System',
@@ -19,7 +21,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         3: {
             region: 'Ross System',
@@ -29,7 +32,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
 
         4: {
@@ -40,7 +44,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         5: {
             region: 'Xi Tauri Region',
@@ -50,7 +55,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         6: {
             region: 'Cancri System',
@@ -60,7 +66,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         7: {
             region: 'Higgs Region',
@@ -70,7 +77,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         8: {
             region: 'Hawking Region',
@@ -80,7 +88,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         9: {
             region: 'Rigel System',
@@ -90,7 +99,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         10: {
             region: 'Aurigae Region',
@@ -100,7 +110,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         11: {
             //Kepler System, Bugs Homeworld
@@ -111,7 +122,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
     },
     1: {
@@ -124,7 +136,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         2: {
             region: 'Polaris Region',
@@ -134,7 +147,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         3: {
             region: 'Pictor Sector',
@@ -144,7 +158,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         4: {
             region: 'Sagan Region',
@@ -154,7 +169,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         5: {
             region: 'Horolium System',
@@ -164,7 +180,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         6: {
             region: 'Gellert Region',
@@ -174,7 +191,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         7: {
             region: 'Lacaille Region',
@@ -184,7 +202,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         8: {
             region: 'Indi System',
@@ -194,7 +213,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         9: {
             region: 'Ceti System',
@@ -204,7 +224,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         10: {
             region: 'Cygni Region',
@@ -214,7 +235,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         11: {
             // //Cyberstan Region, Cyborgs Homeworld
@@ -225,7 +247,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
     },
     2: {
@@ -238,7 +261,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         2: {
             region: 'Barnard Region',
@@ -248,7 +272,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         3: {
             region: 'Procyon Region',
@@ -258,7 +283,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         4: {
             region: 'Castor System',
@@ -268,7 +294,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         5: {
             region: 'Orionis Region',
@@ -278,7 +305,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         6: {
             region: 'Prometheus System',
@@ -288,7 +316,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         7: {
             region: 'Cassiopaiae Region',
@@ -298,7 +327,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         8: {
             region: 'Ursa Region',
@@ -308,7 +338,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         9: {
             region: 'Canes Region',
@@ -318,7 +349,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         10: {
             region: 'Arcturus Region',
@@ -328,7 +360,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         11: {
             // //Squ'bai System, The Illuminate Homeworld
@@ -339,7 +372,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
     },
     3: {
@@ -351,7 +385,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
         1: {
             region: 'Sol System',
@@ -361,7 +396,8 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: 'tbd',
+            status: '',
+            event: '',
         },
     },
 };
