@@ -1,19 +1,19 @@
 # TODO
 
-### 0.6++
+Add player counts and war status to map with player icon etc..
+at least player count
+maybe show war stats in the tooltip instead?
 
-- add attack_in_progress and defend_in_progress sample data.
-- rewrite Galaxy.jsx to use getCampaign()
-- using x_in_progress, extend map functionality to
-    - show in_progress regions
-    - show hovering progress bar over in_progress regions
-    - show hovering progress bar over active event region(s).
-    - when enemy world is taken, show "superearth" region instead
-- show superEarth under attack.
-- tooltip shows progress bar for capture progress
-- tooltip shows progress bar for defend progress
-- tooltip shows progress bar for attack progress
--
+TODO
+main page
+-> map as center + only active event
+and then other homepage things like about us etc...
+
+War Stats - only show in /History
+alongside charts etc...
+
+draggable campaign progress + play button to show it
+(shows events timeline)...
 
 #### 0.7+
 
@@ -105,16 +105,16 @@ todo https://daily.dev/blog/github-markdown-badges-explained
 
     - export default function Home() {
       return (
-        <main className="flex">
-        <a
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    href="https://www.flaticon.com/free-icons/satellite"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    title="satellite icons"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                >
-        Satellite icons created by Freepik - Flaticon
-        </a>
-        </main>
-        );
-        }
+          <main className="flex">
+          <a
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          href="https://www.flaticon.com/free-icons/satellite"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          title="satellite icons"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      >
+          Satellite icons created by Freepik - Flaticon
+          </a>
+          </main>
+          );
+          }
 
 - admin dashboard to manage api key(s)
 

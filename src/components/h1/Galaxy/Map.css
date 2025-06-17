@@ -33,12 +33,12 @@
     fill: rgba(12, 122, 218, 0.35);
 }
 
+/* #bugs .in_progress,
+#cyborgs .in_progress,
+#illuminate .in_progress, */
 #bugs .active,
 #cyborgs .active,
-#illuminate .active,
-#bugs .in_progress,
-#cyborgs .in_progress,
-#illuminate .in_progress {
+#illuminate .active {
     /* fill: rgba(255, 213, 0, 0.33); */
     /* stroke: rgba(255, 0, 0, 0.99); */
 

@@ -11,7 +11,7 @@ window.addEventListener('scroll', function () {
         if (header.classList.contains('transition-top')) {
             header.style.top = `0px`;
 
-            if (scrollTop < 80) {
+            if (scrollTop < 100) {
                 const percentage = (scrollTop * 10).toString();
 
                 if (percentage.length === 2) {

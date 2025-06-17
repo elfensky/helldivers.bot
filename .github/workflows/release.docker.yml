@@ -8,6 +8,17 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
+            - name: Cleanup untagged packages
+              uses: snok/container-retention-policy@v3.0.0
+              with:
+                  account: user
+                  token: ${{ secrets.ACCESS_TOKEN }}
+                  image-names: 'helldivers1api'
+                  tag-selection: untagged # delete all untagged images
+                  # image-tags: "test* dev*"  # target any image that has a tag starting with the word test or dev
+                  cut-off: 30min
+                  dry-run: false
+
             - name: Checkout code
               uses: actions/checkout@v3
 
@@ -44,14 +55,3 @@ jobs:
                   # files: CHANGELOG.md
                   body_path: RELEASE.md
                   token: ${{ secrets.ACCESS_TOKEN }}
-
-            - name: Cleanup untagged packages
-              uses: snok/container-retention-policy@v3.0.0
-              with:
-                account: user
-                token: ${{ secrets.ACCESS_TOKEN }}
-                image-names: "helldivers1api"
-                tag-selection: untagged # delete all untagged images
-                # image-tags: "test* dev*"  # target any image that has a tag starting with the word test or dev
-                cut-off: 30min
-                dry-run: false

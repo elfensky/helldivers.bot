@@ -10,6 +10,26 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 
 - To be copied from RELEASE.md
 
+## 0.7.0 (2025-06-16)
+
+- Add reload.js to reload the page in client every 30 seconds.
+- Update Map
+    - show attack events (flashing)
+    - show defend events (flashing)
+    - Homeworld Tooptips
+- Update Header to hide and show on scroll
+- Update Timeline to show human readable time
+- Update umami to use environment variables
+- Fix Timeline
+    - fix text color in Firefox & Chrome light modes
+- Fix Map
+    - progress styling in Firefox & Chrome
+    - active event keeps showing up after finishing
+- Fix Lighthouse bugs
+    - Image sizing
+    - WebP Fixes 
+    - Caching
+
 ## 0.6.3 (2025-06-11)
 
 - add human readable time to attack and defend events

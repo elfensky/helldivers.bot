@@ -59,9 +59,11 @@ export default function RootLayout({ children }) {
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
                 />
+
                 <Script
+                    // defer
                     src="https://umami.lavrenov.io/script.js"
-                    data-website-id="93ee0589-fb24-43f4-ad6c-929c8c0d7644"
+                    data-website-id="9a916711-2868-43d2-9932-964fc9528824"
                     strategy="afterInteractive"
                 />
             </body>
