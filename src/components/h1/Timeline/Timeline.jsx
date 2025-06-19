@@ -8,11 +8,15 @@ export default function Timeline({ data }) {
     const events = [...data.defend_events, ...data.attack_events];
     events.sort((a, b) => b.start_time - a.start_time);
 
+    if (events.length === 0) {
+        return null;
+    }
+
     return (
         <section
             id="timeline"
             className="flex flex-col gap-4"
-        // className="flex flex-col gap-8 sm:max-h-[86vh] sm:overflow-y-auto sm:p-0"
+            // className="flex flex-col gap-8 sm:max-h-[86vh] sm:overflow-y-auto sm:p-0"
         >
             <h2
                 className="text-3xl uppercase"
@@ -25,7 +29,7 @@ export default function Timeline({ data }) {
                     <div className="flex flex-col gap-4 overflow-y-auto">
                         {events.map((event) => generateEvent(event))}
                     </div>
-                    : null}
+                :   null}
             </div>
         </section>
     );
@@ -39,19 +43,26 @@ function generateEvent(event) {
         type = 'attack';
     }
 
-    const remaining = (new Date(event.end_time * 1000) - new Date());
+    const remaining = new Date(event.end_time * 1000) - new Date();
     const abs_remaining = Math.abs(remaining);
     let human_remaining = null;
 
     if (abs_remaining < 3600000) {
-        human_remaining = humanizeDuration(abs_remaining, { units: ["m", "s"], maxDecimalPoints: 0 });
-    }
-    else if (abs_remaining < 86400000) {
-        human_remaining = humanizeDuration(abs_remaining, { units: ["h", "m"], maxDecimalPoints: 0 });
+        human_remaining = humanizeDuration(abs_remaining, {
+            units: ['m', 's'],
+            maxDecimalPoints: 0,
+        });
+    } else if (abs_remaining < 86400000) {
+        human_remaining = humanizeDuration(abs_remaining, {
+            units: ['h', 'm'],
+            maxDecimalPoints: 0,
+        });
     } else {
-        human_remaining = humanizeDuration(abs_remaining, { units: ["d", "h"], maxDecimalPoints: 0 });
+        human_remaining = humanizeDuration(abs_remaining, {
+            units: ['d', 'h'],
+            maxDecimalPoints: 0,
+        });
     }
-
 
     const percent = (event.points / event.points_max) * 100;
     const progress = util_evaluate_progress(event);
@@ -80,10 +91,9 @@ function generateEvent(event) {
             </div>
             <div className="z-20 flex flex-col gap-2 text-sm">
                 <p className="flex flex-col justify-between gap-2">
-
-                    {remaining > 0
-                        ? <span>Due in {human_remaining}</span>
-                        : <span>Finished {human_remaining} ago</span>}
+                    {remaining > 0 ?
+                        <span>Due in {human_remaining}</span>
+                    :   <span>Finished {human_remaining} ago</span>}
                 </p>
 
                 <p>{progress}</p>

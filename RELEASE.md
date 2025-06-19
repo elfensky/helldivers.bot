@@ -1,6 +1,15 @@
-## 0.7.1 (2025-06-17)
+TODO:
+add badges from CodeQL & Dependabot to README.md
 
-- Update Umami tracking code(s)
-- Update Tooltip to always show inside body
-- Hidden campaigns now correctly display as 0 progress
-- "in_progress" (contested region) doesn't pulse red. Only "active" (Defend & Attack Events) should pulse red.
+## 0.7.2 (2025-06-XX)
+
+- Update Timeline to display nothing when no events are present.
+- Fix Cyborg map order
+- Update and reorganise README.md
+- Add CodeQL and Dependabot badges to README.md
+
+### Docker
+
+- `docker pull ghcr.io/elfensky/helldivers1api:0.7.2`
+- `docker pull ghcr.io/elfensky/helldivers1api:production`
+- `docker pull ghcr.io/elfensky/helldivers1api:latest`

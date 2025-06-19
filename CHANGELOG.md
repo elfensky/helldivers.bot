@@ -10,6 +10,13 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 
 - To be copied from RELEASE.md
 
+## 0.7.1 (2025-06-17)
+
+- Update Umami tracking code(s)
+- Update Tooltip to always show inside body
+- Hidden campaigns now correctly display as 0 progress
+- "in_progress" (contested region) doesn't pulse red. Only "active" (Defend & Attack Events) should pulse red.
+
 ## 0.7.0 (2025-06-16)
 
 - Add reload.js to reload the page in client every 30 seconds.
@@ -27,7 +34,7 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
     - active event keeps showing up after finishing
 - Fix Lighthouse bugs
     - Image sizing
-    - WebP Fixes 
+    - WebP Fixes
     - Caching
 
 ## 0.6.3 (2025-06-11)
