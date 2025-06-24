@@ -10,6 +10,13 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 
 - To be copied from RELEASE.md
 
+## 0.7.3 (2025-06-20)
+
+- Update Timeline to display nothing when no events are present.
+- Fix Cyborg map order
+- Update and reorganise README.md
+- Add CodeQL and Dependabot badges to README.md
+
 ## 0.7.1 (2025-06-17)
 
 - Update Umami tracking code(s)
