@@ -22,7 +22,7 @@
         "react-dom": "^19.0.0",
         "react-hook-form": "^7.56.4",
         "swagger-jsdoc": "^6.2.8",
-        "swagger-ui-dist": "^5.21.0",
+        "swagger-ui-dist": "^5.25.3",
         "zod": "^3.25.67"
     },
     "devDependencies": {
