@@ -1,31 +1,15 @@
 import './War.css';
 import factions from '@/enums/factions';
-import { getWarOutcome } from '@/utils/getWarOutcome.mjs';
-
-export function WarOutcome({ data }) {
-    const result = getWarOutcome(data);
-    if (!result) return null;
-
-    const { outcome } = result;
-
-    return (
-        <div className={`war-outcome ${outcome}`}>
-            <span className="font-bold">
-                {outcome === 'victory' ? 'Victory' : 'Defeat'}
-            </span>
-        </div>
-    );
-}
 
 export default function War({ data }) {
-    if (!data?.live?.length) return null;
+    if (!data) return null;
 
     return (
         <section className="flex flex-col gap-4">
             <h2>War Stats</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                {generateGlobalWarStats(data.live)}
-                {data.live.map((statistic) => generateWarStats(statistic))}
+                {generateGlobalWarStats(data?.statistics)}
+                {data?.statistics?.map((statistic) => generateWarStats(statistic))}
             </div>
         </section>
     );
@@ -45,7 +29,7 @@ function generateGlobalWarStats(statistics) {
 
     return (
         <article id="war" className="flex flex-col gap-1 p-4">
-            <div className="flex items-center justify-start gap-2">
+            <div className="flex items-center justify-start gap-2 text-xl">
                 <img
                     src={`/icons/faction3.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
@@ -66,7 +50,7 @@ function generateGlobalWarStats(statistics) {
 function generateWarStats(statistic) {
     return (
         <article id="war" key={statistic.enemy} className="flex flex-col gap-1 p-4">
-            <div className="flex items-center justify-start gap-2">
+            <div className="flex items-center justify-start gap-2 text-xl">
                 <img
                     src={`/icons/faction${statistic.enemy}.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"

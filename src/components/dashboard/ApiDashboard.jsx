@@ -13,7 +13,7 @@ export default async function ApiDashboard({ user }) {
 
     return (
         <div className="flex flex-col gap-2">
-            <h2>API Keys</h2>
+            <h2 className="text-4xl">API Keys</h2>
             <GenerateApiKeyForm userId={user.id} />
             <ApiKeysList userId={user.id} />
         </div>
@@ -21,8 +21,15 @@ export default async function ApiDashboard({ user }) {
 }
 
 async function ApiKeysList({ userId }) {
-    const result = await getApiKeysByUserId(userId);
-    const apiKeys = result.query;
+    const query = await getApiKeysByUserId(userId);
+
+    // console.log(typeof query.data);
+    // if (typeof query.data !== 'array' && query.data.length < 1) {
+    //     return <div>No API keys found</div>;
+    // }
+
+    const apiKeys = query.data;
+    // console.log('ApiKeysList | apiKeys', apiKeys);
 
     return (
         <table>

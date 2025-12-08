@@ -1,58 +1,37 @@
 {
     "name": "helldivers.bot",
-    "version": "0.16.0",
+    "version": "0.8.0",
     "private": true,
-    "type": "module",
     "scripts": {
-        "dev": "next dev",
+        "dev": "next dev --turbopack",
         "build": "next build",
         "start": "node .next/standalone/server.js",
         "docker": "prisma migrate deploy && node server.js",
-        "format": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npx prettier --write .'",
-        "test": "vitest run && playwright test",
-        "test:unit": "vitest",
-        "test:unit:run": "vitest run",
-        "test:unit:coverage": "vitest run --coverage",
-        "test:e2e": "playwright test",
-        "test:e2e:ui": "playwright test --ui",
-        "test:smoke": "playwright test src/__tests__/e2e/smoke.spec.mjs"
+        "format": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npx prettier --write .'"
     },
     "dependencies": {
-        "@asteasolutions/zod-to-openapi": "^8.4.3",
-        "@auth/prisma-adapter": "^2.11.1",
-        "@prisma/adapter-pg": "^7.6.0",
-        "@prisma/client": "^7.6.0",
-        "@sentry/nextjs": "^10.46.0",
-        "axios": "^1.14.0",
-        "dotenv": "^17.3.1",
-        "humanize-duration": "^3.33.2",
-        "next": "^16.2.1",
-        "next-auth": "^5.0.0-beta.30",
-        "react": "^19.2.4",
-        "react-dom": "^19.2.4",
-        "react-icons": "^5.6.0",
-        "swagger-ui-dist": "^5.32.1",
-        "zod": "^4.3.6"
+        "@auth/prisma-adapter": "^2.10.0",
+        "@prisma/client": "^6.14.0",
+        "@vercel/og": "^0.6.8",
+        "axios": "^1.13.2",
+        "humanize-duration": "^3.33.0",
+        "next": "^15.5.7",
+        "next-auth": "^5.0.0-beta.28",
+        "react": "^19.2.1",
+        "react-dom": "^19.2.1",
+        "react-hook-form": "^7.68.0",
+        "react-icons": "^5.5.0",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-dist": "^5.27.1",
+        "zod": "^3.25.76"
     },
     "devDependencies": {
-        "@playwright/test": "^1.58.2",
-        "@tailwindcss/postcss": "^4.2.2",
-        "@testing-library/jest-dom": "^6.9.1",
-        "@vitest/coverage-v8": "^4.1.2",
-        "babel-plugin-react-compiler": "^1.0.0",
+        "@tailwindcss/postcss": "^4.1.12",
+        "babel-plugin-react-compiler": "^19.1.0-rc.2",
         "chokidar-cli": "^3.0.0",
-        "prettier": "^3.8.1",
-        "prettier-plugin-tailwindcss": "^0.7.2",
-        "prisma": "^7.6.0",
-        "tailwindcss": "^4.2.2",
-        "vitest": "^4.1.2"
-    },
-    "overrides": {
-        "prisma": {
-            "hono": ">=4.12.7",
-            "@hono/node-server": ">=1.19.10",
-            "lodash": ">=4.17.23",
-            "effect": ">=3.20.0"
-        }
+        "prettier": "^3.6.2",
+        "prettier-plugin-tailwindcss": "^0.6.14",
+        "prisma": "^6.19.0",
+        "tailwindcss": "^4.1.11"
     }
 }

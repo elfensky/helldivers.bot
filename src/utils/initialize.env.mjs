@@ -23,10 +23,6 @@ function checkUpdates() {
     if (!process.env.UPDATE_INTERVAL) {
         throw new Error('UPDATE_INTERVAL is not set');
     }
-    // PORT is optional, defaults to 3000 - used by the worker to poll the update endpoint
-    if(!process.env.PORT) {
-        console.info('PORT has defaulted to 3000')
-    }
 }
 
 function checkAnalytics() {
@@ -56,10 +52,10 @@ function checkAuth() {
     }
     //AUTH-GITHUB
     if (!process.env.AUTH_GITHUB_ID) {
-        throw new Error('AUTH_GITHUB_ID is not set');
+        throw new Error('AUTH_GOOGLE_ID is not set');
     }
     if (!process.env.AUTH_GITHUB_SECRET) {
-        throw new Error('AUTH_GITHUB_SECRET is not set');
+        throw new Error('AUTH_GOOGLE_SECRET is not set');
     }
 }
 

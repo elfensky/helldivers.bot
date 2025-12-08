@@ -1,5 +1,4 @@
 import db from '@/db/db';
-import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
 
@@ -10,15 +9,35 @@ export async function queryUpsertIntroductionOrder(season, order) {
     if (!season) throw new Error('season is missing');
     if (!order) throw new Error('order is missing');
 
-    const { data: upsertRecord, error } = await tryCatch(
-        db.h1_introduction_order.upsert({
-            where: { season: season },
-            update: { order: order },
-            create: { season: season, order: order },
-        }),
-    );
+    try {
+        const now = new Date();
 
-    if (error) throw error;
+        const upsertRecord = await db.h1_introduction_order.upsert({
+            where: {
+                season: season,
+            },
+            update: {
+                // season: season,
+                order: order,
+                json: order,
+            },
+            create: {
+                season: season,
+                order: order,
+                json: order,
+            },
+        });
 
-    return { ms: performanceTime(start), query: upsertRecord };
+        const response = {
+            ms: performanceTime(start),
+            query: upsertRecord,
+        };
+
+        return response;
+    } catch (error) {
+        console.error(error.message, {
+            cause: 'db/queries/queryUpsertIntroductionOrder.mjs',
+        });
+        throw error;
+    }
 }

@@ -3,7 +3,7 @@ import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/utils/time';
 import { errorResponse, successResponse } from '@/utils/responses';
 
-import { after } from 'next/server';
+import { NextResponse, after } from 'next/server';
 //validators
 import { isValidNumber } from '@/validators/isValidNumber';
 //db and fetch
@@ -12,16 +12,82 @@ import { updateSeason } from '@/update/season';
 //track
 import { umamiTrackEvent } from '@/utils/umami';
 
+/**
+ * @swagger
+ * /api/h1/campaign:
+ *   get:
+ *     summary: Get campaign data for a specific season or the latest.
+ *     description: |
+ *       Returns campaign data for a given season if the `season` query parameter is provided and valid.
+ *       If no season is provided, returns the latest campaign data.
+ *       If data is not found locally, attempts to fetch and update from a remote source.
+ *     parameters:
+ *       - in: query
+ *         name: season
+ *         schema:
+ *           type: integer
+ *         required: false
+ *         description: The season number to fetch campaign data for.
+ *     responses:
+ *       200:
+ *         description: Campaign data found and returned successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ms:
+ *                   type: number
+ *                   description: Time taken to process the request (ms).
+ *                 data:
+ *                   type: object
+ *                   description: The campaign data object.
+ *       400:
+ *         description: Invalid season parameter.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ms:
+ *                   type: number
+ *                 error:
+ *                   type: string
+ *       404:
+ *         description: Campaign data not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ms:
+ *                   type: number
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ms:
+ *                   type: number
+ *                 error:
+ *                   type: string
+ */
 export async function GET(request) {
-    //0. initialize
-    const start = performance.now();
-
     after(async () => {
         const data = {
             ms: roundedPerformanceTime(start),
         };
+        // console.log(data);
         await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'campaign', data);
     });
+
+    //0. initialize
+    const start = performance.now();
+    let requestType = null; // latest, specific, multiple
     let data = null;
     let season = null;
 

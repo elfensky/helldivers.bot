@@ -1,20 +1,23 @@
 import './Tooltip.css';
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import factions from '@/enums/factions';
 
 export default function Tooltip({ svgRef, map }) {
     const [hover, setHover] = useState(null); //{ faction: "0", id: "1" }
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const [viewportSize, setViewportSize] = useState({ width: 1, height: 1 });
-    const [tooltipSize, setTooltipSize] = useState({ width: 320, height: 103 });
+    const [tooltipSize, setTooltipSize] = useState({ width: 320, height: 103 })
+
+
 
     useEffect(() => {
+        //get viewPortSize
         function handleResize() {
             setViewportSize({ width: window.innerWidth, height: window.innerHeight });
-        }
+        };
         handleResize();
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
@@ -63,13 +66,9 @@ export default function Tooltip({ svgRef, map }) {
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
         //#endregion
-    }, [viewportSize]);
+    }, [viewportSize])
 
     if (!hover) return null;
-
-    const sector = map[hover.faction]?.[hover.id];
-    if (!sector) return null;
-
     if (hover.faction === '3')
         return (
             <div
@@ -82,12 +81,12 @@ export default function Tooltip({ svgRef, map }) {
             >
                 <div className="flex items-center gap-2">
                     <img
-                        src={`/icons/faction${hover.faction}.webp`}
-                        alt="Faction icon"
+                        src={`/icons/faction${hover?.faction}.webp`}
+                        alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
                         width={20}
                         height={20}
                     />
-                    <span>{sector.region}</span>
+                    <span>{map[hover?.faction][hover?.id].region}</span>
                 </div>
             </div>
         );
@@ -103,21 +102,31 @@ export default function Tooltip({ svgRef, map }) {
         >
             <p className="flex items-center gap-2">
                 <img
-                    src={`/icons/faction${hover.faction}.webp`}
-                    alt="Faction icon"
+                    src={`/icons/faction${hover?.faction}.webp`}
+                    alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
                     width={20}
                     height={20}
                 />
-                <span>{sector.region}</span>
+                <span>{map[hover?.faction][hover?.id].region}</span>
             </p>
             <div className="relative">
-                <progress value={sector.percent} max="100"></progress>
-                <span className="absolute right-0">{sector.percent.toFixed(2)}%</span>
+                <progress
+                    value={map[hover?.faction][hover?.id].percent}
+                    max="100"
+                ></progress>
+                <span className="absolute right-0">
+                    {map[hover?.faction][hover?.id].percent.toFixed(2)}%
+                </span>
             </div>
 
             <p>
-                {sector.points}/{sector.points_max} points
+                {map[hover?.faction][hover?.id].points}/
+                {map[hover?.faction][hover?.id].points_max} points
             </p>
+            {/* <span>
+                {map[hover?.faction][hover?.id].points_sector}/
+                {map[hover?.faction][hover?.id].points_sector_max} points
+            </span> */}
         </div>
     );
 }

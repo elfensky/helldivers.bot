@@ -1,57 +1,86 @@
-import './Event.css';
-import factions from '@/enums/factions.mjs';
-import map from '@/enums/map.mjs';
-import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
+import Image from 'next/image';
 import humanizeDuration from 'humanize-duration';
-import { EVENT_TYPE } from '@/enums/events';
+// https://developers.google.com/search/docs/appearance/structured-data/event
+import map from '@/enums/map';
+import factions from '@/enums/factions';
 
 export default function Event({ event }) {
-    const remaining = event.end_time - Math.floor(Date.now() / 1000);
-    const percent = ((event.points / event.points_max) * 100).toFixed(2);
-    const progress = evaluateProgress(event)?.label;
-    const faction = factions[event.enemy];
-    const isDefend = event.type === EVENT_TYPE.DEFEND;
+    const remaining = new Date(event.end_time * 1000) - new Date();
+    const abs_remaining = Math.abs(remaining);
+    let human_remaining = null;
 
-    const timeText =
-        remaining > 0 ?
-            `Due in ${humanizeDuration(remaining * 1000, { largest: 2, round: true })}`
-        :   `Finished ${humanizeDuration(Math.abs(remaining) * 1000, { largest: 2, round: true })} ago`;
+    if (abs_remaining < 3600000) {
+        human_remaining = humanizeDuration(abs_remaining, {
+            units: ['m', 's'],
+            maxDecimalPoints: 0,
+        });
+    } else if (abs_remaining < 86400000) {
+        human_remaining = humanizeDuration(abs_remaining, {
+            units: ['h', 'm'],
+            maxDecimalPoints: 0,
+        });
+    } else {
+        human_remaining = humanizeDuration(abs_remaining, {
+            units: ['d', 'h'],
+            maxDecimalPoints: 0,
+        });
+    }
 
-    const statusText =
-        event.status === 'success' ? 'Won'
-        : event.status === 'fail' ? 'Failed'
-        : 'Active';
+    const percent = (event.points / event.points_max) * 100;
+    const progress = util_evaluate_progress(event);
 
     return (
         <article
-            className={`event-card ${isDefend ? 'event-card--defend' : 'event-card--attack'} event-card--${event.status}`}
+            id={`event-${event.event_id}`}
+            key={event.event_id}
+            style={{ minHeight: '133px' }}
+            className={`event relative flex flex-col gap-2 overflow-hidden rounded-sm p-2 ${event.type} ${event.status}`}
         >
-            <div className="event-card-content">
-                <div className="event-card-header">
-                    <span className="event-card-meta">
-                        {statusText} {event.type} Event
+            <div className="flex gap-2">
+                <Image
+                    src={`/icons/faction${event?.enemy}.webp`}
+                    alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
+                    width={128}
+                    height={128}
+                    className="max-h-6 max-w-6"
+                    priority={true}
+                />
+                <h3>
+                    {event.status === 'success' ? 'Won ' : null}
+                    {event.status === 'fail' ? 'Failed ' : null}
+                    {event.status === 'active' ? 'Active ' : null}
+                    {event.type} Event
+                </h3>
+            </div>
+            <div className="z-20 flex flex-col text-sm">
+                <p className="flex flex-col justify-between gap-2">
+                    {remaining > 0 ?
+                        <span>Due in {human_remaining}</span>
+                    :   <span>Finished {human_remaining} ago</span>}
+                </p>
+
+                <p>{progress}</p>
+
+                <div className="relative">
+                    {/* <meter value={percent} max="100" className="w-full" title="event progress percentage"></meter> */}
+                    <progress value={percent} max="100" className="h-5 w-full"></progress>
+                    <span className="absolute left-1 text-black">
+                        {event.points} / {event.points_max}
                     </span>
-                    {faction && (
-                        <img
-                            src={faction.icon}
-                            alt={faction.name}
-                            className="event-card-faction-icon"
-                        />
-                    )}
-                </div>
-                <div className="event-card-time">{timeText}</div>
-                {progress && <div className="event-card-progress-text">{progress}</div>}
-                <div className="event-card-bar-track">
-                    <div
-                        className="event-card-bar-fill"
-                        style={{ width: `${Math.min(100, percent)}%` }}
-                    />
-                </div>
-                <div className="event-card-points">
-                    {event.points} / {event.points_max} ({percent}%)
+                    <span className="absolute right-1 text-black">
+                        {percent.toFixed(2)}%
+                    </span>
                 </div>
             </div>
-            <div className="event-card-accent" />
+
+            <Image
+                src={`/icons/${event.type}.webp`}
+                alt={`${event.type} Event Icon`}
+                className="absolute -bottom-5 right-0 z-0 h-[80%] w-auto opacity-65"
+                width={256}
+                height={256}
+                priority={true}
+            />
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
@@ -62,8 +91,87 @@ export default function Event({ event }) {
     );
 }
 
+function util_evaluate_progress(event) {
+    // Get the current time as a timestamp
+    const currentTime = Math.floor(Date.now() / 1000);
+
+    // Calculate total time in milliseconds
+    const totalTime = event.end_time - event.start_time;
+    // console.log('totalTime', totalTime);
+
+    // Calculate elapsed time in milliseconds
+    const elapsedTime = currentTime - event.start_time;
+    // console.log('elapsedTime', elapsedTime);
+
+    // Calculate remaining time in milliseconds
+    const remainingTime = event.end_time - currentTime;
+    // console.log('remainingTime', remainingTime);
+
+    // Calculate the expected rate of progress (points per millisecond)
+    const expectedRate = event.points_max / totalTime;
+
+    // Calculate the current rate of progress (points per millisecond)
+    const currentRate = event.points / elapsedTime;
+
+    // Calculate the expected points by now
+    const expectedPoints = expectedRate * elapsedTime;
+
+    // Calculate the remaining points
+    const remainingPoints = event.points_max - event.points;
+
+    // Calculate the required rate for the remaining time (points per millisecond)
+    const requiredRate = remainingPoints / remainingTime;
+
+    // 10% buffer
+    const buffer = expectedPoints * 0.1;
+    // Determine the progress status
+    let status;
+    if (event.points > expectedPoints + buffer) {
+        status = 'Ahead';
+    } else if (event.points < expectedPoints) {
+        status = 'Behind';
+    } else {
+        status = 'On track';
+    }
+
+    let pointDifference = Math.abs(expectedPoints - event.points);
+
+    const progress = {
+        expectedRate: expectedRate.toFixed(6), // Adjust precision as needed
+        currentRate: currentRate.toFixed(6),
+        expectedPoints: expectedPoints.toFixed(0),
+        remainingPoints: remainingPoints.toFixed(0),
+        requiredRate: requiredRate.toFixed(6),
+        status: status,
+        // rateStatus: rateStatus,
+    };
+
+    if (event.status === 'active') {
+        return `${status} by ${pointDifference.toFixed(0)} points`;
+    }
+    // if (event.status === 'success') {
+    //     return `tbd`;
+    // }
+    // if (event.status === 'fail') {
+    //     return `Lost ${pointDifference.toFixed(0)} points`;
+    // }
+
+    // if (event.status === 'success') {
+    //     const remaining_minutes = Math.abs(120 - Math.floor(elapsedTime / 60));
+    //     const win_text =
+    //         remaining_minutes > 1 ?
+    //             `${remaining_minutes} minutes`
+    //             : `${remaining_minutes} minute`;
+
+    //     return `Won with ${win_text} to spare.`;
+    // }
+    // if (event.status === 'failure') {
+    //     return `Lost ${pointDifference.toFixed(0)} points`;
+    // }
+}
+
 function schema(event, type) {
-    if (type === EVENT_TYPE.ATTACK) {
+    if (type === 'attack') {
         const capital = map[event.enemy][11].capital;
         return {
             '@context': 'https://schema.org',
@@ -72,11 +180,15 @@ function schema(event, type) {
             image: ['https://helldivers.bot/icons/attack.webp'],
         };
     }
-    if (type === EVENT_TYPE.DEFEND) {
-        const enemy = event.region === 0 ? 3 : event.enemy;
-        const capital = map[enemy][event.region].capital;
-        const region = map[enemy][event.region].region;
-        const faction = factions[enemy].name;
+    if (type === 'defend') {
+        // console.log(map[event.region][]);
+        if (event.region === 0) {
+            event.enemy = 3;
+        }
+
+        const capital = map[event.enemy][event.region].capital;
+        const region = map[event.enemy][event.region].region;
+        const faction = factions[event.enemy].name;
 
         return {
             '@context': 'https://schema.org',
@@ -89,7 +201,7 @@ function schema(event, type) {
             organizer: {
                 '@type': 'Organization',
                 name: `${faction}`,
-                url: `${factions[enemy].url}`,
+                url: `${factions[[event.enemy]].url}`,
             },
             offers: {
                 '@type': 'Offer',

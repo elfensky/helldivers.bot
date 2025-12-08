@@ -6,23 +6,17 @@
 [![Release](https://github.com/elfensky/helldivers1api/actions/workflows/release.docker.yml/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/release.docker.yml)
 [![CodeQL](https://github.com/elfensky/helldivers1api/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/github-code-scanning/codeql)
 [![Dependabot Updates](https://github.com/elfensky/helldivers1api/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/dependabot/dependabot-updates)
-[![Time](https://wakapi.lavrenov.io/api/badge/elfensky/interval:any/project:helldivers1api)](https://wakapi.lavrenov.io/leaderboard)
 
 ## Status
 
-<!-- ![Website](https://img.shields.io/website?url=https%3A%2F%2Fstaging.helldivers.bot&up_message=online&down_message=offline&label=staging)
-![Website](https://img.shields.io/website?url=https%3A%2F%2Fhelldivers.bot&up_message=online&down_message=offline&label=production) -->
-
-![uptime](https://uptimekuma.lav.ren/api/badge/5/uptime/30d?labelPrefix=production+-+&style=plastic)
-![ping](https://uptimekuma.lav.ren/api/badge/5/ping/30d?labelPrefix=production+-+&style=plastic)
-![status](https://uptimekuma.lav.ren/api/badge/5/status?style=plastic)<br>
-![uptime](https://uptimekuma.lav.ren/api/badge/6/uptime/30d?labelPrefix=staging+-+&style=plastic)
-![ping](https://uptimekuma.lav.ren/api/badge/6/ping/30d?labelPrefix=staging+-+&style=plastic)
-![status](https://uptimekuma.lav.ren/api/badge/6/status?style=plastic)
-
-[![Metrics](/metrics.plugin.pagespeed.svg)](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fhelldivers.bot%2F)
+![Website](https://img.shields.io/website?url=https%3A%2F%2Fstaging.helldivers.bot&up_message=online&down_message=offline&label=staging)
+![Website](https://img.shields.io/website?url=https%3A%2F%2Fhelldivers.bot&up_message=online&down_message=offline&label=production)
 
 ## Info
+
+[![Time](https://wakapi.lavrenov.io/api/badge/elfensky/interval:any/project:helldivers1api)](https://wakapi.lavrenov.io/leaderboard)
+
+[![Metrics](/metrics.plugin.pagespeed.svg)](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fhelldivers.bot%2F)
 
 This is an application that consumes the official Helldivers 1 API, caches and rebroadcasts it as to avoid high load on official servers.
 It also stores historic data that the official API discards, and offers account management and api keys for 3rd parties to access the API to build their own apps.
@@ -123,18 +117,14 @@ When using the docker container, the database you are connecting to needs to alr
 
 #### Build locally
 
-docker build -f ./Dockerfile.migrate -t ghcr.io/elfensky/helldiversbot-migrate:staging .
-docker build -f ./Dockerfile.app -t ghcr.io/elfensky/helldiversbot:staging .
---no-cache --progress=plain
-
-- Use `docker build -t ghcr.io/elfensky/helldiversbot:staging .` to build the image locally for local hardware
-  <!-- - Use `docker build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` -->
-- Use `docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` to build the image for standard x86_64 hardware
+- Use `docker build -t ghcr.io/elfensky/helldivers1api:staging .` to build the image locally for local hardware
+  <!-- - Use `docker build --platform linux/amd64 -t ghcr.io/elfensky/helldivers1api:staging .`  -->
+- Use `docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldivers1api:staging .` to build the image for standard x86_64 hardware
 - Use `docker compose up` to run the container locally.
 
 #### Deploy to ghcr.io
 
-- Manually | Use `docker push ghcr.io/elfensky/helldiversbot:staging` to push the image to ghcr.io
+- Manually | Use `docker push ghcr.io/elfensky/helldivers1api:staging` to push the image to ghcr.io
 - Automatically | On every normal commit, Github Actions will generate a new `:staging` image
 - Automatically | On every tagged commit, Github Actions will generate a new `:production` image alongside and create a new Release (using Release.md)
 

@@ -13,7 +13,7 @@ export default async function UserDashboard() {
 
     return (
         <div className="flex flex-col gap-2">
-            <h1>Dashboard</h1>
+            <h1 className="text-4xl">Dashboard</h1>
             {/* <p>list of account data</p> */}
 
             <ul>
@@ -39,6 +39,10 @@ export default async function UserDashboard() {
 }
 
 function Email({ user }) {
+    // console.log(user);
+    // if (user.emailVerified) {
+    // }
+
     return (
         <>
             <form action="" className="flex flex-row gap-2">
@@ -61,7 +65,7 @@ function Email({ user }) {
                 <span className="text-green-400">
                     Email was verified on {user.emailVerified}
                 </span>
-            :   <div className="flex flex-row gap-2">
+                : <div className="flex flex-row gap-2">
                     <span className="text-red-400">Not Verified</span>
                     <form action="">
                         <button type="submit" aria-label="Verify email address">
@@ -84,6 +88,11 @@ function Avatar({ user }) {
 
     const submitData = async (e) => {
         'use server';
+        // e.preventDefault();
+        // console.log('updateUser', e);
+        // console.log(user);
+        // console.log(getGravatarUrl(user.email));
+        // const user = await updateUserData(e);
     };
 
     return (

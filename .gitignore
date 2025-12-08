@@ -12,9 +12,6 @@
 
 # testing
 /coverage
-/test-results/
-/playwright-report/
-/playwright/
 
 # next.js
 /.next/
@@ -26,7 +23,6 @@
 # misc
 .DS_Store
 *.pem
-.mcp.json
 
 # debug
 npm-debug.log*
@@ -47,22 +43,3 @@ next-env.d.ts
 # Prisma
 /src/generated/prisma
 /.VSCodeCounter
-
-# Serena (removed, prevent re-tracking)
-.serena/cache/
-
-# Claude
-.claude/worktrees
-.claude/projects/
-.worktrees
-.superpowers
-
-# Tool state
-.claude-octopus/
-.playwright-mcp/
-.desloppify/
-
-# Temporary verification screenshots
-verify-*.png
-scorecard.png
-.claude/skills/

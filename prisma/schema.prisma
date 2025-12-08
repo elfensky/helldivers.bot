@@ -13,11 +13,17 @@
 // #region Initialize
 datasource db {
     provider = "postgresql"
+    url      = env("POSTGRES_URL")
 }
 
 generator client {
-    provider = "prisma-client" //read https://www.prisma.io/docs/orm/prisma-schema/overview/generators#prisma-client-early-access
-    output   = "../src/generated/prisma"
+    provider      = "prisma-client" //read https://www.prisma.io/docs/orm/prisma-schema/overview/generators#prisma-client-early-access
+    output        = "../src/generated/prisma"
+    binaryTargets = ["native", "darwin-arm64", "linux-musl-arm64-openssl-3.0.x", "linux-musl-openssl-3.0.x"] //read https://www.prisma.io/docs/orm/reference/prisma-schema-reference#binarytargets-options
+    //native - the default, when not(hing) specified
+    //darwin-arm64 - for Apple Silicon (M1) Macs
+    //linux-musl-arm64-openssl-3.0.x - for Alpine Linux (on MacOS)
+    //linux-musl-openssl-3.0.x - for Alpine Linux (on AMD64)
 }
 
 // #endregion
@@ -179,11 +185,12 @@ model h1_season {
     //relationships
     introduction_order h1_introduction_order? @relation("OneSeasonToOneIntroductionOrder") //a season must have 1 introduction_order, and an introduction_order must always be linked to a season
     points_max         h1_points_max?         @relation("OneSeasonToOnePointsMax") //a season must have 1 points_max, and a points_max must always be linked to a season
+    campaigns          h1_campaign[]          @relation("OneSeasonToManyCampaigns")
     snapshots          h1_snapshot[]          @relation("OneSeasonToManySnapshots")
+    defend_events      h1_defend_event[]      @relation("OneSeasonToManyDefendEvents")
+    attack_events      h1_attack_event[]      @relation("OneSeasonToManyAttackEvents")
     events             h1_event[]             @relation("OneSeasonToManyEvents")
-    live               h1_live[]              @relation("OneSeasonToManyLive")
-    live_snapshots     h1_live_snapshot[]     @relation("OneSeasonToManyLiveSnapshots")
-    event_snapshots    h1_event_snapshot[]    @relation("OneSeasonToManyEventSnapshots")
+    statistics         h1_statistic[]         @relation("OneSeasonToManyStatistics")
     //   @@index([is_active, last_updated])
 
     //indexes
@@ -192,10 +199,29 @@ model h1_season {
     @@index([last_updated])
 }
 
+model h1_campaign {
+    //get_campaign_status -> "campaign_status"
+    id                 String    @id @default(uuid(7))
+    season             Int //foreign key
+    points             Int
+    points_taken       Int
+    points_max         Int
+    status             String
+    introduction_order Int
+    //relationship
+    linked_season      h1_season @relation("OneSeasonToManyCampaigns", fields: [season], references: [season])
+
+    //other
+    @@unique([season, introduction_order]) //unique
+    @@index([season, introduction_order]) //index
+    @@index([season]) //index
+}
+
 model h1_introduction_order {
     id            String    @id @default(uuid(7))
     season        Int       @unique //foreign key //only one introduction_order per season, hence unique. enforces one-to-one relationship
     order         Int[] //stores the order as a native PostGres Int Array
+    json          Json //stores the order in JSON //raw data from api
     //relationship
     linked_season h1_season @relation("OneSeasonToOneIntroductionOrder", fields: [season], references: [season])
 
@@ -207,6 +233,7 @@ model h1_points_max {
     id            String    @id @default(uuid(7))
     season        Int       @unique //foreign key //only one points_max per season, hence unique. enforces one-to-one relationship
     points        Int[] //stores the points_max as a native PostGres Int Array
+    json          Json //original raw data
     //relationship
     linked_season h1_season @relation("OneSeasonToOnePointsMax", fields: [season], references: [season])
 
@@ -217,14 +244,55 @@ model h1_points_max {
 model h1_snapshot {
     id            String    @id @default(uuid(7))
     season        Int //foreign key //multiple snapshots per season, hence NOT unique. enforces one-to-many relationship
-    time          Int //original value
+    time          Int //original value 
     data          Json //data field
+    json          Json //original raw data
     //relationship
     linked_season h1_season @relation("OneSeasonToManySnapshots", fields: [season], references: [season])
 
     //indexes
     @@unique([season, time]) //unique
+    @@index([season, time]) //index
     @@index([season]) //index
+}
+
+model h1_defend_event {
+    id               String    @id @default(uuid(7))
+    season           Int // foreign key
+    //data
+    event_id         Int       @unique
+    start_time       Int
+    end_time         Int
+    region           Int
+    enemy            Int
+    points_max       Int
+    points           Int
+    status           String
+    players_at_start Int?
+    //relationship
+    linked_season    h1_season @relation("OneSeasonToManyDefendEvents", fields: [season], references: [season])
+
+    //indexes
+    @@index([event_id])
+}
+
+model h1_attack_event {
+    id               String    @id @default(uuid(7))
+    season           Int //foreign key
+    //data
+    event_id         Int       @unique
+    start_time       Int
+    end_time         Int
+    enemy            Int
+    points_max       Int
+    points           Int
+    status           String
+    players_at_start Int?
+    //relationship
+    linked_season    h1_season @relation("OneSeasonToManyAttackEvents", fields: [season], references: [season])
+
+    //indexes
+    @@index([event_id])
 }
 
 model h1_event {
@@ -232,7 +300,7 @@ model h1_event {
     season           Int // foreign key
     type             String //attack or defend
     //data
-    event_id         Int
+    event_id         Int    @unique
     start_time       Int
     end_time         Int
     region           Int //fill out for defend, automatic "11" for attack
@@ -244,29 +312,16 @@ model h1_event {
 
     //relationship
     linked_season h1_season @relation("OneSeasonToManyEvents", fields: [season], references: [season])
-    snapshots h1_event_snapshot[] @relation("OneEventToManySnapshots")
 
     //indexes
-    @@unique([type, event_id])
-    @@index([season, type])
-    @@index([season, status])
-    @@index([season, enemy])
+    @@index([event_id])
 }
 
-model h1_live {
+model h1_statistic {
     id                       String @id @default(uuid(7))
-    season                   Int
-    enemy                    Int    // 0=Bugs, 1=Cyborgs, 2=Illuminate
-
-    // from campaign_status
-    points                   Int
-    points_taken             Int
-    points_max               Int
-    status                   String // 'active', 'defeated', 'hidden'
-    introduction_order       Int    // war-entry position (0,1,2,255)
-
-    // from statistics
+    season                   Int //foreign key
     season_duration          Int
+    enemy                    Int
     players                  Int
     total_unique_players     Int
     missions                 Int
@@ -283,61 +338,13 @@ model h1_live {
     shots                    BigInt
     hits                     BigInt
 
-    // computed map data (this faction's 11 regions + homeworld)
-    map                      Json?
+    //relations
+    linked_season h1_season? @relation("OneSeasonToManyStatistics", fields: [season], references: [season])
 
-    linked_season h1_season? @relation("OneSeasonToManyLive", fields: [season], references: [season])
-
-    @@unique([season, enemy])
-    @@index([season])
-}
-
-model h1_live_snapshot {
-    id                       String @id @default(uuid(7))
-    season                   Int
-    time                     Int    // unix timestamp from API response
-    enemy                    Int    // 0=Bugs, 1=Cyborgs, 2=Illuminate
-
-    // statistics fields (from fetchedData.statistics[enemy])
-    season_duration          Int
-    players                  Int
-    total_unique_players     Int
-    missions                 Int
-    successful_missions      Int
-    total_mission_difficulty Int
-    completed_planets        Int
-    defend_events            Int
-    successful_defend_events Int
-    attack_events            Int
-    successful_attack_events Int
-    deaths                   BigInt
-    kills                    BigInt
-    accidentals              BigInt
-    shots                    BigInt
-    hits                     BigInt
-
-    linked_season h1_season? @relation("OneSeasonToManyLiveSnapshots", fields: [season], references: [season])
-
-    @@unique([season, enemy, time])
-    @@index([season, time])
-}
-
-model h1_event_snapshot {
-    id         String @id @default(uuid(7))
-    season     Int    // denormalized for efficient per-season queries
-    type       String // 'attack' or 'defend' — enables FK to h1_event
-    event_id   Int
-    time       Int    // unix timestamp from API response
-    points     Int
-    points_max Int
-
-    // FK to h1_event via (type, event_id) compound key
-    linked_event h1_event? @relation("OneEventToManySnapshots", fields: [type, event_id], references: [type, event_id])
-    linked_season h1_season? @relation("OneSeasonToManyEventSnapshots", fields: [season], references: [season])
-
-    @@unique([type, event_id, time])
-    @@index([season, time])
-    @@index([event_id, time])
+    //other
+    @@unique([season, enemy]) //unique
+    @@index([season, enemy]) //index
+    @@index([season]) //index
 }
 
 // #endregion

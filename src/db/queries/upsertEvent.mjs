@@ -1,29 +1,26 @@
 import db from '@/db/db';
-import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
 
-export async function queryUpsertEvent(season, type, event) {
+export async function queryUpsertEvent(season, event) {
     'use server';
     const start = performance.now();
 
     if (!season) throw new Error('season is missing');
-    if (!type) throw new Error('type is missing');
-    if (!event) throw new Error('event is missing');
+    if (!event) throw new Error('defend event is missing');
 
-    // Skip if data is not from current season (cross-season events are preserved in rebroadcast_status)
-    if (event.season !== season) return null;
+    try {
+        if (event.season !== season) return null; //skip if data is not from current season
 
-    const { data: upsertRecord, error } = await tryCatch(
-        db.h1_event.upsert({
+        const now = new Date();
+
+        const upsertRecord = await db.h1_event.upsert({
             where: {
-                type_event_id: {
-                    type: type,
-                    event_id: event.event_id,
-                },
+                event_id: event.event_id,
             },
             update: {
                 season: event.season,
+                // event_id: event.event_id, //not needed, stays the same
                 start_time: event.start_time,
                 end_time: event.end_time,
                 region: event.region,
@@ -31,11 +28,9 @@ export async function queryUpsertEvent(season, type, event) {
                 points_max: event.points_max,
                 points: event.points,
                 status: event.status,
-                players_at_start: event.players_at_start ?? null,
             },
             create: {
                 season: event.season,
-                type: type,
                 event_id: event.event_id,
                 start_time: event.start_time,
                 end_time: event.end_time,
@@ -44,12 +39,19 @@ export async function queryUpsertEvent(season, type, event) {
                 points_max: event.points_max,
                 points: event.points,
                 status: event.status,
-                players_at_start: event.players_at_start ?? null,
             },
-        }),
-    );
+        });
 
-    if (error) throw error;
+        const response = {
+            ms: performanceTime(start),
+            query: upsertRecord,
+        };
 
-    return { ms: performanceTime(start), query: upsertRecord };
+        return response;
+    } catch (error) {
+        // console.error(error.message, {
+        //     cause: 'db/queries/queryUpsertDefendEvent.mjs',
+        // });
+        throw error;
+    }
 }

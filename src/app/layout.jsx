@@ -1,23 +1,9 @@
 import './layout.css';
 //nextjs
 import Script from 'next/script';
-import { Space_Grotesk, Inter } from 'next/font/google';
 //components
 import Header from '@/components/layout/Header/Header';
 import Footer from '@/components/layout/Footer/Footer';
-import BottomNav from '@/components/layout/BottomNav/BottomNav';
-
-const spaceGrotesk = Space_Grotesk({
-    subsets: ['latin'],
-    variable: '--font-space-grotesk',
-    display: 'swap',
-});
-
-const inter = Inter({
-    subsets: ['latin'],
-    variable: '--font-inter',
-    display: 'swap',
-});
 
 // function getMetaURL() {
 //     switch (process.env.NODE_ENV) {
@@ -33,28 +19,17 @@ const inter = Inter({
 // }
 
 export const metadata = {
-    metadataBase: new URL('https://helldivers.bot'),
-    title: 'Helldivers Bot - Live war dashboard for the original Helldivers',
+    metadataBase: 'https://helldivers.bot',
+    title: 'Home | Helldivers Bot - A web application dedicated to the original Helldivers video game, featuring in-game Stats, an API and a Discord bot.',
     description:
-        'Live Helldivers 1 war dashboard showing campaign progress, faction stats, active events, and an interactive galaxy map.',
-    openGraph: {
-        type: 'website',
-        url: 'https://helldivers.bot',
-    },
-    twitter: {
-        card: 'summary_large_image',
-    },
+        'Display in-game events and current campaign progress, alongside server as an api',
 };
 
 export default function RootLayout({ children }) {
     const isProduction = process.env.NODE_ENV === 'production';
 
     return (
-        <html
-            dir="ltr"
-            lang="en"
-            className={`${spaceGrotesk.variable} ${inter.variable}`}
-        >
+        <html dir="ltr" lang="en">
             {/* <head>
                 <script
                     crossOrigin="anonymous"
@@ -63,7 +38,7 @@ export default function RootLayout({ children }) {
             </head> */}
             <body
                 id="body "
-                className="flex min-h-screen min-w-screen flex-col antialiased"
+                className="min-w-screen flex min-h-screen flex-col antialiased"
             >
                 <script
                     type="application/ld+json"
@@ -71,11 +46,10 @@ export default function RootLayout({ children }) {
                 />
 
                 <Header />
-                <main className="flex min-h-screen w-screen flex-col pb-[48px]">
+                <main className="flex min-h-screen w-screen flex-col pt-[50px] sm:pt-[80px]">
                     {children}
                 </main>
                 <Footer />
-                <BottomNav />
 
                 {isProduction ?
                     <Script

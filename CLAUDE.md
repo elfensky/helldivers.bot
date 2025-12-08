@@ -1,150 +1,167 @@
 # CLAUDE.md
 
-Next.js 16 app that caches the official Helldivers 1 API, stores historic game data, and provides API access + frontend visualizations.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Working Style
+## Project Overview
 
-- **KISS.** Simple solutions only. Do not overengineer or add abstractions for hypothetical future needs.
-- **Use agents** for codebase exploration and multi-step research tasks.
-- **Use git worktrees** for parallel development on separate branches.
-- **Vitest unit tests** are configured. Run `npm run test:unit:run` for a single run, `npm run test:unit` for watch mode.
-- **Playwright smoke tests** are configured. Run `npm run test:smoke` to verify the app builds and runs correctly.
-- **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit:run`.
-- **Never start the dev server.** Ask the user to start it separately if needed (e.g., for smoke tests).
-- **Chrome DevTools MCP** is available for debugging live pages. Use `evaluate_script` to inspect DOM state (e.g., sector CSS classes) and extract RSC payload data. Useful for verifying map state, comparing field values, and debugging visual issues without screenshots.
-- Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
+A Next.js application that consumes the official Helldivers 1 API, caches and rebroadcasts it to reduce load on official servers. It stores historic game data, provides API access via keys, and includes a frontend with data visualizations and event notifications.
 
-## Git Workflow
+**Tech Stack:** Next.js 15 (App Router), Prisma, PostgreSQL, NextAuth.js v5, Node.js 22
 
-**Branching model:** Simplified Git Flow — no release branches.
+## Development Commands
 
-| Branch | Purpose | Deploys to | Protected |
-|--------|---------|-----------|-----------|
-| `main` | Production releases | Production (via tags) | Yes — PR only |
-| `develop` | Integration/staging | Staging (auto) | Yes — PR only |
-| `feature/<desc>` | New functionality | — | No |
-| `bugfix/<desc>` | Non-urgent fixes | — | No |
-| `hotfix/<semver>` | Emergency prod fixes | — | No |
-
-**Rules:**
-1. **Never push directly to `main` or `develop`** — always use pull requests
-2. **Create feature/bugfix branches from `develop`**, merge back to `develop` via PR
-3. **Release process:** Merge `develop` → `main` via PR → tag `vX.Y.0` on main
-4. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
-5. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
-6. **After merging hotfix to `main`:** Always merge back to `develop` to prevent drift
-
-**Git Flow automation (git-workflow skill):**
-- `/git-workflow:feature <desc>` — create feature branch from `develop`
-- `/git-workflow:hotfix <semver>` — create hotfix branch from `main`
-- `/git-workflow:finish` — merge current branch to correct target(s), tag, cleanup
-- `/git-workflow:flow-status` — show branch status, stale branches, version info
-
-Prefer these commands over manual git operations.
-
-## Conventions
-
-### Error Handling
-
-Use the `tryCatch` wrapper (`src/utils/tryCatch.mjs`). Do NOT use try/catch blocks.
-
-```js
-const { data, error } = await tryCatch(someAsyncOperation());
-if (error) {
-    /* handle */
-}
+### Local Development
+```bash
+npm install              # Install dependencies
+npm run dev             # Start dev server with Turbopack
+npm run build           # Build for production
+npm start               # Start production server (uses standalone output)
+npm run format          # Auto-format code with Prettier (watch mode)
 ```
 
-### API Routes
+### Docker
+```bash
+# Build locally (native architecture)
+docker build -t ghcr.io/elfensky/helldivers1api:staging .
 
-- Use `errorResponse(code, start, error)` and `successResponse(code, start, data)` from `src/utils/responses.mjs`
-- Measure execution time with `roundedPerformanceTime(start)` from `src/utils/time.mjs`
+# Build for x86_64/amd64 (production deployment)
+docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldivers1api:staging .
 
-### Validation
+# Run locally
+docker compose up
 
-All external data validated with Zod schemas (`src/validators/`) before database operations.
+# Push to registry
+docker push ghcr.io/elfensky/helldivers1api:staging
+```
 
-### Imports
+**Important:** Database must exist before running the Docker container - it will NOT create it.
 
-`@/*` maps to `./src/*` (configured in `jsconfig.json`).
+### Prisma
+```bash
+npx prisma generate          # Generate Prisma Client from schema
+npx prisma migrate dev       # Create and apply migration (recommended for development)
+npx prisma migrate dev --name init  # Named migration
+npx prisma db push           # Push schema without migration (prototyping only)
+npx prisma migrate reset     # Reset database (destructive)
+npx prisma migrate deploy    # Apply pending migrations (production)
+```
 
-### Formatting
+**Prisma Client Location:** Generated at `src/generated/prisma/` (custom output path)
 
-Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` once before committing, not during development.
+## Architecture
 
-### Design Tokens
+### Application Initialization Flow
 
-All visual properties use CSS custom properties from `src/styles/tokens.css`:
+On startup, `src/instrumentation.js` orchestrates a 4-step initialization sequence:
 
-- Colors: `--color-primary`, `--color-danger`, `--color-surface-0` through `--color-surface-4`, `--color-faction-*`
-- Fonts: `--font-display` (Insignia, titles only), `--font-body` (Inter), `--font-mono` (Space Mono)
-- Faction colors: Bugs=#E8822A (orange), Cyborgs=#8B2D2D (dark red), Illuminate=#7EC8E3 (cyan)
-- Border radius: 0px everywhere (enforced via Tailwind `@theme`)
-- Cards: right-side accent line (4-6px) using CSS Grid
+1. **Environment Variables** - Validates required `.env` variables (see `.example.env`)
+2. **OpenAPI Spec** - Generates or verifies spec existence (dev mode generates automatically)
+3. **Database** - Connects, runs migrations, pre-populates seasons in `h1_season` table
+4. **Worker Thread** - Launches background worker that polls `/api/h1/update` every `UPDATE_INTERVAL` seconds
 
-## Architecture Notes
+The worker (`public/workers/cron.js`) continuously fetches current campaign data using the `UPDATE_KEY` token.
 
-- **Two-table strategy:** `rebroadcast_*` tables store raw API JSON; `h1_*` tables store normalized historical data. Both are needed.
-- **Worker thread** (`public/workers/cron.js`) uses `setTimeout` (not `setInterval`) to prevent overlapping requests.
-- **Prisma 7** with `@prisma/adapter-pg` driver adapter. Client outputs to `src/generated/prisma/`. CLI config in `prisma.config.mjs`.
-- **Auth:** NextAuth.js v5 with database sessions (not JWT). Discord + GitHub OAuth.
-- **React Compiler** enabled experimentally in `next.config.mjs`.
-- **Error tracking:** Sentry SDK configured for self-hosted Bugsink (`tracesSampleRate: 0`, no replays/logs).
-- **Node version:** Volta pins node@22 and npm@11.
-- **Server actions:** Most utilities use `'use server'` directive.
-- **Design tokens:** CSS custom properties in `src/styles/tokens.css`, integrated into Tailwind v4 `@theme` block in `src/app/layout.css`. See `/brandkit` for visual reference.
-- **Mobile-first layout:** Phase 6 rebuilt the homepage with mobile-first single-column layout. New components: `BottomNav` (bottom tab bar), `FactionTabs` (faction switcher), `StatGrid` (2×2 data cards), `DashboardClient` (client wrapper managing faction state), `EventCard` (per-faction sector progress with CAPTURING/DEFENDING/ATTACKING states).
-- **Component patterns:** Data cards use CSS Grid with right-side accent lines. Event cards have status-based background tinting (green=success, red=fail). All border-radius is 0px via `@theme` override.
-- **Shared utilities:** `formatNumber` (`src/utils/formatNumber.mjs`) for compact numbers (12.3M, 1.2K). `formatTimeAgo` (`src/utils/formatTimeAgo.mjs`) for relative timestamps ("Updated 3m ago").
-- **Map state:** `computeMapState` (`src/utils/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 come from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — completed events are already in the score.
-- **On-demand season fetching:** `/war` page derives SeasonSelector from current season number (not DB query). Missing seasons are fetched from the official API on first request via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`).
+### Data Flow: Fetch → Validate → Store
 
-## Task Tracking
+**Two-Table Strategy:**
+- **Rebroadcast tables** (`rebroadcast_status`, `rebroadcast_snapshot`) - Store raw JSON from official API
+- **H1 tables** (`h1_season`, `h1_campaign`, `h1_event`, etc.) - Normalized, historical data
 
-All work is tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and the [helldiversbot project board](https://github.com/users/elfensky/projects/5).
+**Update Process (src/update/status.mjs):**
+1. Fetch from official Helldivers API
+2. Validate with Zod schemas (`src/validators/`)
+3. Extract season number
+4. Upsert to `rebroadcast_status` (raw JSON)
+5. Upsert to normalized tables:
+   - `h1_season` (create if missing, `last_updated` initially null)
+   - `h1_campaign`, `h1_defend_event`, `h1_attack_event`, `h1_statistic` (parallel upserts)
+6. Confirm success by updating `h1_season.last_updated`
 
-### Organization
+**Season Snapshots (src/update/season.mjs):** Similar flow for historical season data.
 
-- **Milestones** group issues by phase: Phase 0 (Initial Release, closed) through Phase 10, plus Shelved. Phase 4 and 11 are closed.
-- **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
-- **Project board** statuses: `Backlog`, `In progress`, `Done`.
-- Issue title prefixes: `Phase N:`, `Shelved:`.
+### Database Schema Highlights
 
-### Project Board Fields
+**Season-Centric Model:** All game data links to `h1_season` via the `season` integer field.
 
-Every issue on the project board has these fields — keep them populated:
+**Key Relationships:**
+- `h1_season` has one-to-one: `h1_introduction_order`, `h1_points_max`
+- `h1_season` has one-to-many: `h1_campaign`, `h1_snapshot`, `h1_defend_event`, `h1_attack_event`, `h1_event`, `h1_statistic`
 
-- **Status**: `Backlog` → `In progress` → `Done`
-- **Priority**: `P0` (current sprint), `P1` (next up), `P2` (later)
-- **Size**: `XS` (<2h), `S` (2–4h), `M` (4–8h), `L` (8–16h), `XL` (16+h)
-- **Estimate**: Hours (numeric)
-- **Start date / End date**: Workday-based timeline (skip weekends)
+**Authentication:** Uses NextAuth.js v5 with Prisma adapter. Supports Discord, GitHub OAuth, and Nodemailer magic links.
 
-### Workflow — Keep Issues & Project Updated
+**User Features:** API key management (`ApiKey` table with MD5 hashing), reviews, custom settings stored as JSON.
 
-When working on a feature or fix:
+### API Endpoints
 
-1. **Before starting**: Check GitHub Issues for existing tracking. If none exists, create one with the correct milestone, labels, and project board assignment.
-2. **When starting work**: Move the issue to `In progress` on the project board. Set **Start date** to today.
-3. **When done**: Close the issue with a comment describing what was implemented. Set **End date** to today. The project board auto-moves closed issues to `Done`.
-4. **New issues**: Always assign a milestone, at least one label, Size, Priority, Estimate, and add to the helldiversbot project (`gh project item-add 5 --owner elfensky --url <issue-url>`).
-5. **Timeline maintenance**: When completing work earlier or later than estimated, update Start/End dates on downstream items to keep the timeline realistic. Shift future items forward or back as needed.
+**Core Endpoints:**
+- `GET /api/h1/update?key=...` - Internal endpoint triggered by worker to update current campaign
+- `POST /api/h1/rebroadcast` - Mirrors official API (actions: `get_campaign_status`, `get_snapshots`)
+- `GET /api/h1/campaign?season=N` - Custom endpoint combining status + snapshot in single query
+- `GET /api/healthcheck` - Health check
+- `POST /api/auth/[...nextauth]` - NextAuth.js authentication
 
-## Specs & Plans
+**Authentication Endpoints:** Handled by NextAuth.js at `/api/auth/[...nextauth]`
 
-For every phase or feature, create both files in `docs/superpowers/`:
+### File Structure
 
-- **Spec** (`specs/{date}-phase-{N}-{name}.md`) — what and why: requirements, design decisions, schema changes, rationale.
-- **Plan** (`plans/{date}-phase-{N}-{name}.md`) — how and in what order: step-by-step implementation with specific files to create/modify.
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── api/               # API routes
+│   │   ├── h1/           # Helldivers endpoints
+│   │   └── auth/         # NextAuth routes
+│   ├── dashboard/         # User dashboard
+│   └── [pages].jsx        # Frontend pages
+├── db/                    # Database layer
+│   ├── db.js             # Prisma client singleton
+│   ├── queries/          # Database operations
+│   └── sample/           # Sample data
+├── update/               # Official API integration
+│   ├── fetch.mjs         # Axios fetchers
+│   ├── status.mjs        # Status update logic
+│   └── season.mjs        # Season snapshot logic
+├── validators/           # Zod schemas
+├── utils/               # Utilities
+│   ├── initialize.*.mjs  # Startup modules
+│   └── [helpers].mjs
+├── generated/prisma/     # Generated Prisma Client
+└── instrumentation.js    # Application bootstrap
+```
 
-## Reference Docs
+**Worker Thread:** `public/workers/cron.js` - Background process for continuous API polling
 
-| Topic                              | Location                                       |
-| ---------------------------------- | ---------------------------------------------- |
-| Docker, CI/CD, init flow, env vars | [Wiki: Infrastructure](https://github.com/elfensky/helldivers.bot/wiki/Infrastructure) |
-| Database schema & relationships    | [Wiki: Database-Schema](https://github.com/elfensky/helldivers.bot/wiki/Database-Schema) |
-| Data pipeline & worker lifecycle   | [Wiki: Data-Flow](https://github.com/elfensky/helldivers.bot/wiki/Data-Flow) |
-| API endpoints & authentication     | [Wiki: API-Reference](https://github.com/elfensky/helldivers.bot/wiki/API-Reference) |
-| Utilities & Zod validators         | [Wiki: Utilities-Reference](https://github.com/elfensky/helldivers.bot/wiki/Utilities-Reference) |
-| Testing infrastructure             | [Wiki: Testing](https://github.com/elfensky/helldivers.bot/wiki/Testing) |
-| Frontend design system & tokens    | `/brandkit` (visual) + `src/styles/tokens.css` |
+### Environment Variables
+
+Required variables (see `.example.env`):
+- `POSTGRES_URL` - PostgreSQL connection string
+- `UPDATE_KEY` - Secret key for `/api/h1/update` endpoint
+- `UPDATE_INTERVAL` - Polling interval in seconds (e.g., "20")
+- `AUTH_SECRET` - NextAuth.js secret (128+ chars recommended)
+- `AUTH_DISCORD_ID` / `AUTH_DISCORD_SECRET` - Discord OAuth
+- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` - Google OAuth (optional)
+- `EMAIL_SERVER_*` - SMTP settings for magic links
+- `UMAMI_*` - Analytics (optional)
+
+**Connection String Differences:**
+- Local: `postgresql://user:pass@127.0.0.1:5432/dbname`
+- Docker: `postgresql://user:pass@host.docker.internal:5432/dbname`
+
+## Deployment
+
+**GitHub Actions:**
+- Every commit → builds `:staging` image
+- Tagged commits → builds `:production` + creates GitHub Release
+
+**Production Container:** Uses standalone Next.js output (`node .next/standalone/server.js`)
+
+## Code Patterns
+
+**Error Handling:** Uses custom `tryCatch` wrapper (returns `{ data, error }`) throughout codebase instead of try/catch blocks.
+
+**Performance Tracking:** All API routes measure execution time using `perf_hooks` and return via `roundedPerformanceTime`.
+
+**Validation:** All external data validated with Zod schemas before database operations.
+
+**Server Actions:** Most utilities marked with `'use server'` directive for server-side execution.
+
+**Node Version:** Uses Volta to pin node@22.16.0 and npm@11.4.2.
