@@ -15,15 +15,14 @@
 
 ![uptime](https://uptimekuma.lav.ren/api/badge/5/uptime/168?labelPrefix=production+-+&style=plastic)
 ![ping](https://uptimekuma.lav.ren/api/badge/5/ping/168?labelPrefix=production+-+&style=plastic)
-![status](https://uptimekuma.lav.ren/api/badge/5/status?style=plastic)
-
+![status](https://uptimekuma.lav.ren/api/badge/5/status?style=plastic) <br>
 ![uptime](https://uptimekuma.lav.ren/api/badge/6/uptime/168?labelPrefix=staging+-+&style=plastic)
 ![ping](https://uptimekuma.lav.ren/api/badge/6/ping/168?labelPrefix=staging+-+&style=plastic)
 ![status](https://uptimekuma.lav.ren/api/badge/6/status?style=plastic)
 
-## Info
-
 [![Metrics](/metrics.plugin.pagespeed.svg)](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fhelldivers.bot%2F)
+
+## Info
 
 This is an application that consumes the official Helldivers 1 API, caches and rebroadcasts it as to avoid high load on official servers.
 It also stores historic data that the official API discards, and offers account management and api keys for 3rd parties to access the API to build their own apps.
