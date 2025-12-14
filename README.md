@@ -21,9 +21,9 @@
 ![ping](https://uptimekuma.lav.ren/api/badge/6/ping/168?labelPrefix=staging+-+&style=plastic)
 ![status](https://uptimekuma.lav.ren/api/badge/6/status?style=plastic)
 
-## Info
-
 [![Metrics](/metrics.plugin.pagespeed.svg)](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fhelldivers.bot%2F)
+
+## Info
 
 This is an application that consumes the official Helldivers 1 API, caches and rebroadcasts it as to avoid high load on official servers.
 It also stores historic data that the official API discards, and offers account management and api keys for 3rd parties to access the API to build their own apps.
@@ -129,7 +129,7 @@ docker build -f ./Dockerfile.app -t ghcr.io/elfensky/helldiversbot:staging .
 --no-cache --progress=plain
 
 - Use `docker build -t ghcr.io/elfensky/helldiversbot:staging .` to build the image locally for local hardware
-    <!-- - Use `docker build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` -->
+      <!-- - Use `docker build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` -->
 - Use `docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` to build the image for standard x86_64 hardware
 - Use `docker compose up` to run the container locally.
 
