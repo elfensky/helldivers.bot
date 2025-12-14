@@ -6,15 +6,22 @@
 [![Release](https://github.com/elfensky/helldivers1api/actions/workflows/release.docker.yml/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/release.docker.yml)
 [![CodeQL](https://github.com/elfensky/helldivers1api/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/github-code-scanning/codeql)
 [![Dependabot Updates](https://github.com/elfensky/helldivers1api/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/dependabot/dependabot-updates)
+[![Time](https://wakapi.lavrenov.io/api/badge/elfensky/interval:any/project:helldivers1api)](https://wakapi.lavrenov.io/leaderboard)
 
 ## Status
 
-![Website](https://img.shields.io/website?url=https%3A%2F%2Fstaging.helldivers.bot&up_message=online&down_message=offline&label=staging)
-![Website](https://img.shields.io/website?url=https%3A%2F%2Fhelldivers.bot&up_message=online&down_message=offline&label=production)
+<!-- ![Website](https://img.shields.io/website?url=https%3A%2F%2Fstaging.helldivers.bot&up_message=online&down_message=offline&label=staging)
+![Website](https://img.shields.io/website?url=https%3A%2F%2Fhelldivers.bot&up_message=online&down_message=offline&label=production) -->
+
+![uptime](https://uptimekuma.lav.ren/api/badge/5/uptime/168?labelPrefix=production+-+&style=plastic)
+![ping](https://uptimekuma.lav.ren/api/badge/5/ping/168?labelPrefix=production+-+&style=plastic)
+![status](https://uptimekuma.lav.ren/api/badge/5/status?style=plastic)
+
+![uptime](https://uptimekuma.lav.ren/api/badge/6/uptime/168?labelPrefix=staging+-+&style=plastic)
+![ping](https://uptimekuma.lav.ren/api/badge/6/ping/168?labelPrefix=staging+-+&style=plastic)
+![status](https://uptimekuma.lav.ren/api/badge/6/status?style=plastic)
 
 ## Info
-
-[![Time](https://wakapi.lavrenov.io/api/badge/elfensky/interval:any/project:helldivers1api)](https://wakapi.lavrenov.io/leaderboard)
 
 [![Metrics](/metrics.plugin.pagespeed.svg)](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fhelldivers.bot%2F)
 
@@ -122,7 +129,7 @@ docker build -f ./Dockerfile.app -t ghcr.io/elfensky/helldiversbot:staging .
 --no-cache --progress=plain
 
 - Use `docker build -t ghcr.io/elfensky/helldiversbot:staging .` to build the image locally for local hardware
-  <!-- - Use `docker build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` -->
+    <!-- - Use `docker build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` -->
 - Use `docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` to build the image for standard x86_64 hardware
 - Use `docker compose up` to run the container locally.
 

@@ -36,6 +36,7 @@ FORGET WAR AND STATS FOR NOW. FOCUS ON GETTING HOMEPAGE GOOD.
 .
 .
 UPDATE DATABASE SCHEMA
+I WANT TO SHOW HISTORIC PLAYERCOUNTS (link to sale events etc..) (let users create them, and I have to approve)
 
 1. SEASON
    -> one2many: 15min interval status that gets upserted on every update (helldivers online, total kills, etc..)
