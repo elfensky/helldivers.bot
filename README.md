@@ -13,11 +13,11 @@
 <!-- ![Website](https://img.shields.io/website?url=https%3A%2F%2Fstaging.helldivers.bot&up_message=online&down_message=offline&label=staging)
 ![Website](https://img.shields.io/website?url=https%3A%2F%2Fhelldivers.bot&up_message=online&down_message=offline&label=production) -->
 
-![uptime](https://uptimekuma.lav.ren/api/badge/5/uptime/168?labelPrefix=production+-+&style=plastic)
-![ping](https://uptimekuma.lav.ren/api/badge/5/ping/168?labelPrefix=production+-+&style=plastic)
-![status](https://uptimekuma.lav.ren/api/badge/5/status?style=plastic) <br>
-![uptime](https://uptimekuma.lav.ren/api/badge/6/uptime/168?labelPrefix=staging+-+&style=plastic)
-![ping](https://uptimekuma.lav.ren/api/badge/6/ping/168?labelPrefix=staging+-+&style=plastic)
+![uptime](https://uptimekuma.lav.ren/api/badge/5/uptime/30d?labelPrefix=production+-+&style=plastic)
+![ping](https://uptimekuma.lav.ren/api/badge/5/ping/30d?labelPrefix=production+-+&style=plastic)
+![status](https://uptimekuma.lav.ren/api/badge/5/status?style=plastic)<br>
+![uptime](https://uptimekuma.lav.ren/api/badge/6/uptime/30d?labelPrefix=staging+-+&style=plastic)
+![ping](https://uptimekuma.lav.ren/api/badge/6/ping/30d?labelPrefix=staging+-+&style=plastic)
 ![status](https://uptimekuma.lav.ren/api/badge/6/status?style=plastic)
 
 [![Metrics](/metrics.plugin.pagespeed.svg)](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fhelldivers.bot%2F)

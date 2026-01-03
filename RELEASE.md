@@ -1,6 +1,7 @@
 ## 0.8.0
 
 - move database initialization & migrations to a separate docker image that runs once and quits
+- fix superearth appearing to always be under attack
 
 ### Docker
 
