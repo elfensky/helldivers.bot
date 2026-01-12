@@ -10,20 +10,20 @@
         "format": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npx prettier --write .'"
     },
     "dependencies": {
-        "@asteasolutions/zod-to-openapi": "^8.2.0",
+        "@asteasolutions/zod-to-openapi": "^8.4.0",
         "@auth/prisma-adapter": "^2.11.1",
         "@prisma/client": "^6.19.1",
-        "@vercel/og": "^0.8.5",
+        "@vercel/og": "^0.8.6",
         "axios": "^1.13.2",
         "humanize-duration": "^3.33.2",
         "next": "^15.5.9",
         "next-auth": "^5.0.0-beta.30",
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
-        "react-hook-form": "^7.68.0",
+        "react-hook-form": "^7.71.0",
         "react-icons": "^5.5.0",
         "swagger-ui-dist": "^5.31.0",
-        "zod": "^4.1.13"
+        "zod": "^4.3.5"
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4.1.18",
