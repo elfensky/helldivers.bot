@@ -10,26 +10,26 @@
         "format": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npx prettier --write .'"
     },
     "dependencies": {
-        "@asteasolutions/zod-to-openapi": "^8.2.0",
+        "@asteasolutions/zod-to-openapi": "^8.4.3",
         "@auth/prisma-adapter": "^2.11.1",
         "@prisma/client": "^6.19.1",
-        "@vercel/og": "^0.8.5",
-        "axios": "^1.13.2",
+        "@vercel/og": "^0.11.1",
+        "axios": "^1.13.6",
         "humanize-duration": "^3.33.2",
         "next": "^15.5.9",
         "next-auth": "^5.0.0-beta.30",
-        "react": "^19.2.3",
-        "react-dom": "^19.2.3",
-        "react-hook-form": "^7.68.0",
-        "react-icons": "^5.5.0",
-        "swagger-ui-dist": "^5.31.0",
-        "zod": "^4.1.13"
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "react-hook-form": "^7.71.2",
+        "react-icons": "^5.6.0",
+        "swagger-ui-dist": "^5.32.0",
+        "zod": "^4.3.6"
     },
     "devDependencies": {
-        "@tailwindcss/postcss": "^4.1.18",
+        "@tailwindcss/postcss": "^4.2.1",
         "babel-plugin-react-compiler": "^1.0.0",
         "chokidar-cli": "^3.0.0",
-        "prettier": "^3.7.4",
+        "prettier": "^3.8.1",
         "prettier-plugin-tailwindcss": "^0.7.2",
         "prisma": "^6.19.1",
         "tailwindcss": "^4.1.11"
