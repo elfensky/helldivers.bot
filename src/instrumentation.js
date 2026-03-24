@@ -29,16 +29,14 @@ async function initializeHelldivers1Api() {
     //ENVIRONMENT - are the required .env variables present and set
     const { data: env, error: envError } = await tryCatch(initializeEnvironmentVariables());
     if (envError) {
-        console.error('instrumentation.js | env:', envError.message);
-        process.exit(1);
+        throw new Error(`instrumentation.js | env: ${envError.message}`);
     }
     console.info('instrumentation.js | env:', env);
 
     // OPEN API - generate spec or check if spec exists
     const openapi = await initializeOpenApiSpec();
     if (!openapi) {
-        console.error('instrumentation.js | openapi: ', openapi);
-        process.exit(1);
+        throw new Error('instrumentation.js | openapi: initialization failed');
     }
     console.info('instrumentation.js | openapi: ', openapi);
 
@@ -54,8 +52,7 @@ async function initializeHelldivers1Api() {
     // WORKER - continiously update current campaign from the official Helldivers API
     const worker = await initializeWorker();
     if (!worker) {
-        console.error('instrumentation.js | worker: ', worker);
-        process.exit(1);
+        throw new Error('instrumentation.js | worker: initialization failed');
     }
     console.info('instrumentation.js | worker: ', worker);
 }
