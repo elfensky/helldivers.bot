@@ -1,126 +1,147 @@
-What DATA do I want to SHOW?
+# TODO
 
-Homepage /: QUICK UPDATE ON CURRENT SITUATION
---> Current status of MAP (in-game desk view)
---> Current Events as ALERTS on top (mobile under eachtoher, tablet+ next to eachtoher and scrollable)
---> Current campaign (number) and its stats (helldivers online, kills, missions, enemies).
---> use WebSockets to push updates to the page, keeping the data up2date.
---> use Notifications for "offline" alerts about in-game events.
+> Mobile-first. Most users visit from mobile — every feature starts there.
 
-Generate map-data on update, and store it in a h1_map JSON field.
-then, the map component and websockets simply poll the latest map field in h1_app table
+---
 
-- Completely rework the website layout and structure
-    - Add Active component
-    - Update Navigation with Github links and umami event tracking
-    - Update HomePage to say more about the project (actual landing page)
-        - Features
-        - About
-        - Roadmap
-    - Update Footer to have a proper sitemap, legal and donate links.
-    - Move the detailed map a new /campaign page
-    - Move stats to the /stats page
+## v0.9 — Mobile-First Redesign & PWA
 
-- Add Mobile Navigation
-- Add JSON LD to Event component
-- Add robots.txt
-- Add sitemap.js to generate sitemap.xml
-- Update Umami tracking to only run in production.
-- Remove NodeMailer and email/password login from auth.
+The fundamental shift: rebuild the frontend mobile-first using the Stitch redesign.
 
-FORGET WAR AND STATS FOR NOW. FOCUS ON GETTING HOMEPAGE GOOD.
+### Style Guide & Design System
 
-.
-.
-.
-.
-.
-UPDATE DATABASE SCHEMA
-I WANT TO SHOW HISTORIC PLAYERCOUNTS (link to sale events etc..) (let users create them, and I have to approve)
+- [ ] Define design tokens in CSS/Tailwind (from Stitch redesign)
+  - Colors: map current CSS vars (`--orange`, `--cyan`, `--blue`, `--black`) to Stitch palette
+  - Typography: `Insignia` for headings, system stack for body — define scale
+  - Spacing: standardize gutters, padding, gaps
+  - Shadows, borders, radii
+- [ ] Define breakpoint semantics:
+  - `default` — phone (mobile-first base)
+  - `sm` (640px) — tablet portrait
+  - `md` (768px) — tablet landscape
+  - `lg` (1024px) — desktop
+  - `xl` (1280px) — desktop wide
+  - `2xl` (1536px) — max-width applied
+  - `3xl` (1920px) — ultrawide: max-width released, wide layout
+- [ ] Create reusable component patterns: cards, buttons, section containers
+- [ ] Patch color palette — replace leftover purple/blue-ish with Helldivers yellow/cyan
 
-1. SEASON
-   -> one2many: 15min interval status that gets upserted on every update (helldivers online, total kills, etc..)
-2. EVENT
-   -> no separate attack/defend event, just event with "type"
-   -> one2many: 10min interval status (event progress, maybe also campaign stats) (same table as season?)
+### Mobile Navigation
 
-War /war/153: HISTORIC DATA AND GRAPHS
---> on load, animate CURRENT WAR PROGRESS upto NOW
---> switch between WARS
---> animate MAP using STATISTICS like in-game
+- [ ] Rewrite mobile nav as a proper React component (replace vanilla `navigation.js`)
+- [ ] Slide-out or slide-down mobile menu with backdrop
+- [ ] Smooth open/close animation (CSS transitions, no layout shift)
+- [ ] Close on route change and outside click
+- [ ] Sign-in button with distinct mobile style
 
-1. Responsive Mobile Menu (go peek at Bolckmans?)
-   basically: {width > 780px ? <DesktopMenu /> : <MobileMenu /> }
-   --> check if this is still server rendered?
+### Homepage Redesign (Mobile-First)
 
-Or just: opacity0 offscreen menu button alyways present
-nav items slide up/away on resize. on button press slide down with bg and flex-col
-something like that.
+- [ ] Hero section: rebuild from phone viewport up
+  - Map: decide mobile treatment (cut off? scroll? separate view?)
+  - Alerts: stack vertically on mobile, horizontal scroll on tablet+
+  - Stats row: 2x2 grid on mobile, inline on desktop
+  - CTA button: full-width on mobile
+- [ ] About section: single column, properly spaced
+- [ ] Features section: stack cards vertically on mobile (currently broken — `w-1/3` on mobile)
+- [ ] Discord section: clean up placeholder text ("insert [screenshot]")
+- [ ] API section: clean up
+- [ ] Buy/Play section: small card, links to Steam/PSN
+- [ ] Roadmap section: link to GitHub Issues/Projects
 
---> mobile/desktop have css reveal animation, so time to check if it's desktop or mobile on pageload.
+### Footer
 
---> signin button different style
---> github logo svg so it can be color hover:stated
+- [ ] Fix empty `href=""` links (Terms, Privacy, Bug Bounty, Cookies, Campaign, History, GitHub, Twitter)
+- [ ] Responsive: stack sections properly on mobile
+- [ ] Proper sitemap links pointing to actual pages
 
-Global (tailwind config variable) margins for spacing
-Global (tailwind config variable) colors
-Global (..) padding
-etc...
-As little "custom" css as possible.
-FIX AND KEEP USING COLOR PALETTE -> Patch the purple/blue-ish to the helldivers yellow/cyan
-Add Skulls to places.
-Add wings to titles
-maybe custo tailwind sizes
-DEFINE (somewhere, maybe README) - which sizes are what design
-\_\_ -> phone is default
-sm -> tablet vertical
-md -> tablet horizontal
-lg -> desktop (small)
-xl -> desktop (large) -> website has a max-width
-2xl-> max width no longer applied, flex-row (max width of a 21:9 ultrawide, wider than that it still has max width);
-ultrawide? but supports ultrawide displays and goes WIIIDE. that would be super cool imo. Maybe custom design.
+### SEO & Meta
 
-1. Big Layout
-   START FROM MOBILE TO DESKTOP
+- [ ] Add `robots.txt` (static file or Next.js route)
+- [ ] Update `sitemap.js` — add `/war`, `/docs`, `/api`, `/faq`, `/discord` pages
+- [ ] Add JSON-LD to Event component
 
-- empty Hero with proper sizing (vh90% or something like that) and bg color (linear gradient I guess? try some stuff, check how volta did it?)
-- the hero section layout should work, but it should be colored blocks (button to rotate map should work I think).
-- empty top content section with chibi.
-- How to transition map on mobile? Cut off? See the rest of it? Test.
+### PWA
 
-3. Content Part 1
+- [ ] Add `manifest.json` (app name, icons, theme color, display: standalone)
+- [ ] Implement service worker for offline shell + caching
+- [ ] Push notification subscription flow (ask permission, store subscription)
+- [ ] Server-side push: send notifications on in-game events (defend/attack events)
+- [ ] "Install app" prompt/banner
 
-- fill out hero content with actual interactive content. hovering over alerts should highlight related map section.
-- fill out about/features (link to github issues in about).
-    - about
-        - photoshop me in a helldiver helmet maybe?
-        - who am I, why did I built this. Started as a discord bot, ended up as a website.
+---
 
-    - features can mention things in the roadmap
-        - map
-        - events
-        - api? (its own section prob)
-        - notifications
-        - pwa offline functionality
-        - history
-        - graphs (advanced hourly history)
-        - ...
-        - (maybe a vertical accordeon that slides between things |||something|| -> |else ||||) click on vertical slices
-        - (like railway but horizontal not vertical)
+## v1.0 — Real-Time Data & Schema
 
-- update map so hovered sections are highlightable - instead of hovered tile info shows up where alerts go? (on mobile and tablet)
+### WebSockets
 
-1. Add section flourishes (+++, lines, // etc...)
+- [ ] WebSocket server for live campaign updates
+- [ ] Client-side: connect on homepage, update map + stats + alerts in real-time
+- [ ] Fallback to polling if WebSocket connection fails
 
-- flesh out the design in figma. Only top section is blocks imo, rest should be flat on page etc..
+### Database Schema Rework
 
-1. Roadmap - nice view of planned features and time estimates + link to github roadmap.
+- [ ] Unify `h1_attack_event` + `h1_defend_event` into single `h1_event` table with `type` field
+- [ ] Add interval statistics table (15-min snapshots for season stats)
+- [ ] Add event-level interval statistics (10-min snapshots for event progress)
+- [ ] Historic player count tracking (link to sale events — user-submitted, admin-approved)
+- [ ] Migrate existing data to new schema
 
-nice to have: rotating blinking logo on hover (eg sattelite)
+### Map Data Pipeline
 
-# ONCE WEB APP IS v1.0.0 (finalized)
+- [ ] Generate map data as JSON on each update cycle
+- [ ] Store in `h1_map` JSON field (or similar)
+- [ ] Map component + WebSocket reads latest map state directly
 
-Build a swiftui webapp with live activities.
--> dynamic island shows in-game event status (attack/defend/...)
+---
 
-How to implement map in swift?
+## v1.1 — War History & Polish
+
+### War History Page
+
+- [ ] Route: `/war/:seasonId` (e.g., `/war/153`)
+- [ ] On load: animate war progress from start to current
+- [ ] Season switcher to browse previous wars
+- [ ] Animated map playback using historical statistics
+
+### Design Polish
+
+- [ ] Section flourishes (decorative dividers, lines, Helldivers motifs)
+- [ ] Add skull/wing decorative elements where appropriate
+- [ ] Rotating/blinking logo animation on hover (satellite)
+- [ ] `Wings` component integration on section titles
+- [ ] Map: hovering alert highlights related map region (mobile: info replaces alert area)
+
+### Ultrawide Support
+
+- [ ] `3xl` (1920px+): release max-width, go wide
+- [ ] Custom ultrawide layout — use extra space meaningfully
+- [ ] Test up to 21:9 ultrawide, apply max-width beyond that
+
+---
+
+## Done
+
+- [x] Active component (`src/components/h1/Active/Active.jsx`)
+- [x] Navigation with GitHub link + Umami event tracking
+- [x] Homepage sections: About, Features, Discord, API
+- [x] Footer with sitemap structure
+- [x] `sitemap.js` route
+- [x] Umami analytics — production only
+- [x] Remove NodeMailer (commented out in `auth.js`)
+- [x] Color palette CSS variables
+- [x] Custom `Insignia` font for headings
+- [x] Gutters utility classes
+- [x] War page (`/war`) with Galaxy, War, Timeline
+- [x] Stats page (`/stats`)
+- [x] JSON-LD on layout and war page
+- [x] Mobile hamburger menu (basic — needs React rewrite)
+
+---
+
+## Shelved
+
+> Revisit after v1.0 is stable.
+
+- **Discord bot rewrite** — focus on website + API first
+- **SwiftUI app** — native iOS with Live Activities / Dynamic Island
+- **Helmet photoshop** — about section avatar
