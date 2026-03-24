@@ -10,6 +10,7 @@ A Next.js application that consumes the official Helldivers 1 API, caches and re
 - **Validation:** Zod schemas
 - **Styling:** Tailwind CSS v4
 - **Runtime:** Node.js 22
+- **Error Tracking:** Sentry SDK with self-hosted Bugsink
 
 ## Architecture Highlights
 

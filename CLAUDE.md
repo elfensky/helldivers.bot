@@ -6,172 +6,149 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Next.js application that consumes the official Helldivers 1 API, caches and rebroadcasts it to reduce load on official servers. It stores historic game data, provides API access via keys, and includes a frontend with data visualizations and event notifications.
 
-**Tech Stack:** Next.js 15 (App Router), Prisma, PostgreSQL, NextAuth.js v5, Node.js 22
+**Tech Stack:** Next.js 15 (App Router), Prisma, PostgreSQL, NextAuth.js v5, Node.js 22, Sentry SDK (Bugsink)
 
 ## Development Commands
 
-### Local Development
-
 ```bash
 npm install              # Install dependencies
-npm run dev             # Start dev server with Turbopack
-npm run build           # Build for production
-npm start               # Start production server (uses standalone output)
-npm run format          # Auto-format code with Prettier (watch mode)
+npm run dev              # Start dev server with Turbopack
+npm run build            # Build for production
+npm start                # Start production server (uses standalone output)
+npm run format           # Auto-format code with Prettier (watch mode)
 ```
 
-### Docker
-
-```bash
-# Build locally (native architecture)
-docker build -t ghcr.io/elfensky/helldiversbot:staging .
-
-# Build for x86_64/amd64 (production deployment)
-docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .
-
-# Run locally
-docker compose up
-
-# Push to registry
-docker push ghcr.io/elfensky/helldiversbot:staging
-```
-
-**Important:** Database must exist before running the Docker container - it will NOT create it.
+**No test framework is configured.** There are no test scripts, test dependencies, or test files.
 
 ### Prisma
 
 ```bash
-npx prisma generate          # Generate Prisma Client from schema
-npx prisma migrate dev       # Create and apply migration (recommended for development)
-npx prisma migrate dev --name init  # Named migration
-npx prisma db push           # Push schema without migration (prototyping only)
-npx prisma migrate reset     # Reset database (destructive)
-npx prisma migrate deploy    # Apply pending migrations (production)
+npx prisma generate                  # Generate Prisma Client (outputs to src/generated/prisma/)
+npx prisma migrate dev               # Create and apply migration (development)
+npx prisma migrate dev --name init   # Named migration
+npx prisma db push                   # Push schema without migration (prototyping only)
+npx prisma migrate deploy            # Apply pending migrations (production)
 ```
 
-**Prisma Client Location:** Generated at `src/generated/prisma/` (custom output path)
+### Docker
+
+Two separate Dockerfiles:
+- `Dockerfile.app` — Multi-stage build for the Next.js app (standalone output)
+- `Dockerfile.migrate` — Runs `npx prisma migrate deploy` only (used in CI before app deployment)
+
+```bash
+docker build -f Dockerfile.app -t ghcr.io/elfensky/helldiversbot:staging .
+docker buildx build --platform linux/amd64 -f Dockerfile.app -t ghcr.io/elfensky/helldiversbot:staging .  # for x86_64
+docker compose up
+```
+
+**Important:** Database must exist before running — the container will NOT create it.
 
 ## Architecture
 
-### Application Initialization Flow
+> For detailed technical reference, see the [docs/](docs/) directory.
 
-On startup, `src/instrumentation.js` orchestrates a 4-step initialization sequence:
+### Initialization Flow (`src/instrumentation.js`)
 
-1. **Environment Variables** - Validates required `.env` variables (see `.example.env`)
-2. **OpenAPI Spec** - Generates or verifies spec existence (dev mode generates automatically)
-3. **Database** - Connects, runs migrations, pre-populates seasons in `h1_season` table
-4. **Worker Thread** - Launches background worker that polls `/api/h1/update` every `UPDATE_INTERVAL` seconds
+On startup, `register()` orchestrates initialization (nodejs runtime only):
 
-The worker (`public/workers/cron.js`) continuously fetches current campaign data using the `UPDATE_KEY` token.
+1. **Sentry** — Registers error tracking for server and edge runtimes
+2. **Environment Variables** — Validates required `.env` variables
+3. **OpenAPI Spec** — Generates or verifies spec existence (dev mode auto-generates)
+4. **Worker Thread** — Launches `public/workers/cron.js` which polls `/api/h1/update` every `UPDATE_INTERVAL` seconds using `UPDATE_KEY`
+
+Database migrations run separately via `Dockerfile.migrate` in CI, not during app startup.
 
 ### Data Flow: Fetch → Validate → Store
 
 **Two-Table Strategy:**
+- **Rebroadcast tables** (`rebroadcast_status`, `rebroadcast_snapshot`) — Raw JSON from official API
+- **H1 tables** (`h1_season`, `h1_campaign`, `h1_event`, etc.) — Normalized, historical data
 
-- **Rebroadcast tables** (`rebroadcast_status`, `rebroadcast_snapshot`) - Store raw JSON from official API
-- **H1 tables** (`h1_season`, `h1_campaign`, `h1_event`, etc.) - Normalized, historical data
-
-**Update Process (src/update/status.mjs):**
-
-1. Fetch from official Helldivers API
+**Update Process (`src/update/status.mjs`):**
+1. Fetch from official Helldivers API via Axios (`src/update/fetch.mjs`)
 2. Validate with Zod schemas (`src/validators/`)
-3. Extract season number
-4. Upsert to `rebroadcast_status` (raw JSON)
-5. Upsert to normalized tables:
-    - `h1_season` (create if missing, `last_updated` initially null)
-    - `h1_campaign`, `h1_defend_event`, `h1_attack_event`, `h1_statistic` (parallel upserts)
-6. Confirm success by updating `h1_season.last_updated`
+3. Upsert raw JSON to `rebroadcast_status`
+4. Upsert to normalized tables in parallel (`h1_campaign`, `h1_defend_event`, `h1_attack_event`, `h1_statistic`)
+5. Confirm success by updating `h1_season.last_updated`
 
-**Season Snapshots (src/update/season.mjs):** Similar flow for historical season data.
-
-### Database Schema Highlights
+### Database Schema (`prisma/schema.prisma`)
 
 **Season-Centric Model:** All game data links to `h1_season` via the `season` integer field.
 
-**Key Relationships:**
+**Custom Prisma Client output:** `src/generated/prisma/` (not the default location). Binary targets include `darwin-arm64` and `linux-musl-*` for Docker.
 
-- `h1_season` has one-to-one: `h1_introduction_order`, `h1_points_max`
-- `h1_season` has one-to-many: `h1_campaign`, `h1_snapshot`, `h1_defend_event`, `h1_attack_event`, `h1_event`, `h1_statistic`
+**Auth tables:** NextAuth.js v5 with Prisma adapter (Account, Session, VerificationToken, Authenticator).
 
-**Authentication:** Uses NextAuth.js v5 with Prisma adapter. Supports Discord, GitHub OAuth, and Nodemailer magic links.
-
-**User Features:** API key management (`ApiKey` table with MD5 hashing), reviews, custom settings stored as JSON.
+**User features:** API key management (`ApiKey` table with MD5 hashing), reviews, JSON settings.
 
 ### API Endpoints
 
-**Core Endpoints:**
+- `GET /api/h1/update?key=...` — Internal, triggered by worker to update current campaign
+- `POST /api/h1/rebroadcast` — Mirrors official API (actions: `get_campaign_status`, `get_snapshots`)
+- `GET /api/h1/campaign?season=N` — Combined status + snapshot in single query
+- `GET /api/healthcheck` — Health check (also used by Docker HEALTHCHECK)
+- `POST /api/auth/[...nextauth]` — NextAuth.js authentication
 
-- `GET /api/h1/update?key=...` - Internal endpoint triggered by worker to update current campaign
-- `POST /api/h1/rebroadcast` - Mirrors official API (actions: `get_campaign_status`, `get_snapshots`)
-- `GET /api/h1/campaign?season=N` - Custom endpoint combining status + snapshot in single query
-- `GET /api/healthcheck` - Health check
-- `POST /api/auth/[...nextauth]` - NextAuth.js authentication
+### Auth (`src/auth.js`)
 
-**Authentication Endpoints:** Handled by NextAuth.js at `/api/auth/[...nextauth]`
+NextAuth.js v5 with database session strategy (not JWT). Active providers: Discord OAuth, GitHub OAuth. Nodemailer magic links available but commented out.
 
-### File Structure
+## Code Patterns
 
-```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── api/               # API routes
-│   │   ├── h1/           # Helldivers endpoints
-│   │   └── auth/         # NextAuth routes
-│   ├── dashboard/         # User dashboard
-│   └── [pages].jsx        # Frontend pages
-├── db/                    # Database layer
-│   ├── db.js             # Prisma client singleton
-│   ├── queries/          # Database operations
-│   └── sample/           # Sample data
-├── update/               # Official API integration
-│   ├── fetch.mjs         # Axios fetchers
-│   ├── status.mjs        # Status update logic
-│   └── season.mjs        # Season snapshot logic
-├── validators/           # Zod schemas
-├── utils/               # Utilities
-│   ├── initialize.*.mjs  # Startup modules
-│   └── [helpers].mjs
-├── generated/prisma/     # Generated Prisma Client
-└── instrumentation.js    # Application bootstrap
+### Error Handling — `tryCatch` wrapper (`src/utils/tryCatch.mjs`)
+
+Used **instead of try/catch blocks** throughout the codebase. Returns `{ data, error }`:
+
+```js
+const { data, error } = await tryCatch(someAsyncOperation());
+if (error) { /* handle */ }
 ```
 
-**Worker Thread:** `public/workers/cron.js` - Background process for continuous API polling
+### API Response Helpers (`src/utils/responses.mjs`)
 
-### Environment Variables
+All API routes use `errorResponse(code, start, error)` and `successResponse(code, start, data)` which include timing, status code, message, and payload.
 
-Required variables (see `.example.env`):
+### Performance Tracking (`src/utils/time.mjs`)
 
-- `POSTGRES_URL` - PostgreSQL connection string
-- `UPDATE_KEY` - Secret key for `/api/h1/update` endpoint
-- `UPDATE_INTERVAL` - Polling interval in seconds (e.g., "20")
-- `AUTH_SECRET` - NextAuth.js secret (128+ chars recommended)
-- `AUTH_DISCORD_ID` / `AUTH_DISCORD_SECRET` - Discord OAuth
-- `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` - Google OAuth (optional)
-- `EMAIL_SERVER_*` - SMTP settings for magic links
-- `UMAMI_*` - Analytics (optional)
+All API routes measure execution time. `roundedPerformanceTime(start)` rounds elapsed time up to nearest 50ms. Used for Umami analytics event tracking.
 
-**Connection String Differences:**
+### Path Aliases
 
-- Local: `postgresql://user:pass@127.0.0.1:5432/dbname`
-- Docker: `postgresql://user:pass@host.docker.internal:5432/dbname`
+`@/*` maps to `./src/*` (configured in `jsconfig.json`). Import Prisma client as `@/db/db`, validators as `@/validators/...`, etc.
+
+### Worker Thread (`public/workers/cron.js`)
+
+Uses `setTimeout` (not `setInterval`) for self-scheduling to prevent overlapping requests. Communicates via `worker_threads` message passing.
+
+### Other Conventions
+
+- **Server Actions:** Most utilities use `'use server'` directive
+- **Validation:** All external data validated with Zod before database operations
+- **React Compiler:** Enabled experimentally in `next.config.mjs`
+- **Formatting:** Prettier with tailwindcss plugin, no ESLint configured
+- **Node Version:** Volta pins node@22.16.0 and npm@11.4.2
 
 ## Deployment
 
 **GitHub Actions:**
+- Every push to main → builds `:staging` images (both migrate and app)
+- Tagged commits (e.g. `v1.0.0`) → builds `:production` + `:latest` images, creates GitHub Release from `RELEASE.md`
 
-- Every commit → builds `:staging` image
-- Tagged commits → builds `:production` + creates GitHub Release
+**Production:** `node .next/standalone/server.js` with tini init system in Alpine container.
 
-**Production Container:** Uses standalone Next.js output (`node .next/standalone/server.js`)
+## Error Tracking (Sentry/Bugsink)
 
-## Code Patterns
+Uses Sentry SDK configured for self-hosted Bugsink instance.
 
-**Error Handling:** Uses custom `tryCatch` wrapper (returns `{ data, error }`) throughout codebase instead of try/catch blocks.
+**Config files:** `sentry.server.config.js`, `sentry.edge.config.js`, `src/instrumentation-client.js`, `src/app/global-error.jsx`
 
-**Performance Tracking:** All API routes measure execution time using `perf_hooks` and return via `roundedPerformanceTime`.
+**Bugsink-specific:** `tracesSampleRate: 0` (unsupported), no session replay/feedback/logs, source map upload disabled, `sendDefaultPii: true` (OK for self-hosted).
 
-**Validation:** All external data validated with Zod schemas before database operations.
+## Environment Variables
 
-**Server Actions:** Most utilities marked with `'use server'` directive for server-side execution.
-
-**Node Version:** Uses Volta to pin node@22.16.0 and npm@11.4.2.
+See `.example.env` for the full list. Key variables:
+- `POSTGRES_URL` — PostgreSQL connection string (use `host.docker.internal` in Docker)
+- `UPDATE_KEY` / `UPDATE_INTERVAL` — Worker thread authentication and polling interval
+- `AUTH_SECRET` — NextAuth.js secret (128+ chars recommended)
+- OAuth credentials for Discord (`AUTH_DISCORD_ID/SECRET`) and GitHub (`AUTH_GITHUB_ID/SECRET`)

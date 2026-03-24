@@ -11,17 +11,22 @@
 - [ ] If adding external data handling, create/update Zod schema in `src/validators/`
 - [ ] Use `tryCatch` wrapper for async operations (not try/catch)
 
-### 3. Database Changes
+### 3. Error Tracking (Sentry/Bugsink)
+- [ ] Errors are automatically captured via Sentry SDK
+- [ ] For manual error capture, use `Sentry.captureException(error)`
+- [ ] Global error boundary at `src/app/global-error.jsx` handles React render errors
+
+### 4. Database Changes
 - [ ] If schema changed: `npx prisma migrate dev --name <descriptive_name>`
 - [ ] Verify Prisma Client regenerated: `npx prisma generate`
 - [ ] Test database operations
 
-### 4. Testing
+### 5. Testing
 - [ ] Run `npm run build` to verify production build succeeds
 - [ ] Test locally with `npm run dev`
 - [ ] If Docker-related: test with `docker compose up`
 
-### 5. Documentation
+### 6. Documentation
 - [ ] Update CLAUDE.md if architecture or commands changed
 - [ ] Update README.md if user-facing features changed
 

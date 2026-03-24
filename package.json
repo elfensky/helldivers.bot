@@ -13,6 +13,7 @@
         "@asteasolutions/zod-to-openapi": "^8.2.0",
         "@auth/prisma-adapter": "^2.11.1",
         "@prisma/client": "^6.19.1",
+        "@sentry/nextjs": "^10.32.1",
         "@vercel/og": "^0.8.5",
         "axios": "^1.13.2",
         "humanize-duration": "^3.33.2",

@@ -117,3 +117,10 @@ ultrawide? but supports ultrawide displays and goes WIIIDE. that would be super 
 1. Roadmap - nice view of planned features and time estimates + link to github roadmap.
 
 nice to have: rotating blinking logo on hover (eg sattelite)
+
+# ONCE WEB APP IS v1.0.0 (finalized)
+
+Build a swiftui webapp with live activities.
+-> dynamic island shows in-game event status (attack/defend/...)
+
+How to implement map in swift?
