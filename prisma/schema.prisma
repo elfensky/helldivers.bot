@@ -17,13 +17,8 @@ datasource db {
 }
 
 generator client {
-    provider      = "prisma-client" //read https://www.prisma.io/docs/orm/prisma-schema/overview/generators#prisma-client-early-access
-    output        = "../src/generated/prisma"
-    binaryTargets = ["darwin-arm64", "linux-musl-arm64-openssl-3.0.x", "linux-musl-openssl-3.0.x"] //read https://www.prisma.io/docs/orm/reference/prisma-schema-reference#binarytargets-options
-    //native - the default, when not(hing) specified
-    //darwin-arm64 - for Apple Silicon (M1) Macs
-    //linux-musl-arm64-openssl-3.0.x - for Alpine Linux (on MacOS)
-    //linux-musl-openssl-3.0.x - for Alpine Linux (on AMD64)
+    provider = "prisma-client" //read https://www.prisma.io/docs/orm/prisma-schema/overview/generators#prisma-client-early-access
+    output   = "../src/generated/prisma"
 }
 
 // #endregion
