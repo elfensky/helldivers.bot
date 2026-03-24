@@ -1,6 +1,6 @@
 # Technical Documentation
 
-Deep technical reference for helldivers.bot internals. For project overview, commands, and file structure, see [`../CLAUDE.md`](../CLAUDE.md).
+Deep technical reference for helldivers.bot internals. For conventions and working style, see [`../CLAUDE.md`](../CLAUDE.md).
 
 ## Documents
 
