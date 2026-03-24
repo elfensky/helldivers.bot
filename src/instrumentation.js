@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { initializeEnvironmentVariables } from '@/utils/initialize.env';
 import { initializeOpenApiSpec } from '@/utils/initialize.openapi';
-import { initializeDatabase } from '@/utils/initialize.prisma';
 import { initializeWorker } from '@/utils/initialize.worker';
 import { tryCatch } from '@/utils/tryCatch';
 
@@ -39,15 +38,6 @@ async function initializeHelldivers1Api() {
         throw new Error('instrumentation.js | openapi: initialization failed');
     }
     console.info('instrumentation.js | openapi: ', openapi);
-
-    // DATABASE - check if connceted, run migrations and generate empty seasons
-    // THIS IS NO LONGER NECCESARY, INITIALIZATION & MIGRATIONS ARE HANDLED IN A SEPARATE CONTAINER THAT RUNS ONCE
-    // const database = await initializeDatabase();
-    // if (!database) {
-    //     console.error('instrumentation.js | database: ', database);
-    //     process.exit(1);
-    // }
-    // console.info('instrumentation.js | database: ', database);
 
     // WORKER - continiously update current campaign from the official Helldivers API
     const worker = await initializeWorker();
