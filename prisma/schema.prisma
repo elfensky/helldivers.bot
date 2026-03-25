@@ -28,7 +28,6 @@ model App {
     version       String
     // is_db_initialized Boolean @default(false)
     active_season Int    @default(0)
-    map           Json? 
     // last_updated_status  DateTime
     // last_updated_season  DateTime
     // settings Json
@@ -180,12 +179,9 @@ model h1_season {
     //relationships
     introduction_order h1_introduction_order? @relation("OneSeasonToOneIntroductionOrder") //a season must have 1 introduction_order, and an introduction_order must always be linked to a season
     points_max         h1_points_max?         @relation("OneSeasonToOnePointsMax") //a season must have 1 points_max, and a points_max must always be linked to a season
-    campaigns          h1_campaign[]          @relation("OneSeasonToManyCampaigns")
     snapshots          h1_snapshot[]          @relation("OneSeasonToManySnapshots")
-    defend_events      h1_defend_event[]      @relation("OneSeasonToManyDefendEvents")
-    attack_events      h1_attack_event[]      @relation("OneSeasonToManyAttackEvents")
     events             h1_event[]             @relation("OneSeasonToManyEvents")
-    statistics         h1_statistic[]         @relation("OneSeasonToManyStatistics")
+    live               h1_live[]              @relation("OneSeasonToManyLive")
     //   @@index([is_active, last_updated])
 
     //indexes
@@ -194,29 +190,10 @@ model h1_season {
     @@index([last_updated])
 }
 
-model h1_campaign {
-    //get_campaign_status -> "campaign_status"
-    id                 String    @id @default(uuid(7))
-    season             Int //foreign key
-    points             Int
-    points_taken       Int
-    points_max         Int
-    status             String
-    introduction_order Int
-    //relationship
-    linked_season      h1_season @relation("OneSeasonToManyCampaigns", fields: [season], references: [season])
-
-    //other
-    @@unique([season, introduction_order]) //unique
-    @@index([season, introduction_order]) //index
-    @@index([season]) //index
-}
-
 model h1_introduction_order {
     id            String    @id @default(uuid(7))
     season        Int       @unique //foreign key //only one introduction_order per season, hence unique. enforces one-to-one relationship
     order         Int[] //stores the order as a native PostGres Int Array
-    json          Json //stores the order in JSON //raw data from api
     //relationship
     linked_season h1_season @relation("OneSeasonToOneIntroductionOrder", fields: [season], references: [season])
 
@@ -228,7 +205,6 @@ model h1_points_max {
     id            String    @id @default(uuid(7))
     season        Int       @unique //foreign key //only one points_max per season, hence unique. enforces one-to-one relationship
     points        Int[] //stores the points_max as a native PostGres Int Array
-    json          Json //original raw data
     //relationship
     linked_season h1_season @relation("OneSeasonToOnePointsMax", fields: [season], references: [season])
 
@@ -251,51 +227,12 @@ model h1_snapshot {
     @@index([season]) //index
 }
 
-model h1_defend_event {
-    id               String    @id @default(uuid(7))
-    season           Int // foreign key
-    //data
-    event_id         Int       @unique
-    start_time       Int
-    end_time         Int
-    region           Int
-    enemy            Int
-    points_max       Int
-    points           Int
-    status           String
-    players_at_start Int?
-    //relationship
-    linked_season    h1_season @relation("OneSeasonToManyDefendEvents", fields: [season], references: [season])
-
-    //indexes
-    @@index([event_id])
-}
-
-model h1_attack_event {
-    id               String    @id @default(uuid(7))
-    season           Int //foreign key
-    //data
-    event_id         Int       @unique
-    start_time       Int
-    end_time         Int
-    enemy            Int
-    points_max       Int
-    points           Int
-    status           String
-    players_at_start Int?
-    //relationship
-    linked_season    h1_season @relation("OneSeasonToManyAttackEvents", fields: [season], references: [season])
-
-    //indexes
-    @@index([event_id])
-}
-
 model h1_event {
     id               String @id @default(uuid(7))
     season           Int // foreign key
     type             String //attack or defend
     //data
-    event_id         Int    @unique
+    event_id         Int
     start_time       Int
     end_time         Int
     region           Int //fill out for defend, automatic "11" for attack
@@ -309,14 +246,26 @@ model h1_event {
     linked_season h1_season @relation("OneSeasonToManyEvents", fields: [season], references: [season])
 
     //indexes
-    @@index([event_id])
+    @@unique([type, event_id])
+    @@index([season, type])
+    @@index([season, status])
+    @@index([season, enemy])
 }
 
-model h1_statistic {
+model h1_live {
     id                       String @id @default(uuid(7))
-    season                   Int //foreign key
+    season                   Int
+    enemy                    Int    // 0=Bugs, 1=Cyborgs, 2=Illuminate
+
+    // from campaign_status
+    points                   Int
+    points_taken             Int
+    points_max               Int
+    status                   String // 'active', 'defeated', 'hidden'
+    introduction_order       Int    // war-entry position (0,1,2,255)
+
+    // from statistics
     season_duration          Int
-    enemy                    Int
     players                  Int
     total_unique_players     Int
     missions                 Int
@@ -333,13 +282,14 @@ model h1_statistic {
     shots                    BigInt
     hits                     BigInt
 
-    //relations
-    linked_season h1_season? @relation("OneSeasonToManyStatistics", fields: [season], references: [season])
+    // computed map data (this faction's 11 regions + homeworld)
+    map                      Json?
 
-    //other
-    @@unique([season, enemy]) //unique
-    @@index([season, enemy]) //index
-    @@index([season]) //index
+    linked_season h1_season? @relation("OneSeasonToManyLive", fields: [season], references: [season])
+
+    @@unique([season, enemy])
+    @@index([season, enemy])
+    @@index([season])
 }
 
 // #endregion
