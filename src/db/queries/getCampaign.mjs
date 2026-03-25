@@ -13,10 +13,9 @@ export async function getCampaign(season = null) {
         :   { season: season, last_updated: { not: null } };
 
     const orderBy = season === null ? { season: 'desc' } : undefined;
-    const method = season === null ? 'findFirst' : 'findUnique';
 
     const { data, error } = await tryCatch(
-        db.h1_season[method]({
+        db.h1_season.findFirst({
             ...(orderBy && { orderBy }),
             where,
             select: {

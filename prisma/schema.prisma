@@ -288,7 +288,6 @@ model h1_live {
     linked_season h1_season? @relation("OneSeasonToManyLive", fields: [season], references: [season])
 
     @@unique([season, enemy])
-    @@index([season, enemy])
     @@index([season])
 }
 

@@ -17,11 +17,11 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Relative imports — @/* aliases don't work outside Next.js
-import { PrismaClient } from '../src/generated/prisma/client.ts';
+import { PrismaClient } from '../../src/generated/prisma/client.ts';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SEASONS_DIR = join(__dirname, 'seed', 'seasons');
+const SEASONS_DIR = join(__dirname, 'seasons');
 
 async function seed() {
     const adapter = new PrismaPg({ connectionString: process.env.POSTGRES_URL });
