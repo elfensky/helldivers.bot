@@ -1,0 +1,20 @@
+[
+  {
+    "id": "019768a8-dd5c-7b73-8f74-1b1760735d89",
+    "userId": "019768a8-664d-7811-aa43-f8af2c893ce6",
+    "createdAt": "2025-06-13 09:39:46.65",
+    "description": "asdasdasd",
+    "enabled": true,
+    "hash": "2cc8fb6447dde0748088ae9afc83950c",
+    "visible": "6618"
+  },
+  {
+    "id": "019777fe-99ce-7a20-8e5f-5cf5a5b5f679",
+    "userId": "019768a8-664d-7811-aa43-f8af2c893ce6",
+    "createdAt": "2025-06-16 09:07:43.693",
+    "description": "aosd",
+    "enabled": true,
+    "hash": "d03d7d9ab28c0af936e9c72038f2e52f",
+    "visible": "63d1"
+  }
+]

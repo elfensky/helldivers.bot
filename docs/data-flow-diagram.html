@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Helldivers Bot — Data Flow Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0a0a0f;
+    color: #e0e0e0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    padding: 24px 32px 16px;
+    border-bottom: 1px solid #1a1a2e;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  header h1 { font-size: 20px; font-weight: 600; color: #fff; }
+  header span { font-size: 13px; color: #666; }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    padding: 16px 32px;
+    border-bottom: 1px solid #1a1a2e;
+    flex-wrap: wrap;
+  }
+  .controls button {
+    padding: 8px 16px;
+    border: 1px solid #2a2a3e;
+    border-radius: 6px;
+    background: #12121f;
+    color: #aaa;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .controls button:hover { border-color: #4a4a6e; color: #fff; }
+  .controls button.active { border-color: #f59e0b; color: #f59e0b; background: #f59e0b15; }
+
+  .canvas {
+    padding: 32px;
+    min-height: calc(100vh - 120px);
+    position: relative;
+  }
+
+  svg.flow {
+    width: 100%;
+    height: 780px;
+    display: block;
+  }
+
+  .node rect, .node-pill rect {
+    rx: 8;
+    ry: 8;
+    transition: all 0.3s;
+  }
+  .node text, .node-pill text {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    fill: #e0e0e0;
+  }
+
+  .cat-api rect { fill: #1e293b; stroke: #3b82f6; stroke-width: 1.5; }
+  .cat-api text.label { fill: #60a5fa; }
+  .cat-worker rect { fill: #1a1a2e; stroke: #a855f7; stroke-width: 1.5; }
+  .cat-worker text.label { fill: #c084fc; }
+  .cat-raw rect { fill: #1c1917; stroke: #f59e0b; stroke-width: 1.5; }
+  .cat-raw text.label { fill: #fbbf24; }
+  .cat-norm rect { fill: #0f1a0f; stroke: #22c55e; stroke-width: 1.5; }
+  .cat-norm text.label { fill: #4ade80; }
+  .cat-seed rect { fill: #1a1520; stroke: #ec4899; stroke-width: 1.5; }
+  .cat-seed text.label { fill: #f472b6; }
+  .cat-frontend rect { fill: #0f1520; stroke: #06b6d4; stroke-width: 1.5; }
+  .cat-frontend text.label { fill: #22d3ee; }
+
+  .arrow { stroke-width: 1.5; fill: none; marker-end: url(#arrowhead); }
+  .arrow-api { stroke: #3b82f6; }
+  .arrow-worker { stroke: #a855f7; }
+  .arrow-amber { stroke: #f59e0b; }
+  .arrow-green { stroke: #22c55e; }
+  .arrow-seed { stroke: #ec4899; }
+  .arrow-frontend { stroke: #06b6d4; }
+  .arrow-dashed { stroke-dasharray: 6 4; }
+
+  .dimmed { opacity: 0.12; transition: opacity 0.3s; }
+  .highlighted { opacity: 1; transition: opacity 0.3s; }
+
+  .annotation {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 11px;
+    fill: #666;
+  }
+  .annotation-bg { fill: #0a0a0f; }
+
+  .legend {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #12121f;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 12px;
+    z-index: 10;
+  }
+  .legend h3 { font-size: 13px; color: #888; margin-bottom: 8px; font-weight: 500; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  .detail-panel {
+    position: fixed;
+    top: 0;
+    right: -420px;
+    width: 400px;
+    height: 100vh;
+    background: #12121f;
+    border-left: 1px solid #2a2a3e;
+    padding: 24px;
+    overflow-y: auto;
+    transition: right 0.3s ease;
+    z-index: 20;
+  }
+  .detail-panel.open { right: 0; }
+  .detail-panel h2 { font-size: 16px; color: #fff; margin-bottom: 4px; }
+  .detail-panel .subtitle { font-size: 12px; color: #666; margin-bottom: 16px; }
+  .detail-panel .close {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: none; color: #666; font-size: 18px; cursor: pointer;
+  }
+  .detail-panel .close:hover { color: #fff; }
+  .detail-panel pre {
+    background: #0a0a0f;
+    border: 1px solid #1a1a2e;
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #a0a0c0;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 8px 0;
+  }
+  .detail-panel p { font-size: 13px; color: #aaa; line-height: 1.6; margin: 8px 0; }
+  .detail-panel .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    margin: 2px;
+  }
+  .tag-interval { background: #a855f720; color: #c084fc; }
+  .tag-upsert { background: #22c55e20; color: #4ade80; }
+  .tag-once { background: #ec489920; color: #f472b6; }
+  .tag-read { background: #06b6d420; color: #22d3ee; }
+
+  .schema-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  .schema-table th { text-align: left; font-size: 11px; color: #666; padding: 4px 8px; border-bottom: 1px solid #1a1a2e; }
+  .schema-table td { font-size: 12px; padding: 4px 8px; color: #aaa; font-family: 'SF Mono', monospace; }
+  .schema-table tr:nth-child(even) td { background: #0a0a0f40; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Helldivers Bot — Data Flow</h1>
+  <span>v1 Architecture</span>
+</header>
+
+<div class="controls">
+  <button class="active" data-view="all">All Flows</button>
+  <button data-view="live">Live Polling (5-15s)</button>
+  <button data-view="snapshot">Snapshot Sync</button>
+  <button data-view="seed">Seed (Bootstrap)</button>
+  <button data-view="refresh">Force Refresh (Season)</button>
+  <button data-view="read">Frontend Reads</button>
+</div>
+
+<div class="canvas">
+<svg class="flow" viewBox="0 0 1100 760">
+  <defs>
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#666" />
+    </marker>
+    <marker id="ah-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#3b82f6" />
+    </marker>
+    <marker id="ah-amber" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#f59e0b" />
+    </marker>
+    <marker id="ah-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#22c55e" />
+    </marker>
+    <marker id="ah-pink" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#ec4899" />
+    </marker>
+    <marker id="ah-cyan" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#06b6d4" />
+    </marker>
+  </defs>
+
+  <!-- LAYER 1: DATA SOURCES -->
+  <g class="node cat-api" data-id="api-status" data-flow="live">
+    <rect x="20" y="40" width="200" height="56" />
+    <text class="label" x="120" y="62" text-anchor="middle" font-size="13" font-weight="600">get_campaign_status</text>
+    <text x="120" y="80" text-anchor="middle" font-size="11" fill="#666">Live war state + stats</text>
+  </g>
+
+  <g class="node cat-api" data-id="api-snapshot" data-flow="snapshot">
+    <rect x="20" y="130" width="200" height="56" />
+    <text class="label" x="120" y="152" text-anchor="middle" font-size="13" font-weight="600">get_snapshots</text>
+    <text x="120" y="170" text-anchor="middle" font-size="11" fill="#666">Historical time-series</text>
+  </g>
+
+  <g class="node cat-seed" data-id="seed-files" data-flow="seed">
+    <rect x="20" y="260" width="200" height="56" />
+    <text class="label" x="120" y="282" text-anchor="middle" font-size="13" font-weight="600">prisma/seed/seasons/*.json</text>
+    <text x="120" y="300" text-anchor="middle" font-size="11" fill="#666">Bootstrap (first deploy)</text>
+  </g>
+
+  <g class="node cat-api" data-id="api-refresh" data-flow="refresh">
+    <rect x="20" y="350" width="200" height="56" />
+    <text class="label" x="120" y="372" text-anchor="middle" font-size="13" font-weight="600">get_snapshots (forced)</text>
+    <text x="120" y="390" text-anchor="middle" font-size="11" fill="#666">Re-fetch any season</text>
+  </g>
+
+  <!-- LAYER 2: PROCESSING -->
+  <g class="node cat-worker" data-id="worker" data-flow="live snapshot">
+    <rect x="340" y="40" width="180" height="86" />
+    <text class="label" x="430" y="62" text-anchor="middle" font-size="13" font-weight="600">Worker Thread</text>
+    <text x="430" y="80" text-anchor="middle" font-size="11" fill="#888">cron.js</text>
+    <text x="430" y="98" text-anchor="middle" font-size="11" fill="#666">setTimeout loop</text>
+    <text x="430" y="114" text-anchor="middle" font-size="10" fill="#555">poll &gt; validate &gt; upsert</text>
+  </g>
+
+  <g class="node cat-seed" data-id="seed-script" data-flow="seed">
+    <rect x="340" y="260" width="180" height="56" />
+    <text class="label" x="430" y="282" text-anchor="middle" font-size="13" font-weight="600">Seed Script</text>
+    <text x="430" y="300" text-anchor="middle" font-size="11" fill="#666">prisma db seed / startup</text>
+  </g>
+
+  <g class="node cat-api" data-id="refresh-handler" data-flow="refresh">
+    <rect x="340" y="350" width="180" height="56" />
+    <text class="label" x="430" y="372" text-anchor="middle" font-size="13" font-weight="600">updateSeason()</text>
+    <text x="430" y="390" text-anchor="middle" font-size="11" fill="#666">fetch + validate + upsert</text>
+  </g>
+
+  <!-- LAYER 3: RAW CACHE -->
+  <g class="node cat-raw" data-id="rb-status" data-flow="live">
+    <rect x="620" y="30" width="200" height="48" />
+    <text class="label" x="720" y="52" text-anchor="middle" font-size="12" font-weight="600">rebroadcast_status</text>
+    <text x="720" y="68" text-anchor="middle" font-size="10" fill="#666">1 row/season - raw JSON</text>
+  </g>
+
+  <g class="node cat-raw" data-id="rb-snapshot" data-flow="snapshot">
+    <rect x="620" y="90" width="200" height="48" />
+    <text class="label" x="720" y="112" text-anchor="middle" font-size="12" font-weight="600">rebroadcast_snapshot</text>
+    <text x="720" y="128" text-anchor="middle" font-size="10" fill="#666">1 row/season - raw JSON</text>
+  </g>
+
+  <!-- LAYER 4: NORMALIZED DB -->
+  <g class="node cat-norm" data-id="h1-season" data-flow="live snapshot seed">
+    <rect x="620" y="170" width="200" height="40" />
+    <text class="label" x="720" y="195" text-anchor="middle" font-size="12" font-weight="600">h1_season</text>
+  </g>
+
+  <g class="node cat-norm" data-id="h1-campaign" data-flow="live">
+    <rect x="620" y="222" width="200" height="40" />
+    <text class="label" x="720" y="247" text-anchor="middle" font-size="12" font-weight="600">h1_campaign</text>
+  </g>
+
+  <g class="node cat-norm" data-id="h1-event" data-flow="live snapshot seed read-events">
+    <rect x="620" y="274" width="200" height="40" />
+    <text class="label" x="720" y="299" text-anchor="middle" font-size="12" font-weight="600">h1_event</text>
+  </g>
+
+  <g class="node cat-norm" data-id="h1-statistic" data-flow="live read-stats">
+    <rect x="620" y="326" width="200" height="40" />
+    <text class="label" x="720" y="351" text-anchor="middle" font-size="12" font-weight="600">h1_statistic</text>
+  </g>
+
+  <g class="node cat-norm" data-id="h1-snapshot" data-flow="snapshot seed read-timeline">
+    <rect x="620" y="378" width="200" height="40" />
+    <text class="label" x="720" y="403" text-anchor="middle" font-size="12" font-weight="600">h1_snapshot</text>
+  </g>
+
+  <g class="node cat-norm" data-id="h1-intro" data-flow="snapshot seed">
+    <rect x="620" y="430" width="200" height="40" />
+    <text class="label" x="720" y="455" text-anchor="middle" font-size="12" font-weight="600">h1_introduction_order</text>
+  </g>
+
+  <g class="node cat-norm" data-id="h1-points" data-flow="snapshot seed">
+    <rect x="620" y="482" width="200" height="40" />
+    <text class="label" x="720" y="507" text-anchor="middle" font-size="12" font-weight="600">h1_points_max</text>
+  </g>
+
+  <g class="node cat-norm" data-id="h1-stat-snap" data-flow="live read-timeline">
+    <rect x="620" y="534" width="200" height="40" />
+    <text class="label" x="720" y="559" text-anchor="middle" font-size="12" font-weight="600">h1_statistic_snapshot</text>
+  </g>
+
+  <g class="node cat-norm" data-id="h1-event-snap" data-flow="live read-timeline">
+    <rect x="620" y="586" width="200" height="40" />
+    <text class="label" x="720" y="611" text-anchor="middle" font-size="12" font-weight="600">h1_event_snapshot</text>
+  </g>
+
+  <g class="node cat-norm" data-id="app-map" data-flow="live read-map">
+    <rect x="620" y="638" width="200" height="40" />
+    <text class="label" x="720" y="663" text-anchor="middle" font-size="12" font-weight="600">App.map</text>
+  </g>
+
+  <!-- LAYER 5: FRONTEND -->
+  <g class="node cat-frontend" data-id="fe-map" data-flow="read-map">
+    <rect x="920" y="210" width="160" height="52" />
+    <text class="label" x="1000" y="232" text-anchor="middle" font-size="12" font-weight="600">Map</text>
+    <text x="1000" y="250" text-anchor="middle" font-size="10" fill="#666">3 factions x 11 regions</text>
+  </g>
+
+  <g class="node cat-frontend" data-id="fe-stats" data-flow="read-stats">
+    <rect x="920" y="274" width="160" height="52" />
+    <text class="label" x="1000" y="296" text-anchor="middle" font-size="12" font-weight="600">Stat Cards</text>
+    <text x="1000" y="314" text-anchor="middle" font-size="10" fill="#666">kills, deaths, players</text>
+  </g>
+
+  <g class="node cat-frontend" data-id="fe-events" data-flow="read-events">
+    <rect x="920" y="338" width="160" height="52" />
+    <text class="label" x="1000" y="360" text-anchor="middle" font-size="12" font-weight="600">Event Alerts</text>
+    <text x="1000" y="378" text-anchor="middle" font-size="10" fill="#666">active defend/attack</text>
+  </g>
+
+  <g class="node cat-frontend" data-id="fe-timeline" data-flow="read-timeline">
+    <rect x="920" y="402" width="160" height="52" />
+    <text class="label" x="1000" y="424" text-anchor="middle" font-size="12" font-weight="600">Timeline</text>
+    <text x="1000" y="442" text-anchor="middle" font-size="10" fill="#666">history + snapshot graphs</text>
+  </g>
+
+  <!-- ARROWS: API to Worker -->
+  <path class="arrow arrow-api" data-flow="live"
+    d="M220,68 L340,68" marker-end="url(#ah-blue)" />
+  <path class="arrow arrow-api" data-flow="snapshot"
+    d="M220,158 L310,158 Q330,158 330,138 L330,100 Q330,83 340,83" marker-end="url(#ah-blue)" />
+
+  <!-- Seed to Seed Script -->
+  <path class="arrow arrow-seed" data-flow="seed"
+    d="M220,288 L340,288" marker-end="url(#ah-pink)" />
+
+  <!-- Force Refresh arrows -->
+  <path class="arrow arrow-api" data-flow="refresh"
+    d="M220,378 L340,378" marker-end="url(#ah-blue)" />
+
+  <rect class="annotation-bg" x="235" y="368" width="72" height="16" />
+  <text class="annotation" x="271" y="379" text-anchor="middle" data-flow="refresh">on demand</text>
+
+  <!-- Worker to Raw Cache -->
+  <path class="arrow arrow-amber" data-flow="live"
+    d="M520,60 L620,54" marker-end="url(#ah-amber)" />
+  <path class="arrow arrow-amber" data-flow="snapshot"
+    d="M520,80 L580,80 Q600,80 600,100 L600,114 L620,114" marker-end="url(#ah-amber)" />
+
+  <!-- Worker to Normalized -->
+  <path class="arrow arrow-green" data-flow="live"
+    d="M520,70 L570,70 Q590,70 590,170 L590,190 L620,190" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="live"
+    d="M520,75 L565,75 Q585,75 585,200 L585,242 L620,242" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="live"
+    d="M520,80 L560,80 Q580,80 580,240 L580,294 L620,294" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="live"
+    d="M520,85 L555,85 Q575,85 575,280 L575,346 L620,346" marker-end="url(#ah-green)" />
+
+  <path class="arrow arrow-green" data-flow="snapshot"
+    d="M520,95 L560,95 Q575,95 575,340 L575,398 L620,398" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="snapshot"
+    d="M520,100 L555,100 Q570,100 570,380 L570,450 L620,450" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="snapshot"
+    d="M520,105 L550,105 Q565,105 565,420 L565,502 L620,502" marker-end="url(#ah-green)" />
+
+  <!-- Seed Script to Normalized -->
+  <path class="arrow arrow-seed" data-flow="seed"
+    d="M520,275 L570,275 Q590,275 590,200 L590,190 L620,190" marker-end="url(#ah-pink)" />
+  <path class="arrow arrow-seed arrow-dashed" data-flow="seed"
+    d="M520,280 L565,280 Q580,280 580,294 L620,294" marker-end="url(#ah-pink)" />
+  <path class="arrow arrow-seed arrow-dashed" data-flow="seed"
+    d="M520,285 L560,285 Q575,285 575,340 L575,398 L620,398" marker-end="url(#ah-pink)" />
+  <path class="arrow arrow-seed arrow-dashed" data-flow="seed"
+    d="M520,290 L555,290 Q570,290 570,380 L570,450 L620,450" marker-end="url(#ah-pink)" />
+  <path class="arrow arrow-seed arrow-dashed" data-flow="seed"
+    d="M520,295 L550,295 Q565,295 565,440 L565,502 L620,502" marker-end="url(#ah-pink)" />
+
+  <!-- Refresh handler to Raw Cache + Normalized -->
+  <path class="arrow arrow-amber" data-flow="refresh"
+    d="M520,365 L580,365 Q600,365 600,140 L600,114 L620,114" marker-end="url(#ah-amber)" />
+  <path class="arrow arrow-green" data-flow="refresh"
+    d="M520,370 L570,370 Q585,370 585,200 L585,190 L620,190" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="refresh"
+    d="M520,375 L565,375 Q580,375 580,294 L620,294" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="refresh"
+    d="M520,380 L560,380 Q575,375 575,398 L620,398" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="refresh"
+    d="M520,385 L555,385 Q570,385 570,440 L570,450 L620,450" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="refresh"
+    d="M520,390 L550,390 Q565,390 565,480 L565,502 L620,502" marker-end="url(#ah-green)" />
+
+  <!-- Worker to new snapshot tables + App.map -->
+  <path class="arrow arrow-green" data-flow="live"
+    d="M520,90 L550,90 Q570,90 570,460 L570,554 L620,554" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="live"
+    d="M520,95 L545,95 Q565,95 565,500 L565,606 L620,606" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="live"
+    d="M520,100 L540,100 Q560,100 560,540 L560,658 L620,658" marker-end="url(#ah-green)" />
+
+  <!-- DB to Frontend -->
+  <path class="arrow arrow-frontend" data-flow="read-map"
+    d="M820,658 L880,658 Q900,658 900,250 L900,236 L920,236" marker-end="url(#ah-cyan)" />
+  <path class="arrow arrow-frontend" data-flow="read-stats"
+    d="M820,346 L880,346 Q900,346 900,310 L900,300 L920,300" marker-end="url(#ah-cyan)" />
+  <path class="arrow arrow-frontend" data-flow="read-events"
+    d="M820,294 L880,294 Q900,294 900,340 L900,364 L920,364" marker-end="url(#ah-cyan)" />
+  <path class="arrow arrow-frontend" data-flow="read-timeline"
+    d="M820,398 L920,428" marker-end="url(#ah-cyan)" />
+  <path class="arrow arrow-frontend" data-flow="read-timeline"
+    d="M820,554 L880,554 Q900,554 900,450 L900,442 L920,442" marker-end="url(#ah-cyan)" />
+  <path class="arrow arrow-frontend" data-flow="read-timeline"
+    d="M820,606 L875,606 Q895,606 895,460 L895,448 L920,448" marker-end="url(#ah-cyan)" />
+
+  <!-- ANNOTATIONS -->
+  <rect class="annotation-bg" x="235" y="42" width="60" height="16" />
+  <text class="annotation" x="265" y="53" text-anchor="middle" data-flow="live">5-15s</text>
+
+  <rect class="annotation-bg" x="235" y="148" width="60" height="16" />
+  <text class="annotation" x="265" y="159" text-anchor="middle" data-flow="snapshot">~1h</text>
+
+  <rect class="annotation-bg" x="235" y="278" width="60" height="16" />
+  <text class="annotation" x="265" y="289" text-anchor="middle" data-flow="seed">once</text>
+
+  <rect class="annotation-bg" x="555" y="30" width="56" height="16" />
+  <text class="annotation" x="583" y="41" text-anchor="middle" data-flow="live snapshot">upsert</text>
+
+  <rect class="annotation-bg" x="845" y="224" width="56" height="16" />
+  <text class="annotation" x="873" y="235" text-anchor="middle" data-flow="read-map read-stats read-events read-timeline">read</text>
+
+  <!-- LAYER LABELS -->
+  <text x="120" y="24" text-anchor="middle" font-size="11" fill="#444" font-weight="500">DATA SOURCES</text>
+  <text x="430" y="24" text-anchor="middle" font-size="11" fill="#444" font-weight="500">PROCESSING</text>
+  <text x="720" y="20" text-anchor="middle" font-size="11" fill="#444" font-weight="500">DATABASE</text>
+  <text x="1000" y="200" text-anchor="middle" font-size="11" fill="#444" font-weight="500">FRONTEND</text>
+
+  <text x="615" y="44" text-anchor="end" font-size="9" fill="#f59e0b40">RAW</text>
+  <text x="615" y="186" text-anchor="end" font-size="9" fill="#22c55e40">NORMALIZED</text>
+
+  <!-- Snapshot interval annotations -->
+  <rect class="annotation-bg" x="555" y="544" width="60" height="16" />
+  <text class="annotation" x="585" y="555" text-anchor="middle" data-flow="live">~15min</text>
+  <rect class="annotation-bg" x="555" y="596" width="60" height="16" />
+  <text class="annotation" x="585" y="607" text-anchor="middle" data-flow="live">~10min</text>
+</svg>
+</div>
+
+<div class="legend">
+  <h3>Legend</h3>
+  <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Official API</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> Worker / Processing</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Raw Cache (rebroadcast)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Normalized (h1_*)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ec4899"></div> Seed Files (past wars)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#06b6d4"></div> Frontend Components</div>
+  <div class="legend-item" style="margin-top:8px;color:#555;font-size:10px">click any node for details</div>
+</div>
+
+<div class="detail-panel" id="detailPanel">
+  <button class="close" id="detailClose">x</button>
+  <div id="detailContent"></div>
+</div>
+
+<script>
+// Detail panel content — all static, no user input
+const detailData = {
+  'api-status': {
+    title: 'get_campaign_status',
+    subtitle: 'Official Helldivers 1 API',
+    sections: [
+      { type: 'text', content: 'Returns the live state of the current war. Polled every 5-15 seconds.' },
+      { type: 'tags', items: [{ text: '5-15s poll', cls: 'tag-interval' }] },
+      { type: 'heading', content: 'Response shape' },
+      { type: 'code', content: '{\n  campaign_status: [{\n    season, points, points_taken,\n    points_max, status, introduction_order\n  }],\n  defend_event: {\n    event_id, region, enemy,\n    points, points_max, status\n  },\n  attack_events: [{ event_id, enemy, ... }],\n  statistics: [{\n    enemy, players, missions, kills,\n    deaths, accidentals, shots, hits\n  }]\n}' }
+    ]
+  },
+  'api-snapshot': {
+    title: 'get_snapshots',
+    subtitle: 'Official Helldivers 1 API',
+    sections: [
+      { type: 'text', content: 'Returns the full history of a war: time-series snapshots + all events. For past wars, data is immutable.' },
+      { type: 'tags', items: [{ text: '~1h poll (current war)', cls: 'tag-interval' }] },
+      { type: 'heading', content: 'Response shape' },
+      { type: 'code', content: '{\n  introduction_order: [2, 1, 0],\n  points_max: [30000, 30000, 30000],\n  snapshots: [{\n    season, time,\n    data: "[{points, points_taken, status}, ...]"\n  }],\n  defend_events: [{ event_id, region, ... }],\n  attack_events: [{ event_id, enemy, ... }]\n}' }
+    ]
+  },
+  'seed-files': {
+    title: 'Seed Files',
+    subtitle: 'prisma/seed/seasons/*.json',
+    sections: [
+      { type: 'text', content: 'Static JSON files that bootstrap the app on first deploy. Same shape as get_snapshots response — processed through the same normalization pipeline.' },
+      { type: 'tags', items: [{ text: 'first deploy only', cls: 'tag-once' }] },
+      { type: 'text', content: 'Does NOT replace the ability to re-fetch from the API. Seed gets the app running without API dependency; force refresh updates data from the live API.' },
+      { type: 'code', content: 'prisma/seed/seasons/\n  001.json\n  002.json\n  ...\n  155.json' }
+    ]
+  },
+  'api-refresh': {
+    title: 'get_snapshots (forced)',
+    subtitle: 'On-demand season refresh',
+    sections: [
+      { type: 'text', content: 'Re-fetch any season from the live API to update or correct data. Triggered by admin action (e.g., /api/h1/update?season=148&force=true).' },
+      { type: 'tags', items: [{ text: 'on demand', cls: 'tag-interval' }] },
+      { type: 'text', content: 'Use cases: pick up a newly completed season, correct corrupted data, backfill a season not in seed files. Goes through the same normalization pipeline as the regular snapshot sync.' }
+    ]
+  },
+  'refresh-handler': {
+    title: 'updateSeason()',
+    subtitle: 'src/update/season.mjs',
+    sections: [
+      { type: 'text', content: 'Same function used by the regular snapshot sync. Fetches get_snapshots for the specified season, validates with Zod, upserts into rebroadcast_snapshot + all normalized h1_* tables.' },
+      { type: 'tags', items: [{ text: 'fetch + validate + upsert', cls: 'tag-upsert' }] },
+      { type: 'text', content: 'Overwrites existing data for that season (idempotent via unique constraints).' }
+    ]
+  },
+  'worker': {
+    title: 'Worker Thread',
+    subtitle: 'public/workers/cron.js',
+    sections: [
+      { type: 'text', content: 'Uses setTimeout (not setInterval) to prevent overlapping requests.' },
+      { type: 'tags', items: [{ text: '5-15s loop', cls: 'tag-interval' }] },
+      { type: 'heading', content: 'Update cycle' },
+      { type: 'text', content: '1. Fetch API response\n2. Validate with Zod schemas\n3. Upsert raw JSON into rebroadcast table\n4. Normalize into h1_* tables\n5. Schedule next poll via setTimeout' }
+    ]
+  },
+  'rb-status': {
+    title: 'rebroadcast_status',
+    subtitle: 'Raw cache layer',
+    sections: [
+      { type: 'text', content: 'Stores the latest raw API response per season. Upserted on every poll. No history.' },
+      { type: 'tags', items: [{ text: 'upsert by season', cls: 'tag-upsert' }] },
+      { type: 'table', headers: ['Field', 'Type', 'Note'], rows: [['season', 'Int', '@unique'], ['last_updated', 'DateTime', 'poll timestamp'], ['json', 'JSONB', 'full response']] }
+    ]
+  },
+  'rb-snapshot': {
+    title: 'rebroadcast_snapshot',
+    subtitle: 'Raw cache layer',
+    sections: [
+      { type: 'text', content: 'Stores the latest raw snapshot response per season. Not time-series — that is h1_snapshot.' },
+      { type: 'tags', items: [{ text: 'upsert by season', cls: 'tag-upsert' }] },
+      { type: 'table', headers: ['Field', 'Type', 'Note'], rows: [['season', 'Int', '@unique'], ['last_updated', 'DateTime', 'poll timestamp'], ['json', 'JSONB', 'full response']] }
+    ]
+  },
+  'h1-season': {
+    title: 'h1_season',
+    subtitle: 'Root anchor for all game data',
+    sections: [
+      { type: 'text', content: 'Every normalized table FKs back to this via season (Int).' },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int @unique'], ['last_updated', 'DateTime?']] }
+    ]
+  },
+  'h1-campaign': {
+    title: 'h1_campaign',
+    subtitle: 'Latest-only planet state',
+    sections: [
+      { type: 'text', content: 'One row per (season, planet). Overwritten on each poll — no history. Used as input to App.map generation; not read directly by frontend.' },
+      { type: 'tags', items: [{ text: 'upsert by (season, introduction_order)', cls: 'tag-upsert' }] },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int FK'], ['introduction_order', 'Int'], ['points', 'Int'], ['points_taken', 'Int'], ['points_max', 'Int'], ['status', 'String']] }
+    ]
+  },
+  'h1-event': {
+    title: 'h1_event',
+    subtitle: 'Unified events (attack + defend)',
+    sections: [
+      { type: 'text', content: 'Single table with type discriminator. Region 1-10 = sectors, 11 = homeworld.' },
+      { type: 'tags', items: [{ text: 'upsert by event_id', cls: 'tag-upsert' }, { text: 'Event Alerts + Timeline', cls: 'tag-read' }] },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['type', '"attack" | "defend"'], ['event_id', 'Int @unique'], ['season', 'Int FK'], ['region', 'Int'], ['enemy', 'Int'], ['points / points_max', 'Int'], ['status', 'String'], ['players_at_start', 'Int?']] },
+      { type: 'text', content: 'Replaces h1_defend_event + h1_attack_event (v1 consolidation)' }
+    ]
+  },
+  'h1-statistic': {
+    title: 'h1_statistic',
+    subtitle: 'Per-enemy aggregate stats',
+    sections: [
+      { type: 'text', content: 'One row per (season, enemy). Overwritten on each poll.' },
+      { type: 'tags', items: [{ text: 'upsert by (season, enemy)', cls: 'tag-upsert' }, { text: 'Stat Cards', cls: 'tag-read' }] },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int FK'], ['enemy', 'Int'], ['players', 'Int'], ['missions', 'Int'], ['kills', 'BigInt'], ['deaths', 'BigInt'], ['shots / hits', 'BigInt']] }
+    ]
+  },
+  'h1-snapshot': {
+    title: 'h1_snapshot',
+    subtitle: 'Historical time-series',
+    sections: [
+      { type: 'text', content: 'Many rows per season. Each row = a point-in-time snapshot of campaign progress.' },
+      { type: 'tags', items: [{ text: 'insert, dedupe by (season, time)', cls: 'tag-upsert' }, { text: 'Timeline graphs', cls: 'tag-read' }] },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int FK'], ['time', 'Int (unix)'], ['data', 'JSONB']] },
+      { type: 'text', content: 'Redundant json field dropped in v1 (was duplicate of data field).' }
+    ]
+  },
+  'h1-intro': {
+    title: 'h1_introduction_order',
+    subtitle: 'Planet ordering per season',
+    sections: [
+      { type: 'text', content: 'One row per season. Which planets appear and in what order.' },
+      { type: 'tags', items: [{ text: 'upsert by season', cls: 'tag-upsert' }] },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int @unique FK'], ['order', 'Int[]']] },
+      { type: 'text', content: 'Redundant json field dropped in v1 (was exact duplicate of order array).' }
+    ]
+  },
+  'h1-points': {
+    title: 'h1_points_max',
+    subtitle: 'Max liberation points per season',
+    sections: [
+      { type: 'text', content: 'One row per season. Max points for each planet.' },
+      { type: 'tags', items: [{ text: 'upsert by season', cls: 'tag-upsert' }] },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int @unique FK'], ['points', 'Int[]']] },
+      { type: 'text', content: 'Redundant json field dropped in v1 (was exact duplicate of points array).' }
+    ]
+  },
+  'h1-stat-snap': {
+    title: 'h1_statistic_snapshot',
+    subtitle: 'Statistics time-series (NEW)',
+    sections: [
+      { type: 'text', content: 'Periodic snapshots of h1_statistic data. Inserted every ~15 minutes during live polling. Enables graphs of player counts, kills, missions over time.' },
+      { type: 'tags', items: [{ text: '~15min interval', cls: 'tag-interval' }, { text: 'Timeline graphs', cls: 'tag-read' }] },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int FK'], ['time', 'Int (unix)'], ['enemy', 'Int'], ['players', 'Int'], ['kills / deaths', 'BigInt'], ['missions', 'Int'], ['shots / hits', 'BigInt']] },
+      { type: 'text', content: 'Unique on (season, enemy, time). Uses API server timestamp, not local clock.' }
+    ]
+  },
+  'h1-event-snap': {
+    title: 'h1_event_snapshot',
+    subtitle: 'Event progress time-series (NEW)',
+    sections: [
+      { type: 'text', content: 'Tracks how active events progress toward their goal. Inserted every ~10 minutes for active events only.' },
+      { type: 'tags', items: [{ text: '~10min interval', cls: 'tag-interval' }, { text: 'Timeline graphs', cls: 'tag-read' }] },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['event_id', 'Int'], ['time', 'Int (unix)'], ['points', 'Int'], ['points_max', 'Int']] },
+      { type: 'text', content: 'Unique on (event_id, time). No FK to h1_event — append-only design.' }
+    ]
+  },
+  'app-map': {
+    title: 'App.map',
+    subtitle: 'Generated map state (NEW)',
+    sections: [
+      { type: 'text', content: 'Pre-computed map JSON stored in the App config row. Generated after each status update by combining campaigns + events + introduction_order.' },
+      { type: 'tags', items: [{ text: 'overwritten each poll', cls: 'tag-upsert' }, { text: 'Map component', cls: 'tag-read' }] },
+      { type: 'text', content: 'Structure: 3 enemies x (10 sectors + homeworld) + Super Earth. Each region has points, status, and active event data. Frontend reads this directly instead of computing from raw tables.' }
+    ]
+  },
+  'fe-map': {
+    title: 'Map Component',
+    subtitle: 'Galaxy.jsx + Map.jsx',
+    sections: [
+      { type: 'text', content: 'Renders 3 factions x (10 sectors + 1 homeworld). Each sector shows captured / in_progress / lost / active state.' },
+      { type: 'tags', items: [{ text: 'reads App.map', cls: 'tag-read' }] },
+      { type: 'text', content: 'Reads pre-computed App.map (generated by status.mjs after each poll). Map JSON includes campaign progress, active events, and faction status. Frontend does not query h1_campaign or h1_event directly.' }
+    ]
+  },
+  'fe-stats': {
+    title: 'Stat Cards',
+    subtitle: 'War statistics',
+    sections: [
+      { type: 'text', content: 'Displays per-faction and aggregate stats: online helldivers, kills, deaths, friendly fire, accuracy.' },
+      { type: 'tags', items: [{ text: 'reads h1_statistic', cls: 'tag-read' }] }
+    ]
+  },
+  'fe-events': {
+    title: 'Event Alerts',
+    subtitle: 'Active defend/attack events',
+    sections: [
+      { type: 'text', content: 'Shows alerts for ongoing events with progress and countdown timer.' },
+      { type: 'tags', items: [{ text: 'reads h1_event WHERE status = active', cls: 'tag-read' }] }
+    ]
+  },
+  'fe-timeline': {
+    title: 'Timeline',
+    subtitle: 'Historical event + snapshot graphs',
+    sections: [
+      { type: 'text', content: 'Past events timeline + campaign progress graphs from snapshot time-series data.' },
+      { type: 'tags', items: [{ text: 'reads h1_event', cls: 'tag-read' }, { text: 'reads h1_snapshot', cls: 'tag-read' }] }
+    ]
+  }
+};
+
+function buildDetailDOM(data) {
+  const container = document.getElementById('detailContent');
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  const h2 = document.createElement('h2');
+  h2.textContent = data.title;
+  container.appendChild(h2);
+
+  const sub = document.createElement('div');
+  sub.className = 'subtitle';
+  sub.textContent = data.subtitle;
+  container.appendChild(sub);
+
+  for (const section of data.sections) {
+    if (section.type === 'text') {
+      const p = document.createElement('p');
+      p.textContent = section.content;
+      container.appendChild(p);
+    } else if (section.type === 'heading') {
+      const h4 = document.createElement('h4');
+      h4.style.cssText = 'color:#888;margin-top:16px;font-size:12px';
+      h4.textContent = section.content;
+      container.appendChild(h4);
+    } else if (section.type === 'code') {
+      const pre = document.createElement('pre');
+      pre.textContent = section.content;
+      container.appendChild(pre);
+    } else if (section.type === 'tags') {
+      const div = document.createElement('div');
+      for (const tag of section.items) {
+        const span = document.createElement('span');
+        span.className = 'tag ' + tag.cls;
+        span.textContent = tag.text;
+        div.appendChild(span);
+      }
+      container.appendChild(div);
+    } else if (section.type === 'table') {
+      const table = document.createElement('table');
+      table.className = 'schema-table';
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      for (const h of section.headers) {
+        const th = document.createElement('th');
+        th.textContent = h;
+        headerRow.appendChild(th);
+      }
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+      const tbody = document.createElement('tbody');
+      for (const row of section.rows) {
+        const tr = document.createElement('tr');
+        for (const cell of row) {
+          const td = document.createElement('td');
+          td.textContent = cell;
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      container.appendChild(table);
+    }
+  }
+}
+
+function openDetail(id) {
+  if (detailData[id]) {
+    buildDetailDOM(detailData[id]);
+    document.getElementById('detailPanel').classList.add('open');
+  }
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+document.getElementById('detailClose').addEventListener('click', closeDetail);
+
+// View filtering
+const buttons = document.querySelectorAll('.controls button');
+const allElements = document.querySelectorAll('[data-flow]');
+
+buttons.forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    buttons.forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    var view = btn.dataset.view;
+
+    if (view === 'all') {
+      allElements.forEach(function(el) {
+        el.classList.remove('dimmed', 'highlighted');
+      });
+      return;
+    }
+
+    var flowMap = {
+      'live': ['live'],
+      'snapshot': ['snapshot'],
+      'seed': ['seed'],
+      'refresh': ['refresh'],
+      'read': ['read-map', 'read-stats', 'read-events', 'read-timeline']
+    };
+
+    var activeFlows = flowMap[view] || [view];
+
+    allElements.forEach(function(el) {
+      var flows = (el.dataset.flow || '').split(' ');
+      var matches = flows.some(function(f) { return activeFlows.indexOf(f) !== -1; });
+      if (matches) {
+        el.classList.remove('dimmed');
+        el.classList.add('highlighted');
+      } else {
+        el.classList.remove('highlighted');
+        el.classList.add('dimmed');
+      }
+    });
+  });
+});
+
+// Click nodes to show detail
+document.querySelectorAll('.node').forEach(function(node) {
+  node.style.cursor = 'pointer';
+  node.addEventListener('click', function(e) {
+    e.stopPropagation();
+    openDetail(node.dataset.id);
+  });
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.detail-panel') && !e.target.closest('.node')) {
+    closeDetail();
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeDetail();
+});
+</script>
+</body>
+</html>
