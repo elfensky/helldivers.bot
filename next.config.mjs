@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     experimental: {
@@ -109,7 +111,30 @@ const nextConfig = {
     },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+    // Bugsink doesn't use Sentry's source map upload, so disable it
+    silent: true,
+
+    // Disable source map upload to Sentry (Bugsink handles errors differently)
+    disableServerWebpackPlugin: true,
+    disableClientWebpackPlugin: true,
+
+    // Hides source maps from generated client bundles
+    hideSourceMaps: true,
+
+    // Webpack-specific configuration
+    webpack: {
+        // Automatically instrument Next.js components
+        autoInstrumentServerFunctions: true,
+        autoInstrumentMiddleware: true,
+        autoInstrumentAppDirectory: true,
+
+        // Tree-shake Sentry logger statements to reduce bundle size
+        treeshake: {
+            removeDebugLogging: true,
+        },
+    },
+});
 
 // #3
 

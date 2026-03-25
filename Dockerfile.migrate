@@ -10,9 +10,10 @@ WORKDIR /app
 # Copy only what's needed for migrations
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
+COPY prisma.config.mjs ./
 # Install only prisma (not all dependencies) (used to be: npm ci --ignore-scripts)
 RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma || require('./package.json').dependencies?.prisma") && \
-    npm install prisma@$PRISMA_VERSION && \
+    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg dotenv && \
     npx prisma generate
 
 # Set tini as the init system
