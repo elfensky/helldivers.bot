@@ -422,6 +422,6 @@ Validates `season` with `isValidNumber.safeParse` before constructing the reques
 
 ## Cross-references
 
-- See [database-schema.md](database-schema.md) for table structures and column definitions.
-- See [api-reference.md](api-reference.md) for the `/api/h1/update` endpoint that triggers the status pipeline on each worker tick.
-- See [utilities-reference.md](utilities-reference.md) for `tryCatch`, `getSeasonFromStatus`, `getSeasonFromSnapshot`, and the Zod validation schemas.
+- See [02-database-schema.md](02-database-schema.md) for table structures and column definitions.
+- See [04-api-reference.md](04-api-reference.md) for the `/api/h1/update` endpoint that triggers the status pipeline on each worker tick.
+- See [05-utilities-reference.md](05-utilities-reference.md) for `tryCatch`, `getSeasonFromStatus`, `getSeasonFromSnapshot`, and the Zod validation schemas.

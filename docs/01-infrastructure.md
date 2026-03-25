@@ -20,7 +20,7 @@ The project uses two separate Dockerfiles. Migrations and the application server
 2. Install `tini` via `apk` (init system for zombie process prevention)
 3. Upgrade npm to `11.7.0`
 4. `WORKDIR /app`
-5. Copy only `package.json`, `package-lock.json`, and `prisma/`
+5. Copy `package.json`, `package-lock.json`, `prisma/`, and `prisma.config.mjs`
 6. Extract the Prisma version from `package.json` at build time and install only that version — no full `npm ci`
 7. Run `npx prisma generate` to produce the client
 8. Entrypoint: `/sbin/tini --`
@@ -29,10 +29,15 @@ The project uses two separate Dockerfiles. Migrations and the application server
 The Prisma version extraction uses a shell one-liner:
 
 ```dockerfile
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
+COPY prisma.config.mjs ./
 RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma || require('./package.json').dependencies?.prisma") && \
-    npm install prisma@$PRISMA_VERSION && \
+    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg dotenv && \
     npx prisma generate
 ```
+
+Prisma 7 CLI no longer auto-loads `.env` files. The `prisma.config.mjs` file imports `dotenv/config` to handle local env loading; in Docker, `POSTGRES_URL` is injected via `docker-compose`'s `env_file`.
 
 This keeps the migrate image small — it carries only the Prisma CLI, not the entire application dependency tree.
 
@@ -170,10 +175,7 @@ register()   [src/instrumentation.js]
         │   ├── staging:     falls through to false (neither branch matches NODE_ENV=staging)
         │   └── false → process.exit(1)
         │
-        ├── Step 3: initializeDatabase()               [COMMENTED OUT]
-        │   └── Now handled by Dockerfile.migrate; this step is skipped entirely in all envs
-        │
-        └── Step 4: initializeWorker()                 [src/utils/initialize.worker.mjs]
+        └── Step 3: initializeWorker()                 [src/utils/initialize.worker.mjs]
             ├── Resolves worker path:
             │   ├── development: relative to __dirname → ../../public/workers/cron.js
             │   └── production:  absolute /app/public/workers/cron.js
@@ -314,5 +316,5 @@ The staging CI workflow passes `NODE_ENV=staging` as a Docker build arg. At runt
 
 ## Cross-references
 
-- See [data-flow.md](data-flow.md) for the worker thread's role in the continuous update pipeline
-- See [database-schema.md](database-schema.md) for the Prisma schema and migration strategy
+- See [03-data-flow.md](03-data-flow.md) for the worker thread's role in the continuous update pipeline
+- See [02-database-schema.md](02-database-schema.md) for the Prisma schema and migration strategy

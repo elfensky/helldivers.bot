@@ -42,7 +42,7 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` to 
 
 - **Two-table strategy:** `rebroadcast_*` tables store raw API JSON; `h1_*` tables store normalized historical data. Both are needed.
 - **Worker thread** (`public/workers/cron.js`) uses `setTimeout` (not `setInterval`) to prevent overlapping requests.
-- **Prisma Client** outputs to `src/generated/prisma/` (non-default path).
+- **Prisma 7** with `@prisma/adapter-pg` driver adapter. Client outputs to `src/generated/prisma/`. CLI config in `prisma.config.mjs`.
 - **Auth:** NextAuth.js v5 with database sessions (not JWT). Discord + GitHub OAuth.
 - **React Compiler** enabled experimentally in `next.config.mjs`.
 - **Error tracking:** Sentry SDK configured for self-hosted Bugsink (`tracesSampleRate: 0`, no replays/logs).
@@ -53,8 +53,8 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` to 
 
 | Topic | Location |
 |-------|----------|
-| Data pipeline & worker lifecycle | `docs/data-flow.md` |
-| Database schema & relationships | `docs/database-schema.md` |
-| API endpoints & authentication | `docs/api-reference.md` |
-| Utilities & Zod validators | `docs/utilities-reference.md` |
-| Docker, CI/CD, init flow, env vars | `docs/infrastructure.md` |
+| Docker, CI/CD, init flow, env vars | `docs/01-infrastructure.md` |
+| Database schema & relationships | `docs/02-database-schema.md` |
+| Data pipeline & worker lifecycle | `docs/03-data-flow.md` |
+| API endpoints & authentication | `docs/04-api-reference.md` |
+| Utilities & Zod validators | `docs/05-utilities-reference.md` |

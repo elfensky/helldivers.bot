@@ -592,5 +592,5 @@ Identical preprocessing behavior to `schemaNumber` in `isValidFormData.js` — c
 
 ## Cross-References
 
-- See [api-reference.md](api-reference.md) for where these utilities are used in route handlers.
-- See [data-flow.md](data-flow.md) for how `isValidStatus` and `isValidSeason` fit into the update pipeline.
+- See [04-api-reference.md](04-api-reference.md) for where these utilities are used in route handlers.
+- See [03-data-flow.md](03-data-flow.md) for how `isValidStatus` and `isValidSeason` fit into the update pipeline.

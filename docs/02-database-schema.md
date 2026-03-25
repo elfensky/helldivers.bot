@@ -41,33 +41,57 @@ This document is the canonical reference for the PostgreSQL schema managed by Pr
 
 ## 1. Schema Configuration
 
+Prisma 7 separates schema definition from connection configuration. The schema file (`prisma/schema.prisma`) defines the provider and generator. The connection URL lives in `prisma.config.mjs`.
+
+### Schema file
+
 ```prisma
 datasource db {
     provider = "postgresql"
-    url      = env("POSTGRES_URL")
 }
 
 generator client {
-    provider      = "prisma-client"
-    output        = "../src/generated/prisma"
-    binaryTargets = [
-        "darwin-arm64",
-        "linux-musl-arm64-openssl-3.0.x",
-        "linux-musl-openssl-3.0.x"
-    ]
+    provider = "prisma-client"
+    output   = "../src/generated/prisma"
 }
 ```
 
 | Setting | Value | Notes |
 |---|---|---|
-| Provider | `postgresql` | Connection via `POSTGRES_URL` env var |
-| Generator | `prisma-client` | Early-access generator, **not** the legacy `prisma-client-js` |
+| Provider | `postgresql` | Connection URL configured externally in `prisma.config.mjs` |
+| Generator | `prisma-client` | Prisma 7 standard generator (replaces legacy `prisma-client-js`) |
 | Client output | `../src/generated/prisma` | Import path: `@/generated/prisma/client` |
-| Binary: darwin-arm64 | Apple Silicon (M1/M2/M3) | Local development |
-| Binary: linux-musl-arm64-openssl-3.0.x | Alpine Linux on ARM | Docker on Apple Silicon host |
-| Binary: linux-musl-openssl-3.0.x | Alpine Linux on AMD64 | Production Docker (x86_64) |
 
-The `native` target is intentionally omitted; the three explicit targets cover every runtime this project touches. `darwin-arm64` is included so that the generated client works on the developer's machine without needing a separate native build.
+### Connection configuration (`prisma.config.mjs`)
+
+```js
+import 'dotenv/config';
+import { defineConfig, env } from 'prisma/config';
+
+export default defineConfig({
+    schema: 'prisma/schema.prisma',
+    migrations: { path: 'prisma/migrations' },
+    datasource: { url: env('POSTGRES_URL') },
+});
+```
+
+This file is read by the Prisma CLI for migrations and introspection. The `dotenv/config` import loads `.env` for local CLI usage; in Docker, `POSTGRES_URL` is injected as a real environment variable.
+
+### Runtime client (`src/db/db.js`)
+
+Prisma 7 requires a JavaScript driver adapter instead of the Rust query engine. The project uses `@prisma/adapter-pg` (which bundles `pg` internally):
+
+```js
+import { PrismaClient } from '@/generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+
+const prismaClientSingleton = () => {
+    const adapter = new PrismaPg({ connectionString: process.env.POSTGRES_URL });
+    return new PrismaClient({ adapter });
+};
+```
+
+The singleton pattern caches the client on `globalThis.prismaGlobal` to survive Next.js hot reloads in development.
 
 ---
 
@@ -740,5 +764,5 @@ This table enumerates every uniqueness constraint and index across the schema.
 
 ## Cross-References
 
-- See [data-flow.md](data-flow.md) for the sequence in which these tables are populated during an update cycle, including the two-table strategy (rebroadcast then normalised).
-- See [api-reference.md](api-reference.md) for the API endpoints that read from and write to these tables, including the `GET /api/h1/campaign` query shape and the rebroadcast endpoint.
+- See [03-data-flow.md](03-data-flow.md) for the sequence in which these tables are populated during an update cycle, including the two-table strategy (rebroadcast then normalised).
+- See [04-api-reference.md](04-api-reference.md) for the API endpoints that read from and write to these tables, including the `GET /api/h1/campaign` query shape and the rebroadcast endpoint.
