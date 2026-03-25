@@ -59,7 +59,7 @@ const rootSchema = z.object({
     time: z.number(),
     error_code: z.number(),
     campaign_status: z.array(campaignStatusSchema),
-    defend_event: defendEventSchema,
+    defend_event: defendEventSchema.nullable(),
     attack_events: z.array(attackEventSchema),
     statistics: z.array(statisticsSchema),
 });
