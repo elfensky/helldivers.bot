@@ -77,29 +77,37 @@ export async function POST(request) {
     let data = undefined;
     // let elapsed = 0;
     switch (formValues.action) {
-        case 'get_campaign_status':
-            data = await queryGetRebroadcastStatus();
-            data = data?.data?.json;
-            //this should theoretically never fail, as the application will fetch the current campaign status from the api on startup.
-            //hence, unlike season, there is no need to live-update the status or check if it's empty
+        case 'get_campaign_status': {
+            const { data: statusResult, error: statusError } = await tryCatch(
+                queryGetRebroadcastStatus(),
+            );
+            if (statusError) return rebroadcastErrorResponse(4);
+            data = statusResult?.data?.json;
             break;
-        case 'get_snapshots':
-            data = await queryGetRebroadcastSeason(formValues.season);
-            data = data?.data?.json;
+        }
+        case 'get_snapshots': {
+            const { data: seasonResult, error: seasonError } = await tryCatch(
+                queryGetRebroadcastSeason(formValues.season),
+            );
+            if (seasonError) return rebroadcastErrorResponse(4);
+            data = seasonResult?.data?.json;
 
-            //fetch from remote if not available locally
+            // fetch from remote if not available locally
             if (data === undefined || data === null) {
-                const { data: seasonData, error: seasonError } = await tryCatch(
+                const { data: seasonData, error: seasonFetchError } = await tryCatch(
                     updateSeason(formValues.season),
                 );
-                if (seasonError) {
+                if (seasonFetchError) {
                     return rebroadcastErrorResponse(4);
-                } else {
-                    data = await queryGetRebroadcastSeason(formValues.season);
-                    data = data?.data?.json;
                 }
+                const { data: retryResult, error: retryError } = await tryCatch(
+                    queryGetRebroadcastSeason(formValues.season),
+                );
+                if (retryError) return rebroadcastErrorResponse(4);
+                data = retryResult?.data?.json;
             }
             break;
+        }
         default:
             break;
     }
