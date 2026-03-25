@@ -13,7 +13,9 @@ COPY prisma ./prisma/
 COPY prisma.config.mjs ./
 # Install only prisma (not all dependencies) (used to be: npm ci --ignore-scripts)
 RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma || require('./package.json').dependencies?.prisma") && \
-    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg dotenv && \
+    ADAPTER_PG_VERSION=$(node -p "require('./package.json').dependencies?.['@prisma/adapter-pg'] || ''") && \
+    DOTENV_VERSION=$(node -p "require('./package.json').dependencies?.dotenv || ''") && \
+    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg@$ADAPTER_PG_VERSION dotenv@$DOTENV_VERSION && \
     npx prisma generate
 
 # Set tini as the init system

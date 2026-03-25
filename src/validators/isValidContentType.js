@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 
 //used by /api/h1/rebroadcast to check if request type is a proper form-data or x-www-form-urlencoded
 export const isValidContentType = z

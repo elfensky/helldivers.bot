@@ -38,7 +38,7 @@ export default function RootLayout({ children }) {
             </head> */}
             <body
                 id="body "
-                className="min-w-screen flex min-h-screen flex-col antialiased"
+                className="flex min-h-screen min-w-screen flex-col antialiased"
             >
                 <script
                     type="application/ld+json"
