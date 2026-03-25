@@ -15,6 +15,7 @@ Get the data layer right before touching the frontend.
 - [ ] Drop redundant `json` fields from `h1_introduction_order` and `h1_points_max`
 - [ ] Replace `h1_campaign` + `h1_statistic` + `App.map` → `h1_live` table
 - [ ] Make `defend_event` nullable in Zod validator (`isValidStatus.js`)
+- [ ] Fix BigInt serialization in API responses (`responses.mjs`)
 - [ ] Add composite indexes for common query patterns
 - [ ] Clean up rebroadcast route (`tryCatch` consistency)
 - [ ] Update `/api/h1/campaign` route to read from `h1_live`
