@@ -114,11 +114,11 @@ function processCampaigns(data) {
 function processDefendEvents(data) {
     if (data?.defend_events?.length > 0) {
         data?.defend_events?.forEach((event) => {
-            if (event?.region === 0 ) {
-                if(event?.status === 'active') {
+            if (event?.region === 0) {
+                if (event?.status === 'active') {
                     map[3][0].event = 'active';
                     map[3][0].status = 'active';
-                } 
+                }
             } else if (event?.region) {
                 if (event?.status === 'active') {
                     map[event?.enemy][event?.region].event = 'active';
@@ -133,11 +133,9 @@ function processDefendEvents(data) {
 }
 
 function processAttackEvents(data) {
-    
     if (data?.attack_events?.length > 0) {
         data?.attack_events?.forEach((event) => {
             if (event?.status === 'active') {
-
                 map[event?.enemy][11].percent = (event?.points / event?.points_max) * 100;
                 map[event?.enemy][11].points = event?.points;
                 map[event?.enemy][11].points_max = event?.points_max;

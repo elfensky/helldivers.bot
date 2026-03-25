@@ -5,13 +5,9 @@ import { initializeWorker } from '@/utils/initialize.worker';
 import { tryCatch } from '@/utils/tryCatch';
 
 export async function register() {
-    // Initialize Sentry for server-side and edge runtimes
+    // Initialize Sentry for server-side runtime
     if (process.env.NEXT_RUNTIME === 'nodejs') {
         await import('../sentry.server.config');
-    }
-
-    if (process.env.NEXT_RUNTIME === 'edge') {
-        await import('../sentry.edge.config');
     }
 
     // Initialize Helldivers API services (only for nodejs runtime)
@@ -20,13 +16,14 @@ export async function register() {
     }
 }
 
-// Capture errors from Server Components, middleware, and proxies
+// Capture errors from Server Components and proxies
 export const onRequestError = Sentry.captureRequestError;
 
 async function initializeHelldivers1Api() {
-    'use server';
     //ENVIRONMENT - are the required .env variables present and set
-    const { data: env, error: envError } = await tryCatch(initializeEnvironmentVariables());
+    const { data: env, error: envError } = await tryCatch(
+        initializeEnvironmentVariables(),
+    );
     if (envError) {
         throw new Error(`instrumentation.js | env: ${envError.message}`);
     }

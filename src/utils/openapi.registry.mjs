@@ -1,5 +1,9 @@
-import { z } from 'zod/v4';
-import { extendZodWithOpenApi, OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
+import { z } from 'zod';
+import {
+    extendZodWithOpenApi,
+    OpenAPIRegistry,
+    OpenApiGeneratorV3,
+} from '@asteasolutions/zod-to-openapi';
 
 // Extend Zod with OpenAPI capabilities
 extendZodWithOpenApi(z);
@@ -38,7 +42,10 @@ registry.registerPath({
             season: z
                 .string()
                 .optional()
-                .openapi({ description: 'The season number to fetch campaign data for.', example: '1' }),
+                .openapi({
+                    description: 'The season number to fetch campaign data for.',
+                    example: '1',
+                }),
         }),
     },
     responses: {
@@ -47,8 +54,14 @@ registry.registerPath({
             content: {
                 'application/json': {
                     schema: z.object({
-                        ms: z.number().openapi({ description: 'Time taken to process the request (ms)' }),
-                        data: z.any().openapi({ description: 'The campaign data object' }),
+                        ms: z
+                            .number()
+                            .openapi({
+                                description: 'Time taken to process the request (ms)',
+                            }),
+                        data: z
+                            .any()
+                            .openapi({ description: 'The campaign data object' }),
                     }),
                 },
             },
@@ -166,11 +179,13 @@ registry.registerPath({
     path: '/api/h1/update',
     summary: 'Trigger current campaign status and snapshot updates',
     description:
-        '**Internal-use-only.** This endpoint is used by a node (web) worker to continuously trigger status and season updates for the current campaign. It is not intended for external user consumption. Requires a valid `key` query parameter matching the server\'s `UPDATE_KEY` environment variable.',
+        "**Internal-use-only.** This endpoint is used by a node (web) worker to continuously trigger status and season updates for the current campaign. It is not intended for external user consumption. Requires a valid `key` query parameter matching the server's `UPDATE_KEY` environment variable.",
     tags: ['Internal'],
     request: {
         query: z.object({
-            key: z.string().openapi({ description: 'Internal API key for authorization.' }),
+            key: z
+                .string()
+                .openapi({ description: 'Internal API key for authorization.' }),
         }),
     },
     responses: {
@@ -182,8 +197,12 @@ registry.registerPath({
                         ms: z.number(),
                         data: z.object({
                             updated: z.object({
-                                status: z.any().openapi({ description: 'The updated status data.' }),
-                                season: z.any().openapi({ description: 'The updated season data.' }),
+                                status: z
+                                    .any()
+                                    .openapi({ description: 'The updated status data.' }),
+                                season: z
+                                    .any()
+                                    .openapi({ description: 'The updated season data.' }),
                             }),
                         }),
                     }),
