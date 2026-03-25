@@ -42,7 +42,7 @@ export default async function HomePage() {
                 id="hero"
                 className="z-10 mb-4 flex flex-col-reverse justify-end sm:mx-24 sm:gap-4 md:flex-row md:gap-8"
             >
-                <div className="sm:max-w-1/3 mx-4">
+                <div className="mx-4 sm:max-w-1/3">
                     {/* className="content box max-h-fit max-w-fit gap-4" */}
                     <section>
                         <h1>
@@ -164,7 +164,7 @@ export default async function HomePage() {
                     </p>
                 </div>
 
-                <div className="flex-grow-1 flex flex-wrap">
+                <div className="flex flex-grow-1 flex-wrap">
                     images of:
                     <span> - nextjs logo</span>
                     <span> - postgresql logo</span>

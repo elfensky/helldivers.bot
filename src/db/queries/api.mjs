@@ -1,5 +1,5 @@
 'use server';
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { performance } from 'perf_hooks';
@@ -66,7 +66,7 @@ export async function generateApiKey(_, formData) {
         // console.log(check.error.toString());
         // console.log(check.error);
         return {
-            errors: error.flatten().fieldErrors,
+            errors: check.error.flatten().fieldErrors,
             values: formValues,
             time: performanceTime(start),
         };

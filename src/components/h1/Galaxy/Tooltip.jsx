@@ -7,15 +7,13 @@ export default function Tooltip({ svgRef, map }) {
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const [viewportSize, setViewportSize] = useState({ width: 1, height: 1 });
-    const [tooltipSize, setTooltipSize] = useState({ width: 320, height: 103 })
-
-
+    const [tooltipSize, setTooltipSize] = useState({ width: 320, height: 103 });
 
     useEffect(() => {
         //get viewPortSize
         function handleResize() {
             setViewportSize({ width: window.innerWidth, height: window.innerHeight });
-        };
+        }
         handleResize();
         window.addEventListener('resize', handleResize);
     }, []);
@@ -66,7 +64,7 @@ export default function Tooltip({ svgRef, map }) {
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
         //#endregion
-    }, [viewportSize])
+    }, [viewportSize]);
 
     if (!hover) return null;
     if (hover.faction === '3')
