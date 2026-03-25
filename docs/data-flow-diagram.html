@@ -52,7 +52,7 @@
 
   svg.flow {
     width: 100%;
-    height: 780px;
+    height: 580px;
     display: block;
   }
 
@@ -183,7 +183,7 @@
 </div>
 
 <div class="canvas">
-<svg class="flow" viewBox="0 0 1100 760">
+<svg class="flow" viewBox="0 0 1100 560">
   <defs>
     <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
       <polygon points="0 0, 8 3, 0 6" fill="#666" />
@@ -258,87 +258,54 @@
     <text x="720" y="68" text-anchor="middle" font-size="10" fill="#666">1 row/season - raw JSON</text>
   </g>
 
-  <g class="node cat-raw" data-id="rb-snapshot" data-flow="snapshot">
+  <g class="node cat-raw" data-id="rb-snapshot" data-flow="snapshot refresh">
     <rect x="620" y="90" width="200" height="48" />
     <text class="label" x="720" y="112" text-anchor="middle" font-size="12" font-weight="600">rebroadcast_snapshot</text>
     <text x="720" y="128" text-anchor="middle" font-size="10" fill="#666">1 row/season - raw JSON</text>
   </g>
 
   <!-- LAYER 4: NORMALIZED DB -->
-  <g class="node cat-norm" data-id="h1-season" data-flow="live snapshot seed">
+  <g class="node cat-norm" data-id="h1-season" data-flow="live snapshot seed refresh">
     <rect x="620" y="170" width="200" height="40" />
     <text class="label" x="720" y="195" text-anchor="middle" font-size="12" font-weight="600">h1_season</text>
   </g>
 
-  <g class="node cat-norm" data-id="h1-campaign" data-flow="live">
-    <rect x="620" y="222" width="200" height="40" />
-    <text class="label" x="720" y="247" text-anchor="middle" font-size="12" font-weight="600">h1_campaign</text>
+  <g class="node cat-norm" data-id="h1-live" data-flow="live read-map read-stats">
+    <rect x="620" y="222" width="200" height="48" />
+    <text class="label" x="720" y="243" text-anchor="middle" font-size="12" font-weight="600">h1_live</text>
+    <text x="720" y="260" text-anchor="middle" font-size="9" fill="#666">campaigns + stats + map</text>
   </g>
 
-  <g class="node cat-norm" data-id="h1-event" data-flow="live snapshot seed read-events">
-    <rect x="620" y="274" width="200" height="40" />
-    <text class="label" x="720" y="299" text-anchor="middle" font-size="12" font-weight="600">h1_event</text>
+  <g class="node cat-norm" data-id="h1-event" data-flow="live snapshot seed refresh read-events">
+    <rect x="620" y="282" width="200" height="40" />
+    <text class="label" x="720" y="307" text-anchor="middle" font-size="12" font-weight="600">h1_event</text>
   </g>
 
-  <g class="node cat-norm" data-id="h1-statistic" data-flow="live read-stats">
-    <rect x="620" y="326" width="200" height="40" />
-    <text class="label" x="720" y="351" text-anchor="middle" font-size="12" font-weight="600">h1_statistic</text>
+  <g class="node cat-norm" data-id="h1-intro" data-flow="live snapshot seed refresh">
+    <rect x="620" y="334" width="200" height="40" />
+    <text class="label" x="720" y="359" text-anchor="middle" font-size="12" font-weight="600">h1_introduction_order</text>
   </g>
 
-  <g class="node cat-norm" data-id="h1-snapshot" data-flow="snapshot seed read-timeline">
-    <rect x="620" y="378" width="200" height="40" />
-    <text class="label" x="720" y="403" text-anchor="middle" font-size="12" font-weight="600">h1_snapshot</text>
-  </g>
-
-  <g class="node cat-norm" data-id="h1-intro" data-flow="snapshot seed">
-    <rect x="620" y="430" width="200" height="40" />
-    <text class="label" x="720" y="455" text-anchor="middle" font-size="12" font-weight="600">h1_introduction_order</text>
-  </g>
-
-  <g class="node cat-norm" data-id="h1-points" data-flow="snapshot seed">
-    <rect x="620" y="482" width="200" height="40" />
-    <text class="label" x="720" y="507" text-anchor="middle" font-size="12" font-weight="600">h1_points_max</text>
-  </g>
-
-  <g class="node cat-norm" data-id="h1-stat-snap" data-flow="live read-timeline">
-    <rect x="620" y="534" width="200" height="40" />
-    <text class="label" x="720" y="559" text-anchor="middle" font-size="12" font-weight="600">h1_statistic_snapshot</text>
-  </g>
-
-  <g class="node cat-norm" data-id="h1-event-snap" data-flow="live read-timeline">
-    <rect x="620" y="586" width="200" height="40" />
-    <text class="label" x="720" y="611" text-anchor="middle" font-size="12" font-weight="600">h1_event_snapshot</text>
-  </g>
-
-  <g class="node cat-norm" data-id="app-map" data-flow="live read-map">
-    <rect x="620" y="638" width="200" height="40" />
-    <text class="label" x="720" y="663" text-anchor="middle" font-size="12" font-weight="600">App.map</text>
+  <g class="node cat-norm" data-id="h1-points" data-flow="live snapshot seed refresh">
+    <rect x="620" y="386" width="200" height="40" />
+    <text class="label" x="720" y="411" text-anchor="middle" font-size="12" font-weight="600">h1_points_max</text>
   </g>
 
   <!-- LAYER 5: FRONTEND -->
-  <g class="node cat-frontend" data-id="fe-map" data-flow="read-map">
-    <rect x="920" y="210" width="160" height="52" />
-    <text class="label" x="1000" y="232" text-anchor="middle" font-size="12" font-weight="600">Map</text>
-    <text x="1000" y="250" text-anchor="middle" font-size="10" fill="#666">3 factions x 11 regions</text>
-  </g>
-
-  <g class="node cat-frontend" data-id="fe-stats" data-flow="read-stats">
-    <rect x="920" y="274" width="160" height="52" />
-    <text class="label" x="1000" y="296" text-anchor="middle" font-size="12" font-weight="600">Stat Cards</text>
-    <text x="1000" y="314" text-anchor="middle" font-size="10" fill="#666">kills, deaths, players</text>
+  <g class="node cat-frontend" data-id="fe-live" data-flow="read-map read-stats">
+    <rect x="920" y="222" width="160" height="72" />
+    <text class="label" x="1000" y="248" text-anchor="middle" font-size="12" font-weight="600">Live Dashboard</text>
+    <text x="1000" y="266" text-anchor="middle" font-size="10" fill="#666">map + stats + players</text>
+    <text x="1000" y="282" text-anchor="middle" font-size="9" fill="#555">reads h1_live (3 rows)</text>
   </g>
 
   <g class="node cat-frontend" data-id="fe-events" data-flow="read-events">
-    <rect x="920" y="338" width="160" height="52" />
-    <text class="label" x="1000" y="360" text-anchor="middle" font-size="12" font-weight="600">Event Alerts</text>
-    <text x="1000" y="378" text-anchor="middle" font-size="10" fill="#666">active defend/attack</text>
+    <rect x="920" y="310" width="160" height="52" />
+    <text class="label" x="1000" y="332" text-anchor="middle" font-size="12" font-weight="600">Event Alerts</text>
+    <text x="1000" y="350" text-anchor="middle" font-size="10" fill="#666">active defend/attack</text>
   </g>
 
-  <g class="node cat-frontend" data-id="fe-timeline" data-flow="read-timeline">
-    <rect x="920" y="402" width="160" height="52" />
-    <text class="label" x="1000" y="424" text-anchor="middle" font-size="12" font-weight="600">Timeline</text>
-    <text x="1000" y="442" text-anchor="middle" font-size="10" fill="#666">history + snapshot graphs</text>
-  </g>
+  <!-- Timeline component deferred to Phase 2 (requires h1_snapshot + time-series tables) -->
 
   <!-- ARROWS: API to Worker -->
   <path class="arrow arrow-api" data-flow="live"
@@ -363,34 +330,35 @@
   <path class="arrow arrow-amber" data-flow="snapshot"
     d="M520,80 L580,80 Q600,80 600,100 L600,114 L620,114" marker-end="url(#ah-amber)" />
 
-  <!-- Worker to Normalized -->
+  <!-- Worker to Normalized: h1_season, h1_live, h1_event, h1_intro, h1_points -->
   <path class="arrow arrow-green" data-flow="live"
     d="M520,70 L570,70 Q590,70 590,170 L590,190 L620,190" marker-end="url(#ah-green)" />
   <path class="arrow arrow-green" data-flow="live"
-    d="M520,75 L565,75 Q585,75 585,200 L585,242 L620,242" marker-end="url(#ah-green)" />
+    d="M520,75 L565,75 Q585,75 585,200 L585,246 L620,246" marker-end="url(#ah-green)" />
   <path class="arrow arrow-green" data-flow="live"
-    d="M520,80 L560,80 Q580,80 580,240 L580,294 L620,294" marker-end="url(#ah-green)" />
+    d="M520,80 L560,80 Q580,80 580,240 L580,302 L620,302" marker-end="url(#ah-green)" />
   <path class="arrow arrow-green" data-flow="live"
-    d="M520,85 L555,85 Q575,85 575,280 L575,346 L620,346" marker-end="url(#ah-green)" />
+    d="M520,85 L555,85 Q575,85 575,280 L575,354 L620,354" marker-end="url(#ah-green)" />
+  <path class="arrow arrow-green" data-flow="live"
+    d="M520,90 L550,90 Q570,90 570,320 L570,406 L620,406" marker-end="url(#ah-green)" />
 
+  <!-- Snapshot sync to Normalized (events + intro_order + points_max) -->
   <path class="arrow arrow-green" data-flow="snapshot"
-    d="M520,95 L560,95 Q575,95 575,340 L575,398 L620,398" marker-end="url(#ah-green)" />
+    d="M520,90 L560,90 Q575,90 575,240 L575,302 L620,302" marker-end="url(#ah-green)" />
   <path class="arrow arrow-green" data-flow="snapshot"
-    d="M520,100 L555,100 Q570,100 570,380 L570,450 L620,450" marker-end="url(#ah-green)" />
+    d="M520,95 L555,95 Q570,95 570,300 L570,354 L620,354" marker-end="url(#ah-green)" />
   <path class="arrow arrow-green" data-flow="snapshot"
-    d="M520,105 L550,105 Q565,105 565,420 L565,502 L620,502" marker-end="url(#ah-green)" />
+    d="M520,100 L550,100 Q565,100 565,340 L565,406 L620,406" marker-end="url(#ah-green)" />
 
-  <!-- Seed Script to Normalized -->
+  <!-- Seed Script to Normalized: h1_season, h1_event, h1_intro, h1_points (NOT h1_live) -->
   <path class="arrow arrow-seed" data-flow="seed"
     d="M520,275 L570,275 Q590,275 590,200 L590,190 L620,190" marker-end="url(#ah-pink)" />
   <path class="arrow arrow-seed arrow-dashed" data-flow="seed"
-    d="M520,280 L565,280 Q580,280 580,294 L620,294" marker-end="url(#ah-pink)" />
+    d="M520,280 L565,280 Q580,280 580,302 L620,302" marker-end="url(#ah-pink)" />
   <path class="arrow arrow-seed arrow-dashed" data-flow="seed"
-    d="M520,285 L560,285 Q575,285 575,340 L575,398 L620,398" marker-end="url(#ah-pink)" />
+    d="M520,285 L560,285 Q575,285 575,340 L575,354 L620,354" marker-end="url(#ah-pink)" />
   <path class="arrow arrow-seed arrow-dashed" data-flow="seed"
-    d="M520,290 L555,290 Q570,290 570,380 L570,450 L620,450" marker-end="url(#ah-pink)" />
-  <path class="arrow arrow-seed arrow-dashed" data-flow="seed"
-    d="M520,295 L550,295 Q565,295 565,440 L565,502 L620,502" marker-end="url(#ah-pink)" />
+    d="M520,290 L555,290 Q570,290 570,380 L570,406 L620,406" marker-end="url(#ah-pink)" />
 
   <!-- Refresh handler to Raw Cache + Normalized -->
   <path class="arrow arrow-amber" data-flow="refresh"
@@ -398,35 +366,17 @@
   <path class="arrow arrow-green" data-flow="refresh"
     d="M520,370 L570,370 Q585,370 585,200 L585,190 L620,190" marker-end="url(#ah-green)" />
   <path class="arrow arrow-green" data-flow="refresh"
-    d="M520,375 L565,375 Q580,375 580,294 L620,294" marker-end="url(#ah-green)" />
+    d="M520,375 L565,375 Q580,375 580,302 L620,302" marker-end="url(#ah-green)" />
   <path class="arrow arrow-green" data-flow="refresh"
-    d="M520,380 L560,380 Q575,375 575,398 L620,398" marker-end="url(#ah-green)" />
+    d="M520,380 L560,380 Q575,375 575,354 L620,354" marker-end="url(#ah-green)" />
   <path class="arrow arrow-green" data-flow="refresh"
-    d="M520,385 L555,385 Q570,385 570,440 L570,450 L620,450" marker-end="url(#ah-green)" />
-  <path class="arrow arrow-green" data-flow="refresh"
-    d="M520,390 L550,390 Q565,390 565,480 L565,502 L620,502" marker-end="url(#ah-green)" />
-
-  <!-- Worker to new snapshot tables + App.map -->
-  <path class="arrow arrow-green" data-flow="live"
-    d="M520,90 L550,90 Q570,90 570,460 L570,554 L620,554" marker-end="url(#ah-green)" />
-  <path class="arrow arrow-green" data-flow="live"
-    d="M520,95 L545,95 Q565,95 565,500 L565,606 L620,606" marker-end="url(#ah-green)" />
-  <path class="arrow arrow-green" data-flow="live"
-    d="M520,100 L540,100 Q560,100 560,540 L560,658 L620,658" marker-end="url(#ah-green)" />
+    d="M520,385 L555,385 Q570,385 570,406 L620,406" marker-end="url(#ah-green)" />
 
   <!-- DB to Frontend -->
-  <path class="arrow arrow-frontend" data-flow="read-map"
-    d="M820,658 L880,658 Q900,658 900,250 L900,236 L920,236" marker-end="url(#ah-cyan)" />
-  <path class="arrow arrow-frontend" data-flow="read-stats"
-    d="M820,346 L880,346 Q900,346 900,310 L900,300 L920,300" marker-end="url(#ah-cyan)" />
+  <path class="arrow arrow-frontend" data-flow="read-map read-stats"
+    d="M820,246 L880,246 Q900,246 900,260 L900,268 L920,268" marker-end="url(#ah-cyan)" />
   <path class="arrow arrow-frontend" data-flow="read-events"
-    d="M820,294 L880,294 Q900,294 900,340 L900,364 L920,364" marker-end="url(#ah-cyan)" />
-  <path class="arrow arrow-frontend" data-flow="read-timeline"
-    d="M820,398 L920,428" marker-end="url(#ah-cyan)" />
-  <path class="arrow arrow-frontend" data-flow="read-timeline"
-    d="M820,554 L880,554 Q900,554 900,450 L900,442 L920,442" marker-end="url(#ah-cyan)" />
-  <path class="arrow arrow-frontend" data-flow="read-timeline"
-    d="M820,606 L875,606 Q895,606 895,460 L895,448 L920,448" marker-end="url(#ah-cyan)" />
+    d="M820,302 L880,302 Q900,302 900,340 L900,364 L920,364" marker-end="url(#ah-cyan)" />
 
   <!-- ANNOTATIONS -->
   <rect class="annotation-bg" x="235" y="42" width="60" height="16" />
@@ -442,7 +392,7 @@
   <text class="annotation" x="583" y="41" text-anchor="middle" data-flow="live snapshot">upsert</text>
 
   <rect class="annotation-bg" x="845" y="224" width="56" height="16" />
-  <text class="annotation" x="873" y="235" text-anchor="middle" data-flow="read-map read-stats read-events read-timeline">read</text>
+  <text class="annotation" x="873" y="235" text-anchor="middle" data-flow="read-map read-stats read-events">read</text>
 
   <!-- LAYER LABELS -->
   <text x="120" y="24" text-anchor="middle" font-size="11" fill="#444" font-weight="500">DATA SOURCES</text>
@@ -452,12 +402,6 @@
 
   <text x="615" y="44" text-anchor="end" font-size="9" fill="#f59e0b40">RAW</text>
   <text x="615" y="186" text-anchor="end" font-size="9" fill="#22c55e40">NORMALIZED</text>
-
-  <!-- Snapshot interval annotations -->
-  <rect class="annotation-bg" x="555" y="544" width="60" height="16" />
-  <text class="annotation" x="585" y="555" text-anchor="middle" data-flow="live">~15min</text>
-  <rect class="annotation-bg" x="555" y="596" width="60" height="16" />
-  <text class="annotation" x="585" y="607" text-anchor="middle" data-flow="live">~10min</text>
 </svg>
 </div>
 
@@ -564,13 +508,14 @@ const detailData = {
       { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int @unique'], ['last_updated', 'DateTime?']] }
     ]
   },
-  'h1-campaign': {
-    title: 'h1_campaign',
-    subtitle: 'Latest-only planet state',
+  'h1-live': {
+    title: 'h1_live',
+    subtitle: 'Current season live state',
     sections: [
-      { type: 'text', content: 'One row per (season, planet). Overwritten on each poll — no history. Used as input to App.map generation; not read directly by frontend.' },
-      { type: 'tags', items: [{ text: 'upsert by (season, introduction_order)', cls: 'tag-upsert' }] },
-      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int FK'], ['introduction_order', 'Int'], ['points', 'Int'], ['points_taken', 'Int'], ['points_max', 'Int'], ['status', 'String']] }
+      { type: 'text', content: 'One row per (season, enemy). Merges campaign_status + statistics + computed map data. Overwritten every 5-15s poll. Current season only — not populated for past seasons.' },
+      { type: 'tags', items: [{ text: 'upsert by (season, enemy)', cls: 'tag-upsert' }, { text: 'Live Dashboard', cls: 'tag-read' }] },
+      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int FK'], ['enemy', 'Int (0/1/2)'], ['points / points_max', 'Int'], ['status', 'String'], ['players', 'Int'], ['kills / deaths', 'BigInt'], ['missions', 'Int'], ['map', 'Json?']] },
+      { type: 'text', content: 'Replaces h1_campaign + h1_statistic + App.map (v1 consolidation). Frontend reads 3 rows for full live dashboard.' }
     ]
   },
   'h1-event': {
@@ -583,89 +528,33 @@ const detailData = {
       { type: 'text', content: 'Replaces h1_defend_event + h1_attack_event (v1 consolidation)' }
     ]
   },
-  'h1-statistic': {
-    title: 'h1_statistic',
-    subtitle: 'Per-enemy aggregate stats',
-    sections: [
-      { type: 'text', content: 'One row per (season, enemy). Overwritten on each poll.' },
-      { type: 'tags', items: [{ text: 'upsert by (season, enemy)', cls: 'tag-upsert' }, { text: 'Stat Cards', cls: 'tag-read' }] },
-      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int FK'], ['enemy', 'Int'], ['players', 'Int'], ['missions', 'Int'], ['kills', 'BigInt'], ['deaths', 'BigInt'], ['shots / hits', 'BigInt']] }
-    ]
-  },
-  'h1-snapshot': {
-    title: 'h1_snapshot',
-    subtitle: 'Historical time-series',
-    sections: [
-      { type: 'text', content: 'Many rows per season. Each row = a point-in-time snapshot of campaign progress.' },
-      { type: 'tags', items: [{ text: 'insert, dedupe by (season, time)', cls: 'tag-upsert' }, { text: 'Timeline graphs', cls: 'tag-read' }] },
-      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int FK'], ['time', 'Int (unix)'], ['data', 'JSONB']] },
-      { type: 'text', content: 'Redundant json field dropped in v1 (was duplicate of data field).' }
-    ]
-  },
   'h1-intro': {
     title: 'h1_introduction_order',
-    subtitle: 'Planet ordering per season',
+    subtitle: 'Faction war-entry ordering per season',
     sections: [
-      { type: 'text', content: 'One row per season. Which planets appear and in what order.' },
+      { type: 'text', content: 'One row per season. Which factions entered the war and in what order. Indexed by enemy: [Bugs, Cyborgs, Illuminate].' },
       { type: 'tags', items: [{ text: 'upsert by season', cls: 'tag-upsert' }] },
       { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int @unique FK'], ['order', 'Int[]']] },
-      { type: 'text', content: 'Redundant json field dropped in v1 (was exact duplicate of order array).' }
+      { type: 'text', content: 'Populated from campaign_status (current season) or get_snapshots (past seasons). Redundant json field dropped in v1.' }
     ]
   },
   'h1-points': {
     title: 'h1_points_max',
     subtitle: 'Max liberation points per season',
     sections: [
-      { type: 'text', content: 'One row per season. Max points for each planet.' },
+      { type: 'text', content: 'One row per season. Max points needed to trigger homeworld assault per faction. Indexed by enemy: [Bugs, Cyborgs, Illuminate].' },
       { type: 'tags', items: [{ text: 'upsert by season', cls: 'tag-upsert' }] },
       { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int @unique FK'], ['points', 'Int[]']] },
-      { type: 'text', content: 'Redundant json field dropped in v1 (was exact duplicate of points array).' }
+      { type: 'text', content: 'Populated from campaign_status (current season) or get_snapshots (past seasons). Redundant json field dropped in v1.' }
     ]
   },
-  'h1-stat-snap': {
-    title: 'h1_statistic_snapshot',
-    subtitle: 'Statistics time-series (NEW)',
+  'fe-live': {
+    title: 'Live Dashboard',
+    subtitle: 'Map + Stats + Players',
     sections: [
-      { type: 'text', content: 'Periodic snapshots of h1_statistic data. Inserted every ~15 minutes during live polling. Enables graphs of player counts, kills, missions over time.' },
-      { type: 'tags', items: [{ text: '~15min interval', cls: 'tag-interval' }, { text: 'Timeline graphs', cls: 'tag-read' }] },
-      { type: 'table', headers: ['Field', 'Type'], rows: [['season', 'Int FK'], ['time', 'Int (unix)'], ['enemy', 'Int'], ['players', 'Int'], ['kills / deaths', 'BigInt'], ['missions', 'Int'], ['shots / hits', 'BigInt']] },
-      { type: 'text', content: 'Unique on (season, enemy, time). Uses API server timestamp, not local clock.' }
-    ]
-  },
-  'h1-event-snap': {
-    title: 'h1_event_snapshot',
-    subtitle: 'Event progress time-series (NEW)',
-    sections: [
-      { type: 'text', content: 'Tracks how active events progress toward their goal. Inserted every ~10 minutes for active events only.' },
-      { type: 'tags', items: [{ text: '~10min interval', cls: 'tag-interval' }, { text: 'Timeline graphs', cls: 'tag-read' }] },
-      { type: 'table', headers: ['Field', 'Type'], rows: [['event_id', 'Int'], ['time', 'Int (unix)'], ['points', 'Int'], ['points_max', 'Int']] },
-      { type: 'text', content: 'Unique on (event_id, time). No FK to h1_event — append-only design.' }
-    ]
-  },
-  'app-map': {
-    title: 'App.map',
-    subtitle: 'Generated map state (NEW)',
-    sections: [
-      { type: 'text', content: 'Pre-computed map JSON stored in the App config row. Generated after each status update by combining campaigns + events + introduction_order.' },
-      { type: 'tags', items: [{ text: 'overwritten each poll', cls: 'tag-upsert' }, { text: 'Map component', cls: 'tag-read' }] },
-      { type: 'text', content: 'Structure: 3 enemies x (10 sectors + homeworld) + Super Earth. Each region has points, status, and active event data. Frontend reads this directly instead of computing from raw tables.' }
-    ]
-  },
-  'fe-map': {
-    title: 'Map Component',
-    subtitle: 'Galaxy.jsx + Map.jsx',
-    sections: [
-      { type: 'text', content: 'Renders 3 factions x (10 sectors + 1 homeworld). Each sector shows captured / in_progress / lost / active state.' },
-      { type: 'tags', items: [{ text: 'reads App.map', cls: 'tag-read' }] },
-      { type: 'text', content: 'Reads pre-computed App.map (generated by status.mjs after each poll). Map JSON includes campaign progress, active events, and faction status. Frontend does not query h1_campaign or h1_event directly.' }
-    ]
-  },
-  'fe-stats': {
-    title: 'Stat Cards',
-    subtitle: 'War statistics',
-    sections: [
-      { type: 'text', content: 'Displays per-faction and aggregate stats: online helldivers, kills, deaths, friendly fire, accuracy.' },
-      { type: 'tags', items: [{ text: 'reads h1_statistic', cls: 'tag-read' }] }
+      { type: 'text', content: 'Reads all 3 h1_live rows for the active season. Renders galaxy map (3 factions x 11 regions), stat cards (kills, deaths, accuracy), and player counts.' },
+      { type: 'tags', items: [{ text: 'reads h1_live', cls: 'tag-read' }] },
+      { type: 'text', content: 'Each h1_live row contains one faction\'s campaign progress, statistics, and pre-computed map slice. Frontend assembles the full view from all 3 rows.' }
     ]
   },
   'fe-events': {
@@ -676,14 +565,6 @@ const detailData = {
       { type: 'tags', items: [{ text: 'reads h1_event WHERE status = active', cls: 'tag-read' }] }
     ]
   },
-  'fe-timeline': {
-    title: 'Timeline',
-    subtitle: 'Historical event + snapshot graphs',
-    sections: [
-      { type: 'text', content: 'Past events timeline + campaign progress graphs from snapshot time-series data.' },
-      { type: 'tags', items: [{ text: 'reads h1_event', cls: 'tag-read' }, { text: 'reads h1_snapshot', cls: 'tag-read' }] }
-    ]
-  }
 };
 
 function buildDetailDOM(data) {
@@ -785,7 +666,7 @@ buttons.forEach(function(btn) {
       'snapshot': ['snapshot'],
       'seed': ['seed'],
       'refresh': ['refresh'],
-      'read': ['read-map', 'read-stats', 'read-events', 'read-timeline']
+      'read': ['read-map', 'read-stats', 'read-events']
     };
 
     var activeFlows = flowMap[view] || [view];

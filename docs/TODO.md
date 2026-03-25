@@ -13,15 +13,40 @@ Get the data layer right before touching the frontend.
 
 - [ ] Unify `h1_defend_event` + `h1_attack_event` → `h1_event`
 - [ ] Drop redundant `json` fields from `h1_introduction_order` and `h1_points_max`
-- [ ] Add `h1_statistic_snapshot` table (15-min interval stats)
-- [ ] Add `h1_event_snapshot` table (10-min event progress)
+- [ ] Replace `h1_campaign` + `h1_statistic` + `App.map` → `h1_live` table
+- [ ] Make `defend_event` nullable in Zod validator (`isValidStatus.js`)
 - [ ] Add composite indexes for common query patterns
-- [ ] Generate map JSON on each update cycle → `App.map`
 - [ ] Clean up rebroadcast route (`tryCatch` consistency)
+- [ ] Update `/api/h1/campaign` route to read from `h1_live`
+- [ ] Create seed files for past seasons (`prisma/seed/seasons/`)
 
 ---
 
-## Phase 2 — War Status Dashboard (Core Feature)
+## Phase 2 — Time-Series Snapshots
+
+Capture how stats and events change over time. Depends on Phase 1 normalized tables.
+
+> Spec: [`docs/superpowers/specs/2026-03-25-phase-2-time-series-snapshots.md`](superpowers/specs/2026-03-25-phase-2-time-series-snapshots.md)
+
+- [ ] Populate `h1_snapshot` from `get_snapshots` pipeline
+- [ ] Add `h1_statistic_snapshot` table (15-min interval stats)
+- [ ] Add `h1_event_snapshot` table (10-min event progress)
+
+---
+
+## Phase 3 — API Key Enforcement
+
+Gate the rebroadcast endpoint behind API key validation.
+
+> Spec: [`docs/superpowers/specs/2026-03-25-phase-3-api-key-enforcement-design.md`](superpowers/specs/2026-03-25-phase-3-api-key-enforcement-design.md)
+
+- [ ] Add `validateApiKey(request)` utility in `src/db/queries/api.mjs`
+- [ ] Integrate key validation into rebroadcast POST handler
+- [ ] Add error codes 6 (401 Unauthorized) and 7 (403 Forbidden)
+
+---
+
+## Phase 4 — War Status Dashboard (Core Feature)
 
 The war dashboard becomes the homepage. Single-page, no vertical scrolling on desktop.
 
@@ -45,7 +70,7 @@ The war dashboard becomes the homepage. Single-page, no vertical scrolling on de
 
 ---
 
-## Phase 3 — Mobile-First Design (Phone)
+## Phase 5 — Mobile-First Design (Phone)
 
 Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything from here up.
 
@@ -84,7 +109,7 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 
 ---
 
-## Phase 4 — Tablet (`sm:` / `md:`)
+## Phase 6 — Tablet (`sm:` / `md:`)
 
 - [ ] Tablet portrait: sidebar slides in or sits beside map
 - [ ] Tablet landscape: side-by-side layout begins
@@ -93,7 +118,7 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 
 ---
 
-## Phase 5 — Desktop & Wide (`lg:` / `xl:` / `2xl:` / `3xl:`)
+## Phase 7 — Desktop & Wide (`lg:` / `xl:` / `2xl:` / `3xl:`)
 
 - [ ] Full sidebar + map + stats layout, no vertical scrolling
 - [ ] Map: hovering alert highlights related map region
@@ -103,7 +128,7 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 
 ---
 
-## Phase 6 — Polish & Extras
+## Phase 8 — Polish & Extras
 
 ### PWA
 
@@ -162,7 +187,7 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 
 ## Shelved
 
-> Revisit after Phase 5 is stable.
+> Revisit after Phase 7 is stable.
 
 - **Discord bot rewrite** — focus on website + API first
 - **SwiftUI app** — native iOS with Live Activities / Dynamic Island
