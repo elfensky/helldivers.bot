@@ -9,25 +9,15 @@
 
 Get the data layer right before touching the frontend.
 
-### Schema Rework
+> Spec: [`docs/superpowers/specs/2026-03-25-phase-1-backend-database-design.md`](superpowers/specs/2026-03-25-phase-1-backend-database-design.md)
 
-- [ ] Drop `h1_defend_event` and `h1_attack_event` tables — migrate fully to unified `h1_event`
-- [ ] Clean up redundant storage in `h1_introduction_order` (stores both `order Int[]` and `json Json`)
-- [ ] Clean up redundant storage in `h1_points_max` (same duplication)
-- [ ] Add interval statistics table — 15-min snapshots for season stats
-- [ ] Add event-level interval statistics — 10-min snapshots for event progress
+- [ ] Unify `h1_defend_event` + `h1_attack_event` → `h1_event`
+- [ ] Drop redundant `json` fields from `h1_introduction_order` and `h1_points_max`
+- [ ] Add `h1_statistic_snapshot` table (15-min interval stats)
+- [ ] Add `h1_event_snapshot` table (10-min event progress)
 - [ ] Add composite indexes for common query patterns
-- [ ] Migrate existing data to new schema
-
-### Data Pipeline
-
-- [ ] Map data pipeline — generate map JSON on each update cycle, store in `h1_map` or `App.map`
-- [ ] Historic player count tracking (link to sale events — user-submitted, admin-approved)
-
-### API Routes
-
-- [ ] Review and clean up `/api/h1/update`, `/api/h1/campaign`, `/api/h1/rebroadcast`
-- [ ] Ensure all routes use `tryCatch`, `errorResponse`/`successResponse`, Zod validation consistently
+- [ ] Generate map JSON on each update cycle → `App.map`
+- [ ] Clean up rebroadcast route (`tryCatch` consistency)
 
 ---
 

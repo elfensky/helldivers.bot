@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Serena (removed, prevent re-tracking)
 .serena/cache/
+
+# Claude
+.claude/worktrees
