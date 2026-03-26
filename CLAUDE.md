@@ -60,7 +60,7 @@ All work is tracked via [GitHub Issues](https://github.com/elfensky/helldivers.b
 
 ### Organization
 
-- **Milestones** group issues by phase: Phase 0 (Initial Release) through Phase 11, plus Shelved.
+- **Milestones** group issues by phase: Phase 0 (Initial Release, closed) through Phase 10, plus Shelved. Phase 4 and 11 are closed.
 - **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
 - **Project board** statuses: `Backlog`, `In progress`, `Done`.
 - Issue title prefixes: `Phase N:`, `Shelved:`.
