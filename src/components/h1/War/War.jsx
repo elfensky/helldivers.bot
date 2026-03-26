@@ -1,13 +1,70 @@
 import './War.css';
 import factions from '@/enums/factions';
 
-export default function War({ data }) {
+function getWarOutcome(data) {
+    if (!data?.live || data.live.length !== 3) return null;
+
+    const events = data?.events || [];
+    const defeatEvent = events.find(
+        (e) => e.type === 'defend' && e.region === 0 && e.status === 'fail',
+    );
+    if (defeatEvent) {
+        return {
+            outcome: 'defeat',
+            reason: 'Super Earth was invaded and overrun.',
+        };
+    }
+
+    const victory = data.live.every((f) => f.status === 'defeated');
+    if (victory) {
+        return {
+            outcome: 'victory',
+            reason: 'All enemy factions have been defeated.',
+        };
+    }
+
+    return null;
+}
+
+function WarOutcome({ data }) {
+    const result = getWarOutcome(data);
+    if (!result) return null;
+
+    const { outcome, reason } = result;
+
+    return (
+        <div className={`war-outcome ${outcome}`}>
+            <h3>{outcome === 'victory' ? 'Victory' : 'Defeat'}</h3>
+            <p>{reason}</p>
+            <ul>
+                {data.live.map((f) => (
+                    <li
+                        key={f.enemy}
+                        className={`faction-status ${f.status === 'defeated' ? 'defeated' : ''}`}
+                    >
+                        <img
+                            src={`/icons/faction${f.enemy}.webp`}
+                            alt={factions[f.enemy]?.name ?? `Faction ${f.enemy}`}
+                            width={16}
+                            height={16}
+                        />
+                        <span>{factions[f.enemy]?.name ?? `Faction ${f.enemy}`}</span>
+                        <span>{f.status}</span>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+export default function War({ data, showOutcome = false }) {
     if (!data) return null;
 
     return (
         <section className="flex flex-col gap-4">
             <h2>War Stats</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                {showOutcome && <WarOutcome data={data} />}
                 {generateGlobalWarStats(data?.live)}
                 {data?.live?.map((statistic) => generateWarStats(statistic))}
             </div>

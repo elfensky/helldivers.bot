@@ -1,0 +1,67 @@
+.war-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.timeline-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.timeline-track {
+    position: relative;
+    height: 18px;
+    margin: 0 0.25rem;
+}
+
+.timeline-range {
+    width: 100%;
+    accent-color: #ffd500;
+    cursor: pointer;
+}
+
+.timeline-marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.timeline-marker.defend {
+    background-color: #e53e3e;
+    box-shadow: 0 0 3px rgba(229, 62, 62, 0.6);
+}
+
+.timeline-marker.attack {
+    background-color: #38a169;
+    box-shadow: 0 0 3px rgba(56, 161, 105, 0.6);
+}
+
+.timeline-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    background-color: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.8rem;
+}
+
+.timeline-info-label {
+    color: #ffd500;
+    font-weight: 500;
+}
+
+.timeline-info-time {
+    color: rgba(255, 255, 255, 0.65);
+    white-space: nowrap;
+}
