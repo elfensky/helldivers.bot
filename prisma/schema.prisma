@@ -215,15 +215,13 @@ model h1_points_max {
 model h1_snapshot {
     id            String    @id @default(uuid(7))
     season        Int //foreign key //multiple snapshots per season, hence NOT unique. enforces one-to-many relationship
-    time          Int //original value 
+    time          Int //original value
     data          Json //data field
-    json          Json //original raw data
     //relationship
     linked_season h1_season @relation("OneSeasonToManySnapshots", fields: [season], references: [season])
 
     //indexes
     @@unique([season, time]) //unique
-    @@index([season, time]) //index
     @@index([season]) //index
 }
 
