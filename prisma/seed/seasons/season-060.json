@@ -1,0 +1,189 @@
+{
+    "time": 1774536597,
+    "error_code": 0,
+    "introduction_order": [
+        1,
+        0,
+        2
+    ],
+    "points_max": [
+        566510,
+        636530,
+        384680
+    ],
+    "snapshots": [
+        {
+            "season": 60,
+            "time": 1531646037,
+            "data": "[{\"points\":283255,\"points_taken\":0,\"status\":\"hidden\"},{\"points\":318265,\"points_taken\":0,\"status\":\"active\"},{\"points\":192340,\"points_taken\":0,\"status\":\"hidden\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1531699201,
+            "data": "[{\"points\":283255,\"points_taken\":0,\"status\":\"hidden\"},{\"points\":412286,\"points_taken\":94021,\"status\":\"active\"},{\"points\":192340,\"points_taken\":0,\"status\":\"hidden\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1531785601,
+            "data": "[{\"points\":336062,\"points_taken\":52807,\"status\":\"active\"},{\"points\":488968,\"points_taken\":170703,\"status\":\"active\"},{\"points\":192340,\"points_taken\":0,\"status\":\"hidden\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1531872001,
+            "data": "[{\"points\":401937,\"points_taken\":118682,\"status\":\"active\"},{\"points\":463443,\"points_taken\":214937,\"status\":\"active\"},{\"points\":211162,\"points_taken\":18822,\"status\":\"active\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1531958401,
+            "data": "[{\"points\":456944,\"points_taken\":173689,\"status\":\"active\"},{\"points\":504249,\"points_taken\":255743,\"status\":\"active\"},{\"points\":235539,\"points_taken\":43199,\"status\":\"active\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1532044801,
+            "data": "[{\"points\":508710,\"points_taken\":225455,\"status\":\"active\"},{\"points\":542201,\"points_taken\":293695,\"status\":\"active\"},{\"points\":257802,\"points_taken\":65462,\"status\":\"active\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1532131201,
+            "data": "[{\"points\":563368,\"points_taken\":280113,\"status\":\"active\"},{\"points\":584329,\"points_taken\":335823,\"status\":\"active\"},{\"points\":280116,\"points_taken\":87776,\"status\":\"active\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1532217601,
+            "data": "[{\"points\":566510,\"points_taken\":287844,\"status\":\"active\"},{\"points\":636241,\"points_taken\":387735,\"status\":\"active\"},{\"points\":307043,\"points_taken\":114703,\"status\":\"active\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1532304001,
+            "data": "[{\"points\":566510,\"points_taken\":288557,\"status\":\"defeated\"},{\"points\":636530,\"points_taken\":391608,\"status\":\"active\"},{\"points\":351920,\"points_taken\":159580,\"status\":\"active\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1532390401,
+            "data": "[{\"points\":566510,\"points_taken\":288557,\"status\":\"defeated\"},{\"points\":636530,\"points_taken\":392711,\"status\":\"active\"},{\"points\":384680,\"points_taken\":193860,\"status\":\"active\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1532476801,
+            "data": "[{\"points\":566510,\"points_taken\":288557,\"status\":\"defeated\"},{\"points\":636530,\"points_taken\":458297,\"status\":\"active\"},{\"points\":384680,\"points_taken\":195606,\"status\":\"active\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1532563201,
+            "data": "[{\"points\":566510,\"points_taken\":288557,\"status\":\"defeated\"},{\"points\":636530,\"points_taken\":462031,\"status\":\"active\"},{\"points\":384680,\"points_taken\":196113,\"status\":\"defeated\"}]"
+        },
+        {
+            "season": 60,
+            "time": 1532613301,
+            "data": "[{\"points\":566510,\"points_taken\":288557,\"status\":\"defeated\"},{\"points\":636530,\"points_taken\":463026,\"status\":\"defeated\"},{\"points\":384680,\"points_taken\":196113,\"status\":\"defeated\"}]"
+        }
+    ],
+    "defend_events": [
+        {
+            "season": 60,
+            "event_id": 1242,
+            "start_time": 1531811282,
+            "end_time": 1531820282,
+            "region": 8,
+            "enemy": 1,
+            "points_max": 1320,
+            "points": 1279,
+            "status": "fail",
+            "players_at_start": 479
+        },
+        {
+            "season": 60,
+            "event_id": 1243,
+            "start_time": 1531820341,
+            "end_time": 1531829282,
+            "region": 7,
+            "enemy": 1,
+            "points_max": 1181,
+            "points": 1181,
+            "status": "success",
+            "players_at_start": 437
+        },
+        {
+            "season": 60,
+            "event_id": 1244,
+            "start_time": 1531969321,
+            "end_time": 1531973701,
+            "region": 7,
+            "enemy": 2,
+            "points_max": 831,
+            "points": 831,
+            "status": "success",
+            "players_at_start": 520
+        },
+        {
+            "season": 60,
+            "event_id": 1245,
+            "start_time": 1532126161,
+            "end_time": 1532134501,
+            "region": 10,
+            "enemy": 0,
+            "points_max": 1686,
+            "points": 1686,
+            "status": "success",
+            "players_at_start": 534
+        },
+        {
+            "season": 60,
+            "event_id": 1246,
+            "start_time": 1532390942,
+            "end_time": 1532396102,
+            "region": 9,
+            "enemy": 1,
+            "points_max": 739,
+            "points": 739,
+            "status": "success",
+            "players_at_start": 272
+        }
+    ],
+    "attack_events": [
+        {
+            "season": 60,
+            "event_id": 377,
+            "start_time": 1532137621,
+            "end_time": 1532277241,
+            "enemy": 0,
+            "points_max": 51455,
+            "points": 51455,
+            "status": "success",
+            "players_at_start": 542
+        },
+        {
+            "season": 60,
+            "event_id": 378,
+            "start_time": 1532218082,
+            "end_time": 1532390882,
+            "enemy": 1,
+            "points_max": 87519,
+            "points": 37292,
+            "status": "fail",
+            "players_at_start": 652
+        },
+        {
+            "season": 60,
+            "event_id": 379,
+            "start_time": 1532376301,
+            "end_time": 1532543942,
+            "enemy": 2,
+            "points_max": 25518,
+            "points": 25518,
+            "status": "success",
+            "players_at_start": 472
+        },
+        {
+            "season": 60,
+            "event_id": 380,
+            "start_time": 1532468341,
+            "end_time": 1532613301,
+            "enemy": 1,
+            "points_max": 40578,
+            "points": 40578,
+            "status": "success",
+            "players_at_start": 424
+        }
+    ]
+}

@@ -19,7 +19,7 @@ Get the data layer right before touching the frontend.
 - [x] Add composite indexes for common query patterns
 - [x] Clean up rebroadcast route (`tryCatch` consistency)
 - [x] Update `/api/h1/campaign` route to read from `h1_live`
-- [ ] Create seed files for past seasons (`prisma/seed/seasons/`)
+- [x] Create seed files for past seasons (`prisma/seed/seasons/`)
 
 ---
 
