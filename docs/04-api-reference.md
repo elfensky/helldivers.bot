@@ -275,7 +275,7 @@ All errors use the rebroadcast envelope: `{ time, error_code, error_message }`.
 
 ### Analytics
 
-Tracked via `after()`. Event name: `"API | Rebroadcast"`. Note: the URL passed to `umamiTrackEvent` is hardcoded as `"/api/h1/update"` — this is a copy-paste bug in the source but does not affect runtime behavior. Custom properties include `action` (and `season` when action is `get_snapshots`) plus `ms`.
+Tracked via `after()` (registered after `formValues` is populated to avoid closure issues with early returns). Event name: `"API | Rebroadcast"`, URL: `"/api/h1/rebroadcast"`. Custom properties include `action` (and `season` when action is `get_snapshots`) plus `ms`.
 
 ### Method Not Allowed
 

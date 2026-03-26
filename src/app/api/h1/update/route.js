@@ -1,4 +1,3 @@
-'use server';
 import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/utils/time';

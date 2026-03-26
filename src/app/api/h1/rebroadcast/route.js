@@ -17,22 +17,10 @@ import { updateSeason } from '@/update/season';
 import { umamiTrackEvent } from '@/utils/umami';
 
 export async function POST(request) {
-    after(async () => {
-        const data = {
-            action: formValues.action,
-            ms: roundedPerformanceTime(start),
-        };
-        if (data?.action === 'get_snapshots') {
-            data.season = formValues.season;
-        }
-        await umamiTrackEvent('API | Rebroadcast', '/api/h1/update', 'rebroadcast', data);
-    });
-
     //0. initialize
     const start = performance.now();
     let check = null;
-    let update = false;
-    // let elapsed = null;
+    let formValues = null;
 
     //1. test if valid POST request
     const contentType = request.headers.get('content-type') || '';
@@ -43,7 +31,23 @@ export async function POST(request) {
 
     //2. get FormData and convert it to an object. Test is "action" parameter is present.
     const formData = await request.formData();
-    const formValues = formDataToObject(formData);
+    formValues = formDataToObject(formData);
+
+    after(async () => {
+        const data = {
+            action: formValues.action,
+            ms: roundedPerformanceTime(start),
+        };
+        if (data?.action === 'get_snapshots') {
+            data.season = formValues.season;
+        }
+        await umamiTrackEvent(
+            'API | Rebroadcast',
+            '/api/h1/rebroadcast',
+            'rebroadcast',
+            data,
+        );
+    });
     if (typeof formValues.action !== 'string') {
         return rebroadcastErrorResponse(1); //no action set
     }
@@ -60,13 +64,10 @@ export async function POST(request) {
         switch (code) {
             case 'invalid_union':
                 return rebroadcastErrorResponse(2);
-                break;
             case 'invalid_type':
                 return rebroadcastErrorResponse(3);
-                break;
             default:
                 return rebroadcastErrorResponse(null);
-                break;
         }
     }
     if (formValues?.season) {

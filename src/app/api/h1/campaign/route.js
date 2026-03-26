@@ -13,16 +13,15 @@ import { updateSeason } from '@/update/season';
 import { umamiTrackEvent } from '@/utils/umami';
 
 export async function GET(request) {
+    //0. initialize
+    const start = performance.now();
+
     after(async () => {
         const data = {
             ms: roundedPerformanceTime(start),
         };
-        // console.log(data);
         await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'campaign', data);
     });
-
-    //0. initialize
-    const start = performance.now();
     let requestType = null; // latest, specific, multiple
     let data = null;
     let season = null;
