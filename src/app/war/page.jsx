@@ -3,6 +3,8 @@ import './war.css';
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { getSeasonList } from '@/db/queries/getSeasonList';
+//utils
+import { computeMapState } from '@/utils/computeMapState.mjs';
 //components
 import Galaxy from '@/components/h1/Galaxy/Galaxy';
 import War from '@/components/h1/War/War';
@@ -54,6 +56,7 @@ export default async function WarHistoryPage({ searchParams }) {
     }
 
     const currentSeason = data.season;
+    const mapState = computeMapState(data.live, []);
 
     return (
         <div className="gutters z-10 flex w-screen flex-col gap-4 overflow-hidden">
@@ -64,7 +67,7 @@ export default async function WarHistoryPage({ searchParams }) {
             <div className="flex flex-col-reverse justify-between gap-4 xl:flex-row xl:flex-wrap">
                 <War data={data} />
                 <Timeline data={data} />
-                <Galaxy data={data} />
+                <Galaxy mapState={mapState} />
             </div>
         </div>
     );

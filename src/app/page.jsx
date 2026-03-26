@@ -2,6 +2,8 @@ import './page.css';
 //db
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
+//utils
+import { computeMapState } from '@/utils/computeMapState.mjs';
 //components
 import Galaxy from '@/components/h1/Galaxy/Galaxy';
 import War from '@/components/h1/War/War';
@@ -30,11 +32,13 @@ export default async function HomePage() {
         );
     }
 
+    const mapState = computeMapState(data.live, data.events);
+
     return (
         <div className="gutters z-10 flex w-screen flex-col-reverse justify-between gap-4 overflow-hidden xl:fixed xl:top-[80px] xl:max-h-[calc(100vh-80px-16px)] xl:flex-row xl:flex-wrap">
             <War data={data} />
             <Timeline data={data} />
-            <Galaxy data={data} />
+            <Galaxy mapState={mapState} />
         </div>
     );
 }
