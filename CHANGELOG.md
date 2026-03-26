@@ -6,6 +6,16 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
+## 0.12.0 (2026-03-26)
+
+- Add Vitest testing infrastructure with node environment, v8 coverage, and `@`/`@test-utils` path aliases
+- Add global mocks for NextAuth v5 `auth()`, Prisma client (all models), and Next.js modules
+- Add test utilities: `createMockRequest`, `createMockSession`, `createMockModel`
+- Migrate Playwright smoke tests from `tests/` to `src/__tests__/e2e/` (aegis conventions)
+- Configure Playwright screenshot-on-failure and trace-on-first-retry
+- Add `docs/06-testing.md` — testing conventions, mock factories, API route testing patterns
+- Add starter unit tests for `tryCatch` utility (100% coverage)
+
 ## 0.11.0 (2026-03-26)
 
 - Phase 3: Gate `/api/h1/rebroadcast` behind API key validation (Bearer token + MD5 hash lookup)
