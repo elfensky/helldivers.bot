@@ -10,6 +10,9 @@ on:
     # push:
     #     paths:
     #         - '.github/workflows/metrics.yml' # run workflow if metrics.yml changes
+permissions:
+    contents: write
+
 jobs:
     generate-metrics:
         runs-on: ubuntu-latest

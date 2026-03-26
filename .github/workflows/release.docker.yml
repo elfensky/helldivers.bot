@@ -3,6 +3,10 @@ on:
     push:
         tags:
             - '*.*.*' # Triggers on version tags like v1.0.0
+permissions:
+    contents: read
+    packages: write
+
 jobs:
     build:
         runs-on: ubuntu-latest

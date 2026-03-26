@@ -18,9 +18,15 @@ describe('tryCatch', () => {
     });
 
     test('returns data for falsy resolved values', async () => {
-        expect(await tryCatch(Promise.resolve(null))).toEqual({ data: null, error: null });
+        expect(await tryCatch(Promise.resolve(null))).toEqual({
+            data: null,
+            error: null,
+        });
         expect(await tryCatch(Promise.resolve(0))).toEqual({ data: 0, error: null });
-        expect(await tryCatch(Promise.resolve(false))).toEqual({ data: false, error: null });
+        expect(await tryCatch(Promise.resolve(false))).toEqual({
+            data: false,
+            error: null,
+        });
         expect(await tryCatch(Promise.resolve(''))).toEqual({ data: '', error: null });
     });
 
