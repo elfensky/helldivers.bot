@@ -6,6 +6,16 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
+## 0.10.0 (2026-03-26)
+
+- Restructure homepage as live war dashboard (galaxy map, faction stats, event timeline)
+- Repurpose `/war` as historical season browser with season selector
+- Create `/about` page for relocated marketing content (about, discord, API)
+- Update navigation: rename "War" to "History", add "About" link
+- Add `getSeasonList` query for season selector
+- Update sitemap with `/war` and `/about` entries
+- Update layout metadata to reflect dashboard purpose
+
 ## x.x.x (YYYY-MM-DD)
 
 - To be copied from RELEASE.md

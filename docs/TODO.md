@@ -52,14 +52,14 @@ Gate the rebroadcast endpoint behind API key validation.
 
 ## Phase 4 — War Status Dashboard (Core Feature)
 
-The war dashboard becomes the homepage. Single-page, no vertical scrolling on desktop.
+The war dashboard is now the homepage. `/war` repurposed as historical season browser.
 
 ### Layout
 
-- [ ] Move war dashboard to `/` (replace current homepage sections)
+- [x] Move war dashboard to `/` (replace current homepage sections)
 - [ ] Single-page layout: sidebar with stats, main area with map + active events
 - [ ] No vertical scroll on desktop — everything fits in viewport
-- [ ] Decide what to do with old homepage content (About, Features, Discord, API, Buy/Play sections)
+- [x] Old homepage content (About, Discord, API) moved to `/about`; Features section deleted
 
 ### Alerts & Notifications
 
@@ -144,15 +144,15 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 
 ### War History Page
 
-- [ ] Route: `/war/:seasonId` (e.g., `/war/153`)
-- [ ] On load: animate war progress from start to current
-- [ ] Season switcher to browse previous wars
-- [ ] Animated map playback using historical statistics
+- [x] Route: `/war?season=N` — historical season browser with season selector
+- [ ] Animated war replay: auto-play + scrubber (separate spec needed)
+- [ ] Animated map playback using `h1_snapshot` + `h1_event` data
 
 ### SEO & Meta
 
 - [ ] Add `robots.txt` (static file or Next.js route)
-- [ ] Update `sitemap.js` — add `/war`, `/docs`, `/api`, `/faq`, `/discord` pages
+- [x] Update `sitemap.js` — added `/war`, `/about`
+- [ ] Update `sitemap.js` — add `/docs`, `/api`, `/faq` pages
 - [ ] Add JSON-LD to Event component
 
 ### Design Polish
@@ -174,7 +174,7 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 
 - [x] Active component (`src/components/h1/Active/Active.jsx`)
 - [x] Navigation with GitHub link + Umami event tracking
-- [x] Homepage sections: About, Features, Discord, API
+- [x] Homepage sections: About, Features, Discord, API (moved to `/about` in v0.10.0)
 - [x] Footer with sitemap structure
 - [x] `sitemap.js` route
 - [x] Umami analytics — production only
@@ -182,7 +182,10 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 - [x] Color palette CSS variables
 - [x] Custom `Insignia` font for headings
 - [x] Gutters utility classes
-- [x] War page (`/war`) with Galaxy, War, Timeline
+- [x] War page (`/war`) with Galaxy, War, Timeline (repurposed as history browser in v0.10.0)
+- [x] Live war dashboard at `/` with Galaxy, War, Timeline (v0.10.0)
+- [x] About page (`/about`) with relocated marketing content (v0.10.0)
+- [x] Navigation: "War" → "History", added "About" link (v0.10.0)
 - [x] Stats page (`/stats`)
 - [x] JSON-LD on layout and war page
 - [x] Mobile hamburger menu (basic — needs React rewrite)
