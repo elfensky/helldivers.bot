@@ -9,7 +9,7 @@
 
 Get the data layer right before touching the frontend.
 
-> Spec: [`docs/superpowers/specs/2026-03-25-phase-1-backend-database-design.md`](superpowers/specs/2026-03-25-phase-1-backend-database-design.md)
+> Spec: [`docs/superpowers/specs/completed/2026-03-25-phase-1-backend-database-design.md`](superpowers/specs/completed/2026-03-25-phase-1-backend-database-design.md)
 
 - [x] Unify `h1_defend_event` + `h1_attack_event` → `h1_event`
 - [x] Drop redundant `json` fields from `h1_introduction_order`, `h1_points_max`, and `h1_snapshot`
@@ -27,7 +27,7 @@ Get the data layer right before touching the frontend.
 
 Capture how stats and events change over time. Depends on Phase 1 normalized tables.
 
-> Spec: [`docs/superpowers/specs/2026-03-25-phase-2-time-series-snapshots.md`](superpowers/specs/2026-03-25-phase-2-time-series-snapshots.md)
+> Spec: [`docs/superpowers/specs/completed/2026-03-25-phase-2-time-series-snapshots.md`](superpowers/specs/completed/2026-03-25-phase-2-time-series-snapshots.md)
 
 - [x] Drop `h1_snapshot.json` column (Phase 1 gap)
 - [x] Add `h1_live_snapshot` table (15-min interval stats from `h1_live`)
@@ -42,7 +42,7 @@ Capture how stats and events change over time. Depends on Phase 1 normalized tab
 
 Gate the rebroadcast endpoint behind API key validation.
 
-> Spec: [`docs/superpowers/specs/2026-03-25-phase-3-api-key-enforcement-design.md`](superpowers/specs/2026-03-25-phase-3-api-key-enforcement-design.md)
+> Spec: [`docs/superpowers/specs/completed/2026-03-25-phase-3-api-key-enforcement-design.md`](superpowers/specs/completed/2026-03-25-phase-3-api-key-enforcement-design.md)
 
 - [x] Add `validateApiKey(request)` utility in `src/db/queries/api.mjs`
 - [x] Integrate key validation into rebroadcast POST handler
@@ -143,6 +143,9 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 - [ ] "Install app" prompt/banner
 
 ### War History & Animated Replay
+
+> Spec: [`docs/superpowers/specs/2026-03-26-phase-8-war-outcome-timeline-design.md`](superpowers/specs/2026-03-26-phase-8-war-outcome-timeline-design.md)
+> Plan: [`docs/superpowers/plans/2026-03-26-phase-8-war-outcome-timeline.md`](superpowers/plans/2026-03-26-phase-8-war-outcome-timeline.md)
 
 - [x] Route: `/war?season=N` — historical season browser with season selector
 - [x] `getSeasonList()` query for season selector
