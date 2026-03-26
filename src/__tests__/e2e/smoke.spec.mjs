@@ -49,4 +49,10 @@ test.describe('Smoke tests', () => {
         const body = await response.json();
         expect(body.error_code).toBe(5);
     });
+
+    test('GET /api/og returns a PNG image', async ({ request }) => {
+        const response = await request.get('/api/og');
+        expect(response.status()).toBe(200);
+        expect(response.headers()['content-type']).toContain('image/png');
+    });
 });
