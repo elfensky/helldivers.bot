@@ -10,7 +10,7 @@ export async function getCampaign(season = null) {
     const where =
         season === null ?
             { last_updated: { not: null } }
-        :   { season: season, last_updated: { not: null } };
+        :   { season: season };
 
     const orderBy = season === null ? { season: 'desc' } : undefined;
 
