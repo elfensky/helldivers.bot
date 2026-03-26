@@ -1,105 +1,135 @@
 import './war.css';
 //db
 import { tryCatch } from '@/utils/tryCatch.mjs';
-import { queryGetRebroadcastStatus } from '@/db/queries/rebroadcast';
 import { getCampaign } from '@/db/queries/getCampaign';
-
-// Force dynamic rendering - skip build-time evaluation (requires database)
-export const dynamic = 'force-dynamic';
-
+import { getSeasonList } from '@/db/queries/getSeasonList';
 //components
 import Galaxy from '@/components/h1/Galaxy/Galaxy';
 import War from '@/components/h1/War/War';
 import Timeline from '@/components/h1/Timeline/Timeline';
-//
-import Script from 'next/script';
+import Link from 'next/link';
+
+// Force dynamic rendering - skip build-time evaluation (requires database)
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
     metadataBase: 'https://helldivers.bot/war',
-    title: 'War | Helldivers Bot - status of the current in-game campaign',
+    title: 'War History | Helldivers Bot - past campaign data',
     description:
-        'Live dashboard showing the progresso of the in-game Helldivers campaign, with player stats, map of the regions and a timeline of events.',
+        'Browse historical Helldivers 1 war data. View past seasons, campaign outcomes, and event logs.',
 };
 
-export default async function Campaign() {
-    const rebroacast_status = await tryCatch(queryGetRebroadcastStatus());
-    // const query = await tryCatch(getCampaign());
-    const { data: query, error: queryError } = await tryCatch(getCampaign());
+export default async function WarHistoryPage({ searchParams }) {
+    const params = await searchParams;
+    const seasonParam = params?.season ? parseInt(params.season, 10) : null;
 
-    if (queryError !== null) {
-        console.error('getCampaign failed:', queryError);
+    const { data: seasons, error: seasonsError } = await tryCatch(getSeasonList());
+
+    if (seasonsError !== null) {
+        console.error('getSeasonList failed:', seasonsError);
         return (
-            <div className="flex min-h-full w-full flex-col-reverse justify-center sm:flex-row">
+            <div className="flex min-h-full w-full flex-col justify-center">
+                Unable to load season list. Please try again later.
+            </div>
+        );
+    }
+
+    const { data, error } = await tryCatch(getCampaign(seasonParam));
+
+    if (error !== null) {
+        console.error('getCampaign failed:', error);
+        return (
+            <div className="flex min-h-full w-full flex-col justify-center">
                 Unable to load campaign data. Please try again later.
             </div>
         );
     }
 
-    const data = query;
-
-    if (!query) {
+    if (!data) {
         return (
-            <div className="flex min-h-full w-full flex-col-reverse justify-center sm:flex-row">
-                Loading...
+            <div className="flex min-h-full w-full flex-col justify-center">
+                No data available.
             </div>
         );
     }
 
+    const currentSeason = data.season;
+
     return (
-        <div className="gutters z-10 flex w-screen flex-col-reverse justify-between gap-4 overflow-hidden xl:fixed xl:top-[80px] xl:max-h-[calc(100vh-80px-16px)] xl:flex-row xl:flex-wrap">
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-            />
-            {/* USE SUSPENSE HERE */}
-            <War data={data} />
-            <Timeline data={data} />
-            <Galaxy data={data} />
-            {/* <Script src="/scripts/reload.js" /> */}
+        <div className="gutters z-10 flex w-screen flex-col gap-4 overflow-hidden">
+            <JsonLd />
+
+            <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
+
+            <div className="flex flex-col-reverse justify-between gap-4 xl:flex-row xl:flex-wrap">
+                <War data={data} />
+                <Timeline data={data} />
+                <Galaxy data={data} />
+            </div>
         </div>
     );
 }
 
-// https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
-const schema = [
-    {
-        '@context': 'https://schema.org',
-        '@type': 'WebApplication',
-        applicationCategory: ['GameUtility', 'GameInformation', 'Entertainment'],
-        url: 'https://helldivers.bot/war',
+function SeasonSelector({ seasons, currentSeason }) {
+    if (!seasons || seasons.length === 0) return null;
 
-        name: 'War | Helldivers Bot',
-        author: 'Andrei Lavrenov',
-        description:
-            'Live dashboard showing the progresso of the in-game Helldivers campaign, with player stats, map of the regions and a timeline of events.',
+    return (
+        <nav className="flex flex-wrap items-center gap-2">
+            <span className="text-sm opacity-70">Season:</span>
+            {seasons.map((s) => (
+                <Link
+                    key={s.season}
+                    href={`/war?season=${s.season}`}
+                    className={`rounded px-3 py-1 text-sm ${
+                        s.season === currentSeason ?
+                            'bg-[var(--orange)] text-black'
+                        :   'bg-white/10 hover:bg-white/20'
+                    }`}
+                >
+                    {s.season}
+                </Link>
+            ))}
+        </nav>
+    );
+}
 
-        // only possible for specific @types
-        // aggregateRating: {
-        //     '@type': 'AggregateRating',
-        //     ratingValue: 5.0,
-        //     ratingCount: 3,
-        // },
-
-        offers: {
-            '@type': 'Offer',
-            price: 0.0,
-            priceCurrency: 'EUR',
-            // availability: 'http://schema.org/InStock',
-            // url: 'https://helldivers.bot/campaign',
-        },
-
-        // image: "https://helldivers.bot/url-to-dynamically-generated-map-status"
-    },
-    {
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-            {
-                '@type': 'ListItem',
-                position: 1,
-                name: 'War',
-                item: 'https://helldivers.bot/war',
+function JsonLd() {
+    // Static JSON-LD structured data for SEO — no user input, safe to inline
+    const structuredData = [
+        {
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            applicationCategory: ['GameUtility', 'GameInformation', 'Entertainment'],
+            url: 'https://helldivers.bot/war',
+            name: 'War History | Helldivers Bot',
+            author: 'Andrei Lavrenov',
+            description:
+                'Browse historical Helldivers 1 war data. View past seasons, campaign outcomes, and event logs.',
+            offers: {
+                '@type': 'Offer',
+                price: 0.0,
+                priceCurrency: 'EUR',
             },
-        ],
-    },
-];
+        },
+        {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+                {
+                    '@type': 'ListItem',
+                    position: 1,
+                    name: 'War History',
+                    item: 'https://helldivers.bot/war',
+                },
+            ],
+        },
+    ];
+
+    return (
+        <script
+            type="application/ld+json"
+            // eslint-disable-next-line react/no-danger -- static structured data, no user input
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+    );
+}

@@ -18,7 +18,8 @@ export default async function Navigation() {
         // { href: '/history', label: 'History' },
         // { href: '/stats', label: 'Stats' },
         { href: 'https://status.helldivers.bot', label: 'Status' },
-        { href: '/war', label: 'War' },
+        { href: '/war', label: 'History' },
+        { href: '/about', label: 'About' },
         { href: '/docs', label: 'Docs' },
         { href: '/api', label: 'API' },
     ];
