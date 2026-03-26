@@ -6,9 +6,9 @@ import { getSeasonList } from '@/db/queries/getSeasonList';
 //utils
 import { computeMapState } from '@/utils/computeMapState.mjs';
 //components
-import Galaxy from '@/components/h1/Galaxy/Galaxy';
 import War from '@/components/h1/War/War';
 import Timeline from '@/components/h1/Timeline/Timeline';
+import WarTimeline from '@/components/h1/WarTimeline/WarTimeline';
 import Link from 'next/link';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
@@ -65,9 +65,9 @@ export default async function WarHistoryPage({ searchParams }) {
             <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
 
             <div className="flex flex-col-reverse justify-between gap-4 xl:flex-row xl:flex-wrap">
-                <War data={data} />
+                <War data={data} showOutcome={true} />
                 <Timeline data={data} />
-                <Galaxy mapState={mapState} />
+                <WarTimeline data={data} defaultMapState={mapState} />
             </div>
         </div>
     );

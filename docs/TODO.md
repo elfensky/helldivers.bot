@@ -59,44 +59,21 @@ Quick feature win with existing design. Show victory/defeat for historical seaso
 
 - [x] Route: `/war?season=N` — historical season browser with season selector
 - [x] `getSeasonList()` query for season selector
+- [x] Win/loss logic from event data (`getWarOutcome` in War.jsx)
+- [x] Victory/Defeat banner on `/war?season=N` (WarOutcome component)
+- [x] Extract `processCampaigns` + `processDefendEvents` + `processAttackEvents` from Galaxy.jsx into pure `computeMapState` utility
+- [x] Refactor Galaxy to accept `mapState` prop (remove shared mutable state)
+- [x] `<input type="range">` timeline scrubber with event markers (WarTimeline component)
+- [x] Re-enable `processAttackEvents` (was commented out due to CSS class conflict, fixed)
 
-#### War outcome banner
+#### Future enhancements (deferred)
 
-- [ ] Win/loss logic from event data
-- [ ] Victory/Defeat banner on `/war?season=N`
-
-#### Data prerequisites
-
-- [ ] Add `points`, `points_taken`, `points_max`, `status` columns to `h1_live_snapshot` — currently only captures stats, not campaign progress; without these fields the sector map cannot be reconstructed from time-series data alone (must fall back to legacy `h1_snapshot` table)
-
-#### Animation engine (zero new dependencies)
-
-- [ ] Extract `processCampaigns()` + `processDefendEvents()` + `processAttackEvents()` from `Galaxy.jsx` into a pure function `deriveMapState(snapshotData, events, pointsMax)` — no shared mutable `map` object
-- [ ] New API route: `GET /api/v1/war/[season]/timeline` — server-side merge of `h1_snapshot` + `h1_event` + `h1_event_snapshot` into sorted keyframe array
-- [ ] `usePlayback` hook: `setInterval` stepping through keyframe array indices (not wall-clock time — snapshots are unevenly spaced)
-- [ ] CSS transitions on `.sector { transition: fill 500ms ease-in-out }` for smooth state changes between frames
-
-#### Timeline scrubber
-
-- [ ] `<input type="range">` mapped to keyframe array index, display real timestamp as label
-- [ ] Play / Pause button
-- [ ] Speed selector (1x / 2x / 5x / 10x)
-- [ ] Day counter ("Day 14 of 45")
-- [ ] "Jump to next event" button
-
-#### Event visualization during playback
-
-- [ ] Active events: use existing `.active` CSS pulse animation on contested regions
-- [ ] Defend success: green flash (800ms `@keyframes`), then revert to `captured`
-- [ ] Defend fail: red flash (800ms), revert to `lost`
-- [ ] Attack events: pulse on homeworld (region 11) with progress overlay
-
-#### Data limitations (known)
-
-- Past seasons: no event point progression (only final state in `h1_event`)
-- Past seasons: no homeworld attack progress over time
-- `h1_event_snapshot` only exists going forward (Phase 2 capture)
-- Snapshot intervals are irregular — map slider to array index, not wall-clock
+- [ ] Auto-play / play-pause controls with `usePlayback` hook
+- [ ] Speed selector (1x / 2x / 5x / 10x), day counter, jump-to-next-event
+- [ ] CSS transitions on map sectors for smooth state changes during scrubbing
+- [ ] Event visualization effects (green/red flash for success/fail)
+- [ ] Use `h1_event_snapshot` data for live dashboard event progress (not historical replay)
+- [ ] Add `points`, `points_taken`, `points_max`, `status` to `h1_live_snapshot` for future richer replay
 
 ---
 
