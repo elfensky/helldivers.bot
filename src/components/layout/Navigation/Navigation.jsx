@@ -24,20 +24,6 @@ export default async function Navigation() {
                 id="navigation"
                 className="pointer-events-none absolute -top-[400%] right-0 z-0 flex w-full flex-col items-end justify-end gap-1 py-4 pr-4 text-right sm:right-12 md:pointer-events-auto md:relative md:right-0 md:w-fit md:flex-row md:items-center md:gap-4 md:p-0"
             >
-                {siteLinks.map((link) => (
-                    <li key={link.href}>
-                        <Link
-                            href={link.href}
-                            className={link.className || ''}
-                            data-umami-event={'header-' + link.label.toLowerCase()}
-                        >
-                            {link.label}
-                        </Link>
-                    </li>
-                ))}
-
-                <li className="hidden md:block md:opacity-30">|</li>
-
                 <li>
                     <Link
                         href="https://status.helldivers.bot"
@@ -89,6 +75,20 @@ export default async function Navigation() {
                         </figure>
                     </Link>
                 </li>
+
+                <li className="hidden md:block md:opacity-30">|</li>
+
+                {siteLinks.map((link) => (
+                    <li key={link.href}>
+                        <Link
+                            href={link.href}
+                            className={link.className || ''}
+                            data-umami-event={'header-' + link.label.toLowerCase()}
+                        >
+                            {link.label}
+                        </Link>
+                    </li>
+                ))}
 
                 <li className="hidden md:block md:opacity-30">|</li>
                 <li>
