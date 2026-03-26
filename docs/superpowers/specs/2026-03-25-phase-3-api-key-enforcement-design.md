@@ -22,15 +22,19 @@ Rate limiting is handled at the reverse proxy level (server infrastructure, outs
 
 ### Function: `validateApiKey(request)`
 
-1. Read `Authorization` header — expect format `Bearer <key>`
-2. If missing or malformed → return `{ error: 'missing' }`
-3. MD5 hash the key (same algorithm as `generateApiKey` uses)
-4. Query `ApiKey` table by `hash` — single DB lookup
-5. If no match → return `{ error: 'invalid' }`
-6. If `enabled === false` → return `{ error: 'disabled' }`
-7. Otherwise → return `{ data: { userId, keyId } }`
+**Not a server action.** This is a plain async utility called from the route handler — it does not use `auth()` sessions. It reads the `Authorization` header directly from the incoming request.
 
-Uses `tryCatch` wrapper per project conventions. No try/catch blocks.
+**Signature:** `async function validateApiKey(request) → { data, error }`
+
+1. Read `Authorization` header — expect format `Bearer <key>`
+2. If missing or malformed → return `{ data: null, error: 'missing' }`
+3. MD5 hash the key (reuses `createHash('md5')` already imported in `api.mjs`)
+4. Query `ApiKey` table by `hash` via `tryCatch` — single DB lookup
+5. If no match → return `{ data: null, error: 'invalid' }`
+6. If `enabled === false` → return `{ data: null, error: 'disabled' }`
+7. Otherwise → return `{ data: { userId: row.userId, keyId: row.id }, error: null }`
+
+Uses `tryCatch` wrapper for the DB query per project conventions. The existing CRUD functions in `api.mjs` use raw try/catch — those are server actions called from React forms and should be left as-is.
 
 ---
 
@@ -81,6 +85,9 @@ The method-not-allowed handler (GET, PUT, etc.) remains unauthenticated — no p
 | ------------------------------------- | ---------------------------------------------------------------- |
 | `src/db/queries/api.mjs`              | Add `validateApiKey(request)` function                           |
 | `src/app/api/h1/rebroadcast/route.js` | Add key check at top of POST handler, two new error codes (6, 7) |
+| `src/utils/openapi.registry.mjs`      | Add 401/403 responses to rebroadcast endpoint                    |
+| `docs/04-api-reference.md`            | Add error codes 6/7, document auth requirement                   |
+| `docs/TODO.md`                        | Check off Phase 3 items                                          |
 
 ---
 

@@ -9,6 +9,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Use git worktrees** for parallel development on separate branches.
 - **Playwright smoke tests** are configured. Run `npm run test:smoke` to verify the app builds and runs correctly.
 - **Always verify** after implementing a feature: run `npm run build` and `npm run test:smoke`.
+- **Never start the dev server.** Ask the user to start it separately if needed (e.g., for smoke tests).
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 
 ## Conventions
@@ -51,6 +52,12 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` to 
 - **Error tracking:** Sentry SDK configured for self-hosted Bugsink (`tracesSampleRate: 0`, no replays/logs).
 - **Node version:** Volta pins node@22 and npm@11.
 - **Server actions:** Most utilities use `'use server'` directive.
+
+## Specs & Plans
+
+For every phase or feature, create both files in `docs/superpowers/`:
+- **Spec** (`specs/{date}-phase-{N}-{name}.md`) — what and why: requirements, design decisions, schema changes, rationale.
+- **Plan** (`plans/{date}-phase-{N}-{name}.md`) — how and in what order: step-by-step implementation with specific files to create/modify.
 
 ## Reference Docs
 
