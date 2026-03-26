@@ -6,6 +6,14 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
+## 0.13.0 (2026-03-26)
+
+- Dynamic OG image generation showing galaxy map with live war progress
+- Extract SVG path geometry into shared `src/enums/mapPaths.mjs`
+- Extract `getWarOutcome` into shared utility with unit tests
+- Refactor `Map.jsx` to consume shared path data
+- Add OG route smoke test
+
 ## 0.12.0 (2026-03-26)
 
 - Add Vitest testing infrastructure with node environment, v8 coverage, and `@`/`@test-utils` path aliases
