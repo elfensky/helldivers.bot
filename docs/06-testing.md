@@ -33,25 +33,25 @@ src/__tests__/
 
 Root-level config files:
 
-| File                | Purpose                                   |
-| ------------------- | ----------------------------------------- |
-| `vitest.config.mjs` | Vitest configuration (env, aliases, coverage) |
-| `vitest.setup.mjs`  | Global mocks (auth, Prisma, Next.js modules)  |
+| File                    | Purpose                                       |
+| ----------------------- | --------------------------------------------- |
+| `vitest.config.mjs`     | Vitest configuration (env, aliases, coverage) |
+| `vitest.setup.mjs`      | Global mocks (auth, Prisma, Next.js modules)  |
 | `playwright.config.mjs` | Playwright configuration (testDir, artifacts) |
 
 ---
 
 ## Section 3: NPM Scripts
 
-| Script               | Description                                      |
-| -------------------- | ------------------------------------------------ |
-| `npm test`           | Run all unit tests then all E2E tests            |
-| `npm run test:unit`  | Vitest in watch mode (for local TDD)             |
-| `npm run test:unit:run` | Vitest single run (for CI)                    |
-| `npm run test:unit:coverage` | Vitest with v8 coverage report           |
-| `npm run test:e2e`   | Playwright full suite                            |
-| `npm run test:e2e:ui` | Playwright with interactive UI                  |
-| `npm run test:smoke` | Playwright smoke tests only                      |
+| Script                       | Description                           |
+| ---------------------------- | ------------------------------------- |
+| `npm test`                   | Run all unit tests then all E2E tests |
+| `npm run test:unit`          | Vitest in watch mode (for local TDD)  |
+| `npm run test:unit:run`      | Vitest single run (for CI)            |
+| `npm run test:unit:coverage` | Vitest with v8 coverage report        |
+| `npm run test:e2e`           | Playwright full suite                 |
+| `npm run test:e2e:ui`        | Playwright with interactive UI        |
+| `npm run test:smoke`         | Playwright smoke tests only           |
 
 **Note:** `test:unit` runs in interactive watch mode by default — use `test:unit:run` for CI or single execution.
 
@@ -137,12 +137,12 @@ Returns a Prisma model stub with all standard CRUD methods as `vi.fn()`. Useful 
 
 ## Section 7: Test Naming Conventions
 
-| Type        | Pattern       | Location                      |
-| ----------- | ------------- | ----------------------------- |
-| Unit test   | `*.test.mjs`  | `src/__tests__/unit/`         |
-| E2E test    | `*.spec.mjs`  | `src/__tests__/e2e/`          |
-| E2E fixture | `*.mjs`       | `src/__tests__/e2e/fixtures/` |
-| E2E helper  | `*.mjs`       | `src/__tests__/e2e/helpers/`  |
+| Type         | Pattern      | Location                      |
+| ------------ | ------------ | ----------------------------- |
+| Unit test    | `*.test.mjs` | `src/__tests__/unit/`         |
+| E2E test     | `*.spec.mjs` | `src/__tests__/e2e/`          |
+| E2E fixture  | `*.mjs`      | `src/__tests__/e2e/fixtures/` |
+| E2E helper   | `*.mjs`      | `src/__tests__/e2e/helpers/`  |
 | Test utility | `*.mjs`      | `src/__tests__/utils/`        |
 
 ---
