@@ -44,9 +44,9 @@ Gate the rebroadcast endpoint behind API key validation.
 
 > Spec: [`docs/superpowers/specs/2026-03-25-phase-3-api-key-enforcement-design.md`](superpowers/specs/2026-03-25-phase-3-api-key-enforcement-design.md)
 
-- [ ] Add `validateApiKey(request)` utility in `src/db/queries/api.mjs`
-- [ ] Integrate key validation into rebroadcast POST handler
-- [ ] Add error codes 6 (401 Unauthorized) and 7 (403 Forbidden)
+- [x] Add `validateApiKey(request)` utility in `src/db/queries/api.mjs`
+- [x] Integrate key validation into rebroadcast POST handler
+- [x] Add error codes 6 (401 Unauthorized) and 7 (403 Forbidden)
 
 ---
 

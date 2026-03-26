@@ -13,6 +13,8 @@ import {
     queryGetRebroadcastSeason,
 } from '@/db/queries/rebroadcast';
 import { updateSeason } from '@/update/season';
+//auth
+import { validateApiKey } from '@/db/queries/api';
 //track
 import { umamiTrackEvent } from '@/utils/umami';
 
@@ -21,6 +23,15 @@ export async function POST(request) {
     const start = performance.now();
     let check = null;
     let formValues = null;
+
+    //0.5 validate API key
+    const { error: keyError } = await validateApiKey(request);
+    if (keyError === 'disabled') {
+        return rebroadcastErrorResponse(7);
+    }
+    if (keyError) {
+        return rebroadcastErrorResponse(6);
+    }
 
     //1. test if valid POST request
     const contentType = request.headers.get('content-type') || '';
@@ -149,6 +160,14 @@ function rebroadcastErrorResponse(code) {
         case 5:
             message = 'Method not allowed';
             status = 405;
+            break;
+        case 6:
+            message = 'Unauthorized';
+            status = 401;
+            break;
+        case 7:
+            message = 'Forbidden';
+            status = 403;
             break;
         default:
             message = 'Unknown error';

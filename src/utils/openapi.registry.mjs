@@ -165,6 +165,30 @@ registry.registerPath({
                 },
             },
         },
+        401: {
+            description: 'Unauthorized. API key missing, malformed, or not found.',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        time: z.number(),
+                        error_code: z.number(),
+                        error_message: z.string(),
+                    }),
+                },
+            },
+        },
+        403: {
+            description: 'Forbidden. API key found but disabled.',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        time: z.number(),
+                        error_code: z.number(),
+                        error_message: z.string(),
+                    }),
+                },
+            },
+        },
         405: {
             description: 'Method not allowed.',
             content: {

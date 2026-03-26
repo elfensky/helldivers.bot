@@ -198,13 +198,18 @@ POST, PUT, DELETE, PATCH, OPTIONS → 405, standard envelope.
 
 **Source:** `src/app/api/h1/rebroadcast/route.js`
 
-**Auth:** None (public).
+**Auth:** API key required. Pass via `Authorization: Bearer <key>` header. Keys are managed from the user dashboard.
 
 **Content-Type:** `multipart/form-data` or `application/x-www-form-urlencoded`. Any other value returns rebroadcast error code 0.
 
 ### Validation Pipeline
 
 ```
+Step 0.5 — API Key
+  validateApiKey(request)
+  Missing/malformed/invalid → rebroadcastErrorResponse(6) [HTTP 401]
+  Disabled                  → rebroadcastErrorResponse(7) [HTTP 403]
+
 Step 1 — Content-Type
   isValidContentType.safeParse(contentType)
   Fail → rebroadcastErrorResponse(0) [HTTP 400]
@@ -269,6 +274,8 @@ After the branch, if `data` is still `null` or `undefined`, returns rebroadcast 
 | 3    | 400         | Missing or invalid arguments | Zod `invalid_type` — action recognized but params wrong    |
 | 4    | 404         | Not found                    | Data not in DB and remote fetch failed or returned nothing |
 | 5    | 405         | Method not allowed           | Non-POST method                                            |
+| 6    | 401         | Unauthorized                 | API key missing, malformed, or not found                   |
+| 7    | 403         | Forbidden                    | API key found but disabled                                 |
 | null | 500         | Unknown error                | Any other Zod error code                                   |
 
 All errors use the rebroadcast envelope: `{ time, error_code, error_message }`.
