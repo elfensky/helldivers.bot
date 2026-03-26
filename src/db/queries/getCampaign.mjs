@@ -54,6 +54,7 @@ export async function getCampaign(season = null) {
                 },
                 snapshots: {
                     select: { data: true, time: true },
+                    orderBy: { time: 'asc' },
                 },
                 // unified events replace defend_events + attack_events
                 events: {
