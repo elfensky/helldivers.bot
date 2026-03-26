@@ -82,7 +82,7 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 
 - [ ] Define design tokens in CSS/Tailwind
     - Colors: map CSS vars (`--orange`, `--cyan`, `--blue`, `--black`) to final palette
-    - Typography: `Insignia` for headings, system stack for body — define scale
+    - [x] Typography: fluid `clamp()` scale on base HTML elements (`layout.css`) — `Insignia` for headings, system stack for body; breakpoint text classes removed from components
     - Spacing: standardize gutters, padding, gaps
     - Shadows, borders, radii
 - [ ] Patch color palette — replace leftover purple/blue-ish with Helldivers yellow/cyan
@@ -221,6 +221,7 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 - [x] Stats page (`/stats`)
 - [x] JSON-LD on layout and war page
 - [x] Mobile hamburger menu (basic — needs React rewrite)
+- [x] Fluid `clamp()` typography on base HTML elements (`layout.css`), breakpoint text classes removed from components
 
 ---
 
