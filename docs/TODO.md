@@ -5,7 +5,7 @@
 
 ---
 
-## Phase 1 — Backend & Database
+## Phase 1 — Backend & Database ✅
 
 Get the data layer right before touching the frontend.
 
@@ -23,7 +23,7 @@ Get the data layer right before touching the frontend.
 
 ---
 
-## Phase 2 — Time-Series Snapshots
+## Phase 2 — Time-Series Snapshots ✅
 
 Capture how stats and events change over time. Depends on Phase 1 normalized tables.
 
@@ -38,117 +38,32 @@ Capture how stats and events change over time. Depends on Phase 1 normalized tab
 
 ---
 
-## Phase 3 — API Key Enforcement
+## Phase 3 — API Key Enforcement ✅
 
 Gate the rebroadcast endpoint behind API key validation.
 
 > Spec: [`docs/superpowers/specs/completed/2026-03-25-phase-3-api-key-enforcement-design.md`](superpowers/specs/completed/2026-03-25-phase-3-api-key-enforcement-design.md)
 
-- [x] Add `validateApiKey(request)` utility in `src/db/queries/api.mjs`
+- [x] Add `validateApiKey(request)` utility in `src/db/queries/validateApiKey.mjs`
 - [x] Integrate key validation into rebroadcast POST handler
 - [x] Add error codes 6 (401 Unauthorized) and 7 (403 Forbidden)
 
 ---
 
-## Phase 4 — War Status Dashboard (Core Feature)
+## Phase 4 — War Outcome & Interactive Timeline
 
-The war dashboard is now the homepage. `/war` repurposed as historical season browser.
+Quick feature win with existing design. Show victory/defeat for historical seasons and let users scrub through the war's progression.
 
-### Layout
-
-- [x] Move war dashboard to `/` (replace current homepage sections)
-- [ ] Single-page layout: sidebar with stats, main area with map + active events
-- [ ] No vertical scroll on desktop — everything fits in viewport
-- [x] Old homepage content (About, Discord, API) moved to `/about`; Features section deleted
-
-### Alerts & Notifications
-
-- [ ] Install Sonner
-- [ ] Wire up event alerts (defend/attack events) as toasts
-
-### Real-Time Updates
-
-- [ ] WebSocket server for live campaign updates
-- [ ] Client-side: connect on dashboard, update map + stats + alerts in real-time
-- [ ] Fallback to polling if WebSocket connection fails
-
----
-
-## Phase 5 — Mobile-First Design (Phone)
-
-Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything from here up.
-
-### Design Tokens
-
-- [ ] Define design tokens in CSS/Tailwind
-    - Colors: map CSS vars (`--orange`, `--cyan`, `--blue`, `--black`) to final palette
-    - [x] Typography: fluid `clamp()` scale on base HTML elements (`layout.css`) — `Insignia` for headings, system stack for body; breakpoint text classes removed from components
-    - Spacing: standardize gutters, padding, gaps
-    - Shadows, borders, radii
-- [ ] Patch color palette — replace leftover purple/blue-ish with Helldivers yellow/cyan
-- [ ] Create reusable component patterns: cards, buttons, section containers
-- [ ] Define breakpoint semantics:
-    - `default` — phone (mobile-first base)
-    - `sm` (640px) — tablet portrait
-    - `md` (768px) — tablet landscape
-    - `lg` (1024px) — desktop
-    - `xl` (1280px) — desktop wide
-    - `2xl` (1536px) — max-width applied
-    - `3xl` (1920px) — ultrawide: max-width released, wide layout
-
-### Mobile Navigation
-
-- [ ] Rewrite mobile nav as a proper React component (replace vanilla `navigation.js`)
-- [ ] Slide-out or slide-down mobile menu with backdrop
-- [ ] Smooth open/close animation (CSS transitions, no layout shift)
-- [ ] Close on route change and outside click
-- [ ] Sign-in button with distinct mobile style
-
-### Dashboard on Phone
-
-- [ ] Map stacked above stats list
-- [ ] Events list below map
-- [ ] Touch-friendly hit targets and interactions
-- [ ] Sonner toasts positioned for mobile
-
----
-
-## Phase 6 — Tablet (`sm:` / `md:`)
-
-- [ ] Tablet portrait: sidebar slides in or sits beside map
-- [ ] Tablet landscape: side-by-side layout begins
-- [ ] Navigation adapts to tablet size
-- [ ] Alerts: horizontal scroll on tablet+
-
----
-
-## Phase 7 — Desktop & Wide (`lg:` / `xl:` / `2xl:` / `3xl:`)
-
-- [ ] Full sidebar + map + stats layout, no vertical scrolling
-- [ ] Map: hovering alert highlights related map region
-- [ ] `3xl` (1920px+): release max-width, go wide
-- [ ] Custom ultrawide layout — use extra space meaningfully
-- [ ] Test up to 21:9 ultrawide, apply max-width beyond that
-
----
-
-## Phase 8 — Polish & Extras
-
-### PWA
-
-- [ ] Add `manifest.json` (app name, icons, theme color, display: standalone)
-- [ ] Implement service worker for offline shell + caching
-- [ ] Push notification subscription flow (ask permission, store subscription)
-- [ ] Server-side push: send notifications on in-game events (defend/attack events)
-- [ ] "Install app" prompt/banner
-
-### War History & Animated Replay
-
-> Spec: [`docs/superpowers/specs/2026-03-26-phase-8-war-outcome-timeline-design.md`](superpowers/specs/2026-03-26-phase-8-war-outcome-timeline-design.md)
-> Plan: [`docs/superpowers/plans/2026-03-26-phase-8-war-outcome-timeline.md`](superpowers/plans/2026-03-26-phase-8-war-outcome-timeline.md)
+> Spec: [`docs/superpowers/specs/2026-03-26-phase-4-war-outcome-timeline-design.md`](superpowers/specs/2026-03-26-phase-4-war-outcome-timeline-design.md)
+> Plan: [`docs/superpowers/plans/2026-03-26-phase-4-war-outcome-timeline.md`](superpowers/plans/2026-03-26-phase-4-war-outcome-timeline.md)
 
 - [x] Route: `/war?season=N` — historical season browser with season selector
 - [x] `getSeasonList()` query for season selector
+
+#### War outcome banner
+
+- [ ] Win/loss logic from event data
+- [ ] Victory/Defeat banner on `/war?season=N`
 
 #### Data prerequisites
 
@@ -182,6 +97,104 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 - Past seasons: no homeworld attack progress over time
 - `h1_event_snapshot` only exists going forward (Phase 2 capture)
 - Snapshot intervals are irregular — map slider to array index, not wall-clock
+
+---
+
+## Phase 5 — Design Tokens & Mobile Nav
+
+Foundation for the full redesign. Design tokens come first, then fix mobile navigation.
+
+### Design Tokens
+
+- [ ] Define design tokens in CSS/Tailwind
+    - Colors: map CSS vars (`--orange`, `--cyan`, `--blue`, `--black`) to final palette
+    - [x] Typography: fluid `clamp()` scale on base HTML elements (`layout.css`) — `Insignia` for headings, system stack for body; breakpoint text classes removed from components
+    - Spacing: standardize gutters, padding, gaps
+    - Shadows, borders, radii
+- [ ] Patch color palette — replace leftover purple/blue-ish with Helldivers yellow/cyan
+- [ ] Create reusable component patterns: cards, buttons, section containers
+- [ ] Define breakpoint semantics:
+    - `default` — phone (mobile-first base)
+    - `sm` (640px) — tablet portrait
+    - `md` (768px) — tablet landscape
+    - `lg` (1024px) — desktop
+    - `xl` (1280px) — desktop wide
+    - `2xl` (1536px) — max-width applied
+    - `3xl` (1920px) — ultrawide: max-width released, wide layout
+
+### Mobile Navigation
+
+- [ ] Rewrite mobile nav as a proper React component (replace vanilla `navigation.js`)
+- [ ] Slide-out or slide-down mobile menu with backdrop
+- [ ] Smooth open/close animation (CSS transitions, no layout shift)
+- [ ] Close on route change and outside click
+- [ ] Sign-in button with distinct mobile style
+
+---
+
+## Phase 6 — Dashboard Layout (Mobile-First)
+
+Core dashboard redesign built on Phase 5 design tokens.
+
+### Layout
+
+- [ ] Single-page layout: sidebar with stats, main area with map + active events
+- [ ] No vertical scroll on desktop — everything fits in viewport
+
+### Dashboard on Phone
+
+- [ ] Map stacked above stats list
+- [ ] Events list below map
+- [ ] Touch-friendly hit targets and interactions
+
+### Alerts & Notifications
+
+- [ ] Install Sonner
+- [ ] Wire up event alerts (defend/attack events) as toasts
+- [ ] Sonner toasts positioned for mobile
+
+---
+
+## Phase 7 — Tablet & Desktop Responsive
+
+Progressive enhancement from mobile base.
+
+### Tablet (`sm:` / `md:`)
+
+- [ ] Tablet portrait: sidebar slides in or sits beside map
+- [ ] Tablet landscape: side-by-side layout begins
+- [ ] Navigation adapts to tablet size
+- [ ] Alerts: horizontal scroll on tablet+
+
+### Desktop & Wide (`lg:` / `xl:` / `2xl:` / `3xl:`)
+
+- [ ] Full sidebar + map + stats layout, no vertical scrolling
+- [ ] Map: hovering alert highlights related map region
+- [ ] `3xl` (1920px+): release max-width, go wide
+- [ ] Custom ultrawide layout — use extra space meaningfully
+- [ ] Test up to 21:9 ultrawide, apply max-width beyond that
+
+---
+
+## Phase 8 — WebSocket Real-Time Updates
+
+Optimization — existing polling works, add WebSocket when everything else is stable.
+
+- [ ] WebSocket server for live campaign updates
+- [ ] Client-side: connect on dashboard, update map + stats + alerts in real-time
+- [ ] Fallback to polling if WebSocket connection fails
+
+---
+
+## Phase 9 — Polish & Extras
+
+### PWA
+
+- [ ] Add `manifest.json` (app name, icons, theme color, display: standalone)
+- [ ] Implement service worker for offline shell + caching
+- [ ] Push notification subscription flow (ask permission, store subscription)
+- [ ] Server-side push: send notifications on in-game events (defend/attack events)
+- [ ] "Install app" prompt/banner
 
 ### SEO & Meta
 
