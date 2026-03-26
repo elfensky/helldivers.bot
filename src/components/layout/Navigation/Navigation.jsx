@@ -87,6 +87,7 @@ export default async function Navigation() {
                     </Link>
                 </li>
 
+                <li className="hidden md:block md:opacity-30">|</li>
                 <li>
                     <User />
                 </li>
