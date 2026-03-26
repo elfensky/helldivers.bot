@@ -10,14 +10,14 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 
 - Phase 3: Gate `/api/h1/rebroadcast` behind API key validation (Bearer token + MD5 hash lookup)
 - Phase 4: War Outcome & Interactive Timeline on `/war?season=N`
-  - Victory/Defeat banner derived from snapshot + event data
-  - Interactive timeline scrubber (`<input type="range">`) with event markers
-  - Extract `computeMapState` pure utility from Galaxy (no more shared mutable state)
-  - Refactor Galaxy to accept `mapState` prop
-  - Re-enable attack event visualization on the map
-  - Native `<select>` season dropdown replaces 155-button grid
-  - Exclude active season from history (homepage shows live war)
-  - Sort snapshots by time ascending in campaign query
+    - Victory/Defeat banner derived from snapshot + event data
+    - Interactive timeline scrubber (`<input type="range">`) with event markers
+    - Extract `computeMapState` pure utility from Galaxy (no more shared mutable state)
+    - Refactor Galaxy to accept `mapState` prop
+    - Re-enable attack event visualization on the map
+    - Native `<select>` season dropdown replaces 155-button grid
+    - Exclude active season from history (homepage shows live war)
+    - Sort snapshots by time ascending in campaign query
 - Merge `/about`, `/docs`, `/api` pages into single `/about` page with Swagger UI
 - Add blinking red "Live" nav item linking to homepage
 - Restructure navigation: site links | external links (heartbeat + GitHub) | user section
