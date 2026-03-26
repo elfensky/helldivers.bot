@@ -12,13 +12,13 @@
 
 ## File Structure
 
-| File                                  | Action | Responsibility                                                 |
-| ------------------------------------- | ------ | -------------------------------------------------------------- |
-| `src/db/queries/api.mjs`             | Modify | Add `validateApiKey(request)` function                         |
-| `src/app/api/h1/rebroadcast/route.js` | Modify | Add key check at top of POST handler, two new error codes      |
-| `src/utils/openapi.registry.mjs`      | Modify | Add 401/403 responses to rebroadcast endpoint                  |
-| `docs/04-api-reference.md`            | Modify | Document auth requirement and new error codes                  |
-| `docs/TODO.md`                        | Modify | Check off Phase 3 items                                        |
+| File                                  | Action | Responsibility                                            |
+| ------------------------------------- | ------ | --------------------------------------------------------- |
+| `src/db/queries/api.mjs`              | Modify | Add `validateApiKey(request)` function                    |
+| `src/app/api/h1/rebroadcast/route.js` | Modify | Add key check at top of POST handler, two new error codes |
+| `src/utils/openapi.registry.mjs`      | Modify | Add 401/403 responses to rebroadcast endpoint             |
+| `docs/04-api-reference.md`            | Modify | Document auth requirement and new error codes             |
+| `docs/TODO.md`                        | Modify | Check off Phase 3 items                                   |
 
 ---
 
@@ -243,8 +243,8 @@ git commit -m "docs: update API reference and OpenAPI spec for Phase 3 auth"
 
 1. `npm run build` passes
 2. Ask user to start dev server, then test:
-   - `curl -X POST http://localhost:3000/api/h1/rebroadcast` → 401, error code 6
-   - `curl -X POST -H "Authorization: Bearer bad-key" http://localhost:3000/api/h1/rebroadcast` → 401, error code 6
-   - `curl -X POST -H "Authorization: Bearer <valid-key>" -H "Content-Type: application/x-www-form-urlencoded" -d "action=get_campaign_status" http://localhost:3000/api/h1/rebroadcast` → 200 with data
-   - `curl http://localhost:3000/api/h1/rebroadcast` → 405, no key check
+    - `curl -X POST http://localhost:3000/api/h1/rebroadcast` → 401, error code 6
+    - `curl -X POST -H "Authorization: Bearer bad-key" http://localhost:3000/api/h1/rebroadcast` → 401, error code 6
+    - `curl -X POST -H "Authorization: Bearer <valid-key>" -H "Content-Type: application/x-www-form-urlencoded" -d "action=get_campaign_status" http://localhost:3000/api/h1/rebroadcast` → 200 with data
+    - `curl http://localhost:3000/api/h1/rebroadcast` → 405, no key check
 3. `npm run test:smoke` (ask user to start dev server first)

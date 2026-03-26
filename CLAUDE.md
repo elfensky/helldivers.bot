@@ -56,6 +56,7 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` to 
 ## Specs & Plans
 
 For every phase or feature, create both files in `docs/superpowers/`:
+
 - **Spec** (`specs/{date}-phase-{N}-{name}.md`) — what and why: requirements, design decisions, schema changes, rationale.
 - **Plan** (`plans/{date}-phase-{N}-{name}.md`) — how and in what order: step-by-step implementation with specific files to create/modify.
 
