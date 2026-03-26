@@ -1,39 +1,39 @@
 services:
-  migrate:
-    container_name: helldiversbot-migrate
-    image: ghcr.io/elfensky/helldiversbot-migrate:staging
-    env_file:
-      - .docker.env
-    # Runs migrations and exits
+    migrate:
+        container_name: helldiversbot-migrate
+        image: ghcr.io/elfensky/helldiversbot-migrate:staging
+        env_file:
+            - .docker.env
+        # Runs migrations and exits
 
-  helldiversbot:
-    container_name: helldiversbot
-    # this isn't neccesary, the dockerfile entrypoint takes care of that
-    # init: true # replaces manually installing and using tini in the docker file.
-    restart: unless-stopped
-    image: ghcr.io/elfensky/helldiversbot:staging
-    ports:
-      - "127.0.0.1:58102:3000" #security update, from '58102:3000'
-    env_file:
-      - .docker.env
-    environment:
-      - SKIP_MIGRATIONS=true
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
+    helldiversbot:
+        container_name: helldiversbot
+        # this isn't neccesary, the dockerfile entrypoint takes care of that
+        # init: true # replaces manually installing and using tini in the docker file.
+        restart: unless-stopped
+        image: ghcr.io/elfensky/helldiversbot:staging
+        ports:
+            - '127.0.0.1:58102:3000' #security update, from '58102:3000'
+        env_file:
+            - .docker.env
+        environment:
+            - SKIP_MIGRATIONS=true
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
 
-    # security
-    # security_opt:
-    #     - no-new-privileges:true # Prevents privilege escalation
-    #     - apparmor:docker-default # Mandatory Access Control
-    #     - seccomp=default # System call filtering
-    # cap_drop:
-    #     - ALL
+        # security
+        # security_opt:
+        #     - no-new-privileges:true # Prevents privilege escalation
+        #     - apparmor:docker-default # Mandatory Access Control
+        #     - seccomp=default # System call filtering
+        # cap_drop:
+        #     - ALL
 
-    # monitoring
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/healthcheck"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+        # monitoring
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/healthcheck']
+            interval: 60s
+            timeout: 10s
+            retries: 3
+            start_period: 10s

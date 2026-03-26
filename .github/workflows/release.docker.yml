@@ -2,7 +2,7 @@ name: Production
 on:
     push:
         tags:
-            - "*.*.*" # Triggers on version tags like v1.0.0
+            - '*.*.*' # Triggers on version tags like v1.0.0
 jobs:
     build:
         runs-on: ubuntu-latest
