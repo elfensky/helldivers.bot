@@ -61,15 +61,19 @@ export function errorResponse(code, start, error = null) {
             break;
     }
 
-    return NextResponse.json(
+    const body = JSON.stringify(
         {
             time: performanceTime(start),
             code: status,
             message: message,
             error: error,
         },
-        { status },
+        (_, v) => (typeof v === 'bigint' ? Number(v) : v),
     );
+    return new NextResponse(body, {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+    });
 }
 
 /**
@@ -109,13 +113,17 @@ export function successResponse(code, start, data) {
             break;
     }
 
-    return NextResponse.json(
+    const body = JSON.stringify(
         {
             time: performanceTime(start),
             code: status,
             message: message,
             data: data,
         },
-        { status },
+        (_, v) => (typeof v === 'bigint' ? Number(v) : v),
     );
+    return new NextResponse(body, {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+    });
 }

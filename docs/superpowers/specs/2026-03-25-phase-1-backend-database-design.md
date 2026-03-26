@@ -304,7 +304,30 @@ ALTER TABLE "App" DROP COLUMN IF EXISTS map;
 
 ---
 
-## 4. Route cleanup
+## 4. BigInt serialization fix
+
+### Problem
+
+Prisma returns `BigInt` for 5 statistic fields (`deaths`, `kills`, `accidentals`, `shots`, `hits`). `NextResponse.json()` crashes because `JSON.stringify()` cannot serialize BigInt natively. Values can exceed 2.1B so changing to `Int` is not viable.
+
+### Solution
+
+Replace `NextResponse.json()` in `src/utils/responses.mjs` with manual `JSON.stringify` using a BigInt→Number replacer. Values under 2^53 (~9 quadrillion) convert exactly — well above any Helldivers stat.
+
+No changes to Zod validators (`z.number()` is correct — incoming API data is regular JSON numbers). Prisma handles Number→BigInt coercion on write automatically.
+
+### Changes
+
+**`src/utils/responses.mjs`:**
+- Both `errorResponse` and `successResponse`: replace `NextResponse.json(payload, { status })` with:
+```js
+const body = JSON.stringify(payload, (_, v) => (typeof v === 'bigint' ? Number(v) : v));
+return new NextResponse(body, { status, headers: { 'Content-Type': 'application/json' } });
+```
+
+---
+
+## 5. Route cleanup
 
 ### `/api/h1/rebroadcast` (`src/app/api/h1/rebroadcast/route.js`)
 
@@ -321,7 +344,7 @@ ALTER TABLE "App" DROP COLUMN IF EXISTS map;
 
 ---
 
-## 5. Seed files for past seasons
+## 6. Seed files for past seasons
 
 ### Purpose
 
@@ -374,6 +397,7 @@ Seed files **bootstrap the app** on first deploy — they get the DB populated w
 | `src/db/queries/upsertIntroductionOrder.mjs` | Stop writing `json` field. |
 | `src/db/queries/upsertPointsMax.mjs` | Stop writing `json` field. |
 | `src/validators/isValidStatus.js` | Make `defend_event` nullable: `defendEventSchema.nullable()`. |
+| `src/utils/responses.mjs` | Replace `NextResponse.json()` with `JSON.stringify` + BigInt→Number replacer in both response functions. |
 | `src/app/api/h1/rebroadcast/route.js` | Replace bare `await` with `tryCatch`. |
 
 **Delete:**
