@@ -35,7 +35,7 @@ export default async function HomePage() {
     const mapState = computeMapState(data.live, data.events);
 
     return (
-        <div className="gutters z-10 flex max-w-full flex-col-reverse justify-between gap-4 overflow-hidden xl:fixed xl:top-[80px] xl:max-h-[calc(100vh-80px-16px)] xl:flex-row xl:flex-wrap">
+        <div className="gutters z-10 flex w-full flex-col-reverse justify-between gap-4 overflow-hidden xl:fixed xl:top-[80px] xl:left-0 xl:max-h-[calc(100vh-80px-16px)] xl:flex-row xl:flex-wrap">
             <War data={data} />
             <Timeline data={data} />
             <Galaxy mapState={mapState} />
