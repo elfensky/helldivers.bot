@@ -50,53 +50,30 @@ Gate the rebroadcast endpoint behind API key validation.
 
 ---
 
-## Phase 4 — War Outcome & Interactive Timeline
+## Phase 4 — War Outcome & Interactive Timeline ✅
 
 Quick feature win with existing design. Show victory/defeat for historical seasons and let users scrub through the war's progression.
 
-> Spec: [`docs/superpowers/specs/2026-03-26-phase-4-war-outcome-timeline-design.md`](superpowers/specs/2026-03-26-phase-4-war-outcome-timeline-design.md)
-> Plan: [`docs/superpowers/plans/2026-03-26-phase-4-war-outcome-timeline.md`](superpowers/plans/2026-03-26-phase-4-war-outcome-timeline.md)
+> Spec: [`docs/superpowers/specs/completed/2026-03-26-phase-4-war-outcome-timeline-design.md`](superpowers/specs/completed/2026-03-26-phase-4-war-outcome-timeline-design.md)
+> Plan: [`docs/superpowers/plans/completed/2026-03-26-phase-4-war-outcome-timeline.md`](superpowers/plans/completed/2026-03-26-phase-4-war-outcome-timeline.md)
 
 - [x] Route: `/war?season=N` — historical season browser with season selector
 - [x] `getSeasonList()` query for season selector
+- [x] Win/loss logic from event data (`getWarOutcome` in War.jsx)
+- [x] Victory/Defeat banner on `/war?season=N` (WarOutcome component)
+- [x] Extract `processCampaigns` + `processDefendEvents` + `processAttackEvents` from Galaxy.jsx into pure `computeMapState` utility
+- [x] Refactor Galaxy to accept `mapState` prop (remove shared mutable state)
+- [x] `<input type="range">` timeline scrubber with event markers (WarTimeline component)
+- [x] Re-enable `processAttackEvents` (was commented out due to CSS class conflict, fixed)
 
-#### War outcome banner
+#### Future enhancements (deferred)
 
-- [ ] Win/loss logic from event data
-- [ ] Victory/Defeat banner on `/war?season=N`
-
-#### Data prerequisites
-
-- [ ] Add `points`, `points_taken`, `points_max`, `status` columns to `h1_live_snapshot` — currently only captures stats, not campaign progress; without these fields the sector map cannot be reconstructed from time-series data alone (must fall back to legacy `h1_snapshot` table)
-
-#### Animation engine (zero new dependencies)
-
-- [ ] Extract `processCampaigns()` + `processDefendEvents()` + `processAttackEvents()` from `Galaxy.jsx` into a pure function `deriveMapState(snapshotData, events, pointsMax)` — no shared mutable `map` object
-- [ ] New API route: `GET /api/v1/war/[season]/timeline` — server-side merge of `h1_snapshot` + `h1_event` + `h1_event_snapshot` into sorted keyframe array
-- [ ] `usePlayback` hook: `setInterval` stepping through keyframe array indices (not wall-clock time — snapshots are unevenly spaced)
-- [ ] CSS transitions on `.sector { transition: fill 500ms ease-in-out }` for smooth state changes between frames
-
-#### Timeline scrubber
-
-- [ ] `<input type="range">` mapped to keyframe array index, display real timestamp as label
-- [ ] Play / Pause button
-- [ ] Speed selector (1x / 2x / 5x / 10x)
-- [ ] Day counter ("Day 14 of 45")
-- [ ] "Jump to next event" button
-
-#### Event visualization during playback
-
-- [ ] Active events: use existing `.active` CSS pulse animation on contested regions
-- [ ] Defend success: green flash (800ms `@keyframes`), then revert to `captured`
-- [ ] Defend fail: red flash (800ms), revert to `lost`
-- [ ] Attack events: pulse on homeworld (region 11) with progress overlay
-
-#### Data limitations (known)
-
-- Past seasons: no event point progression (only final state in `h1_event`)
-- Past seasons: no homeworld attack progress over time
-- `h1_event_snapshot` only exists going forward (Phase 2 capture)
-- Snapshot intervals are irregular — map slider to array index, not wall-clock
+- [ ] Auto-play / play-pause controls with `usePlayback` hook
+- [ ] Speed selector (1x / 2x / 5x / 10x), day counter, jump-to-next-event
+- [ ] CSS transitions on map sectors for smooth state changes during scrubbing
+- [ ] Event visualization effects (green/red flash for success/fail)
+- [ ] Use `h1_event_snapshot` data for live dashboard event progress (not historical replay)
+- [ ] Add `points`, `points_taken`, `points_max`, `status` to `h1_live_snapshot` for future richer replay
 
 ---
 
@@ -202,6 +179,7 @@ Optimization — existing polling works, add WebSocket when everything else is s
 - [x] Update `sitemap.js` — added `/war`, `/about`
 - [ ] Update `sitemap.js` — add `/docs`, `/api`, `/faq` pages
 - [ ] Add JSON-LD to Event component
+- [ ] Various other seo optimization. ask gemini for input.
 
 ### Design Polish
 
@@ -209,6 +187,7 @@ Optimization — existing polling works, add WebSocket when everything else is s
 - [ ] Add skull/wing decorative elements where appropriate
 - [ ] Rotating/blinking logo animation on hover (satellite)
 - [ ] `Wings` component integration on section titles
+- [ ] active css styling in navigation (underline or something idk)
 
 ### Footer
 

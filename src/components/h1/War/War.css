@@ -2,3 +2,23 @@
     background-color: rgba(0, 0, 0, 0.75);
     border: 2px solid black;
 }
+
+.war-outcome {
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    font-size: 0.875rem;
+}
+
+.war-outcome.victory {
+    border-color: rgba(255, 213, 0, 0.8);
+    color: rgba(255, 213, 0, 1);
+}
+
+.war-outcome.defeat {
+    border-color: rgba(255, 0, 0, 0.8);
+    color: rgba(255, 0, 0, 1);
+}

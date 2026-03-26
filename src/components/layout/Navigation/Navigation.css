@@ -3,3 +3,31 @@
         top 0.2s ease-in-out,
         opacity 0.2s ease-in-out;
 }
+
+.nav-live {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: #ff3b3b;
+    font-weight: 600;
+}
+
+.nav-live::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ff3b3b;
+    animation: live-blink 1.5s ease-in-out infinite;
+}
+
+@keyframes live-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.2;
+    }
+}

@@ -32,7 +32,9 @@ test.describe('Smoke tests', () => {
         expect(body.error_message).toBe('Unauthorized');
     });
 
-    test('POST /api/h1/rebroadcast with invalid API key returns 401', async ({ request }) => {
+    test('POST /api/h1/rebroadcast with invalid API key returns 401', async ({
+        request,
+    }) => {
         const response = await request.post('/api/h1/rebroadcast', {
             headers: { Authorization: 'Bearer invalid-key-that-does-not-exist' },
         });

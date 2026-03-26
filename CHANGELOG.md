@@ -6,6 +6,27 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
+## 0.11.0 (2026-03-26)
+
+- Phase 3: Gate `/api/h1/rebroadcast` behind API key validation (Bearer token + MD5 hash lookup)
+- Phase 4: War Outcome & Interactive Timeline on `/war?season=N`
+  - Victory/Defeat banner derived from snapshot + event data
+  - Interactive timeline scrubber (`<input type="range">`) with event markers
+  - Extract `computeMapState` pure utility from Galaxy (no more shared mutable state)
+  - Refactor Galaxy to accept `mapState` prop
+  - Re-enable attack event visualization on the map
+  - Native `<select>` season dropdown replaces 155-button grid
+  - Exclude active season from history (homepage shows live war)
+  - Sort snapshots by time ascending in campaign query
+- Merge `/about`, `/docs`, `/api` pages into single `/about` page with Swagger UI
+- Add blinking red "Live" nav item linking to homepage
+- Restructure navigation: site links | external links (heartbeat + GitHub) | user section
+- Dashboard link moved into user avatar (clickable) section
+- Fix homepage Galaxy map visibility on desktop (fixed-position width regression)
+- Sync OpenAPI spec with actual response format (`time`/`code`/`message` fields)
+- Fix rebroadcast `after()` closure bug and analytics URL copy-paste error
+- Fix documentation inaccuracies across all 5 doc files
+
 ## 0.10.0 (2026-03-26)
 
 - Restructure homepage as live war dashboard (galaxy map, faction stats, event timeline)

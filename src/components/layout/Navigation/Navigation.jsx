@@ -12,32 +12,42 @@ export default async function Navigation() {
     // const router = useRouter();
     const session = await auth();
 
-    const links = [
-        // { href: '/discord', label: 'Discord' },
-        // { href: '/reviews', label: 'Reviews' },
-        // { href: '/history', label: 'History' },
-        // { href: '/stats', label: 'Stats' },
-        { href: 'https://status.helldivers.bot', label: 'Status' },
+    const siteLinks = [
+        { href: '/', label: 'Live', className: 'nav-live' },
         { href: '/war', label: 'History' },
         { href: '/about', label: 'About' },
-        { href: '/docs', label: 'Docs' },
-        { href: '/api', label: 'API' },
     ];
-
-    if (session && session.user) {
-        //only show if user is logged in
-        links.push({ href: '/dashboard', label: 'Dashboard' });
-    }
 
     return (
         <nav className="z-50">
             <ul
                 id="navigation"
-                // opacity-0
-                // top-full
-                // -top-full
                 className="pointer-events-none absolute -top-[400%] right-0 z-0 flex w-full flex-col items-end justify-end gap-1 py-4 pr-4 text-right sm:right-12 md:pointer-events-auto md:relative md:right-0 md:w-fit md:flex-row md:items-center md:gap-4 md:p-0"
             >
+                <li>
+                    <Link
+                        href="https://status.helldivers.bot"
+                        data-umami-event="header-status"
+                        title="Status"
+                        aria-label="Status"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="-4 -4 32 32"
+                            style={{ width: '32px', height: '32px' }}
+                        >
+                            <circle cx="12" cy="12" r="16" fill="#fff" />
+                            <polyline
+                                points="22 12 18 12 15 21 9 3 6 12 2 12"
+                                fill="none"
+                                stroke="#000"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </Link>
+                </li>
                 <li>
                     <Link
                         href="https://github.com/elfensky/helldivers1api"
@@ -66,10 +76,13 @@ export default async function Navigation() {
                     </Link>
                 </li>
 
-                {links.map((link) => (
+                <li className="hidden md:block md:opacity-30">|</li>
+
+                {siteLinks.map((link) => (
                     <li key={link.href}>
                         <Link
                             href={link.href}
+                            className={link.className || ''}
                             data-umami-event={'header-' + link.label.toLowerCase()}
                         >
                             {link.label}
@@ -77,6 +90,7 @@ export default async function Navigation() {
                     </li>
                 ))}
 
+                <li className="hidden md:block md:opacity-30">|</li>
                 <li>
                     <User />
                 </li>
@@ -111,14 +125,16 @@ async function User() {
 
     return (
         <div className="flex items-center gap-4">
-            <Image
-                src={avatarUrl}
-                className="rounded-full"
-                alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
-                width={40}
-                height={40}
-                priority={true}
-            />
+            <Link href="/dashboard" data-umami-event="header-dashboard">
+                <Image
+                    src={avatarUrl}
+                    className="rounded-full"
+                    alt="User avatar"
+                    width={32}
+                    height={32}
+                    priority={true}
+                />
+            </Link>
             <SignOut />
         </div>
     );

@@ -44,9 +44,9 @@ New client component: `src/components/h1/WarTimeline/WarTimeline.jsx`
 
 - Owns `selectedIndex` state (React `useState`)
 - When slider moves, computes map state for that moment:
-  - Finds the nearest `h1_snapshot` at or before the selected time
-  - Filters `h1_event` entries to only those **active at the selected time** (`start_time <= time && end_time >= time`)
-  - Calls `computeMapState(factionStates, activeEvents)` with the filtered data
+    - Finds the nearest `h1_snapshot` at or before the selected time
+    - Filters `h1_event` entries to only those **active at the selected time** (`start_time <= time && end_time >= time`)
+    - Calls `computeMapState(factionStates, activeEvents)` with the filtered data
 - Passes computed map state down to Galaxy
 - Default state (no selection): Galaxy shows final season state from `data.live` with no event overlays (pass `[]` for events)
 
@@ -63,6 +63,7 @@ Extracted from Galaxy's current mutation logic (`processCampaigns`, `processDefe
 **Behavioral change:** Re-enables `processAttackEvents` which is currently commented out in Galaxy.jsx. This was disabled due to a CSS class conflict (`'in_progress active'` as a space-separated string). Fix: use a dedicated status value (e.g., `'attacking'`) instead of combining two class names. Verify CSS handles the new status correctly.
 
 **Consumers:**
+
 - Homepage `/` — called with `data.live` and active events, re-enabling attack event visualization
 - `/war` page default — called with `data.live` and `[]` (no event overlays on default state)
 - `/war` page timeline scrub — called with selected moment's snapshot data + events active at that time
@@ -112,17 +113,17 @@ Snapshot timestamps and event timestamps do not align — they are merged and so
 
 ## Files to Modify
 
-| File | Change |
-| ---- | ------ |
-| `src/utils/computeMapState.mjs` | Create: pure map state computation utility |
-| `src/components/h1/Galaxy/Galaxy.jsx` | Refactor: accept `mapState` prop, remove internal mutation, remove `rebroadcast` prop |
-| `src/app/page.jsx` | Update: compute `mapState` before passing to Galaxy |
-| `src/components/h1/War/War.jsx` | Modify: add `WarOutcome` banner with `showOutcome` prop |
-| `src/components/h1/War/War.css` | Modify: banner styling |
-| `src/components/h1/WarTimeline/WarTimeline.jsx` | Create: timeline scrubber with `<input type="range">`, wraps Galaxy |
-| `src/components/h1/WarTimeline/WarTimeline.css` | Create: timeline styling |
-| `src/app/war/page.jsx` | Update: wire WarTimeline + outcome banner |
-| `docs/TODO.md` | Update: mark Phase 4 items, add future TODO for `h1_event_snapshot` on live dashboard |
+| File                                            | Change                                                                                |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `src/utils/computeMapState.mjs`                 | Create: pure map state computation utility                                            |
+| `src/components/h1/Galaxy/Galaxy.jsx`           | Refactor: accept `mapState` prop, remove internal mutation, remove `rebroadcast` prop |
+| `src/app/page.jsx`                              | Update: compute `mapState` before passing to Galaxy                                   |
+| `src/components/h1/War/War.jsx`                 | Modify: add `WarOutcome` banner with `showOutcome` prop                               |
+| `src/components/h1/War/War.css`                 | Modify: banner styling                                                                |
+| `src/components/h1/WarTimeline/WarTimeline.jsx` | Create: timeline scrubber with `<input type="range">`, wraps Galaxy                   |
+| `src/components/h1/WarTimeline/WarTimeline.css` | Create: timeline styling                                                              |
+| `src/app/war/page.jsx`                          | Update: wire WarTimeline + outcome banner                                             |
+| `docs/TODO.md`                                  | Update: mark Phase 4 items, add future TODO for `h1_event_snapshot` on live dashboard |
 
 ## Verification
 

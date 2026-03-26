@@ -1,15 +1,74 @@
 import './War.css';
 import factions from '@/enums/factions';
 
+function getWarOutcome(data) {
+    const snapshots = data?.snapshots || [];
+    const events = data?.events || [];
+    const live = data?.live || [];
+
+    // 1. Check live data (current season)
+    if (live.length === 3 && live.every((f) => f.status === 'defeated')) {
+        return { outcome: 'victory', reason: 'All enemy factions have been defeated.' };
+    }
+
+    // 2. Check last snapshot (historical — clear cases)
+    if (snapshots.length > 0) {
+        const lastSnapshot = snapshots[snapshots.length - 1];
+        const factionData =
+            typeof lastSnapshot.data === 'string' ?
+                JSON.parse(lastSnapshot.data)
+            :   lastSnapshot.data;
+        if (Array.isArray(factionData) && factionData.length === 3) {
+            if (factionData.every((f) => f.status === 'defeated')) {
+                return {
+                    outcome: 'victory',
+                    reason: 'All enemy factions have been defeated.',
+                };
+            }
+        }
+    }
+
+    // 3. Check events (snapshot may not capture final state)
+    const superEarthDefend = events.find((e) => e.type === 'defend' && e.region === 0);
+    if (superEarthDefend) {
+        if (superEarthDefend.status === 'fail') {
+            return { outcome: 'defeat', reason: 'Super Earth was overwhelmed.' };
+        }
+        if (superEarthDefend.status === 'success') {
+            return {
+                outcome: 'victory',
+                reason: 'All enemy factions have been defeated.',
+            };
+        }
+    }
+
+    return null;
+}
+
+export function WarOutcome({ data }) {
+    const result = getWarOutcome(data);
+    if (!result) return null;
+
+    const { outcome } = result;
+
+    return (
+        <div className={`war-outcome ${outcome}`}>
+            <span className="font-bold">
+                {outcome === 'victory' ? 'Victory' : 'Defeat'}
+            </span>
+        </div>
+    );
+}
+
 export default function War({ data }) {
-    if (!data) return null;
+    if (!data?.live?.length) return null;
 
     return (
         <section className="flex flex-col gap-4">
             <h2>War Stats</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                {generateGlobalWarStats(data?.live)}
-                {data?.live?.map((statistic) => generateWarStats(statistic))}
+                {generateGlobalWarStats(data.live)}
+                {data.live.map((statistic) => generateWarStats(statistic))}
             </div>
         </section>
     );
