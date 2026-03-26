@@ -18,10 +18,6 @@ export default async function Navigation() {
         { href: '/about', label: 'About' },
     ];
 
-    if (session && session.user) {
-        siteLinks.push({ href: '/dashboard', label: 'Dashboard' });
-    }
-
     return (
         <nav className="z-50">
             <ul
@@ -125,14 +121,16 @@ async function User() {
 
     return (
         <div className="flex items-center gap-4">
-            <Image
-                src={avatarUrl}
-                className="rounded-full"
-                alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
-                width={40}
-                height={40}
-                priority={true}
-            />
+            <Link href="/dashboard" data-umami-event="header-dashboard">
+                <Image
+                    src={avatarUrl}
+                    className="rounded-full"
+                    alt="User avatar"
+                    width={32}
+                    height={32}
+                    priority={true}
+                />
+            </Link>
             <SignOut />
         </div>
     );
