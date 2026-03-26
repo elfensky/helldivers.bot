@@ -12,27 +12,44 @@ export default async function Navigation() {
     // const router = useRouter();
     const session = await auth();
 
-    const links = [
+    const siteLinks = [
         { href: '/', label: 'Live', className: 'nav-live' },
-        { href: 'https://status.helldivers.bot', label: 'Status' },
         { href: '/war', label: 'History' },
         { href: '/about', label: 'About' },
     ];
 
     if (session && session.user) {
-        //only show if user is logged in
-        links.push({ href: '/dashboard', label: 'Dashboard' });
+        siteLinks.push({ href: '/dashboard', label: 'Dashboard' });
     }
 
     return (
         <nav className="z-50">
             <ul
                 id="navigation"
-                // opacity-0
-                // top-full
-                // -top-full
                 className="pointer-events-none absolute -top-[400%] right-0 z-0 flex w-full flex-col items-end justify-end gap-1 py-4 pr-4 text-right sm:right-12 md:pointer-events-auto md:relative md:right-0 md:w-fit md:flex-row md:items-center md:gap-4 md:p-0"
             >
+                {siteLinks.map((link) => (
+                    <li key={link.href}>
+                        <Link
+                            href={link.href}
+                            className={link.className || ''}
+                            data-umami-event={'header-' + link.label.toLowerCase()}
+                        >
+                            {link.label}
+                        </Link>
+                    </li>
+                ))}
+
+                <li className="hidden md:block md:opacity-30">|</li>
+
+                <li>
+                    <Link
+                        href="https://status.helldivers.bot"
+                        data-umami-event="header-status"
+                    >
+                        Status
+                    </Link>
+                </li>
                 <li>
                     <Link
                         href="https://github.com/elfensky/helldivers1api"
@@ -60,18 +77,6 @@ export default async function Navigation() {
                         </figure>
                     </Link>
                 </li>
-
-                {links.map((link) => (
-                    <li key={link.href}>
-                        <Link
-                            href={link.href}
-                            className={link.className || ''}
-                            data-umami-event={'header-' + link.label.toLowerCase()}
-                        >
-                            {link.label}
-                        </Link>
-                    </li>
-                ))}
 
                 <li>
                     <User />
