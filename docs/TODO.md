@@ -29,10 +29,12 @@ Capture how stats and events change over time. Depends on Phase 1 normalized tab
 
 > Spec: [`docs/superpowers/specs/2026-03-25-phase-2-time-series-snapshots.md`](superpowers/specs/2026-03-25-phase-2-time-series-snapshots.md)
 
-- [ ] Populate `h1_snapshot` from `get_snapshots` pipeline
-- [ ] Add `h1_statistic_snapshot` table (15-min interval stats)
-- [ ] Add `h1_event_snapshot` table (10-min event progress)
-- [ ] Wire snapshot capture into polling pipeline (`status.mjs`)
+- [x] Drop `h1_snapshot.json` column (Phase 1 gap)
+- [x] Add `h1_live_snapshot` table (15-min interval stats from `h1_live`)
+- [x] Add `h1_event_snapshot` table (10-min event progress with FK to `h1_event`)
+- [x] Wire snapshot capture into polling pipeline (`status.mjs`)
+- [x] Fix `fetchStatus()` error swallowing
+- [x] Add timestamp range validation to Zod schema
 
 ---
 
