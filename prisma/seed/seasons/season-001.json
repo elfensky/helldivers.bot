@@ -38,11 +38,7 @@
         }
     ],
     "error_code": 0,
-    "points_max": [
-        30000,
-        30000,
-        30000
-    ],
+    "points_max": [30000, 30000, 30000],
     "attack_events": [
         {
             "enemy": 0,
@@ -118,9 +114,5 @@
             "players_at_start": 1
         }
     ],
-    "introduction_order": [
-        2,
-        1,
-        0
-    ]
+    "introduction_order": [2, 1, 0]
 }
