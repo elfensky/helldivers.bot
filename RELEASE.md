@@ -1,14 +1,17 @@
-## 0.8.0
+## 0.11.0
 
-- move database initialization & migrations to a separate docker image that runs once and quits
-- fix superearth appearing to always be under attack
+- Phase 3: API key enforcement on rebroadcast endpoint
+- Phase 4: War Outcome & Interactive Timeline for historical seasons
+- Merge about/docs/api into single page
+- Redesigned navigation with Live indicator
+- Multiple bug fixes and documentation updates
 
 ### Docker
 
-- `docker pull ghcr.io/elfensky/helldiversbot:0.8.0`
+- `docker pull ghcr.io/elfensky/helldiversbot:0.11.0`
 - `docker pull ghcr.io/elfensky/helldiversbot:production`
 - `docker pull ghcr.io/elfensky/helldiversbot:latest`
 
-- `docker pull ghcr.io/elfensky/helldiversbot-migrate:0.8.0`
+- `docker pull ghcr.io/elfensky/helldiversbot-migrate:0.11.0`
 - `docker pull ghcr.io/elfensky/helldiversbot-migrate:production`
 - `docker pull ghcr.io/elfensky/helldiversbot-migrate:latest`

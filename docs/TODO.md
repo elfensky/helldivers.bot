@@ -50,12 +50,12 @@ Gate the rebroadcast endpoint behind API key validation.
 
 ---
 
-## Phase 4 — War Outcome & Interactive Timeline
+## Phase 4 — War Outcome & Interactive Timeline ✅
 
 Quick feature win with existing design. Show victory/defeat for historical seasons and let users scrub through the war's progression.
 
-> Spec: [`docs/superpowers/specs/2026-03-26-phase-4-war-outcome-timeline-design.md`](superpowers/specs/2026-03-26-phase-4-war-outcome-timeline-design.md)
-> Plan: [`docs/superpowers/plans/2026-03-26-phase-4-war-outcome-timeline.md`](superpowers/plans/2026-03-26-phase-4-war-outcome-timeline.md)
+> Spec: [`docs/superpowers/specs/completed/2026-03-26-phase-4-war-outcome-timeline-design.md`](superpowers/specs/completed/2026-03-26-phase-4-war-outcome-timeline-design.md)
+> Plan: [`docs/superpowers/plans/completed/2026-03-26-phase-4-war-outcome-timeline.md`](superpowers/plans/completed/2026-03-26-phase-4-war-outcome-timeline.md)
 
 - [x] Route: `/war?season=N` — historical season browser with season selector
 - [x] `getSeasonList()` query for season selector
@@ -179,6 +179,7 @@ Optimization — existing polling works, add WebSocket when everything else is s
 - [x] Update `sitemap.js` — added `/war`, `/about`
 - [ ] Update `sitemap.js` — add `/docs`, `/api`, `/faq` pages
 - [ ] Add JSON-LD to Event component
+- [ ] Various other seo optimization. ask gemini for input.
 
 ### Design Polish
 
@@ -186,6 +187,7 @@ Optimization — existing polling works, add WebSocket when everything else is s
 - [ ] Add skull/wing decorative elements where appropriate
 - [ ] Rotating/blinking logo animation on hover (satellite)
 - [ ] `Wings` component integration on section titles
+- [ ] active css styling in navigation (underline or something idk)
 
 ### Footer
 
