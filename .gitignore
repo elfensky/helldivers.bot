@@ -52,7 +52,11 @@ next-env.d.ts
 .claude/worktrees
 .claude/projects/
 .worktrees
+.superpowers
 
 # Tool state
 .claude-octopus/
 .playwright-mcp/
+
+# Temporary verification screenshots
+verify-*.png
