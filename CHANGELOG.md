@@ -15,6 +15,17 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - Add `getSeasonList` query for season selector
 - Update sitemap with `/war` and `/about` entries
 - Update layout metadata to reflect dashboard purpose
+- Upgrade to Next.js 16 with Turbopack default bundler
+- Upgrade to Prisma 7.5 with `@prisma/adapter-pg` driver adapter
+- Phase 1 backend: restructure Prisma schema — unify events into `h1_event`, add `h1_live`, drop redundant tables (`h1_campaign`, `h1_defend_event`, `h1_attack_event`, `h1_statistic`)
+- Phase 2 backend: add `h1_live_snapshot` and `h1_event_snapshot` tables for time-series data
+- Add in-memory snapshot throttle system (15-min stats, 10-min events)
+- Wire snapshot capture into the polling pipeline
+- Add seed files for all 156 past seasons
+- Add database migration for Phase 1 schema rewrite
+- Implement fluid typography with CSS `clamp()` for responsive text scaling
+- Add ESM `"type": "module"` to `package.json`
+- Add Playwright smoke tests (`npm run test:smoke`)
 
 ## x.x.x (YYYY-MM-DD)
 

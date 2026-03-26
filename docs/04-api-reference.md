@@ -165,7 +165,7 @@ The 404 branch is reached specifically when `updateSeason` receives a Zod parse 
 
 ### Response (200)
 
-Standard envelope. `data` contains the season record with all relations loaded by `getCampaign`: campaigns, statistics, snapshots, defend events, attack events, introduction order, and points max.
+Standard envelope. `data` contains the season record with all relations loaded by `getCampaign`: `live` (replaces the former campaigns and statistics tables), `introduction_order`, `points_max`, `snapshots`, and `events` (unified defend/attack events).
 
 ```json
 {

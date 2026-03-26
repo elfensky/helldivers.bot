@@ -33,7 +33,9 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 COPY prisma.config.mjs ./
 RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma || require('./package.json').dependencies?.prisma") && \
-    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg dotenv && \
+    ADAPTER_PG_VERSION=$(node -p "require('./package.json').dependencies?.['@prisma/adapter-pg'] || ''") && \
+    DOTENV_VERSION=$(node -p "require('./package.json').dependencies?.dotenv || ''") && \
+    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg@$ADAPTER_PG_VERSION dotenv@$DOTENV_VERSION && \
     npx prisma generate
 ```
 
@@ -155,9 +157,6 @@ register()   [src/instrumentation.js]
 ├── NEXT_RUNTIME === 'nodejs'
 │   └── import sentry.server.config.js     → Sentry.init() for server runtime
 │
-├── NEXT_RUNTIME === 'edge'
-│   └── import sentry.edge.config.js       → Sentry.init() for edge runtime
-│
 └── NEXT_RUNTIME === 'nodejs'
     └── initializeHelldivers1Api()
         │
@@ -211,7 +210,6 @@ The project uses the Sentry SDK (`@sentry/nextjs` v10) but targets a **self-host
 | File                            | Runtime | Role                                                              |
 | ------------------------------- | ------- | ----------------------------------------------------------------- |
 | `sentry.server.config.js`       | Node.js | `Sentry.init()` called on server startup via `instrumentation.js` |
-| `sentry.edge.config.js`         | Edge    | `Sentry.init()` called for middleware and edge routes             |
 | `src/instrumentation-client.js` | Browser | `Sentry.init()` called when a page loads in the browser           |
 | `src/app/global-error.jsx`      | Browser | React error boundary; catches render-phase errors                 |
 
@@ -242,23 +240,15 @@ This component is only reached for errors that escape all nested error boundarie
 The `withSentryConfig` wrapper in `next.config.mjs` controls build-time Sentry behavior:
 
 ```js
-withSentryConfig(nextConfig, {
-    silent: true, // suppress Sentry CLI console output
-    disableServerWebpackPlugin: true, // no source map upload (server)
-    disableClientWebpackPlugin: true, // no source map upload (client)
-    hideSourceMaps: true, // strip source maps from client bundles
-    webpack: {
-        autoInstrumentServerFunctions: true,
-        autoInstrumentMiddleware: true,
-        autoInstrumentAppDirectory: true,
-        treeshake: {
-            removeDebugLogging: true, // tree-shake Sentry debug logs from bundle
-        },
+export default withSentryConfig(nextConfig, {
+    silent: true,
+    sourcemaps: {
+        disable: true,
     },
 });
 ```
 
-Source map upload is disabled on both server and client webpack plugins. Bugsink handles error symbolication differently from Sentry SaaS.
+The `withSentryConfig` wrapper suppresses CLI output and disables source map upload. No webpack plugin configuration is needed.
 
 ---
 

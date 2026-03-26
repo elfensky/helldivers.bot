@@ -1,13 +1,14 @@
 # CLAUDE.md
 
-Next.js 15 app that caches the official Helldivers 1 API, stores historic game data, and provides API access + frontend visualizations.
+Next.js 16 app that caches the official Helldivers 1 API, stores historic game data, and provides API access + frontend visualizations.
 
 ## Working Style
 
 - **KISS.** Simple solutions only. Do not overengineer or add abstractions for hypothetical future needs.
 - **Use agents** for codebase exploration and multi-step research tasks.
 - **Use git worktrees** for parallel development on separate branches.
-- **No test framework** is configured. Do not attempt to run tests.
+- **Playwright smoke tests** are configured. Run `npm run test:smoke` to verify the app builds and runs correctly.
+- **Always verify** after implementing a feature: run `npm run build` and `npm run test:smoke`.
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 
 ## Conventions
