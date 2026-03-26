@@ -8,7 +8,7 @@ main {
 }
 
 @media (width >= 48rem /* 640px */) {
-        #map {
-            border-bottom: none;
-        }
+    #map {
+        border-bottom: none;
     }
+}

@@ -39,13 +39,10 @@ registry.registerPath({
         'Returns campaign data for a given season if the `season` query parameter is provided and valid. If no season is provided, returns the latest campaign data. If data is not found locally, attempts to fetch and update from a remote source.',
     request: {
         query: z.object({
-            season: z
-                .string()
-                .optional()
-                .openapi({
-                    description: 'The season number to fetch campaign data for.',
-                    example: '1',
-                }),
+            season: z.string().optional().openapi({
+                description: 'The season number to fetch campaign data for.',
+                example: '1',
+            }),
         }),
     },
     responses: {
@@ -54,11 +51,9 @@ registry.registerPath({
             content: {
                 'application/json': {
                     schema: z.object({
-                        ms: z
-                            .number()
-                            .openapi({
-                                description: 'Time taken to process the request (ms)',
-                            }),
+                        ms: z.number().openapi({
+                            description: 'Time taken to process the request (ms)',
+                        }),
                         data: z
                             .any()
                             .openapi({ description: 'The campaign data object' }),

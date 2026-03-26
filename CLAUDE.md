@@ -18,7 +18,9 @@ Use the `tryCatch` wrapper (`src/utils/tryCatch.mjs`). Do NOT use try/catch bloc
 
 ```js
 const { data, error } = await tryCatch(someAsyncOperation());
-if (error) { /* handle */ }
+if (error) {
+    /* handle */
+}
 ```
 
 ### API Routes
@@ -51,10 +53,10 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` to 
 
 ## Reference Docs
 
-| Topic | Location |
-|-------|----------|
-| Docker, CI/CD, init flow, env vars | `docs/01-infrastructure.md` |
-| Database schema & relationships | `docs/02-database-schema.md` |
-| Data pipeline & worker lifecycle | `docs/03-data-flow.md` |
-| API endpoints & authentication | `docs/04-api-reference.md` |
-| Utilities & Zod validators | `docs/05-utilities-reference.md` |
+| Topic                              | Location                         |
+| ---------------------------------- | -------------------------------- |
+| Docker, CI/CD, init flow, env vars | `docs/01-infrastructure.md`      |
+| Database schema & relationships    | `docs/02-database-schema.md`     |
+| Data pipeline & worker lifecycle   | `docs/03-data-flow.md`           |
+| API endpoints & authentication     | `docs/04-api-reference.md`       |
+| Utilities & Zod validators         | `docs/05-utilities-reference.md` |
