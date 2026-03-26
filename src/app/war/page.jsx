@@ -8,7 +8,7 @@ import { computeMapState } from '@/utils/computeMapState.mjs';
 //components
 import { WarOutcome } from '@/components/h1/War/War';
 import WarTimeline from '@/components/h1/WarTimeline/WarTimeline';
-import Link from 'next/link';
+import SeasonSelector from '@/components/h1/SeasonSelector/SeasonSelector';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
 export const dynamic = 'force-dynamic';
@@ -73,29 +73,6 @@ export default async function WarHistoryPage({ searchParams }) {
             <WarOutcome data={data} />
             <WarTimeline data={data} defaultMapState={mapState} />
         </div>
-    );
-}
-
-function SeasonSelector({ seasons, currentSeason }) {
-    if (!seasons || seasons.length === 0) return null;
-
-    return (
-        <nav className="flex flex-wrap items-center gap-2">
-            <span className="text-sm opacity-70">Season:</span>
-            {seasons.map((s) => (
-                <Link
-                    key={s.season}
-                    href={`/war?season=${s.season}`}
-                    className={`rounded px-3 py-1 text-sm ${
-                        s.season === currentSeason ?
-                            'bg-[var(--orange)] text-black'
-                        :   'bg-white/10 hover:bg-white/20'
-                    }`}
-                >
-                    {s.season}
-                </Link>
-            ))}
-        </nav>
     );
 }
 
