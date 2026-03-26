@@ -54,6 +54,26 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` to 
 - **Node version:** Volta pins node@22 and npm@11.
 - **Server actions:** Most utilities use `'use server'` directive.
 
+## Task Tracking
+
+All work is tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and the [helldiversbot project board](https://github.com/users/elfensky/projects/5). Do NOT use `docs/TODO.md` — it is deprecated.
+
+### Organization
+
+- **Milestones** group issues by phase: Phase 0 (Initial Release) through Phase 11, plus Shelved.
+- **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
+- **Project board** statuses: `Backlog`, `In progress`, `Done`.
+- Issue title prefixes: `Phase N:`, `API:`, `Feature:`, `Shelved:`.
+
+### Workflow — Keep Issues & Project Updated
+
+When working on a feature or fix:
+
+1. **Before starting**: Check GitHub Issues for existing tracking. If none exists, create one with the correct milestone, labels, and project board assignment.
+2. **When starting work**: Move the issue to `In progress` on the project board (`gh project item-edit`).
+3. **When done**: Close the issue with a comment describing what was implemented. The project board auto-moves closed issues to `Done`.
+4. **New issues**: Always assign a milestone, at least one label, and add to the helldiversbot project (`gh project item-add 5 --owner elfensky --url <issue-url>`).
+
 ## Specs & Plans
 
 For every phase or feature, create both files in `docs/superpowers/`:

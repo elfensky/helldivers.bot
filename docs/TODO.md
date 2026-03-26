@@ -1,4 +1,7 @@
-# TODO
+# TODO (DEPRECATED)
+
+> **This file is deprecated.** All task tracking has moved to [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues).
+> This file is kept for historical reference only. Do not add new items here.
 
 > Mobile-first. Most users visit from mobile — every feature starts there.
 > Priority order: backend → core feature → phone → tablet → desktop → polish.
