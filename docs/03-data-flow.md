@@ -60,10 +60,10 @@ This prevents the worker from being spawned in edge runtimes or during static bu
 
 The worker script path is resolved differently depending on environment:
 
-| Environment | Resolved path |
-|---|---|
-| `development` | `path.resolve(__dirname, '../../public/workers/cron.js')` |
-| `production` / `staging` | `path.resolve('/app/public/workers/cron.js')` |
+| Environment              | Resolved path                                             |
+| ------------------------ | --------------------------------------------------------- |
+| `development`            | `path.resolve(__dirname, '../../public/workers/cron.js')` |
+| `production` / `staging` | `path.resolve('/app/public/workers/cron.js')`             |
 
 After spawning, the parent sends a single initialization message to the worker:
 
@@ -224,10 +224,10 @@ return { ms, season, confirmSeason };
 
 `queryUpsertSeason` is called twice in every pipeline run:
 
-| Call | Parameter | Effect |
-|---|---|---|
-| `queryUpsertSeason(season, false)` | `false` | Creates or touches the season row; leaves `last_updated` as `null` |
-| `queryUpsertSeason(season, true)` | `true` | Sets `last_updated` to the current timestamp |
+| Call                               | Parameter | Effect                                                             |
+| ---------------------------------- | --------- | ------------------------------------------------------------------ |
+| `queryUpsertSeason(season, false)` | `false`   | Creates or touches the season row; leaves `last_updated` as `null` |
+| `queryUpsertSeason(season, true)`  | `true`    | Sets `last_updated` to the current timestamp                       |
 
 The invariant this enforces: a season row with `last_updated !== null` has a complete, consistent set of child records. Any season row where `last_updated` is `null` was either just created and is mid-pipeline, or a previous pipeline run failed partway through. Consumers of the `h1_*` tables can filter on `last_updated IS NOT NULL` to read only confirmed seasons.
 
@@ -338,25 +338,25 @@ Every pipeline run writes the same data twice: once as raw JSON, once as normali
 
 ### Rebroadcast tables
 
-| Table | Populated by | Key |
-|---|---|---|
-| `rebroadcast_status` | `queryUpsertRebroadcastStatus` | `season` (unique) |
+| Table                  | Populated by                   | Key               |
+| ---------------------- | ------------------------------ | ----------------- |
+| `rebroadcast_status`   | `queryUpsertRebroadcastStatus` | `season` (unique) |
 | `rebroadcast_snapshot` | `queryUpsertRebroadcastSeason` | `season` (unique) |
 
 These tables store the complete, unmodified API response as a JSON blob. There is one row per season. They exist to serve the `/api/h1/rebroadcast` endpoint, which mirrors the official API format exactly — clients that were already consuming the official API can point at this endpoint and receive the same payload structure without any transformation.
 
 ### H1 tables
 
-| Table | Relationship |
-|---|---|
-| `h1_season` | Root; one row per season |
-| `h1_campaign` | Many per season |
-| `h1_defend_event` | Many per season |
-| `h1_attack_event` | Many per season |
-| `h1_statistic` | Many per season |
-| `h1_snapshot` | Many per season |
-| `h1_introduction_order` | One per season |
-| `h1_points_max` | One per season |
+| Table                   | Relationship             |
+| ----------------------- | ------------------------ |
+| `h1_season`             | Root; one row per season |
+| `h1_campaign`           | Many per season          |
+| `h1_defend_event`       | Many per season          |
+| `h1_attack_event`       | Many per season          |
+| `h1_statistic`          | Many per season          |
+| `h1_snapshot`           | Many per season          |
+| `h1_introduction_order` | One per season           |
+| `h1_points_max`         | One per season           |
 
 These tables store normalized, relational data keyed on `season`. They accumulate historical records across every update cycle, enabling structured queries, aggregations, and time-series analysis. They are used by the `/api/h1/campaign` endpoint and the frontend.
 
@@ -379,11 +379,11 @@ Source: `src/update/fetch.mjs`
 
 Returns the base URL for all environments:
 
-| `NODE_ENV` | URL |
-|---|---|
+| `NODE_ENV`    | URL                                   |
+| ------------- | ------------------------------------- |
 | `development` | `https://api.helldiversgame.com/1.0/` |
-| `staging` | `https://api.helldiversgame.com/1.0/` |
-| `production` | `https://api.helldiversgame.com/1.0/` |
+| `staging`     | `https://api.helldiversgame.com/1.0/` |
+| `production`  | `https://api.helldiversgame.com/1.0/` |
 
 All three environments target the same production API. A commented-out QA URL (`api-qa.helldiversgame.com`) exists in the source but is not active.
 

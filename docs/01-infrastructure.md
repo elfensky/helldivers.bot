@@ -49,12 +49,12 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 
 **Build stages:**
 
-| Stage | Base | What it does |
-|-------|------|-------------|
-| `base` | `node:22-alpine` | Installs `tini` and upgrades npm to `11.7.0` |
-| `deps` | `base` | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent |
-| `builder` | `base` | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build` |
-| `runner` | `base` | Copies only `.next/standalone`, `.next/static`, and `public`; runs as non-root user |
+| Stage     | Base             | What it does                                                                                      |
+| --------- | ---------------- | ------------------------------------------------------------------------------------------------- |
+| `base`    | `node:22-alpine` | Installs `tini` and upgrades npm to `11.7.0`                                                      |
+| `deps`    | `base`           | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent                               |
+| `builder` | `base`           | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build` |
+| `runner`  | `base`           | Copies only `.next/standalone`, `.next/static`, and `public`; runs as non-root user               |
 
 **Runner stage details:**
 
@@ -104,10 +104,10 @@ Running migrations inside the app container creates a race condition when scalin
 
 **Jobs:** `build-migrate` and `build-app` run in parallel (no dependency between them). A third job `cleanup` runs after both complete.
 
-| Job | Dockerfile | Tag pushed |
-|-----|-----------|------------|
+| Job             | Dockerfile           | Tag pushed                                       |
+| --------------- | -------------------- | ------------------------------------------------ |
 | `build-migrate` | `Dockerfile.migrate` | `ghcr.io/elfensky/helldiversbot-migrate:staging` |
-| `build-app` | `Dockerfile.app` | `ghcr.io/elfensky/helldiversbot:staging` |
+| `build-app`     | `Dockerfile.app`     | `ghcr.io/elfensky/helldiversbot:staging`         |
 
 Both jobs pass `NODE_ENV=staging` as a build arg.
 
@@ -208,12 +208,12 @@ The project uses the Sentry SDK (`@sentry/nextjs` v10) but targets a **self-host
 
 ### Configuration files
 
-| File | Runtime | Role |
-|------|---------|------|
-| `sentry.server.config.js` | Node.js | `Sentry.init()` called on server startup via `instrumentation.js` |
-| `sentry.edge.config.js` | Edge | `Sentry.init()` called for middleware and edge routes |
-| `src/instrumentation-client.js` | Browser | `Sentry.init()` called when a page loads in the browser |
-| `src/app/global-error.jsx` | Browser | React error boundary; catches render-phase errors |
+| File                            | Runtime | Role                                                              |
+| ------------------------------- | ------- | ----------------------------------------------------------------- |
+| `sentry.server.config.js`       | Node.js | `Sentry.init()` called on server startup via `instrumentation.js` |
+| `sentry.edge.config.js`         | Edge    | `Sentry.init()` called for middleware and edge routes             |
+| `src/instrumentation-client.js` | Browser | `Sentry.init()` called when a page loads in the browser           |
+| `src/app/global-error.jsx`      | Browser | React error boundary; catches render-phase errors                 |
 
 ### Shared SDK settings (all three `Sentry.init()` calls)
 
@@ -243,19 +243,19 @@ The `withSentryConfig` wrapper in `next.config.mjs` controls build-time Sentry b
 
 ```js
 withSentryConfig(nextConfig, {
-    silent: true,                      // suppress Sentry CLI console output
-    disableServerWebpackPlugin: true,  // no source map upload (server)
-    disableClientWebpackPlugin: true,  // no source map upload (client)
-    hideSourceMaps: true,              // strip source maps from client bundles
+    silent: true, // suppress Sentry CLI console output
+    disableServerWebpackPlugin: true, // no source map upload (server)
+    disableClientWebpackPlugin: true, // no source map upload (client)
+    hideSourceMaps: true, // strip source maps from client bundles
     webpack: {
         autoInstrumentServerFunctions: true,
         autoInstrumentMiddleware: true,
         autoInstrumentAppDirectory: true,
         treeshake: {
-            removeDebugLogging: true,  // tree-shake Sentry debug logs from bundle
+            removeDebugLogging: true, // tree-shake Sentry debug logs from bundle
         },
     },
-})
+});
 ```
 
 Source map upload is disabled on both server and client webpack plugins. Bugsink handles error symbolication differently from Sentry SaaS.
@@ -268,29 +268,29 @@ All required variables are checked at startup by `initializeEnvironmentVariables
 
 ### Full variable reference
 
-| Variable | Required | Category | Description |
-|----------|----------|----------|-------------|
-| `POSTGRES_URL` | Yes | Database | PostgreSQL connection string |
-| `UPDATE_KEY` | Yes | Updates | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests |
-| `UPDATE_INTERVAL` | Yes | Updates | Polling interval in seconds (e.g., `"20"`); passed to the worker thread |
-| `PORT` | No | Updates | Server port; defaults to `3000`; passed to the worker so it knows which port to poll |
-| `UMAMI_SITE_ID` | Yes | Analytics | Umami website tracking ID |
-| `UMAMI_SITE_URL` | No* | Analytics | Umami instance URL; used in fetch calls but not validated at startup |
-| `SENTRY_AUTH_TOKEN` | Yes | Error tracking | Sentry/Bugsink authentication token |
-| `AUTH_SECRET` | Yes | Auth | NextAuth.js session secret; 128+ characters recommended |
-| `AUTH_TRUST_HOST` | Yes | Auth | Tells NextAuth.js to trust the `X-Forwarded-Host` header from the reverse proxy |
-| `AUTH_DISCORD_ID` | Yes | Auth | Discord OAuth application client ID |
-| `AUTH_DISCORD_SECRET` | Yes | Auth | Discord OAuth application client secret |
-| `AUTH_GITHUB_ID` | Yes | Auth | GitHub OAuth application client ID |
-| `AUTH_GITHUB_SECRET` | Yes | Auth | GitHub OAuth application client secret |
-| `EMAIL_SERVER_USER` | Yes | Email | SMTP username |
-| `EMAIL_SERVER_PASSWORD` | Yes | Email | SMTP password |
-| `EMAIL_SERVER_HOST` | Yes | Email | SMTP server hostname |
-| `EMAIL_SERVER_PORT` | Yes | Email | SMTP port (e.g., `587`) |
-| `EMAIL_FROM` | Yes | Email | Sender address for magic link emails |
-| `SKIP_MIGRATIONS` | No | Docker | Set to `"true"` in the app container; has no effect on initialization logic currently but signals intent |
-| `NODE_ENV` | No | App | `development`, `staging`, or `production`; affects OpenAPI spec behavior and worker path resolution |
-| `NEXT_RUNTIME` | Internal | Next.js | Set automatically by Next.js; controls which Sentry config and init steps run |
+| Variable                | Required | Category       | Description                                                                                              |
+| ----------------------- | -------- | -------------- | -------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_URL`          | Yes      | Database       | PostgreSQL connection string                                                                             |
+| `UPDATE_KEY`            | Yes      | Updates        | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests              |
+| `UPDATE_INTERVAL`       | Yes      | Updates        | Polling interval in seconds (e.g., `"20"`); passed to the worker thread                                  |
+| `PORT`                  | No       | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                     |
+| `UMAMI_SITE_ID`         | Yes      | Analytics      | Umami website tracking ID                                                                                |
+| `UMAMI_SITE_URL`        | No\*     | Analytics      | Umami instance URL; used in fetch calls but not validated at startup                                     |
+| `SENTRY_AUTH_TOKEN`     | Yes      | Error tracking | Sentry/Bugsink authentication token                                                                      |
+| `AUTH_SECRET`           | Yes      | Auth           | NextAuth.js session secret; 128+ characters recommended                                                  |
+| `AUTH_TRUST_HOST`       | Yes      | Auth           | Tells NextAuth.js to trust the `X-Forwarded-Host` header from the reverse proxy                          |
+| `AUTH_DISCORD_ID`       | Yes      | Auth           | Discord OAuth application client ID                                                                      |
+| `AUTH_DISCORD_SECRET`   | Yes      | Auth           | Discord OAuth application client secret                                                                  |
+| `AUTH_GITHUB_ID`        | Yes      | Auth           | GitHub OAuth application client ID                                                                       |
+| `AUTH_GITHUB_SECRET`    | Yes      | Auth           | GitHub OAuth application client secret                                                                   |
+| `EMAIL_SERVER_USER`     | Yes      | Email          | SMTP username                                                                                            |
+| `EMAIL_SERVER_PASSWORD` | Yes      | Email          | SMTP password                                                                                            |
+| `EMAIL_SERVER_HOST`     | Yes      | Email          | SMTP server hostname                                                                                     |
+| `EMAIL_SERVER_PORT`     | Yes      | Email          | SMTP port (e.g., `587`)                                                                                  |
+| `EMAIL_FROM`            | Yes      | Email          | Sender address for magic link emails                                                                     |
+| `SKIP_MIGRATIONS`       | No       | Docker         | Set to `"true"` in the app container; has no effect on initialization logic currently but signals intent |
+| `NODE_ENV`              | No       | App            | `development`, `staging`, or `production`; affects OpenAPI spec behavior and worker path resolution      |
+| `NEXT_RUNTIME`          | Internal | Next.js        | Set automatically by Next.js; controls which Sentry config and init steps run                            |
 
 ### Connection string formats
 

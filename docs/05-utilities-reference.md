@@ -36,10 +36,10 @@ export async function tryCatch(promise) {
 
 Wraps any `Promise` and returns a two-field result object instead of throwing. This is the project-wide substitute for `try/catch` blocks; every async operation in the codebase goes through this wrapper.
 
-| Field | On success | On failure |
-|-------|-----------|-----------|
-| `data` | Resolved value | `null` |
-| `error` | `null` | Caught `Error` object |
+| Field   | On success     | On failure            |
+| ------- | -------------- | --------------------- |
+| `data`  | Resolved value | `null`                |
+| `error` | `null`         | Caught `Error` object |
 
 ### Usage pattern
 
@@ -89,20 +89,20 @@ errorResponse(code: number, start: number, error?: any): NextResponse
 
 **Supported codes:**
 
-| Code | Message |
-|------|---------|
-| 400 | Bad Request |
-| 401 | Unauthorized |
-| 403 | Forbidden |
-| 404 | Not found |
-| 405 | Method not allowed |
-| 418 | I'm a teapot |
-| 429 | Too many requests |
-| 451 | Unavailable for legal reasons |
-| 500 | Internal server error |
-| 501 | Not implemented |
-| 502 | Bad gateway |
-| 503 | Service unavailable |
+| Code      | Message                                   |
+| --------- | ----------------------------------------- |
+| 400       | Bad Request                               |
+| 401       | Unauthorized                              |
+| 403       | Forbidden                                 |
+| 404       | Not found                                 |
+| 405       | Method not allowed                        |
+| 418       | I'm a teapot                              |
+| 429       | Too many requests                         |
+| 451       | Unavailable for legal reasons             |
+| 500       | Internal server error                     |
+| 501       | Not implemented                           |
+| 502       | Bad gateway                               |
+| 503       | Service unavailable                       |
 | _(other)_ | Unknown error — HTTP status forced to 500 |
 
 > **Note:** Code 401 means "I don't know who you are." Code 403 means "I know who you are but you're still not allowed." Code 502 is used specifically when the upstream official Helldivers API is unreachable.
@@ -134,13 +134,13 @@ successResponse(code: number, start: number, data: any): NextResponse
 
 **Supported codes:**
 
-| Code | Message |
-|------|---------|
-| 200 | OK |
-| 201 | Created |
-| 202 | Accepted |
-| 203 | Non-authoritative information |
-| 204 | No content |
+| Code          | Message                             |
+| ------------- | ----------------------------------- |
+| 200           | OK                                  |
+| 201           | Created                             |
+| 202           | Accepted                            |
+| 203           | Non-authoritative information       |
+| 204           | No content                          |
 | _(other 2xx)_ | Unknown — HTTP status forced to 200 |
 
 ---
@@ -151,24 +151,24 @@ successResponse(code: number, start: number, data: any): NextResponse
 
 ### Performance measurement (server-side)
 
-| Function | Signature | Returns | Description |
-|----------|-----------|---------|-------------|
-| `performanceTime` | `(start: number) → number` | Elapsed ms | `performance.now() - start`. Used directly inside `responses.mjs` for the `time` field on every API response. |
+| Function                 | Signature                  | Returns    | Description                                                                                                                                                                                                                                    |
+| ------------------------ | -------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `performanceTime`        | `(start: number) → number` | Elapsed ms | `performance.now() - start`. Used directly inside `responses.mjs` for the `time` field on every API response.                                                                                                                                  |
 | `roundedPerformanceTime` | `(start: number) → number` | Rounded ms | Rounds elapsed time up to the nearest 50ms using `Math.ceil(elapsed / 50) * 50`. Examples: 33ms → 50, 60ms → 100, 111ms → 150. Purpose: coarse bucketing for Umami analytics events so individual requests don't create unbounded cardinality. |
 
 ### Relative and formatted time (UI helpers)
 
-| Function | Signature | Returns | Description |
-|----------|-----------|---------|-------------|
-| `timeSince` | `(date: Date) → string` | `"X minutes/hours/days ago"` | Converts a past date to a human-readable relative string. Threshold: < 60 min → minutes, < 24 h → hours, otherwise days. Pluralization handled (e.g., "1 minute ago" vs "2 minutes ago"). |
-| `formatDate` | `(date: Date) → string` | `"YYYY-MM-DD HH:MM:SS"` | Zero-pads all components. Uses local time (not UTC). Used wherever consistent date display is needed. |
+| Function     | Signature               | Returns                      | Description                                                                                                                                                                               |
+| ------------ | ----------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timeSince`  | `(date: Date) → string` | `"X minutes/hours/days ago"` | Converts a past date to a human-readable relative string. Threshold: < 60 min → minutes, < 24 h → hours, otherwise days. Pluralization handled (e.g., "1 minute ago" vs "2 minutes ago"). |
+| `formatDate` | `(date: Date) → string` | `"YYYY-MM-DD HH:MM:SS"`      | Zero-pads all components. Uses local time (not UTC). Used wherever consistent date display is needed.                                                                                     |
 
 ### Elapsed time computations
 
-| Function | Signature | Returns | Description |
-|----------|-----------|---------|-------------|
-| `elapsedSeconds` | `(past: Date) → number` | Integer seconds | `Math.floor((now - past) / 1000)`. |
-| `elapsedDateTime` | `(past: Date) → number` | Milliseconds | Raw `now - past` with no rounding. |
+| Function            | Signature                            | Returns                             | Description                                                                                                                                                                            |
+| ------------------- | ------------------------------------ | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `elapsedSeconds`    | `(past: Date) → number`              | Integer seconds                     | `Math.floor((now - past) / 1000)`.                                                                                                                                                     |
+| `elapsedDateTime`   | `(past: Date) → number`              | Milliseconds                        | Raw `now - past` with no rounding.                                                                                                                                                     |
 | `elapsedSeasonTime` | `(season_duration: number) → object` | `{ days, hours, minutes, seconds }` | Breaks a total-seconds value into human-readable components. Input is the `season_duration` integer from the statistics table. All components use `Math.floor` with modulo arithmetic. |
 
 #### `elapsedSeasonTime` decomposition
@@ -198,12 +198,12 @@ getSeasonFromStatus(data: object): number
 
 **Sources consulted:**
 
-| Field | Included |
-|-------|---------|
-| `campaign_status[].season` | Yes |
-| `defend_event.season` | Yes (single object, not array) |
-| `statistics[].season` | Yes |
-| `attack_events[].season` | **No** — intentionally excluded |
+| Field                      | Included                        |
+| -------------------------- | ------------------------------- |
+| `campaign_status[].season` | Yes                             |
+| `defend_event.season`      | Yes (single object, not array)  |
+| `statistics[].season`      | Yes                             |
+| `attack_events[].season`   | **No** — intentionally excluded |
 
 **Why `attack_events` is excluded:** Attack events can reference an old season when the current season has no recorded attacks yet. Including them would produce a false season mismatch.
 
@@ -232,11 +232,11 @@ getSeasonFromSnapshot(data: object): number
 
 **Sources consulted:**
 
-| Field | Included |
-|-------|---------|
-| `snapshots[].season` | Yes |
-| `defend_events[].season` | Yes |
-| `attack_events[].season` | Yes |
+| Field                    | Included |
+| ------------------------ | -------- |
+| `snapshots[].season`     | Yes      |
+| `defend_events[].season` | Yes      |
+| `attack_events[].season` | Yes      |
 
 Snapshot data includes attack events because historical season data is already fully resolved — the old-season contamination risk present in live status does not apply here.
 
@@ -275,13 +275,13 @@ addOrdinalSuffix(num: number): string
 
 **Behavior:** Appends the English ordinal suffix to an integer. Handles the teen exception (11th, 12th, 13th) by checking `num % 100` before `num % 10`.
 
-| Condition | Suffix |
-|-----------|--------|
-| `% 100` in 11–13 | `th` |
-| `% 10 === 1` | `st` |
-| `% 10 === 2` | `nd` |
-| `% 10 === 3` | `rd` |
-| otherwise | `th` |
+| Condition        | Suffix |
+| ---------------- | ------ |
+| `% 100` in 11–13 | `th`   |
+| `% 10 === 1`     | `st`   |
+| `% 10 === 2`     | `nd`   |
+| `% 10 === 3`     | `rd`   |
+| otherwise        | `th`   |
 
 **Examples:** `1` → `"1st"`, `11` → `"11th"`, `21` → `"21st"`, `112` → `"112th"`.
 
@@ -359,16 +359,16 @@ umamiTrackEvent(title: string, url: string, name: string, data?: object): Promis
 **Source:** `src/utils/umami.mjs` — not exported
 
 ```ts
-function getHostname(): string
+function getHostname(): string;
 ```
 
 Maps `NODE_ENV` to hostname:
 
-| `NODE_ENV` | Returns |
-|-----------|---------|
-| `'development'` | `'localhost'` |
-| `'staging'` | `'staging.helldivers.bot'` |
-| `'production'` | `'helldivers.bot'` |
+| `NODE_ENV`        | Returns                            |
+| ----------------- | ---------------------------------- |
+| `'development'`   | `'localhost'`                      |
+| `'staging'`       | `'staging.helldivers.bot'`         |
+| `'production'`    | `'helldivers.bot'`                 |
 | _(anything else)_ | throws `Error('Unknown NODE_ENV')` |
 
 ---
@@ -391,69 +391,69 @@ Validates the official API `get_campaign_status` response.
 
 **Root schema fields:**
 
-| Field | Type |
-|-------|------|
-| `time` | `number` |
-| `error_code` | `number` |
-| `campaign_status` | `campaignStatusSchema[]` |
-| `defend_event` | `defendEventSchema` (single object, not array) |
-| `attack_events` | `attackEventSchema[]` |
-| `statistics` | `statisticsSchema[]` |
+| Field             | Type                                           |
+| ----------------- | ---------------------------------------------- |
+| `time`            | `number`                                       |
+| `error_code`      | `number`                                       |
+| `campaign_status` | `campaignStatusSchema[]`                       |
+| `defend_event`    | `defendEventSchema` (single object, not array) |
+| `attack_events`   | `attackEventSchema[]`                          |
+| `statistics`      | `statisticsSchema[]`                           |
 
 **`campaignStatusSchema`:**
 
-| Field | Type |
-|-------|------|
-| `season` | `number` |
-| `points` | `number` |
-| `points_taken` | `number` |
-| `points_max` | `number` |
-| `status` | `enum: 'active' \| 'defeated' \| 'hidden'` |
-| `introduction_order` | `number` |
+| Field                | Type                                       |
+| -------------------- | ------------------------------------------ |
+| `season`             | `number`                                   |
+| `points`             | `number`                                   |
+| `points_taken`       | `number`                                   |
+| `points_max`         | `number`                                   |
+| `status`             | `enum: 'active' \| 'defeated' \| 'hidden'` |
+| `introduction_order` | `number`                                   |
 
 **`defendEventSchema`:**
 
-| Field | Type |
-|-------|------|
-| `season` | `number` |
-| `event_id` | `number` |
-| `start_time` | `number` |
-| `end_time` | `number` |
-| `region` | `number` |
-| `enemy` | `number` |
-| `points_max` | `number` |
-| `points` | `number` |
-| `status` | `enum: 'active' \| 'success' \| 'fail'` |
+| Field        | Type                                    |
+| ------------ | --------------------------------------- |
+| `season`     | `number`                                |
+| `event_id`   | `number`                                |
+| `start_time` | `number`                                |
+| `end_time`   | `number`                                |
+| `region`     | `number`                                |
+| `enemy`      | `number`                                |
+| `points_max` | `number`                                |
+| `points`     | `number`                                |
+| `status`     | `enum: 'active' \| 'success' \| 'fail'` |
 
 **`attackEventSchema`:** Same as defend event but **without** `region`, and with two additional fields:
 
-| Additional field | Type |
-|-----------------|------|
+| Additional field   | Type     |
+| ------------------ | -------- |
 | `players_at_start` | `number` |
-| `max_event_id` | `number` |
+| `max_event_id`     | `number` |
 
 **`statisticsSchema`:**
 
-| Field | Type |
-|-------|------|
-| `season` | `number` |
-| `season_duration` | `number` |
-| `enemy` | `number` |
-| `players` | `number` |
-| `total_unique_players` | `number` |
-| `missions` | `number` |
-| `successful_missions` | `number` |
+| Field                      | Type     |
+| -------------------------- | -------- |
+| `season`                   | `number` |
+| `season_duration`          | `number` |
+| `enemy`                    | `number` |
+| `players`                  | `number` |
+| `total_unique_players`     | `number` |
+| `missions`                 | `number` |
+| `successful_missions`      | `number` |
 | `total_mission_difficulty` | `number` |
-| `completed_planets` | `number` |
-| `defend_events` | `number` |
+| `completed_planets`        | `number` |
+| `defend_events`            | `number` |
 | `successful_defend_events` | `number` |
-| `attack_events` | `number` |
+| `attack_events`            | `number` |
 | `successful_attack_events` | `number` |
-| `deaths` | `number` |
-| `kills` | `number` |
-| `accidentals` | `number` |
-| `shots` | `number` |
-| `hits` | `number` |
+| `deaths`                   | `number` |
+| `kills`                    | `number` |
+| `accidentals`              | `number` |
+| `shots`                    | `number` |
+| `hits`                     | `number` |
 
 ---
 
@@ -469,46 +469,46 @@ Validates the official API `get_snapshots` response.
 
 **Root schema fields:**
 
-| Field | Type |
-|-------|------|
-| `time` | `number` |
-| `error_code` | `number` |
-| `introduction_order` | `number[]` |
-| `points_max` | `number[]` |
-| `snapshots` | `snapshotSchema[]` |
-| `defend_events` | `eventSchema[]` (refined: must have `region`) |
-| `attack_events` | `eventSchema[]` (refined: must not have `region`) |
+| Field                | Type                                              |
+| -------------------- | ------------------------------------------------- |
+| `time`               | `number`                                          |
+| `error_code`         | `number`                                          |
+| `introduction_order` | `number[]`                                        |
+| `points_max`         | `number[]`                                        |
+| `snapshots`          | `snapshotSchema[]`                                |
+| `defend_events`      | `eventSchema[]` (refined: must have `region`)     |
+| `attack_events`      | `eventSchema[]` (refined: must not have `region`) |
 
 **`snapshotSchema`:**
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `season` | `number` | |
-| `time` | `number` | |
-| `data` | `string` | Stringified JSON. Validated by parsing and checking each item against `snapshotDataItemSchema`. |
+| Field    | Type     | Notes                                                                                           |
+| -------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `season` | `number` |                                                                                                 |
+| `time`   | `number` |                                                                                                 |
+| `data`   | `string` | Stringified JSON. Validated by parsing and checking each item against `snapshotDataItemSchema`. |
 
 `snapshotDataItemSchema` (not exported):
 
-| Field | Type |
-|-------|------|
-| `points` | `number` |
-| `points_taken` | `number` |
-| `status` | `enum: 'hidden' \| 'active' \| 'defeated'` |
+| Field          | Type                                       |
+| -------------- | ------------------------------------------ |
+| `points`       | `number`                                   |
+| `points_taken` | `number`                                   |
+| `status`       | `enum: 'hidden' \| 'active' \| 'defeated'` |
 
 **`eventSchema`** (shared base for defend and attack events):
 
-| Field | Required | Type |
-|-------|---------|------|
-| `season` | Yes | `number` |
-| `event_id` | Yes | `number` |
-| `start_time` | Yes | `number` |
-| `end_time` | Yes | `number` |
-| `enemy` | Yes | `number` |
-| `points_max` | Yes | `number` |
-| `points` | Yes | `number` |
-| `status` | Yes | `enum: 'fail' \| 'success'` |
-| `players_at_start` | Yes | `number` |
-| `region` | No | `number` (optional) |
+| Field              | Required | Type                        |
+| ------------------ | -------- | --------------------------- |
+| `season`           | Yes      | `number`                    |
+| `event_id`         | Yes      | `number`                    |
+| `start_time`       | Yes      | `number`                    |
+| `end_time`         | Yes      | `number`                    |
+| `enemy`            | Yes      | `number`                    |
+| `points_max`       | Yes      | `number`                    |
+| `points`           | Yes      | `number`                    |
+| `status`           | Yes      | `enum: 'fail' \| 'success'` |
+| `players_at_start` | Yes      | `number`                    |
+| `region`           | No       | `number` (optional)         |
 
 The distinction between defend and attack events is enforced via `.refine()`:
 
@@ -529,20 +529,20 @@ Discriminated union on the `action` field. Used by the `/api/h1/rebroadcast` end
 
 **Actions and their required/optional fields:**
 
-| `action` value | Required fields | Optional fields | Extra keys |
-|---------------|----------------|----------------|-----------|
-| `get_campaign_status` | _(none beyond action)_ | — | Forbidden (strict) |
-| `get_snapshots` | `season` (via `schemaNumber`) | — | Allowed |
-| `get_available_entitlements` | _(none beyond action)_ | — | Forbidden (strict) |
-| `get_leaderboards` | `network` (steam\|psn), `season` | `count`, `users` (string[]) | Allowed |
-| `get_usernames` | `network` (steam\|psn), `count` | — | Allowed |
+| `action` value               | Required fields                  | Optional fields             | Extra keys         |
+| ---------------------------- | -------------------------------- | --------------------------- | ------------------ |
+| `get_campaign_status`        | _(none beyond action)_           | —                           | Forbidden (strict) |
+| `get_snapshots`              | `season` (via `schemaNumber`)    | —                           | Allowed            |
+| `get_available_entitlements` | _(none beyond action)_           | —                           | Forbidden (strict) |
+| `get_leaderboards`           | `network` (steam\|psn), `season` | `count`, `users` (string[]) | Allowed            |
+| `get_usernames`              | `network` (steam\|psn), `count`  | —                           | Allowed            |
 
 **`schemaNumber`** (also exported separately):
 
 ```ts
 export const schemaNumber = z.preprocess(
     (val) => (typeof val === 'string' ? Number(val) : val),
-    z.number().int().positive()
+    z.number().int().positive(),
 );
 ```
 
@@ -563,7 +563,7 @@ export const isValidContentType = z
         (val) =>
             val.includes('multipart/form-data') ||
             val.includes('application/x-www-form-urlencoded'),
-        { message: 'Invalid content type' }
+        { message: 'Invalid content type' },
     );
 ```
 
@@ -580,7 +580,7 @@ Validates the `Content-Type` request header. Uses `.includes()` (not exact match
 ```ts
 export const isValidNumber = z.preprocess(
     (val) => (typeof val === 'string' ? Number(val) : val),
-    z.number().int().positive()
+    z.number().int().positive(),
 );
 ```
 

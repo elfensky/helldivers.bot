@@ -19,6 +19,7 @@
 ### Pipeline
 
 Populated by `get_snapshots` (polled ~1h for current season, or fetched once for past seasons via seed files / force refresh). Each snapshot row contains:
+
 - `season` (FK to `h1_season`)
 - `time` (unix timestamp)
 - `data` (JSON string of per-planet `{points, points_taken, status}` array)
@@ -68,6 +69,7 @@ model h1_statistic_snapshot {
 ```
 
 Also add back-reference to `h1_season`:
+
 ```prisma
 // in h1_season model:
 statistic_snapshots h1_statistic_snapshot[] @relation("OneSeasonToManyStatisticSnapshots")

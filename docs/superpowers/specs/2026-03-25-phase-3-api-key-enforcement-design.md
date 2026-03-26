@@ -53,10 +53,10 @@ At the top of the POST handler, **before** content-type or form-data validation:
 
 Added to the existing 0–5 range:
 
-| Code | HTTP Status | `error_message` | Condition |
-|------|-------------|-----------------|-----------|
-| 6 | 401 | Unauthorized | API key missing, malformed, or not found |
-| 7 | 403 | Forbidden | API key found but disabled |
+| Code | HTTP Status | `error_message` | Condition                                |
+| ---- | ----------- | --------------- | ---------------------------------------- |
+| 6    | 401         | Unauthorized    | API key missing, malformed, or not found |
+| 7    | 403         | Forbidden       | API key found but disabled               |
 
 The rebroadcast error envelope format (`{ time, error_code, error_message }`) stays consistent with existing error codes.
 
@@ -77,9 +77,9 @@ The method-not-allowed handler (GET, PUT, etc.) remains unauthenticated — no p
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/db/queries/api.mjs` | Add `validateApiKey(request)` function |
+| File                                  | Change                                                           |
+| ------------------------------------- | ---------------------------------------------------------------- |
+| `src/db/queries/api.mjs`              | Add `validateApiKey(request)` function                           |
 | `src/app/api/h1/rebroadcast/route.js` | Add key check at top of POST handler, two new error codes (6, 7) |
 
 ---

@@ -81,20 +81,20 @@ Base Tailwind styles (no breakpoint prefix) = phone viewport. Build everything f
 ### Design Tokens
 
 - [ ] Define design tokens in CSS/Tailwind
-  - Colors: map CSS vars (`--orange`, `--cyan`, `--blue`, `--black`) to final palette
-  - Typography: `Insignia` for headings, system stack for body — define scale
-  - Spacing: standardize gutters, padding, gaps
-  - Shadows, borders, radii
+    - Colors: map CSS vars (`--orange`, `--cyan`, `--blue`, `--black`) to final palette
+    - Typography: `Insignia` for headings, system stack for body — define scale
+    - Spacing: standardize gutters, padding, gaps
+    - Shadows, borders, radii
 - [ ] Patch color palette — replace leftover purple/blue-ish with Helldivers yellow/cyan
 - [ ] Create reusable component patterns: cards, buttons, section containers
 - [ ] Define breakpoint semantics:
-  - `default` — phone (mobile-first base)
-  - `sm` (640px) — tablet portrait
-  - `md` (768px) — tablet landscape
-  - `lg` (1024px) — desktop
-  - `xl` (1280px) — desktop wide
-  - `2xl` (1536px) — max-width applied
-  - `3xl` (1920px) — ultrawide: max-width released, wide layout
+    - `default` — phone (mobile-first base)
+    - `sm` (640px) — tablet portrait
+    - `md` (768px) — tablet landscape
+    - `lg` (1024px) — desktop
+    - `xl` (1280px) — desktop wide
+    - `2xl` (1536px) — max-width applied
+    - `3xl` (1920px) — ultrawide: max-width released, wide layout
 
 ### Mobile Navigation
 

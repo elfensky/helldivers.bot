@@ -11,28 +11,60 @@
     "time": 1774438558,
     "error_code": 0,
     "campaign_status": [
-        { "season": 156, "points": 170123, "points_taken": 387515, "points_max": 543480, "status": "active", "introduction_order": 0 }
+        {
+            "season": 156,
+            "points": 170123,
+            "points_taken": 387515,
+            "points_max": 543480,
+            "status": "active",
+            "introduction_order": 0
+        }
     ],
     "defend_event": {
-        "season": 156, "event_id": 4888, "start_time": 1774425902, "end_time": 1774433161,
-        "region": 5, "enemy": 1, "points_max": 502, "points": 502, "status": "success"
+        "season": 156,
+        "event_id": 4888,
+        "start_time": 1774425902,
+        "end_time": 1774433161,
+        "region": 5,
+        "enemy": 1,
+        "points_max": 502,
+        "points": 502,
+        "status": "success"
     },
     "attack_events": [
         {
-            "season": 155, "event_id": 915, "start_time": 1772992682, "end_time": 1773165482,
-            "enemy": 0, "points_max": 44933, "points": 22592, "status": "fail",
-            "players_at_start": 331, "max_event_id": 915
+            "season": 155,
+            "event_id": 915,
+            "start_time": 1772992682,
+            "end_time": 1773165482,
+            "enemy": 0,
+            "points_max": 44933,
+            "points": 22592,
+            "status": "fail",
+            "players_at_start": 331,
+            "max_event_id": 915
         }
     ],
     "statistics": [
         {
-            "season": 156, "season_duration": 1261959, "enemy": 0, "players": 88,
-            "total_unique_players": 14544, "missions": 94795, "successful_missions": 58952,
-            "total_mission_difficulty": 283978, "completed_planets": 20589,
-            "defend_events": 13, "successful_defend_events": 4,
-            "attack_events": 1, "successful_attack_events": 0,
-            "deaths": 368138, "kills": 19327247, "accidentals": 90764,
-            "shots": 87879653, "hits": 40746802
+            "season": 156,
+            "season_duration": 1261959,
+            "enemy": 0,
+            "players": 88,
+            "total_unique_players": 14544,
+            "missions": 94795,
+            "successful_missions": 58952,
+            "total_mission_difficulty": 283978,
+            "completed_planets": 20589,
+            "defend_events": 13,
+            "successful_defend_events": 4,
+            "attack_events": 1,
+            "successful_attack_events": 0,
+            "deaths": 368138,
+            "kills": 19327247,
+            "accidentals": 90764,
+            "shots": 87879653,
+            "hits": 40746802
         }
     ]
 }
@@ -57,13 +89,38 @@
     "introduction_order": [2, 1, 0],
     "points_max": [30000, 30000, 30000],
     "snapshots": [
-        { "season": 1, "time": 1424881142, "data": "[{\"points\":1500,\"points_taken\":0,\"status\":\"hidden\"}]" }
+        {
+            "season": 1,
+            "time": 1424881142,
+            "data": "[{\"points\":1500,\"points_taken\":0,\"status\":\"hidden\"}]"
+        }
     ],
     "defend_events": [
-        { "season": 1, "event_id": 1, "start_time": 1424881201, "end_time": 1424881321, "region": 5, "enemy": 2, "points_max": 48, "points": 48, "status": "success", "players_at_start": 1 }
+        {
+            "season": 1,
+            "event_id": 1,
+            "start_time": 1424881201,
+            "end_time": 1424881321,
+            "region": 5,
+            "enemy": 2,
+            "points_max": 48,
+            "points": 48,
+            "status": "success",
+            "players_at_start": 1
+        }
     ],
     "attack_events": [
-        { "season": 1, "event_id": 1, "start_time": 1425099481, "end_time": 1425272281, "enemy": 0, "points_max": 17960, "points": 1265, "status": "success", "players_at_start": 1 }
+        {
+            "season": 1,
+            "event_id": 1,
+            "start_time": 1425099481,
+            "end_time": 1425272281,
+            "enemy": 0,
+            "points_max": 17960,
+            "points": 1265,
+            "status": "success",
+            "players_at_start": 1
+        }
     ]
 }
 ```
@@ -113,6 +170,7 @@
 ### Changes
 
 **`src/db/queries/upsertEvent.mjs`:**
+
 - Add `type` to both `create` and `update` blocks.
 - Add `players_at_start` to both blocks (nullable — not present in `defend_event` from `get_campaign_status`, but present in both event types from `get_snapshots`).
 - Upsert by `(type, event_id)` — not just `event_id` (defend and attack events can share the same event_id).
@@ -121,6 +179,7 @@
 - Accept `type` as a parameter: `queryUpsertEvent(season, type, event)`.
 
 **`src/update/status.mjs`:**
+
 - Import `queryUpsertEvent` instead of `queryUpsertDefendEvent` + `queryUpsertAttackEvents`.
 - Defend event: `queryUpsertEvent(season, 'defend', fetchedData.defend_event)`. Guard for null `defend_event`. Note: `defend_event` from `get_campaign_status` does NOT include `players_at_start` — the field is nullable in `h1_event`, so this is fine.
 - Attack events: map over array, call `queryUpsertEvent(season, 'attack', { ...event, region: 11 })` for each.
@@ -129,14 +188,17 @@
 - Also derive and upsert `h1_introduction_order` and `h1_points_max` from `campaign_status` (see API Reference — these values are available per entry).
 
 **`src/update/season.mjs`:**
+
 - Same replacement. Map defend_events with `type: 'defend'`, attack_events with `type: 'attack'` + `region: 11`.
 
 **`prisma/schema.prisma`:**
+
 - Remove `h1_defend_event` and `h1_attack_event` models.
 - Remove `defend_events` and `attack_events` relations from `h1_season`.
 - Keep `h1_event` and its `events` relation on `h1_season`.
 - Change unique constraint from `@@unique(event_id)` to `@@unique([type, event_id])` — event IDs are only unique within type (Season 1 has both defend and attack with event_id 1).
 - Add composite indexes to `h1_event`:
+
 ```prisma
 @@unique([type, event_id])
 @@index([season, type])
@@ -145,6 +207,7 @@
 ```
 
 **Delete files:**
+
 - `src/db/queries/upsertDefendEvent.mjs`
 - `src/db/queries/upsertDefendEvents.mjs`
 - `src/db/queries/upsertAttackEvents.mjs`
@@ -243,6 +306,7 @@ model h1_live {
 ```
 
 Also add back-reference to `h1_season`:
+
 ```prisma
 // in h1_season model:
 live h1_live[] @relation("OneSeasonToManyLive")
@@ -253,6 +317,7 @@ live h1_live[] @relation("OneSeasonToManyLive")
 Each `h1_live` row's `map` field stores a JSON object for that faction's 11 regions (from `src/enums/map.js`). Each region has: `region`, `capital`, `percent`, `points`, `points_max`, `points_sector`, `points_sector_max`, `status`, `event`.
 
 The map is computed in `status.mjs` when upserting each faction's `h1_live` row:
+
 - Populate `status` and aggregate `points`/`points_max`/`percent` from `campaign_status`.
 - For the active `defend_event` (if not null, and matching this enemy): set `event: 'defend'` on the appropriate region.
 - For active `attack_events` (filtered to current season, matching this enemy): set `event: 'attack'` on region 11 (homeworld).
@@ -269,7 +334,13 @@ Replace the parallel `queryUpsertCampaigns` + `queryUpsertStatistics` calls with
 for (let enemy = 0; enemy < 3; enemy++) {
     const campaign = fetchedData.campaign_status[enemy];
     const stats = fetchedData.statistics[enemy];
-    const factionMap = computeFactionMap(enemy, campaign, fetchedData.defend_event, fetchedData.attack_events, season);
+    const factionMap = computeFactionMap(
+        enemy,
+        campaign,
+        fetchedData.defend_event,
+        fetchedData.attack_events,
+        season,
+    );
 
     await queryUpsertLive(season, enemy, campaign, stats, factionMap);
 }
@@ -290,6 +361,7 @@ ALTER TABLE "App" DROP COLUMN IF EXISTS map;
 ### Changes
 
 **`prisma/schema.prisma`:**
+
 - Add `h1_live` model.
 - Remove `h1_campaign` and `h1_statistic` models.
 - Remove `campaigns` and `statistics` relations from `h1_season`.
@@ -299,6 +371,7 @@ ALTER TABLE "App" DROP COLUMN IF EXISTS map;
 **`src/db/queries/upsertLive.mjs`** — **New**. Upserts one `h1_live` row per (season, enemy) combining campaign + statistics + map data.
 
 **Delete files:**
+
 - `src/db/queries/upsertCampaigns.mjs`
 - `src/db/queries/upsertStatistics.mjs`
 
@@ -319,10 +392,15 @@ No changes to Zod validators (`z.number()` is correct — incoming API data is r
 ### Changes
 
 **`src/utils/responses.mjs`:**
+
 - Both `errorResponse` and `successResponse`: replace `NextResponse.json(payload, { status })` with:
+
 ```js
 const body = JSON.stringify(payload, (_, v) => (typeof v === 'bigint' ? Number(v) : v));
-return new NextResponse(body, { status, headers: { 'Content-Type': 'application/json' } });
+return new NextResponse(body, {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+});
 ```
 
 ---
@@ -369,6 +447,7 @@ Only seasons 1, 2, 6, 148-153 have been ingested into the production DB. The rem
 ### Processing
 
 Seed files use the **same normalization pipeline** as live `get_snapshots` data:
+
 1. Read JSON file
 2. Validate with `isValidSeason` Zod schema
 3. Upsert into `h1_season`, `h1_introduction_order`, `h1_points_max`, `h1_event`
@@ -387,20 +466,21 @@ Seed files **bootstrap the app** on first deploy — they get the DB populated w
 
 ## Files to modify
 
-| File | Change |
-|------|--------|
-| `prisma/schema.prisma` | Drop `h1_defend_event`, `h1_attack_event`, `h1_campaign`, `h1_statistic`. Drop `json` from intro_order/points_max. Drop `map` from `App`. Add `h1_live`. Add indexes to `h1_event`. |
-| `src/update/status.mjs` | Switch to `queryUpsertEvent` + `queryUpsertLive`. Derive intro_order/points_max from campaign_status. Guard for null `defend_event`. |
-| `src/update/season.mjs` | Switch to `queryUpsertEvent` for defend/attack events. |
-| `src/db/queries/upsertEvent.mjs` | Add `type` field, add `players_at_start`, fix error message, use `tryCatch`. |
-| `src/db/queries/upsertLive.mjs` | **New** — upsert `h1_live` row per (season, enemy) with campaign + stats + map. |
-| `src/db/queries/upsertIntroductionOrder.mjs` | Stop writing `json` field. |
-| `src/db/queries/upsertPointsMax.mjs` | Stop writing `json` field. |
-| `src/validators/isValidStatus.js` | Make `defend_event` nullable: `defendEventSchema.nullable()`. |
-| `src/utils/responses.mjs` | Replace `NextResponse.json()` with `JSON.stringify` + BigInt→Number replacer in both response functions. |
-| `src/app/api/h1/rebroadcast/route.js` | Replace bare `await` with `tryCatch`. |
+| File                                         | Change                                                                                                                                                                              |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prisma/schema.prisma`                       | Drop `h1_defend_event`, `h1_attack_event`, `h1_campaign`, `h1_statistic`. Drop `json` from intro_order/points_max. Drop `map` from `App`. Add `h1_live`. Add indexes to `h1_event`. |
+| `src/update/status.mjs`                      | Switch to `queryUpsertEvent` + `queryUpsertLive`. Derive intro_order/points_max from campaign_status. Guard for null `defend_event`.                                                |
+| `src/update/season.mjs`                      | Switch to `queryUpsertEvent` for defend/attack events.                                                                                                                              |
+| `src/db/queries/upsertEvent.mjs`             | Add `type` field, add `players_at_start`, fix error message, use `tryCatch`.                                                                                                        |
+| `src/db/queries/upsertLive.mjs`              | **New** — upsert `h1_live` row per (season, enemy) with campaign + stats + map.                                                                                                     |
+| `src/db/queries/upsertIntroductionOrder.mjs` | Stop writing `json` field.                                                                                                                                                          |
+| `src/db/queries/upsertPointsMax.mjs`         | Stop writing `json` field.                                                                                                                                                          |
+| `src/validators/isValidStatus.js`            | Make `defend_event` nullable: `defendEventSchema.nullable()`.                                                                                                                       |
+| `src/utils/responses.mjs`                    | Replace `NextResponse.json()` with `JSON.stringify` + BigInt→Number replacer in both response functions.                                                                            |
+| `src/app/api/h1/rebroadcast/route.js`        | Replace bare `await` with `tryCatch`.                                                                                                                                               |
 
 **Delete:**
+
 - `src/db/queries/upsertDefendEvent.mjs`
 - `src/db/queries/upsertDefendEvents.mjs`
 - `src/db/queries/upsertAttackEvents.mjs`

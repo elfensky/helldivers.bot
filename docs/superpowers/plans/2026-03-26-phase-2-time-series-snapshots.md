@@ -12,18 +12,18 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-|------|--------|----------------|
-| `prisma/schema.prisma` | Modify | Add `h1_live_snapshot` and `h1_event_snapshot` models, add back-references to `h1_season`, drop `json` from `h1_snapshot` |
-| `prisma/migrations/YYYYMMDD_phase2_time_series/migration.sql` | Create | SQL migration for new tables + drop h1_snapshot.json |
-| `src/db/queries/createLiveSnapshots.mjs` | Create | Insert statistic snapshots from h1_live data |
-| `src/db/queries/createEventSnapshots.mjs` | Create | Insert event progress snapshots |
-| `src/update/status.mjs` | Modify | Wire snapshot capture after h1_live upsert (step 8) and after event upsert (step 6) |
-| `src/update/snapshotTimers.mjs` | Create | In-memory throttle state + cold-start DB seed |
-| `src/db/queries/upsertSnapshots.mjs` | Modify | Remove `json` field from upsert, fix error cause string, convert to tryCatch |
-| `src/update/fetch.mjs` | Modify | Uncomment `throw error` in `fetchStatus()` |
-| `src/validators/isValidStatus.js` | Modify | Add timestamp range validation |
-| `docs/TODO.md` | Modify | Update Phase 2 checklist |
+| File                                                          | Action | Responsibility                                                                                                            |
+| ------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `prisma/schema.prisma`                                        | Modify | Add `h1_live_snapshot` and `h1_event_snapshot` models, add back-references to `h1_season`, drop `json` from `h1_snapshot` |
+| `prisma/migrations/YYYYMMDD_phase2_time_series/migration.sql` | Create | SQL migration for new tables + drop h1_snapshot.json                                                                      |
+| `src/db/queries/createLiveSnapshots.mjs`                      | Create | Insert statistic snapshots from h1_live data                                                                              |
+| `src/db/queries/createEventSnapshots.mjs`                     | Create | Insert event progress snapshots                                                                                           |
+| `src/update/status.mjs`                                       | Modify | Wire snapshot capture after h1_live upsert (step 8) and after event upsert (step 6)                                       |
+| `src/update/snapshotTimers.mjs`                               | Create | In-memory throttle state + cold-start DB seed                                                                             |
+| `src/db/queries/upsertSnapshots.mjs`                          | Modify | Remove `json` field from upsert, fix error cause string, convert to tryCatch                                              |
+| `src/update/fetch.mjs`                                        | Modify | Uncomment `throw error` in `fetchStatus()`                                                                                |
+| `src/validators/isValidStatus.js`                             | Modify | Add timestamp range validation                                                                                            |
+| `docs/TODO.md`                                                | Modify | Update Phase 2 checklist                                                                                                  |
 
 ---
 
@@ -32,6 +32,7 @@
 **Why:** `fetchStatus()` catches errors and returns `undefined` instead of throwing. This causes confusing downstream failures and will make snapshot debugging impossible.
 
 **Files:**
+
 - Modify: `src/update/fetch.mjs:51-62`
 
 - [ ] **Step 1: Fix `fetchStatus()` to propagate errors**
@@ -68,6 +69,7 @@ git commit -m "fix: propagate fetchStatus() errors instead of swallowing them"
 **Why:** The API `time` field is validated only as `z.number()`. A zero, negative, or far-future timestamp would break snapshot interval logic (either creating snapshots every poll or halting them permanently).
 
 **Files:**
+
 - Modify: `src/validators/isValidStatus.js:58-59`
 
 - [ ] **Step 1: Add range validation**
@@ -101,6 +103,7 @@ git commit -m "fix: add timestamp range validation to status Zod schema"
 **Why:** The Phase 1 migration dropped `json` from `h1_introduction_order` and `h1_points_max` but missed `h1_snapshot`. The schema still declares it and `upsertSnapshots.mjs` still writes to it. This must be cleaned up before Phase 2 adds more snapshot logic.
 
 **Files:**
+
 - Modify: `prisma/schema.prisma:215-228`
 - Create: `prisma/migrations/20260326000001_drop_snapshot_json/migration.sql`
 - Modify: `src/db/queries/upsertSnapshots.mjs`
@@ -218,6 +221,7 @@ git commit -m "fix: drop redundant json column from h1_snapshot, remove duplicat
 **Why:** `h1_live` upserts by `(season, enemy)`, overwriting previous values. This table captures statistics at 15-minute intervals so player counts, kills, missions etc. are tracked as time series.
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Create: `prisma/migrations/20260326000002_add_live_snapshot/migration.sql`
 
@@ -258,6 +262,7 @@ model h1_live_snapshot {
 ```
 
 Key decisions:
+
 - Named `h1_live_snapshot` (not `h1_statistic_snapshot`) because the source table is `h1_live`, not the dropped `h1_statistic`.
 - No `@@index([season, enemy, time])` — the `@@unique` already creates that index.
 - `@@index([season, time])` is kept — useful for cross-faction queries ("all stats for season X in time range").
@@ -333,6 +338,7 @@ git commit -m "feat: add h1_live_snapshot table for time-series statistics"
 **Why:** `h1_event` upserts overwrite event progress. This table captures `(points, points_max)` at 10-minute intervals so event progression can be charted.
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Create: `prisma/migrations/20260326000003_add_event_snapshot/migration.sql`
 
@@ -361,6 +367,7 @@ model h1_event_snapshot {
 ```
 
 Key decisions from the debate:
+
 - **`season` column added** (denormalized) — enables efficient "all event snapshots for season 153" queries needed by War History page (Phase 8). Without it, you'd need a full table scan + join.
 - **`type` column added** — enables a proper FK to `h1_event` via `(type, event_id)`. The original spec omitted the FK claiming "events can span seasons" but they don't (`upsertEvent.mjs:15` skips cross-season events). The real blocker was that `event_id` alone isn't unique in `h1_event` — adding `type` solves that.
 - **Unique on `(type, event_id, time)`** not `(event_id, time)` — because `event_id` is only unique within a type.
@@ -432,6 +439,7 @@ git commit -m "feat: add h1_event_snapshot table for event progress tracking"
 **Why:** The polling pipeline runs every ~20 seconds. Snapshot writes should happen at 15-min (stats) and 10-min (events) intervals. Querying `MAX(time)` from the DB every poll cycle is wasteful. An in-memory timer with DB fallback on cold start eliminates this overhead.
 
 **Files:**
+
 - Create: `src/update/snapshotTimers.mjs`
 
 - [ ] **Step 1: Create the throttle module**
@@ -448,7 +456,7 @@ import { tryCatch } from '@/utils/tryCatch';
 let lastLiveSnapshotTime = null;
 const lastEventSnapshotTimes = new Map(); // key: `${type}:${event_id}`, value: time
 
-const LIVE_SNAPSHOT_INTERVAL = 900;  // 15 minutes in seconds
+const LIVE_SNAPSHOT_INTERVAL = 900; // 15 minutes in seconds
 const EVENT_SNAPSHOT_INTERVAL = 600; // 10 minutes in seconds
 
 /**
@@ -535,6 +543,7 @@ git commit -m "feat: add in-memory snapshot throttle with DB cold-start fallback
 **Why:** This is the DB write function for statistic snapshots. Uses `upsert` (not `createMany` with `skipDuplicates`) per the debate finding that `skipDuplicates` silently drops legitimate data when timestamps collide.
 
 **Files:**
+
 - Create: `src/db/queries/createLiveSnapshots.mjs`
 
 - [ ] **Step 1: Create the query file**
@@ -641,6 +650,7 @@ git commit -m "feat: add createLiveSnapshots query for statistic time-series"
 **Why:** This is the DB write function for event progress snapshots. Captures both active events and events that just transitioned to a terminal state (to avoid losing the final data point).
 
 **Files:**
+
 - Create: `src/db/queries/createEventSnapshots.mjs`
 
 - [ ] **Step 1: Create the query file**
@@ -718,6 +728,7 @@ git commit -m "feat: add createEventSnapshot query for event progress tracking"
 **Why:** This is the integration point — connecting the snapshot queries and throttle logic into the existing polling pipeline.
 
 **Files:**
+
 - Modify: `src/update/status.mjs`
 
 - [ ] **Step 1: Add imports**
@@ -740,51 +751,60 @@ import {
 After the attack events loop (after line 113 in current `status.mjs`), add a new step 6.5:
 
 ```js
-    //6.5 capture event snapshots (10-min throttle)
-    // Defend event snapshot
-    if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
-        const de = fetchedData.defend_event;
-        // Snapshot if active OR if terminal (captures the final state)
-        if (de.status === 'active' || de.status === 'success' || de.status === 'fail') {
-            const { data: shouldSnapshot, error: timerError } = await tryCatch(
-                shouldTakeEventSnapshot('defend', de.event_id, fetchedData.time),
+//6.5 capture event snapshots (10-min throttle)
+// Defend event snapshot
+if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
+    const de = fetchedData.defend_event;
+    // Snapshot if active OR if terminal (captures the final state)
+    if (de.status === 'active' || de.status === 'success' || de.status === 'fail') {
+        const { data: shouldSnapshot, error: timerError } = await tryCatch(
+            shouldTakeEventSnapshot('defend', de.event_id, fetchedData.time),
+        );
+        if (timerError) {
+            console.error('Event snapshot timer error:', timerError.message);
+        } else if (shouldSnapshot) {
+            const { error: snapError } = await tryCatch(
+                queryCreateEventSnapshot(season, 'defend', de, fetchedData.time),
             );
-            if (timerError) {
-                console.error('Event snapshot timer error:', timerError.message);
-            } else if (shouldSnapshot) {
-                const { error: snapError } = await tryCatch(
-                    queryCreateEventSnapshot(season, 'defend', de, fetchedData.time),
-                );
-                if (snapError) {
-                    console.error('Defend event snapshot error:', snapError.message);
-                } else {
-                    recordEventSnapshotTime('defend', de.event_id, fetchedData.time);
-                }
+            if (snapError) {
+                console.error('Defend event snapshot error:', snapError.message);
+            } else {
+                recordEventSnapshotTime('defend', de.event_id, fetchedData.time);
             }
         }
     }
+}
 
-    // Attack event snapshots
-    for (const event of fetchedData.attack_events) {
-        if (event.season !== season) continue;
-        if (event.status === 'active' || event.status === 'success' || event.status === 'fail') {
-            const { data: shouldSnapshot, error: timerError } = await tryCatch(
-                shouldTakeEventSnapshot('attack', event.event_id, fetchedData.time),
+// Attack event snapshots
+for (const event of fetchedData.attack_events) {
+    if (event.season !== season) continue;
+    if (
+        event.status === 'active' ||
+        event.status === 'success' ||
+        event.status === 'fail'
+    ) {
+        const { data: shouldSnapshot, error: timerError } = await tryCatch(
+            shouldTakeEventSnapshot('attack', event.event_id, fetchedData.time),
+        );
+        if (timerError) {
+            console.error('Event snapshot timer error:', timerError.message);
+        } else if (shouldSnapshot) {
+            const { error: snapError } = await tryCatch(
+                queryCreateEventSnapshot(
+                    season,
+                    'attack',
+                    { ...event, region: 11 },
+                    fetchedData.time,
+                ),
             );
-            if (timerError) {
-                console.error('Event snapshot timer error:', timerError.message);
-            } else if (shouldSnapshot) {
-                const { error: snapError } = await tryCatch(
-                    queryCreateEventSnapshot(season, 'attack', { ...event, region: 11 }, fetchedData.time),
-                );
-                if (snapError) {
-                    console.error('Attack event snapshot error:', snapError.message);
-                } else {
-                    recordEventSnapshotTime('attack', event.event_id, fetchedData.time);
-                }
+            if (snapError) {
+                console.error('Attack event snapshot error:', snapError.message);
+            } else {
+                recordEventSnapshotTime('attack', event.event_id, fetchedData.time);
             }
         }
     }
+}
 ```
 
 Note: snapshots capture ALL event states (active, success, fail) — not just active. This captures the final data point when an event transitions to a terminal state. The throttle timer still prevents duplicate writes at the same timestamp.
@@ -796,22 +816,22 @@ Note: snapshot errors are logged but do NOT throw — snapshot failure should no
 After the h1_live upsert loop (after line 151 in current `status.mjs`), add step 8.5:
 
 ```js
-    //8.5 capture live statistic snapshots (15-min throttle)
-    const { data: shouldSnapshot, error: liveTimerError } = await tryCatch(
-        shouldTakeLiveSnapshot(season, fetchedData.time),
+//8.5 capture live statistic snapshots (15-min throttle)
+const { data: shouldSnapshot, error: liveTimerError } = await tryCatch(
+    shouldTakeLiveSnapshot(season, fetchedData.time),
+);
+if (liveTimerError) {
+    console.error('Live snapshot timer error:', liveTimerError.message);
+} else if (shouldSnapshot) {
+    const { error: liveSnapError } = await tryCatch(
+        queryCreateLiveSnapshots(season, fetchedData.time, fetchedData.statistics),
     );
-    if (liveTimerError) {
-        console.error('Live snapshot timer error:', liveTimerError.message);
-    } else if (shouldSnapshot) {
-        const { error: liveSnapError } = await tryCatch(
-            queryCreateLiveSnapshots(season, fetchedData.time, fetchedData.statistics),
-        );
-        if (liveSnapError) {
-            console.error('Live snapshot error:', liveSnapError.message);
-        } else {
-            recordLiveSnapshotTime(fetchedData.time);
-        }
+    if (liveSnapError) {
+        console.error('Live snapshot error:', liveSnapError.message);
+    } else {
+        recordLiveSnapshotTime(fetchedData.time);
     }
+}
 ```
 
 - [ ] **Step 4: Verify the app starts and the pipeline runs**
@@ -819,6 +839,7 @@ After the h1_live upsert loop (after line 151 in current `status.mjs`), add step
 Run: `npm run dev`
 
 Watch worker logs. After 15+ minutes, verify:
+
 - `h1_live_snapshot` has rows: check via Prisma Studio or direct DB query
 - `h1_event_snapshot` has rows (if any events are active)
 
@@ -834,6 +855,7 @@ git commit -m "feat: wire snapshot capture into polling pipeline (15-min stats, 
 ## Task 10: Update TODO and spec
 
 **Files:**
+
 - Modify: `docs/TODO.md`
 - Modify: `docs/superpowers/specs/2026-03-25-phase-2-time-series-snapshots.md`
 
@@ -869,21 +891,21 @@ git commit -m "docs: update Phase 2 TODO items to match revised plan"
 
 Issues identified in the four-way debate and how each is resolved:
 
-| # | Issue | Resolution |
-|---|-------|-----------|
-| 1 | Spec references dropped `h1_statistic` | Renamed to `h1_live_snapshot`, sourced from `h1_live`/`fetchedData.statistics` |
-| 2 | `season_duration` phantom field | Kept — confirmed it exists in `isValidStatus.js:39` and `upsertLive.mjs:31` |
-| 3 | Prisma client may be stale | Task 3 includes `prisma generate` |
-| 4 | `skipDuplicates` silent data loss | Changed to `upsert` pattern (update on conflict) |
-| 5 | Active-to-inactive event transition gap | Snapshot captures all event states, not just active |
-| 6 | No timestamp validation | Task 2 adds `z.number().int().min().max()` |
-| 7 | Double-encoded JSON in `h1_snapshot.data` | Out of scope — existing data issue, not Phase 2. Worth a future cleanup. |
-| 8 | Redundant `@@index` where `@@unique` exists | Removed from both new tables and from `h1_snapshot` |
-| 9 | `h1_event_snapshot` missing `season` column | Added with `@@index([season, time])` |
-| 10 | Per-poll `MAX(time)` queries | In-memory throttle with DB cold-start fallback (Task 6) |
-| 11 | No FK on `h1_event_snapshot` | Added FK via `(type, event_id)` compound key |
-| 12 | No retention policy | Acknowledged — deferred. Growth is ~1K rows/day, manageable for years |
-| 13 | Clock source ambiguity | All comparisons use `fetchedData.time` (API clock) |
-| 14 | `fetchStatus()` swallows errors | Task 1 fixes it |
-| 15 | `upsertSnapshots.mjs` uses raw try/catch | Task 3 converts to tryCatch wrapper |
-| 16 | "Populate h1_snapshot" TODO is already done | Removed from Phase 2 TODO |
+| #   | Issue                                       | Resolution                                                                     |
+| --- | ------------------------------------------- | ------------------------------------------------------------------------------ |
+| 1   | Spec references dropped `h1_statistic`      | Renamed to `h1_live_snapshot`, sourced from `h1_live`/`fetchedData.statistics` |
+| 2   | `season_duration` phantom field             | Kept — confirmed it exists in `isValidStatus.js:39` and `upsertLive.mjs:31`    |
+| 3   | Prisma client may be stale                  | Task 3 includes `prisma generate`                                              |
+| 4   | `skipDuplicates` silent data loss           | Changed to `upsert` pattern (update on conflict)                               |
+| 5   | Active-to-inactive event transition gap     | Snapshot captures all event states, not just active                            |
+| 6   | No timestamp validation                     | Task 2 adds `z.number().int().min().max()`                                     |
+| 7   | Double-encoded JSON in `h1_snapshot.data`   | Out of scope — existing data issue, not Phase 2. Worth a future cleanup.       |
+| 8   | Redundant `@@index` where `@@unique` exists | Removed from both new tables and from `h1_snapshot`                            |
+| 9   | `h1_event_snapshot` missing `season` column | Added with `@@index([season, time])`                                           |
+| 10  | Per-poll `MAX(time)` queries                | In-memory throttle with DB cold-start fallback (Task 6)                        |
+| 11  | No FK on `h1_event_snapshot`                | Added FK via `(type, event_id)` compound key                                   |
+| 12  | No retention policy                         | Acknowledged — deferred. Growth is ~1K rows/day, manageable for years          |
+| 13  | Clock source ambiguity                      | All comparisons use `fetchedData.time` (API clock)                             |
+| 14  | `fetchStatus()` swallows errors             | Task 1 fixes it                                                                |
+| 15  | `upsertSnapshots.mjs` uses raw try/catch    | Task 3 converts to tryCatch wrapper                                            |
+| 16  | "Populate h1_snapshot" TODO is already done | Removed from Phase 2 TODO                                                      |
