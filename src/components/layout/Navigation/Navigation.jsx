@@ -13,15 +13,10 @@ export default async function Navigation() {
     const session = await auth();
 
     const links = [
-        // { href: '/discord', label: 'Discord' },
-        // { href: '/reviews', label: 'Reviews' },
-        // { href: '/history', label: 'History' },
-        // { href: '/stats', label: 'Stats' },
+        { href: '/', label: 'Live', className: 'nav-live' },
         { href: 'https://status.helldivers.bot', label: 'Status' },
         { href: '/war', label: 'History' },
         { href: '/about', label: 'About' },
-        { href: '/docs', label: 'Docs' },
-        { href: '/api', label: 'API' },
     ];
 
     if (session && session.user) {
@@ -70,6 +65,7 @@ export default async function Navigation() {
                     <li key={link.href}>
                         <Link
                             href={link.href}
+                            className={link.className || ''}
                             data-umami-event={'header-' + link.label.toLowerCase()}
                         >
                             {link.label}

@@ -1,3 +1,7 @@
+import fs from 'fs';
+import path from 'path';
+import DocsClient from '@/components/layout/openapi/DocsClient';
+
 export const metadata = {
     title: 'About | Helldivers Bot',
     description:
@@ -5,11 +9,16 @@ export const metadata = {
 };
 
 export default function AboutPage() {
+    const filePath = path.join(process.cwd(), 'public', 'openapi.json');
+    const jsonData = fs.readFileSync(filePath, 'utf-8');
+    const openapi = JSON.parse(jsonData);
+
     return (
         <div className="gutters relative mb-8 flex flex-col flex-wrap gap-8">
             <About />
             <Discord />
             <Api />
+            <Docs openapi={openapi} />
         </div>
     );
 }
@@ -67,11 +76,15 @@ function Api() {
                 purposes. Use my API to avoid overloading the official server, so I can
                 act as a cache.
             </p>
-            <p>
-                In the meantime, read the
-                <a href="/docs"> Docs</a> or the
-                <a href="/api"> API Specification</a>
-            </p>
+        </section>
+    );
+}
+
+function Docs({ openapi }) {
+    return (
+        <section id="docs" className="w-full">
+            <h2>API Documentation</h2>
+            <DocsClient spec={openapi} />
         </section>
     );
 }
