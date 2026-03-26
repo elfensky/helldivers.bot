@@ -450,4 +450,4 @@ The generated spec is rendered at the `/api` page route (`src/app/api/page.jsx`)
 
 - See [03-data-flow.md](03-data-flow.md) for what happens inside `updateStatus()` and `updateSeason()` after `/api/h1/update` triggers the pipeline.
 - See [05-utilities-reference.md](05-utilities-reference.md) for `successResponse`, `errorResponse`, `tryCatch`, `performanceTime`, `roundedPerformanceTime`, and validation schemas.
-- See [02-database-schema.md](02-database-schema.md) for the tables queried by these endpoints (`rebroadcast_status`, `rebroadcast_snapshot`, `h1_season`, `h1_campaign`, etc.).
+- See [02-database-schema.md](02-database-schema.md) for the tables queried by these endpoints (`rebroadcast_status`, `rebroadcast_snapshot`, `h1_season`, `h1_live`, etc.).

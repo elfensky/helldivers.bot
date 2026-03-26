@@ -292,7 +292,7 @@ await tryCatch(queryUpsertSeason(season, true));
 return { ms, season, confirmSeason };
 ```
 
-`ms` is the rounded execution time in milliseconds. `confirmSeason` is the updated `h1_season` record.
+`ms` is the raw execution time in milliseconds (via `performanceTime(start)`, not rounded). `confirmSeason` is the updated `h1_season` record.
 
 ### Confirm pattern
 

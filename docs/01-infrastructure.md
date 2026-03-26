@@ -176,8 +176,8 @@ register()   [src/instrumentation.js]
         │
         └── Step 3: initializeWorker()                 [src/utils/initialize.worker.mjs]
             ├── Resolves worker path:
-            │   ├── development: relative to __dirname → ../../public/workers/cron.js
-            │   └── production:  absolute /app/public/workers/cron.js
+            │   ├── development: path.resolve(process.cwd(), 'public/workers/cron.js')
+            │   └── production:  path.resolve('/app/public/workers/cron.js')
             ├── new Worker(workerPath)
             ├── worker.postMessage({ key, interval, port })
             ├── Attaches message/error/exit handlers
