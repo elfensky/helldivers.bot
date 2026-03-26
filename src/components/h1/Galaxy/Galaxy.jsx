@@ -17,7 +17,7 @@ export default function Galaxy({ data, rebroadcast }) {
     processDefendEvents(data);
     // processAttackEvents(data);
 
-    const elapsedTime = elapsedSeasonTime(data?.statistics[0]?.season_duration);
+    const elapsedTime = elapsedSeasonTime(data?.live?.[0]?.season_duration);
 
     return (
         <>
@@ -40,7 +40,8 @@ export default function Galaxy({ data, rebroadcast }) {
 }
 
 function processCampaigns(data) {
-    data?.campaigns?.forEach((campaign, faction) => {
+    data?.live?.forEach((campaign) => {
+        const faction = campaign.enemy;
         const sector_count = 10; //10 sectors, 11th (homeworld) is determined by the attack event, not campaign progress.
         const points_max = campaign?.points_max;
         const points = campaign?.points;
@@ -112,8 +113,9 @@ function processCampaigns(data) {
 }
 
 function processDefendEvents(data) {
-    if (data?.defend_events?.length > 0) {
-        data?.defend_events?.forEach((event) => {
+    const defendEvents = data?.events?.filter((e) => e.type === 'defend') || [];
+    if (defendEvents.length > 0) {
+        defendEvents.forEach((event) => {
             if (event?.region === 0) {
                 if (event?.status === 'active') {
                     map[3][0].event = 'active';
@@ -133,8 +135,9 @@ function processDefendEvents(data) {
 }
 
 function processAttackEvents(data) {
-    if (data?.attack_events?.length > 0) {
-        data?.attack_events?.forEach((event) => {
+    const attackEvents = data?.events?.filter((e) => e.type === 'attack') || [];
+    if (attackEvents.length > 0) {
+        attackEvents.forEach((event) => {
             if (event?.status === 'active') {
                 map[event?.enemy][11].percent = (event?.points / event?.points_max) * 100;
                 map[event?.enemy][11].points = event?.points;

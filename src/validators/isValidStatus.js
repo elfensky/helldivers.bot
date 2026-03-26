@@ -56,7 +56,7 @@ const statisticsSchema = z.object({
 });
 
 const rootSchema = z.object({
-    time: z.number(),
+    time: z.number().int().min(1000000000).max(2000000000),
     error_code: z.number(),
     campaign_status: z.array(campaignStatusSchema),
     defend_event: defendEventSchema.nullable(),

@@ -12,6 +12,14 @@ import { queryUpsertEvent } from '@/db/queries/upsertEvent';
 import { queryUpsertLive } from '@/db/queries/upsertLive';
 import { queryUpsertIntroductionOrder } from '@/db/queries/upsertIntroductionOrder';
 import { queryUpsertPointsMax } from '@/db/queries/upsertPointsMax';
+import { queryCreateLiveSnapshots } from '@/db/queries/createLiveSnapshots';
+import { queryCreateEventSnapshot } from '@/db/queries/createEventSnapshots';
+import {
+    shouldTakeLiveSnapshot,
+    recordLiveSnapshotTime,
+    shouldTakeEventSnapshot,
+    recordEventSnapshotTime,
+} from '@/update/snapshotTimers';
 
 function computeFactionMap(enemy, campaign, defendEvent, attackEvents, season) {
     const factionMap = JSON.parse(JSON.stringify(map[enemy]));
@@ -112,6 +120,61 @@ export async function updateStatus() {
         }
     }
 
+    //6.5 capture event snapshots (10-min throttle)
+    // Defend event snapshot
+    if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
+        const de = fetchedData.defend_event;
+        // Snapshot if active OR if terminal (captures the final state)
+        if (de.status === 'active' || de.status === 'success' || de.status === 'fail') {
+            const { data: shouldSnapshot, error: timerError } = await tryCatch(
+                shouldTakeEventSnapshot('defend', de.event_id, fetchedData.time),
+            );
+            if (timerError) {
+                console.error('Event snapshot timer error:', timerError.message);
+            } else if (shouldSnapshot) {
+                const { error: snapError } = await tryCatch(
+                    queryCreateEventSnapshot(season, 'defend', de, fetchedData.time),
+                );
+                if (snapError) {
+                    console.error('Defend event snapshot error:', snapError.message);
+                } else {
+                    recordEventSnapshotTime('defend', de.event_id, fetchedData.time);
+                }
+            }
+        }
+    }
+
+    // Attack event snapshots
+    for (const event of fetchedData.attack_events) {
+        if (event.season !== season) continue;
+        if (
+            event.status === 'active' ||
+            event.status === 'success' ||
+            event.status === 'fail'
+        ) {
+            const { data: shouldSnapshot, error: timerError } = await tryCatch(
+                shouldTakeEventSnapshot('attack', event.event_id, fetchedData.time),
+            );
+            if (timerError) {
+                console.error('Event snapshot timer error:', timerError.message);
+            } else if (shouldSnapshot) {
+                const { error: snapError } = await tryCatch(
+                    queryCreateEventSnapshot(
+                        season,
+                        'attack',
+                        { ...event, region: 11 },
+                        fetchedData.time,
+                    ),
+                );
+                if (snapError) {
+                    console.error('Attack event snapshot error:', snapError.message);
+                } else {
+                    recordEventSnapshotTime('attack', event.event_id, fetchedData.time);
+                }
+            }
+        }
+    }
+
     //7. derive introduction_order and points_max from campaign_status
     const introOrder = fetchedData.campaign_status.map((c) => c.introduction_order);
     const pointsMax = fetchedData.campaign_status.map((c) => c.points_max);
@@ -147,6 +210,23 @@ export async function updateStatus() {
         );
         if (liveError) {
             throw new Error(liveError?.message || 'Failed to upsert h1_live');
+        }
+    }
+
+    //8.5 capture live statistic snapshots (15-min throttle)
+    const { data: shouldSnapshot, error: liveTimerError } = await tryCatch(
+        shouldTakeLiveSnapshot(season, fetchedData.time),
+    );
+    if (liveTimerError) {
+        console.error('Live snapshot timer error:', liveTimerError.message);
+    } else if (shouldSnapshot) {
+        const { error: liveSnapError } = await tryCatch(
+            queryCreateLiveSnapshots(season, fetchedData.time, fetchedData.statistics),
+        );
+        if (liveSnapError) {
+            console.error('Live snapshot error:', liveSnapError.message);
+        } else {
+            recordLiveSnapshotTime(fetchedData.time);
         }
     }
 
