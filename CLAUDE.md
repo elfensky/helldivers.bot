@@ -56,7 +56,7 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` onc
 
 ## Task Tracking
 
-All work is tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and the [helldiversbot project board](https://github.com/users/elfensky/projects/5). Do NOT use `docs/TODO.md` — it is deprecated.
+All work is tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and the [helldiversbot project board](https://github.com/users/elfensky/projects/5).
 
 ### Organization
 
