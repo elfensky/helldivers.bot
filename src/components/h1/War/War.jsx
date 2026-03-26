@@ -3,22 +3,46 @@ import factions from '@/enums/factions';
 
 function getWarOutcome(data) {
     const snapshots = data?.snapshots || [];
-    if (snapshots.length === 0) return null;
+    const events = data?.events || [];
+    const live = data?.live || [];
 
-    const lastSnapshot = snapshots[snapshots.length - 1];
-    const factionData =
-        typeof lastSnapshot.data === 'string' ?
-            JSON.parse(lastSnapshot.data)
-        :   lastSnapshot.data;
-
-    if (!Array.isArray(factionData) || factionData.length !== 3) return null;
-
-    const allDefeated = factionData.every((f) => f.status === 'defeated');
-    if (allDefeated) {
+    // 1. Check live data (current season)
+    if (live.length === 3 && live.every((f) => f.status === 'defeated')) {
         return { outcome: 'victory', reason: 'All enemy factions have been defeated.' };
     }
 
-    return { outcome: 'defeat', reason: 'Super Earth was overwhelmed.' };
+    // 2. Check last snapshot (historical — clear cases)
+    if (snapshots.length > 0) {
+        const lastSnapshot = snapshots[snapshots.length - 1];
+        const factionData =
+            typeof lastSnapshot.data === 'string' ?
+                JSON.parse(lastSnapshot.data)
+            :   lastSnapshot.data;
+        if (Array.isArray(factionData) && factionData.length === 3) {
+            if (factionData.every((f) => f.status === 'defeated')) {
+                return {
+                    outcome: 'victory',
+                    reason: 'All enemy factions have been defeated.',
+                };
+            }
+        }
+    }
+
+    // 3. Check events (snapshot may not capture final state)
+    const superEarthDefend = events.find((e) => e.type === 'defend' && e.region === 0);
+    if (superEarthDefend) {
+        if (superEarthDefend.status === 'fail') {
+            return { outcome: 'defeat', reason: 'Super Earth was overwhelmed.' };
+        }
+        if (superEarthDefend.status === 'success') {
+            return {
+                outcome: 'victory',
+                reason: 'All enemy factions have been defeated.',
+            };
+        }
+    }
+
+    return null;
 }
 
 export function WarOutcome({ data }) {
