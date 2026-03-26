@@ -1,5 +1,6 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import './WarTimeline.css';
 import { computeMapState } from '@/utils/computeMapState.mjs';
 import Galaxy from '@/components/h1/Galaxy/Galaxy';
@@ -85,14 +86,13 @@ function computeMomentMapState(moment, data) {
     const activeEvents = (data.events ?? [])
         .filter((e) => {
             const isActive = e.start_time <= moment.time && e.end_time >= moment.time;
-            const isCompletedSuccess =
-                e.end_time <= moment.time && e.status === 'success';
-            return isActive || isCompletedSuccess;
+            const isCompleted = e.end_time <= moment.time && (e.status === 'success' || e.status === 'fail');
+            return isActive || isCompleted;
         })
         .map((e) => ({
             ...e,
             status:
-                e.start_time <= moment.time && e.end_time >= moment.time ?
+                e.start_time <= moment.time && e.end_time > moment.time ?
                     'active'
                 :   e.status,
         }));
@@ -110,14 +110,44 @@ function formatTimestamp(unixSeconds) {
     });
 }
 
+function syncTimelineToUrl(idx) {
+    const url = new URL(window.location.href);
+    if (idx === null) {
+        url.searchParams.delete('timeline');
+    } else {
+        url.searchParams.set('timeline', String(idx));
+    }
+    window.history.replaceState(null, '', url.toString());
+}
+
 export default function WarTimeline({ data, defaultMapState }) {
+    const searchParams = useSearchParams();
+
     const [selectedIndex, setSelectedIndex] = useState(null);
 
     const moments = useMemo(() => buildTimeline(data), [data]);
 
+    // Sync selectedIndex from URL params (runs on mount, season change, and param change)
+    useEffect(() => {
+        const param = searchParams.get('timeline');
+        if (param === null) {
+            setSelectedIndex(null);
+        } else {
+            const idx = parseInt(param, 10);
+            const clamped = Number.isFinite(idx) && moments.length > 0
+                ? Math.min(idx, moments.length - 1)
+                : null;
+            setSelectedIndex(clamped);
+        }
+    }, [searchParams, data, moments.length]);
+
     const currentMapState = useMemo(() => {
-        if (selectedIndex === null) return defaultMapState;
-        return computeMomentMapState(moments[selectedIndex], data);
+        if (selectedIndex === null || moments.length === 0) return defaultMapState;
+        const clamped = Math.min(selectedIndex, moments.length - 1);
+        const moment = moments[clamped];
+        const result = computeMomentMapState(moment, data);
+        // DEBUG: log bug sector statuses
+        return result;
     }, [selectedIndex, moments, data, defaultMapState]);
 
     if (moments.length === 0) {
@@ -159,7 +189,11 @@ export default function WarTimeline({ data, defaultMapState }) {
                     min={0}
                     max={moments.length - 1}
                     value={activeIndex}
-                    onChange={(e) => setSelectedIndex(Number(e.target.value))}
+                    onChange={(e) => {
+                        const idx = Number(e.target.value);
+                        setSelectedIndex(idx);
+                        syncTimelineToUrl(idx);
+                    }}
                     aria-label="War timeline"
                     aria-valuetext={formatTimestamp(activeMoment.time)}
                 />

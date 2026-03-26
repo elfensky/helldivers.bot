@@ -1,9 +1,10 @@
 'use client';
-import { useRef, memo } from 'react';
+import { useRef } from 'react';
 import Map from '@/components/h1/Galaxy/Map';
 import Tooltip from '@/components/h1/Galaxy/Tooltip';
 
-export default memo(function Galaxy({ mapState }) {
+export default function Galaxy({ mapState }) {
+    // Note: memo was removed because React Compiler handles memoization
     const svgRef = useRef(null);
 
     return (
@@ -15,4 +16,4 @@ export default memo(function Galaxy({ mapState }) {
             <Tooltip svgRef={svgRef} map={mapState} />
         </section>
     );
-});
+}
