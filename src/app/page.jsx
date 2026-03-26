@@ -26,9 +26,10 @@ export default async function HomePage() {
     const { data: query, error: queryError } = await tryCatch(getCampaign());
 
     if (queryError !== null) {
+        console.error('getCampaign failed:', queryError);
         return (
             <div className="flex min-h-full w-full flex-col-reverse justify-center sm:flex-row">
-                Error: {queryError.message}
+                Unable to load campaign data. Please try again later.
             </div>
         );
     }
@@ -145,13 +146,13 @@ function HeroBackup({ data }) {
 }
 
 function HeroStats({ data }) {
-    const players = data.statistics.reduce((total, enemy) => total + enemy.players, 0);
-    const successful_missions = data.statistics.reduce(
+    const players = data.live.reduce((total, enemy) => total + enemy.players, 0);
+    const successful_missions = data.live.reduce(
         (total, enemy) => total + enemy.successful_missions,
         0,
     );
-    const deaths = data.statistics.reduce((total, enemy) => total + enemy.deaths, 0n);
-    const kills = data.statistics.reduce((total, enemy) => total + enemy.kills, 0n);
+    const deaths = data.live.reduce((total, enemy) => total + enemy.deaths, 0n);
+    const kills = data.live.reduce((total, enemy) => total + enemy.kills, 0n);
 
     return (
         <>

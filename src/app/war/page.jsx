@@ -27,9 +27,10 @@ export default async function Campaign() {
     const { data: query, error: queryError } = await tryCatch(getCampaign());
 
     if (queryError !== null) {
+        console.error('getCampaign failed:', queryError);
         return (
             <div className="flex min-h-full w-full flex-col-reverse justify-center sm:flex-row">
-                Error: {queryError.message}
+                Unable to load campaign data. Please try again later.
             </div>
         );
     }
