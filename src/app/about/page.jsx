@@ -20,7 +20,7 @@ function About() {
             id="about"
             className="card w-full rounded-md p-2 sm:max-w-1/3 sm:min-w-[300px] md:p-4"
         >
-            <h2 className="text-lg sm:text-xl lg:text-2xl">About</h2>
+            <h2>About</h2>
             <p>
                 Hi, I'm Andrei Lavrenov, a Full Stack Developer based in Belgium. As a
                 passionate Helldivers player who earned the platinum trophy on
@@ -43,7 +43,7 @@ function About() {
 function Discord() {
     return (
         <section id="discord" className="card w-full rounded-md p-2 sm:max-w-1/2 md:p-4">
-            <h2 className="text-lg sm:text-xl lg:text-2xl">Discord (Bot)</h2>
+            <h2>Discord (Bot)</h2>
             <p>
                 While this project started as a discord bot, I learned a lot since, and it
                 would require a full rewrite of whatever code exists now. I want to focus
@@ -61,7 +61,7 @@ function Discord() {
 function Api() {
     return (
         <section id="api" className="card w-full sm:max-w-1/2">
-            <h2 className="text-lg sm:text-xl lg:text-2xl">API</h2>
+            <h2>API</h2>
             <p>
                 Log in to create an api key so you can use the Helldivers API for your own
                 purposes. Use my API to avoid overloading the official server, so I can

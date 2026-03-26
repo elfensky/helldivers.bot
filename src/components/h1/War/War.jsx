@@ -29,7 +29,7 @@ function generateGlobalWarStats(statistics) {
 
     return (
         <article id="war" className="flex flex-col gap-1 p-4">
-            <div className="flex items-center justify-start gap-2 text-xl">
+            <div className="flex items-center justify-start gap-2">
                 <img
                     src={`/icons/faction3.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
@@ -50,7 +50,7 @@ function generateGlobalWarStats(statistics) {
 function generateWarStats(statistic) {
     return (
         <article id="war" key={statistic.enemy} className="flex flex-col gap-1 p-4">
-            <div className="flex items-center justify-start gap-2 text-xl">
+            <div className="flex items-center justify-start gap-2">
                 <img
                     src={`/icons/faction${statistic.enemy}.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"

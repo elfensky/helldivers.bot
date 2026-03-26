@@ -13,7 +13,7 @@ export default async function UserDashboard() {
 
     return (
         <div className="flex flex-col gap-2">
-            <h1 className="text-4xl">Dashboard</h1>
+            <h1>Dashboard</h1>
             {/* <p>list of account data</p> */}
 
             <ul>

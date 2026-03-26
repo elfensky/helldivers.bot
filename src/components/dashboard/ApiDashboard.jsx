@@ -13,7 +13,7 @@ export default async function ApiDashboard({ user }) {
 
     return (
         <div className="flex flex-col gap-2">
-            <h2 className="text-4xl">API Keys</h2>
+            <h2>API Keys</h2>
             <GenerateApiKeyForm userId={user.id} />
             <ApiKeysList userId={user.id} />
         </div>
