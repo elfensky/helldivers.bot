@@ -24,7 +24,7 @@ export default async function WarHistoryPage({ searchParams }) {
     const params = await searchParams;
     const seasonParam = params?.season ? parseInt(params.season, 10) : null;
 
-    const { data: seasons, error: seasonsError } = await tryCatch(getSeasonList());
+    const { data: allSeasons, error: seasonsError } = await tryCatch(getSeasonList());
 
     if (seasonsError !== null) {
         console.error('getSeasonList failed:', seasonsError);
@@ -35,7 +35,14 @@ export default async function WarHistoryPage({ searchParams }) {
         );
     }
 
-    const { data, error } = await tryCatch(getCampaign(seasonParam));
+    // Exclude the current (active) season — it's shown on the homepage
+    const activeSeason = allSeasons?.[0]?.season;
+    const seasons = allSeasons?.filter((s) => s.season !== activeSeason) || [];
+
+    // Default to the most recent completed season if no season param
+    const resolvedSeason = seasonParam ?? seasons[0]?.season ?? null;
+
+    const { data, error } = await tryCatch(getCampaign(resolvedSeason));
 
     if (error !== null) {
         console.error('getCampaign failed:', error);

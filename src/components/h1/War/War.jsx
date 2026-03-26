@@ -2,44 +2,23 @@ import './War.css';
 import factions from '@/enums/factions';
 
 function getWarOutcome(data) {
-    const events = data?.events || [];
-    const live = data?.live || [];
     const snapshots = data?.snapshots || [];
+    if (snapshots.length === 0) return null;
 
-    // Defeat: Super Earth defend event failed
-    const defeatEvent = events.find(
-        (e) => e.type === 'defend' && e.region === 0 && e.status === 'fail',
-    );
-    if (defeatEvent) {
-        return { outcome: 'defeat', reason: 'Super Earth was invaded and overrun.' };
-    }
+    const lastSnapshot = snapshots[snapshots.length - 1];
+    const factionData =
+        typeof lastSnapshot.data === 'string' ?
+            JSON.parse(lastSnapshot.data)
+        :   lastSnapshot.data;
 
-    // Victory from live data: all 3 factions defeated
-    if (live.length === 3 && live.every((f) => f.status === 'defeated')) {
+    if (!Array.isArray(factionData) || factionData.length !== 3) return null;
+
+    const allDefeated = factionData.every((f) => f.status === 'defeated');
+    if (allDefeated) {
         return { outcome: 'victory', reason: 'All enemy factions have been defeated.' };
     }
 
-    // Victory from last snapshot (historical seasons without live data):
-    // check if the final snapshot shows all 3 factions defeated
-    if (snapshots.length > 0) {
-        const lastSnapshot = snapshots[snapshots.length - 1];
-        const factionData =
-            typeof lastSnapshot.data === 'string' ?
-                JSON.parse(lastSnapshot.data)
-            :   lastSnapshot.data;
-        if (
-            Array.isArray(factionData) &&
-            factionData.length === 3 &&
-            factionData.every((f) => f.status === 'defeated')
-        ) {
-            return {
-                outcome: 'victory',
-                reason: 'All enemy factions have been defeated.',
-            };
-        }
-    }
-
-    return null;
+    return { outcome: 'defeat', reason: 'Super Earth was overwhelmed.' };
 }
 
 export function WarOutcome({ data }) {
