@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 export default async function PostPage() {
     const session = await auth();
-    const loggedIn = session && session.user ? true : false;
+    const loggedIn = !!session?.user;
     // const posts =
 
     return (

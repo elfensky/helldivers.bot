@@ -25,6 +25,8 @@ export default async function WarHistoryPage({ searchParams }) {
     const params = await searchParams;
     const seasonParam = params?.season ? parseInt(params.season, 10) : null;
 
+    // Fetch season list and (if season specified) campaign data in parallel
+    const campaignPromise = seasonParam !== null ? tryCatch(getCampaign(seasonParam)) : null;
     const { data: allSeasons, error: seasonsError } = await tryCatch(getSeasonList());
 
     if (seasonsError !== null) {
@@ -48,7 +50,8 @@ export default async function WarHistoryPage({ searchParams }) {
         redirect(`/war?season=${resolvedSeason}`);
     }
 
-    const { data, error } = await tryCatch(getCampaign(resolvedSeason));
+    // Await the campaign (already started if seasonParam was provided, otherwise start now)
+    const { data, error } = await (campaignPromise ?? tryCatch(getCampaign(resolvedSeason)));
 
     if (error !== null) {
         console.error('getCampaign failed:', error);

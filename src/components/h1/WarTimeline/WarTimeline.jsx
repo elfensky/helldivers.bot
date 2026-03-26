@@ -174,7 +174,7 @@ export default function WarTimeline({ data, defaultMapState }) {
                             :   'timeline-marker attack';
                         return (
                             <span
-                                key={`${moment.kind}-${moment.time}-${index}`}
+                                key={`${moment.kind}-${moment.time}-${moment.event?.event_id ?? index}`}
                                 className={markerClass}
                                 style={{ left: `${percent}%` }}
                                 aria-hidden="true"

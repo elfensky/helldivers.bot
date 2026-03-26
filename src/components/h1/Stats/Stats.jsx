@@ -1,8 +1,5 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-// import { tryCatch } from '@/utils/tryCatch.mjs';
-// import { query_get_rebroadcast_status } from '@/db/queries/rebroadcast';
-import axios from 'axios';
 
 // Example faction name list
 const faction_name_list = ['Bugs', 'Cyborgs', 'Illuminates', 'Super Earth'];
@@ -26,9 +23,9 @@ export default function HelldiversStats() {
         const formData = new FormData();
         formData.append('action', 'get_campaign_status');
 
-        axios
-            .post('/api/h1/rebroadcast', formData)
-            .then((res) => setData(res.data))
+        fetch('/api/h1/rebroadcast', { method: 'POST', body: formData })
+            .then((res) => res.json())
+            .then((json) => setData(json))
             .catch((err) => console.error(err));
     }, []);
 
