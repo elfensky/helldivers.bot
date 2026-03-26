@@ -58,7 +58,7 @@ export default async function WarHistoryPage({ searchParams }) {
     const mapState = computeMapState(data.live, []);
 
     return (
-        <div className="gutters z-10 flex w-screen flex-col gap-4 overflow-hidden">
+        <div className="gutters z-10 flex w-full flex-col gap-4 overflow-hidden">
             <JsonLd />
 
             <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
