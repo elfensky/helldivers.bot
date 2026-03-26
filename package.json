@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.11.0",
+    "version": "0.12.0",
     "private": true,
     "type": "module",
     "scripts": {
@@ -9,8 +9,13 @@
         "start": "node .next/standalone/server.js",
         "docker": "prisma migrate deploy && node server.js",
         "format": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npx prettier --write .'",
-        "test": "npx playwright test",
-        "test:smoke": "npx playwright test tests/smoke.spec.mjs"
+        "test": "vitest run && playwright test",
+        "test:unit": "vitest",
+        "test:unit:run": "vitest run",
+        "test:unit:coverage": "vitest run --coverage",
+        "test:e2e": "playwright test",
+        "test:e2e:ui": "playwright test --ui",
+        "test:smoke": "playwright test src/__tests__/e2e/smoke.spec.mjs"
     },
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.4.3",
@@ -34,11 +39,14 @@
     "devDependencies": {
         "@playwright/test": "^1.58.2",
         "@tailwindcss/postcss": "^4.2.2",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@vitest/coverage-v8": "^4.1.2",
         "babel-plugin-react-compiler": "^1.0.0",
         "chokidar-cli": "^3.0.0",
         "prettier": "^3.8.1",
         "prettier-plugin-tailwindcss": "^0.7.2",
         "prisma": "^7.5.0",
-        "tailwindcss": "^4.2.2"
+        "tailwindcss": "^4.2.2",
+        "vitest": "^4.1.2"
     }
 }

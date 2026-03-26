@@ -11,6 +11,7 @@ Deep technical reference for helldivers.bot internals. For conventions and worki
 | [03-data-flow.md](03-data-flow.md)                     | Update pipeline from official API through validation to database, worker thread lifecycle, two-table strategy |
 | [04-api-reference.md](04-api-reference.md)             | Every API endpoint: request format, response shapes, error codes, authentication                              |
 | [05-utilities-reference.md](05-utilities-reference.md) | Shared utilities and Zod validation schemas — signatures, behavior, usage patterns                            |
+| [06-testing.md](06-testing.md)                         | Vitest + Playwright setup, test conventions, mock factories, API route testing patterns                       |
 
 ## Conventions
 

@@ -7,8 +7,9 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **KISS.** Simple solutions only. Do not overengineer or add abstractions for hypothetical future needs.
 - **Use agents** for codebase exploration and multi-step research tasks.
 - **Use git worktrees** for parallel development on separate branches.
+- **Vitest unit tests** are configured. Run `npm run test:unit:run` for a single run, `npm run test:unit` for watch mode.
 - **Playwright smoke tests** are configured. Run `npm run test:smoke` to verify the app builds and runs correctly.
-- **Always verify** after implementing a feature: run `npm run build` and `npm run test:smoke`.
+- **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit:run`.
 - **Never start the dev server.** Ask the user to start it separately if needed (e.g., for smoke tests).
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 
@@ -69,3 +70,4 @@ For every phase or feature, create both files in `docs/superpowers/`:
 | Data pipeline & worker lifecycle   | `docs/03-data-flow.md`           |
 | API endpoints & authentication     | `docs/04-api-reference.md`       |
 | Utilities & Zod validators         | `docs/05-utilities-reference.md` |
+| Testing infrastructure             | `docs/06-testing.md`             |
