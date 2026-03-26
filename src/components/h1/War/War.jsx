@@ -60,14 +60,20 @@ function WarOutcome({ data }) {
 export default function War({ data, showOutcome = false }) {
     if (!data) return null;
 
+    const hasStats = data?.live?.length > 0;
+
     return (
         <section className="flex flex-col gap-4">
-            <h2>War Stats</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                {showOutcome && <WarOutcome data={data} />}
-                {generateGlobalWarStats(data?.live)}
-                {data?.live?.map((statistic) => generateWarStats(statistic))}
-            </div>
+            {showOutcome && <WarOutcome data={data} />}
+            {hasStats && (
+                <>
+                    <h2>War Stats</h2>
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                        {generateGlobalWarStats(data.live)}
+                        {data.live.map((statistic) => generateWarStats(statistic))}
+                    </div>
+                </>
+            )}
         </section>
     );
 }
