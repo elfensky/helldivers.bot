@@ -182,6 +182,7 @@ model h1_season {
     snapshots          h1_snapshot[]          @relation("OneSeasonToManySnapshots")
     events             h1_event[]             @relation("OneSeasonToManyEvents")
     live               h1_live[]              @relation("OneSeasonToManyLive")
+    live_snapshots     h1_live_snapshot[]     @relation("OneSeasonToManyLiveSnapshots")
     //   @@index([is_active, last_updated])
 
     //indexes
@@ -287,6 +288,36 @@ model h1_live {
 
     @@unique([season, enemy])
     @@index([season])
+}
+
+model h1_live_snapshot {
+    id                       String @id @default(uuid(7))
+    season                   Int
+    time                     Int    // unix timestamp from API response
+    enemy                    Int    // 0=Bugs, 1=Cyborgs, 2=Illuminate
+
+    // statistics fields (from fetchedData.statistics[enemy])
+    season_duration          Int
+    players                  Int
+    total_unique_players     Int
+    missions                 Int
+    successful_missions      Int
+    total_mission_difficulty Int
+    completed_planets        Int
+    defend_events            Int
+    successful_defend_events Int
+    attack_events            Int
+    successful_attack_events Int
+    deaths                   BigInt
+    kills                    BigInt
+    accidentals              BigInt
+    shots                    BigInt
+    hits                     BigInt
+
+    linked_season h1_season? @relation("OneSeasonToManyLiveSnapshots", fields: [season], references: [season])
+
+    @@unique([season, enemy, time])
+    @@index([season, time])
 }
 
 // #endregion
