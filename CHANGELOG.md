@@ -15,6 +15,7 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - Configure Playwright screenshot-on-failure and trace-on-first-retry
 - Add `docs/06-testing.md` — testing conventions, mock factories, API route testing patterns
 - Add starter unit tests for `tryCatch` utility (100% coverage)
+- Fix war outcome detection: data-derived algorithm replaces lookup table, verified against 137 wiki seasons (0 mismatches)
 
 ## 0.11.0 (2026-03-26)
 

@@ -12,10 +12,23 @@ Show whether a historical season ended in Victory or Defeat, and provide an inte
 
 ## Win/Loss Logic
 
-- **Victory:** all 3 factions in `data.live` have `status === 'defeated'`
-- **Defeat:** any event in `data.events` has `type === 'defend'`, `region === 0`, `status === 'fail'`
-- **Active:** neither condition met — no banner shown (ongoing season)
-- **Guard:** `data.live.length !== 3` → no banner (incomplete/empty season data)
+Algorithm verified against 137 wiki-confirmed seasons (0 mismatches). See `getWarOutcome()` in `src/components/h1/War/War.jsx`.
+
+**Victory signals** (any = victory):
+1. `data.live`: all 3 factions have `status === 'defeated'` (current season)
+2. ANY `data.snapshots[]` contains all 3 factions with `status === 'defeated'`
+3. All 3 enemy homeworlds captured: successful attack events on enemies 0, 1, 2
+
+**Defeat signal:**
+- Chronologically last region-0 defend event has `status === 'fail'` (Super Earth fell)
+
+**Decision:**
+- Victory signal AND no defeat signal → **Victory**
+- Defeat signal → **Defeat**
+- No victory signal → **Defeat** (war ended without winning)
+- No data → no banner
+
+**Key insight:** Check ANY snapshot, not just the last. The API's periodic snapshots may miss the final moment, but earlier snapshots can capture the all-defeated state.
 
 ## Components
 
