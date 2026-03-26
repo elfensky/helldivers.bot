@@ -1,282 +1,282 @@
 [
-  {
-    "id": "05c805b4-9352-487f-81ad-a4d16a297218",
-    "checksum": "1dae4c865ff3436ec2f6c1ec87bc3d01ef3bac700d5883923dbf30ab9aa99064",
-    "finished_at": "2025-06-09 22:42:21.478302+00",
-    "migration_name": "20250530145856_naming_convention",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.447885+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "0a3ffc4e-58d4-4e3a-83ae-9a655552088d",
-    "checksum": "a7ae68b445700e1d62b03c5f06b5e34f673a42a507d246c95417b8587ae6ac0c",
-    "finished_at": "2025-06-09 22:42:21.529735+00",
-    "migration_name": "20250530175605_snapshot_fix2",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.52262+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "0bd06c85-7929-4ae1-8ff3-f69b608b32ac",
-    "checksum": "032baef45cb0e00dd5a17648a3646d10335ab4cd9a379f54a6879f0a4fabf6ec",
-    "finished_at": "2025-06-09 22:42:21.521454+00",
-    "migration_name": "20250530175126_snapshotsfix",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.515774+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "170f7e4d-320c-4b67-948a-e882a1e178f9",
-    "checksum": "74925e591b3db1d6adb8ab807ff16274dad373b6a6391f9847c85849a7fce15e",
-    "finished_at": "2025-06-09 22:42:21.393102+00",
-    "migration_name": "20250519221409_app_settings",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.386495+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "1b29b291-8f57-4eff-bb9b-83f1b6e2763d",
-    "checksum": "91203b2cd94a9dc0fcf03d9a4311031dd23a5c3f5c341692bc9cd923508b2055",
-    "finished_at": "2025-06-09 22:42:21.349158+00",
-    "migration_name": "20250517214816_apikey2",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.344997+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "22fc6d74-ccb6-4936-bda8-40e25c07f051",
-    "checksum": "1d0eaf30b0d27b9f7eaf0a11b9ce9c99e19bcd4748e1b82bb7c528ccbb998c38",
-    "finished_at": "2025-06-09 22:42:21.283501+00",
-    "migration_name": "20250511180654_nextauth",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.251473+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "318769ec-f4b3-426d-9308-cf28fe6fdd05",
-    "checksum": "6e2ff8a3b594fb33603f782003f245df5a3759d5ca04b0ec30858346e4f42a55",
-    "finished_at": "2025-06-09 22:42:21.543846+00",
-    "migration_name": "20250601151651_remove_is_active_from_season",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.538867+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "39336567-c0a4-45fd-a4bc-60d00f3a9a13",
-    "checksum": "9d527bf95dbee1bdc96db475f703edf46f60694fc3d1290d7258da02e5a69f9c",
-    "finished_at": "2025-06-09 22:42:21.311935+00",
-    "migration_name": "20250513070038_role",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.302232+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "3de9bd0f-78c7-40cd-bd46-162ce58b90cf",
-    "checksum": "44ff2d8672a5eb70480266d442047f369cae3d10f3b5426943ae7b497fa2b083",
-    "finished_at": "2025-06-09 22:42:21.399353+00",
-    "migration_name": "20250520005303_rebroadcast_3",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.394634+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "5f2e17f4-103c-4db0-a889-19fc99dfb3f9",
-    "checksum": "94735bb4b9245298b75d444fce6a237c787561e0648f396658f0f810b14a3921",
-    "finished_at": "2025-06-09 22:42:21.514359+00",
-    "migration_name": "20250530153757_strings",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.508407+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "672db94a-11dd-408d-8927-bba81242e8b9",
-    "checksum": "a219bc48e64cd5b2555a4037ac6bd0a4d76366e939614cf774acf946eab81652",
-    "finished_at": "2025-06-09 22:42:21.53781+00",
-    "migration_name": "20250531154610_nullable_last_updated",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.53129+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "6d19bcfe-ed04-495e-8d02-dcad3fbd565e",
-    "checksum": "802f102bc3e6f61c2afad7a3cff99052fece3f2add3b3a44bb2e696858bdfdfc",
-    "finished_at": "2025-06-09 22:42:21.445756+00",
-    "migration_name": "20250530145359_fix_statistics",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.435778+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "6d654e65-5e18-47cc-b0b9-897ad03d4c8b",
-    "checksum": "e6094674138ce428a8065718398ed9e354efeb63adac97b722ff6adfd3e81c5d",
-    "finished_at": "2025-06-09 22:42:21.336362+00",
-    "migration_name": "20250515170958_apihashrename",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.330117+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "7f6db623-9752-4cbf-a176-9a98bb1c63db",
-    "checksum": "85fc368841db28078921e671ca0faa550b4055ab911fb13675f36872f9484b7b",
-    "finished_at": "2025-06-09 22:42:21.41925+00",
-    "migration_name": "20250530004559_asd",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.412692+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "8632e51d-9a8a-4ccc-adf8-adb25e2cd064",
-    "checksum": "c7aab05f2b0ad89a5a6a058b256125ad68af7738691b832e76c41a12f3630470",
-    "finished_at": "2025-06-09 22:42:21.506912+00",
-    "migration_name": "20250530153620_strings",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.494003+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "96514d98-314a-424c-bae6-6d2d4af6fc8b",
-    "checksum": "f78d1a3e10b017eba4636e1f48464948a7a91194962c519da6a21e5294d3024b",
-    "finished_at": "2025-06-09 22:42:21.318925+00",
-    "migration_name": "20250513070312_role",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.313711+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "a582a15a-70c5-4b62-9776-53e8b3e5def4",
-    "checksum": "6ec41c6fcca43b6cad8bcaa7f63a62beca1baf538335100025d5e05b9c351dd2",
-    "finished_at": "2025-06-09 22:42:21.411178+00",
-    "migration_name": "20250530003904_fix_relation_onetomany",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.40071+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "ab0845b7-20f3-49a5-b10a-587080acf688",
-    "checksum": "2f462d95b7c3df89df833e41b4e4c5ed7fb9bdd08fc9f829943d49b72620e22e",
-    "finished_at": "2025-07-22 22:36:46.512433+00",
-    "migration_name": "20250722222610_h1_event",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-07-22 22:36:46.493101+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "b3ee1e59-dea4-4c43-8d8b-3f15c696dbe6",
-    "checksum": "4f05961da06efbc341fabfb3c2ea686d15afbd5de418262d6460cf563f46e06a",
-    "finished_at": "2025-06-09 22:42:21.485376+00",
-    "migration_name": "20250530152919_fix_stats",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.479879+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "b5d83fb5-d854-4f28-b899-872d40fbcbab",
-    "checksum": "d5c78ee7d7074bdb0751187324b3c31f28951386e57c2e8c13419228d60f59fc",
-    "finished_at": "2025-06-09 22:42:21.328163+00",
-    "migration_name": "20250515170754_apihash",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.320418+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "c1d6afdf-b94a-423c-8185-7eb887375bbe",
-    "checksum": "a099727b9dd42a9e6c6e1b94cfaa6b4205be842ecfd05fbfd9ad05996b19812c",
-    "finished_at": "2025-06-09 22:42:21.427444+00",
-    "migration_name": "20250530144534_fix_campaign",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.420899+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "cc77692b-e680-4013-8471-8f4ad837e25e",
-    "checksum": "c9ca22ffafa02c4a43211cb37351385b7f290d72835286561eb558048b41834a",
-    "finished_at": "2025-07-22 22:36:46.490897+00",
-    "migration_name": "20250722163100_bigint",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-07-22 22:36:46.444071+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "d147da13-c36f-480c-bfbb-0277f32f4b56",
-    "checksum": "c6ad039c11169e1716ef3a7723b6c0a7934ee134609757b11c977feda3262088",
-    "finished_at": "2025-06-09 22:42:21.300131+00",
-    "migration_name": "20250512210323_bla",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.285288+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "d27f4481-7938-4aef-a86a-204ed8e285a2",
-    "checksum": "68b02fcb0d705855a5e49fafc1c248a12a5c08654f3696b823b941781df4b103",
-    "finished_at": "2025-06-09 22:42:21.250052+00",
-    "migration_name": "20250511074409_init",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.239814+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "e8192ccf-68c1-46d8-9e35-455f2518fa4e",
-    "checksum": "19053354ebfd83c12e3eda0982b22ca54b043d865b14d2025eeb2978942165d4",
-    "finished_at": "2025-06-09 22:42:21.434281+00",
-    "migration_name": "20250530144755_fix_campaigns_2",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.429184+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "ead7a4d2-b42e-491a-9808-c718e23b1927",
-    "checksum": "ceaf4fc2fb7dedddabab2b60b80f5a1ca7bc8d31de466968b94a862e7207cb16",
-    "finished_at": "2025-06-09 22:42:21.492461+00",
-    "migration_name": "20250530153356_stats4",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.487311+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "fb171076-981e-4eba-87b0-bc35f5cd2cb6",
-    "checksum": "387717f1fcd6a67401e8d0d1a7c88bcd0491517d473d337f403b335d7af36034",
-    "finished_at": "2025-06-09 22:42:21.343787+00",
-    "migration_name": "20250517210759_apikey",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.337491+00",
-    "applied_steps_count": 1
-  },
-  {
-    "id": "fc84eaec-9581-469c-9792-1d40bb4f9086",
-    "checksum": "db54fdbae2b422d39e55003d14fca2327df7ffa1192dcb848e5a922989e5b710",
-    "finished_at": "2025-06-09 22:42:21.384849+00",
-    "migration_name": "20250519221122_helldivers_data",
-    "logs": null,
-    "rolled_back_at": null,
-    "started_at": "2025-06-09 22:42:21.351162+00",
-    "applied_steps_count": 1
-  }
+    {
+        "id": "05c805b4-9352-487f-81ad-a4d16a297218",
+        "checksum": "1dae4c865ff3436ec2f6c1ec87bc3d01ef3bac700d5883923dbf30ab9aa99064",
+        "finished_at": "2025-06-09 22:42:21.478302+00",
+        "migration_name": "20250530145856_naming_convention",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.447885+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "0a3ffc4e-58d4-4e3a-83ae-9a655552088d",
+        "checksum": "a7ae68b445700e1d62b03c5f06b5e34f673a42a507d246c95417b8587ae6ac0c",
+        "finished_at": "2025-06-09 22:42:21.529735+00",
+        "migration_name": "20250530175605_snapshot_fix2",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.52262+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "0bd06c85-7929-4ae1-8ff3-f69b608b32ac",
+        "checksum": "032baef45cb0e00dd5a17648a3646d10335ab4cd9a379f54a6879f0a4fabf6ec",
+        "finished_at": "2025-06-09 22:42:21.521454+00",
+        "migration_name": "20250530175126_snapshotsfix",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.515774+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "170f7e4d-320c-4b67-948a-e882a1e178f9",
+        "checksum": "74925e591b3db1d6adb8ab807ff16274dad373b6a6391f9847c85849a7fce15e",
+        "finished_at": "2025-06-09 22:42:21.393102+00",
+        "migration_name": "20250519221409_app_settings",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.386495+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "1b29b291-8f57-4eff-bb9b-83f1b6e2763d",
+        "checksum": "91203b2cd94a9dc0fcf03d9a4311031dd23a5c3f5c341692bc9cd923508b2055",
+        "finished_at": "2025-06-09 22:42:21.349158+00",
+        "migration_name": "20250517214816_apikey2",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.344997+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "22fc6d74-ccb6-4936-bda8-40e25c07f051",
+        "checksum": "1d0eaf30b0d27b9f7eaf0a11b9ce9c99e19bcd4748e1b82bb7c528ccbb998c38",
+        "finished_at": "2025-06-09 22:42:21.283501+00",
+        "migration_name": "20250511180654_nextauth",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.251473+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "318769ec-f4b3-426d-9308-cf28fe6fdd05",
+        "checksum": "6e2ff8a3b594fb33603f782003f245df5a3759d5ca04b0ec30858346e4f42a55",
+        "finished_at": "2025-06-09 22:42:21.543846+00",
+        "migration_name": "20250601151651_remove_is_active_from_season",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.538867+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "39336567-c0a4-45fd-a4bc-60d00f3a9a13",
+        "checksum": "9d527bf95dbee1bdc96db475f703edf46f60694fc3d1290d7258da02e5a69f9c",
+        "finished_at": "2025-06-09 22:42:21.311935+00",
+        "migration_name": "20250513070038_role",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.302232+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "3de9bd0f-78c7-40cd-bd46-162ce58b90cf",
+        "checksum": "44ff2d8672a5eb70480266d442047f369cae3d10f3b5426943ae7b497fa2b083",
+        "finished_at": "2025-06-09 22:42:21.399353+00",
+        "migration_name": "20250520005303_rebroadcast_3",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.394634+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "5f2e17f4-103c-4db0-a889-19fc99dfb3f9",
+        "checksum": "94735bb4b9245298b75d444fce6a237c787561e0648f396658f0f810b14a3921",
+        "finished_at": "2025-06-09 22:42:21.514359+00",
+        "migration_name": "20250530153757_strings",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.508407+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "672db94a-11dd-408d-8927-bba81242e8b9",
+        "checksum": "a219bc48e64cd5b2555a4037ac6bd0a4d76366e939614cf774acf946eab81652",
+        "finished_at": "2025-06-09 22:42:21.53781+00",
+        "migration_name": "20250531154610_nullable_last_updated",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.53129+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "6d19bcfe-ed04-495e-8d02-dcad3fbd565e",
+        "checksum": "802f102bc3e6f61c2afad7a3cff99052fece3f2add3b3a44bb2e696858bdfdfc",
+        "finished_at": "2025-06-09 22:42:21.445756+00",
+        "migration_name": "20250530145359_fix_statistics",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.435778+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "6d654e65-5e18-47cc-b0b9-897ad03d4c8b",
+        "checksum": "e6094674138ce428a8065718398ed9e354efeb63adac97b722ff6adfd3e81c5d",
+        "finished_at": "2025-06-09 22:42:21.336362+00",
+        "migration_name": "20250515170958_apihashrename",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.330117+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "7f6db623-9752-4cbf-a176-9a98bb1c63db",
+        "checksum": "85fc368841db28078921e671ca0faa550b4055ab911fb13675f36872f9484b7b",
+        "finished_at": "2025-06-09 22:42:21.41925+00",
+        "migration_name": "20250530004559_asd",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.412692+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "8632e51d-9a8a-4ccc-adf8-adb25e2cd064",
+        "checksum": "c7aab05f2b0ad89a5a6a058b256125ad68af7738691b832e76c41a12f3630470",
+        "finished_at": "2025-06-09 22:42:21.506912+00",
+        "migration_name": "20250530153620_strings",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.494003+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "96514d98-314a-424c-bae6-6d2d4af6fc8b",
+        "checksum": "f78d1a3e10b017eba4636e1f48464948a7a91194962c519da6a21e5294d3024b",
+        "finished_at": "2025-06-09 22:42:21.318925+00",
+        "migration_name": "20250513070312_role",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.313711+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "a582a15a-70c5-4b62-9776-53e8b3e5def4",
+        "checksum": "6ec41c6fcca43b6cad8bcaa7f63a62beca1baf538335100025d5e05b9c351dd2",
+        "finished_at": "2025-06-09 22:42:21.411178+00",
+        "migration_name": "20250530003904_fix_relation_onetomany",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.40071+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "ab0845b7-20f3-49a5-b10a-587080acf688",
+        "checksum": "2f462d95b7c3df89df833e41b4e4c5ed7fb9bdd08fc9f829943d49b72620e22e",
+        "finished_at": "2025-07-22 22:36:46.512433+00",
+        "migration_name": "20250722222610_h1_event",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-07-22 22:36:46.493101+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "b3ee1e59-dea4-4c43-8d8b-3f15c696dbe6",
+        "checksum": "4f05961da06efbc341fabfb3c2ea686d15afbd5de418262d6460cf563f46e06a",
+        "finished_at": "2025-06-09 22:42:21.485376+00",
+        "migration_name": "20250530152919_fix_stats",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.479879+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "b5d83fb5-d854-4f28-b899-872d40fbcbab",
+        "checksum": "d5c78ee7d7074bdb0751187324b3c31f28951386e57c2e8c13419228d60f59fc",
+        "finished_at": "2025-06-09 22:42:21.328163+00",
+        "migration_name": "20250515170754_apihash",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.320418+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "c1d6afdf-b94a-423c-8185-7eb887375bbe",
+        "checksum": "a099727b9dd42a9e6c6e1b94cfaa6b4205be842ecfd05fbfd9ad05996b19812c",
+        "finished_at": "2025-06-09 22:42:21.427444+00",
+        "migration_name": "20250530144534_fix_campaign",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.420899+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "cc77692b-e680-4013-8471-8f4ad837e25e",
+        "checksum": "c9ca22ffafa02c4a43211cb37351385b7f290d72835286561eb558048b41834a",
+        "finished_at": "2025-07-22 22:36:46.490897+00",
+        "migration_name": "20250722163100_bigint",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-07-22 22:36:46.444071+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "d147da13-c36f-480c-bfbb-0277f32f4b56",
+        "checksum": "c6ad039c11169e1716ef3a7723b6c0a7934ee134609757b11c977feda3262088",
+        "finished_at": "2025-06-09 22:42:21.300131+00",
+        "migration_name": "20250512210323_bla",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.285288+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "d27f4481-7938-4aef-a86a-204ed8e285a2",
+        "checksum": "68b02fcb0d705855a5e49fafc1c248a12a5c08654f3696b823b941781df4b103",
+        "finished_at": "2025-06-09 22:42:21.250052+00",
+        "migration_name": "20250511074409_init",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.239814+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "e8192ccf-68c1-46d8-9e35-455f2518fa4e",
+        "checksum": "19053354ebfd83c12e3eda0982b22ca54b043d865b14d2025eeb2978942165d4",
+        "finished_at": "2025-06-09 22:42:21.434281+00",
+        "migration_name": "20250530144755_fix_campaigns_2",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.429184+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "ead7a4d2-b42e-491a-9808-c718e23b1927",
+        "checksum": "ceaf4fc2fb7dedddabab2b60b80f5a1ca7bc8d31de466968b94a862e7207cb16",
+        "finished_at": "2025-06-09 22:42:21.492461+00",
+        "migration_name": "20250530153356_stats4",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.487311+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "fb171076-981e-4eba-87b0-bc35f5cd2cb6",
+        "checksum": "387717f1fcd6a67401e8d0d1a7c88bcd0491517d473d337f403b335d7af36034",
+        "finished_at": "2025-06-09 22:42:21.343787+00",
+        "migration_name": "20250517210759_apikey",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.337491+00",
+        "applied_steps_count": 1
+    },
+    {
+        "id": "fc84eaec-9581-469c-9792-1d40bb4f9086",
+        "checksum": "db54fdbae2b422d39e55003d14fca2327df7ffa1192dcb848e5a922989e5b710",
+        "finished_at": "2025-06-09 22:42:21.384849+00",
+        "migration_name": "20250519221122_helldivers_data",
+        "logs": null,
+        "rolled_back_at": null,
+        "started_at": "2025-06-09 22:42:21.351162+00",
+        "applied_steps_count": 1
+    }
 ]
