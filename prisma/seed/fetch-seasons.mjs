@@ -76,7 +76,9 @@ async function main() {
         console.log(`Current season: ${season}`);
     }
 
-    console.log(`Fetching seasons ${args.from} to ${args.to} (${args.delay}ms delay)...\n`);
+    console.log(
+        `Fetching seasons ${args.from} to ${args.to} (${args.delay}ms delay)...\n`,
+    );
 
     let fetched = 0;
     let skipped = 0;
@@ -111,7 +113,9 @@ async function main() {
                 const s = data.snapshots?.length ?? 0;
                 const d = data.defend_events?.length ?? 0;
                 const a = data.attack_events?.length ?? 0;
-                process.stdout.write(`  ${filename}: ${s} snapshots, ${d} defend, ${a} attack\n`);
+                process.stdout.write(
+                    `  ${filename}: ${s} snapshots, ${d} defend, ${a} attack\n`,
+                );
             }
         } catch (err) {
             errors++;
@@ -121,7 +125,9 @@ async function main() {
         if (season < args.to) await sleep(args.delay);
     }
 
-    console.log(`\nDone. Fetched: ${fetched}, Skipped: ${skipped}, Empty: ${empty}, Errors: ${errors}`);
+    console.log(
+        `\nDone. Fetched: ${fetched}, Skipped: ${skipped}, Empty: ${empty}, Errors: ${errors}`,
+    );
 }
 
 main().catch((err) => {

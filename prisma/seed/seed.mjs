@@ -70,7 +70,9 @@ async function seedSeason(db, file) {
     await Promise.all(metaOps);
 
     // 4. Upsert defend events (batched)
-    const defendEvents = (seasonData.defend_events ?? []).filter((e) => e.season === season);
+    const defendEvents = (seasonData.defend_events ?? []).filter(
+        (e) => e.season === season,
+    );
     await Promise.all(
         defendEvents.map((event) =>
             db.h1_event.upsert({
@@ -104,7 +106,9 @@ async function seedSeason(db, file) {
     );
 
     // 5. Upsert attack events (batched)
-    const attackEvents = (seasonData.attack_events ?? []).filter((e) => e.season === season);
+    const attackEvents = (seasonData.attack_events ?? []).filter(
+        (e) => e.season === season,
+    );
     await Promise.all(
         attackEvents.map((event) =>
             db.h1_event.upsert({
@@ -142,7 +146,9 @@ async function seedSeason(db, file) {
     await Promise.all(
         snapshots.map((snapshot) => {
             const parsedData =
-                typeof snapshot.data === 'string' ? JSON.parse(snapshot.data) : snapshot.data;
+                typeof snapshot.data === 'string' ?
+                    JSON.parse(snapshot.data)
+                :   snapshot.data;
             return db.h1_snapshot.upsert({
                 where: { season_time: { season: snapshot.season, time: snapshot.time } },
                 update: { data: parsedData },
@@ -186,7 +192,9 @@ async function seed() {
         return;
     }
 
-    console.log(`Found ${jsonFiles.length} season file(s) to seed (concurrency: ${CONCURRENCY}).`);
+    console.log(
+        `Found ${jsonFiles.length} season file(s) to seed (concurrency: ${CONCURRENCY}).`,
+    );
 
     // Process in batches of CONCURRENCY
     for (let i = 0; i < jsonFiles.length; i += CONCURRENCY) {

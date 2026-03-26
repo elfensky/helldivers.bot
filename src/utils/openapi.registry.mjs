@@ -14,7 +14,9 @@ const registry = new OpenAPIRegistry();
 // Common schemas
 const ErrorResponseSchema = z
     .object({
-        time: z.number().openapi({ description: 'Time taken to process the request (ms)' }),
+        time: z
+            .number()
+            .openapi({ description: 'Time taken to process the request (ms)' }),
         code: z.number().openapi({ description: 'HTTP status code' }),
         message: z.string().openapi({ description: 'Human-readable status message' }),
         error: z.any().openapi({ description: 'Error details or null' }),
@@ -23,7 +25,9 @@ const ErrorResponseSchema = z
 
 const SuccessResponseSchema = z
     .object({
-        time: z.number().openapi({ description: 'Time taken to process the request (ms)' }),
+        time: z
+            .number()
+            .openapi({ description: 'Time taken to process the request (ms)' }),
         code: z.number().openapi({ description: 'HTTP status code' }),
         message: z.string().openapi({ description: 'Human-readable status message' }),
         data: z.any().openapi({ description: 'Response data' }),
@@ -59,7 +63,9 @@ registry.registerPath({
                             description: 'Time taken to process the request (ms)',
                         }),
                         code: z.number().openapi({ description: 'HTTP status code' }),
-                        message: z.string().openapi({ description: 'Human-readable status message' }),
+                        message: z
+                            .string()
+                            .openapi({ description: 'Human-readable status message' }),
                         data: z
                             .any()
                             .openapi({ description: 'The campaign data object' }),
