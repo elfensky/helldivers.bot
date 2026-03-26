@@ -41,7 +41,7 @@ All external data validated with Zod schemas (`src/validators/`) before database
 
 ### Formatting
 
-Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` to auto-format.
+Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` once before committing, not during development.
 
 ## Architecture Notes
 
@@ -63,7 +63,7 @@ All work is tracked via [GitHub Issues](https://github.com/elfensky/helldivers.b
 - **Milestones** group issues by phase: Phase 0 (Initial Release) through Phase 11, plus Shelved.
 - **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
 - **Project board** statuses: `Backlog`, `In progress`, `Done`.
-- Issue title prefixes: `Phase N:`, `API:`, `Feature:`, `Shelved:`.
+- Issue title prefixes: `Phase N:`, `Shelved:`.
 
 ### Workflow — Keep Issues & Project Updated
 
