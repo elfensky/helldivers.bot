@@ -11,14 +11,14 @@ Get the data layer right before touching the frontend.
 
 > Spec: [`docs/superpowers/specs/2026-03-25-phase-1-backend-database-design.md`](superpowers/specs/2026-03-25-phase-1-backend-database-design.md)
 
-- [ ] Unify `h1_defend_event` + `h1_attack_event` → `h1_event`
-- [ ] Drop redundant `json` fields from `h1_introduction_order` and `h1_points_max`
-- [ ] Replace `h1_campaign` + `h1_statistic` + `App.map` → `h1_live` table
-- [ ] Make `defend_event` nullable in Zod validator (`isValidStatus.js`)
-- [ ] Fix BigInt serialization in API responses (`responses.mjs`)
-- [ ] Add composite indexes for common query patterns
-- [ ] Clean up rebroadcast route (`tryCatch` consistency)
-- [ ] Update `/api/h1/campaign` route to read from `h1_live`
+- [x] Unify `h1_defend_event` + `h1_attack_event` → `h1_event`
+- [x] Drop redundant `json` fields from `h1_introduction_order`, `h1_points_max`, and `h1_snapshot`
+- [x] Replace `h1_campaign` + `h1_statistic` + `App.map` → `h1_live` table
+- [x] Make `defend_event` nullable in Zod validator (`isValidStatus.js`)
+- [x] Fix BigInt serialization in API responses (`responses.mjs`)
+- [x] Add composite indexes for common query patterns
+- [x] Clean up rebroadcast route (`tryCatch` consistency)
+- [x] Update `/api/h1/campaign` route to read from `h1_live`
 - [ ] Create seed files for past seasons (`prisma/seed/seasons/`)
 
 ---
@@ -32,6 +32,7 @@ Capture how stats and events change over time. Depends on Phase 1 normalized tab
 - [ ] Populate `h1_snapshot` from `get_snapshots` pipeline
 - [ ] Add `h1_statistic_snapshot` table (15-min interval stats)
 - [ ] Add `h1_event_snapshot` table (10-min event progress)
+- [ ] Wire snapshot capture into polling pipeline (`status.mjs`)
 
 ---
 

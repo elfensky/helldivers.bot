@@ -52,13 +52,7 @@ export async function fetchStatus() {
     const url = getApiURL();
     const form = new FormData();
     form.append('action', 'get_campaign_status');
-
-    try {
-        return await fetchInvalidHttps(url, form);
-    } catch (error) {
-        console.error(error.message);
-        // throw error;
-    }
+    return fetchInvalidHttps(url, form);
 }
 
 export async function fetchSeason(season) {
