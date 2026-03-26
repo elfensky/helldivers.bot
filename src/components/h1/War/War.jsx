@@ -1,17 +1,28 @@
 import './War.css';
 import factions from '@/enums/factions';
+import warOutcomes from '@/enums/warOutcomes';
 
 function getWarOutcome(data) {
+    const season = data?.season;
+
+    // 1. Canonical lookup (wars 2-138 from wiki)
+    if (season && warOutcomes[season] !== undefined) {
+        return warOutcomes[season] ?
+                { outcome: 'victory', reason: 'All enemy factions have been defeated.' }
+            :   { outcome: 'defeat', reason: 'The war was lost.' };
+    }
+
+    // For wars not in the lookup (139+), derive from data:
     const snapshots = data?.snapshots || [];
     const events = data?.events || [];
     const live = data?.live || [];
 
-    // 1. Check live data (current season)
+    // 2. Check live data (current season)
     if (live.length === 3 && live.every((f) => f.status === 'defeated')) {
         return { outcome: 'victory', reason: 'All enemy factions have been defeated.' };
     }
 
-    // 2. Check last snapshot (historical — clear cases)
+    // 3. Check last snapshot
     if (snapshots.length > 0) {
         const lastSnapshot = snapshots[snapshots.length - 1];
         const factionData =
@@ -28,18 +39,19 @@ function getWarOutcome(data) {
         }
     }
 
-    // 3. Check events (snapshot may not capture final state)
-    const superEarthDefend = events.find((e) => e.type === 'defend' && e.region === 0);
-    if (superEarthDefend) {
-        if (superEarthDefend.status === 'fail') {
-            return { outcome: 'defeat', reason: 'Super Earth was overwhelmed.' };
-        }
-        if (superEarthDefend.status === 'success') {
-            return {
-                outcome: 'victory',
-                reason: 'All enemy factions have been defeated.',
-            };
-        }
+    // 4. Check if all 3 homeworlds were captured
+    const factionsDefeated = new Set(
+        events
+            .filter((e) => e.type === 'attack' && e.status === 'success')
+            .map((e) => e.enemy),
+    );
+    if (factionsDefeated.size === 3) {
+        return { outcome: 'victory', reason: 'All enemy factions have been defeated.' };
+    }
+
+    // 5. If we have data but no victory — it's a defeat
+    if (snapshots.length > 0 || events.length > 0) {
+        return { outcome: 'defeat', reason: 'The war was lost.' };
     }
 
     return null;
