@@ -6,16 +6,16 @@ Replace breakpoint-based responsive text sizing with CSS `clamp()` fluid typogra
 
 ## Fluid Type Scale
 
-| Element | `clamp()` value                              | Mobile (375px) | Desktop (1440px) | line-height |
-| ------- | -------------------------------------------- | -------------- | ----------------- | ----------- |
-| `h1`    | `clamp(1.5rem, 1rem + 2vw, 2.5rem)`         | 24px           | 40px              | 1.1         |
-| `h2`    | `clamp(1.25rem, 0.9rem + 1.5vw, 1.875rem)`  | 20px           | 30px              | 1.2         |
-| `h3`    | `clamp(1.125rem, 0.9rem + 1vw, 1.5rem)`     | 18px           | 24px              | 1.2         |
-| `h4`    | `clamp(1rem, 0.9rem + 0.5vw, 1.25rem)`      | 16px           | 20px              | 1.3         |
-| `h5`    | `clamp(0.9375rem, 0.875rem + 0.25vw, 1.125rem)` | 15px       | 18px              | 1.3         |
-| `h6`    | `clamp(0.875rem, 0.85rem + 0.15vw, 1rem)`   | 14px           | 16px              | 1.3         |
-| `body`  | `clamp(0.875rem, 0.8rem + 0.35vw, 1.0625rem)` | 14px         | 17px              | 1.5         |
-| `small` | `clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)` | 12px           | 14px              | 1.4         |
+| Element | `clamp()` value                                 | Mobile (375px) | Desktop (1440px) | line-height |
+| ------- | ----------------------------------------------- | -------------- | ---------------- | ----------- |
+| `h1`    | `clamp(1.5rem, 1rem + 2vw, 2.5rem)`             | 24px           | 40px             | 1.1         |
+| `h2`    | `clamp(1.25rem, 0.9rem + 1.5vw, 1.875rem)`      | 20px           | 30px             | 1.2         |
+| `h3`    | `clamp(1.125rem, 0.9rem + 1vw, 1.5rem)`         | 18px           | 24px             | 1.2         |
+| `h4`    | `clamp(1rem, 0.9rem + 0.5vw, 1.25rem)`          | 16px           | 20px             | 1.3         |
+| `h5`    | `clamp(0.9375rem, 0.875rem + 0.25vw, 1.125rem)` | 15px           | 18px             | 1.3         |
+| `h6`    | `clamp(0.875rem, 0.85rem + 0.15vw, 1rem)`       | 14px           | 16px             | 1.3         |
+| `body`  | `clamp(0.875rem, 0.8rem + 0.35vw, 1.0625rem)`   | 14px           | 17px             | 1.5         |
+| `small` | `clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)`     | 12px           | 14px             | 1.4         |
 
 Line-heights are fixed (not fluid).
 

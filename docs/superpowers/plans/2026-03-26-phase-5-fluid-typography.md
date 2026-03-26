@@ -13,6 +13,7 @@
 ### Task 1: Add fluid font-sizes to base elements in layout.css
 
 **Files:**
+
 - Modify: `src/app/layout.css:83-101`
 
 - [ ] **Step 1: Replace the `html, body` block with fluid body font-size**
@@ -122,6 +123,7 @@ small {
 Run: `npm run dev`
 
 Open the site in a browser at different viewport widths (375px, 768px, 1440px). Verify:
+
 - Headings scale fluidly without jumps
 - Body text is readable at all sizes
 - No layout breaks from the size changes
@@ -138,6 +140,7 @@ git commit -m "feat: add fluid clamp() typography to base HTML elements"
 ### Task 2: Remove text size overrides from about page headings
 
 **Files:**
+
 - Modify: `src/app/about/page.jsx:23,46,64`
 
 The three `<h2>` elements on the about page have `className="text-lg sm:text-xl lg:text-2xl"`. Since `h2` now gets fluid sizing from `layout.css`, these classes are redundant.
@@ -200,6 +203,7 @@ git commit -m "refactor: remove breakpoint text classes from about page headings
 ### Task 3: Remove text size override from UserDashboard h1
 
 **Files:**
+
 - Modify: `src/components/dashboard/UserDashboard.jsx:16`
 
 The `<h1>` has `className="text-4xl"` which overrides the fluid `h1` sizing. The fluid `h1` tops out at `2.5rem` (40px) vs `text-4xl` (36px), which is close enough — the fluid scale is the intended behavior now.
@@ -230,6 +234,7 @@ git commit -m "refactor: remove text-4xl override from dashboard h1"
 ### Task 4: Remove text size override from ApiDashboard h2
 
 **Files:**
+
 - Modify: `src/components/dashboard/ApiDashboard.jsx:16`
 
 The `<h2>` has `className="text-4xl"` which makes it visually the same size as an h1. The fluid `h2` scale (`1.25rem` to `1.875rem`) is more appropriate for a section within the dashboard.
@@ -264,6 +269,7 @@ git commit -m "refactor: remove text-4xl override from API keys h2"
 ### Task 5: Remove text-xl from War.jsx wrapper divs
 
 **Files:**
+
 - Modify: `src/components/h1/War/War.jsx:32,53`
 
 The `text-xl` class is on `<div>` wrappers that contain `<h3>` elements and icons. The `<h3>` now gets its fluid size from `layout.css`. The `text-xl` on the wrapper div was setting the size for the h3 via inheritance, but the base style now takes precedence. Remove `text-xl` so the h3 uses its own fluid size.
@@ -312,6 +318,7 @@ git commit -m "refactor: remove text-xl from war stat heading wrappers"
 ### Task 6: Clean up Header logo text sizing
 
 **Files:**
+
 - Modify: `src/components/layout/Header/Header.jsx:38`
 
 The logo `<Link>` has `text-[1.1rem] font-bold sm:text-2xl`. This is not a heading element — it's a logo/brand text inside a `<figcaption>`. The fluid body size from `layout.css` applies to the `<Link>`, but the logo needs to be larger than body text. Since this is a brand element (not a semantic heading), keep an explicit size but replace the breakpoint approach with a single `clamp()` value.
@@ -321,13 +328,15 @@ The logo `<Link>` has `text-[1.1rem] font-bold sm:text-2xl`. This is not a headi
 In `src/components/layout/Header/Header.jsx` line 38, change:
 
 ```jsx
-className="z-50 flex flex-row items-center justify-center gap-2 text-[1.1rem] font-bold sm:text-2xl"
+className =
+    'z-50 flex flex-row items-center justify-center gap-2 text-[1.1rem] font-bold sm:text-2xl';
 ```
 
 to:
 
 ```jsx
-className="z-50 flex flex-row items-center justify-center gap-2 text-[clamp(1.1rem,0.9rem+1vw,1.5rem)] font-bold"
+className =
+    'z-50 flex flex-row items-center justify-center gap-2 text-[clamp(1.1rem,0.9rem+1vw,1.5rem)] font-bold';
 ```
 
 This scales the logo from 17.6px on mobile to 24px on desktop, matching the previous breakpoint behavior but fluid.
@@ -348,6 +357,7 @@ git commit -m "refactor: replace breakpoint text classes with fluid clamp() on h
 ### Task 7: Run Prettier and final verification
 
 **Files:**
+
 - All modified files
 
 - [ ] **Step 1: Run Prettier**
@@ -359,12 +369,14 @@ npm run format
 - [ ] **Step 2: Full visual verification**
 
 Open the site and check these pages at 375px, 768px, and 1440px viewport widths:
+
 - Homepage: heading hierarchy, war stats, events
 - `/about`: section headings
 - `/war`: season selector, war stats, timeline
 - Dashboard (if accessible): h1 and h2 hierarchy
 
 Verify:
+
 - Text scales smoothly without breakpoint jumps
 - Heading hierarchy is visually clear (h1 > h2 > h3)
 - No layout shifts or overflow from the new sizes
@@ -382,6 +394,7 @@ git commit -m "style: prettier formatting"
 ## Notes
 
 **Intentionally kept `text-sm` classes:**
+
 - `src/components/h1/Event/Event.jsx:55` — `text-sm` on a `<div>` wrapping event details. This is intentional small text for secondary information, not a heading override.
 - `src/app/war/page.jsx:78,83` — `text-sm` on season selector `<span>` and `<Link>` elements. These are UI controls, not headings.
 

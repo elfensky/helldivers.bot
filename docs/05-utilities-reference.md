@@ -599,18 +599,18 @@ Called from `src/update/status.mjs` during the status update pipeline.
 
 ### Constants
 
-| Constant                  | Value | Meaning                                        |
-| ------------------------- | ----- | ---------------------------------------------- |
-| `LIVE_SNAPSHOT_INTERVAL`  | `900` | Minimum seconds between live snapshots (15 min) |
+| Constant                  | Value | Meaning                                          |
+| ------------------------- | ----- | ------------------------------------------------ |
+| `LIVE_SNAPSHOT_INTERVAL`  | `900` | Minimum seconds between live snapshots (15 min)  |
 | `EVENT_SNAPSHOT_INTERVAL` | `600` | Minimum seconds between event snapshots (10 min) |
 
 ### In-memory state
 
-| Variable                  | Type                          | Description                                         |
-| ------------------------- | ----------------------------- | --------------------------------------------------- |
-| `currentSeason`           | `number \| null`              | Tracks the current season; triggers reset on change  |
-| `lastLiveSnapshotTime`    | `number \| null`              | Epoch-seconds of the most recent live snapshot       |
-| `lastEventSnapshotTimes`  | `Map<string, number>`         | Key: `${type}:${event_id}`, value: epoch-seconds     |
+| Variable                 | Type                  | Description                                         |
+| ------------------------ | --------------------- | --------------------------------------------------- |
+| `currentSeason`          | `number \| null`      | Tracks the current season; triggers reset on change |
+| `lastLiveSnapshotTime`   | `number \| null`      | Epoch-seconds of the most recent live snapshot      |
+| `lastEventSnapshotTimes` | `Map<string, number>` | Key: `${type}:${event_id}`, value: epoch-seconds    |
 
 ---
 

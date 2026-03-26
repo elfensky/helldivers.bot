@@ -60,10 +60,10 @@ This prevents the worker from being spawned in edge runtimes or during static bu
 
 The worker script path is resolved differently depending on environment:
 
-| Environment              | Resolved path                                                |
-| ------------------------ | ------------------------------------------------------------ |
-| `development`            | `path.resolve(process.cwd(), 'public/workers/cron.js')`     |
-| `production` / `staging` | `path.resolve('/app/public/workers/cron.js')`                |
+| Environment              | Resolved path                                           |
+| ------------------------ | ------------------------------------------------------- |
+| `development`            | `path.resolve(process.cwd(), 'public/workers/cron.js')` |
+| `production` / `staging` | `path.resolve('/app/public/workers/cron.js')`           |
 
 After spawning, the parent sends a single initialization message to the worker:
 
@@ -244,7 +244,13 @@ These two values are derived from the `campaign_status` array by mapping each fa
 for (let enemy = 0; enemy < 3; enemy++) {
     const campaign = fetchedData.campaign_status[enemy];
     const stats = fetchedData.statistics[enemy];
-    const factionMap = computeFactionMap(enemy, campaign, defendEvent, attackEvents, season);
+    const factionMap = computeFactionMap(
+        enemy,
+        campaign,
+        defendEvent,
+        attackEvents,
+        season,
+    );
     await tryCatch(queryUpsertLive(season, enemy, campaign, stats, factionMap));
 }
 ```
@@ -256,6 +262,7 @@ The pipeline loops over the three enemy factions (0, 1, 2). For each faction, it
 3. Upserts a row in `h1_live` containing the campaign data, statistics, and computed map.
 
 The `computeFactionMap()` helper:
+
 - Deep-clones the base map template for the given enemy.
 - Sets `status` on all regions from the campaign.
 - Sets `points`, `points_max`, and `percent` on region 11 (homeworld).
@@ -269,7 +276,9 @@ const { data: shouldSnapshot } = await tryCatch(
     shouldTakeLiveSnapshot(season, fetchedData.time),
 );
 if (shouldSnapshot) {
-    await tryCatch(queryCreateLiveSnapshots(season, fetchedData.time, fetchedData.statistics));
+    await tryCatch(
+        queryCreateLiveSnapshots(season, fetchedData.time, fetchedData.statistics),
+    );
     recordLiveSnapshotTime(fetchedData.time);
 }
 ```
@@ -441,16 +450,16 @@ These tables store the complete, unmodified API response as a JSON blob. There i
 
 ### H1 tables
 
-| Table                   | Relationship                              | Written by            |
-| ----------------------- | ----------------------------------------- | --------------------- |
-| `h1_season`             | Root; one row per season                  | Both pipelines        |
-| `h1_event`              | Many per season (defend + attack unified) | Both pipelines        |
-| `h1_event_snapshot`     | Many per event (10-min intervals)         | Status pipeline only  |
-| `h1_live`               | Three per season (one per faction)        | Status pipeline only  |
-| `h1_live_snapshot`      | Many per season (15-min intervals)        | Status pipeline only  |
-| `h1_snapshot`           | Many per season                           | Season pipeline only  |
-| `h1_introduction_order` | One per season                            | Both pipelines        |
-| `h1_points_max`         | One per season                            | Both pipelines        |
+| Table                   | Relationship                              | Written by           |
+| ----------------------- | ----------------------------------------- | -------------------- |
+| `h1_season`             | Root; one row per season                  | Both pipelines       |
+| `h1_event`              | Many per season (defend + attack unified) | Both pipelines       |
+| `h1_event_snapshot`     | Many per event (10-min intervals)         | Status pipeline only |
+| `h1_live`               | Three per season (one per faction)        | Status pipeline only |
+| `h1_live_snapshot`      | Many per season (15-min intervals)        | Status pipeline only |
+| `h1_snapshot`           | Many per season                           | Season pipeline only |
+| `h1_introduction_order` | One per season                            | Both pipelines       |
+| `h1_points_max`         | One per season                            | Both pipelines       |
 
 These tables store normalized, relational data keyed on `season`. They accumulate historical records across every update cycle, enabling structured queries, aggregations, and time-series analysis. They are used by the `/api/h1/campaign` endpoint and the frontend.
 
@@ -477,18 +486,18 @@ The module maintains three pieces of in-memory state:
 
 ```js
 let currentSeason = null;
-let lastLiveSnapshotTime = null;                // single timestamp
-const lastEventSnapshotTimes = new Map();       // key: `${type}:${event_id}`, value: time
+let lastLiveSnapshotTime = null; // single timestamp
+const lastEventSnapshotTimes = new Map(); // key: `${type}:${event_id}`, value: time
 ```
 
 All timestamps are API-provided Unix times (the `time` field from the status response), not wall-clock times. This ensures throttle intervals are based on game-time progression, not server clock.
 
 ### Intervals
 
-| Snapshot type   | Interval | Constant                   |
-| --------------- | -------- | -------------------------- |
-| Live snapshot   | 15 min   | `LIVE_SNAPSHOT_INTERVAL = 900` (seconds)  |
-| Event snapshot  | 10 min   | `EVENT_SNAPSHOT_INTERVAL = 600` (seconds) |
+| Snapshot type  | Interval | Constant                                  |
+| -------------- | -------- | ----------------------------------------- |
+| Live snapshot  | 15 min   | `LIVE_SNAPSHOT_INTERVAL = 900` (seconds)  |
+| Event snapshot | 10 min   | `EVENT_SNAPSHOT_INTERVAL = 600` (seconds) |
 
 ### Live snapshot throttle
 
