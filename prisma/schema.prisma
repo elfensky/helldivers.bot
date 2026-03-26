@@ -183,6 +183,7 @@ model h1_season {
     events             h1_event[]             @relation("OneSeasonToManyEvents")
     live               h1_live[]              @relation("OneSeasonToManyLive")
     live_snapshots     h1_live_snapshot[]     @relation("OneSeasonToManyLiveSnapshots")
+    event_snapshots    h1_event_snapshot[]    @relation("OneSeasonToManyEventSnapshots")
     //   @@index([is_active, last_updated])
 
     //indexes
@@ -243,6 +244,7 @@ model h1_event {
 
     //relationship
     linked_season h1_season @relation("OneSeasonToManyEvents", fields: [season], references: [season])
+    snapshots h1_event_snapshot[] @relation("OneEventToManySnapshots")
 
     //indexes
     @@unique([type, event_id])
@@ -318,6 +320,24 @@ model h1_live_snapshot {
 
     @@unique([season, enemy, time])
     @@index([season, time])
+}
+
+model h1_event_snapshot {
+    id         String @id @default(uuid(7))
+    season     Int    // denormalized for efficient per-season queries
+    type       String // 'attack' or 'defend' — enables FK to h1_event
+    event_id   Int
+    time       Int    // unix timestamp from API response
+    points     Int
+    points_max Int
+
+    // FK to h1_event via (type, event_id) compound key
+    linked_event h1_event? @relation("OneEventToManySnapshots", fields: [type, event_id], references: [type, event_id])
+    linked_season h1_season? @relation("OneSeasonToManyEventSnapshots", fields: [season], references: [season])
+
+    @@unique([type, event_id, time])
+    @@index([season, time])
+    @@index([event_id, time])
 }
 
 // #endregion
