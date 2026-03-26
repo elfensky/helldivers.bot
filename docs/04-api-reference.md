@@ -423,7 +423,7 @@ The rebroadcast route deviates: it uses `rebroadcastErrorResponse(5)` instead of
 
 **Output file:** `public/openapi.json`
 
-**Spec version:** OpenAPI 3.0.0, declared API version `0.4.1`.
+**Spec version:** OpenAPI 3.0.0, declared API version `0.10.0` (synced from `package.json`).
 
 ### Generation Lifecycle
 

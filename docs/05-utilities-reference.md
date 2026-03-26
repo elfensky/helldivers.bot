@@ -378,14 +378,14 @@ Maps `NODE_ENV` to hostname:
 
 **Source:** `src/validators/`
 
-All schemas use Zod. Note the mixed version usage — see notes per schema.
+All schemas use Zod v4 (`"zod": "^4.3.6"` in `package.json`). Every validator imports from `'zod'`, which is the standard import path for Zod v4.
 
 ---
 
 ### `isValidStatus`
 
 **Source:** `src/validators/isValidStatus.js`
-**Zod version:** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Function — `(data: unknown) => SafeParseReturnType`
 
 Validates the official API `get_campaign_status` response.
@@ -461,12 +461,10 @@ Validates the official API `get_campaign_status` response.
 ### `isValidSeason`
 
 **Source:** `src/validators/isValidSeason.js`
-**Zod version:** `zod` (v3) — **not** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Function — `(data: unknown) => SafeParseReturnType`
 
 Validates the official API `get_snapshots` response.
-
-> **Important:** This file imports from `'zod'` (v3), not `'zod/v4'`. This is intentional — do not change the import when editing this file.
 
 **Root schema fields:**
 
@@ -523,7 +521,7 @@ The distinction between defend and attack events is enforced via `.refine()`:
 ### `isValidFormData`
 
 **Source:** `src/validators/isValidFormData.js`
-**Zod version:** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object (not a function) — call `.safeParse(data)` directly
 
 Discriminated union on the `action` field. Used by the `/api/h1/rebroadcast` endpoint after `formDataToObject` converts the request body.
@@ -554,7 +552,7 @@ Preprocesses a string to a number before validation. Used for form fields where 
 ### `isValidContentType`
 
 **Source:** `src/validators/isValidContentType.js`
-**Zod version:** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object — call `.safeParse(value)` directly
 
 ```ts
@@ -575,7 +573,7 @@ Validates the `Content-Type` request header. Uses `.includes()` (not exact match
 ### `isValidNumber`
 
 **Source:** `src/validators/isValidNumber.mjs`
-**Zod version:** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object — call `.safeParse(value)` directly
 
 ```ts

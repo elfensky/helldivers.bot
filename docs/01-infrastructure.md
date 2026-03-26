@@ -166,13 +166,13 @@ register()   [src/instrumentation.js]
         │   ├── checkAnalytics()   → UMAMI_SITE_ID, SENTRY_AUTH_TOKEN
         │   ├── checkAuth()        → AUTH_SECRET, AUTH_TRUST_HOST, AUTH_DISCORD_ID/SECRET, AUTH_GITHUB_ID/SECRET
         │   ├── checkEmail()       → EMAIL_SERVER_USER/PASSWORD/HOST/PORT, EMAIL_FROM
-        │   └── Error → process.exit(1)
+        │   └── Error → throw (crashes the process)
         │
         ├── Step 2: initializeOpenApiSpec()            [src/utils/initialize.openapi.mjs]
         │   ├── development: generates public/openapi.json from the OpenAPI registry, validates JSON
         │   ├── production:  reads existing public/openapi.json, validates it parses as JSON
         │   ├── staging:     falls through to false (neither branch matches NODE_ENV=staging)
-        │   └── false → process.exit(1)
+        │   └── false → throw (crashes the process)
         │
         └── Step 3: initializeWorker()                 [src/utils/initialize.worker.mjs]
             ├── Resolves worker path:
@@ -182,12 +182,12 @@ register()   [src/instrumentation.js]
             ├── worker.postMessage({ key, interval, port })
             ├── Attaches message/error/exit handlers
             ├── Registers SIGINT/SIGTERM handlers that terminate the worker before exit
-            └── false → process.exit(1)
+            └── false → throw (crashes the process)
 ```
 
 ### Failure behavior
 
-Every initialization step fails hard: any error or falsy return causes `process.exit(1)`. There is no graceful degradation. The intent is that Docker's `restart: unless-stopped` will restart the container, giving the underlying problem (missing env var, bad database, missing OpenAPI spec) a chance to be resolved.
+Every initialization step fails hard: any error or falsy return causes a `throw new Error(...)` inside the `register()` function. Since Next.js does not catch errors thrown from `register()`, this crashes the process. There is no graceful degradation. The intent is that Docker's `restart: unless-stopped` will restart the container, giving the underlying problem (missing env var, bad database, missing OpenAPI spec) a chance to be resolved.
 
 ### onRequestError export
 
@@ -273,6 +273,8 @@ All required variables are checked at startup by `initializeEnvironmentVariables
 | `AUTH_DISCORD_SECRET`   | Yes      | Auth           | Discord OAuth application client secret                                                                  |
 | `AUTH_GITHUB_ID`        | Yes      | Auth           | GitHub OAuth application client ID                                                                       |
 | `AUTH_GITHUB_SECRET`    | Yes      | Auth           | GitHub OAuth application client secret                                                                   |
+| `AUTH_GOOGLE_ID`        | No       | Auth           | Google OAuth application client ID (provider exists in `.example.env` but is commented out in `auth.js`) |
+| `AUTH_GOOGLE_SECRET`    | No       | Auth           | Google OAuth application client secret (commented out)                                                   |
 | `EMAIL_SERVER_USER`     | Yes      | Email          | SMTP username                                                                                            |
 | `EMAIL_SERVER_PASSWORD` | Yes      | Email          | SMTP password                                                                                            |
 | `EMAIL_SERVER_HOST`     | Yes      | Email          | SMTP server hostname                                                                                     |
@@ -300,7 +302,7 @@ The `.docker.env` file (not checked into version control) holds the Docker-speci
 
 ### Behavior note on `NODE_ENV=staging`
 
-The staging CI workflow passes `NODE_ENV=staging` as a Docker build arg. At runtime this means `initializeOpenApiSpec()` returns `false` immediately (neither the `development` nor `production` branch matches), which triggers `process.exit(1)`. In practice the OpenAPI spec is baked into the image at build time and the staging environment is expected to run with `NODE_ENV=production` at runtime, not at build time. The build arg is used only for labeling purposes.
+The staging CI workflow passes `NODE_ENV=staging` as a Docker build arg. At runtime this means `initializeOpenApiSpec()` returns `false` immediately (neither the `development` nor `production` branch matches), which causes `instrumentation.js` to throw and crash the process. In practice the OpenAPI spec is baked into the image at build time and the staging environment is expected to run with `NODE_ENV=production` at runtime, not at build time. The build arg is used only for labeling purposes.
 
 ---
 

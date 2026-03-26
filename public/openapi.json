@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "Helldivers 1 API",
-    "version": "0.4.1",
+    "version": "0.10.0",
     "description": "A simple API"
   },
   "components": {
@@ -10,26 +10,43 @@
       "ErrorResponse": {
         "type": "object",
         "properties": {
-          "ms": {
+          "time": {
             "type": "number",
             "description": "Time taken to process the request (ms)"
           },
-          "error": {
+          "code": {
+            "type": "number",
+            "description": "HTTP status code"
+          },
+          "message": {
             "type": "string",
-            "description": "Error message"
+            "description": "Human-readable status message"
+          },
+          "error": {
+            "nullable": true,
+            "description": "Error details or null"
           }
         },
         "required": [
-          "ms",
-          "error"
+          "time",
+          "code",
+          "message"
         ]
       },
       "SuccessResponse": {
         "type": "object",
         "properties": {
-          "ms": {
+          "time": {
             "type": "number",
             "description": "Time taken to process the request (ms)"
+          },
+          "code": {
+            "type": "number",
+            "description": "HTTP status code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable status message"
           },
           "data": {
             "nullable": true,
@@ -37,7 +54,9 @@
           }
         },
         "required": [
-          "ms"
+          "time",
+          "code",
+          "message"
         ]
       },
       "RebroadcastFormData": {
@@ -91,9 +110,17 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "ms": {
+                    "time": {
                       "type": "number",
                       "description": "Time taken to process the request (ms)"
+                    },
+                    "code": {
+                      "type": "number",
+                      "description": "HTTP status code"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Human-readable status message"
                     },
                     "data": {
                       "nullable": true,
@@ -101,7 +128,9 @@
                     }
                   },
                   "required": [
-                    "ms"
+                    "time",
+                    "code",
+                    "message"
                   ]
                 }
               }
@@ -277,8 +306,14 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "ms": {
+                    "time": {
                       "type": "number"
+                    },
+                    "code": {
+                      "type": "number"
+                    },
+                    "message": {
+                      "type": "string"
                     },
                     "data": {
                       "type": "object",
@@ -303,7 +338,9 @@
                     }
                   },
                   "required": [
-                    "ms",
+                    "time",
+                    "code",
+                    "message",
                     "data"
                   ]
                 }
@@ -325,20 +362,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ms": {
-                      "type": "number"
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
-                    }
-                  },
-                  "required": [
-                    "ms",
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -348,20 +372,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ms": {
-                      "type": "number"
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Method Not Allowed"
-                    }
-                  },
-                  "required": [
-                    "ms",
-                    "error"
-                  ]
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
