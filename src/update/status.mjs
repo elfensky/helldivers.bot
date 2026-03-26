@@ -147,7 +147,11 @@ export async function updateStatus() {
     // Attack event snapshots
     for (const event of fetchedData.attack_events) {
         if (event.season !== season) continue;
-        if (event.status === 'active' || event.status === 'success' || event.status === 'fail') {
+        if (
+            event.status === 'active' ||
+            event.status === 'success' ||
+            event.status === 'fail'
+        ) {
             const { data: shouldSnapshot, error: timerError } = await tryCatch(
                 shouldTakeEventSnapshot('attack', event.event_id, fetchedData.time),
             );
@@ -155,7 +159,12 @@ export async function updateStatus() {
                 console.error('Event snapshot timer error:', timerError.message);
             } else if (shouldSnapshot) {
                 const { error: snapError } = await tryCatch(
-                    queryCreateEventSnapshot(season, 'attack', { ...event, region: 11 }, fetchedData.time),
+                    queryCreateEventSnapshot(
+                        season,
+                        'attack',
+                        { ...event, region: 11 },
+                        fetchedData.time,
+                    ),
                 );
                 if (snapError) {
                     console.error('Attack event snapshot error:', snapError.message);
