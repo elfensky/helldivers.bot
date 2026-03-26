@@ -1,13 +1,21 @@
-'use server';
 import db from '@/db/db';
 import { tryCatch } from '@/utils/tryCatch';
 
 // In-memory last-snapshot timestamps. Keyed by type.
 // Seeded from DB on first check, updated in memory after each write.
+let currentSeason = null;
 let lastLiveSnapshotTime = null;
 const lastEventSnapshotTimes = new Map(); // key: `${type}:${event_id}`, value: time
 
-const LIVE_SNAPSHOT_INTERVAL = 900;  // 15 minutes in seconds
+function resetIfSeasonChanged(season) {
+    if (currentSeason !== null && currentSeason !== season) {
+        lastLiveSnapshotTime = null;
+        lastEventSnapshotTimes.clear();
+    }
+    currentSeason = season;
+}
+
+const LIVE_SNAPSHOT_INTERVAL = 900; // 15 minutes in seconds
 const EVENT_SNAPSHOT_INTERVAL = 600; // 10 minutes in seconds
 
 /**
@@ -16,6 +24,8 @@ const EVENT_SNAPSHOT_INTERVAL = 600; // 10 minutes in seconds
  * Returns true if a snapshot should be taken.
  */
 export async function shouldTakeLiveSnapshot(season, apiTime) {
+    resetIfSeasonChanged(season);
+
     if (lastLiveSnapshotTime === null) {
         // Cold start: seed from DB
         const { data: row, error } = await tryCatch(
@@ -35,7 +45,7 @@ export async function shouldTakeLiveSnapshot(season, apiTime) {
 /**
  * Update the in-memory timer after a successful live snapshot write.
  */
-export function recordLiveSnapshotTime(time) {
+export async function recordLiveSnapshotTime(time) {
     lastLiveSnapshotTime = time;
 }
 
@@ -66,7 +76,7 @@ export async function shouldTakeEventSnapshot(type, eventId, apiTime) {
 /**
  * Update the in-memory timer after a successful event snapshot write.
  */
-export function recordEventSnapshotTime(type, eventId, time) {
+export async function recordEventSnapshotTime(type, eventId, time) {
     const key = `${type}:${eventId}`;
     lastEventSnapshotTimes.set(key, time);
 }
@@ -74,7 +84,7 @@ export function recordEventSnapshotTime(type, eventId, time) {
 /**
  * Reset all timers. Called if season changes.
  */
-export function resetSnapshotTimers() {
+export async function resetSnapshotTimers() {
     lastLiveSnapshotTime = null;
     lastEventSnapshotTimes.clear();
 }

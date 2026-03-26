@@ -62,11 +62,5 @@ export async function fetchSeason(season) {
     const form = new FormData();
     form.append('action', 'get_snapshots');
     form.append('season', season.toString());
-
-    try {
-        return await fetchInvalidHttps(url, form);
-    } catch (error) {
-        console.error(error.message);
-        throw error;
-    }
+    return fetchInvalidHttps(url, form);
 }

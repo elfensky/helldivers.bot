@@ -11,13 +11,9 @@ export async function queryUpsertSnapshots(season, snapshots) {
     if (!snapshots) throw new Error('snapshots are missing');
 
     const upsertRecords = [];
-    let skipped = false;
 
     for (const snapshot of snapshots) {
-        if (snapshot?.season !== season) {
-            skipped = true;
-            continue;
-        }
+        if (snapshot?.season !== season) continue;
 
         const { data: upsertRecord, error } = await tryCatch(
             db.h1_snapshot.upsert({
@@ -41,11 +37,10 @@ export async function queryUpsertSnapshots(season, snapshots) {
         if (error) throw error;
 
         upsertRecords.push(upsertRecord);
-        skipped = false;
     }
 
     return {
         ms: performanceTime(start),
-        query: upsertRecords || skipped,
+        query: upsertRecords,
     };
 }

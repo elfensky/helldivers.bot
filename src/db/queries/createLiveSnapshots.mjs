@@ -24,6 +24,25 @@ export async function queryCreateLiveSnapshots(season, time, statistics) {
 
     for (const stats of statistics) {
         const enemy = stats.enemy;
+        const snapshotData = {
+            season_duration: stats.season_duration,
+            players: stats.players,
+            total_unique_players: stats.total_unique_players,
+            missions: stats.missions,
+            successful_missions: stats.successful_missions,
+            total_mission_difficulty: stats.total_mission_difficulty,
+            completed_planets: stats.completed_planets,
+            defend_events: stats.defend_events,
+            successful_defend_events: stats.successful_defend_events,
+            attack_events: stats.attack_events,
+            successful_attack_events: stats.successful_attack_events,
+            deaths: stats.deaths,
+            kills: stats.kills,
+            accidentals: stats.accidentals,
+            shots: stats.shots,
+            hits: stats.hits,
+        };
+
         const { data: record, error } = await tryCatch(
             db.h1_live_snapshot.upsert({
                 where: {
@@ -33,45 +52,8 @@ export async function queryCreateLiveSnapshots(season, time, statistics) {
                         time: time,
                     },
                 },
-                update: {
-                    season_duration: stats.season_duration,
-                    players: stats.players,
-                    total_unique_players: stats.total_unique_players,
-                    missions: stats.missions,
-                    successful_missions: stats.successful_missions,
-                    total_mission_difficulty: stats.total_mission_difficulty,
-                    completed_planets: stats.completed_planets,
-                    defend_events: stats.defend_events,
-                    successful_defend_events: stats.successful_defend_events,
-                    attack_events: stats.attack_events,
-                    successful_attack_events: stats.successful_attack_events,
-                    deaths: stats.deaths,
-                    kills: stats.kills,
-                    accidentals: stats.accidentals,
-                    shots: stats.shots,
-                    hits: stats.hits,
-                },
-                create: {
-                    season: season,
-                    time: time,
-                    enemy: enemy,
-                    season_duration: stats.season_duration,
-                    players: stats.players,
-                    total_unique_players: stats.total_unique_players,
-                    missions: stats.missions,
-                    successful_missions: stats.successful_missions,
-                    total_mission_difficulty: stats.total_mission_difficulty,
-                    completed_planets: stats.completed_planets,
-                    defend_events: stats.defend_events,
-                    successful_defend_events: stats.successful_defend_events,
-                    attack_events: stats.attack_events,
-                    successful_attack_events: stats.successful_attack_events,
-                    deaths: stats.deaths,
-                    kills: stats.kills,
-                    accidentals: stats.accidentals,
-                    shots: stats.shots,
-                    hits: stats.hits,
-                },
+                update: snapshotData,
+                create: { season, time, enemy, ...snapshotData },
             }),
         );
 
