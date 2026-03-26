@@ -47,15 +47,18 @@ export default async function Navigation() {
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            style={{ width: '24px', height: '24px' }}
+                            viewBox="-4 -4 32 32"
+                            style={{ width: '32px', height: '32px' }}
                         >
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            <circle cx="12" cy="12" r="16" fill="#fff" />
+                            <polyline
+                                points="22 12 18 12 15 21 9 3 6 12 2 12"
+                                fill="none"
+                                stroke="#000"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
                         </svg>
                     </Link>
                 </li>
