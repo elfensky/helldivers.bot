@@ -6,29 +6,19 @@
 .war-outcome {
     background-color: rgba(0, 0, 0, 0.75);
     border: 2px solid rgba(255, 255, 255, 0.2);
-    grid-column: 1 / -1;
-    padding: 1rem;
+    padding: 0.5rem 1rem;
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    align-items: center;
+    flex: 1;
+    font-size: 0.875rem;
 }
 
 .war-outcome.victory {
     border-color: rgba(255, 213, 0, 0.8);
+    color: rgba(255, 213, 0, 1);
 }
 
 .war-outcome.defeat {
     border-color: rgba(255, 0, 0, 0.8);
-}
-
-.faction-status {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-}
-
-.faction-status.defeated {
-    opacity: 0.5;
+    color: rgba(255, 0, 0, 1);
 }

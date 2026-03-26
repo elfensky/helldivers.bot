@@ -49,29 +49,13 @@ export function WarOutcome({ data }) {
     const result = getWarOutcome(data);
     if (!result) return null;
 
-    const { outcome, reason } = result;
+    const { outcome } = result;
 
     return (
         <div className={`war-outcome ${outcome}`}>
-            <h3>{outcome === 'victory' ? 'Victory' : 'Defeat'}</h3>
-            <p>{reason}</p>
-            <ul>
-                {data.live.map((f) => (
-                    <li
-                        key={f.enemy}
-                        className={`faction-status ${f.status === 'defeated' ? 'defeated' : ''}`}
-                    >
-                        <img
-                            src={`/icons/faction${f.enemy}.webp`}
-                            alt={factions[f.enemy]?.name ?? `Faction ${f.enemy}`}
-                            width={16}
-                            height={16}
-                        />
-                        <span>{factions[f.enemy]?.name ?? `Faction ${f.enemy}`}</span>
-                        <span>{f.status}</span>
-                    </li>
-                ))}
-            </ul>
+            <span className="font-bold">
+                {outcome === 'victory' ? 'Victory' : 'Defeat'}
+            </span>
         </div>
     );
 }

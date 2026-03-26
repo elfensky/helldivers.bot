@@ -68,9 +68,10 @@ export default async function WarHistoryPage({ searchParams }) {
         <div className="gutters z-10 flex max-w-full flex-col gap-4 overflow-hidden">
             <JsonLd />
 
-            <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
-
-            <WarOutcome data={data} />
+            <div className="flex items-stretch gap-4">
+                <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
+                <WarOutcome data={data} />
+            </div>
             <WarTimeline data={data} defaultMapState={mapState} />
         </div>
     );
