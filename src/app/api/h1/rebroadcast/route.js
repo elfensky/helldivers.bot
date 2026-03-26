@@ -14,7 +14,7 @@ import {
 } from '@/db/queries/rebroadcast';
 import { updateSeason } from '@/update/season';
 //auth
-import { validateApiKey } from '@/db/queries/api';
+import { validateApiKey } from '@/db/queries/validateApiKey';
 //track
 import { umamiTrackEvent } from '@/utils/umami';
 

@@ -23,4 +23,28 @@ test.describe('Smoke tests', () => {
         const body = await response.json();
         expect(body.data.alive).toBe(true);
     });
+
+    test('POST /api/h1/rebroadcast without API key returns 401', async ({ request }) => {
+        const response = await request.post('/api/h1/rebroadcast');
+        expect(response.status()).toBe(401);
+        const body = await response.json();
+        expect(body.error_code).toBe(6);
+        expect(body.error_message).toBe('Unauthorized');
+    });
+
+    test('POST /api/h1/rebroadcast with invalid API key returns 401', async ({ request }) => {
+        const response = await request.post('/api/h1/rebroadcast', {
+            headers: { Authorization: 'Bearer invalid-key-that-does-not-exist' },
+        });
+        expect(response.status()).toBe(401);
+        const body = await response.json();
+        expect(body.error_code).toBe(6);
+    });
+
+    test('GET /api/h1/rebroadcast returns 405 without key check', async ({ request }) => {
+        const response = await request.get('/api/h1/rebroadcast');
+        expect(response.status()).toBe(405);
+        const body = await response.json();
+        expect(body.error_code).toBe(5);
+    });
 });
