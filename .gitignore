@@ -50,4 +50,9 @@ next-env.d.ts
 
 # Claude
 .claude/worktrees
+.claude/projects/
 .worktrees
+
+# Tool state
+.claude-octopus/
+.playwright-mcp/
