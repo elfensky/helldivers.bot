@@ -6,7 +6,7 @@ import { getSeasonList } from '@/db/queries/getSeasonList';
 //utils
 import { computeMapState } from '@/utils/computeMapState.mjs';
 //components
-import War from '@/components/h1/War/War';
+import { WarOutcome } from '@/components/h1/War/War';
 import WarTimeline from '@/components/h1/WarTimeline/WarTimeline';
 import Link from 'next/link';
 
@@ -63,10 +63,8 @@ export default async function WarHistoryPage({ searchParams }) {
 
             <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
 
-            <div className="flex flex-col justify-between gap-4 xl:flex-row xl:flex-wrap">
-                <War data={data} showOutcome={true} />
-                <WarTimeline data={data} defaultMapState={mapState} />
-            </div>
+            <WarOutcome data={data} />
+            <WarTimeline data={data} defaultMapState={mapState} />
         </div>
     );
 }
