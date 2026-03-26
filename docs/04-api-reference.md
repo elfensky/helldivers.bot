@@ -165,7 +165,7 @@ The 404 branch is reached specifically when `updateSeason` receives a Zod parse 
 
 ### Response (200)
 
-Standard envelope. `data` contains the season record with all relations loaded by `getCampaign`: campaigns, statistics, snapshots, defend events, attack events, introduction order, and points max.
+Standard envelope. `data` contains the season record with all relations loaded by `getCampaign`: `live` (replaces the former campaigns and statistics tables), `introduction_order`, `points_max`, `snapshots`, and `events` (unified defend/attack events).
 
 ```json
 {
@@ -198,13 +198,18 @@ POST, PUT, DELETE, PATCH, OPTIONS → 405, standard envelope.
 
 **Source:** `src/app/api/h1/rebroadcast/route.js`
 
-**Auth:** None (public).
+**Auth:** API key required. Pass via `Authorization: Bearer <key>` header. Keys are managed from the user dashboard.
 
 **Content-Type:** `multipart/form-data` or `application/x-www-form-urlencoded`. Any other value returns rebroadcast error code 0.
 
 ### Validation Pipeline
 
 ```
+Step 0.5 — API Key
+  validateApiKey(request)
+  Missing/malformed/invalid → rebroadcastErrorResponse(6) [HTTP 401]
+  Disabled                  → rebroadcastErrorResponse(7) [HTTP 403]
+
 Step 1 — Content-Type
   isValidContentType.safeParse(contentType)
   Fail → rebroadcastErrorResponse(0) [HTTP 400]
@@ -269,13 +274,15 @@ After the branch, if `data` is still `null` or `undefined`, returns rebroadcast 
 | 3    | 400         | Missing or invalid arguments | Zod `invalid_type` — action recognized but params wrong    |
 | 4    | 404         | Not found                    | Data not in DB and remote fetch failed or returned nothing |
 | 5    | 405         | Method not allowed           | Non-POST method                                            |
+| 6    | 401         | Unauthorized                 | API key missing, malformed, or not found                   |
+| 7    | 403         | Forbidden                    | API key found but disabled                                 |
 | null | 500         | Unknown error                | Any other Zod error code                                   |
 
 All errors use the rebroadcast envelope: `{ time, error_code, error_message }`.
 
 ### Analytics
 
-Tracked via `after()`. Event name: `"API | Rebroadcast"`. Note: the URL passed to `umamiTrackEvent` is hardcoded as `"/api/h1/update"` — this is a copy-paste bug in the source but does not affect runtime behavior. Custom properties include `action` (and `season` when action is `get_snapshots`) plus `ms`.
+Tracked via `after()` (registered after `formValues` is populated to avoid closure issues with early returns). Event name: `"API | Rebroadcast"`, URL: `"/api/h1/rebroadcast"`. Custom properties include `action` (and `season` when action is `get_snapshots`) plus `ms`.
 
 ### Method Not Allowed
 
@@ -423,7 +430,7 @@ The rebroadcast route deviates: it uses `rebroadcastErrorResponse(5)` instead of
 
 **Output file:** `public/openapi.json`
 
-**Spec version:** OpenAPI 3.0.0, declared API version `0.4.1`.
+**Spec version:** OpenAPI 3.0.0, declared API version `0.10.0` (synced from `package.json`).
 
 ### Generation Lifecycle
 
@@ -450,4 +457,4 @@ The generated spec is rendered at the `/api` page route (`src/app/api/page.jsx`)
 
 - See [03-data-flow.md](03-data-flow.md) for what happens inside `updateStatus()` and `updateSeason()` after `/api/h1/update` triggers the pipeline.
 - See [05-utilities-reference.md](05-utilities-reference.md) for `successResponse`, `errorResponse`, `tryCatch`, `performanceTime`, `roundedPerformanceTime`, and validation schemas.
-- See [02-database-schema.md](02-database-schema.md) for the tables queried by these endpoints (`rebroadcast_status`, `rebroadcast_snapshot`, `h1_season`, `h1_campaign`, etc.).
+- See [02-database-schema.md](02-database-schema.md) for the tables queried by these endpoints (`rebroadcast_status`, `rebroadcast_snapshot`, `h1_season`, `h1_live`, etc.).

@@ -13,26 +13,25 @@ import {
     queryGetRebroadcastSeason,
 } from '@/db/queries/rebroadcast';
 import { updateSeason } from '@/update/season';
+//auth
+import { validateApiKey } from '@/db/queries/validateApiKey';
 //track
 import { umamiTrackEvent } from '@/utils/umami';
 
 export async function POST(request) {
-    after(async () => {
-        const data = {
-            action: formValues.action,
-            ms: roundedPerformanceTime(start),
-        };
-        if (data?.action === 'get_snapshots') {
-            data.season = formValues.season;
-        }
-        await umamiTrackEvent('API | Rebroadcast', '/api/h1/update', 'rebroadcast', data);
-    });
-
     //0. initialize
     const start = performance.now();
     let check = null;
-    let update = false;
-    // let elapsed = null;
+    let formValues = null;
+
+    //0.5 validate API key
+    const { error: keyError } = await validateApiKey(request);
+    if (keyError === 'disabled') {
+        return rebroadcastErrorResponse(7);
+    }
+    if (keyError) {
+        return rebroadcastErrorResponse(6);
+    }
 
     //1. test if valid POST request
     const contentType = request.headers.get('content-type') || '';
@@ -43,7 +42,23 @@ export async function POST(request) {
 
     //2. get FormData and convert it to an object. Test is "action" parameter is present.
     const formData = await request.formData();
-    const formValues = formDataToObject(formData);
+    formValues = formDataToObject(formData);
+
+    after(async () => {
+        const data = {
+            action: formValues.action,
+            ms: roundedPerformanceTime(start),
+        };
+        if (data?.action === 'get_snapshots') {
+            data.season = formValues.season;
+        }
+        await umamiTrackEvent(
+            'API | Rebroadcast',
+            '/api/h1/rebroadcast',
+            'rebroadcast',
+            data,
+        );
+    });
     if (typeof formValues.action !== 'string') {
         return rebroadcastErrorResponse(1); //no action set
     }
@@ -60,13 +75,10 @@ export async function POST(request) {
         switch (code) {
             case 'invalid_union':
                 return rebroadcastErrorResponse(2);
-                break;
             case 'invalid_type':
                 return rebroadcastErrorResponse(3);
-                break;
             default:
                 return rebroadcastErrorResponse(null);
-                break;
         }
     }
     if (formValues?.season) {
@@ -148,6 +160,14 @@ function rebroadcastErrorResponse(code) {
         case 5:
             message = 'Method not allowed';
             status = 405;
+            break;
+        case 6:
+            message = 'Unauthorized';
+            status = 401;
+            break;
+        case 7:
+            message = 'Forbidden';
+            status = 403;
             break;
         default:
             message = 'Unknown error';

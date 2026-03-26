@@ -3,11 +3,12 @@ import './war.css';
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { getSeasonList } from '@/db/queries/getSeasonList';
+//utils
+import { computeMapState } from '@/utils/computeMapState.mjs';
 //components
-import Galaxy from '@/components/h1/Galaxy/Galaxy';
-import War from '@/components/h1/War/War';
-import Timeline from '@/components/h1/Timeline/Timeline';
-import Link from 'next/link';
+import { WarOutcome } from '@/components/h1/War/War';
+import WarTimeline from '@/components/h1/WarTimeline/WarTimeline';
+import SeasonSelector from '@/components/h1/SeasonSelector/SeasonSelector';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export default async function WarHistoryPage({ searchParams }) {
     const params = await searchParams;
     const seasonParam = params?.season ? parseInt(params.season, 10) : null;
 
-    const { data: seasons, error: seasonsError } = await tryCatch(getSeasonList());
+    const { data: allSeasons, error: seasonsError } = await tryCatch(getSeasonList());
 
     if (seasonsError !== null) {
         console.error('getSeasonList failed:', seasonsError);
@@ -34,7 +35,14 @@ export default async function WarHistoryPage({ searchParams }) {
         );
     }
 
-    const { data, error } = await tryCatch(getCampaign(seasonParam));
+    // Exclude the current (active) season — it's shown on the homepage
+    const activeSeason = allSeasons?.[0]?.season;
+    const seasons = allSeasons?.filter((s) => s.season !== activeSeason) || [];
+
+    // Default to the most recent completed season if no season param
+    const resolvedSeason = seasonParam ?? seasons[0]?.season ?? null;
+
+    const { data, error } = await tryCatch(getCampaign(resolvedSeason));
 
     if (error !== null) {
         console.error('getCampaign failed:', error);
@@ -54,42 +62,18 @@ export default async function WarHistoryPage({ searchParams }) {
     }
 
     const currentSeason = data.season;
+    const mapState = computeMapState(data.live, []);
 
     return (
-        <div className="gutters z-10 flex w-screen flex-col gap-4 overflow-hidden">
+        <div className="gutters z-10 flex max-w-full flex-col gap-4 overflow-hidden">
             <JsonLd />
 
-            <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
-
-            <div className="flex flex-col-reverse justify-between gap-4 xl:flex-row xl:flex-wrap">
-                <War data={data} />
-                <Timeline data={data} />
-                <Galaxy data={data} />
+            <div className="flex items-stretch gap-4">
+                <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
+                <WarOutcome data={data} />
             </div>
+            <WarTimeline data={data} defaultMapState={mapState} />
         </div>
-    );
-}
-
-function SeasonSelector({ seasons, currentSeason }) {
-    if (!seasons || seasons.length === 0) return null;
-
-    return (
-        <nav className="flex flex-wrap items-center gap-2">
-            <span className="text-sm opacity-70">Season:</span>
-            {seasons.map((s) => (
-                <Link
-                    key={s.season}
-                    href={`/war?season=${s.season}`}
-                    className={`rounded px-3 py-1 text-sm ${
-                        s.season === currentSeason ?
-                            'bg-[var(--orange)] text-black'
-                        :   'bg-white/10 hover:bg-white/20'
-                    }`}
-                >
-                    {s.season}
-                </Link>
-            ))}
-        </nav>
     );
 }
 

@@ -14,14 +14,22 @@ const registry = new OpenAPIRegistry();
 // Common schemas
 const ErrorResponseSchema = z
     .object({
-        ms: z.number().openapi({ description: 'Time taken to process the request (ms)' }),
-        error: z.string().openapi({ description: 'Error message' }),
+        time: z
+            .number()
+            .openapi({ description: 'Time taken to process the request (ms)' }),
+        code: z.number().openapi({ description: 'HTTP status code' }),
+        message: z.string().openapi({ description: 'Human-readable status message' }),
+        error: z.any().openapi({ description: 'Error details or null' }),
     })
     .openapi('ErrorResponse');
 
 const SuccessResponseSchema = z
     .object({
-        ms: z.number().openapi({ description: 'Time taken to process the request (ms)' }),
+        time: z
+            .number()
+            .openapi({ description: 'Time taken to process the request (ms)' }),
+        code: z.number().openapi({ description: 'HTTP status code' }),
+        message: z.string().openapi({ description: 'Human-readable status message' }),
         data: z.any().openapi({ description: 'Response data' }),
     })
     .openapi('SuccessResponse');
@@ -51,9 +59,13 @@ registry.registerPath({
             content: {
                 'application/json': {
                     schema: z.object({
-                        ms: z.number().openapi({
+                        time: z.number().openapi({
                             description: 'Time taken to process the request (ms)',
                         }),
+                        code: z.number().openapi({ description: 'HTTP status code' }),
+                        message: z
+                            .string()
+                            .openapi({ description: 'Human-readable status message' }),
                         data: z
                             .any()
                             .openapi({ description: 'The campaign data object' }),
@@ -153,6 +165,30 @@ registry.registerPath({
                 },
             },
         },
+        401: {
+            description: 'Unauthorized. API key missing, malformed, or not found.',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        time: z.number(),
+                        error_code: z.number(),
+                        error_message: z.string(),
+                    }),
+                },
+            },
+        },
+        403: {
+            description: 'Forbidden. API key found but disabled.',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        time: z.number(),
+                        error_code: z.number(),
+                        error_message: z.string(),
+                    }),
+                },
+            },
+        },
         405: {
             description: 'Method not allowed.',
             content: {
@@ -189,7 +225,9 @@ registry.registerPath({
             content: {
                 'application/json': {
                     schema: z.object({
-                        ms: z.number(),
+                        time: z.number(),
+                        code: z.number(),
+                        message: z.string(),
                         data: z.object({
                             updated: z.object({
                                 status: z
@@ -216,10 +254,7 @@ registry.registerPath({
             description: 'Unauthorized. The provided key is missing or invalid.',
             content: {
                 'application/json': {
-                    schema: z.object({
-                        ms: z.number(),
-                        error: z.string().openapi({ example: 'Unauthorized' }),
-                    }),
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -227,10 +262,7 @@ registry.registerPath({
             description: 'Method Not Allowed. Only GET is supported.',
             content: {
                 'application/json': {
-                    schema: z.object({
-                        ms: z.number(),
-                        error: z.string().openapi({ example: 'Method Not Allowed' }),
-                    }),
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -253,7 +285,7 @@ export function generateOpenApiSpec() {
         openapi: '3.0.0',
         info: {
             title: 'Helldivers 1 API',
-            version: '0.4.1',
+            version: '0.11.0',
             description: 'A simple API',
         },
     });

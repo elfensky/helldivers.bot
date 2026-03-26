@@ -35,7 +35,7 @@ function Logo() {
             href="/"
             data-umami-event={'header-home'}
             aria-label="Go to homepage"
-            className="z-50 flex flex-row items-center justify-center gap-2 text-[1.1rem] font-bold sm:text-2xl"
+            className="z-50 flex flex-row items-center justify-center gap-2 text-[clamp(1.1rem,0.9rem+1vw,1.5rem)] font-bold"
         >
             <figure className="relative m-0 flex flex-row items-center gap-2">
                 <Image

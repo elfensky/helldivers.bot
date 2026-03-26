@@ -24,14 +24,14 @@ rebroadcast_snapshot          — Raw JSON, one row per season
     v
 h1_season (unconfirmed)       — Season record, last_updated = null
     |
-    v  [parallel]
-h1_campaign                   — Normalized campaign data
-h1_defend_event               — Normalized defend event
-h1_attack_event               — Normalized attack events
-h1_statistic                  — Normalized statistics
-h1_introduction_order         — Season introduction order (snapshots only)
-h1_points_max                 — Season points max (snapshots only)
-h1_snapshot                   — Historical snapshots (snapshots only)
+    v  [sequential]
+h1_event                      — Unified defend/attack events
+h1_event_snapshot             — Event progress snapshots (10-min throttle)
+h1_introduction_order         — Derived from campaign_status
+h1_points_max                 — Derived from campaign_status
+h1_live                       — Per-faction live state with map overlay
+h1_live_snapshot              — Live statistic snapshots (15-min throttle)
+h1_snapshot                   — Historical snapshots (season pipeline only)
     |
     v
 h1_season (confirmed)         — last_updated set only after all child writes succeed
@@ -39,8 +39,8 @@ h1_season (confirmed)         — last_updated set only after all child writes s
 
 There are two distinct pipelines that share this shape:
 
-- **Status pipeline** (`updateStatus()`) — runs on every worker tick, updates the current campaign state.
-- **Season pipeline** (`updateSeason(season)`) — runs on-demand when historical season data is needed.
+- **Status pipeline** (`updateStatus()`) — runs on every worker tick, updates the current campaign state. Writes `h1_event`, `h1_event_snapshot`, `h1_introduction_order`, `h1_points_max`, `h1_live`, and `h1_live_snapshot`.
+- **Season pipeline** (`updateSeason(season)`) — runs on-demand when historical season data is needed. Writes `h1_event`, `h1_introduction_order`, `h1_points_max`, and `h1_snapshot`.
 
 ---
 
@@ -60,15 +60,15 @@ This prevents the worker from being spawned in edge runtimes or during static bu
 
 The worker script path is resolved differently depending on environment:
 
-| Environment              | Resolved path                                             |
-| ------------------------ | --------------------------------------------------------- |
-| `development`            | `path.resolve(__dirname, '../../public/workers/cron.js')` |
-| `production` / `staging` | `path.resolve('/app/public/workers/cron.js')`             |
+| Environment              | Resolved path                                           |
+| ------------------------ | ------------------------------------------------------- |
+| `development`            | `path.resolve(process.cwd(), 'public/workers/cron.js')` |
+| `production` / `staging` | `path.resolve('/app/public/workers/cron.js')`           |
 
 After spawning, the parent sends a single initialization message to the worker:
 
 ```js
-worker.postMessage({ key: UPDATE_KEY, interval: UPDATE_INTERVAL, port: PORT || 3000 });
+worker.postMessage({ key: key, interval: interval, port: port });
 ```
 
 ### Worker message loop
@@ -151,7 +151,7 @@ Execution time is measured from the very start and returned in the response as `
 const { data: fetchedData, error: fetchedError } = await tryCatch(fetchStatus());
 ```
 
-`fetchStatus()` POSTs `action=get_campaign_status` to the official API. On network failure it logs and returns `undefined` without re-throwing. `tryCatch()` catches any thrown error and returns it in `error`. If `fetchedError` is set, `updateStatus()` throws immediately with a descriptive message and a `cause` pointing to the source location.
+`fetchStatus()` POSTs `action=get_campaign_status` to the official API. It delegates to `fetchInvalidHttps()`, which throws on network failure or empty response. `tryCatch()` catches any thrown error and returns it in `error`. If `fetchedError` is set, `updateStatus()` throws immediately with a descriptive message and a `cause` pointing to the source location.
 
 **Step 2 — Zod validation**
 
@@ -178,7 +178,7 @@ await tryCatch(queryUpsertRebroadcastStatus(season, fetchedData));
 
 The complete, unmodified API response is stored in `rebroadcast_status`, keyed by `season`. This is an upsert — the row for that season is created or replaced.
 
-**Step 5.1 — Create unconfirmed season record**
+**Step 5 — Create unconfirmed season record**
 
 ```js
 await tryCatch(queryUpsertSeason(season, false));
@@ -186,25 +186,108 @@ await tryCatch(queryUpsertSeason(season, false));
 
 A row for this season is created in `h1_season` with `last_updated` left as `null`. The `false` parameter signals that this is the initial, unconfirmed creation. See the Confirm Pattern section below.
 
-**Steps 5.2–5.5 — Parallel normalized writes**
+**Step 6 — Upsert events**
 
 ```js
-await Promise.all([
-    tryCatch(queryUpsertCampaigns(season, fetchedData.campaign_status)),
-    tryCatch(queryUpsertDefendEvent(season, fetchedData.defend_event)),
-    tryCatch(queryUpsertAttackEvents(season, fetchedData.attack_events)),
-    tryCatch(queryUpsertStatistics(season, fetchedData.statistics)),
-]);
+// Defend event (guard for null — API omits when no defend active)
+if (fetchedData.defend_event) {
+    await tryCatch(queryUpsertEvent(season, 'defend', fetchedData.defend_event));
+}
+
+// Attack events
+for (const event of fetchedData.attack_events) {
+    await tryCatch(queryUpsertEvent(season, 'attack', { ...event, region: 11 }));
+}
 ```
 
-All four child tables are written concurrently. Note the naming asymmetry:
+Both defend and attack events are written through the unified `queryUpsertEvent(season, type, event)` function to the `h1_event` table. Key differences:
 
-- `queryUpsertDefendEvent` (singular) — `defend_event` is a single object in the API response.
-- `queryUpsertAttackEvents` (plural) — `attack_events` is an array.
+- `defend_event` is a single nullable object in the API response. It is guarded with an `if` check — the API omits this field when no defend event is active.
+- `attack_events` is an array. Each event is spread with `region: 11` added, because attack events always target the enemy homeworld (region 11) and the API does not include the region field.
 
-Each result is checked individually after `Promise.all` resolves; any error throws immediately.
+Events are written sequentially, not in parallel. Each error throws immediately.
 
-**Step 6 — Confirm season**
+**Step 6.5 — Event snapshot capture (10-min throttle)**
+
+After upserting events, the pipeline captures time-series snapshots of event progress for active or terminal events:
+
+```js
+// For each defend/attack event where status is 'active', 'success', or 'fail':
+const { data: shouldSnapshot } = await tryCatch(
+    shouldTakeEventSnapshot(type, event.event_id, fetchedData.time),
+);
+if (shouldSnapshot) {
+    await tryCatch(queryCreateEventSnapshot(season, type, event, fetchedData.time));
+    recordEventSnapshotTime(type, event.event_id, fetchedData.time);
+}
+```
+
+For each active or terminal event (defend and attack), the pipeline calls `shouldTakeEventSnapshot()` to check whether 10 minutes have elapsed since the last snapshot for that specific event. If yes, it writes a row to `h1_event_snapshot` and updates the in-memory timer. Terminal events (`success`/`fail`) are also snapshotted to capture the final state.
+
+Snapshot errors are logged but do not throw — they are non-fatal to the pipeline. The update continues even if a snapshot write fails.
+
+**Step 7 — Derive introduction_order and points_max**
+
+```js
+const introOrder = fetchedData.campaign_status.map((c) => c.introduction_order);
+const pointsMax = fetchedData.campaign_status.map((c) => c.points_max);
+
+await tryCatch(queryUpsertIntroductionOrder(season, introOrder));
+await tryCatch(queryUpsertPointsMax(season, pointsMax));
+```
+
+These two values are derived from the `campaign_status` array by mapping each faction's entry. They are stored in their own tables (`h1_introduction_order` and `h1_points_max`) because they are season-level metadata, not per-tick data. Written sequentially; errors throw.
+
+**Step 8 — Upsert h1_live (per-faction live state)**
+
+```js
+for (let enemy = 0; enemy < 3; enemy++) {
+    const campaign = fetchedData.campaign_status[enemy];
+    const stats = fetchedData.statistics[enemy];
+    const factionMap = computeFactionMap(
+        enemy,
+        campaign,
+        defendEvent,
+        attackEvents,
+        season,
+    );
+    await tryCatch(queryUpsertLive(season, enemy, campaign, stats, factionMap));
+}
+```
+
+The pipeline loops over the three enemy factions (0, 1, 2). For each faction, it:
+
+1. Extracts the campaign entry and statistics entry from the API arrays.
+2. Computes a `factionMap` via `computeFactionMap()` — a deep-cloned map template from `src/enums/map` with live campaign data overlaid (points, percent, status) and event markers (`'defend'`/`'attack'`) applied to affected regions.
+3. Upserts a row in `h1_live` containing the campaign data, statistics, and computed map.
+
+The `computeFactionMap()` helper:
+
+- Deep-clones the base map template for the given enemy.
+- Sets `status` on all regions from the campaign.
+- Sets `points`, `points_max`, and `percent` on region 11 (homeworld).
+- Marks the region with `event: 'defend'` if a defend event targets that faction.
+- Marks region 11 with `event: 'attack'` if any active attack event targets that faction.
+
+**Step 8.5 — Live snapshot capture (15-min throttle)**
+
+```js
+const { data: shouldSnapshot } = await tryCatch(
+    shouldTakeLiveSnapshot(season, fetchedData.time),
+);
+if (shouldSnapshot) {
+    await tryCatch(
+        queryCreateLiveSnapshots(season, fetchedData.time, fetchedData.statistics),
+    );
+    recordLiveSnapshotTime(fetchedData.time);
+}
+```
+
+After all three factions are written, the pipeline checks `shouldTakeLiveSnapshot()` to determine if 15 minutes have elapsed since the last live snapshot. If yes, it writes all three factions' statistics to `h1_live_snapshot` in a single call and updates the in-memory timer.
+
+Like event snapshots, live snapshot errors are logged but do not throw — they are non-fatal.
+
+**Step 9 — Confirm season**
 
 ```js
 await tryCatch(queryUpsertSeason(season, true));
@@ -218,7 +301,7 @@ await tryCatch(queryUpsertSeason(season, true));
 return { ms, season, confirmSeason };
 ```
 
-`ms` is the rounded execution time in milliseconds. `confirmSeason` is the updated `h1_season` record.
+`ms` is the raw execution time in milliseconds (via `performanceTime(start)`, not rounded). `confirmSeason` is the updated `h1_season` record.
 
 ### Confirm pattern
 
@@ -235,13 +318,15 @@ The invariant this enforces: a season row with `last_updated !== null` has a com
 
 Every async operation is wrapped in `tryCatch()`, which returns `{ data, error }` instead of throwing. Errors surface as explicit `if (someError) throw new Error(...)` checks after each step, with a `cause` field that identifies the exact source file and operation. This makes stack traces actionable without relying on implicit propagation.
 
+The exception is snapshot writes (Steps 6.5 and 8.5), which log errors with `console.error` instead of throwing. Snapshot failures are non-fatal — the pipeline completes and confirms the season even if individual snapshots fail to write.
+
 ---
 
 ## 4. Season Snapshot Pipeline
 
 Source: `src/update/season.mjs` — `updateSeason(season)`
 
-This function fetches the full historical snapshot data for a given season number. It is structurally identical to the status pipeline but operates on different data.
+This function fetches the full historical snapshot data for a given season number. It is structurally similar to the status pipeline but operates on different data and does not write live state or throttled snapshots.
 
 ### Step-by-step
 
@@ -260,7 +345,7 @@ Season is required. If absent, the function throws before attempting any I/O.
 const { data: fetchedData, error: fetchedError } = await tryCatch(fetchSeason(season));
 ```
 
-`fetchSeason` validates the season parameter with `isValidNumber`, then POSTs `action=get_snapshots&season=N`. Unlike `fetchStatus`, `fetchSeason` re-throws on error — a failed season fetch is always a hard failure.
+`fetchSeason` validates the season parameter with `isValidNumber.safeParse`, then POSTs `action=get_snapshots&season=N`. Unlike `fetchStatus`, `fetchSeason` delegates directly to `fetchInvalidHttps` which re-throws on error — a failed season fetch is always a hard failure.
 
 **Step 2 — Zod validation**
 
@@ -295,19 +380,37 @@ await tryCatch(queryUpsertSeason(season, false));
 
 Same confirm pattern as the status pipeline.
 
-**Steps 5.2–5.6 — Parallel normalized writes**
+**Steps 5.2-5.4 — Parallel normalized writes**
 
 ```js
 await Promise.all([
     tryCatch(queryUpsertIntroductionOrder(season, fetchedData.introduction_order)),
     tryCatch(queryUpsertPointsMax(season, fetchedData.points_max)),
     tryCatch(queryUpsertSnapshots(season, fetchedData.snapshots)),
-    tryCatch(queryUpsertDefendEvents(season, fetchedData.defend_events)),
-    tryCatch(queryUpsertAttackEvents(season, fetchedData.attack_events)),
 ]);
 ```
 
-Five tables are written concurrently. Note that in this pipeline both `defend_events` and `attack_events` are arrays (plural forms), because snapshot data contains full historical event lists rather than a single current event.
+Three tables are written concurrently: `h1_introduction_order`, `h1_points_max`, and `h1_snapshot`. Each result is checked individually after `Promise.all` resolves; any error throws immediately.
+
+**Step 5.5 — Upsert defend events**
+
+```js
+for (const event of fetchedData.defend_events) {
+    await tryCatch(queryUpsertEvent(season, 'defend', event));
+}
+```
+
+Defend events are iterated and each is written to `h1_event` via the unified `queryUpsertEvent` function. In the season pipeline, `defend_events` is an array (plural) because snapshot data contains full historical event lists rather than a single current event.
+
+**Step 5.6 — Upsert attack events**
+
+```js
+for (const event of fetchedData.attack_events) {
+    await tryCatch(queryUpsertEvent(season, 'attack', { ...event, region: 11 }));
+}
+```
+
+Attack events are also iterated individually. Each event is spread with `region: 11` added, same as in the status pipeline.
 
 **Step 6 — Confirm season**
 
@@ -323,7 +426,7 @@ return { ms, season, confirmSeason };
 
 ### On-demand invocation
 
-`updateSeason()` is not called on a schedule. It is called reactively by two API handlers when they cannot find the requested season in the local database:
+`updateSeason()` is not called on a schedule. It is called reactively by API handlers when they cannot find the requested season in the local database:
 
 - `GET /api/h1/campaign?season=N` — queries local `h1_*` tables first; calls `updateSeason(season)` if the season is missing.
 - `POST /api/h1/rebroadcast` with `action=get_snapshots` — queries `rebroadcast_snapshot` first; calls `updateSeason(season)` if the row is absent.
@@ -347,16 +450,16 @@ These tables store the complete, unmodified API response as a JSON blob. There i
 
 ### H1 tables
 
-| Table                   | Relationship             |
-| ----------------------- | ------------------------ |
-| `h1_season`             | Root; one row per season |
-| `h1_campaign`           | Many per season          |
-| `h1_defend_event`       | Many per season          |
-| `h1_attack_event`       | Many per season          |
-| `h1_statistic`          | Many per season          |
-| `h1_snapshot`           | Many per season          |
-| `h1_introduction_order` | One per season           |
-| `h1_points_max`         | One per season           |
+| Table                   | Relationship                              | Written by           |
+| ----------------------- | ----------------------------------------- | -------------------- |
+| `h1_season`             | Root; one row per season                  | Both pipelines       |
+| `h1_event`              | Many per season (defend + attack unified) | Both pipelines       |
+| `h1_event_snapshot`     | Many per event (10-min intervals)         | Status pipeline only |
+| `h1_live`               | Three per season (one per faction)        | Status pipeline only |
+| `h1_live_snapshot`      | Many per season (15-min intervals)        | Status pipeline only |
+| `h1_snapshot`           | Many per season                           | Season pipeline only |
+| `h1_introduction_order` | One per season                            | Both pipelines       |
+| `h1_points_max`         | One per season                            | Both pipelines       |
 
 These tables store normalized, relational data keyed on `season`. They accumulate historical records across every update cycle, enabling structured queries, aggregations, and time-series analysis. They are used by the `/api/h1/campaign` endpoint and the frontend.
 
@@ -371,7 +474,79 @@ Storing both avoids the trade-off: the raw blob is always available for faithful
 
 ---
 
-## 6. Fetching Layer
+## 6. Snapshot Throttle System
+
+Source: `src/update/snapshotTimers.mjs`
+
+The status pipeline runs on every worker tick (typically every few seconds), but writing a snapshot row on every tick would generate excessive data. The snapshot throttle system limits how often snapshots are written using in-memory timestamp tracking with a database cold-start fallback.
+
+### Architecture
+
+The module maintains three pieces of in-memory state:
+
+```js
+let currentSeason = null;
+let lastLiveSnapshotTime = null; // single timestamp
+const lastEventSnapshotTimes = new Map(); // key: `${type}:${event_id}`, value: time
+```
+
+All timestamps are API-provided Unix times (the `time` field from the status response), not wall-clock times. This ensures throttle intervals are based on game-time progression, not server clock.
+
+### Intervals
+
+| Snapshot type  | Interval | Constant                                  |
+| -------------- | -------- | ----------------------------------------- |
+| Live snapshot  | 15 min   | `LIVE_SNAPSHOT_INTERVAL = 900` (seconds)  |
+| Event snapshot | 10 min   | `EVENT_SNAPSHOT_INTERVAL = 600` (seconds) |
+
+### Live snapshot throttle
+
+**`shouldTakeLiveSnapshot(season, apiTime)`** — Returns `true` if a live snapshot should be written.
+
+On cold start (when `lastLiveSnapshotTime` is `null`), it queries the database for the most recent `h1_live_snapshot` row for the current season and seeds the in-memory timestamp from it. If no row exists, it defaults to `0`, which guarantees the first check passes.
+
+On subsequent calls, it compares `apiTime - lastLiveSnapshotTime` against the 900-second interval purely in memory, with no database query.
+
+**`recordLiveSnapshotTime(time)`** — Called after a successful snapshot write to update the in-memory timestamp. This must be called only after the database write succeeds to avoid the timer advancing past a failed write.
+
+### Event snapshot throttle
+
+**`shouldTakeEventSnapshot(type, eventId, apiTime)`** — Returns `true` if a snapshot should be written for the given event.
+
+Works identically to the live snapshot throttle, but tracks each event independently using a `Map` keyed by `${type}:${event_id}` (e.g., `defend:42` or `attack:17`). On cold start for a given event, it queries `h1_event_snapshot` for that specific type and event_id.
+
+**`recordEventSnapshotTime(type, eventId, time)`** — Updates the in-memory timestamp for a specific event after a successful write.
+
+### Season change detection
+
+**`resetIfSeasonChanged(season)`** — Called at the top of `shouldTakeLiveSnapshot()`. If the season number has changed since the last call, it clears all in-memory timestamps:
+
+```js
+if (currentSeason !== null && currentSeason !== season) {
+    lastLiveSnapshotTime = null;
+    lastEventSnapshotTimes.clear();
+}
+currentSeason = season;
+```
+
+This ensures that when a new season starts, the throttle system re-seeds from the database (which will find no rows for the new season) and immediately begins capturing snapshots.
+
+**`resetSnapshotTimers()`** — A manual reset function that clears all in-memory state. Available for external callers but not currently used by the pipelines (season changes are detected automatically).
+
+### Cold-start behavior
+
+Because the worker thread restarts on every deployment (and the Next.js process may restart for other reasons), in-memory state is regularly lost. The cold-start fallback ensures the system recovers gracefully:
+
+1. First tick after restart: `lastLiveSnapshotTime` is `null`, triggering a DB query.
+2. DB returns the most recent snapshot time (or nothing if no snapshots exist yet).
+3. The throttle check runs against the DB-seeded value.
+4. All subsequent ticks use the in-memory value, avoiding repeated DB queries.
+
+This design means the worst case on restart is one extra database read per snapshot type, not a gap or duplication in snapshot data.
+
+---
+
+## 7. Fetching Layer
 
 Source: `src/update/fetch.mjs`
 
@@ -408,7 +583,7 @@ The function uses `axios.post`. It throws in two cases:
 export async function fetchStatus() { ... }
 ```
 
-Posts `action=get_campaign_status`. On error, it logs the message and returns `undefined` without re-throwing. The caller (`updateStatus`) handles the `undefined` case via `tryCatch` and throws with context.
+Posts `action=get_campaign_status`. Delegates directly to `fetchInvalidHttps` and returns the result. On error, the exception propagates to the caller (`updateStatus`) which handles it via `tryCatch`.
 
 ### `fetchSeason(season)`
 
@@ -416,7 +591,7 @@ Posts `action=get_campaign_status`. On error, it logs the message and returns `u
 export async function fetchSeason(season) { ... }
 ```
 
-Validates `season` with `isValidNumber.safeParse` before constructing the request. Posts `action=get_snapshots` with `season=N`. On error, it logs and **re-throws** — unlike `fetchStatus`, a season fetch failure is always propagated to the caller.
+Validates `season` with `isValidNumber.safeParse` before constructing the request. Posts `action=get_snapshots` with `season=N`. On validation failure, throws immediately before making any network request. On network error, the exception propagates from `fetchInvalidHttps`.
 
 ---
 

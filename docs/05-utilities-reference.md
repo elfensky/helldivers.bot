@@ -14,6 +14,7 @@
 5. [Formatting](#5-formatting)
 6. [Other Utilities](#6-other-utilities)
 7. [Validation Schemas](#7-validation-schemas)
+8. [Snapshot Throttle Timers](#8-snapshot-throttle-timers)
 
 ---
 
@@ -377,14 +378,14 @@ Maps `NODE_ENV` to hostname:
 
 **Source:** `src/validators/`
 
-All schemas use Zod. Note the mixed version usage — see notes per schema.
+All schemas use Zod v4 (`"zod": "^4.3.6"` in `package.json`). Every validator imports from `'zod'`, which is the standard import path for Zod v4.
 
 ---
 
 ### `isValidStatus`
 
 **Source:** `src/validators/isValidStatus.js`
-**Zod version:** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Function — `(data: unknown) => SafeParseReturnType`
 
 Validates the official API `get_campaign_status` response.
@@ -460,12 +461,10 @@ Validates the official API `get_campaign_status` response.
 ### `isValidSeason`
 
 **Source:** `src/validators/isValidSeason.js`
-**Zod version:** `zod` (v3) — **not** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Function — `(data: unknown) => SafeParseReturnType`
 
 Validates the official API `get_snapshots` response.
-
-> **Important:** This file imports from `'zod'` (v3), not `'zod/v4'`. This is intentional — do not change the import when editing this file.
 
 **Root schema fields:**
 
@@ -522,7 +521,7 @@ The distinction between defend and attack events is enforced via `.refine()`:
 ### `isValidFormData`
 
 **Source:** `src/validators/isValidFormData.js`
-**Zod version:** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object (not a function) — call `.safeParse(data)` directly
 
 Discriminated union on the `action` field. Used by the `/api/h1/rebroadcast` endpoint after `formDataToObject` converts the request body.
@@ -553,7 +552,7 @@ Preprocesses a string to a number before validation. Used for form fields where 
 ### `isValidContentType`
 
 **Source:** `src/validators/isValidContentType.js`
-**Zod version:** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object — call `.safeParse(value)` directly
 
 ```ts
@@ -574,7 +573,7 @@ Validates the `Content-Type` request header. Uses `.includes()` (not exact match
 ### `isValidNumber`
 
 **Source:** `src/validators/isValidNumber.mjs`
-**Zod version:** `zod/v4`
+**Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object — call `.safeParse(value)` directly
 
 ```ts
@@ -587,6 +586,93 @@ export const isValidNumber = z.preprocess(
 Identical preprocessing behavior to `schemaNumber` in `isValidFormData.js` — converts string to number then validates integer and positive. Used specifically for season number validation in `getSeason.mjs` and query parameter validation on the `/api/h1/campaign` endpoint.
 
 > **Note:** `isValidNumber` and `schemaNumber` are functionally identical schemas defined in separate files. `isValidNumber` is in `src/validators/`, `schemaNumber` is co-located in `isValidFormData.js` and exported from there.
+
+---
+
+## 8. Snapshot Throttle Timers
+
+**Source:** `src/update/snapshotTimers.mjs`
+
+In-memory throttle layer that prevents the status pipeline from writing snapshots too frequently. Each function checks whether enough time has elapsed since the last snapshot before allowing a new write. On cold start (first call after process boot), the timers seed themselves from the database so restarts do not lose track of the last write time.
+
+Called from `src/update/status.mjs` during the status update pipeline.
+
+### Constants
+
+| Constant                  | Value | Meaning                                          |
+| ------------------------- | ----- | ------------------------------------------------ |
+| `LIVE_SNAPSHOT_INTERVAL`  | `900` | Minimum seconds between live snapshots (15 min)  |
+| `EVENT_SNAPSHOT_INTERVAL` | `600` | Minimum seconds between event snapshots (10 min) |
+
+### In-memory state
+
+| Variable                 | Type                  | Description                                         |
+| ------------------------ | --------------------- | --------------------------------------------------- |
+| `currentSeason`          | `number \| null`      | Tracks the current season; triggers reset on change |
+| `lastLiveSnapshotTime`   | `number \| null`      | Epoch-seconds of the most recent live snapshot      |
+| `lastEventSnapshotTimes` | `Map<string, number>` | Key: `${type}:${event_id}`, value: epoch-seconds    |
+
+---
+
+### `shouldTakeLiveSnapshot(season, apiTime)`
+
+```ts
+shouldTakeLiveSnapshot(season: number, apiTime: number): Promise<boolean>
+```
+
+**Behavior:**
+
+1. Calls `resetIfSeasonChanged(season)` — if the season has changed since the last call, clears all in-memory state.
+2. If `lastLiveSnapshotTime` is `null` (cold start), queries `h1_live_snapshot` for the most recent snapshot time for the given season. Seeds the in-memory timer with the result (or `0` if no rows exist).
+3. Returns `true` if `apiTime - lastLiveSnapshotTime >= 900`.
+
+**Throws:** Re-throws any Prisma error from the cold-start query.
+
+---
+
+### `recordLiveSnapshotTime(time)`
+
+```ts
+recordLiveSnapshotTime(time: number): Promise<void>
+```
+
+Updates `lastLiveSnapshotTime` in memory. Called after a successful live snapshot database write to advance the throttle window.
+
+---
+
+### `shouldTakeEventSnapshot(type, eventId, apiTime)`
+
+```ts
+shouldTakeEventSnapshot(type: string, eventId: number, apiTime: number): Promise<boolean>
+```
+
+**Behavior:**
+
+1. Builds a lookup key as `${type}:${eventId}`.
+2. If the key is not in `lastEventSnapshotTimes` (cold start for this event), queries `h1_event_snapshot` for the most recent snapshot time matching `type` and `event_id`. Seeds the map entry with the result (or `0` if no rows exist).
+3. Returns `true` if `apiTime - lastEventSnapshotTimes.get(key) >= 600`.
+
+**Throws:** Re-throws any Prisma error from the cold-start query.
+
+---
+
+### `recordEventSnapshotTime(type, eventId, time)`
+
+```ts
+recordEventSnapshotTime(type: string, eventId: number, time: number): Promise<void>
+```
+
+Updates the `lastEventSnapshotTimes` map entry for the given `${type}:${eventId}` key. Called after a successful event snapshot database write.
+
+---
+
+### `resetSnapshotTimers()`
+
+```ts
+resetSnapshotTimers(): Promise<void>
+```
+
+Clears all in-memory state: sets `lastLiveSnapshotTime` to `null` and clears the `lastEventSnapshotTimes` map. Not called internally — `resetIfSeasonChanged` performs its own inline reset. Exported for external callers that need a full manual reset.
 
 ---
 

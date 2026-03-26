@@ -7,10 +7,7 @@ import { performanceTime } from '@/utils/time';
 export async function getCampaign(season = null) {
     const start = performance.now();
 
-    const where =
-        season === null ?
-            { last_updated: { not: null } }
-        :   { season: season, last_updated: { not: null } };
+    const where = season === null ? { last_updated: { not: null } } : { season: season };
 
     const orderBy = season === null ? { season: 'desc' } : undefined;
 
@@ -57,6 +54,7 @@ export async function getCampaign(season = null) {
                 },
                 snapshots: {
                     select: { data: true, time: true },
+                    orderBy: { time: 'asc' },
                 },
                 // unified events replace defend_events + attack_events
                 events: {

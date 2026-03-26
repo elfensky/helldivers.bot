@@ -6,6 +6,27 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
+## 0.11.0 (2026-03-26)
+
+- Phase 3: Gate `/api/h1/rebroadcast` behind API key validation (Bearer token + MD5 hash lookup)
+- Phase 4: War Outcome & Interactive Timeline on `/war?season=N`
+  - Victory/Defeat banner derived from snapshot + event data
+  - Interactive timeline scrubber (`<input type="range">`) with event markers
+  - Extract `computeMapState` pure utility from Galaxy (no more shared mutable state)
+  - Refactor Galaxy to accept `mapState` prop
+  - Re-enable attack event visualization on the map
+  - Native `<select>` season dropdown replaces 155-button grid
+  - Exclude active season from history (homepage shows live war)
+  - Sort snapshots by time ascending in campaign query
+- Merge `/about`, `/docs`, `/api` pages into single `/about` page with Swagger UI
+- Add blinking red "Live" nav item linking to homepage
+- Restructure navigation: site links | external links (heartbeat + GitHub) | user section
+- Dashboard link moved into user avatar (clickable) section
+- Fix homepage Galaxy map visibility on desktop (fixed-position width regression)
+- Sync OpenAPI spec with actual response format (`time`/`code`/`message` fields)
+- Fix rebroadcast `after()` closure bug and analytics URL copy-paste error
+- Fix documentation inaccuracies across all 5 doc files
+
 ## 0.10.0 (2026-03-26)
 
 - Restructure homepage as live war dashboard (galaxy map, faction stats, event timeline)
@@ -15,6 +36,17 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - Add `getSeasonList` query for season selector
 - Update sitemap with `/war` and `/about` entries
 - Update layout metadata to reflect dashboard purpose
+- Upgrade to Next.js 16 with Turbopack default bundler
+- Upgrade to Prisma 7.5 with `@prisma/adapter-pg` driver adapter
+- Phase 1 backend: restructure Prisma schema — unify events into `h1_event`, add `h1_live`, drop redundant tables (`h1_campaign`, `h1_defend_event`, `h1_attack_event`, `h1_statistic`)
+- Phase 2 backend: add `h1_live_snapshot` and `h1_event_snapshot` tables for time-series data
+- Add in-memory snapshot throttle system (15-min stats, 10-min events)
+- Wire snapshot capture into the polling pipeline
+- Add seed files for all 156 past seasons
+- Add database migration for Phase 1 schema rewrite
+- Implement fluid typography with CSS `clamp()` for responsive text scaling
+- Add ESM `"type": "module"` to `package.json`
+- Add Playwright smoke tests (`npm run test:smoke`)
 
 ## x.x.x (YYYY-MM-DD)
 

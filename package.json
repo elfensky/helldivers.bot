@@ -1,13 +1,16 @@
 {
     "name": "helldivers.bot",
-    "version": "0.10.0",
+    "version": "0.11.0",
     "private": true,
+    "type": "module",
     "scripts": {
         "dev": "next dev",
         "build": "next build",
         "start": "node .next/standalone/server.js",
         "docker": "prisma migrate deploy && node server.js",
-        "format": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npx prettier --write .'"
+        "format": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npx prettier --write .'",
+        "test": "npx playwright test",
+        "test:smoke": "npx playwright test tests/smoke.spec.mjs"
     },
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.4.3",
@@ -29,6 +32,7 @@
         "zod": "^4.3.6"
     },
     "devDependencies": {
+        "@playwright/test": "^1.58.2",
         "@tailwindcss/postcss": "^4.2.2",
         "babel-plugin-react-compiler": "^1.0.0",
         "chokidar-cli": "^3.0.0",

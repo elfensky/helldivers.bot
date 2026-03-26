@@ -20,28 +20,17 @@ export async function initializeWorker() {
         //worker threads and path
         const { performance } = await import('perf_hooks');
         const { Worker } = await import('worker_threads');
-        const { fileURLToPath } = await import('url');
         const path = await import('path');
-        const fs = await import('fs');
-        const { exec } = await import('child_process');
 
         //initialize
         const start = performance.now();
         try {
-            const __filename = fileURLToPath(import.meta.url);
-            const __dirname = path.dirname(__filename);
-            // console.log(__dirname);
-
             let workerPath = '';
             if (process.env.NODE_ENV === 'development') {
-                // path = '../../public/workers/cron.js');
-                workerPath = path.resolve(__dirname, '../../public/workers/cron.js');
+                workerPath = path.resolve(process.cwd(), 'public/workers/cron.js');
             } else {
                 workerPath = path.resolve('/app/public/workers/cron.js');
             }
-
-            // const workerPath = path.resolve(__dirname, '../../public/workers/cron.js');
-            // console.log(workerPath);
 
             // exec('ls -all', (error, stdout, stderr) => {
             //     if (error) {
