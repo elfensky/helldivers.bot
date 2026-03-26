@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 
 //preprocessor to convert to number if string, and check if number
 export const schemaNumber = z.preprocess(

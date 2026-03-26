@@ -385,7 +385,7 @@ const map = {
             points_max: 0,
             points_sector: 0,
             points_sector_max: 0,
-            status: '', //active, captured, lost
+            status: 'captured', //active, captured, lost
             event: '', //defend, attack
         },
     },

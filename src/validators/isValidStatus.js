@@ -1,4 +1,4 @@
-import { z } from 'zod/v4';
+import { z } from 'zod';
 
 const campaignStatusSchema = z.object({
     season: z.number(),
@@ -56,10 +56,10 @@ const statisticsSchema = z.object({
 });
 
 const rootSchema = z.object({
-    time: z.number(),
+    time: z.number().int().min(1000000000).max(2000000000),
     error_code: z.number(),
     campaign_status: z.array(campaignStatusSchema),
-    defend_event: defendEventSchema,
+    defend_event: defendEventSchema.nullable(),
     attack_events: z.array(attackEventSchema),
     statistics: z.array(statisticsSchema),
 });

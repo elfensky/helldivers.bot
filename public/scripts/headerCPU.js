@@ -5,7 +5,7 @@ let lastScrollTop = 0;
 
 function getColorValue(scrollTop) {
     const percentage_scroll = (scrollTop * 10).toString().padStart(3, '0');
-    console.log(percentage_scroll);
+    // console.log(percentage_scroll);
     const percentage = (header_opacity / 100) * percentage_scroll;
     return `rgba(1, 47, 57, 0.${percentage})`;
 }

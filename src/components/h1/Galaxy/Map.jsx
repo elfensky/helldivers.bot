@@ -5,7 +5,8 @@ export default function Map({ svgRef, map }) {
     const cyborgs = 1;
     const illuminate = 2;
     const superearth = 3;
-
+    // console.log(map[illuminate][10])
+    // console.log(map[superearth])
     return (
         <>
             <div id="map" className="max-h-full w-full">

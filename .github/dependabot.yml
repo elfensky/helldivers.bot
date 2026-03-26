@@ -5,10 +5,41 @@
 
 version: 2
 updates:
-  # Enable version updates for npm
-  - package-ecosystem: "npm"
-    # Look for `package.json` and `lock` files in the `root` directory
-    directory: "/"
-    # Check the npm registry for updates every day (weekdays)
-    schedule:
-      interval: "weekly"
+    - package-ecosystem: 'npm'
+      directory: '/'
+      schedule:
+          interval: 'weekly'
+          day: 'monday'
+          time: '09:00'
+          timezone: 'Europe/Brussels'
+
+      # Reduce PR noise by grouping updates
+      groups:
+          # Group all minor/patch updates into a single PR
+          minor-and-patch:
+              patterns:
+                  - '*'
+              update-types:
+                  - 'minor'
+                  - 'patch'
+
+      # Limit open PRs to avoid overwhelming
+      open-pull-requests-limit: 10
+
+      # Add labels for filtering
+      labels:
+          - 'dependencies'
+          - 'npm'
+
+      # Customize commit messages
+      commit-message:
+          prefix: 'chore(deps)'
+
+    # Keep GitHub Actions up to date
+    - package-ecosystem: 'github-actions'
+      directory: '/'
+      schedule:
+          interval: 'weekly'
+      labels:
+          - 'dependencies'
+          - 'github-actions'

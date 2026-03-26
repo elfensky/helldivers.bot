@@ -13,7 +13,7 @@ export default async function PostPage() {
             <h1>Posts</h1>
             {loggedIn ?
                 <PostEditor />
-                : null}
+            :   null}
             {/* {loggedIn ?
                 <GeneratePost />
             :   null} */}
@@ -65,7 +65,7 @@ async function ShowPosts() {
                                         className="rounded-full"
                                         priority={true}
                                     />
-                                    : null}
+                                :   null}
                             </div>
                             {timeSince(post.updatedAt)}
                             {/* {formatDate(post.updatedAt)} */}

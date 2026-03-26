@@ -2,13 +2,3 @@ main {
     background: url('/images/background.webp') no-repeat center center fixed;
     background-size: cover;
 }
-
-#map {
-    border-bottom: 3px solid gold;
-}
-
-@media (width >= 48rem /* 640px */) {
-        #map {
-            border-bottom: none;
-        }
-    }

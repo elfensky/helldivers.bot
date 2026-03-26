@@ -1,5 +1,5 @@
 'use server';
-import { z } from 'zod/v4';
+import { z } from 'zod';
 import db from '@/db/db';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';

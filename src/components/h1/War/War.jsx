@@ -8,8 +8,8 @@ export default function War({ data }) {
         <section className="flex flex-col gap-4">
             <h2>War Stats</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                {generateGlobalWarStats(data?.statistics)}
-                {data?.statistics?.map((statistic) => generateWarStats(statistic))}
+                {generateGlobalWarStats(data?.live)}
+                {data?.live?.map((statistic) => generateWarStats(statistic))}
             </div>
         </section>
     );

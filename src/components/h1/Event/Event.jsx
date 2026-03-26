@@ -76,7 +76,7 @@ export default function Event({ event }) {
             <Image
                 src={`/icons/${event.type}.webp`}
                 alt={`${event.type} Event Icon`}
-                className="absolute -bottom-5 right-0 z-0 h-[80%] w-auto opacity-65"
+                className="absolute right-0 -bottom-5 z-0 h-[80%] w-auto opacity-65"
                 width={256}
                 height={256}
                 priority={true}

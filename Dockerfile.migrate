@@ -1,0 +1,24 @@
+# LOCAL BUILD: docker build -f ./Dockerfile.migrate -t ghcr.io/elfensky/helldiversbot-migrate:staging .
+FROM node:22-alpine
+# Install tini to avoid zombie processes
+RUN apk add --no-cache tini
+# upgrade npm to a specific version
+RUN npm i -g npm@11.7.0
+
+# set working directory
+WORKDIR /app
+# Copy only what's needed for migrations
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
+COPY prisma.config.mjs ./
+# Install only prisma (not all dependencies) (used to be: npm ci --ignore-scripts)
+RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma || require('./package.json').dependencies?.prisma") && \
+    ADAPTER_PG_VERSION=$(node -p "require('./package.json').dependencies?.['@prisma/adapter-pg'] || ''") && \
+    DOTENV_VERSION=$(node -p "require('./package.json').dependencies?.dotenv || ''") && \
+    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg@$ADAPTER_PG_VERSION dotenv@$DOTENV_VERSION && \
+    npx prisma generate
+
+# Set tini as the init system
+ENTRYPOINT ["/sbin/tini", "--"]   
+# Run migrations and exit
+CMD ["npx", "prisma", "migrate", "deploy"]

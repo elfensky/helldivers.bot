@@ -14,6 +14,7 @@ export async function initializeWorker() {
         if (!interval) {
             throw new Error('UPDATE_INTERVAL is not set');
         }
+        const port = process.env.PORT || 3000;
 
         //dynamic imports
         //worker threads and path
@@ -55,7 +56,7 @@ export async function initializeWorker() {
             // });
 
             let worker = new Worker(workerPath);
-            worker.postMessage({ key: key, interval: interval });
+            worker.postMessage({ key: key, interval: interval, port: port });
             // worker.onmessage = function (e) {
             //     if (e.data.error) {
             //         console.error('Worker error:', e.data.error, 'at', e.data.time);
@@ -67,7 +68,7 @@ export async function initializeWorker() {
                 if (data.error) {
                     console.error('Worker error:', data.error, 'at', data.time);
                 } else {
-                    console.log('Worker result:', data.data, 'at', data.time);
+                    // console.log('Worker result:', data.data, 'at', data.time);
                 }
             });
             worker.on('error', (err) => {

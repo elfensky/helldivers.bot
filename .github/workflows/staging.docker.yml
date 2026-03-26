@@ -4,19 +4,22 @@ on:
     push:
         branches:
             - main
+permissions:
+    contents: write
+    packages: write
 
 jobs:
     # sonarqube:
     #     runs-on: ubuntu-latest
     #     steps:
-    #         - uses: actions/checkout@v4
+    #         - uses: actions/checkout@v6
     #           with:
     #               # Disabling shallow clones is recommended for improving the relevancy of reporting
     #               fetch-depth: 0
 
     #         # perform scan
     #         - name: SonarQube Cloud Scan
-    #           uses: SonarSource/sonarqube-scan-action@v5.3.0 # Ex: v5.2.0, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
+    #           uses: SonarSource/sonarqube-scan-action@v7.0.0 # Ex: v5.2.0, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
     #           env:
     #               SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     #               SONAR_HOST_URL: https://sonarcloud.io # ${{ vars.SONAR_HOST_URL }}
@@ -31,45 +34,72 @@ jobs:
     #         #       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     #         #       SONAR_HOST_URL: https://sonarcloud.io
 
-    build:
+    build-migrate:
         # needs: sonarqube # <--- This makes build wait for sonarqube to finish
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v2
+              uses: docker/setup-buildx-action@v4
 
             - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v2
+              uses: docker/login-action@v4
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
-                  password: ${{ secrets.ACCESS_TOKEN }} # use personal access token
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Extract version from package.json
-              id: extract_version
-              run: echo "VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
-
-            - name: Build and push Docker image
-              uses: docker/build-push-action@v4
+            - name: Build and push MIGRATE
+              uses: docker/build-push-action@v7
               with:
                   context: .
+                  file: ./Dockerfile.migrate
+                  push: true
+                  tags: |
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
+                  build-args: |
+                      NODE_ENV=staging
+    build-app:
+        # needs: sonarqube # <--- This makes build wait for sonarqube to finish
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v4
+
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v4
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Build and push APP
+              uses: docker/build-push-action@v7
+              with:
+                  context: .
+                  file: ./Dockerfile.app
                   #   platforms: linux/amd64,linux/arm64
                   push: true
                   tags: |
-                      ghcr.io/${{ github.repository_owner }}/helldivers1api:staging
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
                   build-args: |
                       NODE_ENV=staging
 
-            - name: Cleanup untagged packages (when you create a new :staging, the old one remains available)
-              uses: snok/container-retention-policy@v3.0.0
+    cleanup:
+        needs: [build-migrate, build-app] # Runs after both builds complete
+        runs-on: ubuntu-latest
+        steps:
+            - name: Cleanup untagged packages
+              uses: snok/container-retention-policy@v3.0.1
               with:
                   account: user
-                  token: ${{ secrets.ACCESS_TOKEN }}
-                  image-names: "helldivers1api"
-                  tag-selection: untagged # delete all untagged images
-                  # image-tags: "test* dev*"  # target any image that has a tag starting with the word test or dev
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  image-names: 'helldiversbot helldiversbot-migrate'
+                  tag-selection: untagged
                   cut-off: 30min
-                  dry-run: true
+                  dry-run: false

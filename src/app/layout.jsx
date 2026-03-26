@@ -20,9 +20,9 @@ import Footer from '@/components/layout/Footer/Footer';
 
 export const metadata = {
     metadataBase: 'https://helldivers.bot',
-    title: 'Home | Helldivers Bot - A web application dedicated to the original Helldivers video game, featuring in-game Stats, an API and a Discord bot.',
+    title: 'Helldivers Bot - Live war dashboard for the original Helldivers',
     description:
-        'Display in-game events and current campaign progress, alongside server as an api',
+        'Live Helldivers 1 war dashboard showing campaign progress, faction stats, active events, and an interactive galaxy map.',
 };
 
 export default function RootLayout({ children }) {
@@ -38,7 +38,7 @@ export default function RootLayout({ children }) {
             </head> */}
             <body
                 id="body "
-                className="min-w-screen flex min-h-screen flex-col antialiased"
+                className="flex min-h-screen min-w-screen flex-col antialiased"
             >
                 <script
                     type="application/ld+json"

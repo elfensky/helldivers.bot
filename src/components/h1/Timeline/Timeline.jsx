@@ -7,19 +7,7 @@ import humanizeDuration from 'humanize-duration';
 import Event from '@/components/h1/Event/Event';
 
 export default function Timeline({ data }) {
-    const attackEvents = (data?.attack_events || []).map((event) => ({
-        ...event,
-        type: 'attack',
-    }));
-
-    const defendEvents = (data?.defend_events || []).map((event) => ({
-        ...event,
-        type: 'defend',
-    }));
-
-    const events = [...attackEvents, ...defendEvents]
-        // .filter((event) => event.status === 'active')
-        .sort((a, b) => b.start_time - a.start_time);
+    const events = (data?.events || []).sort((a, b) => b.start_time - a.start_time);
 
     if (events.length === 0) {
         return null;

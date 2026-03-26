@@ -7,21 +7,11 @@ import map from '@/enums/map';
 import factions from '@/enums/factions';
 
 export default function Alerts({ data }) {
-    const attackEvents = (data?.attack_events || []).map((event) => ({
-        ...event,
-        type: 'attack',
-    }));
-
-    const defendEvents = (data?.defend_events || []).map((event) => ({
-        ...event,
-        type: 'defend',
-    }));
-
-    const active = [...attackEvents, ...defendEvents]
+    const active = (data?.events || [])
         .filter((event) => event.status === 'active')
         .sort((a, b) => b.end_time - a.end_time);
 
-    console.log(active);
+    // console.log(active);
 
     return (
         <ul className="flex flex-row gap-10">
