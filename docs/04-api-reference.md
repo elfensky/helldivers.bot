@@ -365,11 +365,28 @@ POST, PUT, DELETE, PATCH, OPTIONS → 405, standard envelope.
 
 **Request:** No parameters.
 
-**Response:** PNG image, `1200 x 630` pixels, generated via `ImageResponse` from `next/og`.
+**Response:** PNG image, `1200 × 630` pixels, generated via `ImageResponse` from `next/og`.
 
-The current implementation renders a white background with the text "Hello" at 40px. It is a placeholder for a dynamic Open Graph image used in social media link previews (`<meta property="og:image">`).
+**Cache:** `Cache-Control: public, s-maxage=300, stale-while-revalidate=60` (5-minute CDN cache).
 
-There are no error responses defined and no method-not-allowed handlers exported. Calling with a non-GET method will result in Next.js framework-level 405 behavior.
+Generates a dynamic Open Graph image for social media link previews. The image shows:
+
+- **Left 60%:** Galaxy map (SVG built as a string, base64-encoded as a `data:image/svg+xml` data URI embedded via `<img>` — Satori does not support inline SVG elements)
+- **Right 40%:** Season number, war/event status, faction progress bars (Bugs/Cyborgs/Illuminate), and branding
+
+**Data pipeline:** `getCampaign()` → `computeMapState(live, events)` → `buildMapSvg(mapState)` → `ImageResponse`
+
+**Status logic:** Derived from the events array, not `getWarOutcome`:
+- Active event exists → "ACTIVE EVENT"
+- Last completed event → "DEFEND WON", "DEFEND LOST", "ATTACK WON", or "ATTACK LOST"
+- All 3 factions defeated → "VICTORY"
+- No events → "WAR IN PROGRESS"
+
+**Error handling:** Uses `tryCatch` wrapper. On error or missing data, returns a branded fallback image (dark background with "helldivers.bot" text) — never a 500.
+
+**Dependencies:** `mapPaths.mjs` (shared SVG geometry), `computeMapState.mjs`, `getCampaign.mjs`, `tryCatch.mjs`
+
+There are no method-not-allowed handlers exported. Calling with a non-GET method will result in Next.js framework-level 405 behavior.
 
 ---
 
@@ -445,7 +462,7 @@ The rebroadcast route deviates: it uses `rebroadcastErrorResponse(5)` instead of
 | POST   | `/api/h1/rebroadcast` | (none)   | Body schema documents only `get_campaign_status` and `get_snapshots`; the three unimplemented actions are omitted |
 | GET    | `/api/h1/update`      | Internal | Explicitly tagged to separate from public endpoints                                                               |
 
-`/api/healthcheck` and `/api/og` are not registered in the OpenAPI spec.
+`/api/healthcheck` and `/api/og` are not registered in the OpenAPI spec. `/api/og` returns a PNG image, not JSON.
 
 ### Viewer
 

@@ -13,8 +13,10 @@
 4. [Season Extraction](#4-season-extraction)
 5. [Formatting](#5-formatting)
 6. [Other Utilities](#6-other-utilities)
-7. [Validation Schemas](#7-validation-schemas)
-8. [Snapshot Throttle Timers](#8-snapshot-throttle-timers)
+7. [War Outcome — `getWarOutcome`](#7-war-outcome--getwaroutcome)
+8. [Shared Map Data — `mapPaths`](#8-shared-map-data--mappaths)
+9. [Validation Schemas](#9-validation-schemas)
+10. [Snapshot Throttle Timers](#10-snapshot-throttle-timers)
 
 ---
 
@@ -374,7 +376,48 @@ Maps `NODE_ENV` to hostname:
 
 ---
 
-## 7. Validation Schemas
+## 7. War Outcome — `getWarOutcome`
+
+**Source:** `src/utils/getWarOutcome.mjs`
+
+```ts
+getWarOutcome(data: { snapshots?, events?, live? }): { outcome: 'victory'|'defeat', reason: string } | null
+```
+
+Determines whether a war ended in victory or defeat. Extracted from `War.jsx` for reuse.
+
+**Decision tree:**
+1. No data (all arrays empty) → `null`
+2. All 3 live factions `status === 'defeated'` → `{ outcome: 'victory' }` (early return)
+3. Victory signal: any snapshot shows all 3 defeated, OR all 3 homeworlds captured via attack events
+4. Defeat signal: last region-0 defend event has `status === 'fail'`
+5. Victory AND no defeat → victory. Defeat signal → defeat. No victory signal → defeat.
+
+**Consumers:** `War.jsx` (UI banner), potentially future features. Note: the OG image route does NOT use this — it derives status directly from events.
+
+**Tests:** `src/__tests__/unit/utils/getWarOutcome.test.mjs` (8 cases)
+
+---
+
+## 8. Shared Map Data — `mapPaths`
+
+**Source:** `src/enums/mapPaths.mjs`
+
+Shared SVG path geometry for the Galaxy map. Single source of truth consumed by both `Map.jsx` (CSS class styling) and the OG image route (inline styling).
+
+**Exports:**
+- `viewBox` — `'0 0 806.93 868.81'`
+- `bugPaths` — `Array<{ id, sector, d }>` (11 items, sectors 1-11)
+- `cyborgPaths` — same structure (11 items)
+- `illuminatePaths` — same structure (11 items)
+- `superEarthCircle` — `{ id, cx, cy, r }`
+- `factionIcons` — `Array<{ id, href, x, y, width, height }>` (4 items: bugs, cyborgs, illuminate, superearth)
+
+The `sector` field is a number to avoid string parsing from `id`.
+
+---
+
+## 9. Validation Schemas
 
 **Source:** `src/validators/`
 
@@ -589,7 +632,7 @@ Identical preprocessing behavior to `schemaNumber` in `isValidFormData.js` — c
 
 ---
 
-## 8. Snapshot Throttle Timers
+## 10. Snapshot Throttle Timers
 
 **Source:** `src/update/snapshotTimers.mjs`
 
