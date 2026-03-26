@@ -80,7 +80,10 @@
     @apply w-4 sm:w-12 lg:w-24;
 }
 
-html,
+html {
+    font-size: 16px;
+}
+
 body {
     font-size: clamp(0.875rem, 0.8rem + 0.35vw, 1.0625rem);
     line-height: 1.5;
