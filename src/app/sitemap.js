@@ -14,17 +14,23 @@ export default async function sitemap() {
             priority: 1,
         },
         {
+            url: 'https://helldivers.bot/war',
+            lastModified: new Date(),
+            changeFrequency: 'daily',
+            priority: 0.9,
+        },
+        {
+            url: 'https://helldivers.bot/about',
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.5,
+        },
+        {
             url: 'https://helldivers.bot/stats',
             lastModified: new Date(),
             changeFrequency: 'always',
             priority: 0.8,
         },
-        // {
-        //     url: 'https://helldivers.bot/blog',
-        //     lastModified: new Date(),
-        //     changeFrequency: 'yearly',
-        //     priority: 0.9,
-        // },
         {
             url: 'https://helldivers.bot/front/reviews',
             lastModified: reviews?.updatedAt || new Date(),
