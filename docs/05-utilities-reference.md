@@ -15,8 +15,9 @@
 6. [Other Utilities](#6-other-utilities)
 7. [War Outcome — `getWarOutcome`](#7-war-outcome--getwaroutcome)
 8. [Shared Map Data — `mapPaths`](#8-shared-map-data--mappaths)
-9. [Validation Schemas](#9-validation-schemas)
-10. [Snapshot Throttle Timers](#10-snapshot-throttle-timers)
+9. [Event Progress — `evaluateProgress`](#9-event-progress--evaluateprogress)
+10. [Validation Schemas](#10-validation-schemas)
+11. [Snapshot Throttle Timers](#11-snapshot-throttle-timers)
 
 ---
 
@@ -419,7 +420,31 @@ The `sector` field is a number to avoid string parsing from `id`.
 
 ---
 
-## 9. Validation Schemas
+## 9. Event Progress — `evaluateProgress`
+
+**Source:** `src/utils/evaluateProgress.mjs`
+
+Evaluates how a live event is performing relative to the expected linear progress rate. Returns a human-readable status string for active events, or `null` for completed/inactive events.
+
+```ts
+evaluateProgress(event: { start_time, end_time, points, points_max, status }) → string | null
+```
+
+**Algorithm:**
+
+1. Calculate expected points at current time assuming linear progress (`expectedRate × elapsedTime`).
+2. Compare actual `points` against expected with a 10% buffer.
+3. Return status:
+   - `"Ahead by N points"` — actual > expected + 10% buffer
+   - `"Behind by N points"` — actual < expected
+   - `"On track by N points"` — within buffer
+   - `null` — event `status` is not `'active'`
+
+**Tests:** `src/__tests__/unit/utils/evaluateProgress.test.mjs`
+
+---
+
+## 10. Validation Schemas
 
 **Source:** `src/validators/`
 
@@ -429,7 +454,7 @@ All schemas use Zod v4 (`"zod": "^4.3.6"` in `package.json`). Every validator im
 
 ### `isValidStatus`
 
-**Source:** `src/validators/isValidStatus.js`
+**Source:** `src/validators/isValidStatus.mjs`
 **Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Function — `(data: unknown) => SafeParseReturnType`
 
@@ -505,7 +530,7 @@ Validates the official API `get_campaign_status` response.
 
 ### `isValidSeason`
 
-**Source:** `src/validators/isValidSeason.js`
+**Source:** `src/validators/isValidSeason.mjs`
 **Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Function — `(data: unknown) => SafeParseReturnType`
 
@@ -565,7 +590,7 @@ The distinction between defend and attack events is enforced via `.refine()`:
 
 ### `isValidFormData`
 
-**Source:** `src/validators/isValidFormData.js`
+**Source:** `src/validators/isValidFormData.mjs`
 **Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object (not a function) — call `.safeParse(data)` directly
 
@@ -596,7 +621,7 @@ Preprocesses a string to a number before validation. Used for form fields where 
 
 ### `isValidContentType`
 
-**Source:** `src/validators/isValidContentType.js`
+**Source:** `src/validators/isValidContentType.mjs`
 **Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object — call `.safeParse(value)` directly
 
@@ -634,7 +659,7 @@ Identical preprocessing behavior to `schemaNumber` in `isValidFormData.js` — c
 
 ---
 
-## 10. Snapshot Throttle Timers
+## 11. Snapshot Throttle Timers
 
 **Source:** `src/update/snapshotTimers.mjs`
 

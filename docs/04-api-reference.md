@@ -294,21 +294,21 @@ GET, PUT, DELETE, PATCH, OPTIONS → `rebroadcastErrorResponse(5)` [HTTP 405, re
 
 **Source:** `src/app/api/h1/update/route.js`
 
-**Auth:** `key` query parameter must exactly match `process.env.UPDATE_KEY`.
+**Auth:** Bearer token in `Authorization` header must exactly match `process.env.UPDATE_KEY`.
 
 **Caller:** Worker thread (`public/workers/cron.js`) only. Not intended for external or user-facing consumption.
 
 ### Request
 
-| Parameter | Location     | Required | Validation                      |
-| --------- | ------------ | -------- | ------------------------------- |
-| `key`     | Query string | Yes      | Must equal `UPDATE_KEY` env var |
+| Parameter       | Location             | Required | Validation                      |
+| --------------- | -------------------- | -------- | ------------------------------- |
+| `Authorization` | Header (`Bearer ...`) | Yes      | Must equal `UPDATE_KEY` env var |
 
 ### Behavior
 
 ```
-1. key param missing          → 400
-2. key !== UPDATE_KEY         → 401
+1. Authorization header missing or not Bearer → 401
+2. token !== UPDATE_KEY                       → 401
 3. updateStatus()             → fetches and upserts current campaign status
    On error → 500 with statusError.message
 4. updateSeason(statusData.season)  → fetches and upserts current season snapshot
@@ -339,13 +339,12 @@ Both steps use `tryCatch()`, which returns `{ data, error }` and never throws. E
 
 ### Error Responses
 
-| Code | Condition                                     |
-| ---- | --------------------------------------------- |
-| 400  | `key` query param absent                      |
-| 401  | `key` present but does not match `UPDATE_KEY` |
-| 500  | `updateStatus()` or `updateSeason()` threw    |
+| Code | Condition                                                      |
+| ---- | -------------------------------------------------------------- |
+| 401  | `Authorization` header missing, not Bearer, or token mismatch |
+| 500  | `updateStatus()` or `updateSeason()` threw                    |
 
-For 400 and 401, `error` in the response body is `null` (default value — no third argument passed to `errorResponse`).
+For 401, `error` in the response body is `null` (default value — no third argument passed to `errorResponse`).
 
 ### Analytics
 
