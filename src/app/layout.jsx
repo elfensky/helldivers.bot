@@ -1,9 +1,22 @@
 import './layout.css';
 //nextjs
 import Script from 'next/script';
+import { Space_Grotesk, Inter } from 'next/font/google';
 //components
 import Header from '@/components/layout/Header/Header';
 import Footer from '@/components/layout/Footer/Footer';
+
+const spaceGrotesk = Space_Grotesk({
+    subsets: ['latin'],
+    variable: '--font-space-grotesk',
+    display: 'swap',
+});
+
+const inter = Inter({
+    subsets: ['latin'],
+    variable: '--font-inter',
+    display: 'swap',
+});
 
 // function getMetaURL() {
 //     switch (process.env.NODE_ENV) {
@@ -36,7 +49,11 @@ export default function RootLayout({ children }) {
     const isProduction = process.env.NODE_ENV === 'production';
 
     return (
-        <html dir="ltr" lang="en">
+        <html
+            dir="ltr"
+            lang="en"
+            className={`${spaceGrotesk.variable} ${inter.variable}`}
+        >
             {/* <head>
                 <script
                     crossOrigin="anonymous"

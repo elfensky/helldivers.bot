@@ -1,0 +1,76 @@
+/* ================================================================
+   DESIGN TOKENS — Tactical Command Interface
+   Source of truth for all visual properties.
+   See /brandkit for the visual reference page.
+   ================================================================ */
+
+:root {
+    /* === PRIMARY === */
+    --color-primary: #ffe000;
+    --color-on-primary: #131313;
+    --color-danger: #ff0000;
+
+    /* === SURFACES (tonal layering — no shadows) === */
+    --color-surface-0: #131313;
+    --color-surface-1: #1c1b1b;
+    --color-surface-2: #201f1f;
+    --color-surface-3: #2a2a2a;
+    --color-surface-4: #353534;
+
+    /* === TEXT === */
+    --color-text: hsl(0, 0%, 80%);
+    --color-text-muted: hsl(0, 0%, 46%);
+    --color-text-on-primary: #131313;
+
+    /* === OUTLINE === */
+    --color-outline: #999077;
+    --color-outline-variant: #4d4732;
+    --color-ghost-border: rgba(255, 255, 255, 0.15);
+
+    /* === FACTION (game-canonical — do not change) === */
+    --color-faction-bugs: #e8822a;
+    --color-faction-bugs-fill: rgba(232, 130, 42, 0.35);
+    --color-faction-cyborgs: #8b2d2d;
+    --color-faction-cyborgs-fill: rgba(139, 45, 45, 0.35);
+    --color-faction-illuminate: #7ec8e3;
+    --color-faction-illuminate-fill: rgba(126, 200, 227, 0.35);
+    --color-faction-superearth: #ffe000;
+
+    /* === MAP === */
+    --color-map-border: rgba(255, 225, 0, 0.99);
+    --color-map-region: rgba(255, 213, 0, 0.33);
+
+    /* === TYPOGRAPHY === */
+    --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
+    --font-body: 'Inter', Arial, Helvetica, sans-serif;
+    --font-mono: 'Space Mono', monospace;
+
+    /* === SPACING === */
+    --space-1: 0.25rem;
+    --space-2: 0.4rem;
+    --space-3: 0.5rem;
+    --space-4: 0.75rem;
+    --space-6: 1rem;
+    --space-8: 1.5rem;
+    --space-10: 2.25rem;
+    --space-12: 3rem;
+
+    /* === RADIUS === */
+    --radius: 0px;
+
+    /* === LEGACY ALIASES (backward compat — migrate in Phase 6) === */
+    --orange: var(--color-primary);
+    --cyan: hsl(187, 100%, 33%); /* deprecated */
+    --blue: hsl(191, 97%, 11%); /* deprecated — use --color-surface-0 */
+    --black: rgba(0, 9, 19, 1); /* deprecated */
+    --text: var(--color-text);
+    --inactive: var(--color-text-muted);
+    --border: var(--color-map-border);
+    --region: var(--color-map-region);
+    --cyborgs: var(--color-faction-cyborgs-fill);
+    --bugs: var(--color-faction-bugs-fill);
+    --illuminate: var(--color-faction-illuminate-fill);
+    --background: hsla(60, 8%, 10%, 0.7);
+    --gradient-horizontal: linear-gradient(to right, #262427, #49494b, #262427);
+    --gradient-vertical: linear-gradient(to right, #262427, #49494b, #262427);
+}

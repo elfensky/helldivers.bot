@@ -1,51 +1,40 @@
 @import 'tailwindcss';
+@import '../styles/tokens.css';
 
 @theme {
     --breakpoint-3xl: 1920px;
-}
 
-/* :root {
-    --background: #ffffff;
-    --foreground: #171717;
-}
+    /* Colors — enables bg-primary, text-danger, border-surface-3, etc. */
+    --color-primary: #ffe000;
+    --color-on-primary: #131313;
+    --color-danger: #ff0000;
+    --color-surface-0: #131313;
+    --color-surface-1: #1c1b1b;
+    --color-surface-2: #201f1f;
+    --color-surface-3: #2a2a2a;
+    --color-surface-4: #353534;
+    --color-text: hsl(0, 0%, 80%);
+    --color-text-muted: hsl(0, 0%, 46%);
+    --color-outline: #999077;
+    --color-outline-variant: #4d4732;
+    --color-faction-bugs: #e8822a;
+    --color-faction-cyborgs: #8b2d2d;
+    --color-faction-illuminate: #7ec8e3;
 
-@theme inline {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-}
+    /* Typography */
+    --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
+    --font-body: 'Inter', Arial, Helvetica, sans-serif;
+    --font-mono: 'Space Mono', monospace;
 
-@media (prefers-color-scheme: light) {
-    :root {
-        --background: #0a0a0a;
-        --foreground: #ededed;
-        --dark: hsla(0, 0%, 10%, 1);
-    }
-} */
-
-:root {
-    /* COLORS */
-    --orange: hsl(42, 81%, 50%); /* checlboxe and variables in text */
-    --cyan: hsl(187, 100%, 33%); /* accent stuff */
-    --blue: hsl(191, 97%, 11%);
-    --black: rgba(0, 9, 19, 1);
-
-    /* MAP */
-    --border: rgba(255, 225, 0, 0.99); /* map region border(s) */
-    --region: rgba(255, 213, 0, 0.33); /* map region fill */
-    --cyborgs: rgba(213, 15, 15, 0.35);
-    --bugs: rgba(25, 218, 12, 0.35);
-    --illuminate: rgba(12, 122, 218, 0.35);
-
-    /* TEXT */
-    --text: hsl(0, 0%, 80%); /* active text */
-    --inactive: hsl(0, 0%, 46%); /* inactive text */
-
-    /* GRADIENTS */
-    --gradient-horizontal: linear-gradient(to right, #262427, #49494b, #262427);
-    --gradient-vertical: linear-gradient(to right, #262427, #49494b, #262427);
-
-    /* BACKGROUND */
-    --background: hsla(60, 8%, 10%, 0.7);
+    /* Radius — 0px everywhere, makes all rounded-* classes no-ops */
+    --radius-xs: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+    --radius-2xl: 0px;
+    --radius-3xl: 0px;
+    --radius-4xl: 0px;
 }
 
 @font-face {
@@ -87,8 +76,8 @@ html {
 body {
     font-size: clamp(0.875rem, 0.8rem + 0.35vw, 1.0625rem);
     line-height: 1.5;
-    font-family: Arial, Helvetica, sans-serif;
-    background-color: var(--blue);
+    font-family: var(--font-body);
+    background-color: var(--color-surface-0);
     color: var(--text);
 }
 
@@ -141,7 +130,7 @@ small {
 }
 
 section {
-    @apply rounded-md;
+    @apply rounded-md; /* resolves to 0px via @theme override */
 }
 .card {
     @apply bg-slate-800 opacity-90;
