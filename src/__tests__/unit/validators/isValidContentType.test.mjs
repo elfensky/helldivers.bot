@@ -1,4 +1,4 @@
-import { isValidContentType } from '@/validators/isValidContentType.js';
+import { isValidContentType } from '@/validators/isValidContentType.mjs';
 
 describe('isValidContentType', () => {
     test('accepts multipart/form-data', () => {

@@ -1,4 +1,4 @@
-import { isValidFormData, schemaNumber } from '@/validators/isValidFormData.js';
+import { isValidFormData, schemaNumber } from '@/validators/isValidFormData.mjs';
 
 describe('schemaNumber', () => {
     test('accepts positive integers and coerces strings', () => {

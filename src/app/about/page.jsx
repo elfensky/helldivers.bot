@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import DocsClient from '@/components/layout/openapi/DocsClient';
+import DocsClient from '@/components/layout/OpenAPI/DocsClient';
 
 export const metadata = {
     title: 'About | Helldivers Bot',

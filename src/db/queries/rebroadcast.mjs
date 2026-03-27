@@ -1,4 +1,3 @@
-'use server';
 import db from '@/db/db';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';

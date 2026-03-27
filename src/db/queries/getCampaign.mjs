@@ -1,4 +1,3 @@
-'use server';
 import { cache } from 'react';
 import db from '@/db/db';
 import { tryCatch } from '@/utils/tryCatch';
@@ -6,6 +5,7 @@ import { performance } from 'perf_hooks';
 
 
 export const getCampaign = cache(async function getCampaign(season = null) {
+    'use server';
     const start = performance.now();
 
     const where = season === null ? { last_updated: { not: null } } : { season: season };

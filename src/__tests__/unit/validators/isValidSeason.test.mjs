@@ -1,4 +1,4 @@
-import { isValidSeason } from '@/validators/isValidSeason.js';
+import { isValidSeason } from '@/validators/isValidSeason.mjs';
 
 const makeSnapshot = (overrides = {}) => ({
     season: 1,

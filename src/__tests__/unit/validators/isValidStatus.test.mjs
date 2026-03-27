@@ -1,4 +1,4 @@
-import { isValidStatus } from '@/validators/isValidStatus.js';
+import { isValidStatus } from '@/validators/isValidStatus.mjs';
 
 const makeCampaignStatus = (overrides = {}) => ({
     season: 1,

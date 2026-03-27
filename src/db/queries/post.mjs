@@ -1,5 +1,3 @@
-'use server';
-
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { tryCatch } from '@/utils/tryCatch';
@@ -61,6 +59,7 @@ export async function createRandomPost() {
 }
 
 export async function createPost(formData) {
+    'use server';
     const start = performance.now();
 
     const session = await auth();
@@ -88,6 +87,7 @@ export async function createPost(formData) {
 }
 
 export async function getLatestPostDate() {
+    'use server';
     const start = performance.now();
 
     const { data: result, error } = await tryCatch(
