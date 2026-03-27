@@ -44,7 +44,7 @@ export async function updateSeason(season) {
     if (season !== fetchedSeason) throw new Error('Invalid season');
 
     //4. store in db -> /api/rebroadcast
-    const { data: storedRebroadcastData, error: storedRebroadcastError } = await tryCatch(
+    const { error: storedRebroadcastError } = await tryCatch(
         queryUpsertRebroadcastSeason(season, fetchedData),
     );
     if (storedRebroadcastError) {

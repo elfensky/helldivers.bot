@@ -70,12 +70,6 @@ export function getWarOutcome(data) {
     if (victorySignal && !defeatSignal) {
         return { outcome: 'victory', reason: 'All enemy factions have been defeated.' };
     }
-    if (defeatSignal) {
-        return { outcome: 'defeat', reason: 'The war was lost.' };
-    }
-    if (!victorySignal) {
-        return { outcome: 'defeat', reason: 'The war was lost.' };
-    }
-
-    return null;
+    // defeatSignal OR no victorySignal → defeat
+    return { outcome: 'defeat', reason: 'The war was lost.' };
 }

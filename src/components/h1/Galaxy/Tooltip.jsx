@@ -9,12 +9,12 @@ export default function Tooltip({ svgRef, map }) {
     const [tooltipSize, setTooltipSize] = useState({ width: 320, height: 103 });
 
     useEffect(() => {
-        //get viewPortSize
         function handleResize() {
             setViewportSize({ width: window.innerWidth, height: window.innerHeight });
         }
         handleResize();
         window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {

@@ -22,7 +22,6 @@ export async function GET(request) {
         };
         await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'campaign', data);
     });
-    let requestType = null; // latest, specific, multiple
     let data = null;
     let season = null;
 
