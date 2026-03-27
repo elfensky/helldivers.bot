@@ -52,8 +52,14 @@ describe('queryUpsertRebroadcastSeason', () => {
         expect(db.rebroadcast_snapshot.upsert).toHaveBeenCalledWith(
             expect.objectContaining({
                 where: { season: 2 },
-                update: expect.objectContaining({ season: 2, json: { status: 'active' } }),
-                create: expect.objectContaining({ season: 2, json: { status: 'active' } }),
+                update: expect.objectContaining({
+                    season: 2,
+                    json: { status: 'active' },
+                }),
+                create: expect.objectContaining({
+                    season: 2,
+                    json: { status: 'active' },
+                }),
             }),
         );
     });
@@ -73,7 +79,11 @@ describe('queryUpsertRebroadcastSeason', () => {
 
 describe('queryGetRebroadcastStatus', () => {
     test('returns ms and data from latest status', async () => {
-        const mockStatus = { season: 5, json: { war: 'ongoing' }, last_updated: new Date() };
+        const mockStatus = {
+            season: 5,
+            json: { war: 'ongoing' },
+            last_updated: new Date(),
+        };
         vi.mocked(db.rebroadcast_status.findFirst).mockResolvedValue(mockStatus);
 
         const result = await queryGetRebroadcastStatus();

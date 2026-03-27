@@ -86,7 +86,9 @@ function computeMomentMapState(moment, data) {
     const activeEvents = (data.events ?? [])
         .filter((e) => {
             const isActive = e.start_time <= moment.time && e.end_time >= moment.time;
-            const isCompleted = e.end_time <= moment.time && (e.status === 'success' || e.status === 'fail');
+            const isCompleted =
+                e.end_time <= moment.time &&
+                (e.status === 'success' || e.status === 'fail');
             return isActive || isCompleted;
         })
         .map((e) => ({
@@ -134,9 +136,10 @@ export default function WarTimeline({ data, defaultMapState }) {
             setSelectedIndex(null);
         } else {
             const idx = parseInt(param, 10);
-            const clamped = Number.isFinite(idx) && moments.length > 0
-                ? Math.min(idx, moments.length - 1)
-                : null;
+            const clamped =
+                Number.isFinite(idx) && moments.length > 0 ?
+                    Math.min(idx, moments.length - 1)
+                :   null;
             setSelectedIndex(clamped);
         }
     }, [searchParams, data, moments.length]);

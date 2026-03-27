@@ -377,6 +377,7 @@ Generates a dynamic Open Graph image for social media link previews. The image s
 **Data pipeline:** `getCampaign()` → `computeMapState(live, events)` → `buildMapSvg(mapState)` → `ImageResponse`
 
 **Status logic:** Derived from the events array, not `getWarOutcome`:
+
 - Active event exists → "ACTIVE EVENT"
 - Last completed event → "DEFEND WON", "DEFEND LOST", "ATTACK WON", or "ATTACK LOST"
 - All 3 factions defeated → "VICTORY"

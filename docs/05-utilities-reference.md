@@ -387,6 +387,7 @@ getWarOutcome(data: { snapshots?, events?, live? }): { outcome: 'victory'|'defea
 Determines whether a war ended in victory or defeat. Extracted from `War.jsx` for reuse.
 
 **Decision tree:**
+
 1. No data (all arrays empty) → `null`
 2. All 3 live factions `status === 'defeated'` → `{ outcome: 'victory' }` (early return)
 3. Victory signal: any snapshot shows all 3 defeated, OR all 3 homeworlds captured via attack events
@@ -406,6 +407,7 @@ Determines whether a war ended in victory or defeat. Extracted from `War.jsx` fo
 Shared SVG path geometry for the Galaxy map. Single source of truth consumed by both `Map.jsx` (CSS class styling) and the OG image route (inline styling).
 
 **Exports:**
+
 - `viewBox` — `'0 0 806.93 868.81'`
 - `bugPaths` — `Array<{ id, sector, d }>` (11 items, sectors 1-11)
 - `cyborgPaths` — same structure (11 items)

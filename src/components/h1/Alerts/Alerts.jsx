@@ -9,8 +9,6 @@ export default function Alerts({ data }) {
         .filter((event) => event.status === 'active')
         .sort((a, b) => b.end_time - a.end_time);
 
-
-
     return (
         <ul className="flex flex-row gap-10">
             {active.map((event) => (

@@ -122,7 +122,11 @@ export async function updateStatus() {
 
     //6.5 capture event snapshots (10-min throttle)
     async function captureEventSnapshot(type, event, eventData) {
-        if (event.status !== 'active' && event.status !== 'success' && event.status !== 'fail')
+        if (
+            event.status !== 'active' &&
+            event.status !== 'success' &&
+            event.status !== 'fail'
+        )
             return;
         const { data: shouldSnapshot, error: timerError } = await tryCatch(
             shouldTakeEventSnapshot(type, event.event_id, fetchedData.time),
@@ -144,7 +148,11 @@ export async function updateStatus() {
 
     // Defend event snapshot
     if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
-        await captureEventSnapshot('defend', fetchedData.defend_event, fetchedData.defend_event);
+        await captureEventSnapshot(
+            'defend',
+            fetchedData.defend_event,
+            fetchedData.defend_event,
+        );
     }
 
     // Attack event snapshots

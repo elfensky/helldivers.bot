@@ -22,7 +22,13 @@ export async function getApiKeysByUserId(userId) {
     const { data: result, error } = await tryCatch(
         db.ApiKey.findMany({
             where: { userId },
-            select: { id: true, description: true, visible: true, createdAt: true, enabled: true },
+            select: {
+                id: true,
+                description: true,
+                visible: true,
+                createdAt: true,
+                enabled: true,
+            },
         }),
     );
     if (error) throw error;
@@ -67,7 +73,9 @@ export async function generateApiKey(_, formData) {
 
     if (apiKeyCount >= 5) {
         return {
-            errors: { general: 'You have reached the maximum number of API keys allowed' },
+            errors: {
+                general: 'You have reached the maximum number of API keys allowed',
+            },
             time: performanceTime(start),
         };
     }

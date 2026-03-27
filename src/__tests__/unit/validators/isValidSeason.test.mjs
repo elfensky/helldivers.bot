@@ -129,9 +129,7 @@ describe('isValidSeason', () => {
         test('rejects defend_event without region', () => {
             const event = makeDefendEvent();
             delete event.region;
-            const result = isValidSeason(
-                makeValidSeason({ defend_events: [event] }),
-            );
+            const result = isValidSeason(makeValidSeason({ defend_events: [event] }));
             expect(result.success).toBe(false);
         });
 
@@ -169,9 +167,7 @@ describe('isValidSeason', () => {
         test('accepts attack_event without region', () => {
             const event = makeDefendEvent();
             delete event.region;
-            const result = isValidSeason(
-                makeValidSeason({ attack_events: [event] }),
-            );
+            const result = isValidSeason(makeValidSeason({ attack_events: [event] }));
             expect(result.success).toBe(true);
         });
     });

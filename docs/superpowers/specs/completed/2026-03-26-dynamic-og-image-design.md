@@ -34,8 +34,12 @@ export const bugPaths = [
     { id: '0-2', sector: 2, d: 'M468.6,416.02l30.15...' },
     // ... sectors 1-11
 ];
-export const cyborgPaths = [ /* same structure, ids '1-1' through '1-11' */ ];
-export const illuminatePaths = [ /* same structure, ids '2-1' through '2-11' */ ];
+export const cyborgPaths = [
+    /* same structure, ids '1-1' through '1-11' */
+];
+export const illuminatePaths = [
+    /* same structure, ids '2-1' through '2-11' */
+];
 export const superEarth = { circle: { id: '3-0', cx: 402.72, cy: 392.12, r: 27 } };
 export const viewBox = '0 0 806.93 868.81';
 ```
@@ -88,13 +92,13 @@ Rewrites the placeholder to generate a dynamic image:
 
 Sector fill colors are applied inline based on `map[faction][sector].status`:
 
-| Status | Fill Color |
-|--------|-----------|
-| `captured` | `rgba(255, 213, 0, 0.33)` (yellow) |
-| `lost` | `rgba(0, 0, 0, 0.55)` (black) |
-| `in_progress` (bugs) | `rgba(25, 218, 12, 0.35)` (green) |
-| `in_progress` (cyborgs) | `rgba(213, 15, 15, 0.35)` (red) |
-| `in_progress` (illuminate) | `rgba(12, 122, 218, 0.35)` (blue) |
+| Status                     | Fill Color                         |
+| -------------------------- | ---------------------------------- |
+| `captured`                 | `rgba(255, 213, 0, 0.33)` (yellow) |
+| `lost`                     | `rgba(0, 0, 0, 0.55)` (black)      |
+| `in_progress` (bugs)       | `rgba(25, 218, 12, 0.35)` (green)  |
+| `in_progress` (cyborgs)    | `rgba(213, 15, 15, 0.35)` (red)    |
+| `in_progress` (illuminate) | `rgba(12, 122, 218, 0.35)` (blue)  |
 
 Sector stroke: `rgba(255, 225, 0, 0.99)` for captured/in_progress, `rgba(0, 0, 0, 0.99)` for lost.
 
@@ -135,16 +139,16 @@ Faction progress bar colors match the sector fill colors at higher opacity.
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/enums/mapPaths.mjs` | **Create** — shared SVG path geometry |
-| `src/components/h1/Galaxy/Map.jsx` | **Modify** — import paths from mapPaths.mjs |
-| `src/utils/getWarOutcome.mjs` | **Create** — extracted verbatim from War.jsx |
-| `src/components/h1/War/War.jsx` | **Modify** — import getWarOutcome from shared utility |
-| `src/app/api/og/route.js` | **Rewrite** — dynamic OG image generation |
-| `src/app/layout.jsx` | **Modify** — update metadata to use /api/og |
-| `src/__tests__/unit/utils/getWarOutcome.test.mjs` | **Create** — unit tests for getWarOutcome |
-| `src/__tests__/e2e/smoke.spec.mjs` | **Modify** — add OG route smoke test |
+| File                                              | Action                                                |
+| ------------------------------------------------- | ----------------------------------------------------- |
+| `src/enums/mapPaths.mjs`                          | **Create** — shared SVG path geometry                 |
+| `src/components/h1/Galaxy/Map.jsx`                | **Modify** — import paths from mapPaths.mjs           |
+| `src/utils/getWarOutcome.mjs`                     | **Create** — extracted verbatim from War.jsx          |
+| `src/components/h1/War/War.jsx`                   | **Modify** — import getWarOutcome from shared utility |
+| `src/app/api/og/route.js`                         | **Rewrite** — dynamic OG image generation             |
+| `src/app/layout.jsx`                              | **Modify** — update metadata to use /api/og           |
+| `src/__tests__/unit/utils/getWarOutcome.test.mjs` | **Create** — unit tests for getWarOutcome             |
+| `src/__tests__/e2e/smoke.spec.mjs`                | **Modify** — add OG route smoke test                  |
 
 ## Verification
 

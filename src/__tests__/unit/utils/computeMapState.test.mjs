@@ -52,7 +52,14 @@ describe('computeMapState', () => {
 
     test('attack event fail reverts homeworld to lost', () => {
         const events = [
-            { type: 'attack', enemy: 2, status: 'fail', end_time: 100, points: 5000, points_max: 10000 },
+            {
+                type: 'attack',
+                enemy: 2,
+                status: 'fail',
+                end_time: 100,
+                points: 5000,
+                points_max: 10000,
+            },
         ];
         const map = computeMapState(baseFactions, events);
 
@@ -62,7 +69,14 @@ describe('computeMapState', () => {
 
     test('attack event active sets homeworld to active', () => {
         const events = [
-            { type: 'attack', enemy: 0, status: 'active', end_time: 100, points: 5000, points_max: 10000 },
+            {
+                type: 'attack',
+                enemy: 0,
+                status: 'active',
+                end_time: 100,
+                points: 5000,
+                points_max: 10000,
+            },
         ];
         const map = computeMapState(baseFactions, events);
 

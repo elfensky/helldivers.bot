@@ -75,7 +75,9 @@ describe('getSeasonFromStatus', () => {
             defend_event: null,
             statistics: [],
         };
-        expect(() => getSeasonFromStatus(data)).toThrow('No seasons found in status data');
+        expect(() => getSeasonFromStatus(data)).toThrow(
+            'No seasons found in status data',
+        );
     });
 
     test('throws when season is not a valid number', () => {
@@ -106,7 +108,9 @@ describe('getSeasonFromStatus', () => {
         const data = {
             // campaign_status and statistics default to []
         };
-        expect(() => getSeasonFromStatus(data)).toThrow('No seasons found in status data');
+        expect(() => getSeasonFromStatus(data)).toThrow(
+            'No seasons found in status data',
+        );
     });
 });
 
@@ -174,7 +178,9 @@ describe('getSeasonFromSnapshot', () => {
             defend_events: [],
             attack_events: [],
         };
-        expect(() => getSeasonFromSnapshot(data)).toThrow('No seasons found in status data');
+        expect(() => getSeasonFromSnapshot(data)).toThrow(
+            'No seasons found in status data',
+        );
     });
 
     test('throws when season is not a valid number', () => {

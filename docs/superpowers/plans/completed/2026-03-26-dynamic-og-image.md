@@ -15,6 +15,7 @@
 ### Task 1: Extract SVG path data into shared file
 
 **Files:**
+
 - Create: `src/enums/mapPaths.mjs`
 
 This file contains ALL SVG path `d` attributes extracted from `Map.jsx`. Each faction has an array of `{ id, sector, d }` objects for sectors 1-11. Super Earth has a circle definition. The `sector` field is a number to avoid string parsing.
@@ -59,7 +60,11 @@ export const factionIcons = [
 ];
 
 export const superEarthIcon = {
-    href: '/icons/superearth.webp', x: 352, y: 334, width: 100, height: 100,
+    href: '/icons/superearth.webp',
+    x: 352,
+    y: 334,
+    width: 100,
+    height: 100,
 };
 ```
 
@@ -83,6 +88,7 @@ git commit -m "feat: extract SVG path geometry into shared mapPaths.mjs"
 ### Task 2: Refactor Map.jsx to use shared paths
 
 **Files:**
+
 - Modify: `src/components/h1/Galaxy/Map.jsx`
 - Reference: `src/enums/mapPaths.mjs` (created in Task 1)
 
@@ -93,23 +99,36 @@ Replace hardcoded `<path d="...">` elements with `.map()` over the imported arra
 Replace the contents of `Map.jsx` with a version that imports from `mapPaths.mjs` and maps over the arrays. The key pattern for each faction group:
 
 ```jsx
-import { viewBox, bugPaths, cyborgPaths, illuminatePaths, superEarth, factionIcons, superEarthIcon } from '@/enums/mapPaths.mjs';
+import {
+    viewBox,
+    bugPaths,
+    cyborgPaths,
+    illuminatePaths,
+    superEarth,
+    factionIcons,
+    superEarthIcon,
+} from '@/enums/mapPaths.mjs';
 
 // Inside the <g id="bugs"> group, replace all 11 hardcoded <path> elements with:
-{bugPaths.map((path) => (
-    <path
-        key={path.id}
-        id={path.id}
-        data-name={String(path.sector)}
-        data-faction="bugs"
-        className={
-            path.sector === 11
-                ? 'sector ' + map[bugs][11].status
-                : 'sector ' + map[bugs][path.sector].status + ' ' + map[bugs][path.sector].event
-        }
-        d={path.d}
-    />
-))}
+{
+    bugPaths.map((path) => (
+        <path
+            key={path.id}
+            id={path.id}
+            data-name={String(path.sector)}
+            data-faction="bugs"
+            className={
+                path.sector === 11 ?
+                    'sector ' + map[bugs][11].status
+                :   'sector ' +
+                    map[bugs][path.sector].status +
+                    ' ' +
+                    map[bugs][path.sector].event
+            }
+            d={path.d}
+        />
+    ));
+}
 <image
     href={factionIcons[0].href}
     className="pointer-events-none"
@@ -117,12 +136,13 @@ import { viewBox, bugPaths, cyborgPaths, illuminatePaths, superEarth, factionIco
     y={factionIcons[0].y}
     width={factionIcons[0].width}
     height={factionIcons[0].height}
-/>
+/>;
 ```
 
 Apply the same pattern for cyborgs (faction index 1, `cyborgPaths`, `factionIcons[1]`) and illuminate (faction index 2, `illuminatePaths`, `factionIcons[2]`).
 
 For Super Earth:
+
 ```jsx
 <g id="superearth">
     <circle
@@ -151,6 +171,7 @@ Note: Keep the `<defs>` block (filters) and the `import './Map.css'` — those s
 - [ ] **Step 2: Visual verification**
 
 Ask the user to start the dev server. Open `http://localhost:3000` and compare the Galaxy map. It must look identical to before the refactor. Check that:
+
 - All 3 faction sectors render with correct colors
 - Sector statuses (captured/lost/in_progress) display correctly
 - Faction icons appear at correct positions
@@ -174,6 +195,7 @@ git commit -m "refactor: Map.jsx imports SVG paths from shared mapPaths.mjs"
 ### Task 3: Extract getWarOutcome into a shared utility
 
 **Files:**
+
 - Create: `src/utils/getWarOutcome.mjs`
 - Modify: `src/components/h1/War/War.jsx` (import from new location)
 - Test: `src/__tests__/unit/utils/getWarOutcome.test.mjs`
@@ -243,9 +265,7 @@ describe('getWarOutcome', () => {
         const data = {
             live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
-            events: [
-                { type: 'defend', region: 0, status: 'fail', end_time: 100 },
-            ],
+            events: [{ type: 'defend', region: 0, status: 'fail', end_time: 100 }],
         };
         const result = getWarOutcome(data);
         expect(result.outcome).toBe('defeat');
@@ -270,9 +290,7 @@ describe('getWarOutcome', () => {
         const data = {
             live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
-            events: [
-                { type: 'attack', status: 'fail', enemy: 0 },
-            ],
+            events: [{ type: 'attack', status: 'fail', enemy: 0 }],
         };
         const result = getWarOutcome(data);
         expect(result.outcome).toBe('defeat');
@@ -298,6 +316,7 @@ Expected: FAIL — `getWarOutcome` module does not exist.
 - [ ] **Step 3: Create `src/utils/getWarOutcome.mjs`**
 
 Extract the function **verbatim** from `src/components/h1/War/War.jsx` (lines 29-84). The decision tree MUST preserve:
+
 - The early return for all 3 live factions defeated (line 40)
 - `victorySignal && !defeatSignal` → victory (line 73)
 - `defeatSignal` → defeat (line 76)
@@ -404,12 +423,14 @@ git commit -m "refactor: extract getWarOutcome into shared utility with tests"
 ### Task 4: Rewrite the OG image route
 
 **Files:**
+
 - Rewrite: `src/app/api/og/route.js`
 - Reference: `src/enums/mapPaths.mjs`, `src/utils/computeMapState.mjs`, `src/utils/getWarOutcome.mjs`, `src/db/queries/getCampaign.mjs`
 
 This is the main feature. The route fetches live war data, computes map state, builds the galaxy map as an SVG string (base64-encoded for Satori), and renders a 1200x630 PNG with stats sidebar.
 
 **Key design decisions:**
+
 - SVG is built as a string and embedded as `<img src="data:image/svg+xml;base64,...">` because Satori does not support inline SVG elements
 - Uses `tryCatch` wrapper per project convention
 - Sets `Cache-Control` headers to prevent crawler-driven DB load
@@ -424,7 +445,13 @@ import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeMapState } from '@/utils/computeMapState.mjs';
 import { getWarOutcome } from '@/utils/getWarOutcome.mjs';
 import { tryCatch } from '@/utils/tryCatch.mjs';
-import { bugPaths, cyborgPaths, illuminatePaths, superEarth, viewBox } from '@/enums/mapPaths.mjs';
+import {
+    bugPaths,
+    cyborgPaths,
+    illuminatePaths,
+    superEarth,
+    viewBox,
+} from '@/enums/mapPaths.mjs';
 
 // Color constants (from Map.css, hardcoded for Satori)
 const COLORS = {
@@ -470,7 +497,18 @@ function getSectorStroke(status) {
 
 function fallbackImage() {
     return new ImageResponse(
-        <div style={{ display: 'flex', width: '100%', height: '100%', background: COLORS.bg, color: 'white', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>
+        <div
+            style={{
+                display: 'flex',
+                width: '100%',
+                height: '100%',
+                background: COLORS.bg,
+                color: 'white',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 32,
+            }}
+        >
             helldivers.bot
         </div>,
         { width: 1200, height: 630, headers: CACHE_HEADERS },
@@ -489,13 +527,15 @@ function buildMapSvg(mapState) {
             const status = mapState[fi]?.[path.sector]?.status || 'lost';
             const fill = getSectorFill(status, fi);
             const stroke = getSectorStroke(status);
-            paths.push(`<path d="${path.d}" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`);
+            paths.push(
+                `<path d="${path.d}" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`,
+            );
         }
     }
 
     // Super Earth
     paths.push(
-        `<circle cx="${superEarth.circle.cx}" cy="${superEarth.circle.cy}" r="${superEarth.circle.r}" fill="${COLORS.captured}" stroke="${COLORS.border}" stroke-width="2"/>`
+        `<circle cx="${superEarth.circle.cx}" cy="${superEarth.circle.cy}" r="${superEarth.circle.r}" fill="${COLORS.captured}" stroke="${COLORS.border}" stroke-width="2"/>`,
     );
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">${paths.join('')}</svg>`;
@@ -537,39 +577,131 @@ export async function GET() {
     }
 
     return new ImageResponse(
-        <div style={{ display: 'flex', width: '100%', height: '100%', background: COLORS.bg }}>
+        <div
+            style={{
+                display: 'flex',
+                width: '100%',
+                height: '100%',
+                background: COLORS.bg,
+            }}
+        >
             {/* Left: Galaxy Map (60%) */}
-            <div style={{ display: 'flex', width: '60%', height: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <div
+                style={{
+                    display: 'flex',
+                    width: '60%',
+                    height: '100%',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                }}
+            >
                 {/* Title overlay */}
-                <div style={{ display: 'flex', flexDirection: 'column', position: 'absolute', left: 24, top: 24 }}>
-                    <span style={{ fontSize: 14, color: COLORS.textDim, letterSpacing: 2 }}>HELLDIVERS 1</span>
-                    <span style={{ fontSize: 24, color: COLORS.yellow, fontWeight: 'bold' }}>GALACTIC WAR</span>
+                <div
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        position: 'absolute',
+                        left: 24,
+                        top: 24,
+                    }}
+                >
+                    <span
+                        style={{ fontSize: 14, color: COLORS.textDim, letterSpacing: 2 }}
+                    >
+                        HELLDIVERS 1
+                    </span>
+                    <span
+                        style={{ fontSize: 24, color: COLORS.yellow, fontWeight: 'bold' }}
+                    >
+                        GALACTIC WAR
+                    </span>
                 </div>
                 {/* Map as base64 SVG image */}
-                <img src={mapDataUri} width={600} height={600} style={{ objectFit: 'contain' }} />
+                <img
+                    src={mapDataUri}
+                    width={600}
+                    height={600}
+                    style={{ objectFit: 'contain' }}
+                />
             </div>
             {/* Right: Stats (40%) */}
-            <div style={{ display: 'flex', flexDirection: 'column', width: '40%', height: '100%', padding: '40px 32px', justifyContent: 'center', gap: 16 }}>
-                <span style={{ fontSize: 16, color: COLORS.yellow, fontWeight: 'bold', letterSpacing: 3 }}>
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: '40%',
+                    height: '100%',
+                    padding: '40px 32px',
+                    justifyContent: 'center',
+                    gap: 16,
+                }}
+            >
+                <span
+                    style={{
+                        fontSize: 16,
+                        color: COLORS.yellow,
+                        fontWeight: 'bold',
+                        letterSpacing: 3,
+                    }}
+                >
                     SEASON {data.season ?? '?'}
                 </span>
-                <span style={{ fontSize: 28, color: statusColor, fontWeight: 'bold' }}>{statusText}</span>
+                <span style={{ fontSize: 28, color: statusColor, fontWeight: 'bold' }}>
+                    {statusText}
+                </span>
                 {/* Faction progress bars */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 16 }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 20,
+                        marginTop: 16,
+                    }}
+                >
                     {factionStats.map((f) => (
-                        <div key={f.enemy} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: f.textColor }}>
+                        <div
+                            key={f.enemy}
+                            style={{ display: 'flex', flexDirection: 'column', gap: 4 }}
+                        >
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    fontSize: 14,
+                                    color: f.textColor,
+                                }}
+                            >
                                 <span>{f.name}</span>
                                 <span>{f.percent}%</span>
                             </div>
-                            <div style={{ display: 'flex', height: 10, background: COLORS.barBg, borderRadius: 5, overflow: 'hidden' }}>
-                                <div style={{ width: `${f.percent}%`, height: '100%', background: f.barColor, borderRadius: 5 }} />
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    height: 10,
+                                    background: COLORS.barBg,
+                                    borderRadius: 5,
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: `${f.percent}%`,
+                                        height: '100%',
+                                        background: f.barColor,
+                                        borderRadius: 5,
+                                    }}
+                                />
                             </div>
                         </div>
                     ))}
                 </div>
                 {/* Branding */}
-                <span style={{ fontSize: 14, color: COLORS.textMuted, marginTop: 'auto' }}>helldivers.bot</span>
+                <span
+                    style={{ fontSize: 14, color: COLORS.textMuted, marginTop: 'auto' }}
+                >
+                    helldivers.bot
+                </span>
             </div>
         </div>,
         { width: 1200, height: 630, headers: CACHE_HEADERS },
@@ -601,6 +733,7 @@ git commit -m "feat: dynamic OG image with galaxy map and war stats"
 ### Task 5: Update layout metadata and add smoke test
 
 **Files:**
+
 - Modify: `src/app/layout.jsx`
 - Modify: `src/__tests__/e2e/smoke.spec.mjs`
 

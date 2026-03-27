@@ -104,7 +104,6 @@ export default async function Navigation() {
 }
 
 async function User({ session }) {
-
     if (!session || !session.user) {
         return (
             <>

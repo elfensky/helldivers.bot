@@ -150,10 +150,18 @@ describe('successResponse', () => {
     });
 
     test('throws on non-2xx codes', () => {
-        expect(() => successResponse(400, performance.now(), null)).toThrow('Invalid success code');
-        expect(() => successResponse(100, performance.now(), null)).toThrow('Invalid success code');
-        expect(() => successResponse(301, performance.now(), null)).toThrow('Invalid success code');
-        expect(() => successResponse(500, performance.now(), null)).toThrow('Invalid success code');
+        expect(() => successResponse(400, performance.now(), null)).toThrow(
+            'Invalid success code',
+        );
+        expect(() => successResponse(100, performance.now(), null)).toThrow(
+            'Invalid success code',
+        );
+        expect(() => successResponse(301, performance.now(), null)).toThrow(
+            'Invalid success code',
+        );
+        expect(() => successResponse(500, performance.now(), null)).toThrow(
+            'Invalid success code',
+        );
     });
 
     test('sets Content-Type to application/json', () => {

@@ -170,9 +170,7 @@ describe('isValidStatus', () => {
 
         test('rejects missing region', () => {
             const { region, ...noRegion } = makeDefendEvent();
-            const result = isValidStatus(
-                makeValidStatus({ defend_event: noRegion }),
-            );
+            const result = isValidStatus(makeValidStatus({ defend_event: noRegion }));
             expect(result.success).toBe(false);
         });
     });
@@ -198,9 +196,7 @@ describe('isValidStatus', () => {
     describe('statistics', () => {
         test('rejects missing required field', () => {
             const { kills, ...incomplete } = makeStatistics();
-            const result = isValidStatus(
-                makeValidStatus({ statistics: [incomplete] }),
-            );
+            const result = isValidStatus(makeValidStatus({ statistics: [incomplete] }));
             expect(result.success).toBe(false);
         });
 
