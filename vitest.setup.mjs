@@ -53,6 +53,7 @@ vi.mock('@/db/db', () => ({
         settings: createModelMock(),
         review: createModelMock(),
         apiKey: createModelMock(),
+        ApiKey: createModelMock(),
         // Rebroadcast models
         rebroadcast_status: createModelMock(),
         rebroadcast_snapshot: createModelMock(),
