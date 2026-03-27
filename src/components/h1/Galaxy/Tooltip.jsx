@@ -1,6 +1,5 @@
 import './Tooltip.css';
-import { useRef, useState, useEffect } from 'react';
-import factions from '@/enums/factions';
+import { useState, useEffect } from 'react';
 
 export default function Tooltip({ svgRef, map }) {
     const [hover, setHover] = useState(null); //{ faction: "0", id: "1" }

@@ -2,7 +2,7 @@ import db from '@/db/db';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
 import { isValidNumber } from '@/validators/isValidNumber';
-import { tryCatch } from '@/utils/tryCatch';
+
 
 export async function queryUpsertSeason(season, complete = false) {
     'use server';

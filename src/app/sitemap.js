@@ -1,10 +1,10 @@
 import { cookies } from 'next/headers';
-import { getLatestsPostDate } from '@/db/queries/post';
+import { getLatestPostDate } from '@/db/queries/post';
 import { tryCatch } from '@/utils/tryCatch.mjs';
 
 export default async function sitemap() {
     const cookieStore = await cookies();
-    const { data: reviews, error: reviewsError } = await tryCatch(getLatestsPostDate());
+    const { data: reviews, error: reviewsError } = await tryCatch(getLatestPostDate());
 
     return [
         {

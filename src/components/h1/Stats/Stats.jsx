@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // Example faction name list
 const faction_name_list = ['Bugs', 'Cyborgs', 'Illuminates', 'Super Earth'];

@@ -55,17 +55,21 @@ export async function createRandomPost() {
     'use server';
     const start = performance.now();
 
+    const session = await auth();
+    if (!session || !session?.user) {
+        throw new Error('No session found');
+    }
+
     try {
-        const randomTitle = getRandomString(10); // Generate a random string of length 10 for the title
-        const randomContent = getRandomString(50); // Generate a random string of length 50 for the content
-        const randomPublished = getRandomBoolean(); // Randomly decide if the post is published
+        const randomTitle = getRandomString(10);
+        const randomContent = getRandomString(50);
 
         const newPost = await db.post.create({
             data: {
                 title: randomTitle,
                 content: randomContent,
                 published: true,
-                authorId: '0196c87c-5447-7df1-a89e-799d2cf6e1ce',
+                authorId: session.user.id,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },
@@ -120,13 +124,13 @@ export async function createPost(formData) {
         revalidatePath('/front/posts', 'page');
         return query;
     } catch (error) {
-        console.error('createRandomPost()');
+        console.error('createPost()');
         console.error(error);
         throw error;
     }
 }
 
-export async function getLatestsPostDate() {
+export async function getLatestPostDate() {
     const start = performance.now();
 
     try {
@@ -145,7 +149,7 @@ export async function getLatestsPostDate() {
         };
         return query;
     } catch (error) {
-        console.error('getLatestsPostDate()');
+        console.error('getLatestPostDate()');
         console.error(error);
         throw error;
     }

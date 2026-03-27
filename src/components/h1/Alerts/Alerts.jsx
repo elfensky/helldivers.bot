@@ -2,9 +2,7 @@ import './Alerts.css';
 
 import Image from 'next/image';
 import humanizeDuration from 'humanize-duration';
-// https://developers.google.com/search/docs/appearance/structured-data/event
-import map from '@/enums/map';
-import factions from '@/enums/factions';
+import { evaluateProgress } from '@/utils/evaluateProgress';
 
 export default function Alerts({ data }) {
     const active = (data?.events || [])
@@ -45,7 +43,7 @@ function Alert({ event }) {
     }
 
     const percent = (event.points / event.points_max) * 100;
-    const progress = util_evaluate_progress(event);
+    const progress = evaluateProgress(event);
 
     return (
         <li className="flex w-[33vw] min-w-[300px] rounded-lg first:ml-4 last:mr-4 sm:min-w-[400px] first:sm:ml-12 last:sm:mr-12 first:lg:ml-24 last:lg:mr-24">
@@ -95,124 +93,4 @@ function Alert({ event }) {
             </article>
         </li>
     );
-}
-
-function util_evaluate_progress(event) {
-    // Get the current time as a timestamp
-    const currentTime = Math.floor(Date.now() / 1000);
-
-    // Calculate total time in milliseconds
-    const totalTime = event.end_time - event.start_time;
-    // console.log('totalTime', totalTime);
-
-    // Calculate elapsed time in milliseconds
-    const elapsedTime = currentTime - event.start_time;
-    // console.log('elapsedTime', elapsedTime);
-
-    // Calculate remaining time in milliseconds
-    const remainingTime = event.end_time - currentTime;
-    // console.log('remainingTime', remainingTime);
-
-    // Calculate the expected rate of progress (points per millisecond)
-    const expectedRate = event.points_max / totalTime;
-
-    // Calculate the current rate of progress (points per millisecond)
-    const currentRate = event.points / elapsedTime;
-
-    // Calculate the expected points by now
-    const expectedPoints = expectedRate * elapsedTime;
-
-    // Calculate the remaining points
-    const remainingPoints = event.points_max - event.points;
-
-    // Calculate the required rate for the remaining time (points per millisecond)
-    const requiredRate = remainingPoints / remainingTime;
-
-    // 10% buffer
-    const buffer = expectedPoints * 0.1;
-    // Determine the progress status
-    let status;
-    if (event.points > expectedPoints + buffer) {
-        status = 'Ahead';
-    } else if (event.points < expectedPoints) {
-        status = 'Behind';
-    } else {
-        status = 'On track';
-    }
-
-    let pointDifference = Math.abs(expectedPoints - event.points);
-
-    const progress = {
-        expectedRate: expectedRate.toFixed(6), // Adjust precision as needed
-        currentRate: currentRate.toFixed(6),
-        expectedPoints: expectedPoints.toFixed(0),
-        remainingPoints: remainingPoints.toFixed(0),
-        requiredRate: requiredRate.toFixed(6),
-        status: status,
-        // rateStatus: rateStatus,
-    };
-
-    if (event.status === 'active') {
-        return `${status} by ${pointDifference.toFixed(0)} points`;
-    }
-    // if (event.status === 'success') {
-    //     return `tbd`;
-    // }
-    // if (event.status === 'fail') {
-    //     return `Lost ${pointDifference.toFixed(0)} points`;
-    // }
-
-    // if (event.status === 'success') {
-    //     const remaining_minutes = Math.abs(120 - Math.floor(elapsedTime / 60));
-    //     const win_text =
-    //         remaining_minutes > 1 ?
-    //             `${remaining_minutes} minutes`
-    //             : `${remaining_minutes} minute`;
-
-    //     return `Won with ${win_text} to spare.`;
-    // }
-    // if (event.status === 'failure') {
-    //     return `Lost ${pointDifference.toFixed(0)} points`;
-    // }
-}
-
-function schema(event, type) {
-    if (type === 'attack') {
-        const capital = map[event.enemy][11].capital;
-        return {
-            '@context': 'https://schema.org',
-            '@type': 'Event',
-            name: `Attacking ${capital}`,
-            image: ['https://helldivers.bot/icons/attack.webp'],
-        };
-    }
-    if (type === 'defend') {
-        // console.log(map[event.region][]);
-        const capital = map[event.enemy][event.region].capital;
-        const region = map[event.enemy][event.region].region;
-        const faction = factions[event.enemy].name;
-
-        return {
-            '@context': 'https://schema.org',
-            '@type': 'Event',
-            name: `Defend ${capital}`,
-            description: `Cowardly ${faction} has attacked the innocent city of ${capital} in the ${region}. Get together and defend against this xeno threat!`,
-            startDate: new Date(event.start_time * 1000),
-            endDate: new Date(event.end_time * 1000),
-            image: ['https://helldivers.bot/icons/defend.webp'],
-            organizer: {
-                '@type': 'Organization',
-                name: `${faction}`,
-                url: `${factions[[event.enemy]].url}`,
-            },
-            offers: {
-                '@type': 'Offer',
-                url: 'https://helldivers.bot/campaign',
-                price: 0,
-                priceCurrency: 'EUR',
-                availability: 'https://schema.org/InStock',
-                validFrom: new Date(event.start_time * 1000),
-            },
-        };
-    }
 }

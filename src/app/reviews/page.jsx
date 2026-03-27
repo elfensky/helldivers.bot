@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { getPosts, createRandomPost, createPost } from '@/db/queries/post';
-import { formatDate, timeSince } from '@/utils/time';
+import { timeSince } from '@/utils/time';
 import Image from 'next/image';
 
 export default async function PostPage() {

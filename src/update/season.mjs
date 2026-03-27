@@ -39,9 +39,9 @@ export async function updateSeason(season) {
         throw check.error;
     }
 
-    //3. get season paramater from fetched data.
-    const season2 = getSeasonFromSnapshot(fetchedData);
-    if (season !== season2) throw new Error('Invalid season');
+    //3. get season parameter from fetched data.
+    const fetchedSeason = getSeasonFromSnapshot(fetchedData);
+    if (season !== fetchedSeason) throw new Error('Invalid season');
 
     //4. store in db -> /api/rebroadcast
     const { data: storedRebroadcastData, error: storedRebroadcastError } = await tryCatch(

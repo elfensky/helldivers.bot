@@ -47,6 +47,11 @@ export async function getApiKeysByUserId(userId) {
 export async function generateApiKey(_, formData) {
     const start = performance.now();
 
+    const session = await auth();
+    if (!session || !session?.user) {
+        throw new Error('No session found');
+    }
+
     //get values from FormData
     const formValues = {
         userId: formData.get('userId'),
@@ -60,16 +65,15 @@ export async function generateApiKey(_, formData) {
     });
     const check = schema.safeParse(formValues);
     if (check?.success === false) {
-        // console.log(check);
-        // console.log(check.error);
-        // console.log(check.error.issues);
-        // console.log(check.error.toString());
-        // console.log(check.error);
         return {
             errors: check.error.flatten().fieldErrors,
             values: formValues,
             time: performanceTime(start),
         };
+    }
+
+    if (session.user.id !== formValues.userId) {
+        throw new Error('User does not match');
     }
 
     //check if user has reached the maximum number of API keys
@@ -92,17 +96,11 @@ export async function generateApiKey(_, formData) {
     const hash = createHash('md5').update(key).digest('hex');
 
     try {
-        const session = await auth();
-        if (!session || !session?.user) {
-            throw new Error('No session found');
-        }
-
         const newApiKey = await db.ApiKey.create({
             data: {
                 userId: formValues.userId,
                 description: formValues.description,
                 createdAt: new Date(),
-                // updatedAt: new Date(),
                 hash: hash,
                 visible: key.slice(-4),
             },
@@ -118,7 +116,7 @@ export async function generateApiKey(_, formData) {
         revalidatePath('/dashboard', 'page');
         return query;
     } catch (error) {
-        console.error('createRandomPost()');
+        console.error('generateApiKey()');
         console.error(error);
         throw error;
     }

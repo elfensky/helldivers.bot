@@ -3,7 +3,7 @@ import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/utils/time';
 import { errorResponse, successResponse } from '@/utils/responses';
 
-import { NextResponse, after } from 'next/server';
+import { after } from 'next/server';
 //validators
 import { isValidNumber } from '@/validators/isValidNumber';
 //db and fetch

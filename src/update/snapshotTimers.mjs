@@ -45,7 +45,7 @@ export async function shouldTakeLiveSnapshot(season, apiTime) {
 /**
  * Update the in-memory timer after a successful live snapshot write.
  */
-export async function recordLiveSnapshotTime(time) {
+export function recordLiveSnapshotTime(time) {
     lastLiveSnapshotTime = time;
 }
 
@@ -76,7 +76,7 @@ export async function shouldTakeEventSnapshot(type, eventId, apiTime) {
 /**
  * Update the in-memory timer after a successful event snapshot write.
  */
-export async function recordEventSnapshotTime(type, eventId, time) {
+export function recordEventSnapshotTime(type, eventId, time) {
     const key = `${type}:${eventId}`;
     lastEventSnapshotTimes.set(key, time);
 }
@@ -84,7 +84,7 @@ export async function recordEventSnapshotTime(type, eventId, time) {
 /**
  * Reset all timers. Called if season changes.
  */
-export async function resetSnapshotTimers() {
+export function resetSnapshotTimers() {
     lastLiveSnapshotTime = null;
     lastEventSnapshotTimes.clear();
 }
