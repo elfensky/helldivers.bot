@@ -9,8 +9,9 @@ import { updateSeason } from '@/update/season';
 export async function GET(request) {
     //INITIALIZE
     const start = performance.now();
-    const key = request.nextUrl.searchParams.get('key');
-    if (!key) return errorResponse(400, start);
+    const header = request.headers.get('authorization');
+    const key = header?.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!key) return errorResponse(401, start);
     const secret = process.env.UPDATE_KEY;
     if (key !== secret) return errorResponse(401, start);
 

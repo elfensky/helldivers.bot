@@ -41,7 +41,10 @@ export async function generateApiKey(_, formData) {
 
     const session = await auth();
     if (!session || !session?.user) {
-        throw new Error('No session found');
+        return {
+            errors: { auth: 'You must be signed in to generate an API key' },
+            time: performanceTime(start),
+        };
     }
 
     const formValues = {
@@ -63,7 +66,10 @@ export async function generateApiKey(_, formData) {
     }
 
     if (session.user.id !== formValues.userId) {
-        throw new Error('User does not match');
+        return {
+            errors: { auth: "You don't have permission to create this API key" },
+            time: performanceTime(start),
+        };
     }
 
     const { data: apiKeyCount, error: countError } = await tryCatch(
@@ -81,7 +87,7 @@ export async function generateApiKey(_, formData) {
     }
 
     const key = randomUUID();
-    const hash = createHash('md5').update(key).digest('hex');
+    const hash = createHash('sha256').update(key).digest('hex');
 
     const { data: newApiKey, error: createError } = await tryCatch(
         db.ApiKey.create({

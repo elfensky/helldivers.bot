@@ -33,7 +33,9 @@ describe('validateApiKey', () => {
         const result = await validateApiKey(makeRequest('Bearer some-unknown-key'));
         expect(result).toEqual({ data: null, error: 'invalid' });
 
-        const expectedHash = createHash('md5').update('some-unknown-key').digest('hex');
+        const expectedHash = createHash('sha256')
+            .update('some-unknown-key')
+            .digest('hex');
         expect(db.ApiKey.findUnique).toHaveBeenCalledWith({
             where: { hash: expectedHash },
             select: { id: true, userId: true, enabled: true },
@@ -77,7 +79,7 @@ describe('validateApiKey', () => {
 
         await validateApiKey(makeRequest('Bearer test-api-key'));
 
-        const expectedHash = createHash('md5').update('test-api-key').digest('hex');
+        const expectedHash = createHash('sha256').update('test-api-key').digest('hex');
         expect(db.ApiKey.findUnique).toHaveBeenCalledWith(
             expect.objectContaining({ where: { hash: expectedHash } }),
         );

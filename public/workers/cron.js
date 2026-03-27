@@ -36,10 +36,12 @@ parentPort.on('message', async (msg) => {
      * Uses setTimeout for self-scheduling to ensure sequential execution.
      */
     async function doWork() {
-        const url = `http://localhost:${port}/api/h1/update?key=${key}`;
+        const url = `http://localhost:${port}/api/h1/update`;
 
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                headers: { Authorization: `Bearer ${key}` },
+            });
             const data = await response.json();
 
             // Report successful update back to parent for logging
