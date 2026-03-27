@@ -24,24 +24,15 @@ export default async function PostPage() {
 
 async function ShowPosts() {
     const result = await getPosts();
+    const posts = result.query;
 
-    if (result.error) {
-        return (
-            <ul>
-                <li>Error: {result.error}</li>
-            </ul>
-        );
-    }
-
-    if (result.data.length < 1) {
+    if (!posts || posts.length < 1) {
         return (
             <ul>
                 <li>No posts yet</li>
             </ul>
         );
     }
-
-    const posts = result.data;
 
     return (
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">

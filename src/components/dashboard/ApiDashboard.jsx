@@ -21,8 +21,8 @@ export default async function ApiDashboard({ user }) {
 }
 
 async function ApiKeysList({ userId }) {
-    const query = await getApiKeysByUserId(userId);
-    const apiKeys = query.data;
+    const result = await getApiKeysByUserId(userId);
+    const apiKeys = result.query;
 
     return (
         <table>

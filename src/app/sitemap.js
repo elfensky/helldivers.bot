@@ -4,7 +4,7 @@ import { tryCatch } from '@/utils/tryCatch.mjs';
 
 export default async function sitemap() {
     const cookieStore = await cookies();
-    const { data: reviews, error: reviewsError } = await tryCatch(getLatestPostDate());
+    const { data: reviewResult } = await tryCatch(getLatestPostDate());
 
     return [
         {
@@ -33,7 +33,7 @@ export default async function sitemap() {
         },
         {
             url: 'https://helldivers.bot/front/reviews',
-            lastModified: reviews?.updatedAt || new Date(),
+            lastModified: reviewResult?.query?.updatedAt || new Date(),
             changeFrequency: 'weekly',
             priority: 0.7,
         },
