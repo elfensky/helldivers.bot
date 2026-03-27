@@ -11,21 +11,13 @@ export async function queryUpsertRebroadcastStatus(season, data) {
 
     const now = new Date();
 
-    const existingRecord = await db.rebroadcast_status.findUnique({
-        where: { season },
-    });
-
-    const upsertRecord = await db.rebroadcast_status.upsert({
+    const query = await db.rebroadcast_status.upsert({
         where: { season },
         update: { season, last_updated: now, json: data },
         create: { season, last_updated: now, json: data },
     });
 
-    return {
-        ms: performanceTime(start),
-        action: existingRecord ? 'UPDATE' : 'CREATE',
-        query: upsertRecord,
-    };
+    return { ms: performanceTime(start), query };
 }
 
 export async function queryUpsertRebroadcastSeason(season, data) {
@@ -36,21 +28,13 @@ export async function queryUpsertRebroadcastSeason(season, data) {
 
     const now = new Date();
 
-    const existingRecord = await db.rebroadcast_snapshot.findUnique({
-        where: { season },
-    });
-
-    const upsertRecord = await db.rebroadcast_snapshot.upsert({
+    const query = await db.rebroadcast_snapshot.upsert({
         where: { season },
         update: { season, last_updated: now, json: data },
         create: { season, last_updated: now, json: data },
     });
 
-    return {
-        ms: performanceTime(start),
-        action: existingRecord ? 'UPDATE' : 'CREATE',
-        query: upsertRecord,
-    };
+    return { ms: performanceTime(start), query };
 }
 
 export async function queryGetRebroadcastStatus() {
@@ -61,10 +45,7 @@ export async function queryGetRebroadcastStatus() {
         orderBy: { last_updated: 'desc' },
     });
 
-    return {
-        ms: performanceTime(start),
-        data: query,
-    };
+    return { ms: performanceTime(start), data: query };
 }
 
 export async function queryGetRebroadcastSeason(season) {
@@ -75,8 +56,5 @@ export async function queryGetRebroadcastSeason(season) {
         where: { season },
     });
 
-    return {
-        ms: performanceTime(start),
-        data: query,
-    };
+    return { ms: performanceTime(start), data: query };
 }

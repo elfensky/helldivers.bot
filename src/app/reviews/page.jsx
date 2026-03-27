@@ -99,7 +99,6 @@ async function GeneratePost() {
 }
 
 function PostAuthor({ author }) {
-    // console.log('PostAuthor', author);
     if (author.name) {
         return <span>{author.name}</span>;
     }

@@ -38,7 +38,6 @@ export async function getPosts() {
                 },
             },
         });
-        // console.log('getPosts', result);
         const query = {
             data: result,
             time: performance.now() - start,
@@ -93,8 +92,6 @@ export async function createPost(formData) {
 
     try {
         const session = await auth();
-        // console.log('session', session);
-        // console.log(formData);
 
         if (!session || !session?.user) {
             throw new Error('No session found');

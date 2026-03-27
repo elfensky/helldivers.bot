@@ -18,24 +18,8 @@ export default async function Dashboard() {
     const user = session.user;
 
     if (user.role === 'user') {
-        return (
-            <>
-                <ApiDashboard user={user} />
-                {/* <UserDashboard /> */}
-            </>
-        );
+        return <ApiDashboard user={user} />;
     }
 
-    // if (user.role === 'admin') {
-    //     console.log('role: ', user.role);
-    //     return (
-    //         <>
-    //             <ApiDashboard user={user} />
-    //             {/* <UserDashboard />
-    //             <AdminDashboard />; */}
-    //         </>
-    //     );
-    // }
-
-    return null; //this is a fallback, it should theoretically never be reached
+    return null;
 }

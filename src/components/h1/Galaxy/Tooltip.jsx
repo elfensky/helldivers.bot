@@ -66,6 +66,10 @@ export default function Tooltip({ svgRef, map }) {
     }, [viewportSize]);
 
     if (!hover) return null;
+
+    const sector = map[hover.faction]?.[hover.id];
+    if (!sector) return null;
+
     if (hover.faction === '3')
         return (
             <div
@@ -78,12 +82,12 @@ export default function Tooltip({ svgRef, map }) {
             >
                 <div className="flex items-center gap-2">
                     <img
-                        src={`/icons/faction${hover?.faction}.webp`}
-                        alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
+                        src={`/icons/faction${hover.faction}.webp`}
+                        alt="Faction icon"
                         width={20}
                         height={20}
                     />
-                    <span>{map[hover?.faction][hover?.id].region}</span>
+                    <span>{sector.region}</span>
                 </div>
             </div>
         );
@@ -99,31 +103,21 @@ export default function Tooltip({ svgRef, map }) {
         >
             <p className="flex items-center gap-2">
                 <img
-                    src={`/icons/faction${hover?.faction}.webp`}
-                    alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
+                    src={`/icons/faction${hover.faction}.webp`}
+                    alt="Faction icon"
                     width={20}
                     height={20}
                 />
-                <span>{map[hover?.faction][hover?.id].region}</span>
+                <span>{sector.region}</span>
             </p>
             <div className="relative">
-                <progress
-                    value={map[hover?.faction][hover?.id].percent}
-                    max="100"
-                ></progress>
-                <span className="absolute right-0">
-                    {map[hover?.faction][hover?.id].percent.toFixed(2)}%
-                </span>
+                <progress value={sector.percent} max="100"></progress>
+                <span className="absolute right-0">{sector.percent.toFixed(2)}%</span>
             </div>
 
             <p>
-                {map[hover?.faction][hover?.id].points}/
-                {map[hover?.faction][hover?.id].points_max} points
+                {sector.points}/{sector.points_max} points
             </p>
-            {/* <span>
-                {map[hover?.faction][hover?.id].points_sector}/
-                {map[hover?.faction][hover?.id].points_sector_max} points
-            </span> */}
         </div>
     );
 }

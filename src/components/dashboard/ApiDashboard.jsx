@@ -22,14 +22,7 @@ export default async function ApiDashboard({ user }) {
 
 async function ApiKeysList({ userId }) {
     const query = await getApiKeysByUserId(userId);
-
-    // console.log(typeof query.data);
-    // if (typeof query.data !== 'array' && query.data.length < 1) {
-    //     return <div>No API keys found</div>;
-    // }
-
     const apiKeys = query.data;
-    // console.log('ApiKeysList | apiKeys', apiKeys);
 
     return (
         <table>
