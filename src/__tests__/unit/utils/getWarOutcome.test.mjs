@@ -57,9 +57,7 @@ describe('getWarOutcome', () => {
         const data = {
             live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
-            events: [
-                { type: 'defend', region: 0, status: 'fail', end_time: 100 },
-            ],
+            events: [{ type: 'defend', region: 0, status: 'fail', end_time: 100 }],
         };
         const result = getWarOutcome(data);
         expect(result.outcome).toBe('defeat');

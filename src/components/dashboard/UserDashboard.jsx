@@ -39,10 +39,6 @@ export default async function UserDashboard() {
 }
 
 function Email({ user }) {
-    // console.log(user);
-    // if (user.emailVerified) {
-    // }
-
     return (
         <>
             <form action="" className="flex flex-row gap-2">
@@ -88,11 +84,6 @@ function Avatar({ user }) {
 
     const submitData = async (e) => {
         'use server';
-        // e.preventDefault();
-        // console.log('updateUser', e);
-        // console.log(user);
-        // console.log(getGravatarUrl(user.email));
-        // const user = await updateUserData(e);
     };
 
     return (

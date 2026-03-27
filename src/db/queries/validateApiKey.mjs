@@ -17,7 +17,7 @@ export async function validateApiKey(request) {
         return { data: null, error: 'missing' };
     }
 
-    const hash = createHash('md5').update(key).digest('hex');
+    const hash = createHash('sha256').update(key).digest('hex');
 
     const { data: row, error: dbError } = await tryCatch(
         db.ApiKey.findUnique({

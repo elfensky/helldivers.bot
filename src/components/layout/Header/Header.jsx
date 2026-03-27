@@ -1,14 +1,10 @@
-//auth
 import './Header.css';
-import { auth } from '@/auth';
 //next
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
 //components
 import Navigation from '@/components/layout/Navigation/Navigation';
-//utils
-import { getGravatarUrl } from '@/utils/gravatar';
-import Script from 'next/script';
 //rename component to UpperCase
 //icons
 

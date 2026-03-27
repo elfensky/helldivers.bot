@@ -92,7 +92,7 @@ export default async function Navigation() {
 
                 <li className="hidden md:block md:opacity-30">|</li>
                 <li>
-                    <User />
+                    <User session={session} />
                 </li>
             </ul>
 
@@ -103,10 +103,7 @@ export default async function Navigation() {
     );
 }
 
-async function User() {
-    const session = await auth();
-    // console.log(session);
-
+async function User({ session }) {
     if (!session || !session.user) {
         return (
             <>

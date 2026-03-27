@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import db from '@/db/db';
 import { auth } from '@/auth';
+import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
 import { randomUUID, createHash } from 'crypto';
@@ -18,11 +19,9 @@ export async function getApiKeysByUserId(userId) {
         throw new Error('User does not match');
     }
 
-    try {
-        const result = await db.ApiKey.findMany({
-            where: {
-                userId: userId,
-            },
+    const { data: result, error } = await tryCatch(
+        db.ApiKey.findMany({
+            where: { userId },
             select: {
                 id: true,
                 description: true,
@@ -30,41 +29,35 @@ export async function getApiKeysByUserId(userId) {
                 createdAt: true,
                 enabled: true,
             },
-        });
+        }),
+    );
+    if (error) throw error;
 
-        const query = {
-            data: result,
-            time: performanceTime(start),
-        };
-        return query;
-    } catch (error) {
-        console.error('getApiKeysByUser()');
-        console.error(error);
-        throw error;
-    }
+    return { ms: performanceTime(start), query: result };
 }
 
 export async function generateApiKey(_, formData) {
     const start = performance.now();
 
-    //get values from FormData
+    const session = await auth();
+    if (!session || !session?.user) {
+        return {
+            errors: { auth: 'You must be signed in to generate an API key' },
+            time: performanceTime(start),
+        };
+    }
+
     const formValues = {
         userId: formData.get('userId'),
         description: formData.get('description'),
     };
 
-    //create and test FormData values using zod
     const schema = z.object({
         userId: z.string().uuid(),
         description: z.string().min(3).max(200),
     });
     const check = schema.safeParse(formValues);
-    if (check?.success === false) {
-        // console.log(check);
-        // console.log(check.error);
-        // console.log(check.error.issues);
-        // console.log(check.error.toString());
-        // console.log(check.error);
+    if (!check.success) {
         return {
             errors: check.error.flatten().fieldErrors,
             values: formValues,
@@ -72,12 +65,17 @@ export async function generateApiKey(_, formData) {
         };
     }
 
-    //check if user has reached the maximum number of API keys
-    const apiKeyCount = await db.ApiKey.count({
-        where: {
-            userId: formValues.userId,
-        },
-    });
+    if (session.user.id !== formValues.userId) {
+        return {
+            errors: { auth: "You don't have permission to create this API key" },
+            time: performanceTime(start),
+        };
+    }
+
+    const { data: apiKeyCount, error: countError } = await tryCatch(
+        db.ApiKey.count({ where: { userId: formValues.userId } }),
+    );
+    if (countError) throw countError;
 
     if (apiKeyCount >= 5) {
         return {
@@ -89,57 +87,49 @@ export async function generateApiKey(_, formData) {
     }
 
     const key = randomUUID();
-    const hash = createHash('md5').update(key).digest('hex');
+    const hash = createHash('sha256').update(key).digest('hex');
 
-    try {
-        const session = await auth();
-        if (!session || !session?.user) {
-            throw new Error('No session found');
-        }
-
-        const newApiKey = await db.ApiKey.create({
+    const { data: newApiKey, error: createError } = await tryCatch(
+        db.ApiKey.create({
             data: {
                 userId: formValues.userId,
                 description: formValues.description,
                 createdAt: new Date(),
-                // updatedAt: new Date(),
-                hash: hash,
+                hash,
                 visible: key.slice(-4),
             },
-        });
+        }),
+    );
+    if (createError) throw createError;
 
-        newApiKey['key'] = key;
+    newApiKey['key'] = key;
 
-        const query = {
-            data: newApiKey,
-            time: performanceTime(start),
-        };
-
-        revalidatePath('/dashboard', 'page');
-        return query;
-    } catch (error) {
-        console.error('createRandomPost()');
-        console.error(error);
-        throw error;
-    }
+    revalidatePath('/dashboard', 'page');
+    return { data: newApiKey, time: performanceTime(start) };
 }
 
 export async function deleteApiKey(_, formData) {
     const start = performance.now();
 
-    //get values from FormData
+    const session = await auth();
+    if (!session || !session?.user) {
+        return {
+            errors: { auth: "You don't have permission to delete this API key" },
+            time: performanceTime(start),
+        };
+    }
+
     const formValues = {
         userId: formData.get('userId'),
         apikeyId: formData.get('apikeyId'),
     };
 
-    //create and test FormData values using zod
     const schema = z.object({
         userId: z.string().uuid(),
         apikeyId: z.string().uuid(),
     });
     const check = schema.safeParse(formValues);
-    if (check?.success === false) {
+    if (!check.success) {
         return {
             errors: check.error.flatten().fieldErrors,
             data: formValues,
@@ -147,37 +137,20 @@ export async function deleteApiKey(_, formData) {
         };
     }
 
-    try {
-        const session = await auth();
-        if (!session || !session?.user) {
-            return {
-                errors: { auth: "You don't have permission to delete this API key" },
-                time: performanceTime(start),
-            };
-        }
-        if (session.user.id !== formValues.userId) {
-            return {
-                errors: { auth: "You don't have permission to delete this API key" },
-                time: performanceTime(start),
-            };
-        }
-
-        const deletedApiKey = await db.ApiKey.delete({
-            where: {
-                id: formValues.apikeyId,
-            },
-        });
-
-        const query = {
-            data: deletedApiKey,
+    if (session.user.id !== formValues.userId) {
+        return {
+            errors: { auth: "You don't have permission to delete this API key" },
             time: performanceTime(start),
         };
-
-        revalidatePath('/dashboard', 'page');
-        return query;
-    } catch (error) {
-        console.error('deleteApiKey()');
-        console.error(error);
-        throw error;
     }
+
+    const { data: deletedApiKey, error } = await tryCatch(
+        db.ApiKey.delete({
+            where: { id: formValues.apikeyId, userId: formValues.userId },
+        }),
+    );
+    if (error) throw error;
+
+    revalidatePath('/dashboard', 'page');
+    return { data: deletedApiKey, time: performanceTime(start) };
 }

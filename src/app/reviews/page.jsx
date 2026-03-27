@@ -1,11 +1,11 @@
 import { auth } from '@/auth';
 import { getPosts, createRandomPost, createPost } from '@/db/queries/post';
-import { formatDate, timeSince } from '@/utils/time';
+import { timeSince } from '@/utils/time';
 import Image from 'next/image';
 
 export default async function PostPage() {
     const session = await auth();
-    const loggedIn = session && session.user ? true : false;
+    const loggedIn = !!session?.user;
     // const posts =
 
     return (
@@ -24,24 +24,15 @@ export default async function PostPage() {
 
 async function ShowPosts() {
     const result = await getPosts();
+    const posts = result.query;
 
-    if (result.error) {
-        return (
-            <ul>
-                <li>Error: {result.error}</li>
-            </ul>
-        );
-    }
-
-    if (result.data.length < 1) {
+    if (!posts || posts.length < 1) {
         return (
             <ul>
                 <li>No posts yet</li>
             </ul>
         );
     }
-
-    const posts = result.data;
 
     return (
         <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
@@ -99,7 +90,6 @@ async function GeneratePost() {
 }
 
 function PostAuthor({ author }) {
-    // console.log('PostAuthor', author);
     if (author.name) {
         return <span>{author.name}</span>;
     }

@@ -1,7 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeMapState } from '@/utils/computeMapState.mjs';
-import { getWarOutcome } from '@/utils/getWarOutcome.mjs';
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import {
     bugPaths,
@@ -15,8 +14,8 @@ const COLORS = {
     bg: 'rgb(0, 9, 19)',
     border: 'rgba(255, 225, 0, 0.99)',
     captured: 'rgba(255, 213, 0, 0.33)',
-    lost: 'rgba(0, 0, 0, 0.55)',
-    lostStroke: 'rgba(0, 0, 0, 0.99)',
+    lost: 'rgba(255, 255, 255, 0.06)',
+    lostStroke: 'rgba(255, 255, 255, 0.15)',
     bugs: 'rgba(25, 218, 12, 0.35)',
     bugsText: 'rgba(25, 218, 12, 0.9)',
     bugsBar: 'rgba(25, 218, 12, 0.7)',
@@ -101,8 +100,8 @@ export async function GET() {
         return fallbackImage();
     }
 
-    const mapState = computeMapState(data.live, data.events || []);
-    const warOutcome = getWarOutcome(data);
+    const events = data.events || [];
+    const mapState = computeMapState(data.live, events);
     const mapDataUri = buildMapSvg(mapState);
 
     const factionStats = data.live.map((f) => {
@@ -116,14 +115,25 @@ export async function GET() {
         };
     });
 
+    // Determine status from live data and events
     let statusText = 'WAR IN PROGRESS';
     let statusColor = COLORS.yellow;
-    if (warOutcome?.outcome === 'victory') {
+
+    const allDefeated =
+        data.live.length === 3 && data.live.every((f) => f.status === 'defeated');
+    if (allDefeated) {
         statusText = 'VICTORY';
-        statusColor = COLORS.yellow;
-    } else if (warOutcome?.outcome === 'defeat') {
-        statusText = 'DEFEAT';
-        statusColor = COLORS.cyborgsText;
+    } else if (events.length > 0) {
+        const activeEvent = events.find((e) => e.status === 'active');
+        if (activeEvent) {
+            statusText = 'ACTIVE EVENT';
+        } else {
+            const lastEvent = events.toSorted((a, b) => b.end_time - a.end_time)[0];
+            const won = lastEvent.status === 'success';
+            const verb = lastEvent.type === 'defend' ? 'DEFEND' : 'ATTACK';
+            statusText = won ? `${verb} WON` : `${verb} LOST`;
+            statusColor = won ? COLORS.yellow : COLORS.cyborgsText;
+        }
     }
 
     return new ImageResponse(
@@ -156,7 +166,7 @@ export async function GET() {
                 >
                     <span
                         style={{
-                            fontSize: 14,
+                            fontSize: 18,
                             color: COLORS.textDim,
                             letterSpacing: 2,
                         }}
@@ -165,7 +175,7 @@ export async function GET() {
                     </span>
                     <span
                         style={{
-                            fontSize: 24,
+                            fontSize: 34,
                             color: COLORS.yellow,
                             fontWeight: 'bold',
                         }}
@@ -193,7 +203,7 @@ export async function GET() {
             >
                 <span
                     style={{
-                        fontSize: 16,
+                        fontSize: 24,
                         color: COLORS.yellow,
                         fontWeight: 'bold',
                         letterSpacing: 3,
@@ -203,7 +213,7 @@ export async function GET() {
                 </span>
                 <span
                     style={{
-                        fontSize: 28,
+                        fontSize: 44,
                         color: statusColor,
                         fontWeight: 'bold',
                     }}
@@ -231,7 +241,8 @@ export async function GET() {
                                 style={{
                                     display: 'flex',
                                     justifyContent: 'space-between',
-                                    fontSize: 14,
+                                    fontSize: 20,
+                                    fontWeight: 'bold',
                                     color: f.textColor,
                                 }}
                             >
@@ -241,7 +252,7 @@ export async function GET() {
                             <div
                                 style={{
                                     display: 'flex',
-                                    height: 10,
+                                    height: 14,
                                     background: COLORS.barBg,
                                     borderRadius: 5,
                                     overflow: 'hidden',
@@ -261,7 +272,7 @@ export async function GET() {
                 </div>
                 <span
                     style={{
-                        fontSize: 14,
+                        fontSize: 16,
                         color: COLORS.textMuted,
                         marginTop: 'auto',
                     }}

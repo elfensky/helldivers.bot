@@ -60,6 +60,9 @@ next-env.d.ts
 # Tool state
 .claude-octopus/
 .playwright-mcp/
+.desloppify/
 
 # Temporary verification screenshots
 verify-*.png
+scorecard.png
+.claude/skills/

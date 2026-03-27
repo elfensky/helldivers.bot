@@ -1,10 +1,10 @@
-'use server';
+import { cache } from 'react';
 import db from '@/db/db';
 import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/utils/time';
 
-export async function getCampaign(season = null) {
+export const getCampaign = cache(async function getCampaign(season = null) {
+    'use server';
     const start = performance.now();
 
     const where = season === null ? { last_updated: { not: null } } : { season: season };
@@ -78,4 +78,4 @@ export async function getCampaign(season = null) {
     if (error) throw error;
 
     return data;
-}
+});

@@ -41,7 +41,7 @@ All external data validated with Zod schemas (`src/validators/`) before database
 
 ### Formatting
 
-Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` to auto-format.
+Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` once before committing, not during development.
 
 ## Architecture Notes
 
@@ -53,6 +53,37 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` to 
 - **Error tracking:** Sentry SDK configured for self-hosted Bugsink (`tracesSampleRate: 0`, no replays/logs).
 - **Node version:** Volta pins node@22 and npm@11.
 - **Server actions:** Most utilities use `'use server'` directive.
+
+## Task Tracking
+
+All work is tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and the [helldiversbot project board](https://github.com/users/elfensky/projects/5).
+
+### Organization
+
+- **Milestones** group issues by phase: Phase 0 (Initial Release, closed) through Phase 10, plus Shelved. Phase 4 and 11 are closed.
+- **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
+- **Project board** statuses: `Backlog`, `In progress`, `Done`.
+- Issue title prefixes: `Phase N:`, `Shelved:`.
+
+### Project Board Fields
+
+Every issue on the project board has these fields — keep them populated:
+
+- **Status**: `Backlog` → `In progress` → `Done`
+- **Priority**: `P0` (current sprint), `P1` (next up), `P2` (later)
+- **Size**: `XS` (<2h), `S` (2–4h), `M` (4–8h), `L` (8–16h), `XL` (16+h)
+- **Estimate**: Hours (numeric)
+- **Start date / End date**: Workday-based timeline (skip weekends)
+
+### Workflow — Keep Issues & Project Updated
+
+When working on a feature or fix:
+
+1. **Before starting**: Check GitHub Issues for existing tracking. If none exists, create one with the correct milestone, labels, and project board assignment.
+2. **When starting work**: Move the issue to `In progress` on the project board. Set **Start date** to today.
+3. **When done**: Close the issue with a comment describing what was implemented. Set **End date** to today. The project board auto-moves closed issues to `Done`.
+4. **New issues**: Always assign a milestone, at least one label, Size, Priority, Estimate, and add to the helldiversbot project (`gh project item-add 5 --owner elfensky --url <issue-url>`).
+5. **Timeline maintenance**: When completing work earlier or later than estimated, update Start/End dates on downstream items to keep the timeline realistic. Shift future items forward or back as needed.
 
 ## Specs & Plans
 

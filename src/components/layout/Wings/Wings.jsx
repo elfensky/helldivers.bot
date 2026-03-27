@@ -1,5 +1,4 @@
 import './Wings.css';
-import Image from 'next/image';
 
 export default function Wings({ as = 'h2', wings = false, children }) {
     const Heading = as;

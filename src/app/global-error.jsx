@@ -1,13 +1,9 @@
 'use client';
 
-import * as Sentry from '@sentry/nextjs';
-import { useEffect } from 'react';
+// Sentry captures errors automatically via instrumentation-client.js
+// No manual captureException needed here
 
 export default function GlobalError({ error, reset }) {
-    useEffect(() => {
-        Sentry.captureException(error);
-    }, [error]);
-
     return (
         <html>
             <body>

@@ -70,8 +70,10 @@ export function computeMapState(factionStates, events = []) {
         }
     }
 
-    // Process defend events
-    const defendEvents = events.filter((e) => e.type === 'defend');
+    // Process defend events (sorted by end_time so most recent outcome wins)
+    const defendEvents = events
+        .filter((e) => e.type === 'defend')
+        .sort((a, b) => a.end_time - b.end_time);
     for (const event of defendEvents) {
         if (event.region === 0) {
             if (event.status === 'active') {
@@ -79,13 +81,27 @@ export function computeMapState(factionStates, events = []) {
                 map[3][0].status = 'active';
             }
         } else if (event.region !== undefined && event.region !== null) {
-            map[event.enemy][event.region].event =
-                event.status === 'active' ? 'active' : 'idle';
+            if (event.status === 'active') {
+                map[event.enemy][event.region].event = 'active';
+            } else if (event.status === 'fail') {
+                // Failed defend: sector and all beyond it revert to lost
+                for (let r = event.region; r <= 10; r++) {
+                    if (map[event.enemy][r]) {
+                        map[event.enemy][r].status = 'lost';
+                        map[event.enemy][r].event = 'idle';
+                        map[event.enemy][r].percent = 0;
+                    }
+                }
+            } else {
+                map[event.enemy][event.region].event = 'idle';
+            }
         }
     }
 
-    // Process attack events
-    const attackEvents = events.filter((e) => e.type === 'attack');
+    // Process attack events (sorted by end_time so most recent outcome wins)
+    const attackEvents = events
+        .filter((e) => e.type === 'attack')
+        .sort((a, b) => a.end_time - b.end_time);
     for (const event of attackEvents) {
         if (event.status === 'active') {
             map[event.enemy][11].percent = (event.points / event.points_max) * 100;
@@ -98,6 +114,9 @@ export function computeMapState(factionStates, events = []) {
             map[event.enemy][11].points = event.points;
             map[event.enemy][11].points_max = event.points_max;
             map[event.enemy][11].status = 'captured';
+            map[event.enemy][11].event = 'idle';
+        } else if (event.status === 'fail') {
+            map[event.enemy][11].status = 'lost';
             map[event.enemy][11].event = 'idle';
         }
     }

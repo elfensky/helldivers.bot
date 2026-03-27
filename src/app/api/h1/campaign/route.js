@@ -3,7 +3,7 @@ import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/utils/time';
 import { errorResponse, successResponse } from '@/utils/responses';
 
-import { NextResponse, after } from 'next/server';
+import { after } from 'next/server';
 //validators
 import { isValidNumber } from '@/validators/isValidNumber';
 //db and fetch
@@ -22,7 +22,6 @@ export async function GET(request) {
         };
         await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'campaign', data);
     });
-    let requestType = null; // latest, specific, multiple
     let data = null;
     let season = null;
 

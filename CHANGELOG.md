@@ -6,6 +6,40 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
+## 0.14.0 (2026-03-27)
+
+### Security
+
+- Migrate update endpoint auth from query param to Bearer token header
+- Upgrade API key hashing from MD5 to SHA-256
+- Normalize auth patterns across all protected endpoints
+
+### Code Quality (desloppify)
+
+- Add 210 unit tests across 16 files (validators, queries, utilities)
+- Migrate `api.mjs` and `post.mjs` to `tryCatch` pattern, fix `db.post` → `db.review`
+- Rename all enum and validator files from `.js` to `.mjs` for consistency
+- Standardize rebroadcast query structure, remove dead code
+- Deduplicate logic, simplify utilities, remove unused exports
+- Add `evaluateProgress` utility for live event progress tracking
+- Add `'use server'` directives where missing
+
+### Performance
+
+- Fix React rendering waterfalls, reduce bundle size, improve caching (#146)
+
+### Features
+
+- Timeline deep-linking with URL hash navigation
+- Lost sector visibility improvements on war page
+- Season URL redirect (bare `/war` → current season)
+
+### Chores
+
+- Move OG image spec/plan to completed
+- Remove deprecated `TODO.md`
+- Run prettier formatting pass
+
 ## 0.13.0 (2026-03-26)
 
 - Dynamic OG image generation showing galaxy map with live war progress

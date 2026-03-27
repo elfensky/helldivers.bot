@@ -13,8 +13,11 @@
 4. [Season Extraction](#4-season-extraction)
 5. [Formatting](#5-formatting)
 6. [Other Utilities](#6-other-utilities)
-7. [Validation Schemas](#7-validation-schemas)
-8. [Snapshot Throttle Timers](#8-snapshot-throttle-timers)
+7. [War Outcome — `getWarOutcome`](#7-war-outcome--getwaroutcome)
+8. [Shared Map Data — `mapPaths`](#8-shared-map-data--mappaths)
+9. [Event Progress — `evaluateProgress`](#9-event-progress--evaluateprogress)
+10. [Validation Schemas](#10-validation-schemas)
+11. [Snapshot Throttle Timers](#11-snapshot-throttle-timers)
 
 ---
 
@@ -374,7 +377,74 @@ Maps `NODE_ENV` to hostname:
 
 ---
 
-## 7. Validation Schemas
+## 7. War Outcome — `getWarOutcome`
+
+**Source:** `src/utils/getWarOutcome.mjs`
+
+```ts
+getWarOutcome(data: { snapshots?, events?, live? }): { outcome: 'victory'|'defeat', reason: string } | null
+```
+
+Determines whether a war ended in victory or defeat. Extracted from `War.jsx` for reuse.
+
+**Decision tree:**
+
+1. No data (all arrays empty) → `null`
+2. All 3 live factions `status === 'defeated'` → `{ outcome: 'victory' }` (early return)
+3. Victory signal: any snapshot shows all 3 defeated, OR all 3 homeworlds captured via attack events
+4. Defeat signal: last region-0 defend event has `status === 'fail'`
+5. Victory AND no defeat → victory. Defeat signal → defeat. No victory signal → defeat.
+
+**Consumers:** `War.jsx` (UI banner), potentially future features. Note: the OG image route does NOT use this — it derives status directly from events.
+
+**Tests:** `src/__tests__/unit/utils/getWarOutcome.test.mjs` (8 cases)
+
+---
+
+## 8. Shared Map Data — `mapPaths`
+
+**Source:** `src/enums/mapPaths.mjs`
+
+Shared SVG path geometry for the Galaxy map. Single source of truth consumed by both `Map.jsx` (CSS class styling) and the OG image route (inline styling).
+
+**Exports:**
+
+- `viewBox` — `'0 0 806.93 868.81'`
+- `bugPaths` — `Array<{ id, sector, d }>` (11 items, sectors 1-11)
+- `cyborgPaths` — same structure (11 items)
+- `illuminatePaths` — same structure (11 items)
+- `superEarthCircle` — `{ id, cx, cy, r }`
+- `factionIcons` — `Array<{ id, href, x, y, width, height }>` (4 items: bugs, cyborgs, illuminate, superearth)
+
+The `sector` field is a number to avoid string parsing from `id`.
+
+---
+
+## 9. Event Progress — `evaluateProgress`
+
+**Source:** `src/utils/evaluateProgress.mjs`
+
+Evaluates how a live event is performing relative to the expected linear progress rate. Returns a human-readable status string for active events, or `null` for completed/inactive events.
+
+```ts
+evaluateProgress(event: { start_time, end_time, points, points_max, status }) → string | null
+```
+
+**Algorithm:**
+
+1. Calculate expected points at current time assuming linear progress (`expectedRate × elapsedTime`).
+2. Compare actual `points` against expected with a 10% buffer.
+3. Return status:
+   - `"Ahead by N points"` — actual > expected + 10% buffer
+   - `"Behind by N points"` — actual < expected
+   - `"On track by N points"` — within buffer
+   - `null` — event `status` is not `'active'`
+
+**Tests:** `src/__tests__/unit/utils/evaluateProgress.test.mjs`
+
+---
+
+## 10. Validation Schemas
 
 **Source:** `src/validators/`
 
@@ -384,7 +454,7 @@ All schemas use Zod v4 (`"zod": "^4.3.6"` in `package.json`). Every validator im
 
 ### `isValidStatus`
 
-**Source:** `src/validators/isValidStatus.js`
+**Source:** `src/validators/isValidStatus.mjs`
 **Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Function — `(data: unknown) => SafeParseReturnType`
 
@@ -460,7 +530,7 @@ Validates the official API `get_campaign_status` response.
 
 ### `isValidSeason`
 
-**Source:** `src/validators/isValidSeason.js`
+**Source:** `src/validators/isValidSeason.mjs`
 **Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Function — `(data: unknown) => SafeParseReturnType`
 
@@ -520,7 +590,7 @@ The distinction between defend and attack events is enforced via `.refine()`:
 
 ### `isValidFormData`
 
-**Source:** `src/validators/isValidFormData.js`
+**Source:** `src/validators/isValidFormData.mjs`
 **Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object (not a function) — call `.safeParse(data)` directly
 
@@ -551,7 +621,7 @@ Preprocesses a string to a number before validation. Used for form fields where 
 
 ### `isValidContentType`
 
-**Source:** `src/validators/isValidContentType.js`
+**Source:** `src/validators/isValidContentType.mjs`
 **Zod import:** `import { z } from 'zod'` (Zod v4)
 **Export type:** Zod schema object — call `.safeParse(value)` directly
 
@@ -589,7 +659,7 @@ Identical preprocessing behavior to `schemaNumber` in `isValidFormData.js` — c
 
 ---
 
-## 8. Snapshot Throttle Timers
+## 11. Snapshot Throttle Timers
 
 **Source:** `src/update/snapshotTimers.mjs`
 
