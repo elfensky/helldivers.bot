@@ -14,12 +14,14 @@ Add two server-rendered info elements to the galaxy map: a "last updated" timest
 **Format:** `Updated Xs ago` or `Updated Xm ago` — computed at render time from `data.last_updated` (already returned by `getCampaign()`).
 
 **Styling:**
+
 - Font: `--font-mono`
 - Color: `--color-text-muted`
 - Size: small (text-xs or 12px)
 - Centered
 
 **Data flow:**
+
 - `page.jsx` already has `data.last_updated`
 - Pass `lastUpdated` prop from `DashboardClient` → `Galaxy`
 - `Galaxy` renders a `<p>` below the `<Map>` component
@@ -28,6 +30,7 @@ Add two server-rendered info elements to the galaxy map: a "last updated" timest
 ## 2. Player Counts Above Faction Icons
 
 **Position:** SVG `<text>` elements inside the map SVG, centered horizontally above each faction icon. Uses existing `factionIcons` coordinates:
+
 - Bugs: x=760, y=110 (above icon at 710,120)
 - Cyborgs: x=50, y=110 (above icon at 0,120)
 - Illuminate: x=404, y=757 (above icon at 354,765)
@@ -36,12 +39,14 @@ Add two server-rendered info elements to the galaxy map: a "last updated" timest
 **Format:** Compact number — `12.3K`, `1.2M`, `847`. Same `formatNumber` logic as `StatGrid`.
 
 **Styling:**
+
 - Font: monospace (SVG `font-family="monospace"`)
 - Fill: `rgba(255,255,255,0.7)`
 - Size: ~18px in SVG units
 - `text-anchor="middle"`, `pointer-events="none"`
 
 **Data flow:**
+
 - `DashboardClient` passes `data.live` to `Galaxy` → `Map`
 - `Map` receives a new `live` prop (array of 3 faction objects)
 - `Map` renders `<text>` elements inside each faction `<g>`, positioned above the `<image>`

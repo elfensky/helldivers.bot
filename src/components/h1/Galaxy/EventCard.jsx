@@ -44,7 +44,14 @@ export function computeFrontier(campaignData, factionMap) {
 /**
  * HTML info card showing sector capture/defend/attack progress.
  */
-export default function EventCard({ label, region, percent, points, pointsMax, factionIndex }) {
+export default function EventCard({
+    label,
+    region,
+    percent,
+    points,
+    pointsMax,
+    factionIndex,
+}) {
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = label === 'DEFENDING' || label === 'ATTACKING';
     const labelColor = isEvent ? 'var(--color-danger)' : color;
