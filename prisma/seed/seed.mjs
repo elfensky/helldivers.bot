@@ -69,12 +69,17 @@ async function seedSeason(db, file) {
     }
     await Promise.all(metaOps);
 
-    // 4. Upsert defend events (batched)
+    // 4. Upsert defend events, attack events, and snapshots (all parallel)
     const defendEvents = (seasonData.defend_events ?? []).filter(
         (e) => e.season === season,
     );
-    await Promise.all(
-        defendEvents.map((event) =>
+    const attackEvents = (seasonData.attack_events ?? []).filter(
+        (e) => e.season === season,
+    );
+    const snapshots = (seasonData.snapshots ?? []).filter((s) => s.season === season);
+
+    await Promise.all([
+        ...defendEvents.map((event) =>
             db.h1_event.upsert({
                 where: { type_event_id: { type: 'defend', event_id: event.event_id } },
                 update: {
@@ -103,14 +108,7 @@ async function seedSeason(db, file) {
                 },
             }),
         ),
-    );
-
-    // 5. Upsert attack events (batched)
-    const attackEvents = (seasonData.attack_events ?? []).filter(
-        (e) => e.season === season,
-    );
-    await Promise.all(
-        attackEvents.map((event) =>
+        ...attackEvents.map((event) =>
             db.h1_event.upsert({
                 where: { type_event_id: { type: 'attack', event_id: event.event_id } },
                 update: {
@@ -139,12 +137,7 @@ async function seedSeason(db, file) {
                 },
             }),
         ),
-    );
-
-    // 6. Upsert snapshots (batched)
-    const snapshots = (seasonData.snapshots ?? []).filter((s) => s.season === season);
-    await Promise.all(
-        snapshots.map((snapshot) => {
+        ...snapshots.map((snapshot) => {
             const parsedData =
                 typeof snapshot.data === 'string' ?
                     JSON.parse(snapshot.data)
@@ -159,7 +152,7 @@ async function seedSeason(db, file) {
                 },
             });
         }),
-    );
+    ]);
 
     const d = defendEvents.length;
     const a = attackEvents.length;
@@ -190,6 +183,20 @@ async function seed() {
         console.log('No seed files found. Skipping seed.');
         await db.$disconnect();
         return;
+    }
+
+    // Skip seeding if DB already has the expected number of seasons
+    if (!process.env.FORCE_SEED) {
+        const dbCount = await db.h1_season.count();
+        if (dbCount === jsonFiles.length) {
+            console.log(
+                `Already seeded (${dbCount} seasons). Skipping. Set FORCE_SEED=true to re-seed.`,
+            );
+            await db.$disconnect();
+            return;
+        }
+    } else {
+        console.log('FORCE_SEED is set. Re-seeding all data.');
     }
 
     console.log(
