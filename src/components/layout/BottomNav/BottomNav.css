@@ -1,0 +1,41 @@
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    display: flex;
+    height: 48px;
+    background: var(--color-surface-1);
+    border-top: 1px solid var(--color-ghost-border);
+}
+
+.bottom-nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-family: var(--font-body);
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-top: 2px solid transparent;
+    transition: color 0.15s ease;
+}
+
+.bottom-nav-tab.active {
+    color: var(--color-primary);
+    border-top-color: var(--color-primary);
+}
+
+.bottom-nav-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+.bottom-nav-label {
+    line-height: 1;
+}
