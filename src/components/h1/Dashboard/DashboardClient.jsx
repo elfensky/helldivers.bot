@@ -24,11 +24,12 @@ export default function DashboardClient({ data, mapState }) {
             <section className="sector-grid">
                 {timeAgo && (
                     <p
-                        className="mb-0 font-mono text-xs"
+                        className="font-mono text-xs"
                         style={{
                             color: 'var(--color-text-muted)',
                             gridColumn: '1 / -1',
                         }}
+                        suppressHydrationWarning
                     >
                         {timeAgo}
                     </p>
