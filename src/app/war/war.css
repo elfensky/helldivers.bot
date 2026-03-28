@@ -1,3 +1,6 @@
 main {
-    background: var(--color-surface-0);
+    background:
+        linear-gradient(var(--color-surface-0, #131313) 0%, rgba(19, 19, 19, 0.85) 100%),
+        url('/images/background.webp') no-repeat center center fixed;
+    background-size: cover;
 }
