@@ -7,6 +7,7 @@ import EventCard, { computeFrontier } from '@/components/h1/Galaxy/EventCard';
 import FactionTabs from '@/components/h1/FactionTabs/FactionTabs';
 import StatGrid from '@/components/h1/StatGrid/StatGrid';
 import Event from '@/components/h1/Event/Event';
+import { formatTimeAgo } from '@/utils/formatTimeAgo.mjs';
 
 const factionIndices = [0, 1, 2];
 
@@ -14,12 +15,24 @@ export default function DashboardClient({ data, mapState }) {
     const [faction, setFaction] = useState('global');
 
     const events = data?.events?.sort((a, b) => b.start_time - a.start_time);
+    const timeAgo = formatTimeAgo(data.last_updated);
 
     return (
         <div className="gutters flex flex-col gap-4 pb-4">
             <Alerts data={data} />
-            <Galaxy mapState={mapState} lastUpdated={data.last_updated} />
-            <div className="sector-grid">
+            <Galaxy mapState={mapState} />
+            <section className="sector-grid">
+                {timeAgo && (
+                    <p
+                        className="mb-0 font-mono text-xs"
+                        style={{
+                            color: 'var(--color-text-muted)',
+                            gridColumn: '1 / -1',
+                        }}
+                    >
+                        {timeAgo}
+                    </p>
+                )}
                 {factionIndices.map((index) => {
                     const campaignData = data.live?.find((l) => l.enemy === index);
                     const frontier = computeFrontier(campaignData, mapState[index]);
@@ -56,7 +69,7 @@ export default function DashboardClient({ data, mapState }) {
                         />
                     );
                 })}
-            </div>
+            </section>
             <section className="flex flex-col gap-2">
                 <h2>Stats</h2>
                 <FactionTabs active={faction} onChange={setFaction} />
