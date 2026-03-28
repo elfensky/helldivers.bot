@@ -4,7 +4,6 @@ import Map from '@/components/h1/Galaxy/Map';
 import Tooltip from '@/components/h1/Galaxy/Tooltip';
 
 export default function Galaxy({ mapState }) {
-    // Note: memo was removed because React Compiler handles memoization
     const svgRef = useRef(null);
 
     return (

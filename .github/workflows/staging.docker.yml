@@ -9,33 +9,29 @@ permissions:
     packages: write
 
 jobs:
-    # sonarqube:
-    #     runs-on: ubuntu-latest
-    #     steps:
-    #         - uses: actions/checkout@v6
-    #           with:
-    #               # Disabling shallow clones is recommended for improving the relevancy of reporting
-    #               fetch-depth: 0
+    detect-migration:
+        runs-on: ubuntu-latest
+        outputs:
+            migrate: ${{ steps.filter.outputs.migrate }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
 
-    #         # perform scan
-    #         - name: SonarQube Cloud Scan
-    #           uses: SonarSource/sonarqube-scan-action@v7.0.0 # Ex: v5.2.0, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
-    #           env:
-    #               SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    #               SONAR_HOST_URL: https://sonarcloud.io # ${{ vars.SONAR_HOST_URL }}
-
-    #         # check scan results
-    #         # - name: SonarQube Quality Gate
-    #         #   id: sonarqube-quality-gate-check
-    #         #   uses: sonarsource/sonarqube-quality-gate-action@v1.2.0 # Ex: v1.2.0, See the latest version at https://github.com/marketplace/actions/sonarqube-quality-gate-check
-    #         #   with:
-    #         #       pollingTimeoutSec: 300 #default
-    #         #   env:
-    #         #       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    #         #       SONAR_HOST_URL: https://sonarcloud.io
+            - name: Detect migration-related changes
+              id: filter
+              uses: dorny/paths-filter@v4
+              with:
+                  filters: |
+                      migrate:
+                        - 'prisma/**'
+                        - 'prisma.config.mjs'
+                        - 'package.json'
+                        - 'package-lock.json'
+                        - 'Dockerfile.migrate'
 
     build-migrate:
-        # needs: sonarqube # <--- This makes build wait for sonarqube to finish
+        needs: detect-migration
+        if: needs.detect-migration.outputs.migrate == 'true' || github.event_name == 'workflow_dispatch'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
@@ -91,7 +87,8 @@ jobs:
                       NODE_ENV=staging
 
     cleanup:
-        needs: [build-migrate, build-app] # Runs after both builds complete
+        needs: [build-migrate, build-app]
+        if: ${{ !cancelled() }} # Run even when build-migrate is skipped
         runs-on: ubuntu-latest
         steps:
             - name: Cleanup untagged packages

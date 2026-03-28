@@ -1,0 +1,12 @@
+.sector-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+@media (min-width: 480px) {
+    .sector-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}

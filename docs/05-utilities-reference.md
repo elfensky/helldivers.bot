@@ -18,6 +18,8 @@
 9. [Event Progress — `evaluateProgress`](#9-event-progress--evaluateprogress)
 10. [Validation Schemas](#10-validation-schemas)
 11. [Snapshot Throttle Timers](#11-snapshot-throttle-timers)
+12. [Map State — `computeMapState`](#12-map-state--computemapstate)
+13. [On-Demand Season Fetching — `fetchAndSeedSeason`](#13-on-demand-season-fetching--fetchandseedseason)
 
 ---
 
@@ -252,22 +254,48 @@ Snapshot data includes attack events because historical season data is already f
 
 ## 5. Formatting
 
-**Source:** `src/utils/utils.mjs`
+### `formatNumber(n)`
 
-### `formatNumber(num)`
+**Source:** `src/utils/formatNumber.mjs`
 
 ```ts
-formatNumber(num: number | bigint): string
+formatNumber(n: number | null | undefined): string
 ```
 
 **Behavior:**
 
-1. If input is `bigint`, converts to `Number` first (note: precision loss possible for very large values).
-2. `>= 1,000,000` → `Math.round(num / 1_000_000) + 'M'`
-3. `>= 1,000` → `Math.round(num / 1_000) + 'K'`
-4. Otherwise → `num.toString()`
+1. `null` / `undefined` → `'—'`
+2. `NaN` / `Infinity` → `'—'`
+3. `>= 1,000,000,000` → `(n / 1B).toFixed(1) + 'B'`
+4. `>= 1,000,000` → `(n / 1M).toFixed(1) + 'M'`
+5. `>= 1,000` → `n.toLocaleString()` (with commas)
+6. Otherwise → `String(n)`
 
-**Examples:** `1500000` → `"2M"`, `1499` → `"1K"`, `999` → `"999"`.
+**Examples:** `1_500_000_000` → `"1.5B"`, `12_300_000` → `"12.3M"`, `12345` → `"12,345"`, `847` → `"847"`.
+
+**Used by:** `StatGrid`, `EventCard`.
+
+---
+
+### `formatTimeAgo(date, now?)`
+
+**Source:** `src/utils/formatTimeAgo.mjs`
+
+```ts
+formatTimeAgo(date: Date | null, now?: Date): string | null
+```
+
+**Behavior:**
+
+1. `null` / `undefined` → `null`
+2. Invalid date / future date → `'Updated just now'`
+3. `< 60 seconds` → `'Updated Xs ago'`
+4. `< 60 minutes` → `'Updated Xm ago'`
+5. `>= 60 minutes` → `'Updated Xh ago'`
+
+**Examples:** 45 seconds elapsed → `"Updated 45s ago"`, 3 minutes → `"Updated 3m ago"`.
+
+**Used by:** `Galaxy` component (timestamp below the map).
 
 ---
 
@@ -743,6 +771,104 @@ resetSnapshotTimers(): Promise<void>
 ```
 
 Clears all in-memory state: sets `lastLiveSnapshotTime` to `null` and clears the `lastEventSnapshotTimes` map. Not called internally — `resetIfSeasonChanged` performs its own inline reset. Exported for external callers that need a full manual reset.
+
+---
+
+## 12. Map State — `computeMapState`
+
+**Source:** `src/utils/computeMapState.mjs`
+
+```ts
+computeMapState(factionStates: Array, events?: Array): Object
+```
+
+Computes the visual state of the galaxy map from faction campaign data and events. Returns a deep clone of the map template with computed sector statuses — never mutates the template.
+
+### Sector calculation (regions 1-10)
+
+Uses `campaign.points` (current influence score) divided by `campaign.points_max / 10` (per-sector threshold) to determine how many sectors are captured:
+
+- `sectorsEarned = Math.trunc(points / pointsPerSector)` — fully captured sectors
+- `sectorsInProgress = sectorsEarned + 1` — the sector currently being contested
+- Remaining sectors default to `lost`
+
+**Important:** `campaign.points` is the correct field, not `campaign.points_taken`. The `points` field reflects current influence (can decrease due to counter-attacks), while `points_taken` is cumulative. The game's sector display corresponds to `points`.
+
+### Homeworld (region 11)
+
+Region 11 is **only** affected by attack events. Campaign score has no effect. Attack events set region 11 to `active` (in progress), `captured` (success), or `lost` (fail).
+
+### Event filtering — critical for callers
+
+**For live views** (homepage, OG image): only pass events with `status === 'active'`. Completed events are already reflected in the campaign score. Passing completed defend events will incorrectly overwrite score-based sector ownership.
+
+```js
+// Correct (live view)
+const activeEvents = (data.events ?? []).filter((e) => e.status === 'active');
+const mapState = computeMapState(data.live, activeEvents);
+```
+
+**For the timeline** (`WarTimeline`): pass time-filtered events including completed ones, as the timeline reconstructs historical state from snapshots where the score at that moment matches the events.
+
+### Defend event behavior
+
+Defend events are sorted by `end_time` (most recent wins per region):
+
+- `status === 'active'` — sets `event: 'active'` on the region (visual overlay)
+- `status === 'fail'` — reverts the region **and all regions beyond it** (to region 10) to `lost`
+- `status === 'success'` — sets `event: 'idle'` (preserves score-based status)
+- Region 0 defend events affect Super Earth (`map[3][0]`)
+
+### Used by
+
+| Caller | Events passed |
+|--------|--------------|
+| `src/app/page.jsx` (homepage) | Active only |
+| `src/app/api/og/route.js` (OG image) | Active only |
+| `src/app/war/page.jsx` (history) | None (`[]`) — timeline handles its own |
+| `src/components/h1/WarTimeline/WarTimeline.jsx` | Time-filtered (active + completed at that moment) |
+
+---
+
+## 13. On-Demand Season Fetching — `fetchAndSeedSeason`
+
+**Source:** `src/db/queries/fetchAndSeedSeason.mjs`
+
+```ts
+fetchAndSeedSeason(season: number): Promise<void>
+```
+
+Fetches a single season from the official Helldivers API and seeds it into the normalized `h1_*` tables. Called on-demand by the `/war` history page when a user requests a season not yet stored in the database.
+
+### Behavior
+
+1. Calls `fetchSeason(season)` from `src/update/fetch.mjs` (official API `get_snapshots` endpoint)
+2. Returns early (no-op) if the API returns no meaningful data (no snapshots, no events)
+3. Upserts into: `h1_season`, `h1_introduction_order`, `h1_points_max`, `h1_event` (defend + attack), `h1_snapshot`
+4. All operations use Prisma upserts — idempotent, safe to call multiple times for the same season
+5. Throws if the API fetch itself fails
+
+### Usage
+
+```js
+// In /war page — fetch missing season on first request
+const { data, error } = await tryCatch(getCampaign(season));
+if (!error && !data) {
+    await tryCatch(fetchAndSeedSeason(season));
+    // Re-query after seeding
+    ({ data, error } = await tryCatch(getCampaign(season)));
+}
+```
+
+### Season selector derivation
+
+The `/war` page no longer queries the database for available seasons. Instead, it derives the list from the current active season number:
+
+```js
+const seasons = Array.from({ length: activeSeason - 1 }, (_, i) => activeSeason - 1 - i);
+```
+
+This ensures all past seasons are always selectable, even if they haven't been fetched yet. First access triggers `fetchAndSeedSeason()`, after which the data is cached in the DB permanently.
 
 ---
 

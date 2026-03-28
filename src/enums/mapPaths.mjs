@@ -201,6 +201,58 @@ export const superEarthCircle = {
 /**
  * Faction icon definitions (used by Map.jsx, not OG image).
  */
+/**
+ * Approximate center coordinates for each sector path (bounding-box midpoint).
+ * Used for positioning permanent info cards on the map.
+ */
+export const sectorCentroids = {
+    0: {
+        // Bugs (right side)
+        1: { x: 457, y: 353 },
+        2: { x: 505, y: 366 },
+        3: { x: 489, y: 275 },
+        4: { x: 566, y: 361 },
+        5: { x: 545, y: 269 },
+        6: { x: 668, y: 365 },
+        7: { x: 620, y: 202 },
+        8: { x: 582, y: 140 },
+        9: { x: 746, y: 372 },
+        10: { x: 623, y: 133 },
+        11: { x: 750, y: 176 },
+    },
+    1: {
+        // Cyborgs (left side)
+        1: { x: 366, y: 353 },
+        2: { x: 323, y: 318 },
+        3: { x: 264, y: 348 },
+        4: { x: 306, y: 277 },
+        5: { x: 277, y: 204 },
+        6: { x: 176, y: 284 },
+        7: { x: 139, y: 362 },
+        8: { x: 235, y: 142 },
+        9: { x: 60, y: 363 },
+        10: { x: 197, y: 114 },
+        11: { x: 59, y: 171 },
+    },
+    2: {
+        // Illuminate (bottom)
+        1: { x: 388, y: 455 },
+        2: { x: 385, y: 504 },
+        3: { x: 470, y: 553 },
+        4: { x: 379, y: 615 },
+        5: { x: 254, y: 591 },
+        6: { x: 200, y: 686 },
+        7: { x: 551, y: 637 },
+        8: { x: 431, y: 710 },
+        9: { x: 617, y: 687 },
+        10: { x: 402, y: 764 },
+        11: { x: 402, y: 835 },
+    },
+    3: {
+        0: { x: 403, y: 392 },
+    },
+};
+
 export const factionIcons = [
     {
         id: 'faction0',

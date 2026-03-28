@@ -1,6 +1,19 @@
 main {
-    background:
-        linear-gradient(var(--color-surface-0, #131313) 0%, rgba(19, 19, 19, 0.85) 100%),
-        url('/images/background.webp') no-repeat center center fixed;
+    background: url('/images/background.webp') no-repeat center center fixed;
     background-size: cover;
+    position: relative;
+}
+
+main::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(19, 19, 19, 0.85);
+    z-index: 0;
+    pointer-events: none;
+}
+
+main > * {
+    position: relative;
+    z-index: 1;
 }

@@ -21,4 +21,4 @@ RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma 
 # Set tini as the init system
 ENTRYPOINT ["/sbin/tini", "--"]   
 # Run migrations and exit
-CMD ["npx", "prisma", "migrate", "deploy"]
+CMD sh -c "npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs"

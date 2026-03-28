@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 //db
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
-import { getSeasonList } from '@/db/queries/getSeasonList';
+import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
 //utils
 import { computeMapState } from '@/utils/computeMapState.mjs';
 //components
@@ -25,35 +25,47 @@ export default async function WarHistoryPage({ searchParams }) {
     const params = await searchParams;
     const seasonParam = params?.season ? parseInt(params.season, 10) : null;
 
-    // Fetch season list and (if season specified) campaign data in parallel
-    const campaignPromise =
-        seasonParam !== null ? tryCatch(getCampaign(seasonParam)) : null;
-    const { data: allSeasons, error: seasonsError } = await tryCatch(getSeasonList());
+    // Get the active season to derive the selector range
+    const { data: activeCampaign, error: activeError } = await tryCatch(getCampaign());
 
-    if (seasonsError !== null) {
-        console.error('getSeasonList failed:', seasonsError);
+    if (activeError !== null || !activeCampaign) {
+        console.error('getCampaign (active) failed:', activeError);
         return (
             <div className="flex min-h-full w-full flex-col justify-center">
-                Unable to load season list. Please try again later.
+                Unable to load campaign data. Please try again later.
             </div>
         );
     }
 
-    // Exclude the current (active) season — it's shown on the homepage
-    const activeSeason = allSeasons?.[0]?.season;
-    const seasons = allSeasons?.filter((s) => s.season !== activeSeason) || [];
+    const activeSeason = activeCampaign.season;
+    // All past seasons in descending order
+    const seasons = Array.from({ length: activeSeason - 1 }, (_, i) => activeSeason - 1 - i);
 
     // Default to the most recent completed season if no season param
-    const resolvedSeason = seasonParam ?? seasons[0]?.season ?? null;
+    const resolvedSeason = seasonParam ?? seasons[0] ?? null;
 
     // Populate ?season in URL so the link is always shareable
     if (seasonParam === null && resolvedSeason !== null) {
         redirect(`/war?season=${resolvedSeason}`);
     }
 
-    // Await the campaign (already started if seasonParam was provided, otherwise start now)
-    const { data, error } = await (campaignPromise ??
-        tryCatch(getCampaign(resolvedSeason)));
+    // Fetch requested season from DB
+    let { data, error } = await tryCatch(getCampaign(resolvedSeason));
+
+    // If season not in DB, fetch from official API and seed it
+    if (!error && !data && resolvedSeason !== null) {
+        const { error: seedError } = await tryCatch(fetchAndSeedSeason(resolvedSeason));
+        if (seedError) {
+            console.error('fetchAndSeedSeason failed:', seedError);
+            return (
+                <div className="flex min-h-full w-full flex-col justify-center">
+                    Unable to fetch season {resolvedSeason} from the official API.
+                </div>
+            );
+        }
+        // Re-query after seeding
+        ({ data, error } = await tryCatch(getCampaign(resolvedSeason)));
+    }
 
     if (error !== null) {
         console.error('getCampaign failed:', error);
@@ -67,7 +79,7 @@ export default async function WarHistoryPage({ searchParams }) {
     if (!data) {
         return (
             <div className="flex min-h-full w-full flex-col justify-center">
-                No data available.
+                No data available for season {resolvedSeason}.
             </div>
         );
     }

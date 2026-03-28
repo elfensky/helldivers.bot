@@ -71,7 +71,7 @@ export default function RootLayout({ children }) {
                 />
 
                 <Header />
-                <main className="flex min-h-screen w-screen flex-col pt-[50px] pb-[48px] sm:pt-[80px]">
+                <main className="flex min-h-screen w-screen flex-col pb-[48px]">
                     {children}
                 </main>
                 <Footer />
