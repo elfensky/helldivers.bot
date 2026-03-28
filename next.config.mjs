@@ -32,7 +32,40 @@ const nextConfig = {
         ];
     },
     async headers() {
+        const csp = [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: https://authjs.dev https://cdn.discordapp.com https://avatars.githubusercontent.com https://www.gravatar.com",
+            "font-src 'self'",
+            "connect-src 'self' https://umami.lavrenov.io https://bugsink.lavrenov.cloud",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            "base-uri 'self'",
+        ].join('; ');
+
         return [
+            {
+                source: '/(.*)',
+                headers: [
+                    {
+                        key: 'Content-Security-Policy',
+                        value: csp,
+                    },
+                    {
+                        key: 'X-Frame-Options',
+                        value: 'DENY',
+                    },
+                    {
+                        key: 'X-Content-Type-Options',
+                        value: 'nosniff',
+                    },
+                    {
+                        key: 'Referrer-Policy',
+                        value: 'strict-origin-when-cross-origin',
+                    },
+                ],
+            },
             {
                 source: '/favicons/:slug',
                 headers: [
