@@ -14,7 +14,7 @@ export default function DashboardClient({ data, mapState }) {
     return (
         <div className="gutters flex flex-col gap-4 pb-4">
             <Alerts data={data} />
-            <Galaxy mapState={mapState} />
+            <Galaxy mapState={mapState} lastUpdated={data.last_updated} />
             <FactionTabs active={faction} onChange={setFaction} />
             <StatGrid live={data.live} faction={faction} />
             {events?.length > 0 && (
