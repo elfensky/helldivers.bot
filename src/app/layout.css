@@ -101,7 +101,6 @@ h1 {
 h2 {
     font-size: clamp(1.25rem, 0.9rem + 1.5vw, 1.875rem);
     line-height: 1.2;
-    @apply mb-6;
 }
 
 h3 {
