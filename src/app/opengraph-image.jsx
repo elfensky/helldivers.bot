@@ -10,6 +10,13 @@ import {
     viewBox,
 } from '@/enums/mapPaths.mjs';
 
+// --- File convention exports ---
+export const revalidate = 300;
+export const alt = 'Helldivers 1 galactic war status map with faction progress';
+export const size = { width: 1200, height: 630 };
+export const contentType = 'image/png';
+
+// --- Constants ---
 const COLORS = {
     bg: 'rgb(0, 9, 19)',
     border: 'rgba(255, 225, 0, 0.99)',
@@ -37,10 +44,6 @@ const FACTION_TEXT = [COLORS.bugsText, COLORS.cyborgsText, COLORS.illuminateText
 const FACTION_BAR = [COLORS.bugsBar, COLORS.cyborgsBar, COLORS.illuminateBar];
 const FACTION_PATHS = [bugPaths, cyborgPaths, illuminatePaths];
 
-const CACHE_HEADERS = {
-    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
-};
-
 function getSectorFill(status, factionIndex) {
     if (status === 'captured') return COLORS.captured;
     if (status === 'lost') return COLORS.lost;
@@ -67,7 +70,7 @@ function fallbackImage() {
         >
             helldivers.bot
         </div>,
-        { width: 1200, height: 630, headers: CACHE_HEADERS },
+        { width: 1200, height: 630 },
     );
 }
 
@@ -93,15 +96,18 @@ function buildMapSvg(mapState) {
     return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }
 
-export async function GET() {
+export default async function Image() {
     const { data, error } = await tryCatch(getCampaign());
 
     if (error || !data || !data.live || data.live.length === 0) {
         return fallbackImage();
     }
 
-    // Only pass active events — completed events are already reflected in the campaign score
-    const activeEvents = (data.events || []).filter((e) => e.status === 'active');
+    // Two event lists:
+    // - events: full list — needed for status text (includes completed events for WON/LOST display)
+    // - activeEvents: filtered — only active events affect sector ownership on the map
+    const events = data.events || [];
+    const activeEvents = events.filter((e) => e.status === 'active');
     const mapState = computeMapState(data.live, activeEvents);
     const mapDataUri = buildMapSvg(mapState);
 
@@ -282,6 +288,6 @@ export async function GET() {
                 </span>
             </div>
         </div>,
-        { width: 1200, height: 630, headers: CACHE_HEADERS },
+        { width: 1200, height: 630 },
     );
 }
