@@ -39,3 +39,22 @@
 .bottom-nav-label {
     line-height: 1;
 }
+
+.bottom-nav-live {
+    color: var(--color-danger);
+    animation: live-blink 2s infinite;
+}
+
+.bottom-nav-tab.active .bottom-nav-live {
+    color: var(--color-danger);
+}
+
+@keyframes live-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}

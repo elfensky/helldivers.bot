@@ -133,7 +133,8 @@ section {
     @apply rounded-md; /* resolves to 0px via @theme override */
 }
 .card {
-    @apply bg-slate-800 opacity-90;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-ghost-border);
 }
 
 p {

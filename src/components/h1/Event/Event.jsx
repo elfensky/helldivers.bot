@@ -23,7 +23,7 @@ export default function Event({ event }) {
 
     return (
         <article
-            className={`event-card ${isDefend ? 'event-card--defend' : 'event-card--attack'}`}
+            className={`event-card ${isDefend ? 'event-card--defend' : 'event-card--attack'} event-card--${event.status}`}
         >
             <div className="event-card-content">
                 <div className="event-card-header">

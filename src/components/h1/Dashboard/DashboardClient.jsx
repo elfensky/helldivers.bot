@@ -19,8 +19,8 @@ export default function DashboardClient({ data, mapState }) {
             <StatGrid live={data.live} faction={faction} />
             {events?.length > 0 && (
                 <section>
-                    <h2>Timeline</h2>
-                    <div className="flex flex-col gap-2">
+                    <h2>Event Timeline</h2>
+                    <div className="flex flex-col gap-2" style={{ marginTop: '0.5rem' }}>
                         {events.map((event) => (
                             <Event key={event.event_id} event={event} />
                         ))}
