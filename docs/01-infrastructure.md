@@ -104,14 +104,15 @@ Running migrations inside the app container creates a race condition when scalin
 
 **Trigger:** Push to `main`, or manual `workflow_dispatch`
 
-**Jobs:** `build-migrate` and `build-app` run in parallel (no dependency between them). A third job `cleanup` runs after both complete.
+**Jobs:** A `changes` job detects which files were modified. `build-app` always runs. `build-migrate` only runs when migration-related files changed (or on manual `workflow_dispatch`). A `cleanup` job runs after both builds complete (or are skipped).
 
-| Job             | Dockerfile           | Tag pushed                                       |
-| --------------- | -------------------- | ------------------------------------------------ |
-| `build-migrate` | `Dockerfile.migrate` | `ghcr.io/elfensky/helldiversbot-migrate:staging` |
-| `build-app`     | `Dockerfile.app`     | `ghcr.io/elfensky/helldiversbot:staging`         |
+| Job             | Dockerfile           | Tag pushed                                       | Condition                                                       |
+| --------------- | -------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
+| `changes`       | —                    | —                                                | Always runs; outputs `migrate` boolean via `dorny/paths-filter` |
+| `build-migrate` | `Dockerfile.migrate` | `ghcr.io/elfensky/helldiversbot-migrate:staging` | Only when `prisma/**`, `prisma.config.mjs`, `package.json`, `package-lock.json`, or `Dockerfile.migrate` changed |
+| `build-app`     | `Dockerfile.app`     | `ghcr.io/elfensky/helldiversbot:staging`         | Always                                                          |
 
-Both jobs pass `NODE_ENV=staging` as a build arg.
+Both build jobs pass `NODE_ENV=staging` as a build arg.
 
 **Registry auth:** `secrets.GITHUB_TOKEN` — the default token with `contents: write` and `packages: write` permissions declared at the workflow level.
 
