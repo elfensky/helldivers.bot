@@ -1,3 +1,4 @@
+import './page.css';
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { computeMapState } from '@/utils/computeMapState.mjs';
