@@ -33,16 +33,16 @@ const inter = Inter({
 // }
 
 export const metadata = {
-    metadataBase: 'https://helldivers.bot',
+    metadataBase: new URL('https://helldivers.bot'),
     title: 'Helldivers Bot - Live war dashboard for the original Helldivers',
     description:
         'Live Helldivers 1 war dashboard showing campaign progress, faction stats, active events, and an interactive galaxy map.',
     openGraph: {
-        images: ['/api/og'],
+        type: 'website',
+        url: 'https://helldivers.bot',
     },
     twitter: {
         card: 'summary_large_image',
-        images: ['/api/og'],
     },
 };
 
