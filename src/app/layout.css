@@ -158,10 +158,6 @@ progress::-webkit-progress-value {
     background: #ffd700;
 }
 
-footer {
-    background-color: var(--black);
-}
-
 header {
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(8.8px);
