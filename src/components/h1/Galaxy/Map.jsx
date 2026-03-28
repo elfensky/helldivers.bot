@@ -18,8 +18,7 @@ export default function Map({ svgRef, map }) {
     const superearth = 3;
 
     return (
-        <>
-            <div id="map" className="max-h-full w-full">
+        <div id="map" className="max-h-full w-full">
                 <svg
                     ref={svgRef}
                     id="Layer_2"
@@ -84,7 +83,12 @@ export default function Map({ svgRef, map }) {
                         <circle
                             id={superEarthCircle.id}
                             data-name="0"
-                            className={'sector captured ' + map[superearth][0].status}
+                            className={
+                                'sector ' +
+                                map[superearth][0].status +
+                                ' ' +
+                                map[superearth][0].event
+                            }
                             cx={superEarthCircle.cx}
                             cy={superEarthCircle.cy}
                             r={superEarthCircle.r}
@@ -99,7 +103,6 @@ export default function Map({ svgRef, map }) {
                         />
                     </g>
                 </svg>
-            </div>
-        </>
+        </div>
     );
 }
