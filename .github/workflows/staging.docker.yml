@@ -9,7 +9,7 @@ permissions:
     packages: write
 
 jobs:
-    changes:
+    detect-migration:
         runs-on: ubuntu-latest
         outputs:
             migrate: ${{ steps.filter.outputs.migrate }}
@@ -19,7 +19,7 @@ jobs:
 
             - name: Detect migration-related changes
               id: filter
-              uses: dorny/paths-filter@v3
+              uses: dorny/paths-filter@v4
               with:
                   filters: |
                       migrate:
@@ -30,8 +30,8 @@ jobs:
                         - 'Dockerfile.migrate'
 
     build-migrate:
-        needs: changes
-        if: needs.changes.outputs.migrate == 'true' || github.event_name == 'workflow_dispatch'
+        needs: detect-migration
+        if: needs.detect-migration.outputs.migrate == 'true' || github.event_name == 'workflow_dispatch'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
