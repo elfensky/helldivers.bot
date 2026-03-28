@@ -11,6 +11,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Playwright smoke tests** are configured. Run `npm run test:smoke` to verify the app builds and runs correctly.
 - **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit:run`.
 - **Never start the dev server.** Ask the user to start it separately if needed (e.g., for smoke tests).
+- **Chrome DevTools MCP** is available for debugging live pages. Use `evaluate_script` to inspect DOM state (e.g., sector CSS classes) and extract RSC payload data. Useful for verifying map state, comparing field values, and debugging visual issues without screenshots.
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 
 ## Conventions
@@ -67,6 +68,8 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`:
 - **Mobile-first layout:** Phase 6 rebuilt the homepage with mobile-first single-column layout. New components: `BottomNav` (bottom tab bar), `FactionTabs` (faction switcher), `StatGrid` (2×2 data cards), `DashboardClient` (client wrapper managing faction state), `EventCard` (per-faction sector progress with CAPTURING/DEFENDING/ATTACKING states).
 - **Component patterns:** Data cards use CSS Grid with right-side accent lines. Event cards have status-based background tinting (green=success, red=fail). All border-radius is 0px via `@theme` override.
 - **Shared utilities:** `formatNumber` (`src/utils/formatNumber.mjs`) for compact numbers (12.3M, 1.2K). `formatTimeAgo` (`src/utils/formatTimeAgo.mjs`) for relative timestamps ("Updated 3m ago").
+- **Map state:** `computeMapState` (`src/utils/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 come from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — completed events are already in the score.
+- **On-demand season fetching:** `/war` page derives SeasonSelector from current season number (not DB query). Missing seasons are fetched from the official API on first request via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`).
 
 ## Task Tracking
 

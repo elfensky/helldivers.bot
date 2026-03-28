@@ -5,7 +5,17 @@ import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 
 /**
  * Fetches a single season from the official Helldivers API and seeds it into the DB.
- * Called on-demand when a user requests a season that hasn't been stored yet.
+ * Called on-demand by the /war history page when a user requests a season not yet stored.
+ *
+ * Uses fetchSeason() to call the official API's get_snapshots endpoint, then upserts
+ * into h1_season, h1_introduction_order, h1_points_max, h1_event, and h1_snapshot.
+ * All operations use upserts (idempotent — safe to call multiple times for the same season).
+ *
+ * Returns void — caller should re-query getCampaign(season) after this completes.
+ * Returns early (no-op) if the API returns no meaningful data for the season.
+ * Throws if the API fetch itself fails.
+ *
+ * @param {number} season - The season number to fetch and store
  */
 export async function fetchAndSeedSeason(season) {
     'use server';

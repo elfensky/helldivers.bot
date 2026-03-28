@@ -24,7 +24,7 @@ The project uses two separate Dockerfiles. Migrations and the application server
 6. Extract the Prisma version from `package.json` at build time and install only that version — no full `npm ci`
 7. Run `npx prisma generate` to produce the client
 8. Entrypoint: `/sbin/tini --`
-9. CMD: `npx prisma migrate deploy`
+9. CMD: `npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs` — runs migrations first, then seeds historical season data from JSON files in `prisma/seed/seasons/`. The seed uses upserts and is idempotent (safe to re-run on every deploy). If no season files exist, the seed exits gracefully.
 
 The Prisma version extraction uses a shell one-liner:
 
@@ -106,11 +106,11 @@ Running migrations inside the app container creates a race condition when scalin
 
 **Jobs:** A `changes` job detects which files were modified. `build-app` always runs. `build-migrate` only runs when migration-related files changed (or on manual `workflow_dispatch`). A `cleanup` job runs after both builds complete (or are skipped).
 
-| Job             | Dockerfile           | Tag pushed                                       | Condition                                                       |
-| --------------- | -------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
-| `changes`       | —                    | —                                                | Always runs; outputs `migrate` boolean via `dorny/paths-filter` |
+| Job             | Dockerfile           | Tag pushed                                       | Condition                                                                                                        |
+| --------------- | -------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `changes`       | —                    | —                                                | Always runs; outputs `migrate` boolean via `dorny/paths-filter`                                                  |
 | `build-migrate` | `Dockerfile.migrate` | `ghcr.io/elfensky/helldiversbot-migrate:staging` | Only when `prisma/**`, `prisma.config.mjs`, `package.json`, `package-lock.json`, or `Dockerfile.migrate` changed |
-| `build-app`     | `Dockerfile.app`     | `ghcr.io/elfensky/helldiversbot:staging`         | Always                                                          |
+| `build-app`     | `Dockerfile.app`     | `ghcr.io/elfensky/helldiversbot:staging`         | Always                                                                                                           |
 
 Both build jobs pass `NODE_ENV=staging` as a build arg.
 

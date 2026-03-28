@@ -6,6 +6,26 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
+## 0.16.0 (2026-03-28)
+
+### Infrastructure
+
+- Chain seed script after `prisma migrate deploy` in `Dockerfile.migrate` — historical season data is now automatically seeded on deployment
+
+### Features
+
+- On-demand season fetching: `/war` page derives season selector from current season number instead of querying DB. Missing seasons are fetched from the official Helldivers API and stored on first request via `fetchAndSeedSeason()`
+- Deleted `getSeasonList.mjs` query — no longer needed
+
+### Bug Fixes
+
+- Fix map sector calculation: only pass active events to `computeMapState()` on live homepage and OG image. Completed defend events were overwriting campaign score-based sector ownership, causing fewer sectors to appear captured than the score warranted
+- Affects: `src/app/page.jsx`, `src/app/api/og/route.js`
+
+### Debugging Technique
+
+- Used Chrome DevTools MCP to parse live DOM sector classes and extract RSC payload data, comparing `points` vs `points_taken` field values across all three factions to identify the root cause
+
 ## 0.15.0 (2026-03-28)
 
 ### Phase 5: Design System

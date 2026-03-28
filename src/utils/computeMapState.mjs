@@ -4,8 +4,17 @@ import mapTemplate from '@/enums/map';
  * Compute map state from faction data and events at a point in time.
  * Returns a NEW map object — never mutates the template.
  *
+ * Sectors 1-10 are determined by campaign score (points / points_max).
+ * Region 11 (homeworld) is only affected by attack events.
+ *
+ * IMPORTANT: For live views, only pass events with status === 'active'.
+ * Completed events (success/fail) are already reflected in campaign scores.
+ * Passing completed defend events will incorrectly overwrite score-based
+ * sector ownership. The timeline component handles its own time-based
+ * event filtering and may pass completed events for historical accuracy.
+ *
  * @param {Array} factionStates - Array of 3 objects: { enemy, points, points_taken, points_max, status }
- * @param {Array} events - Pre-filtered events active at this point in time (caller handles timestamp filtering)
+ * @param {Array} events - Pre-filtered events (caller handles filtering — see note above)
  * @returns {Object} Deep clone of map template with computed state
  */
 export function computeMapState(factionStates, events = []) {

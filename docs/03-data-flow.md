@@ -433,6 +433,16 @@ return { ms, season, confirmSeason };
 
 After `updateSeason()` returns, the handler re-queries the database and returns the result. This means a cold request for an unknown season incurs one extra round-trip to the official API before responding.
 
+### Frontend on-demand fetching
+
+The `/war` history page also fetches seasons on-demand via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`). When a user selects a season not yet in the database:
+
+1. `getCampaign(season)` returns `null`
+2. `fetchAndSeedSeason(season)` calls `fetchSeason(season)` (official API) and upserts into `h1_season`, `h1_event`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`
+3. `getCampaign(season)` is re-queried and now returns the seeded data
+
+The season selector on `/war` is derived from the current season number (`Array.from({length: activeSeason - 1}, ...)`), not from a database query. This ensures all past seasons are always selectable regardless of what exists in the DB.
+
 ---
 
 ## 5. Two-Table Strategy
