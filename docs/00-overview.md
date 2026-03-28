@@ -23,16 +23,18 @@ The `/brandkit` page is the living visual reference — palette swatches, type s
 
 Mobile-first single-column layout. Key components:
 
-| Component | Path | Purpose |
-|-----------|------|---------|
-| `BottomNav` | `src/components/layout/BottomNav/` | Fixed bottom tab bar (Live/History/About) |
-| `FactionTabs` | `src/components/h1/FactionTabs/` | Client-side faction switcher (Global/Bugs/Cyborgs/Illuminate) |
-| `StatGrid` | `src/components/h1/StatGrid/` | 2×2 data card grid, accepts faction filter |
-| `DashboardClient` | `src/components/h1/Dashboard/` | Client wrapper composing Alerts, Galaxy, FactionTabs, StatGrid, Events |
-| `Event` | `src/components/h1/Event/` | Data card with right-side accent, status-based tinting |
-| `Alerts` | `src/components/h1/Alerts/` | Full-width stacked alert banners for active events |
+| Component         | Path                               | Purpose                                                                            |
+| ----------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `BottomNav`       | `src/components/layout/BottomNav/` | Fixed bottom tab bar (Live/History/About)                                          |
+| `FactionTabs`     | `src/components/h1/FactionTabs/`   | Client-side faction switcher (Global/Bugs/Cyborgs/Illuminate)                      |
+| `StatGrid`        | `src/components/h1/StatGrid/`      | 2×2 data card grid, accepts faction filter                                         |
+| `DashboardClient` | `src/components/h1/Dashboard/`     | Client wrapper composing Alerts, Galaxy, EventCards, FactionTabs, StatGrid, Events |
+| `EventCard`       | `src/components/h1/Galaxy/`        | Per-faction sector progress card (CAPTURING/DEFENDING/ATTACKING)                   |
+| `Galaxy`          | `src/components/h1/Galaxy/`        | Map wrapper with "Updated Xs ago" timestamp and hover tooltip                      |
+| `Event`           | `src/components/h1/Event/`         | Timeline data card with right-side accent, status-based tinting                    |
+| `Alerts`          | `src/components/h1/Alerts/`        | Full-width stacked alert banners for active events                                 |
 
-Data cards use CSS Grid with a right-side accent line (4-6px). Event cards tint backgrounds by status (green=success, red=fail, yellow border=active).
+Data cards use CSS Grid with a right-side accent line (4-6px). Event cards tint backgrounds by status (green=success, red=fail, yellow border=active). Shared utilities: `formatNumber` (compact numbers) and `formatTimeAgo` (relative timestamps) in `src/utils/`.
 
 ## Conventions
 

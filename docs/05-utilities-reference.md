@@ -252,22 +252,48 @@ Snapshot data includes attack events because historical season data is already f
 
 ## 5. Formatting
 
-**Source:** `src/utils/utils.mjs`
+### `formatNumber(n)`
 
-### `formatNumber(num)`
+**Source:** `src/utils/formatNumber.mjs`
 
 ```ts
-formatNumber(num: number | bigint): string
+formatNumber(n: number | null | undefined): string
 ```
 
 **Behavior:**
 
-1. If input is `bigint`, converts to `Number` first (note: precision loss possible for very large values).
-2. `>= 1,000,000` → `Math.round(num / 1_000_000) + 'M'`
-3. `>= 1,000` → `Math.round(num / 1_000) + 'K'`
-4. Otherwise → `num.toString()`
+1. `null` / `undefined` → `'—'`
+2. `NaN` / `Infinity` → `'—'`
+3. `>= 1,000,000,000` → `(n / 1B).toFixed(1) + 'B'`
+4. `>= 1,000,000` → `(n / 1M).toFixed(1) + 'M'`
+5. `>= 1,000` → `n.toLocaleString()` (with commas)
+6. Otherwise → `String(n)`
 
-**Examples:** `1500000` → `"2M"`, `1499` → `"1K"`, `999` → `"999"`.
+**Examples:** `1_500_000_000` → `"1.5B"`, `12_300_000` → `"12.3M"`, `12345` → `"12,345"`, `847` → `"847"`.
+
+**Used by:** `StatGrid`, `EventCard`.
+
+---
+
+### `formatTimeAgo(date, now?)`
+
+**Source:** `src/utils/formatTimeAgo.mjs`
+
+```ts
+formatTimeAgo(date: Date | null, now?: Date): string | null
+```
+
+**Behavior:**
+
+1. `null` / `undefined` → `null`
+2. Invalid date / future date → `'Updated just now'`
+3. `< 60 seconds` → `'Updated Xs ago'`
+4. `< 60 minutes` → `'Updated Xm ago'`
+5. `>= 60 minutes` → `'Updated Xh ago'`
+
+**Examples:** 45 seconds elapsed → `"Updated 45s ago"`, 3 minutes → `"Updated 3m ago"`.
+
+**Used by:** `Galaxy` component (timestamp below the map).
 
 ---
 
