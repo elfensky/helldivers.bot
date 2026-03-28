@@ -100,8 +100,9 @@ export async function GET() {
         return fallbackImage();
     }
 
-    const events = data.events || [];
-    const mapState = computeMapState(data.live, events);
+    // Only pass active events — completed events are already reflected in the campaign score
+    const activeEvents = (data.events || []).filter((e) => e.status === 'active');
+    const mapState = computeMapState(data.live, activeEvents);
     const mapDataUri = buildMapSvg(mapState);
 
     const factionStats = data.live.map((f) => {

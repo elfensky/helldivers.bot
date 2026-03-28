@@ -18,7 +18,9 @@ export default async function HomePage() {
         );
     }
 
-    const mapState = computeMapState(data.live, data.events);
+    // Only pass active events — completed events are already reflected in the campaign score
+    const activeEvents = (data.events ?? []).filter((e) => e.status === 'active');
+    const mapState = computeMapState(data.live, activeEvents);
 
     return <DashboardClient data={data} mapState={mapState} />;
 }
