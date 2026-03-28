@@ -43,6 +43,15 @@ All external data validated with Zod schemas (`src/validators/`) before database
 
 Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` once before committing, not during development.
 
+### Design Tokens
+
+All visual properties use CSS custom properties from `src/styles/tokens.css`:
+- Colors: `--color-primary`, `--color-danger`, `--color-surface-0` through `--color-surface-4`, `--color-faction-*`
+- Fonts: `--font-display` (Insignia, titles only), `--font-body` (Inter), `--font-mono` (Space Mono)
+- Faction colors: Bugs=#E8822A (orange), Cyborgs=#8B2D2D (dark red), Illuminate=#7EC8E3 (cyan)
+- Border radius: 0px everywhere (enforced via Tailwind `@theme`)
+- Cards: right-side accent line (4-6px) using CSS Grid
+
 ## Architecture Notes
 
 - **Two-table strategy:** `rebroadcast_*` tables store raw API JSON; `h1_*` tables store normalized historical data. Both are needed.
@@ -53,6 +62,9 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` onc
 - **Error tracking:** Sentry SDK configured for self-hosted Bugsink (`tracesSampleRate: 0`, no replays/logs).
 - **Node version:** Volta pins node@22 and npm@11.
 - **Server actions:** Most utilities use `'use server'` directive.
+- **Design tokens:** CSS custom properties in `src/styles/tokens.css`, integrated into Tailwind v4 `@theme` block in `src/app/layout.css`. See `/brandkit` for visual reference.
+- **Mobile-first layout:** Phase 6 rebuilt the homepage with mobile-first single-column layout. New components: `BottomNav` (bottom tab bar), `FactionTabs` (faction switcher), `StatGrid` (2×2 data cards), `DashboardClient` (client wrapper managing faction state).
+- **Component patterns:** Data cards use CSS Grid with right-side accent lines. Event cards have status-based background tinting (green=success, red=fail). All border-radius is 0px via `@theme` override.
 
 ## Task Tracking
 
@@ -102,3 +114,4 @@ For every phase or feature, create both files in `docs/superpowers/`:
 | API endpoints & authentication     | `docs/04-api-reference.md`       |
 | Utilities & Zod validators         | `docs/05-utilities-reference.md` |
 | Testing infrastructure             | `docs/06-testing.md`             |
+| Frontend design system & tokens   | `/brandkit` (visual) + `src/styles/tokens.css` |
