@@ -435,10 +435,10 @@ evaluateProgress(event: { start_time, end_time, points, points_max, status }) �
 1. Calculate expected points at current time assuming linear progress (`expectedRate × elapsedTime`).
 2. Compare actual `points` against expected with a 10% buffer.
 3. Return status:
-   - `"Ahead by N points"` — actual > expected + 10% buffer
-   - `"Behind by N points"` — actual < expected
-   - `"On track by N points"` — within buffer
-   - `null` — event `status` is not `'active'`
+    - `"Ahead by N points"` — actual > expected + 10% buffer
+    - `"Behind by N points"` — actual < expected
+    - `"On track by N points"` — within buffer
+    - `null` — event `status` is not `'active'`
 
 **Tests:** `src/__tests__/unit/utils/evaluateProgress.test.mjs`
 

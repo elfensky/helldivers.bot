@@ -13,6 +13,27 @@ Deep technical reference for helldivers.bot internals. For conventions and worki
 | [05-utilities-reference.md](05-utilities-reference.md) | Shared utilities and Zod validation schemas — signatures, behavior, usage patterns                            |
 | [06-testing.md](06-testing.md)                         | Vitest + Playwright setup, test conventions, mock factories, API route testing patterns                       |
 
+## Design System (Phase 5)
+
+Visual identity defined by CSS custom properties in `src/styles/tokens.css`, integrated into Tailwind v4 via the `@theme` block in `src/app/layout.css`. Tokens cover colors (primary yellow, danger red, 5-level surface tonal layering, game-canonical faction colors), typography (Insignia for titles, Inter for body, Space Mono for data), spacing scale, and 0px border radius enforcement.
+
+The `/brandkit` page is the living visual reference — palette swatches, type scale, spacing, and component demos all reading from CSS custom properties.
+
+## Frontend Components (Phase 6)
+
+Mobile-first single-column layout. Key components:
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| `BottomNav` | `src/components/layout/BottomNav/` | Fixed bottom tab bar (Live/History/About) |
+| `FactionTabs` | `src/components/h1/FactionTabs/` | Client-side faction switcher (Global/Bugs/Cyborgs/Illuminate) |
+| `StatGrid` | `src/components/h1/StatGrid/` | 2×2 data card grid, accepts faction filter |
+| `DashboardClient` | `src/components/h1/Dashboard/` | Client wrapper composing Alerts, Galaxy, FactionTabs, StatGrid, Events |
+| `Event` | `src/components/h1/Event/` | Data card with right-side accent, status-based tinting |
+| `Alerts` | `src/components/h1/Alerts/` | Full-width stacked alert banners for active events |
+
+Data cards use CSS Grid with a right-side accent line (4-6px). Event cards tint backgrounds by status (green=success, red=fail, yellow border=active).
+
 ## Conventions
 
 - File paths are relative to the repository root unless noted otherwise

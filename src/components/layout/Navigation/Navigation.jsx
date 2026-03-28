@@ -79,7 +79,7 @@ export default async function Navigation() {
                 <li className="hidden md:block md:opacity-30">|</li>
 
                 {siteLinks.map((link) => (
-                    <li key={link.href}>
+                    <li key={link.href} className="hidden sm:block">
                         <Link
                             href={link.href}
                             className={link.className || ''}

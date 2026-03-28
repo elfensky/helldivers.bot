@@ -1,24 +1,27 @@
 #war {
-    background-color: rgba(0, 0, 0, 0.75);
-    border: 2px solid black;
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-ghost-border);
 }
 
 .war-outcome {
-    background-color: rgba(0, 0, 0, 0.75);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background-color: var(--color-surface-1);
+    border: 2px solid var(--color-ghost-border);
     padding: 0.5rem 1rem;
     display: flex;
     align-items: center;
     flex: 1;
-    font-size: 0.875rem;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 900;
+    text-transform: uppercase;
 }
 
 .war-outcome.victory {
-    border-color: rgba(255, 213, 0, 0.8);
-    color: rgba(255, 213, 0, 1);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
 }
 
 .war-outcome.defeat {
-    border-color: rgba(255, 0, 0, 0.8);
-    color: rgba(255, 0, 0, 1);
+    border-color: var(--color-danger);
+    color: var(--color-danger);
 }

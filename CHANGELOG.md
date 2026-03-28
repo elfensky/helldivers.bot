@@ -6,6 +6,30 @@ Given a version number MAJOR.MINOR.PATCH, increment the:
 - MINOR version when you add functionality in a backward compatible manner
 - PATCH version when you make backward compatible bug fixes
 
+## 0.15.0 (2026-03-28)
+
+### Phase 5: Design System
+
+- Create design token system (`src/styles/tokens.css`) with colors, surfaces, fonts, spacing
+- Integrate tokens into Tailwind v4 `@theme` block with 0px radius overrides
+- Load Space Grotesk and Inter via `next/font/google`
+- Create `/brandkit` visual reference page (palette, typography, spacing, components)
+- Fix faction colors to match game icons: Bugs=orange, Cyborgs=dark red, Illuminate=cyan
+- Standardize card component: right-side accent line, grid-based layout
+
+### Phase 6: Mobile-First Dashboard
+
+- Add BottomNav component (fixed bottom tab bar: Live/History/About)
+- Add FactionTabs segmented control (Global/Bugs/Cyborgs/Illuminate)
+- Add StatGrid 2×2 data card grid with faction filtering
+- Rewrite Event cards with right-side accent, status-based background tinting
+- Rewrite Alerts as full-width stacked banners (replacing carousel)
+- Complete homepage rewrite with DashboardClient mobile-first layout
+- Update war history page for mobile-first single column
+- Slim header on mobile (hide nav links, BottomNav handles primary nav)
+- Migrate `.card` class from Tailwind hardcoded to design tokens
+- Update war outcome badge to use design tokens
+
 ## 0.14.0 (2026-03-27)
 
 ### Security

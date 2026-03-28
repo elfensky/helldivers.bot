@@ -300,8 +300,8 @@ GET, PUT, DELETE, PATCH, OPTIONS → `rebroadcastErrorResponse(5)` [HTTP 405, re
 
 ### Request
 
-| Parameter       | Location             | Required | Validation                      |
-| --------------- | -------------------- | -------- | ------------------------------- |
+| Parameter       | Location              | Required | Validation                      |
+| --------------- | --------------------- | -------- | ------------------------------- |
 | `Authorization` | Header (`Bearer ...`) | Yes      | Must equal `UPDATE_KEY` env var |
 
 ### Behavior
@@ -339,8 +339,8 @@ Both steps use `tryCatch()`, which returns `{ data, error }` and never throws. E
 
 ### Error Responses
 
-| Code | Condition                                                      |
-| ---- | -------------------------------------------------------------- |
+| Code | Condition                                                     |
+| ---- | ------------------------------------------------------------- |
 | 401  | `Authorization` header missing, not Bearer, or token mismatch |
 | 500  | `updateStatus()` or `updateSeason()` threw                    |
 
