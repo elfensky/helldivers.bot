@@ -1,19 +1,4 @@
-import { isValidFormData, schemaNumber } from '@/validators/isValidFormData.mjs';
-
-describe('schemaNumber', () => {
-    test('accepts positive integers and coerces strings', () => {
-        expect(schemaNumber.safeParse(1).success).toBe(true);
-        expect(schemaNumber.safeParse('7').success).toBe(true);
-        expect(schemaNumber.safeParse('7').data).toBe(7);
-    });
-
-    test('rejects invalid values', () => {
-        expect(schemaNumber.safeParse(0).success).toBe(false);
-        expect(schemaNumber.safeParse(-1).success).toBe(false);
-        expect(schemaNumber.safeParse(1.5).success).toBe(false);
-        expect(schemaNumber.safeParse('abc').success).toBe(false);
-    });
-});
+import { isValidFormData } from '@/validators/isValidFormData.mjs';
 
 describe('isValidFormData', () => {
     describe('get_campaign_status', () => {

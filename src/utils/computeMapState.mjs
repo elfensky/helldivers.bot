@@ -1,4 +1,5 @@
 import mapTemplate from '@/enums/map';
+import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/enums/events';
 
 /**
  * Compute map state from faction data and events at a point in time.
@@ -30,7 +31,7 @@ export function computeMapState(factionStates, events = []) {
         const sectorsEarned = Math.trunc(points / pointsPerSector);
         const sectorsInProgress = sectorsEarned + 1;
 
-        if (campaign.status === 'active') {
+        if (campaign.status === CAMPAIGN_STATUS.ACTIVE) {
             for (const regionKey of Object.keys(map[faction])) {
                 const region = parseInt(regionKey);
                 const totalPointsForSector = region * pointsPerSector;
@@ -65,7 +66,7 @@ export function computeMapState(factionStates, events = []) {
                     map[faction][region].percent = 0;
                 }
             }
-        } else if (campaign.status === 'defeated') {
+        } else if (campaign.status === CAMPAIGN_STATUS.DEFEATED) {
             for (const regionKey of Object.keys(map[faction])) {
                 map[faction][regionKey].status = 'captured';
                 map[faction][regionKey].percent = 100;
@@ -81,18 +82,18 @@ export function computeMapState(factionStates, events = []) {
 
     // Process defend events (sorted by end_time so most recent outcome wins)
     const defendEvents = events
-        .filter((e) => e.type === 'defend')
+        .filter((e) => e.type === EVENT_TYPE.DEFEND)
         .sort((a, b) => a.end_time - b.end_time);
     for (const event of defendEvents) {
         if (event.region === 0) {
-            if (event.status === 'active') {
-                map[3][0].event = 'active';
-                map[3][0].status = 'active';
+            if (event.status === EVENT_STATUS.ACTIVE) {
+                map[3][0].event = EVENT_STATUS.ACTIVE;
+                map[3][0].status = EVENT_STATUS.ACTIVE;
             }
         } else if (event.region !== undefined && event.region !== null) {
-            if (event.status === 'active') {
-                map[event.enemy][event.region].event = 'active';
-            } else if (event.status === 'fail') {
+            if (event.status === EVENT_STATUS.ACTIVE) {
+                map[event.enemy][event.region].event = EVENT_STATUS.ACTIVE;
+            } else if (event.status === EVENT_STATUS.FAIL) {
                 // Failed defend: sector and all beyond it revert to lost
                 for (let r = event.region; r <= 10; r++) {
                     if (map[event.enemy][r]) {
@@ -109,22 +110,22 @@ export function computeMapState(factionStates, events = []) {
 
     // Process attack events (sorted by end_time so most recent outcome wins)
     const attackEvents = events
-        .filter((e) => e.type === 'attack')
+        .filter((e) => e.type === EVENT_TYPE.ATTACK)
         .sort((a, b) => a.end_time - b.end_time);
     for (const event of attackEvents) {
-        if (event.status === 'active') {
+        if (event.status === EVENT_STATUS.ACTIVE) {
             map[event.enemy][11].percent = (event.points / event.points_max) * 100;
             map[event.enemy][11].points = event.points;
             map[event.enemy][11].points_max = event.points_max;
-            map[event.enemy][11].status = 'active';
-            map[event.enemy][11].event = 'active';
-        } else if (event.status === 'success') {
+            map[event.enemy][11].status = EVENT_STATUS.ACTIVE;
+            map[event.enemy][11].event = EVENT_STATUS.ACTIVE;
+        } else if (event.status === EVENT_STATUS.SUCCESS) {
             map[event.enemy][11].percent = (event.points / event.points_max) * 100;
             map[event.enemy][11].points = event.points;
             map[event.enemy][11].points_max = event.points_max;
             map[event.enemy][11].status = 'captured';
             map[event.enemy][11].event = 'idle';
-        } else if (event.status === 'fail') {
+        } else if (event.status === EVENT_STATUS.FAIL) {
             map[event.enemy][11].status = 'lost';
             map[event.enemy][11].event = 'idle';
         }

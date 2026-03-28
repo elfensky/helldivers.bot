@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeMapState } from '@/utils/computeMapState.mjs';
 import { tryCatch } from '@/utils/tryCatch.mjs';
+import { EVENT_STATUS } from '@/enums/events';
 import {
     bugPaths,
     cyborgPaths,
@@ -107,7 +108,7 @@ export default async function Image() {
     // - events: full list — needed for status text (includes completed events for WON/LOST display)
     // - activeEvents: filtered — only active events affect sector ownership on the map
     const events = data.events || [];
-    const activeEvents = events.filter((e) => e.status === 'active');
+    const activeEvents = events.filter((e) => e.status === EVENT_STATUS.ACTIVE);
     const mapState = computeMapState(data.live, activeEvents);
     const mapDataUri = buildMapSvg(mapState);
 
@@ -131,7 +132,7 @@ export default async function Image() {
     if (allDefeated) {
         statusText = 'VICTORY';
     } else if (events.length > 0) {
-        const activeEvent = events.find((e) => e.status === 'active');
+        const activeEvent = events.find((e) => e.status === EVENT_STATUS.ACTIVE);
         if (activeEvent) {
             statusText = 'ACTIVE EVENT';
         } else {

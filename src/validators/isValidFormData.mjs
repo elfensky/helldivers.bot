@@ -1,9 +1,5 @@
 import { z } from 'zod';
-
-export const schemaNumber = z.preprocess(
-    (val) => (typeof val === 'string' ? Number(val) : val),
-    z.number().int().positive(),
-);
+import { isValidNumber } from '@/validators/isValidNumber';
 
 const schemaGetCampaignStatus = z
     .object({
@@ -15,7 +11,7 @@ const schemaGetCampaignStatus = z
 
 const schemaGetSnapshots = z.object({
     action: z.literal('get_snapshots'),
-    season: schemaNumber,
+    season: isValidNumber,
 });
 
 const schemaGetAvailableEntitlements = z
@@ -29,15 +25,15 @@ const schemaGetAvailableEntitlements = z
 const schemaGetLeaderboards = z.object({
     action: z.literal('get_leaderboards'),
     network: z.enum(['steam', 'psn']),
-    season: schemaNumber,
-    count: schemaNumber.optional(),
+    season: isValidNumber,
+    count: isValidNumber.optional(),
     users: z.array(z.string()).optional(),
 });
 
 const schemaGetUsernames = z.object({
     action: z.literal('get_usernames'),
     network: z.enum(['steam', 'psn']),
-    count: schemaNumber,
+    count: isValidNumber,
 });
 
 export const isValidFormData = z.discriminatedUnion('action', [

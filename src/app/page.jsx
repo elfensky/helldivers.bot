@@ -2,6 +2,7 @@ import './page.css';
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { computeMapState } from '@/utils/computeMapState.mjs';
+import { EVENT_STATUS } from '@/enums/events';
 import DashboardClient from '@/components/h1/Dashboard/DashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export default async function HomePage() {
     }
 
     // Only pass active events — completed events are already reflected in the campaign score
-    const activeEvents = (data.events ?? []).filter((e) => e.status === 'active');
+    const activeEvents = (data.events ?? []).filter((e) => e.status === EVENT_STATUS.ACTIVE);
     const mapState = computeMapState(data.live, activeEvents);
 
     return <DashboardClient data={data} mapState={mapState} />;

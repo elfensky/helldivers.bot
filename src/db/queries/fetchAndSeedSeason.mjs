@@ -2,6 +2,7 @@ import db from '@/db/db';
 import { tryCatch } from '@/utils/tryCatch';
 import { fetchSeason } from '@/update/fetch';
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
+import { EVENT_TYPE } from '@/enums/events';
 
 /**
  * Fetches a single season from the official Helldivers API and seeds it into the DB.
@@ -60,7 +61,7 @@ export async function fetchAndSeedSeason(season) {
     await Promise.all(
         defendEvents.map((event) =>
             db.h1_event.upsert({
-                where: { type_event_id: { type: 'defend', event_id: event.event_id } },
+                where: { type_event_id: { type: EVENT_TYPE.DEFEND, event_id: event.event_id } },
                 update: {
                     season: event.season,
                     start_time: event.start_time,
@@ -74,7 +75,7 @@ export async function fetchAndSeedSeason(season) {
                 },
                 create: {
                     season: event.season,
-                    type: 'defend',
+                    type: EVENT_TYPE.DEFEND,
                     event_id: event.event_id,
                     start_time: event.start_time,
                     end_time: event.end_time,
@@ -94,7 +95,7 @@ export async function fetchAndSeedSeason(season) {
     await Promise.all(
         attackEvents.map((event) =>
             db.h1_event.upsert({
-                where: { type_event_id: { type: 'attack', event_id: event.event_id } },
+                where: { type_event_id: { type: EVENT_TYPE.ATTACK, event_id: event.event_id } },
                 update: {
                     season: event.season,
                     start_time: event.start_time,
@@ -108,7 +109,7 @@ export async function fetchAndSeedSeason(season) {
                 },
                 create: {
                     season: event.season,
-                    type: 'attack',
+                    type: EVENT_TYPE.ATTACK,
                     event_id: event.event_id,
                     start_time: event.start_time,
                     end_time: event.end_time,
