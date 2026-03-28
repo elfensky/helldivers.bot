@@ -1,5 +1,4 @@
 import './Map.css';
-import { formatNumber } from '@/utils/formatNumber.mjs';
 import {
     viewBox,
     bugPaths,
@@ -15,7 +14,7 @@ const factions = [
     { id: 'illuminate', index: 2, paths: illuminatePaths },
 ];
 
-export default function Map({ svgRef, map, live }) {
+export default function Map({ svgRef, map }) {
     const superearth = 3;
 
     return (
@@ -52,57 +51,40 @@ export default function Map({ svgRef, map, live }) {
                             </feMerge>
                         </filter>
                     </defs>
-                    {factions.map(({ id, index, paths }) => {
-                        const icon = factionIcons[index];
-                        const players = live?.find((s) => s.enemy === index)?.players;
-                        return (
-                            <g key={id} id={id}>
-                                {paths.map((path) => (
-                                    <path
-                                        key={path.id}
-                                        id={path.id}
-                                        data-name={String(path.sector)}
-                                        data-faction={id}
-                                        className={
-                                            path.sector === 11 ?
-                                                'sector ' + map[index][11].status
-                                            :   'sector ' +
-                                                map[index][path.sector].status +
-                                                ' ' +
-                                                map[index][path.sector].event
-                                        }
-                                        d={path.d}
-                                    />
-                                ))}
-                                <image
-                                    href={icon.href}
-                                    className="pointer-events-none"
-                                    x={icon.x}
-                                    y={icon.y}
-                                    width={icon.width}
-                                    height={icon.height}
+                    {factions.map(({ id, index, paths }) => (
+                        <g key={id} id={id}>
+                            {paths.map((path) => (
+                                <path
+                                    key={path.id}
+                                    id={path.id}
+                                    data-name={String(path.sector)}
+                                    data-faction={id}
+                                    className={
+                                        path.sector === 11 ?
+                                            'sector ' + map[index][11].status
+                                        :   'sector ' +
+                                            map[index][path.sector].status +
+                                            ' ' +
+                                            map[index][path.sector].event
+                                    }
+                                    d={path.d}
                                 />
-                                {players != null && (
-                                    <text
-                                        x={icon.x + icon.width / 2}
-                                        y={icon.y - 10}
-                                        textAnchor="middle"
-                                        fill="rgba(255,255,255,0.7)"
-                                        fontSize="18"
-                                        fontFamily="monospace"
-                                        className="pointer-events-none"
-                                    >
-                                        {formatNumber(players)}
-                                    </text>
-                                )}
-                            </g>
-                        );
-                    })}
+                            ))}
+                            <image
+                                href={factionIcons[index].href}
+                                className="pointer-events-none"
+                                x={factionIcons[index].x}
+                                y={factionIcons[index].y}
+                                width={factionIcons[index].width}
+                                height={factionIcons[index].height}
+                            />
+                        </g>
+                    ))}
                     <g id="superearth">
                         <circle
                             id={superEarthCircle.id}
                             data-name="0"
-                            className={'sector ' + map[superearth][0].status + ' ' + map[superearth][0].event}
+                            className={'sector captured ' + map[superearth][0].status}
                             cx={superEarthCircle.cx}
                             cy={superEarthCircle.cy}
                             r={superEarthCircle.r}

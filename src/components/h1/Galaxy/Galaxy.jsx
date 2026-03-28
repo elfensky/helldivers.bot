@@ -4,7 +4,7 @@ import Map from '@/components/h1/Galaxy/Map';
 import Tooltip from '@/components/h1/Galaxy/Tooltip';
 import { formatTimeAgo } from '@/utils/formatTimeAgo.mjs';
 
-export default function Galaxy({ mapState, lastUpdated, live }) {
+export default function Galaxy({ mapState, lastUpdated }) {
     const svgRef = useRef(null);
     const timeAgo = formatTimeAgo(lastUpdated);
 
@@ -13,7 +13,7 @@ export default function Galaxy({ mapState, lastUpdated, live }) {
             id="galaxy"
             className="mx-4 mb-4 flex flex-grow-[4] flex-col items-center gap-4 sm:mx-0"
         >
-            <Map svgRef={svgRef} map={mapState} live={live} />
+            <Map svgRef={svgRef} map={mapState} />
             {timeAgo && (
                 <p
                     className="text-center font-mono text-xs"
