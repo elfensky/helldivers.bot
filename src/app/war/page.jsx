@@ -76,10 +76,10 @@ export default async function WarHistoryPage({ searchParams }) {
     const mapState = computeMapState(data.live, []);
 
     return (
-        <div className="gutters z-10 flex max-w-full flex-col gap-4 overflow-hidden">
+        <div className="gutters flex flex-col gap-4 pb-4">
             <JsonLd />
 
-            <div className="flex items-stretch gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-4">
                 <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
                 <WarOutcome data={data} />
             </div>
