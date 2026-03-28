@@ -14,8 +14,8 @@ export default function SeasonSelector({ seasons, currentSeason }) {
                 className="rounded bg-white/10 px-3 py-2 text-sm text-white accent-[var(--orange)] hover:bg-white/20"
             >
                 {seasons.map((s) => (
-                    <option key={s.season} value={s.season}>
-                        Season {s.season}
+                    <option key={s} value={s}>
+                        Season {s}
                     </option>
                 ))}
             </select>
