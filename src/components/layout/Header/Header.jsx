@@ -2,25 +2,16 @@ import './Header.css';
 //next
 import Image from 'next/image';
 import Link from 'next/link';
-import Script from 'next/script';
 //components
 import Navigation from '@/components/layout/Navigation/Navigation';
-//rename component to UpperCase
-//icons
 
 export default async function Header() {
     return (
-        <header
-            id="header"
-            className="fixed top-0 z-50 flex h-[50px] w-full text-white sm:h-[80px]"
-        >
+        <header id="header" className="z-50 flex h-[50px] w-full text-white sm:h-[80px]">
             <div className="gutters flex w-full items-center justify-between">
                 <Logo />
                 <Navigation />
             </div>
-
-            <Script src="/scripts/headerCPU.js?111a" strategy="afterInteractive" />
-            <Script src="/scripts/navigation.js" strategy="afterInteractive" />
         </header>
     );
 }
