@@ -1,44 +1,23 @@
-import './page.css';
-//db
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
-//utils
 import { computeMapState } from '@/utils/computeMapState.mjs';
-//components
-import Galaxy from '@/components/h1/Galaxy/Galaxy';
-import War from '@/components/h1/War/War';
-import Timeline from '@/components/h1/Timeline/Timeline';
+import DashboardClient from '@/components/h1/Dashboard/DashboardClient';
 
-// Force dynamic rendering - skip build-time evaluation (requires database)
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
     const { data, error } = await tryCatch(getCampaign());
 
-    if (error !== null) {
-        console.error('getCampaign failed:', error);
+    if (error || !data) {
         return (
-            <div className="flex min-h-full w-full flex-col-reverse justify-center sm:flex-row">
-                Unable to load campaign data. Please try again later.
-            </div>
-        );
-    }
-
-    if (!data) {
-        return (
-            <div className="flex min-h-full w-full flex-col-reverse justify-center sm:flex-row">
-                Loading...
+            <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
+                <h1>Signal Lost</h1>
+                <p>Unable to load campaign data. Please try again later.</p>
             </div>
         );
     }
 
     const mapState = computeMapState(data.live, data.events);
 
-    return (
-        <div className="gutters z-10 flex w-full flex-col-reverse justify-between gap-4 overflow-hidden xl:fixed xl:top-[80px] xl:left-0 xl:max-h-[calc(100vh-80px-16px)] xl:flex-row xl:flex-wrap">
-            <War data={data} />
-            <Timeline data={data} />
-            <Galaxy mapState={mapState} />
-        </div>
-    );
+    return <DashboardClient data={data} mapState={mapState} />;
 }
