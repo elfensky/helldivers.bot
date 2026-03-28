@@ -5,28 +5,18 @@
 
 export default function GlobalError({ error, reset }) {
     return (
-        <html>
-            <body>
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minHeight: '100vh',
-                        padding: '2rem',
-                        fontFamily: 'system-ui, sans-serif',
-                    }}
-                >
-                    <h1>Something went wrong!</h1>
-                    <p>An unexpected error has occurred.</p>
+        <html lang="en">
+            <body className="bg-[var(--color-surface-0)] text-[var(--color-text)]">
+                <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
+                    <h1 className="text-3xl font-[family-name:var(--font-display)]">
+                        Something went wrong!
+                    </h1>
+                    <p className="text-[var(--color-text-muted)]">
+                        An unexpected error has occurred.
+                    </p>
                     <button
                         onClick={() => reset()}
-                        style={{
-                            marginTop: '1rem',
-                            padding: '0.5rem 1rem',
-                            cursor: 'pointer',
-                        }}
+                        className="mt-4 cursor-pointer bg-[var(--color-primary)] px-4 py-2 text-[var(--color-on-primary)]"
                     >
                         Try again
                     </button>
