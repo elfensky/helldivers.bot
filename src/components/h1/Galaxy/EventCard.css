@@ -65,3 +65,9 @@
     font-size: 0.5rem;
     color: var(--color-text-muted);
 }
+
+.sector-card-pace {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.5rem;
+    font-weight: 600;
+}

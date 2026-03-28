@@ -44,6 +44,12 @@ export function computeFrontier(campaignData, factionMap) {
 /**
  * HTML info card showing sector capture/defend/attack progress.
  */
+const PACE_COLORS = {
+    ahead: 'var(--color-success)',
+    behind: 'var(--color-danger)',
+    on_track: 'var(--color-primary)',
+};
+
 export default function EventCard({
     label,
     region,
@@ -51,6 +57,7 @@ export default function EventCard({
     points,
     pointsMax,
     factionIndex,
+    pace,
 }) {
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = label === 'DEFENDING' || label === 'ATTACKING';
@@ -72,6 +79,14 @@ export default function EventCard({
                     </span>
                 </div>
                 <span className="sector-card-region">{region}</span>
+                {pace && (
+                    <span
+                        className="sector-card-pace"
+                        style={{ color: PACE_COLORS[pace.status] }}
+                    >
+                        {pace.label}
+                    </span>
+                )}
                 <div className="sector-card-bar-wrap">
                     <div className="sector-card-bar">
                         <div

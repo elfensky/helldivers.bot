@@ -8,7 +8,7 @@ import { EVENT_TYPE } from '@/enums/events';
 export default function Event({ event }) {
     const remaining = event.end_time - Math.floor(Date.now() / 1000);
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
-    const progress = evaluateProgress(event);
+    const progress = evaluateProgress(event)?.label;
     const faction = factions[event.enemy];
     const isDefend = event.type === EVENT_TYPE.DEFEND;
 

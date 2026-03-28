@@ -3,6 +3,7 @@ import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeMapState } from '@/utils/computeMapState.mjs';
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { EVENT_STATUS } from '@/enums/events';
+import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import {
     bugPaths,
     cyborgPaths,
@@ -134,7 +135,16 @@ export default async function Image() {
     } else if (events.length > 0) {
         const activeEvent = events.find((e) => e.status === EVENT_STATUS.ACTIVE);
         if (activeEvent) {
-            statusText = 'ACTIVE EVENT';
+            const pace = evaluateProgress(activeEvent);
+            const PACE_STATUS = {
+                ahead: 'AHEAD',
+                behind: 'BEHIND',
+                on_track: 'ON TRACK',
+            };
+            statusText =
+                pace ?
+                    `${activeEvent.type.toUpperCase()} — ${PACE_STATUS[pace.status]}`
+                :   'ACTIVE EVENT';
         } else {
             const lastEvent = events.toSorted((a, b) => b.end_time - a.end_time)[0];
             const won = lastEvent.status === 'success';

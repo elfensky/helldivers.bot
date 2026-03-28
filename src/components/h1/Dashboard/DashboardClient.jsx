@@ -7,6 +7,7 @@ import EventCard, { computeFrontier } from '@/components/h1/Galaxy/EventCard';
 import FactionTabs from '@/components/h1/FactionTabs/FactionTabs';
 import StatGrid from '@/components/h1/StatGrid/StatGrid';
 import Event from '@/components/h1/Event/Event';
+import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import { formatTimeAgo } from '@/utils/formatTimeAgo.mjs';
 
 const factionIndices = [0, 1, 2];
@@ -41,6 +42,15 @@ export default function DashboardClient({ data, mapState }) {
 
                     const isDefending = frontier.event === 'active';
                     const label = isDefending ? 'DEFENDING' : 'CAPTURING';
+                    const activeEvent =
+                        isDefending ?
+                            events?.find(
+                                (e) =>
+                                    e.enemy === index &&
+                                    e.type === 'defend' &&
+                                    e.status === 'active',
+                            )
+                        :   null;
 
                     return (
                         <EventCard
@@ -51,12 +61,19 @@ export default function DashboardClient({ data, mapState }) {
                             points={frontier.points}
                             pointsMax={frontier.pointsMax}
                             factionIndex={index}
+                            pace={activeEvent ? evaluateProgress(activeEvent) : null}
                         />
                     );
                 })}
                 {factionIndices.map((index) => {
                     const homeworld = mapState[index]?.[11];
                     if (homeworld?.event !== 'active') return null;
+                    const attackEvent = events?.find(
+                        (e) =>
+                            e.enemy === index &&
+                            e.type === 'attack' &&
+                            e.status === 'active',
+                    );
 
                     return (
                         <EventCard
@@ -67,6 +84,7 @@ export default function DashboardClient({ data, mapState }) {
                             points={homeworld.points}
                             pointsMax={homeworld.points_max}
                             factionIndex={index}
+                            pace={attackEvent ? evaluateProgress(attackEvent) : null}
                         />
                     );
                 })}

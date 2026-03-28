@@ -23,7 +23,7 @@ function Alert({ event }) {
     const remaining = event.end_time - Math.floor(Date.now() / 1000);
     const percent = ((event.points / event.points_max) * 100).toFixed(1);
     const faction = factions[event.enemy];
-    const progress = evaluateProgress(event);
+    const progress = evaluateProgress(event)?.label;
     const timeText =
         remaining > 0 ?
             `Due in ${humanizeDuration(remaining * 1000, { largest: 2, round: true })}`
