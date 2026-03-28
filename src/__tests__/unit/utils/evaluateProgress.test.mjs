@@ -46,7 +46,7 @@ describe('evaluateProgress', () => {
         const result = evaluateProgress(event);
         expect(result).not.toBeNull();
         expect(result.status).toBe('on_track');
-        expect(result.label).toMatch(/On track by \d+ points/);
+        expect(result.label).toBe('On track');
     });
 
     test('returns null for non-active events', () => {
