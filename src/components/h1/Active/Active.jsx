@@ -26,13 +26,13 @@ export default function Active({ data }) {
     return (
         <section id="current" className="flex flex-col gap-4">
             <h2>{active.length} Active Events</h2>
-            <div className="flex flex-col gap-4 sm:overflow-y-auto">
-                <div className="flex flex-col gap-4 overflow-y-auto">
-                    {active.map((event) => (
-                        <Event key={event.event_id} event={event} />
-                    ))}
-                </div>
-            </div>
+            <ul className="flex list-none flex-col gap-4 overflow-y-auto p-0 sm:overflow-y-auto">
+                {active.map((event) => (
+                    <li key={event.event_id}>
+                        <Event event={event} />
+                    </li>
+                ))}
+            </ul>
         </section>
     );
 }
