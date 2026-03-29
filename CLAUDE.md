@@ -14,6 +14,34 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Chrome DevTools MCP** is available for debugging live pages. Use `evaluate_script` to inspect DOM state (e.g., sector CSS classes) and extract RSC payload data. Useful for verifying map state, comparing field values, and debugging visual issues without screenshots.
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 
+## Git Workflow
+
+**Branching model:** Simplified Git Flow — no release branches.
+
+| Branch | Purpose | Deploys to | Protected |
+|--------|---------|-----------|-----------|
+| `main` | Production releases | Production (via tags) | Yes — PR only |
+| `develop` | Integration/staging | Staging (auto) | Yes — PR only |
+| `feature/<desc>` | New functionality | — | No |
+| `bugfix/<desc>` | Non-urgent fixes | — | No |
+| `hotfix/<semver>` | Emergency prod fixes | — | No |
+
+**Rules:**
+1. **Never push directly to `main` or `develop`** — always use pull requests
+2. **Create feature/bugfix branches from `develop`**, merge back to `develop` via PR
+3. **Release process:** Merge `develop` → `main` via PR → tag `vX.Y.0` on main
+4. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
+5. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
+6. **After merging hotfix to `main`:** Always merge back to `develop` to prevent drift
+
+**Git Flow automation (git-workflow skill):**
+- `/git-workflow:feature <desc>` — create feature branch from `develop`
+- `/git-workflow:hotfix <semver>` — create hotfix branch from `main`
+- `/git-workflow:finish` — merge current branch to correct target(s), tag, cleanup
+- `/git-workflow:flow-status` — show branch status, stale branches, version info
+
+Prefer these commands over manual git operations.
+
 ## Conventions
 
 ### Error Handling
