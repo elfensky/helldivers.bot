@@ -18,15 +18,16 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 
 **Branching model:** Simplified Git Flow — no release branches.
 
-| Branch | Purpose | Deploys to | Protected |
-|--------|---------|-----------|-----------|
-| `main` | Production releases | Production (via tags) | Yes — PR only |
-| `develop` | Integration/staging | Staging (auto) | Yes — PR only |
-| `feature/<desc>` | New functionality | — | No |
-| `bugfix/<desc>` | Non-urgent fixes | — | No |
-| `hotfix/<semver>` | Emergency prod fixes | — | No |
+| Branch            | Purpose              | Deploys to            | Protected     |
+| ----------------- | -------------------- | --------------------- | ------------- |
+| `main`            | Production releases  | Production (via tags) | Yes — PR only |
+| `develop`         | Integration/staging  | Staging (auto)        | Yes — PR only |
+| `feature/<desc>`  | New functionality    | —                     | No            |
+| `bugfix/<desc>`   | Non-urgent fixes     | —                     | No            |
+| `hotfix/<semver>` | Emergency prod fixes | —                     | No            |
 
 **Rules:**
+
 1. **Never push directly to `main` or `develop`** — always use pull requests
 2. **Create feature/bugfix branches from `develop`**, merge back to `develop` via PR
 3. **Release process:** Merge `develop` → `main` via PR → tag `vX.Y.0` on main
@@ -35,6 +36,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 6. **After merging hotfix to `main`:** Always merge back to `develop` to prevent drift
 
 **Git Flow automation (git-workflow skill):**
+
 - `/git-workflow:feature <desc>` — create feature branch from `develop`
 - `/git-workflow:hotfix <semver>` — create hotfix branch from `main`
 - `/git-workflow:finish` — merge current branch to correct target(s), tag, cleanup
@@ -93,8 +95,9 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`:
 - **Node version:** Volta pins node@22 and npm@11.
 - **Server actions:** Most utilities use `'use server'` directive.
 - **Design tokens:** CSS custom properties in `src/styles/tokens.css`, integrated into Tailwind v4 `@theme` block in `src/app/layout.css`. See `/brandkit` for visual reference.
-- **Mobile-first layout:** Phase 6 rebuilt the homepage with mobile-first single-column layout. New components: `BottomNav` (bottom tab bar), `FactionTabs` (faction switcher), `StatGrid` (2×2 data cards), `DashboardClient` (client wrapper managing faction state), `EventCard` (per-faction sector progress with CAPTURING/DEFENDING/ATTACKING states).
-- **Component patterns:** Data cards use CSS Grid with right-side accent lines. Event cards have status-based background tinting (green=success, red=fail). All border-radius is 0px via `@theme` override.
+- **Mobile-first layout:** Phase 6 rebuilt the homepage with mobile-first single-column layout. Phase 7 added tablet responsive: portrait (md: 768px) enhanced single column, landscape (lg: 1024px) map + sidebar layout. New components: `BottomNav` (bottom tab bar, hidden at lg:), `HeaderNav` (page links in header at lg:, with live pulse indicator), `FactionTabs` (faction switcher with faction icons), `StatGrid` (2×2 data cards, 4-col at md:, 2-col in sidebar), `DashboardClient` (client wrapper managing faction state + sidebar layout at lg:), `EventCard` (per-faction sector progress with CAPTURING/DEFENDING/ATTACKING states).
+- **Component patterns:** Data cards use CSS Grid with right-side accent lines. Event cards have status-based background tinting (green=success, red=fail). All border-radius is 0px via `@theme` override. FactionTabs show icon-only on mobile, icon+text at sm:+, icon-only again in sidebar at lg:. **Grid columns must use `minmax(0, 1fr)` not bare `1fr`** — bare `1fr` respects content min-width, causing overflow on tiny viewports.
+- **Viewport minimum:** Below 200px, a "use a larger screen" warning replaces all content. Uses `hidden min-[200px]:contents` wrapper pattern in `layout.jsx`. Header status/GitHub icons are hidden below `sm` (640px) since BottomNav provides navigation.
 - **Shared utilities:** `formatNumber` (`src/utils/formatNumber.mjs`) for compact numbers (12.3M, 1.2K). `formatTimeAgo` (`src/utils/formatTimeAgo.mjs`) for relative timestamps ("Updated 3m ago").
 - **Map state:** `computeMapState` (`src/utils/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 come from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — completed events are already in the score.
 - **On-demand season fetching:** `/war` page derives SeasonSelector from current season number (not DB query). Missing seasons are fetched from the official API on first request via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`).
@@ -139,12 +142,12 @@ For every phase or feature, create both files in `docs/superpowers/`:
 
 ## Reference Docs
 
-| Topic                              | Location                                       |
-| ---------------------------------- | ---------------------------------------------- |
-| Docker, CI/CD, init flow, env vars | [Wiki: Infrastructure](https://github.com/elfensky/helldivers.bot/wiki/Infrastructure) |
-| Database schema & relationships    | [Wiki: Database-Schema](https://github.com/elfensky/helldivers.bot/wiki/Database-Schema) |
-| Data pipeline & worker lifecycle   | [Wiki: Data-Flow](https://github.com/elfensky/helldivers.bot/wiki/Data-Flow) |
-| API endpoints & authentication     | [Wiki: API-Reference](https://github.com/elfensky/helldivers.bot/wiki/API-Reference) |
+| Topic                              | Location                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Docker, CI/CD, init flow, env vars | [Wiki: Infrastructure](https://github.com/elfensky/helldivers.bot/wiki/Infrastructure)           |
+| Database schema & relationships    | [Wiki: Database-Schema](https://github.com/elfensky/helldivers.bot/wiki/Database-Schema)         |
+| Data pipeline & worker lifecycle   | [Wiki: Data-Flow](https://github.com/elfensky/helldivers.bot/wiki/Data-Flow)                     |
+| API endpoints & authentication     | [Wiki: API-Reference](https://github.com/elfensky/helldivers.bot/wiki/API-Reference)             |
 | Utilities & Zod validators         | [Wiki: Utilities-Reference](https://github.com/elfensky/helldivers.bot/wiki/Utilities-Reference) |
-| Testing infrastructure             | [Wiki: Testing](https://github.com/elfensky/helldivers.bot/wiki/Testing) |
-| Frontend design system & tokens    | `/brandkit` (visual) + `src/styles/tokens.css` |
+| Testing infrastructure             | [Wiki: Testing](https://github.com/elfensky/helldivers.bot/wiki/Testing)                         |
+| Frontend design system & tokens    | `/brandkit` (visual) + `src/styles/tokens.css`                                                   |

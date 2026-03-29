@@ -73,6 +73,8 @@ export default function RootLayout({ children }) {
                 >
                     Skip to content
                 </a>
+                {/* Viewport minimum: <200px shows warning, ≥200px shows content.
+                    The content wrapper uses `contents` so it doesn't break body's flex layout. */}
                 <div
                     className="flex min-h-screen items-center justify-center p-4 text-center text-sm text-[var(--color-text-muted)] min-[200px]:hidden"
                     role="alert"

@@ -1,5 +1,6 @@
 .stat-grid {
     display: grid;
+    /* minmax(0, 1fr) not bare 1fr — bare 1fr respects content min-width, causing overflow on tiny viewports */
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0.5rem;
     width: 100%;
