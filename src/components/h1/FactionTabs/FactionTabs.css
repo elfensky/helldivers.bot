@@ -21,6 +21,37 @@
     transition:
         color 0.15s ease,
         border-color 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.faction-tab-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.faction-tab-label {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .faction-tab-icon {
+        display: none;
+    }
+
+    .faction-tab-label {
+        display: inline;
+    }
+}
+
+@media (min-width: 1024px) {
+    .dashboard-sidebar .faction-tab-icon {
+        display: inline;
+    }
+    .dashboard-sidebar .faction-tab-label {
+        display: none;
+    }
 }
 
 .faction-tab.active {
