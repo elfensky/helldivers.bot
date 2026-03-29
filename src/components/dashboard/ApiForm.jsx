@@ -17,7 +17,9 @@ export function GenerateApiKeyForm({ userId }) {
                 <span>Key: {state?.data?.key}</span>
             :   null}
             {state?.errors?.general ?
-                <span className="text-red-400">{state.errors.general}</span>
+                <span role="alert" className="text-red-400">
+                    {state.errors.general}
+                </span>
             :   null}
 
             <Form action={formAction} className="flex flex-row gap-2">
@@ -26,17 +28,22 @@ export function GenerateApiKeyForm({ userId }) {
                     <label htmlFor="description">
                         Description
                         {state?.errors?.description ?
-                            <span className="ml-2 text-red-400">
+                            <span
+                                id="description-error"
+                                className="ml-2 text-red-400"
+                            >
                                 {state.errors.description}
                             </span>
                         :   null}
                     </label>
                     <input
                         type="text"
+                        id="description"
                         name="description"
                         placeholder="used by [application name]"
-                        // value={'bla'}
-                        // required
+                        aria-describedby={
+                            state?.errors?.description ? 'description-error' : undefined
+                        }
                     />
                 </fieldset>
 

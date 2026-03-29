@@ -79,7 +79,7 @@ async function User({ session }) {
                 <Image
                     src={avatarUrl}
                     className="rounded-full"
-                    alt="User avatar"
+                    alt={`${session.user.name ?? 'User'} avatar`}
                     width={32}
                     height={32}
                     priority={true}
