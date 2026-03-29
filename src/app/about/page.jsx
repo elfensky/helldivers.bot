@@ -16,6 +16,7 @@ export default function AboutPage() {
 
     return (
         <div className="gutters relative mb-8 flex flex-col flex-wrap gap-8">
+            <h1 className="font-[family-name:var(--font-display)] text-3xl">About</h1>
             <About />
             <Architecture />
             <Discord />
@@ -31,7 +32,7 @@ function About() {
             id="about"
             className="card w-full rounded-md p-2 sm:max-w-1/3 sm:min-w-[300px] md:p-4"
         >
-            <h2 className="font-[family-name:var(--font-display)]">About</h2>
+            <h2 className="font-[family-name:var(--font-display)]">The Project</h2>
             <p>
                 Hi, I'm Andrei Lavrenov, a Full Stack Developer based in Belgium. As a
                 passionate Helldivers player who earned the platinum trophy on

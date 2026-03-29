@@ -89,6 +89,7 @@ export default async function WarHistoryPage({ searchParams }) {
 
     return (
         <div className="gutters flex flex-col gap-4 pb-4">
+            <h1 className="sr-only">War History</h1>
             <JsonLd />
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-4">
