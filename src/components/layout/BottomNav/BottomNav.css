@@ -10,6 +10,14 @@
     border-top: 1px solid var(--color-ghost-border);
 }
 
+/* Unlayered CSS beats Tailwind's @layer utilities, so lg:hidden won't work.
+   Hide BottomNav here where it shares the same (unlayered) cascade context. */
+@media (min-width: 1024px) {
+    .bottom-nav {
+        display: none;
+    }
+}
+
 .bottom-nav-tab {
     flex: 1;
     display: flex;

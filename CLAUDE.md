@@ -11,7 +11,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Playwright smoke tests** are configured. Run `npm run test:smoke` to verify the app builds and runs correctly.
 - **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit:run`.
 - **Never start the dev server.** Ask the user to start it separately if needed (e.g., for smoke tests).
-- **Chrome DevTools MCP** is available for debugging live pages. Use `evaluate_script` to inspect DOM state (e.g., sector CSS classes) and extract RSC payload data. Useful for verifying map state, comparing field values, and debugging visual issues without screenshots.
+- **Chrome DevTools MCP** is available for debugging live pages. Use `evaluate_script` to inspect DOM state (e.g., sector CSS classes) and extract RSC payload data. Useful for verifying map state, comparing field values, and debugging visual issues without screenshots. **Always verify CSS issues via DevTools before guessing** — use `getComputedStyle()` to check actual applied values, and inspect which rules win in specificity conflicts.
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 
 ## Git Workflow
