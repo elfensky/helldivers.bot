@@ -5,6 +5,7 @@ import ApiDashboard from '@/components/dashboard/ApiDashboard';
 export const metadata = {
     title: 'Dashboard | Helldivers Bot',
     description: 'Manage your Helldivers API key and view your account information',
+    robots: { index: false, follow: false },
 };
 
 export default async function Dashboard() {

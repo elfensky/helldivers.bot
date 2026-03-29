@@ -18,6 +18,24 @@ export default async function sitemap() {
             changeFrequency: 'monthly',
             priority: 0.5,
         },
+        {
+            url: 'https://helldivers.bot/faq',
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.3,
+        },
+        {
+            url: 'https://helldivers.bot/architecture',
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.3,
+        },
+        {
+            url: 'https://helldivers.bot/discord',
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.3,
+        },
     ];
 }
 
