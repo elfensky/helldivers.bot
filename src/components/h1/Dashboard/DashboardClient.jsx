@@ -21,7 +21,6 @@ export default function DashboardClient({ data, mapState }) {
     return (
         <div className="gutters flex flex-col gap-4 pb-4">
             <Alerts data={data} />
-            <Galaxy mapState={mapState} />
             {timeAgo && (
                 <p
                     className="font-mono text-xs"
@@ -31,68 +30,75 @@ export default function DashboardClient({ data, mapState }) {
                     {timeAgo}
                 </p>
             )}
-            <ul className="sector-grid list-none p-0">
-                {factionIndices.map((index) => {
-                    const campaignData = data.live?.find((l) => l.enemy === index);
-                    const frontier = computeFrontier(campaignData, mapState[index]);
-                    if (!frontier) return null;
+            <div className="dashboard-main">
+                <div className="dashboard-map">
+                    <Galaxy mapState={mapState} />
+                </div>
+                <div className="dashboard-sidebar">
+                    <ul className="sector-grid list-none p-0">
+                        {factionIndices.map((index) => {
+                            const campaignData = data.live?.find((l) => l.enemy === index);
+                            const frontier = computeFrontier(campaignData, mapState[index]);
+                            if (!frontier) return null;
 
-                    const isDefending = frontier.event === 'active';
-                    const label = isDefending ? 'DEFENDING' : 'CAPTURING';
-                    const activeEvent =
-                        isDefending ?
-                            events?.find(
+                            const isDefending = frontier.event === 'active';
+                            const label = isDefending ? 'DEFENDING' : 'CAPTURING';
+                            const activeEvent =
+                                isDefending ?
+                                    events?.find(
+                                        (e) =>
+                                            e.enemy === index &&
+                                            e.type === 'defend' &&
+                                            e.status === 'active',
+                                    )
+                                :   null;
+
+                            return (
+                                <li key={`frontier-${index}`}>
+                                    <EventCard
+                                        label={label}
+                                        region={frontier.region}
+                                        percent={frontier.percent}
+                                        points={frontier.points}
+                                        pointsMax={frontier.pointsMax}
+                                        factionIndex={index}
+                                        pace={activeEvent ? evaluateProgress(activeEvent) : null}
+                                    />
+                                </li>
+                            );
+                        })}
+                        {factionIndices.map((index) => {
+                            const homeworld = mapState[index]?.[11];
+                            if (homeworld?.event !== 'active') return null;
+                            const attackEvent = events?.find(
                                 (e) =>
                                     e.enemy === index &&
-                                    e.type === 'defend' &&
+                                    e.type === 'attack' &&
                                     e.status === 'active',
-                            )
-                        :   null;
+                            );
 
-                    return (
-                        <li key={`frontier-${index}`}>
-                            <EventCard
-                                label={label}
-                                region={frontier.region}
-                                percent={frontier.percent}
-                                points={frontier.points}
-                                pointsMax={frontier.pointsMax}
-                                factionIndex={index}
-                                pace={activeEvent ? evaluateProgress(activeEvent) : null}
-                            />
-                        </li>
-                    );
-                })}
-                {factionIndices.map((index) => {
-                    const homeworld = mapState[index]?.[11];
-                    if (homeworld?.event !== 'active') return null;
-                    const attackEvent = events?.find(
-                        (e) =>
-                            e.enemy === index &&
-                            e.type === 'attack' &&
-                            e.status === 'active',
-                    );
-
-                    return (
-                        <li key={`attack-${index}`}>
-                            <EventCard
-                                label="ATTACKING"
-                                region={homeworld.region}
-                                percent={homeworld.percent}
-                                points={homeworld.points}
-                                pointsMax={homeworld.points_max}
-                                factionIndex={index}
-                                pace={attackEvent ? evaluateProgress(attackEvent) : null}
-                            />
-                        </li>
-                    );
-                })}
-            </ul>
-            <section className="flex flex-col gap-2">
-                <h2>Stats</h2>
-                <FactionTabs active={faction} onChange={setFaction} />
-                <StatGrid live={data.live} faction={faction} />
-            </section>
+                            return (
+                                <li key={`attack-${index}`}>
+                                    <EventCard
+                                        label="ATTACKING"
+                                        region={homeworld.region}
+                                        percent={homeworld.percent}
+                                        points={homeworld.points}
+                                        pointsMax={homeworld.points_max}
+                                        factionIndex={index}
+                                        pace={attackEvent ? evaluateProgress(attackEvent) : null}
+                                    />
+                                </li>
+                            );
+                        })}
+                    </ul>
+                    <section className="flex flex-col gap-2">
+                        <h2>Stats</h2>
+                        <FactionTabs active={faction} onChange={setFaction} />
+                        <StatGrid live={data.live} faction={faction} />
+                    </section>
+                </div>
+            </div>
             {events?.length > 0 && (
                 <section className="flex flex-col gap-2">
                     <h2>Event Timeline</h2>
