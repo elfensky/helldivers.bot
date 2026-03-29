@@ -36,8 +36,14 @@
 }
 
 @media (min-width: 640px) {
+    .faction-tab {
+        gap: 0.375rem;
+    }
+
     .faction-tab-icon {
-        display: none;
+        display: inline;
+        width: 16px;
+        height: 16px;
     }
 
     .faction-tab-label {
