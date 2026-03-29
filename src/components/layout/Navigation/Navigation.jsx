@@ -19,6 +19,7 @@ export default async function Navigation() {
                 data-umami-event="header-status"
                 title="Status"
                 aria-label="Status"
+                className="hidden sm:block"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -40,6 +41,7 @@ export default async function Navigation() {
                 href="https://github.com/elfensky/helldivers1api"
                 data-umami-event="header-github"
                 aria-label="GitHub"
+                className="hidden sm:block"
             >
                 <svg
                     width="98"

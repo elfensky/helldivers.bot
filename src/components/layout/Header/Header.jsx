@@ -7,7 +7,10 @@ import Navigation from '@/components/layout/Navigation/Navigation';
 
 export default async function Header() {
     return (
-        <header id="header" className="z-50 flex h-[50px] w-full text-white sm:h-[80px]">
+        <header
+            id="header"
+            className="z-50 flex h-[50px] w-full overflow-hidden text-white sm:h-[80px]"
+        >
             <div className="gutters flex w-full items-center justify-between">
                 <Logo />
                 <Navigation />
