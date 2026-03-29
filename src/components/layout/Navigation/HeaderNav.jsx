@@ -12,7 +12,7 @@ export default function HeaderNav() {
     const pathname = usePathname();
 
     return (
-        <div className="hidden items-center gap-4 lg:flex">
+        <div className="hidden items-center gap-4 md:flex">
             {tabs.map(({ href, label, live }) => {
                 const isActive =
                     href === '/' ? pathname === '/' : pathname.startsWith(href);

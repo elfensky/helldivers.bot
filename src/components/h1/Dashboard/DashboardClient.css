@@ -11,7 +11,18 @@
     }
 }
 
+@media (min-width: 768px) {
+    .dashboard-map {
+        max-width: 480px;
+        margin: 0 auto;
+    }
+}
+
 @media (min-width: 1024px) {
+    .dashboard-map {
+        max-width: none;
+        margin: 0;
+    }
     .dashboard-main {
         display: flex;
         gap: 1rem;
