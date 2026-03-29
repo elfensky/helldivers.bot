@@ -6,12 +6,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 //
 import { SignIn, SignOut } from '@/components/layout/Auth/Auth';
+import HeaderNav from '@/components/layout/Navigation/HeaderNav';
 
 export default async function Navigation() {
     const session = await auth();
 
     return (
         <nav className="z-50 flex items-center gap-3">
+            <HeaderNav />
             <Link
                 href="https://status.helldivers.bot"
                 data-umami-event="header-status"
