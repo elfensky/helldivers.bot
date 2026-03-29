@@ -28,11 +28,13 @@ async function ApiKeysList({ userId }) {
         <table>
             <thead>
                 <tr>
-                    <th>Description</th>
-                    <th>Last 4 characters</th>
-                    <th>Created At</th>
-                    <th>Enabled</th>
-                    <th></th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Last 4 characters</th>
+                    <th scope="col">Created At</th>
+                    <th scope="col">Enabled</th>
+                    <th scope="col">
+                        <span className="sr-only">Actions</span>
+                    </th>
                 </tr>
             </thead>
             <tbody>

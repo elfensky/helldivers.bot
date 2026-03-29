@@ -62,7 +62,7 @@ export default function RootLayout({ children }) {
                 />
             </head> */}
             <body
-                id="body "
+                id="body"
                 className="flex min-h-screen min-w-screen flex-col antialiased"
             >
                 <script
@@ -70,8 +70,14 @@ export default function RootLayout({ children }) {
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
                 />
 
+                <a
+                    href="#main"
+                    className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-[var(--color-primary)] focus:px-4 focus:py-2 focus:text-[var(--color-on-primary)]"
+                >
+                    Skip to content
+                </a>
                 <Header />
-                <main className="flex min-h-screen w-screen flex-col pb-[48px]">
+                <main id="main" className="flex min-h-screen w-screen flex-col pb-[48px] lg:pb-0">
                     {children}
                 </main>
                 <Footer />

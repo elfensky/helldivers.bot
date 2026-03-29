@@ -4,6 +4,18 @@
     gap: 0.5rem;
 }
 
+@media (min-width: 768px) {
+    .stat-grid {
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+    }
+}
+
+@media (min-width: 1024px) {
+    .dashboard-sidebar .stat-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 .stat-card {
     display: grid;
     grid-template-columns: 1fr 4px;

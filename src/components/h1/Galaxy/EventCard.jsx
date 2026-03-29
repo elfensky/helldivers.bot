@@ -88,7 +88,13 @@ export default function EventCard({
                     </span>
                 )}
                 <div className="sector-card-bar-wrap">
-                    <div className="sector-card-bar">
+                    <div
+                        className="sector-card-bar"
+                        role="progressbar"
+                        aria-valuenow={safePct}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                    >
                         <div
                             className="sector-card-bar-fill"
                             style={{ width: `${safePct}%` }}

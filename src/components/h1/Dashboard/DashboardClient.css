@@ -10,3 +10,23 @@
         grid-template-columns: 1fr 1fr 1fr;
     }
 }
+
+@media (min-width: 1024px) {
+    .dashboard-main {
+        display: flex;
+        gap: 1rem;
+    }
+    .dashboard-map {
+        flex: 1;
+        min-width: 0;
+    }
+    .dashboard-sidebar {
+        flex: 0 0 260px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .sector-grid {
+        grid-template-columns: 1fr;
+    }
+}

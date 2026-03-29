@@ -7,6 +7,11 @@ export const metadata = {
 export default function BotPage() {
     return (
         <div className="gutters flex min-h-[50vh] flex-col items-center justify-center gap-4">
+            <script
+                type="application/ld+json"
+                // Safe: schema is a hardcoded constant, not user input
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+            />
             <h1 className="text-3xl font-[family-name:var(--font-display)] text-[var(--color-text)]">
                 Discord Bot
             </h1>
