@@ -20,6 +20,7 @@ export default function DashboardClient({ data, mapState }) {
 
     return (
         <div className="gutters flex flex-col gap-4 pb-4">
+            <h1 className="sr-only">Live Campaign</h1>
             <Alerts data={data} />
             {timeAgo && (
                 <p
