@@ -23,6 +23,15 @@ const nextConfig = {
             },
         ],
     },
+    async redirects() {
+        return [
+            {
+                source: '/war',
+                destination: '/archives',
+                permanent: true,
+            },
+        ];
+    },
     async rewrites() {
         return [
             {
