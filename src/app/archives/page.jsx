@@ -1,4 +1,4 @@
-import './war.css';
+import './archives.css';
 import { redirect } from 'next/navigation';
 //db
 import { tryCatch } from '@/utils/tryCatch.mjs';
@@ -15,10 +15,10 @@ import SeasonSelector from '@/components/h1/SeasonSelector/SeasonSelector';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-    metadataBase: 'https://helldivers.bot/war',
-    title: 'War History | Helldivers Bot - past campaign data',
+    metadataBase: 'https://helldivers.bot/archives',
+    title: 'Archives | Helldivers Bot — campaign records approved by High Command',
     description:
-        'Browse historical Helldivers 1 war data. View past seasons, campaign outcomes, and event logs.',
+        'Browse the official Super Earth archives. All campaign records have been verified and approved by High Command. Any resemblance to defeat is purely clerical error.',
 };
 
 export default async function WarHistoryPage({ searchParams }) {
@@ -39,14 +39,17 @@ export default async function WarHistoryPage({ searchParams }) {
 
     const activeSeason = activeCampaign.season;
     // All past seasons in descending order
-    const seasons = Array.from({ length: activeSeason - 1 }, (_, i) => activeSeason - 1 - i);
+    const seasons = Array.from(
+        { length: activeSeason - 1 },
+        (_, i) => activeSeason - 1 - i,
+    );
 
     // Default to the most recent completed season if no season param
     const resolvedSeason = seasonParam ?? seasons[0] ?? null;
 
     // Populate ?season in URL so the link is always shareable
     if (seasonParam === null && resolvedSeason !== null) {
-        redirect(`/war?season=${resolvedSeason}`);
+        redirect(`/archives?season=${resolvedSeason}`);
     }
 
     // Fetch requested season from DB
@@ -108,11 +111,11 @@ function JsonLd() {
             '@context': 'https://schema.org',
             '@type': 'WebApplication',
             applicationCategory: ['GameUtility', 'GameInformation', 'Entertainment'],
-            url: 'https://helldivers.bot/war',
-            name: 'War History | Helldivers Bot',
+            url: 'https://helldivers.bot/archives',
+            name: 'Archives | Helldivers Bot',
             author: 'Andrei Lavrenov',
             description:
-                'Browse historical Helldivers 1 war data. View past seasons, campaign outcomes, and event logs.',
+                'Browse the official Super Earth archives. All campaign records have been verified and approved by High Command.',
             offers: {
                 '@type': 'Offer',
                 price: 0.0,
@@ -126,8 +129,8 @@ function JsonLd() {
                 {
                     '@type': 'ListItem',
                     position: 1,
-                    name: 'War History',
-                    item: 'https://helldivers.bot/war',
+                    name: 'Archives',
+                    item: 'https://helldivers.bot/archives',
                 },
             ],
         },

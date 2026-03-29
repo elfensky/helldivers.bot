@@ -7,7 +7,7 @@ export default function BottomNav() {
     const pathname = usePathname();
     const tabs = [
         { href: '/', label: 'Live', icon: '●', live: true },
-        { href: '/war', label: 'History', icon: '◈' },
+        { href: '/archives', label: 'Archives', icon: '◈' },
         { href: '/about', label: 'About', icon: '◇' },
     ];
 

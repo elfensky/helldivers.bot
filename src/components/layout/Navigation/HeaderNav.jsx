@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 
 const tabs = [
     { href: '/', label: 'Live', live: true },
-    { href: '/war', label: 'History' },
+    { href: '/archives', label: 'Archives' },
     { href: '/about', label: 'About' },
 ];
 

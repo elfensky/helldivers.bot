@@ -7,7 +7,7 @@ export default async function sitemap() {
             priority: 1,
         },
         {
-            url: 'https://helldivers.bot/war',
+            url: 'https://helldivers.bot/archives',
             lastModified: new Date(),
             changeFrequency: 'daily',
             priority: 0.9,

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Smoke tests', () => {
     const pages = [
         ['/', 'Homepage'],
-        ['/war', 'War page'],
+        ['/archives', 'Archives page'],
         ['/faq', 'FAQ page'],
         ['/about', 'About page'],
         ['/docs', 'Docs page'],

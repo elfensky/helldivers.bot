@@ -50,8 +50,8 @@ export default function Footer() {
                             </Link>
                         </li>
                         <li>
-                            <Link href="/war" className="footer-link">
-                                History
+                            <Link href="/archives" className="footer-link">
+                                Archives
                             </Link>
                         </li>
                         <li>
