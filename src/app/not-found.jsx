@@ -6,9 +6,9 @@ import Link from 'next/link';
 export default function NotFound() {
     return (
         <div className="gutters flex min-h-[50vh] flex-col items-center justify-center gap-4">
-            <h2 className="text-3xl font-[family-name:var(--font-display)] text-[var(--color-text)]">
+            <h1 className="text-3xl font-[family-name:var(--font-display)] text-[var(--color-text)]">
                 Not Found
-            </h2>
+            </h1>
             <p className="text-[var(--color-text-muted)]">
                 Could not find requested resource
             </p>

@@ -3,6 +3,16 @@
     flex-direction: column;
     gap: 0.5rem;
 }
+@media (min-width: 768px) {
+    .alerts {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+    .alert-banner {
+        min-width: 220px;
+        flex-shrink: 0;
+    }
+}
 .alert-banner {
     background: rgba(119, 1, 1, 0.9);
     border: 2px solid var(--color-danger);

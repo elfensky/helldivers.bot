@@ -11,11 +11,13 @@ export default function Alerts({ data }) {
     if (!active?.length) return null;
 
     return (
-        <div className="alerts">
+        <ul className="alerts list-none p-0">
             {active.map((event) => (
-                <Alert key={event.event_id} event={event} />
+                <li key={event.event_id}>
+                    <Alert event={event} />
+                </li>
             ))}
-        </div>
+        </ul>
     );
 }
 
@@ -46,7 +48,13 @@ function Alert({ event }) {
                 {progress && ` — ${progress}`}
             </div>
             <div className="alert-banner-time">{timeText}</div>
-            <div className="alert-banner-bar">
+            <div
+                className="alert-banner-bar"
+                role="progressbar"
+                aria-valuenow={Math.min(100, parseFloat(percent))}
+                aria-valuemin={0}
+                aria-valuemax={100}
+            >
                 <div
                     className="alert-banner-bar-fill"
                     style={{ width: `${Math.min(100, percent)}%` }}

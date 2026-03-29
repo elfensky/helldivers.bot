@@ -9,6 +9,7 @@ export const metadata = {
 export default function ArchitecturePage() {
     return (
         <div className="gutters relative mb-8 flex flex-col gap-8">
+            <h1 className="font-[family-name:var(--font-display)] text-3xl">Architecture</h1>
             <section className="card w-full p-2 md:p-4">
                 <h2 className="font-[family-name:var(--font-display)]">
                     Data Flow Architecture
