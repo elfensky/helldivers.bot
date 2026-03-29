@@ -77,7 +77,7 @@ export default function RootLayout({ children }) {
                     Skip to content
                 </a>
                 <Header />
-                <main id="main" className="flex min-h-screen w-screen flex-col pb-[48px]">
+                <main id="main" className="flex min-h-screen w-screen flex-col pb-[48px] lg:pb-0">
                     {children}
                 </main>
                 <Footer />
