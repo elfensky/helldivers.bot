@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import Link from 'next/link';
 import DocsClient from '@/components/layout/OpenAPI/DocsClient';
 
 export const metadata = {
@@ -16,6 +17,7 @@ export default function AboutPage() {
     return (
         <div className="gutters relative mb-8 flex flex-col flex-wrap gap-8">
             <About />
+            <Architecture />
             <Discord />
             <Api />
             <Docs openapi={openapi} />
@@ -45,6 +47,25 @@ function About() {
                 I work on this project in my spare time as a hobby, combining my love for
                 the game with my passion for coding and learning new technologies.
             </p>
+        </section>
+    );
+}
+
+function Architecture() {
+    return (
+        <section className="card w-full rounded-md p-2 sm:max-w-1/2 md:p-4">
+            <h2 className="font-[family-name:var(--font-display)]">Architecture</h2>
+            <p>
+                Curious how the data pipeline works? See the interactive diagram showing
+                how data flows from the official Helldivers API through validation,
+                storage, and normalization to the frontend.
+            </p>
+            <Link
+                href="/architecture"
+                className="mt-2 inline-block text-[var(--color-primary)] hover:underline"
+            >
+                View data flow diagram &rarr;
+            </Link>
         </section>
     );
 }
