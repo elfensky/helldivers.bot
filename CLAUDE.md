@@ -141,10 +141,10 @@ For every phase or feature, create both files in `docs/superpowers/`:
 
 | Topic                              | Location                                       |
 | ---------------------------------- | ---------------------------------------------- |
-| Docker, CI/CD, init flow, env vars | `docs/01-infrastructure.md`                    |
-| Database schema & relationships    | `docs/02-database-schema.md`                   |
-| Data pipeline & worker lifecycle   | `docs/03-data-flow.md`                         |
-| API endpoints & authentication     | `docs/04-api-reference.md`                     |
-| Utilities & Zod validators         | `docs/05-utilities-reference.md`               |
-| Testing infrastructure             | `docs/06-testing.md`                           |
+| Docker, CI/CD, init flow, env vars | [Wiki: Infrastructure](https://github.com/elfensky/helldivers.bot/wiki/Infrastructure) |
+| Database schema & relationships    | [Wiki: Database-Schema](https://github.com/elfensky/helldivers.bot/wiki/Database-Schema) |
+| Data pipeline & worker lifecycle   | [Wiki: Data-Flow](https://github.com/elfensky/helldivers.bot/wiki/Data-Flow) |
+| API endpoints & authentication     | [Wiki: API-Reference](https://github.com/elfensky/helldivers.bot/wiki/API-Reference) |
+| Utilities & Zod validators         | [Wiki: Utilities-Reference](https://github.com/elfensky/helldivers.bot/wiki/Utilities-Reference) |
+| Testing infrastructure             | [Wiki: Testing](https://github.com/elfensky/helldivers.bot/wiki/Testing) |
 | Frontend design system & tokens    | `/brandkit` (visual) + `src/styles/tokens.css` |
