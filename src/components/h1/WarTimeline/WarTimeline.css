@@ -43,7 +43,7 @@
 
 .timeline-range {
     width: 100%;
-    accent-color: #ffd500;
+    accent-color: var(--color-primary);
     cursor: pointer;
 }
 
@@ -58,13 +58,13 @@
 }
 
 .timeline-marker.defend {
-    background-color: #e53e3e;
-    box-shadow: 0 0 3px rgba(229, 62, 62, 0.6);
+    background-color: var(--color-danger);
+    box-shadow: 0 0 3px rgba(255, 0, 0, 0.6);
 }
 
 .timeline-marker.attack {
-    background-color: #38a169;
-    box-shadow: 0 0 3px rgba(56, 161, 105, 0.6);
+    background-color: var(--color-success);
+    box-shadow: 0 0 3px rgba(34, 197, 94, 0.6);
 }
 
 .timeline-info {
@@ -163,11 +163,11 @@
 }
 
 .timeline-card.defend {
-    border-left-color: #e53e3e;
+    border-left-color: var(--color-danger);
 }
 
 .timeline-card.attack {
-    border-left-color: #38a169;
+    border-left-color: var(--color-success);
 }
 
 .timeline-card.snapshot {

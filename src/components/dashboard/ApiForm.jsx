@@ -1,5 +1,4 @@
 'use client';
-import './ApiForm.css';
 import Form from 'next/form'; //form component
 import { useActionState } from 'react'; //hook to do forms with NextJs
 import { generateApiKey, deleteApiKey } from '@/db/queries/api'; //server action
@@ -28,10 +27,7 @@ export function GenerateApiKeyForm({ userId }) {
                     <label htmlFor="description">
                         Description
                         {state?.errors?.description ?
-                            <span
-                                id="description-error"
-                                className="ml-2 text-red-400"
-                            >
+                            <span id="description-error" className="ml-2 text-red-400">
                                 {state.errors.description}
                             </span>
                         :   null}
@@ -47,7 +43,10 @@ export function GenerateApiKeyForm({ userId }) {
                     />
                 </fieldset>
 
-                <button className="" disabled={pending}>
+                <button
+                    className="cursor-pointer bg-[var(--color-primary)] px-4 py-2 text-[var(--color-on-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={pending}
+                >
                     Generate
                 </button>
             </Form>
@@ -70,7 +69,10 @@ export function DeleteApiKeyForm({ userId, apikeyId }) {
             <Form action={formAction}>
                 <input type="hidden" name="userId" value={userId} readOnly hidden />
                 <input type="hidden" name="apikeyId" value={apikeyId} readOnly hidden />
-                <button type="submit" className="text-red-600">
+                <button
+                    type="submit"
+                    className="cursor-pointer text-[var(--color-danger)]"
+                >
                     {state?.errors?.auth ?
                         <span className="text-red-400">{state.errors.auth}</span>
                     :   null}
