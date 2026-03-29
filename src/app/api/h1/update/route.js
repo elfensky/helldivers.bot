@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/utils/time';
@@ -13,7 +14,9 @@ export async function GET(request) {
     const key = header?.startsWith('Bearer ') ? header.slice(7) : null;
     if (!key) return errorResponse(401, start);
     const secret = process.env.UPDATE_KEY;
-    if (key !== secret) return errorResponse(401, start);
+    const actual = crypto.createHash('sha256').update(key).digest();
+    const expected = crypto.createHash('sha256').update(secret).digest();
+    if (!crypto.timingSafeEqual(actual, expected)) return errorResponse(401, start);
 
     //STATUS
     const { data: statusData, error: statusError } = await tryCatch(updateStatus());
