@@ -1,7 +1,21 @@
 {
-    "sonarlint.connectedMode.project": {
-        "connectionId": "elfensky",
-        "projectKey": "elfensky_helldivers1api"
+    "files.watcherExclude": {
+        "**/.next": true,
+        "**/.next/**": true,
+        "**/.claude/worktrees": true,
+        "**/.claude/worktrees/**": true,
+        "**/.desloppify": true
     },
-    "kiroAgent.configureMCP": "Disabled"
+    "files.exclude": {
+        "**/.next": true,
+        "**/.next/**": true,
+        "**/.claude/worktrees": true,
+        "**/.claude/worktrees/**": true
+    },
+    "search.exclude": {
+        "**/.next": true,
+        "**/.next/**": true,
+        "**/.claude/worktrees": true,
+        "**/.claude/worktrees/**": true
+    }
 }

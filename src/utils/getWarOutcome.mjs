@@ -23,6 +23,8 @@
  * @param {object} data - Campaign data with snapshots[], events[], live[]
  * @returns {{ outcome: 'victory'|'defeat', reason: string } | null}
  */
+import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/enums/events';
+
 export function getWarOutcome(data) {
     const snapshots = data?.snapshots || [];
     const events = data?.events || [];
@@ -34,7 +36,7 @@ export function getWarOutcome(data) {
     }
 
     // Victory signal 1: live data shows all 3 factions defeated (current season)
-    if (live.length === 3 && live.every((f) => f.status === 'defeated')) {
+    if (live.length === 3 && live.every((f) => f.status === CAMPAIGN_STATUS.DEFEATED)) {
         return { outcome: 'victory', reason: 'All enemy factions have been defeated.' };
     }
 
@@ -45,14 +47,14 @@ export function getWarOutcome(data) {
         return (
             Array.isArray(factionData) &&
             factionData.length === 3 &&
-            factionData.every((f) => f.status === 'defeated')
+            factionData.every((f) => f.status === CAMPAIGN_STATUS.DEFEATED)
         );
     });
 
     // Victory signal 3: all 3 enemy homeworlds captured (successful attacks)
     const factionsDefeated = new Set(
         events
-            .filter((e) => e.type === 'attack' && e.status === 'success')
+            .filter((e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.SUCCESS)
             .map((e) => e.enemy),
     );
     const allHomeworldsCaptured = factionsDefeated.size === 3;
@@ -61,10 +63,10 @@ export function getWarOutcome(data) {
 
     // Defeat signal: last region-0 defend event failed (Super Earth fell)
     const r0Defends = events
-        .filter((e) => e.type === 'defend' && e.region === 0)
+        .filter((e) => e.type === EVENT_TYPE.DEFEND && e.region === 0)
         .sort((a, b) => a.end_time - b.end_time);
     const defeatSignal =
-        r0Defends.length > 0 && r0Defends[r0Defends.length - 1].status === 'fail';
+        r0Defends.length > 0 && r0Defends[r0Defends.length - 1].status === EVENT_STATUS.FAIL;
 
     // Decision
     if (victorySignal && !defeatSignal) {

@@ -9,6 +9,7 @@
     --color-primary: #ffe000;
     --color-on-primary: #131313;
     --color-danger: #ff0000;
+    --color-success: #22c55e;
 
     /* === SURFACES (tonal layering — no shadows) === */
     --color-surface-0: #131313;

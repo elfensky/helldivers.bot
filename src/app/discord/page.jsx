@@ -1,11 +1,16 @@
+export const metadata = {
+    title: 'Discord | Helldivers Bot',
+    description:
+        'The Helldivers Bot Discord integration — a bot providing in-game event updates and statistics.',
+};
+
 export default function BotPage() {
     return (
-        <div className="">
-            <ul>
-                <li>general info about the discord bot and its features</li>
-                <li>github repo</li>
-                <li>how it works</li>
-            </ul>
+        <div className="gutters flex min-h-[50vh] flex-col items-center justify-center gap-4">
+            <h1 className="text-3xl font-[family-name:var(--font-display)] text-[var(--color-text)]">
+                Discord Bot
+            </h1>
+            <p className="text-[var(--color-text-muted)]">Coming Soon</p>
         </div>
     );
 }

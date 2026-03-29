@@ -3,6 +3,7 @@ import { tryCatch } from '@/utils/tryCatch.mjs';
 import { performanceTime } from '@/utils/time';
 import { getSeasonFromStatus } from '@/utils/getSeason';
 import { fetchStatus } from '@/update/fetch.mjs';
+import { EVENT_TYPE } from '@/enums/events';
 import { isValidStatus } from '@/validators/isValidStatus';
 import map from '@/enums/map';
 //db
@@ -38,7 +39,7 @@ function computeFactionMap(enemy, campaign, defendEvent, attackEvents, season) {
     if (defendEvent && defendEvent.enemy === enemy && defendEvent.season === season) {
         const region = factionMap[defendEvent.region];
         if (region) {
-            region.event = 'defend';
+            region.event = EVENT_TYPE.DEFEND;
         }
     }
 
@@ -50,7 +51,7 @@ function computeFactionMap(enemy, campaign, defendEvent, attackEvents, season) {
                 event.status === 'active'
             ) {
                 if (factionMap[11]) {
-                    factionMap[11].event = 'attack';
+                    factionMap[11].event = EVENT_TYPE.ATTACK;
                 }
             }
         }
@@ -103,7 +104,7 @@ export async function updateStatus() {
     // Defend event (guard for null — API omits when no defend active)
     if (fetchedData.defend_event) {
         const { error: defendError } = await tryCatch(
-            queryUpsertEvent(season, 'defend', fetchedData.defend_event),
+            queryUpsertEvent(season, EVENT_TYPE.DEFEND, fetchedData.defend_event),
         );
         if (defendError) {
             throw new Error(defendError?.message || 'Failed to upsert defend event');
@@ -113,7 +114,7 @@ export async function updateStatus() {
     // Attack events
     for (const event of fetchedData.attack_events) {
         const { error: attackError } = await tryCatch(
-            queryUpsertEvent(season, 'attack', { ...event, region: 11 }),
+            queryUpsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
         );
         if (attackError) {
             throw new Error(attackError?.message || 'Failed to upsert attack event');
@@ -149,7 +150,7 @@ export async function updateStatus() {
     // Defend event snapshot
     if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
         await captureEventSnapshot(
-            'defend',
+            EVENT_TYPE.DEFEND,
             fetchedData.defend_event,
             fetchedData.defend_event,
         );
@@ -158,7 +159,7 @@ export async function updateStatus() {
     // Attack event snapshots
     for (const event of fetchedData.attack_events) {
         if (event.season !== season) continue;
-        await captureEventSnapshot('attack', event, { ...event, region: 11 });
+        await captureEventSnapshot(EVENT_TYPE.ATTACK, event, { ...event, region: 11 });
     }
 
     //7. derive introduction_order and points_max from campaign_status

@@ -3,6 +3,7 @@ import { tryCatch } from '@/utils/tryCatch'; //util
 import { performance } from 'perf_hooks'; //util
 import { performanceTime } from '@/utils/time'; //util
 import { getSeasonFromSnapshot } from '@/utils/getSeason'; //util
+import { EVENT_TYPE } from '@/enums/events';
 import { fetchSeason } from '@/update/fetch'; //fetch
 import { isValidSeason } from '@/validators/isValidSeason'; //validators
 //db
@@ -102,7 +103,7 @@ export async function updateSeason(season) {
     //5.5 Defend events
     for (const event of fetchedData.defend_events) {
         const { error: defendError } = await tryCatch(
-            queryUpsertEvent(season, 'defend', event),
+            queryUpsertEvent(season, EVENT_TYPE.DEFEND, event),
         );
         if (defendError) {
             throw new Error(
@@ -115,7 +116,7 @@ export async function updateSeason(season) {
     //5.6 Attack events (set region to 11 for homeworld)
     for (const event of fetchedData.attack_events) {
         const { error: attackError } = await tryCatch(
-            queryUpsertEvent(season, 'attack', { ...event, region: 11 }),
+            queryUpsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
         );
         if (attackError) {
             throw new Error(

@@ -1,0 +1,374 @@
+/* DataFlowDiagram — Architecture visualization */
+
+.diagram-wrapper {
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Filter controls */
+.diagram-controls {
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-4) 0;
+    flex-wrap: wrap;
+}
+
+.diagram-controls button {
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--color-surface-3);
+    background: var(--color-surface-1);
+    color: var(--color-text-muted);
+    font-family: var(--font-body);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.diagram-controls button:hover {
+    border-color: var(--color-surface-4);
+    color: var(--color-text);
+}
+
+.diagram-controls button.active {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(255, 224, 0, 0.08);
+}
+
+/* SVG canvas */
+.diagram-canvas {
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+svg.diagram-flow {
+    width: 100%;
+    min-width: 700px;
+    height: auto;
+    display: block;
+}
+
+/* Node styles */
+.diagram-node rect {
+    transition: all 0.3s;
+}
+
+.diagram-node {
+    cursor: pointer;
+}
+
+.diagram-node:hover rect {
+    filter: brightness(1.2);
+}
+
+/* Category colors */
+.cat-api rect {
+    fill: var(--color-surface-2);
+    stroke: #3b82f6;
+    stroke-width: 1.5;
+}
+
+.cat-api text.label {
+    fill: #60a5fa;
+}
+
+.cat-worker rect {
+    fill: var(--color-surface-1);
+    stroke: #a855f7;
+    stroke-width: 1.5;
+}
+
+.cat-worker text.label {
+    fill: #c084fc;
+}
+
+.cat-raw rect {
+    fill: var(--color-surface-1);
+    stroke: var(--color-faction-bugs);
+    stroke-width: 1.5;
+}
+
+.cat-raw text.label {
+    fill: var(--color-faction-bugs);
+}
+
+.cat-norm rect {
+    fill: var(--color-surface-1);
+    stroke: var(--color-success);
+    stroke-width: 1.5;
+}
+
+.cat-norm text.label {
+    fill: #4ade80;
+}
+
+.cat-seed rect {
+    fill: var(--color-surface-1);
+    stroke: #ec4899;
+    stroke-width: 1.5;
+}
+
+.cat-seed text.label {
+    fill: #f472b6;
+}
+
+.cat-frontend rect {
+    fill: var(--color-surface-1);
+    stroke: #06b6d4;
+    stroke-width: 1.5;
+}
+
+.cat-frontend text.label {
+    fill: #22d3ee;
+}
+
+/* Arrow styles */
+.diagram-arrow {
+    stroke-width: 1.5;
+    fill: none;
+}
+
+.arrow-api {
+    stroke: #3b82f6;
+}
+
+.arrow-worker {
+    stroke: #a855f7;
+}
+
+.arrow-amber {
+    stroke: var(--color-faction-bugs);
+}
+
+.arrow-green {
+    stroke: var(--color-success);
+}
+
+.arrow-seed {
+    stroke: #ec4899;
+}
+
+.arrow-frontend {
+    stroke: #06b6d4;
+}
+
+.arrow-dashed {
+    stroke-dasharray: 6 4;
+}
+
+/* Dim/highlight for filter views */
+.diagram-dimmed {
+    opacity: 0.12;
+    transition: opacity 0.3s;
+}
+
+.diagram-highlighted {
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+/* Annotations */
+.diagram-annotation {
+    font-family: var(--font-body);
+    font-size: 11px;
+    fill: var(--color-text-muted);
+}
+
+.diagram-annotation-bg {
+    fill: var(--color-surface-0);
+}
+
+/* Legend */
+.diagram-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.diagram-legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.diagram-legend-dot {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+}
+
+/* Detail panel (slide-in from right) */
+.diagram-detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.diagram-detail-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.diagram-detail-panel {
+    position: fixed;
+    top: 0;
+    right: -420px;
+    width: min(400px, 90vw);
+    height: 100vh;
+    background: var(--color-surface-1);
+    border-left: 1px solid var(--color-surface-3);
+    padding: var(--space-8);
+    overflow-y: auto;
+    transition: right 0.3s ease;
+    z-index: 50;
+}
+
+.diagram-detail-panel.open {
+    right: 0;
+}
+
+.diagram-detail-panel h3 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--color-text);
+    margin-bottom: var(--space-1);
+}
+
+.diagram-detail-subtitle {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-6);
+}
+
+.diagram-detail-close {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: var(--space-2);
+}
+
+.diagram-detail-close:hover {
+    color: var(--color-text);
+}
+
+.diagram-detail-panel p {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin: var(--space-2) 0;
+    white-space: pre-line;
+}
+
+.diagram-detail-panel pre {
+    background: var(--color-surface-0);
+    border: 1px solid var(--color-surface-3);
+    padding: var(--space-4);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--color-text);
+    overflow-x: auto;
+    white-space: pre;
+    margin: var(--space-2) 0;
+}
+
+.diagram-detail-heading {
+    color: var(--color-text-muted);
+    margin-top: var(--space-6);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Tags */
+.diagram-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    margin: 2px;
+}
+
+.tag-interval {
+    background: rgba(168, 85, 247, 0.12);
+    color: #c084fc;
+}
+
+.tag-upsert {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+}
+
+.tag-once {
+    background: rgba(236, 72, 153, 0.12);
+    color: #f472b6;
+}
+
+.tag-read {
+    background: rgba(6, 182, 212, 0.12);
+    color: #22d3ee;
+}
+
+/* Schema table in detail panel */
+.diagram-schema-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--space-2) 0;
+}
+
+.diagram-schema-table th {
+    text-align: left;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--color-surface-3);
+}
+
+.diagram-schema-table td {
+    font-size: 12px;
+    padding: 4px 8px;
+    color: var(--color-text);
+    font-family: var(--font-mono);
+}
+
+.diagram-schema-table tr:nth-child(even) td {
+    background: rgba(19, 19, 19, 0.4);
+}
+
+/* Layer labels in SVG */
+.diagram-layer-label {
+    font-size: 11px;
+    fill: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.diagram-sublabel {
+    font-size: 9px;
+}
+
+/* Mobile: horizontal scroll hint */
+@media (max-width: 768px) {
+    .diagram-canvas::after {
+        content: 'Scroll \u2192';
+        position: absolute;
+        top: var(--space-2);
+        right: var(--space-2);
+        font-size: 11px;
+        color: var(--color-text-muted);
+        background: var(--color-surface-1);
+        padding: 2px 8px;
+        opacity: 0.8;
+        pointer-events: none;
+    }
+}

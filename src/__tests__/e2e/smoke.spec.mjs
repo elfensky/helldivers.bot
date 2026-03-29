@@ -50,8 +50,8 @@ test.describe('Smoke tests', () => {
         expect(body.error_code).toBe(5);
     });
 
-    test('GET /api/og returns a PNG image', async ({ request }) => {
-        const response = await request.get('/api/og');
+    test('GET /opengraph-image returns a PNG image', async ({ request }) => {
+        const response = await request.get('/opengraph-image');
         expect(response.status()).toBe(200);
         expect(response.headers()['content-type']).toContain('image/png');
     });

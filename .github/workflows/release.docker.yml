@@ -2,7 +2,7 @@ name: Production
 on:
     push:
         tags:
-            - '*.*.*' # Triggers on version tags like v1.0.0
+            - 'v*.*.*' # Triggers on version tags like v1.0.0
 permissions:
     contents: read
     packages: write

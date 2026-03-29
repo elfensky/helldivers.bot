@@ -3,13 +3,14 @@ import factions from '@/enums/factions.mjs';
 import map from '@/enums/map.mjs';
 import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import humanizeDuration from 'humanize-duration';
+import { EVENT_TYPE } from '@/enums/events';
 
 export default function Event({ event }) {
     const remaining = event.end_time - Math.floor(Date.now() / 1000);
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
-    const progress = evaluateProgress(event);
+    const progress = evaluateProgress(event)?.label;
     const faction = factions[event.enemy];
-    const isDefend = event.type === 'defend';
+    const isDefend = event.type === EVENT_TYPE.DEFEND;
 
     const timeText =
         remaining > 0 ?
@@ -62,7 +63,7 @@ export default function Event({ event }) {
 }
 
 function schema(event, type) {
-    if (type === 'attack') {
+    if (type === EVENT_TYPE.ATTACK) {
         const capital = map[event.enemy][11].capital;
         return {
             '@context': 'https://schema.org',
@@ -71,7 +72,7 @@ function schema(event, type) {
             image: ['https://helldivers.bot/icons/attack.webp'],
         };
     }
-    if (type === 'defend') {
+    if (type === EVENT_TYPE.DEFEND) {
         const enemy = event.region === 0 ? 3 : event.enemy;
         const capital = map[enemy][event.region].capital;
         const region = map[enemy][event.region].region;

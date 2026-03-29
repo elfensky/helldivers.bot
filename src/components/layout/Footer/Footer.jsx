@@ -60,11 +60,6 @@ export default function Footer() {
                             </Link>
                         </li>
                         <li>
-                            <Link href="/stats" className="footer-link">
-                                Stats
-                            </Link>
-                        </li>
-                        <li>
                             <Link href="/api" className="footer-link">
                                 API
                             </Link>

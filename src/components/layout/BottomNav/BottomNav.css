@@ -13,14 +13,14 @@
 .bottom-nav-tab {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 6px;
     color: var(--color-text-muted);
     text-decoration: none;
     font-family: var(--font-body);
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     border-top: 2px solid transparent;
@@ -33,7 +33,7 @@
 }
 
 .bottom-nav-icon {
-    font-size: 1rem;
+    font-size: 0.875rem;
     line-height: 1;
 }
 .bottom-nav-label {

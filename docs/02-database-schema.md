@@ -115,13 +115,13 @@ erDiagram
 
     h1_introduction_order {
         String id    PK
-        Int    season FK-UK
+        Int    season FK "unique"
         Int[]  order
     }
 
     h1_points_max {
         String id     PK
-        Int    season FK-UK
+        Int    season FK "unique"
         Int[]  points
     }
 
@@ -201,7 +201,7 @@ erDiagram
 
     Account {
         String id               PK
-        String userId           FK-UK
+        String userId           FK "unique"
         String provider
         String providerAccountId
     }

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import './WarTimeline.css';
 import { computeMapState } from '@/utils/computeMapState.mjs';
@@ -164,9 +164,36 @@ export default function WarTimeline({ data, defaultMapState }) {
         .map((m, i) => ({ moment: m, index: i }))
         .filter(({ moment }) => moment.kind !== 'snapshot');
 
+    const carouselRef = useRef(null);
+
+    const selectMoment = useCallback(
+        (idx) => {
+            setSelectedIndex(idx);
+            syncTimelineToUrl(idx);
+        },
+        [setSelectedIndex],
+    );
+
+    // Auto-scroll carousel to active card
+    useEffect(() => {
+        const container = carouselRef.current;
+        if (!container) return;
+        const activeCard = container.querySelector('.timeline-card.active');
+        if (activeCard) {
+            activeCard.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+    }, [activeIndex]);
+
+    function getCardClass(moment) {
+        if (moment.kind === 'snapshot') return 'timeline-card snapshot';
+        if (moment.event?.type === 'defend') return 'timeline-card defend';
+        return 'timeline-card attack';
+    }
+
     return (
         <div className="war-timeline">
-            <div className="timeline-controls">
+            {/* Desktop: range slider */}
+            <div className="timeline-controls timeline-desktop">
                 <div className="timeline-track">
                     {eventMoments.map(({ moment, index }) => {
                         const percent = (index / (moments.length - 1)) * 100;
@@ -192,11 +219,7 @@ export default function WarTimeline({ data, defaultMapState }) {
                     min={0}
                     max={moments.length - 1}
                     value={activeIndex}
-                    onChange={(e) => {
-                        const idx = Number(e.target.value);
-                        setSelectedIndex(idx);
-                        syncTimelineToUrl(idx);
-                    }}
+                    onChange={(e) => selectMoment(Number(e.target.value))}
                     aria-label="War timeline"
                     aria-valuetext={formatTimestamp(activeMoment.time)}
                 />
@@ -206,6 +229,47 @@ export default function WarTimeline({ data, defaultMapState }) {
                     <span className="timeline-info-time">
                         {formatTimestamp(activeMoment.time)}
                     </span>
+                </div>
+            </div>
+
+            {/* Mobile: carousel */}
+            <div className="timeline-controls timeline-mobile">
+                <div className="timeline-nav">
+                    <button
+                        className="timeline-nav-btn"
+                        onClick={() => selectMoment(Math.max(0, activeIndex - 1))}
+                        disabled={activeIndex === 0}
+                        aria-label="Previous moment"
+                    >
+                        ‹
+                    </button>
+                    <span className="timeline-nav-count">
+                        {activeIndex + 1} / {moments.length}
+                    </span>
+                    <button
+                        className="timeline-nav-btn"
+                        onClick={() =>
+                            selectMoment(Math.min(moments.length - 1, activeIndex + 1))
+                        }
+                        disabled={activeIndex === moments.length - 1}
+                        aria-label="Next moment"
+                    >
+                        ›
+                    </button>
+                </div>
+                <div className="timeline-carousel" ref={carouselRef}>
+                    {moments.map((moment, index) => (
+                        <button
+                            key={`${moment.kind}-${moment.time}-${moment.event?.event_id ?? index}`}
+                            className={`${getCardClass(moment)}${index === activeIndex ? ' active' : ''}`}
+                            onClick={() => selectMoment(index)}
+                        >
+                            <span className="timeline-card-label">{moment.label}</span>
+                            <span className="timeline-card-time">
+                                {formatTimestamp(moment.time)}
+                            </span>
+                        </button>
+                    ))}
                 </div>
             </div>
 
