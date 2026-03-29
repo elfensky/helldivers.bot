@@ -12,7 +12,7 @@ export default function BottomNav() {
     ];
 
     return (
-        <nav className="bottom-nav">
+        <nav className="bottom-nav lg:hidden">
             {tabs.map(({ href, label, icon, live }) => {
                 const isActive =
                     href === '/' ? pathname === '/' : pathname.startsWith(href);

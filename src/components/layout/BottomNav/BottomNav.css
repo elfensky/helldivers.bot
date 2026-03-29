@@ -10,12 +10,6 @@
     border-top: 1px solid var(--color-ghost-border);
 }
 
-@media (min-width: 1024px) {
-    .bottom-nav {
-        display: none;
-    }
-}
-
 .bottom-nav-tab {
     flex: 1;
     display: flex;
