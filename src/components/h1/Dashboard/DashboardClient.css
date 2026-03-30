@@ -9,6 +9,7 @@
         "sidebar";
     grid-template-columns: 1fr;
     gap: 1rem;
+    padding-top: 1rem;
     padding-bottom: 1rem;
 }
 
@@ -57,11 +58,10 @@
         grid-template-columns: 260px minmax(0, 1fr);
         grid-template-rows: auto auto minmax(0, 1fr);
         width: 100%;
-        max-width: calc(100dvh - 80px - 3rem + 260px + 1rem);
+        max-width: calc(100dvh - 80px - 2rem + 260px + 1rem);
         margin-left: auto;
         margin-right: auto;
         height: calc(100dvh - 80px);
-        padding-bottom: 0;
     }
 
     .dashboard-map {
@@ -90,7 +90,7 @@
 @media (min-width: 1280px) {
     .dashboard {
         grid-template-columns: 300px minmax(0, 1fr);
-        max-width: calc(100dvh - 80px - 3rem + 300px + 1rem);
+        max-width: calc(100dvh - 80px - 2rem + 300px + 1rem);
     }
 }
 
@@ -99,7 +99,7 @@
 @media (min-width: 1920px) {
     .dashboard {
         grid-template-columns: 360px minmax(0, 1fr);
-        max-width: calc(100dvh - 80px - 3rem + 360px + 1rem);
+        max-width: calc(100dvh - 80px - 2rem + 360px + 1rem);
     }
 }
 
