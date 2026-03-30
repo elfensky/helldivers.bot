@@ -38,8 +38,13 @@ export default function DashboardClient({ data, mapState }) {
                 <div className="dashboard-sidebar">
                     <ul className="sector-grid list-none p-0">
                         {factionIndices.map((index) => {
-                            const campaignData = data.live?.find((l) => l.enemy === index);
-                            const frontier = computeFrontier(campaignData, mapState[index]);
+                            const campaignData = data.live?.find(
+                                (l) => l.enemy === index,
+                            );
+                            const frontier = computeFrontier(
+                                campaignData,
+                                mapState[index],
+                            );
                             if (!frontier) return null;
 
                             const isDefending = frontier.event === 'active';
@@ -63,7 +68,11 @@ export default function DashboardClient({ data, mapState }) {
                                         points={frontier.points}
                                         pointsMax={frontier.pointsMax}
                                         factionIndex={index}
-                                        pace={activeEvent ? evaluateProgress(activeEvent) : null}
+                                        pace={
+                                            activeEvent ?
+                                                evaluateProgress(activeEvent)
+                                            :   null
+                                        }
                                     />
                                 </li>
                             );
@@ -87,7 +96,11 @@ export default function DashboardClient({ data, mapState }) {
                                         points={homeworld.points}
                                         pointsMax={homeworld.points_max}
                                         factionIndex={index}
-                                        pace={attackEvent ? evaluateProgress(attackEvent) : null}
+                                        pace={
+                                            attackEvent ?
+                                                evaluateProgress(attackEvent)
+                                            :   null
+                                        }
                                     />
                                 </li>
                             );

@@ -67,13 +67,14 @@ export async function GET(request) {
         }
 
         //2. fetch local data
-        const { data: campaignData2, error: campaignError2 } = await tryCatch(
+        const { data: retriedCampaignData, error: retriedCampaignError } = await tryCatch(
             getCampaign(season),
         );
-        if (campaignError2) return errorResponse(500, start, campaignError2?.message);
+        if (retriedCampaignError)
+            return errorResponse(500, start, retriedCampaignError?.message);
 
         //3. set result to variable
-        data = campaignData2;
+        data = retriedCampaignData;
     }
     //4. return response
     return successResponse(200, start, data);
