@@ -28,11 +28,13 @@ No snap scroll — the timeline is a standard section below the dashboard conten
 The timeline moves out of the sidebar. A new **war summary row** replaces it at the bottom of the sidebar:
 
 **Sidebar content order (lg:+):**
+
 1. Campaigns (EventCards)
 2. Stats (FactionTabs + StatGrid)
 3. War Summary — compact win/loss counts for the current season (e.g., "3W / 2L")
 
 **Mobile content order:**
+
 1. Map
 2. Campaigns
 3. Stats
@@ -82,17 +84,18 @@ The timeline moves out of the sidebar. A new **war summary row** replaces it at 
 
 ### Responsive Grid
 
-| Breakpoint | Columns | Context |
-|---|---|---|
-| Mobile (< 640px) | 1 column | Single column, full-width cards |
-| Tablet (640px+) | 2 columns | Side-by-side within each day group |
-| Desktop (lg:+) | 2-3 columns | Full-width section, more room |
+| Breakpoint       | Columns     | Context                            |
+| ---------------- | ----------- | ---------------------------------- |
+| Mobile (< 640px) | 1 column    | Single column, full-width cards    |
+| Tablet (640px+)  | 2 columns   | Side-by-side within each day group |
+| Desktop (lg:+)   | 2-3 columns | Full-width section, more room      |
 
 ## Event Card Redesign
 
 ### Active Events (Full Detail)
 
 Same content as current Event component:
+
 - Status label + event type (e.g., "Active Defend Event")
 - Faction icon
 - Time remaining ("Due in 4h 23m")
@@ -104,6 +107,7 @@ Same content as current Event component:
 ### Resolved Events (Compact)
 
 Reduced card for completed events:
+
 - Outcome + type (e.g., "Won Defend Event" / "Failed Defend Event")
 - Faction icon
 - Time elapsed ("Finished 11 hours ago")
@@ -126,16 +130,16 @@ At desktop (lg:+), a subtle visual hint at the bottom of screen 1 indicates ther
 ```css
 /* Only at desktop where dashboard fits in one viewport */
 @media (min-width: 1024px) {
-  .snap-container {
-    scroll-snap-type: y mandatory;
-    overflow-y: auto;
-    height: 100dvh;
-  }
+    .snap-container {
+        scroll-snap-type: y mandatory;
+        overflow-y: auto;
+        height: 100dvh;
+    }
 
-  .snap-screen {
-    scroll-snap-align: start;
-    height: 100dvh;
-  }
+    .snap-screen {
+        scroll-snap-align: start;
+        height: 100dvh;
+    }
 }
 ```
 
@@ -168,11 +172,13 @@ The snap scroll container needs to be **above** the current dashboard grid in th
 ## Files to Modify
 
 ### New Files
+
 - `src/components/h1/Timeline/TimelineSection.jsx` — timeline section with rail, date grouping, grid
 - `src/components/h1/Timeline/TimelineSection.css` — rail styles, responsive grid, snap targets
 - `src/components/h1/Timeline/WarSummary.jsx` — compact win/loss row for sidebar
 
 ### Modified Files
+
 - `src/components/h1/Dashboard/DashboardClient.jsx` — remove timeline from sidebar, add WarSummary, wrap in snap container
 - `src/components/h1/Dashboard/DashboardClient.css` — snap scroll styles at lg:, remove timeline-related sidebar styles
 - `src/components/h1/Event/Event.jsx` — add compact variant prop for resolved events
@@ -181,6 +187,7 @@ The snap scroll container needs to be **above** the current dashboard grid in th
 - `src/app/page.css` — restore footer at lg:, adjust main styles for snap scroll
 
 ### No Changes To
+
 - Galaxy, Map, EventCard, StatGrid, FactionTabs — unchanged
 - WarTimeline (archives page) — separate component, unaffected
 - tokens.css, layout.css — no new design tokens needed
