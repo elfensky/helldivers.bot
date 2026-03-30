@@ -1,5 +1,8 @@
 export async function umamiTrackPage(title, url) {
-
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (!isProduction) {
+        return;
+    }
     // const agent = `Node.js/${process.versions.node} (${process.platform} ${process.arch})`;
     //use umami or something else to track usage
     await fetch(`https://${process.env.UMAMI_SITE_URL}/api/send`, {
@@ -33,6 +36,11 @@ export async function umamiTrackPage(title, url) {
 }
 
 export async function umamiTrackEvent(title, url, name, data = {}) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (!isProduction) {
+        return;
+    }
+
     await fetch(`https://${process.env.UMAMI_SITE_URL}/api/send`, {
         method: 'POST',
         headers: {

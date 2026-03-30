@@ -1,29 +1,12 @@
-import { performanceTime } from '@/utils/time';
+import { generateOpenApiSpec as generateSpec } from '@/utils/openapi.registry';
 
 async function generateOpenApiSpec() {
     if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'development') {
         //imports
         const fs = await import('fs/promises');
-        const swaggerJSDoc = await import('swagger-jsdoc');
-        const { performance } = await import('perf_hooks');
-
-        //initialize
-        const start = performance.now();
-        const apisPattern = './src/app/api/h1/**/*.js';
-        const swaggerOptions = {
-            definition: {
-                openapi: '3.0.0',
-                info: {
-                    title: 'Helldivers 1 API',
-                    version: '0.4.1',
-                    description: 'A simple API',
-                },
-            },
-            apis: [apisPattern],
-        };
 
         //generate
-        const swaggerSpec = swaggerJSDoc(swaggerOptions);
+        const swaggerSpec = generateSpec();
         const filePath = 'public/openapi.json';
 
         await fs.writeFile(filePath, JSON.stringify(swaggerSpec, null, 2), 'utf-8');

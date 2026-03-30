@@ -1,8 +1,21 @@
 export async function initializeEnvironmentVariables() {
+    checkDatabase();
+    checkUpdates();
+    checkAnalytics();
+    checkAuth();
+    checkEmail();
+    return true;
+}
+
+function checkDatabase() {
     //DATABASE
     if (!process.env.POSTGRES_URL) {
         throw new Error('POSTGRES_URL is not set');
     }
+}
+
+function checkUpdates() {
+    //TODO - switch from runtime set api key to dynamic admin panel set key
     //UPDATES
     if (!process.env.UPDATE_KEY) {
         throw new Error('UPDATE_KEY is not set');
@@ -10,6 +23,13 @@ export async function initializeEnvironmentVariables() {
     if (!process.env.UPDATE_INTERVAL) {
         throw new Error('UPDATE_INTERVAL is not set');
     }
+    // PORT is optional, defaults to 3000 - used by the worker to poll the update endpoint
+    if(!process.env.PORT) {
+        console.info('PORT has defaulted to 3000')
+    }
+}
+
+function checkAnalytics() {
     //ANALYTICS
     if (!process.env.UMAMI_SITE_ID) {
         throw new Error('UMAMI_SITE_ID is not set');
@@ -17,6 +37,9 @@ export async function initializeEnvironmentVariables() {
     if (!process.env.SENTRY_AUTH_TOKEN) {
         throw new Error('SENTRY_AUTH_TOKEN is not set');
     }
+}
+
+function checkAuth() {
     //NEXT-AUTH
     if (!process.env.AUTH_SECRET) {
         throw new Error('AUTH_SECRET is not set');
@@ -33,11 +56,14 @@ export async function initializeEnvironmentVariables() {
     }
     //AUTH-GITHUB
     if (!process.env.AUTH_GITHUB_ID) {
-        throw new Error('AUTH_GOOGLE_ID is not set');
+        throw new Error('AUTH_GITHUB_ID is not set');
     }
     if (!process.env.AUTH_GITHUB_SECRET) {
-        throw new Error('AUTH_GOOGLE_SECRET is not set');
+        throw new Error('AUTH_GITHUB_SECRET is not set');
     }
+}
+
+function checkEmail() {
     //EMAIL
     if (!process.env.EMAIL_SERVER_USER) {
         throw new Error('EMAIL_SERVER_USER is not set');
@@ -54,5 +80,4 @@ export async function initializeEnvironmentVariables() {
     if (!process.env.EMAIL_FROM) {
         throw new Error('EMAIL_FROM is not set');
     }
-    return true;
 }

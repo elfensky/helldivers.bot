@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/playwright/
 
 # next.js
 /.next/
@@ -23,6 +26,7 @@
 # misc
 .DS_Store
 *.pem
+.mcp.json
 
 # debug
 npm-debug.log*
@@ -31,7 +35,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+*.env*
 
 # vercel
 .vercel
@@ -43,3 +47,22 @@ next-env.d.ts
 # Prisma
 /src/generated/prisma
 /.VSCodeCounter
+
+# Serena (removed, prevent re-tracking)
+.serena/cache/
+
+# Claude
+.claude/worktrees
+.claude/projects/
+.worktrees
+.superpowers
+
+# Tool state
+.claude-octopus/
+.playwright-mcp/
+.desloppify/
+
+# Temporary verification screenshots
+verify-*.png
+scorecard.png
+.claude/skills/

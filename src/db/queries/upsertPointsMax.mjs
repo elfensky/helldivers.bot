@@ -1,4 +1,5 @@
 import db from '@/db/db';
+import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/utils/time';
 
@@ -9,35 +10,15 @@ export async function queryUpsertPointsMax(season, points) {
     if (!season) throw new Error('season is missing');
     if (!points) throw new Error('points is missing');
 
-    try {
-        const now = new Date();
+    const { data: upsertRecord, error } = await tryCatch(
+        db.h1_points_max.upsert({
+            where: { season: season },
+            update: { points: points },
+            create: { season: season, points: points },
+        }),
+    );
 
-        const upsertRecord = await db.h1_points_max.upsert({
-            where: {
-                season: season,
-            },
-            update: {
-                // season: season,
-                points: points,
-                json: points,
-            },
-            create: {
-                season: season,
-                points: points,
-                json: points,
-            },
-        });
+    if (error) throw error;
 
-        const response = {
-            ms: performanceTime(start),
-            query: upsertRecord,
-        };
-
-        return response;
-    } catch (error) {
-        console.error(error.message, {
-            cause: 'db/queries/queryUpsertPointsMax.mjs',
-        });
-        throw error;
-    }
+    return { ms: performanceTime(start), query: upsertRecord };
 }

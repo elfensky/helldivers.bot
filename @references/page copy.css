@@ -1,0 +1,58 @@
+main {
+    background: url('/images/background.webp') no-repeat center center fixed;
+    background-size: cover;
+}
+
+#transition {
+    /* className="absolute bottom-full left-0 h-full w-full bg-gradient-to-b from-transparent to-red-400" */
+    position: absolute;
+    bottom: 0%;
+    left: 0;
+    height: 200%;
+    width: 100%;
+    /* background: linear-gradient(to bottom, transparent, var(--black)); */
+    background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0) 0%,
+        /* rgba(6, 9, 58, 0.75) 25%, */ rgb(21, 21, 21) 55%
+    );
+    z-index: 0;
+    pointer-events: none;
+}
+#features,
+#about {
+    /* border-top: 5px solid var(--orange); */
+    border-bottom: 5px solid var(--orange);
+    /* background: var(--gradient); */
+    /* background-color: #262427; */
+    /* background-color: var(--blue); */
+}
+
+#about,
+#roadmap {
+    background-color: rgb(21, 21, 21);
+    /* border-bottom: 5px solid var(--orange); */
+}
+/* 
+#hero {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 8px;
+}
+
+.alerts {
+    grid-column: span 5 / span 5;
+}
+
+.info {
+    grid-column: span 5 / span 5;
+    grid-row: span 4 / span 4;
+    grid-row-start: 2;
+}
+
+.map {
+    grid-column: span 5 / span 5;
+    grid-row: span 5 / span 5;
+    grid-row-start: 6;
+} */

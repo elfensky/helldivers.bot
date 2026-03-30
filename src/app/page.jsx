@@ -1,38 +1,27 @@
 import './page.css';
-//db
 import { tryCatch } from '@/utils/tryCatch.mjs';
-import { queryGetRebroadcastStatus } from '@/db/queries/rebroadcast';
 import { getCampaign } from '@/db/queries/getCampaign';
-//components
-import Galaxy from '@/components/h1/Galaxy/Galaxy';
-import War from '@/components/h1/War/War';
-import Timeline from '@/components/h1/Timeline/Timeline';
-//
-import Script from 'next/script';
+import { computeMapState } from '@/utils/computeMapState.mjs';
+import { EVENT_STATUS } from '@/enums/events';
+import DashboardClient from '@/components/h1/Dashboard/DashboardClient';
 
-//
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-    const rebroacast_status = await tryCatch(queryGetRebroadcastStatus());
-    const query = await tryCatch(getCampaign());
-    const data = query?.data;
+    const { data, error } = await tryCatch(getCampaign());
 
-    if (!data) {
+    if (error || !data) {
         return (
-            <div className="flex min-h-full w-full flex-col-reverse justify-center sm:flex-row">
-                Loading...
+            <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
+                <h1>Signal Lost</h1>
+                <p>Unable to load campaign data. Please try again later.</p>
             </div>
         );
     }
 
-    return (
-        <div className="mx-2 flex flex-col-reverse gap-4 sm:mx-24 lg:flex-row">
-            {/* mx-2 flex min-h-full w-full flex-col-reverse items-center justify-center gap-2 sm:mx-24 sm:items-start sm:gap-4 lg:flex-row */}
+    // Only pass active events — completed events are already reflected in the campaign score
+    const activeEvents = (data.events ?? []).filter((e) => e.status === EVENT_STATUS.ACTIVE);
+    const mapState = computeMapState(data.live, activeEvents);
 
-            <War data={data} />
-            <Timeline data={data} />
-            <Galaxy data={data} />
-            <Script src="/scripts/reload.js" />
-        </div>
-    );
+    return <DashboardClient data={data} mapState={mapState} />;
 }

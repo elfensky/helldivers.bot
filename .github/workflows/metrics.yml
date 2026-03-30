@@ -1,4 +1,4 @@
-name: Automate Metrics
+name: Pagespeed
 on:
     schedule:
         # - cron: '0 0 * * *' # Every Day at 00:00 AM UTC
@@ -7,9 +7,12 @@ on:
         - cron: '0 6 * * 5' # Every Friday at 06:00 AM UTC
     workflow_dispatch: # allows requesting workflow manually from the website
     # push: { branches: ['main'] } # Run workflow when pushing on master/main
-    push:
-        paths:
-            - '.github/workflows/metrics.yml' # run workflow if metrics.yml changes
+    # push:
+    #     paths:
+    #         - '.github/workflows/metrics.yml' # run workflow if metrics.yml changes
+permissions:
+    contents: write
+
 jobs:
     generate-metrics:
         runs-on: ubuntu-latest

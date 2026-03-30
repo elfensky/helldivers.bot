@@ -1,0 +1,21 @@
+{
+    "files.watcherExclude": {
+        "**/.next": true,
+        "**/.next/**": true,
+        "**/.claude/worktrees": true,
+        "**/.claude/worktrees/**": true,
+        "**/.desloppify": true
+    },
+    "files.exclude": {
+        "**/.next": true,
+        "**/.next/**": true,
+        "**/.claude/worktrees": true,
+        "**/.claude/worktrees/**": true
+    },
+    "search.exclude": {
+        "**/.next": true,
+        "**/.next/**": true,
+        "**/.claude/worktrees": true,
+        "**/.claude/worktrees/**": true
+    }
+}

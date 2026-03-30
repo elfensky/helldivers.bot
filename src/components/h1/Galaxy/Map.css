@@ -5,14 +5,16 @@
 }
 
 .lost {
-    fill: rgba(0, 0, 0, 0.55);
-    stroke: rgba(0, 0, 0, 0.99);
+    fill: rgba(255, 255, 255, 0.06);
+    stroke: rgba(255, 255, 255, 0.15);
     z-index: 10;
 }
 
 .captured {
-    fill: rgba(255, 213, 0, 0.33);
-    stroke: rgba(255, 225, 0, 0.99);
+    /* fill: rgba(255, 213, 0, 0.33); */
+    fill: var(--region);
+    /* stroke: rgba(255, 225, 0, 0.99); */
+    stroke: var(--border);
     z-index: 20;
 }
 
@@ -22,15 +24,15 @@
 }
 
 #bugs .in_progress {
-    fill: rgba(25, 218, 12, 0.35);
+    fill: rgba(232, 130, 42, 0.35);
 }
 
 #cyborgs .in_progress {
-    fill: rgba(213, 15, 15, 0.35);
+    fill: rgba(139, 45, 45, 0.35);
 }
 
 #illuminate .in_progress {
-    fill: rgba(12, 122, 218, 0.35);
+    fill: rgba(126, 200, 227, 0.35);
 }
 
 /* #bugs .in_progress,
@@ -38,7 +40,8 @@
 #illuminate .in_progress, */
 #bugs .active,
 #cyborgs .active,
-#illuminate .active {
+#illuminate .active,
+#superearth .active {
     /* fill: rgba(255, 213, 0, 0.33); */
     /* stroke: rgba(255, 0, 0, 0.99); */
 

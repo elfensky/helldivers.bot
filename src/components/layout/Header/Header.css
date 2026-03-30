@@ -1,0 +1,5 @@
+.header-transition {
+    transition:
+        top 0.333s ease-in-out,
+        margin 0.333s ease-in-out;
+}

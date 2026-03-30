@@ -3,42 +3,6 @@
     border: 2px solid black;
 }
 
-/* .event.defend {
-    progress {
-        background: #ffd700;
-    }
-
-    progress::-webkit-progress-bar {
-        background: #ffd700;
-    }
-
-    progress::-moz-progress-bar {
-        background: #ff0000;
-    }
-
-    progress::-webkit-progress-value {
-        background: #ff0000;
-    }
-} */
-
-/* .event.attack {
-    progress {
-        background: #ff0000;
-    }
-
-    progress::-webkit-progress-bar {
-        background: #ff0000;
-    }
-
-    progress::-moz-progress-bar {
-        background: #ffd700;
-    }
-
-    progress::-webkit-progress-value {
-        background: #ffd700;
-    }
-} */
-
 .event.success {
     /* border-left: 10px solid green; */
     background-color: rgba(0, 20, 0, 0.8);
@@ -46,7 +10,6 @@
 
 .event.fail {
     /* border-left: 10px solid red; */
-
     background-color: rgba(40, 0, 0, 0.8);
 }
 
@@ -85,5 +48,14 @@
     40% {
         border: 2px solid gold;
         background-color: rgba(0, 0, 0, 0.75);
+    }
+}
+
+#body {
+    scroll-snap-type: y mandatory;
+    main,
+    footer,
+    div {
+        scroll-snap-align: start;
     }
 }

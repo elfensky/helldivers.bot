@@ -1,71 +1,91 @@
-import Script from 'next/script';
-
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-
-// import localFont from 'next/font/local';
-// import { Geist, Geist_Mono } from 'next/font/google';
 import './layout.css';
+//nextjs
+import Script from 'next/script';
+import { Space_Grotesk, Inter } from 'next/font/google';
+//components
+import Header from '@/components/layout/Header/Header';
+import Footer from '@/components/layout/Footer/Footer';
+import BottomNav from '@/components/layout/BottomNav/BottomNav';
 
-// const Insignia = localFont({
-//     src: '../../public/fonts/insignia.regular.otf',
-//     display: 'swap',
-//     variable: '--font-insignia', // optional, for CSS variable
-//     subsets: ['latin'],
-// });
+const spaceGrotesk = Space_Grotesk({
+    subsets: ['latin'],
+    variable: '--font-space-grotesk',
+    display: 'swap',
+});
 
-// const geistSans = Geist({
-//     variable: '--font-geist-sans',
-//     subsets: ['latin'],
-// });
+const inter = Inter({
+    subsets: ['latin'],
+    variable: '--font-inter',
+    display: 'swap',
+});
 
-// const geistMono = Geist_Mono({
-//     variable: '--font-geist-mono',
-//     subsets: ['latin'],
-// });
-
-function getMetaURL() {
-    switch (process.env.NODE_ENV) {
-        case 'development':
-            return new URL('http://localhost:3000');
-        case 'staging':
-            return new URL('https://staging.helldivers.bot');
-        case 'production':
-            return new URL('https://helldivers.bot');
-        default:
-            throw new Error('Unknown NODE_ENV');
-    }
-}
+// function getMetaURL() {
+//     switch (process.env.NODE_ENV) {
+//         case 'development':
+//             return new URL('http://localhost:3000');
+//         case 'staging':
+//             return new URL('https://staging.helldivers.bot');
+//         case 'production':
+//             return new URL('https://helldivers.bot');
+//         default:
+//             throw new Error('Unknown NODE_ENV');
+//     }
+// }
 
 export const metadata = {
-    metadataBase: getMetaURL(),
-    title: 'Home | Helldivers Bot',
+    metadataBase: new URL('https://helldivers.bot'),
+    title: 'Helldivers Bot - Live war dashboard for the original Helldivers',
     description:
-        'Display in-game events and current campaign progress, alongside server as an api',
+        'Live Helldivers 1 war dashboard showing campaign progress, faction stats, active events, and an interactive galaxy map.',
+    openGraph: {
+        type: 'website',
+        url: 'https://helldivers.bot',
+    },
+    twitter: {
+        card: 'summary_large_image',
+    },
 };
 
 export default function RootLayout({ children }) {
+    const isProduction = process.env.NODE_ENV === 'production';
+
     return (
-        <html lang="en" className="bg-blue-950">
+        <html
+            dir="ltr"
+            lang="en"
+            className={`${spaceGrotesk.variable} ${inter.variable}`}
+        >
+            {/* <head>
+                <script
+                    crossOrigin="anonymous"
+                    src="//unpkg.com/react-scan/dist/auto.global.js"
+                />
+            </head> */}
             <body
-                id="body"
-                className={`min-w-screen flex min-h-screen flex-col antialiased`}
+                id="body "
+                className="flex min-h-screen min-w-screen flex-col antialiased"
             >
-                <Header />
-                {/* <main className="flex min-h-screen min-w-full flex-grow flex-col items-center justify-center gap-4 pt-[80px]"> */}
-                <main className="min-h-screen w-screen pt-[80px]">{children}</main>
-                {/* <Footer /> */}
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
                 />
 
-                <Script
-                    // defer
-                    src="https://umami.lavrenov.io/script.js"
-                    data-website-id="9a916711-2868-43d2-9932-964fc9528824"
-                    strategy="afterInteractive"
-                />
+                <Header />
+                <main className="flex min-h-screen w-screen flex-col pb-[48px]">
+                    {children}
+                </main>
+                <Footer />
+                <BottomNav />
+
+                {isProduction ?
+                    <Script
+                        // src="https://umami.lavrenov.io/script.js"
+                        src="/stats.js"
+                        data-website-id="9a916711-2868-43d2-9932-964fc9528824"
+                        strategy="afterInteractive"
+                        data-host-url="https://umami.lavrenov.io"
+                    />
+                :   null}
             </body>
         </html>
     );
@@ -73,68 +93,94 @@ export default function RootLayout({ children }) {
 
 const schema = {
     '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'Helldivers Bot',
+    '@type': 'WebSite', // '@type': ['WebSite', 'WebApplication', 'VideoGame']
+    applicationCategory: ['GameUtility', 'GameInformation', 'Entertainment'],
     url: 'https://helldivers.bot',
+
+    name: 'Helldivers Bot',
+    // author: 'Andrei Lavrenov',
+    author: {
+        '@type': 'Person',
+        name: 'Andrei Lavrenov',
+        url: 'https://lavrenov.io',
+    },
     description:
-        'A website dedicated to the Helldivers video game, featuring in-game Stats, an API and a Discord bot.',
-    mainEntity: [
-        {
-            '@type': 'VideoGame',
-            name: 'Helldivers',
-            url: 'https://helldivers.bot',
-            gamePlatform: 'PC, PlayStation',
-            applicationCategory: 'Action, Shooter',
-            description:
-                'Helldivers is a top-down cooperative shooter game where players fight to protect Super Earth from Xeno threats.',
-            publisher: {
-                '@type': 'Organization',
-                name: 'Arrowhead Game Studios',
-                url: 'https://arrowheadgamestudios.com',
-            },
-        },
-        {
-            '@type': 'SoftwareApplication',
-            name: 'Helldivers 1 Bot',
-            applicationCategory: 'Discord Bot, Chat bot',
-            operatingSystem: 'Discord',
-            url: 'https://helldivers.bot/discord',
-            description:
-                'A Discord bot that provides updates about in-game events and statistics.',
-            softwareVersion: '1.0.0',
-            creator: {
-                '@type': 'Person',
-                name: 'Andrei Lavrenov',
-                url: 'https://lavrenov.io',
-            },
-            offers: {
-                '@type': 'Offer',
-                price: '0.00',
-                priceCurrency: 'EUR',
-                availability: 'http://schema.org/InStock',
-                url: 'https://helldivers.bot/discord',
-            },
-            // aggregateRating: {
-            //     '@type': 'AggregateRating',
-            //     ratingValue: '0.8',
-            //     bestRating: '1',
-            //     ratingCount: '1',
-            // },
-        },
-        {
-            '@type': 'WebAPI',
-            name: 'Helldivers 1 API',
-            url: 'https://helldivers.bot/api',
-            description:
-                'An API providing access to Helldivers campaign status and statistics. Written in JavaScript and powered by Next.js.',
-            documentation: 'https://helldivers.bot/docs',
-            provider: {
-                '@type': 'Person',
-                name: 'Andrei Lavrenov',
-                url: 'https://lavrenov.io',
-            },
-        },
-    ],
+        'A website that provides dedicated real-time in-game status updates for the original Helldivers videogame.',
+
+    // only possible for specific @types
+    // aggregateRating: {
+    //     '@type': 'AggregateRating',
+    //     ratingValue: 5.0,
+    //     ratingCount: 3,
+    // },
+
+    offers: {
+        '@type': 'Offer',
+        price: 0.0,
+        priceCurrency: 'EUR',
+        // availability: 'http://schema.org/InStock',
+        // url: 'https://helldivers.bot/campaign',
+    },
+
+    // image: "https://helldivers.bot/url-to-dynamically-generated-map-status"
+
+    // mainEntity: [
+    //     {
+    //         '@type': 'VideoGame',
+    //         name: 'Helldivers',
+    //         url: 'https://helldivers.bot',
+    //         gamePlatform: 'PC, PlayStation',
+    //         applicationCategory: 'Action, Shooter',
+    //         description:
+    //             'Helldivers is a top-down cooperative shooter game where players fight to protect Super Earth from Xeno threats.',
+    //         publisher: {
+    //             '@type': 'Organization',
+    //             name: 'Arrowhead Game Studios',
+    //             url: 'https://arrowheadgamestudios.com',
+    //         },
+    //     },
+    //     {
+    //         '@type': 'SoftwareApplication',
+    //         name: 'Helldivers 1 Bot',
+    //         applicationCategory: 'Discord Bot, Chat bot',
+    //         operatingSystem: 'Discord',
+    //         url: 'https://helldivers.bot/discord',
+    //         description:
+    //             'A Discord bot that provides updates about in-game events and statistics.',
+    //         softwareVersion: '1.0.0',
+    //         creator: {
+    //             '@type': 'Person',
+    //             name: 'Andrei Lavrenov',
+    //             url: 'https://lavrenov.io',
+    //         },
+    //         offers: {
+    //             '@type': 'Offer',
+    //             price: '0.00',
+    //             priceCurrency: 'EUR',
+    //             availability: 'http://schema.org/InStock',
+    //             url: 'https://helldivers.bot/discord',
+    //         },
+    //         // aggregateRating: {
+    //         //     '@type': 'AggregateRating',
+    //         //     ratingValue: '0.8',
+    //         //     bestRating: '1',
+    //         //     ratingCount: '1',
+    //         // },
+    //     },
+    //     {
+    //         '@type': 'WebAPI',
+    //         name: 'Helldivers 1 API',
+    //         url: 'https://helldivers.bot/api',
+    //         description:
+    //             'An API providing access to Helldivers campaign status and statistics. Written in JavaScript and powered by Next.js.',
+    //         documentation: 'https://helldivers.bot/docs',
+    //         provider: {
+    //             '@type': 'Person',
+    //             name: 'Andrei Lavrenov',
+    //             url: 'https://lavrenov.io',
+    //         },
+    //     },
+    // ],
 };
 
 // const toAddToJsonLd = {

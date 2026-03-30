@@ -1,31 +1,13 @@
-// V1
-// import { PrismaClient } from '@prisma/client';
-
-// let db;
-
-// if (!global.prisma) {
-//     db = new PrismaClient();
-//     if (process.env.NODE_ENV !== 'production') {
-//         global.prisma = db;
-//     }
-// } else {
-//     db = global.prisma;
-// }
-
-// export default db;
-
-// V2
-// import { PrismaClient } from '@prisma/client';
 import { PrismaClient } from '@/generated/prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 const prismaClientSingleton = () => {
-    return new PrismaClient();
+    const adapter = new PrismaPg({ connectionString: process.env.POSTGRES_URL });
+    return new PrismaClient({ adapter });
 };
 
-// Check if `globalThis.prismaGlobal` is already defined, otherwise create a new instance
 const db = globalThis.prismaGlobal || prismaClientSingleton();
 
-// If `prismaGlobal` is not set, assign the new instance to it
 if (!globalThis.prismaGlobal) {
     globalThis.prismaGlobal = db;
 }

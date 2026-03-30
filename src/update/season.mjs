@@ -3,6 +3,7 @@ import { tryCatch } from '@/utils/tryCatch'; //util
 import { performance } from 'perf_hooks'; //util
 import { performanceTime } from '@/utils/time'; //util
 import { getSeasonFromSnapshot } from '@/utils/getSeason'; //util
+import { EVENT_TYPE } from '@/enums/events';
 import { fetchSeason } from '@/update/fetch'; //fetch
 import { isValidSeason } from '@/validators/isValidSeason'; //validators
 //db
@@ -11,8 +12,7 @@ import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { queryUpsertIntroductionOrder } from '@/db/queries/upsertIntroductionOrder';
 import { queryUpsertPointsMax } from '@/db/queries/upsertPointsMax';
 import { queryUpsertSnapshots } from '@/db/queries/upsertSnapshots';
-import { queryUpsertDefendEvents } from '@/db/queries/upsertDefendEvents';
-import { queryUpsertAttackEvents } from '@/db/queries/upsertAttackEvents';
+import { queryUpsertEvent } from '@/db/queries/upsertEvent';
 
 export async function updateSeason(season) {
     //0. initialize
@@ -40,12 +40,12 @@ export async function updateSeason(season) {
         throw check.error;
     }
 
-    //3. get season paramater from fetched data.
-    const season2 = getSeasonFromSnapshot(fetchedData);
-    if (season !== season2) throw new Error('Invalid season');
+    //3. get season parameter from fetched data.
+    const fetchedSeason = getSeasonFromSnapshot(fetchedData);
+    if (season !== fetchedSeason) throw new Error('Invalid season');
 
     //4. store in db -> /api/rebroadcast
-    const { data: storedRebroadcastData, error: storedRebroadcastError } = await tryCatch(
+    const { error: storedRebroadcastError } = await tryCatch(
         queryUpsertRebroadcastSeason(season, fetchedData),
     );
     if (storedRebroadcastError) {
@@ -70,19 +70,15 @@ export async function updateSeason(season) {
         );
     }
 
-    //5.2-5.6 in parallel, create or update normalized data in h1_campaign, h1_defend_event, h1_attack_event, h1_statistics
+    //5.2-5.4 in parallel, create or update normalized data
     const [
-        { data: newIntroductionOrder, error: newIntroductionOrderError }, //5.2 upsertIntroductionOrder()
-        { data: newPointsMax, error: newPointsMaxError }, //5.3 upsertPointsMax()
-        { data: newSnapshots, error: newSnapshotsError }, //5.4 upsertSnapshots()
-        { data: newDefendEvents, error: newDefendEventsError }, //5.5 upsertDefendEvents()
-        { data: newAttackEvents, error: newAttackEventsError }, //5.6 upsertAttackEvents()
+        { data: newIntroductionOrder, error: newIntroductionOrderError },
+        { data: newPointsMax, error: newPointsMaxError },
+        { data: newSnapshots, error: newSnapshotsError },
     ] = await Promise.all([
-        tryCatch(queryUpsertIntroductionOrder(season, fetchedData.introduction_order)), //5.2 upsertIntroductionOrder()
-        tryCatch(queryUpsertPointsMax(season, fetchedData.points_max)), //5.3 upsertPointsMax()
-        tryCatch(queryUpsertSnapshots(season, fetchedData.snapshots)), //5.4 upsertSnapshots()
-        tryCatch(queryUpsertDefendEvents(season, fetchedData.defend_events)), //5.5 upsertDefendEvents()
-        tryCatch(queryUpsertAttackEvents(season, fetchedData.attack_events)), //5.6 upsertAttackEvents()
+        tryCatch(queryUpsertIntroductionOrder(season, fetchedData.introduction_order)),
+        tryCatch(queryUpsertPointsMax(season, fetchedData.points_max)),
+        tryCatch(queryUpsertSnapshots(season, fetchedData.snapshots)),
     ]);
 
     if (newIntroductionOrderError) {
@@ -103,17 +99,31 @@ export async function updateSeason(season) {
                 'Failed to store normalized snapshot (snapshots) in the database',
         );
     }
-    if (newDefendEventsError) {
-        throw new Error(
-            newDefendEventsError?.message ||
-                'Failed to store normalized snapshot (defendEvents) in the database',
+
+    //5.5 Defend events
+    for (const event of fetchedData.defend_events) {
+        const { error: defendError } = await tryCatch(
+            queryUpsertEvent(season, EVENT_TYPE.DEFEND, event),
         );
+        if (defendError) {
+            throw new Error(
+                defendError?.message ||
+                    'Failed to store normalized snapshot (defendEvent)',
+            );
+        }
     }
-    if (newAttackEventsError) {
-        throw new Error(
-            newAttackEventsError?.message ||
-                'Failed to store normalized snapshot (attackEvents) in the database',
+
+    //5.6 Attack events (set region to 11 for homeworld)
+    for (const event of fetchedData.attack_events) {
+        const { error: attackError } = await tryCatch(
+            queryUpsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
         );
+        if (attackError) {
+            throw new Error(
+                attackError?.message ||
+                    'Failed to store normalized snapshot (attackEvent)',
+            );
+        }
     }
 
     // 6. confirm that the normalized data has succesfully been saved by updating the last_updated time in the season table
@@ -131,10 +141,5 @@ export async function updateSeason(season) {
         ms: performanceTime(start),
         season: season,
         confirmSeason,
-        // newIntroductionOrder,
-        // newPointsMax,
-        // newSnapshots,
-        // newDefendEvents,
-        // newAttackEvents,
     };
 }

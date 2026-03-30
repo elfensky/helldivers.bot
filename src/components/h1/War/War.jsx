@@ -1,40 +1,51 @@
 import './War.css';
 import factions from '@/enums/factions';
+import { getWarOutcome } from '@/utils/getWarOutcome.mjs';
+
+export function WarOutcome({ data }) {
+    const result = getWarOutcome(data);
+    if (!result) return null;
+
+    const { outcome } = result;
+
+    return (
+        <div className={`war-outcome ${outcome}`}>
+            <span className="font-bold">
+                {outcome === 'victory' ? 'Victory' : 'Defeat'}
+            </span>
+        </div>
+    );
+}
 
 export default function War({ data }) {
-    if (!data) return null;
+    if (!data?.live?.length) return null;
 
     return (
         <section className="flex flex-col gap-4">
-            <h2
-                className="text-3xl uppercase"
-                style={{ fontFamily: 'Insignia, sans-serif' }}
-            >
-                War Stats
-            </h2>
+            <h2>War Stats</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                {generateGlobalWarStats(data?.statistics)}
-                {data?.statistics?.map((statistic) => generateWarStats(statistic))}
+                {generateGlobalWarStats(data.live)}
+                {data.live.map((statistic) => generateWarStats(statistic))}
             </div>
         </section>
     );
 }
 function generateGlobalWarStats(statistics) {
-    let players = 0;
-    let deaths = 0;
-    let accidentals = 0;
-    let kills = 0;
+    let players = BigInt(0);
+    let deaths = BigInt(0);
+    let accidentals = BigInt(0);
+    let kills = BigInt(0);
 
     statistics.forEach((statistic) => {
-        players += statistic.players;
-        deaths += statistic.deaths;
-        accidentals += statistic.accidentals;
-        kills += statistic.kills;
+        players += BigInt(statistic.players);
+        deaths += BigInt(statistic.deaths);
+        accidentals += BigInt(statistic.accidentals);
+        kills += BigInt(statistic.kills);
     });
 
     return (
         <article id="war" className="flex flex-col gap-1 p-4">
-            <div className="flex items-center justify-start gap-2 text-xl">
+            <div className="flex items-center justify-start gap-2">
                 <img
                     src={`/icons/faction3.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"
@@ -55,7 +66,7 @@ function generateGlobalWarStats(statistics) {
 function generateWarStats(statistic) {
     return (
         <article id="war" key={statistic.enemy} className="flex flex-col gap-1 p-4">
-            <div className="flex items-center justify-start gap-2 text-xl">
+            <div className="flex items-center justify-start gap-2">
                 <img
                     src={`/icons/faction${statistic.enemy}.webp`}
                     alt="Logo of Helldivers Bot, which is a cartoon depiction of a spy sattelite"

@@ -1,11 +1,17 @@
-## 0.7.3 (2025-06-XX)
+## 0.11.0
 
-- Add Github Action to generate PageSpeed Insights Metrics
-- Add loaderio verification file
-- Update favicon.ico so there's less whitespace (more icon)
+- Phase 3: API key enforcement on rebroadcast endpoint
+- Phase 4: War Outcome & Interactive Timeline for historical seasons
+- Merge about/docs/api into single page
+- Redesigned navigation with Live indicator
+- Multiple bug fixes and documentation updates
 
 ### Docker
 
-- `docker pull ghcr.io/elfensky/helldivers1api:0.7.3`
-- `docker pull ghcr.io/elfensky/helldivers1api:production`
-- `docker pull ghcr.io/elfensky/helldivers1api:latest`
+- `docker pull ghcr.io/elfensky/helldiversbot:0.11.0`
+- `docker pull ghcr.io/elfensky/helldiversbot:production`
+- `docker pull ghcr.io/elfensky/helldiversbot:latest`
+
+- `docker pull ghcr.io/elfensky/helldiversbot-migrate:0.11.0`
+- `docker pull ghcr.io/elfensky/helldiversbot-migrate:production`
+- `docker pull ghcr.io/elfensky/helldiversbot-migrate:latest`
