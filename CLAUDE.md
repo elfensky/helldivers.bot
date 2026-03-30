@@ -28,7 +28,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 
 **Rules:**
 
-1. **Never push directly to `main` or `develop`** — always use pull requests
+1. **Never commit or push directly to `main` or `develop`** — always create a feature/bugfix branch first, then merge via PR. This applies to ALL work, no matter how small.
 2. **Create feature/bugfix branches from `develop`**, merge back to `develop` via PR
 3. **Release process:** Merge `develop` → `main` via PR → tag `vX.Y.0` on main
 4. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
