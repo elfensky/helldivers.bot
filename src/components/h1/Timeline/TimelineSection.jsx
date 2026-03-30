@@ -8,7 +8,7 @@ export default function TimelineSection({ events }) {
     if (groups.length === 0) return null;
 
     return (
-        <section className="timeline-section">
+        <section id="event-log" className="timeline-section">
             <div className="timeline-content gutters">
                 <h2 className="timeline-heading">Event Log</h2>
                 <div className="timeline-rail">

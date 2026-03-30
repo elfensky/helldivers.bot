@@ -44,23 +44,8 @@ export default async function HomePage() {
 
     return (
         <div className="live-page">
-            <div className="gutters pt-4 pb-2 lg:hidden">
-                <h1 className="font-[family-name:var(--font-display)] text-sm text-[var(--color-primary)]">
-                    Track Managed Democracy Across the Galaxy
-                </h1>
-                <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                    Don&apos;t miss a moment of the action! Follow the Helldivers&apos;
-                    campaign progress as they battle the Bugs, Cyborgs, and Illuminate for
-                    peace, liberty, and managed democracy. See which sectors are under
-                    siege, which are liberated, and where your next mission awaits.
-                </p>
-            </div>
-            <div className="snap-screen">
-                <DashboardClient data={data} mapState={mapState} />
-            </div>
-            <div className="snap-screen">
-                <TimelineSection events={data.events} />
-            </div>
+            <DashboardClient data={data} mapState={mapState} />
+            <TimelineSection events={data.events} />
         </div>
     );
 }

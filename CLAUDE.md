@@ -12,6 +12,12 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit:run`.
 - **Never start the dev server.** Ask the user to start it separately if needed (e.g., for smoke tests).
 - **Chrome DevTools MCP** is available for debugging live pages. Use `evaluate_script` to inspect DOM state (e.g., sector CSS classes) and extract RSC payload data. Useful for verifying map state, comparing field values, and debugging visual issues without screenshots. **Always verify CSS issues via DevTools before guessing** — use `getComputedStyle()` to check actual applied values, and inspect which rules win in specificity conflicts.
+- **Post-implementation DevTools verification** — after any frontend/CSS change, verify via Chrome DevTools MCP before declaring done. Ask the user to start the dev server, navigate to the page, then use `evaluate_script` to check:
+  - `getComputedStyle()` on modified elements — confirm CSS properties match intent (e.g., `overflow`, `position`, `display`, `justify-self`)
+  - `getBoundingClientRect()` on layout elements — confirm sizing, no unexpected shrinking or overflow
+  - For map/SVG: verify `isFullyVisible` (SVG rect within container rect on all sides)
+  - For grid/flex changes: check parent-child sizing chain (container → wrapper → content)
+  - For interactive changes: programmatically trigger state changes (e.g., click tabs) and verify DOM updates
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 
 ## Git Workflow
