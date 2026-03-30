@@ -7,10 +7,7 @@ export default function Galaxy({ mapState }) {
     const svgRef = useRef(null);
 
     return (
-        <section
-            id="galaxy"
-            className="mb-4 flex flex-col items-center gap-4"
-        >
+        <section id="galaxy" className="mb-4 flex flex-col items-center gap-4">
             <Map svgRef={svgRef} map={mapState} />
             <Tooltip svgRef={svgRef} map={mapState} />
         </section>

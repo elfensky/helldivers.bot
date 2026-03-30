@@ -3,10 +3,10 @@
 .dashboard {
     display: grid;
     grid-template-areas:
-        "alerts"
-        "updated"
-        "map"
-        "sidebar";
+        'alerts'
+        'updated'
+        'map'
+        'sidebar';
     grid-template-columns: 1fr;
     gap: 1rem;
     padding-top: 1rem;
@@ -52,9 +52,9 @@
 @media (min-width: 1024px) {
     .dashboard {
         grid-template-areas:
-            "alerts  alerts"
-            "updated updated"
-            "sidebar map";
+            'alerts  alerts'
+            'updated updated'
+            'sidebar map';
         grid-template-columns: 260px minmax(0, 1fr);
         grid-template-rows: auto auto minmax(0, 1fr);
         width: 100%;

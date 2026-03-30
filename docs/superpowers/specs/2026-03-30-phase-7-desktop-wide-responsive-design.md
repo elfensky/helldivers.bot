@@ -44,17 +44,17 @@ DOM order is mobile-friendly (map before sidebar). CSS `grid-template-areas` han
 ```css
 /* Mobile (default) */
 grid-template-areas:
-  "alerts"
-  "updated"
-  "map"
-  "sidebar";
+    'alerts'
+    'updated'
+    'map'
+    'sidebar';
 grid-template-columns: 1fr;
 
 /* Desktop (lg:) */
 grid-template-areas:
-  "alerts  alerts"
-  "updated updated"
-  "sidebar map";
+    'alerts  alerts'
+    'updated updated'
+    'sidebar map';
 grid-template-columns: 260px 1fr;
 ```
 
@@ -70,12 +70,12 @@ The sidebar has a fixed height matching the content area and scrolls independent
 
 ## Breakpoint Scaling
 
-| Breakpoint | Width | Sidebar | Layout | Max-Width |
-|---|---|---|---|---|
-| < lg (< 1024px) | — | N/A | Single column, vertical stack (unchanged) | None |
-| lg: (1024px) | 1024px+ | 260px fixed | Two-column: sidebar left, map right | Dynamic cap |
-| xl: (1280px) | 1280px+ | 300px fixed | Same, sidebar wider | Dynamic cap |
-| 3xl: (1920px) | 1920px+ | 360px fixed | Same, sidebar wider | Dynamic cap |
+| Breakpoint      | Width   | Sidebar     | Layout                                    | Max-Width   |
+| --------------- | ------- | ----------- | ----------------------------------------- | ----------- |
+| < lg (< 1024px) | —       | N/A         | Single column, vertical stack (unchanged) | None        |
+| lg: (1024px)    | 1024px+ | 260px fixed | Two-column: sidebar left, map right       | Dynamic cap |
+| xl: (1280px)    | 1280px+ | 300px fixed | Same, sidebar wider                       | Dynamic cap |
+| 3xl: (1920px)   | 1920px+ | 360px fixed | Same, sidebar wider                       | Dynamic cap |
 
 ### Mobile / Tablet (Unchanged)
 
