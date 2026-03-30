@@ -1,52 +1,49 @@
 .event {
     background-color: rgba(0, 0, 0, 0.75);
-    border: 2px solid black;
+    border: 2px solid var(--color-ghost-border);
 }
 
 .event.success {
-    /* border-left: 10px solid green; */
     background-color: rgba(0, 20, 0, 0.8);
 }
 
 .event.fail {
-    /* border-left: 10px solid red; */
     background-color: rgba(40, 0, 0, 0.8);
 }
 
 .event.active {
-    /* border-left: 10px solid gold; */
-    border: 2px solid gold;
+    border: 2px solid var(--color-primary);
     animation: timeline-pulse-red 3s infinite alternate;
 }
 
 @keyframes timeline-pulse-red {
     0% {
-        border: 2px solid gold;
+        border: 2px solid var(--color-primary);
         background-color: rgba(0, 0, 0, 0.75);
     }
 
     10% {
-        border: 2px solid gold;
+        border: 2px solid var(--color-primary);
         background-color: rgba(0, 0, 0, 0.75);
     }
 
     20% {
-        border: 2px solid red;
+        border: 2px solid var(--color-danger);
         background-color: rgb(200, 0, 0, 0.99);
     }
 
     25% {
-        border: 2px solid red;
+        border: 2px solid var(--color-danger);
         background-color: rgba(200, 0, 0, 0.66);
     }
 
     30% {
-        border: 2px solid red;
+        border: 2px solid var(--color-danger);
         background-color: rgb(200, 0, 0, 0.99);
     }
 
     40% {
-        border: 2px solid gold;
+        border: 2px solid var(--color-primary);
         background-color: rgba(0, 0, 0, 0.75);
     }
 }

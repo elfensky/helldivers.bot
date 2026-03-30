@@ -46,8 +46,8 @@ export function evaluateProgress(event) {
         currentRate,
         requiredRate,
         label:
-            status === 'on_track' ?
-                'On track'
-            :   `${STATUS_LABELS[status]} by ${delta} points`,
+            status === 'on_track' ? 'On track' : (
+                `${STATUS_LABELS[status]} by ${delta} points`
+            ),
     };
 }

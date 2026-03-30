@@ -6,7 +6,7 @@ import { EVENT_TYPE } from '@/enums/events';
 
 /**
  * Fetches a single season from the official Helldivers API and seeds it into the DB.
- * Called on-demand by the /war history page when a user requests a season not yet stored.
+ * Called on-demand by the /archives page when a user requests a season not yet stored.
  *
  * Uses fetchSeason() to call the official API's get_snapshots endpoint, then upserts
  * into h1_season, h1_introduction_order, h1_points_max, h1_event, and h1_snapshot.
@@ -57,11 +57,15 @@ export async function fetchAndSeedSeason(season) {
     await Promise.all(metaOps);
 
     // 3. Upsert defend events
-    const defendEvents = (seasonData.defend_events ?? []).filter((e) => e.season === season);
+    const defendEvents = (seasonData.defend_events ?? []).filter(
+        (e) => e.season === season,
+    );
     await Promise.all(
         defendEvents.map((event) =>
             db.h1_event.upsert({
-                where: { type_event_id: { type: EVENT_TYPE.DEFEND, event_id: event.event_id } },
+                where: {
+                    type_event_id: { type: EVENT_TYPE.DEFEND, event_id: event.event_id },
+                },
                 update: {
                     season: event.season,
                     start_time: event.start_time,
@@ -91,11 +95,15 @@ export async function fetchAndSeedSeason(season) {
     );
 
     // 4. Upsert attack events
-    const attackEvents = (seasonData.attack_events ?? []).filter((e) => e.season === season);
+    const attackEvents = (seasonData.attack_events ?? []).filter(
+        (e) => e.season === season,
+    );
     await Promise.all(
         attackEvents.map((event) =>
             db.h1_event.upsert({
-                where: { type_event_id: { type: EVENT_TYPE.ATTACK, event_id: event.event_id } },
+                where: {
+                    type_event_id: { type: EVENT_TYPE.ATTACK, event_id: event.event_id },
+                },
                 update: {
                     season: event.season,
                     start_time: event.start_time,
@@ -129,7 +137,9 @@ export async function fetchAndSeedSeason(season) {
     await Promise.all(
         snapshots.map((snapshot) => {
             const parsedData =
-                typeof snapshot.data === 'string' ? JSON.parse(snapshot.data) : snapshot.data;
+                typeof snapshot.data === 'string' ?
+                    JSON.parse(snapshot.data)
+                :   snapshot.data;
             return db.h1_snapshot.upsert({
                 where: { season_time: { season: snapshot.season, time: snapshot.time } },
                 update: { data: parsedData },

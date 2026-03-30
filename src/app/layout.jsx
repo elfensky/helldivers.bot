@@ -37,9 +37,12 @@ export const metadata = {
     title: 'Helldivers Bot - Live war dashboard for the original Helldivers',
     description:
         'Live Helldivers 1 war dashboard showing campaign progress, faction stats, active events, and an interactive galaxy map.',
+    alternates: {
+        canonical: '/',
+    },
     openGraph: {
         type: 'website',
-        url: 'https://helldivers.bot',
+        url: '/',
     },
     twitter: {
         card: 'summary_large_image',
@@ -61,10 +64,7 @@ export default function RootLayout({ children }) {
                     src="//unpkg.com/react-scan/dist/auto.global.js"
                 />
             </head> */}
-            <body
-                id="body"
-                className="flex min-h-screen min-w-screen flex-col antialiased"
-            >
+            <body id="body" className="flex min-h-screen min-w-full flex-col antialiased">
                 <script
                     type="application/ld+json"
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
@@ -72,12 +72,21 @@ export default function RootLayout({ children }) {
 
                 <a
                     href="#main"
-                    className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-[var(--color-primary)] focus:px-4 focus:py-2 focus:text-[var(--color-on-primary)]"
+                    className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-[var(--color-primary)] focus:px-4 focus:py-2 focus:text-[var(--color-on-primary)]"
                 >
                     Skip to content
                 </a>
+                <div
+                    className="fixed inset-0 z-[999] flex items-center justify-center bg-[var(--color-surface-0)] p-4 text-center text-sm text-[var(--color-text-muted)] min-[200px]:hidden"
+                    role="alert"
+                >
+                    <p className="m-0">Please use a larger screen to view this site.</p>
+                </div>
                 <Header />
-                <main id="main" className="flex min-h-screen w-screen flex-col pb-[48px] lg:pb-0">
+                <main
+                    id="main"
+                    className="flex min-h-screen w-full flex-col pb-[48px] md:pb-0"
+                >
                     {children}
                 </main>
                 <Footer />

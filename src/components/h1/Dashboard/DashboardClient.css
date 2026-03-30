@@ -1,3 +1,39 @@
+/* === Dashboard Grid Layout === */
+
+.dashboard {
+    display: grid;
+    grid-template-areas:
+        'alerts'
+        'updated'
+        'map'
+        'sidebar';
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.dashboard-alerts {
+    grid-area: alerts;
+}
+
+.dashboard-updated {
+    grid-area: updated;
+}
+
+.dashboard-map {
+    grid-area: map;
+}
+
+.dashboard-sidebar {
+    grid-area: sidebar;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* === Sector Grid (campaign cards) === */
+
 .sector-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -11,22 +47,74 @@
     }
 }
 
+/* === Desktop: two-column grid (lg: 1024px) === */
+
 @media (min-width: 1024px) {
-    .dashboard-main {
-        display: flex;
-        gap: 1rem;
+    .dashboard {
+        grid-template-areas:
+            'alerts  alerts'
+            'updated updated'
+            'sidebar map';
+        grid-template-columns: 260px minmax(0, 1fr);
+        grid-template-rows: auto auto minmax(0, 1fr);
+        width: 100%;
+        max-width: calc(100dvh - 80px - 2rem + 260px + 1rem);
+        margin-left: auto;
+        margin-right: auto;
+        padding-inline: 1.5rem;
+        height: calc(100dvh - 80px);
     }
+
     .dashboard-map {
-        flex: 1;
-        min-width: 0;
+        position: sticky;
+        top: calc(80px + 1.5rem);
+        align-self: start;
+        max-width: none;
+        max-height: 100%;
+        min-height: 0;
+        overflow: hidden;
+        margin: 0;
     }
+
     .dashboard-sidebar {
-        flex: 0 0 260px;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
+        overflow-y: auto;
+        min-height: 0;
     }
+
     .sector-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* === Wide desktop: wider sidebar (xl: 1280px) === */
+
+@media (min-width: 1280px) {
+    .dashboard {
+        grid-template-columns: 300px minmax(0, 1fr);
+        max-width: calc(100dvh - 80px - 2rem + 300px + 1rem);
+    }
+}
+
+/* === Ultrawide: widest sidebar (3xl: 1920px) === */
+
+@media (min-width: 1920px) {
+    .dashboard {
+        grid-template-columns: 360px minmax(0, 1fr);
+        max-width: calc(100dvh - 80px - 2rem + 360px + 1rem);
+    }
+}
+
+/* === Sidebar scrollbar === */
+
+.dashboard-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.dashboard-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }

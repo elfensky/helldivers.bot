@@ -2,6 +2,8 @@ export const metadata = {
     title: 'Discord | Helldivers Bot',
     description:
         'The Helldivers Bot Discord integration — a bot providing in-game event updates and statistics.',
+    alternates: { canonical: '/discord' },
+    openGraph: { url: '/discord' },
 };
 
 export default function BotPage() {
@@ -12,10 +14,13 @@ export default function BotPage() {
                 // Safe: schema is a hardcoded constant, not user input
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
             />
-            <h1 className="text-3xl font-[family-name:var(--font-display)] text-[var(--color-text)]">
-                Discord Bot
+            <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-text)]">
+                DISCORD BOT
             </h1>
-            <p className="text-[var(--color-text-muted)]">Coming Soon</p>
+            <p className="text-[var(--color-text-muted)]">
+                A Ministry-approved communication channel is being established. Standby
+                for propaganda — er, updates.
+            </p>
         </div>
     );
 }

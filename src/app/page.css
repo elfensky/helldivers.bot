@@ -17,3 +17,14 @@ main > * {
     position: relative;
     z-index: 1;
 }
+
+/* At desktop, shrink main and hide footer — dashboard fills viewport, no page scroll */
+@media (min-width: 1024px) {
+    main {
+        min-height: auto;
+    }
+
+    footer {
+        display: none;
+    }
+}

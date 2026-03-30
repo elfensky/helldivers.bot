@@ -5,7 +5,7 @@ import {
     timeSince,
     elapsedSeasonTime,
     elapsedSeconds,
-    elapsedDateTime,
+    elapsedMilliseconds,
 } from '@/utils/time.mjs';
 
 describe('performanceTime', () => {
@@ -171,10 +171,10 @@ describe('elapsedSeconds', () => {
     });
 });
 
-describe('elapsedDateTime', () => {
+describe('elapsedMilliseconds', () => {
     test('returns milliseconds since past date', () => {
         const fiveSecsAgo = new Date(Date.now() - 5000);
-        const result = elapsedDateTime(fiveSecsAgo);
+        const result = elapsedMilliseconds(fiveSecsAgo);
         expect(result).toBeGreaterThanOrEqual(4900);
         expect(result).toBeLessThanOrEqual(5200);
     });

@@ -54,7 +54,9 @@ export function getWarOutcome(data) {
     // Victory signal 3: all 3 enemy homeworlds captured (successful attacks)
     const factionsDefeated = new Set(
         events
-            .filter((e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.SUCCESS)
+            .filter(
+                (e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.SUCCESS,
+            )
             .map((e) => e.enemy),
     );
     const allHomeworldsCaptured = factionsDefeated.size === 3;
@@ -66,7 +68,8 @@ export function getWarOutcome(data) {
         .filter((e) => e.type === EVENT_TYPE.DEFEND && e.region === 0)
         .sort((a, b) => a.end_time - b.end_time);
     const defeatSignal =
-        r0Defends.length > 0 && r0Defends[r0Defends.length - 1].status === EVENT_STATUS.FAIL;
+        r0Defends.length > 0 &&
+        r0Defends[r0Defends.length - 1].status === EVENT_STATUS.FAIL;
 
     // Decision
     if (victorySignal && !defeatSignal) {

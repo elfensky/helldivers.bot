@@ -1,6 +1,6 @@
 #tooltip {
     background-color: rgba(0, 0, 0, 0.75);
-    border: 2px solid black;
+    border: 2px solid var(--color-ghost-border);
 
     progress {
         /* Remove default appearance */
@@ -9,7 +9,7 @@
         width: 300px;
         height: 20px;
         border: none;
-        background-color: #eee;
+        background-color: var(--color-surface-4);
         border-radius: 0;
         /* Squared corners */
         overflow: hidden;

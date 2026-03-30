@@ -4,12 +4,16 @@ export const metadata = {
     title: 'Architecture | Helldivers Bot',
     description:
         'Data flow architecture diagram for helldivers.bot — see how data moves from the official API through processing and storage to the frontend.',
+    alternates: { canonical: '/architecture' },
+    openGraph: { url: '/architecture' },
 };
 
 export default function ArchitecturePage() {
     return (
         <div className="gutters relative mb-8 flex flex-col gap-8">
-            <h1 className="font-[family-name:var(--font-display)] text-3xl">Architecture</h1>
+            <h1 className="font-[family-name:var(--font-display)] text-3xl">
+                Architecture
+            </h1>
             <section className="card w-full p-2 md:p-4">
                 <h2 className="font-[family-name:var(--font-display)]">
                     Data Flow Architecture
@@ -61,7 +65,7 @@ export default function ArchitecturePage() {
                         </h3>
                         <p className="text-sm text-[var(--color-text-muted)]">
                             Missing seasons are fetched from the official API on first
-                            request. The /war page derives available seasons from the
+                            request. The /archives page derives available seasons from the
                             current season number, not a database query.
                         </p>
                     </div>

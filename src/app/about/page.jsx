@@ -7,6 +7,8 @@ export const metadata = {
     title: 'About | Helldivers Bot',
     description:
         'About helldivers.bot — a community project tracking the Helldivers 1 galactic campaign.',
+    alternates: { canonical: '/about' },
+    openGraph: { url: '/about' },
 };
 
 export default function AboutPage() {
