@@ -6,7 +6,7 @@ import Galaxy from '@/components/h1/Galaxy/Galaxy';
 import EventCard, { computeFrontier } from '@/components/h1/Galaxy/EventCard';
 import FactionTabs from '@/components/h1/FactionTabs/FactionTabs';
 import StatGrid from '@/components/h1/StatGrid/StatGrid';
-import Event from '@/components/h1/Event/Event';
+import WarSummary from '@/components/h1/WarSummary/WarSummary';
 import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import { formatTimeAgo } from '@/utils/formatTimeAgo.mjs';
 
@@ -98,18 +98,10 @@ export default function DashboardClient({ data, mapState }) {
                     <FactionTabs active={faction} onChange={setFaction} />
                     <StatGrid live={data.live} faction={faction} />
                 </section>
-                {events?.length > 0 && (
-                    <section className="flex flex-col gap-2">
-                        <h2>Event Timeline</h2>
-                        <ul className="flex list-none flex-col gap-2 p-0">
-                            {events.map((event) => (
-                                <li key={event.event_id}>
-                                    <Event event={event} />
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                )}
+                <WarSummary events={events} />
+            </div>
+            <div className="dashboard-scroll-hint">
+                <span>↓ event log</span>
             </div>
         </div>
     );

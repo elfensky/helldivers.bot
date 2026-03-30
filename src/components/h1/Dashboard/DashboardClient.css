@@ -32,6 +32,11 @@
     gap: 0.5rem;
 }
 
+.dashboard-scroll-hint {
+    grid-area: hint;
+    display: none;
+}
+
 /* === Sector Grid (campaign cards) === */
 
 .sector-grid {
@@ -54,9 +59,10 @@
         grid-template-areas:
             'alerts  alerts'
             'updated updated'
-            'sidebar map';
+            'sidebar map'
+            'hint    hint';
         grid-template-columns: 260px minmax(0, 1fr);
-        grid-template-rows: auto auto minmax(0, 1fr);
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
         width: 100%;
         max-width: calc(100dvh - 80px - 2rem + 260px + 1rem);
         margin-left: auto;
@@ -83,6 +89,16 @@
 
     .sector-grid {
         grid-template-columns: 1fr;
+    }
+
+    .dashboard-scroll-hint {
+        display: flex;
+        justify-content: center;
+        padding: 0.5rem;
+        color: var(--color-text-muted);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        opacity: 0.5;
     }
 }
 
