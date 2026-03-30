@@ -15,10 +15,11 @@ import SeasonSelector from '@/components/h1/SeasonSelector/SeasonSelector';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-    metadataBase: 'https://helldivers.bot/archives',
     title: 'Archives | Helldivers Bot — campaign records approved by High Command',
     description:
         'Browse the official Super Earth archives. All campaign records have been verified and approved by High Command. Any resemblance to defeat is purely clerical error.',
+    alternates: { canonical: '/archives' },
+    openGraph: { url: '/archives' },
 };
 
 export default async function WarHistoryPage({ searchParams }) {

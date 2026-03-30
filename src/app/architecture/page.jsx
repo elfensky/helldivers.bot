@@ -4,6 +4,8 @@ export const metadata = {
     title: 'Architecture | Helldivers Bot',
     description:
         'Data flow architecture diagram for helldivers.bot — see how data moves from the official API through processing and storage to the frontend.',
+    alternates: { canonical: '/architecture' },
+    openGraph: { url: '/architecture' },
 };
 
 export default function ArchitecturePage() {

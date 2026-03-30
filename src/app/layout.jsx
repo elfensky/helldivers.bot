@@ -37,9 +37,12 @@ export const metadata = {
     title: 'Helldivers Bot - Live war dashboard for the original Helldivers',
     description:
         'Live Helldivers 1 war dashboard showing campaign progress, faction stats, active events, and an interactive galaxy map.',
+    alternates: {
+        canonical: '/',
+    },
     openGraph: {
         type: 'website',
-        url: 'https://helldivers.bot',
+        url: '/',
     },
     twitter: {
         card: 'summary_large_image',

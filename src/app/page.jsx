@@ -10,11 +10,13 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
     title: 'Helldivers Bot — Live Galactic Campaign Dashboard',
     description:
-        "Track Managed Democracy across the galaxy. Live Helldivers 1 campaign dashboard with faction stats, active events, and an interactive galaxy map for the war against the Bugs, Cyborgs, and Illuminate.",
+        'Track Managed Democracy across the galaxy. Live Helldivers 1 campaign dashboard with faction stats, active events, and an interactive galaxy map for the war against the Bugs, Cyborgs, and Illuminate.',
+    alternates: { canonical: '/' },
     openGraph: {
         title: 'Helldivers Bot — Live Galactic Campaign Dashboard',
         description:
             "Don't miss a moment of the action! Follow the Helldivers' campaign progress as they battle for peace, liberty, and managed democracy.",
+        url: '/',
     },
 };
 
@@ -24,14 +26,19 @@ export default async function HomePage() {
     if (error || !data) {
         return (
             <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
-                <h1>Signal Lost</h1>
-                <p>Unable to load campaign data. Please try again later.</p>
+                <h1>SIGNAL LOST</h1>
+                <p>
+                    Communication with Super Earth High Command has been disrupted. This
+                    is not cause for alarm. Remain calm and await further instructions.
+                </p>
             </div>
         );
     }
 
     // Only pass active events — completed events are already reflected in the campaign score
-    const activeEvents = (data.events ?? []).filter((e) => e.status === EVENT_STATUS.ACTIVE);
+    const activeEvents = (data.events ?? []).filter(
+        (e) => e.status === EVENT_STATUS.ACTIVE,
+    );
     const mapState = computeMapState(data.live, activeEvents);
 
     return (
@@ -42,9 +49,9 @@ export default async function HomePage() {
                 </h1>
                 <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                     Don&apos;t miss a moment of the action! Follow the Helldivers&apos;
-                    campaign progress as they battle the Bugs, Cyborgs, and Illuminate
-                    for peace, liberty, and managed democracy. See which sectors are
-                    under siege, which are liberated, and where your next mission awaits.
+                    campaign progress as they battle the Bugs, Cyborgs, and Illuminate for
+                    peace, liberty, and managed democracy. See which sectors are under
+                    siege, which are liberated, and where your next mission awaits.
                 </p>
             </div>
             <DashboardClient data={data} mapState={mapState} />
