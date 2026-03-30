@@ -43,7 +43,7 @@ export default async function HomePage() {
 
     return (
         <>
-            <div className="gutters pt-4 pb-2">
+            <div className="gutters pt-4 pb-2 lg:hidden">
                 <h1 className="font-[family-name:var(--font-display)] text-sm text-[var(--color-primary)]">
                     Track Managed Democracy Across the Galaxy
                 </h1>
