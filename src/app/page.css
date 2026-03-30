@@ -18,13 +18,20 @@ main > * {
     z-index: 1;
 }
 
-/* At desktop, shrink main and hide footer — dashboard fills viewport, no page scroll */
+/* At desktop, snap scroll between dashboard and timeline */
 @media (min-width: 1024px) {
     main {
         min-height: auto;
     }
 
-    footer {
-        display: none;
+    .live-page {
+        scroll-snap-type: y mandatory;
+        overflow-y: auto;
+        height: calc(100dvh - 80px);
+    }
+
+    .live-page > .snap-screen {
+        scroll-snap-align: start;
+        min-height: calc(100dvh - 80px);
     }
 }

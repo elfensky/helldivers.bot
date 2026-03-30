@@ -4,6 +4,7 @@ import { getCampaign } from '@/db/queries/getCampaign';
 import { computeMapState } from '@/utils/computeMapState.mjs';
 import { EVENT_STATUS } from '@/enums/events';
 import DashboardClient from '@/components/h1/Dashboard/DashboardClient';
+import TimelineSection from '@/components/h1/Timeline/TimelineSection';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,7 @@ export default async function HomePage() {
     const mapState = computeMapState(data.live, activeEvents);
 
     return (
-        <>
+        <div className="live-page">
             <div className="gutters pt-4 pb-2 lg:hidden">
                 <h1 className="font-[family-name:var(--font-display)] text-sm text-[var(--color-primary)]">
                     Track Managed Democracy Across the Galaxy
@@ -54,7 +55,12 @@ export default async function HomePage() {
                     siege, which are liberated, and where your next mission awaits.
                 </p>
             </div>
-            <DashboardClient data={data} mapState={mapState} />
-        </>
+            <div className="snap-screen">
+                <DashboardClient data={data} mapState={mapState} />
+            </div>
+            <div className="snap-screen">
+                <TimelineSection events={data.events} />
+            </div>
+        </div>
     );
 }
