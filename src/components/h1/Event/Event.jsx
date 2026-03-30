@@ -5,7 +5,7 @@ import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import humanizeDuration from 'humanize-duration';
 import { EVENT_TYPE } from '@/enums/events';
 
-export default function Event({ event }) {
+export default function Event({ event, compact = false }) {
     const remaining = event.end_time - Math.floor(Date.now() / 1000);
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
     const progress = evaluateProgress(event)?.label;
@@ -22,9 +22,12 @@ export default function Event({ event }) {
         : event.status === 'fail' ? 'Failed'
         : 'Active';
 
+    const isResolved = event.status !== 'active';
+    const showCompact = compact && isResolved;
+
     return (
         <article
-            className={`event-card ${isDefend ? 'event-card--defend' : 'event-card--attack'} event-card--${event.status}`}
+            className={`event-card ${isDefend ? 'event-card--defend' : 'event-card--attack'} event-card--${event.status}${showCompact ? ' event-card--compact' : ''}`}
         >
             <div className="event-card-content">
                 <div className="event-card-header">
@@ -40,13 +43,17 @@ export default function Event({ event }) {
                     )}
                 </div>
                 <div className="event-card-time">{timeText}</div>
-                {progress && <div className="event-card-progress-text">{progress}</div>}
-                <div className="event-card-bar-track">
-                    <div
-                        className="event-card-bar-fill"
-                        style={{ width: `${Math.min(100, percent)}%` }}
-                    />
-                </div>
+                {!showCompact && progress && (
+                    <div className="event-card-progress-text">{progress}</div>
+                )}
+                {!showCompact && (
+                    <div className="event-card-bar-track">
+                        <div
+                            className="event-card-bar-fill"
+                            style={{ width: `${Math.min(100, percent)}%` }}
+                        />
+                    </div>
+                )}
                 <div className="event-card-points">
                     {event.points} / {event.points_max} ({percent}%)
                 </div>
