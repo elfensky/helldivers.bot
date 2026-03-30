@@ -14,13 +14,13 @@ develop ──────●──●──●──●──●──── (s
               feature/*  bugfix/*
 ```
 
-| Branch | Created from | Merges to | Lifetime |
-|--------|-------------|-----------|----------|
-| `main` | — | — | Permanent (production) |
-| `develop` | — | — | Permanent (staging) |
-| `feature/<desc>` | `develop` | `develop` | Days (max 1-2 weeks) |
-| `bugfix/<desc>` | `develop` | `develop` | Days |
-| `hotfix/<semver>` | `main` | `main` + `develop` | Hours |
+| Branch            | Created from | Merges to          | Lifetime               |
+| ----------------- | ------------ | ------------------ | ---------------------- |
+| `main`            | —            | —                  | Permanent (production) |
+| `develop`         | —            | —                  | Permanent (staging)    |
+| `feature/<desc>`  | `develop`    | `develop`          | Days (max 1-2 weeks)   |
+| `bugfix/<desc>`   | `develop`    | `develop`          | Days                   |
+| `hotfix/<semver>` | `main`       | `main` + `develop` | Hours                  |
 
 ### Branch Naming
 
@@ -66,6 +66,7 @@ develop ──────●──●──●──●──●──── (s
 ## Versioning
 
 Semantic versioning with `v` prefix (`vMAJOR.MINOR.PATCH`):
+
 - **Major**: Breaking API changes, Discord.js major upgrade
 - **Minor**: New commands, features, event handlers
 - **Patch**: Bug fixes, dependency updates
@@ -85,7 +86,7 @@ refactor: extract event handler base class
 
 ## CI/CD
 
-| Event | Action |
-|-------|--------|
-| Push to `main` or `develop` | Build + deploy staging Docker image |
-| Tag `v*.*.*` | Build production Docker image + GitHub Release |
+| Event                       | Action                                         |
+| --------------------------- | ---------------------------------------------- |
+| Push to `main` or `develop` | Build + deploy staging Docker image            |
+| Tag `v*.*.*`                | Build production Docker image + GitHub Release |

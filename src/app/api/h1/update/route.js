@@ -41,7 +41,10 @@ export async function GET(request) {
         updated: {
             status: statusData,
             season: seasonData,
-            // wait: wait,
+        },
+        timing: {
+            statusMs: statusTime,
+            seasonMs: seasonTime,
         },
     });
 }

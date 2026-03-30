@@ -60,7 +60,7 @@ export function elapsedSeconds(past) {
     return Math.floor(elapsed / 1000);
 }
 
-export function elapsedDateTime(past) {
+export function elapsedMilliseconds(past) {
     const now = new Date();
     const elapsed = now - past;
     return elapsed;

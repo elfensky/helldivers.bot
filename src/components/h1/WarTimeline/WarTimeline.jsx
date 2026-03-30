@@ -8,7 +8,7 @@ import factions from '@/enums/factions';
 
 const KIND_PRIORITY = { snapshot: 0, event_start: 1, event_end: 2 };
 
-function formatEventLabel(event, phase) {
+export function formatEventLabel(event, phase) {
     const factionName = factions[event.enemy]?.name ?? `Faction ${event.enemy}`;
     const typeLabel = event.type === 'defend' ? 'Defend' : 'Attack';
 
@@ -20,7 +20,7 @@ function formatEventLabel(event, phase) {
     return `${typeLabel} ${outcome}: ${factionName}`;
 }
 
-function buildTimeline(data) {
+export function buildTimeline(data) {
     const moments = [];
 
     for (const s of data.snapshots ?? []) {
@@ -54,7 +54,7 @@ function buildTimeline(data) {
     return moments;
 }
 
-function computeMomentMapState(moment, data) {
+export function computeMomentMapState(moment, data) {
     const snapshots = data.snapshots ?? [];
 
     const nearest = snapshots
@@ -102,7 +102,7 @@ function computeMomentMapState(moment, data) {
     return computeMapState(factionStates, activeEvents);
 }
 
-function formatTimestamp(unixSeconds) {
+export function formatTimestamp(unixSeconds) {
     return new Date(unixSeconds * 1000).toLocaleString(undefined, {
         year: 'numeric',
         month: 'short',
@@ -180,7 +180,11 @@ export default function WarTimeline({ data, defaultMapState }) {
         if (!container) return;
         const activeCard = container.querySelector('.timeline-card.active');
         if (activeCard) {
-            activeCard.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            activeCard.scrollIntoView({
+                behavior: 'smooth',
+                inline: 'center',
+                block: 'nearest',
+            });
         }
     }, [activeIndex]);
 
