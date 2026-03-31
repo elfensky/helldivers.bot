@@ -3,6 +3,7 @@
     grid-template-columns: 1fr 6px;
     background: var(--color-surface-1);
     border: 1px solid var(--color-ghost-border);
+    border-left: 4px solid transparent;
 }
 
 .event-card-content {
@@ -70,14 +71,17 @@
 /* Status-based tinting overrides */
 .event-card--success {
     background: rgba(0, 20, 0, 0.4);
+    border-left-color: var(--color-success);
 }
 
 .event-card--fail {
     background: rgba(40, 0, 0, 0.5);
+    border-left-color: var(--color-danger);
 }
 
 .event-card--active {
     border-color: var(--color-primary);
+    border-left-color: var(--color-primary);
 }
 
 /* Accent colors by event type */
@@ -87,6 +91,13 @@
 
 .event-card--attack .event-card-accent {
     background: var(--color-primary);
+}
+
+/* Desktop: remove mobile rail border */
+@media (min-width: 768px) {
+    .event-card {
+        border-left: 1px solid var(--color-ghost-border);
+    }
 }
 
 /* Compact variant — resolved events in timeline */
