@@ -1,10 +1,4 @@
-# CHANGELOG
-
-Given a version number MAJOR.MINOR.PATCH, increment the:
-
-- MAJOR version when you make incompatible API changes
-- MINOR version when you add functionality in a backward compatible manner
-- PATCH version when you make backward compatible bug fixes
+# Changelog
 
 ## 0.16.0 (2026-03-28)
 
