@@ -6,7 +6,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 
 - **KISS.** Simple solutions only. Do not overengineer or add abstractions for hypothetical future needs.
 - **Never commit or push directly to `main` or `develop`** — always branch first, merge via PR.
-- **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit:run`.
+- **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit`.
 - **Assume the dev server is already running on :3000.** Ask the user to (re)start it separately if needed to clear cache or if it crashed.
 - Report outcomes faithfully: if tests fail, say so with the relevant output; if you did not run a verification step, say that rather than implying it succeeded. Never claim "all tests pass" when output shows failures, never suppress or simplify failing checks (tests, lints, type errors) to manufacture a green result, and never characterize incomplete or broken work as done.
 
@@ -22,8 +22,8 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 
 - **Use agents** for codebase exploration and multi-step research tasks.
 - **Use git worktrees** for parallel development on separate branches.
-- **Vitest:** `npm run test:unit:run` (single run), `npm run test:unit` (watch).
-- **Playwright smoke tests:** `npm run test:smoke` to verify app builds and runs.
+- **Vitest:** `npm run test:unit` (single run), `npm run test:coverage` (with coverage).
+- **Playwright smoke tests:** `npm run test:e2e` to verify app builds and runs.
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 
 ### DevTools Verification
