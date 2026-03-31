@@ -44,7 +44,7 @@ export async function queryGetRebroadcastStatus() {
         orderBy: { last_updated: 'desc' },
     });
 
-    return { ms: performanceTime(start), data: query };
+    return { ms: performanceTime(start), query };
 }
 
 export async function queryGetRebroadcastSeason(season) {
@@ -55,5 +55,5 @@ export async function queryGetRebroadcastSeason(season) {
         where: { season },
     });
 
-    return { ms: performanceTime(start), data: query };
+    return { ms: performanceTime(start), query };
 }

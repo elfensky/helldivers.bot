@@ -88,7 +88,7 @@ export async function POST(request) {
                 queryGetRebroadcastStatus(),
             );
             if (statusError) return errorResponse(404, start, 'Not found');
-            data = statusResult?.data?.json;
+            data = statusResult?.query?.json;
             break;
         }
         case 'get_snapshots': {
@@ -96,7 +96,7 @@ export async function POST(request) {
                 queryGetRebroadcastSeason(formValues.season),
             );
             if (seasonError) return errorResponse(404, start, 'Not found');
-            data = seasonResult?.data?.json;
+            data = seasonResult?.query?.json;
 
             // fetch from remote if not available locally
             if (data === undefined || data === null) {
@@ -110,7 +110,7 @@ export async function POST(request) {
                     queryGetRebroadcastSeason(formValues.season),
                 );
                 if (retryError) return errorResponse(404, start, 'Not found');
-                data = retryResult?.data?.json;
+                data = retryResult?.query?.json;
             }
             break;
         }

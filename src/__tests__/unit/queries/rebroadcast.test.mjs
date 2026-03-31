@@ -90,7 +90,7 @@ describe('queryGetRebroadcastStatus', () => {
 
         expect(result).toHaveProperty('ms');
         expect(typeof result.ms).toBe('number');
-        expect(result.data).toEqual(mockStatus);
+        expect(result.query).toEqual(mockStatus);
         expect(db.rebroadcast_status.findFirst).toHaveBeenCalledWith({
             orderBy: { last_updated: 'desc' },
         });
@@ -101,7 +101,7 @@ describe('queryGetRebroadcastStatus', () => {
 
         const result = await queryGetRebroadcastStatus();
 
-        expect(result.data).toBeNull();
+        expect(result.query).toBeNull();
         expect(result).toHaveProperty('ms');
     });
 });
@@ -115,7 +115,7 @@ describe('queryGetRebroadcastSeason', () => {
 
         expect(result).toHaveProperty('ms');
         expect(typeof result.ms).toBe('number');
-        expect(result.data).toEqual(mockSnapshot);
+        expect(result.query).toEqual(mockSnapshot);
         expect(db.rebroadcast_snapshot.findUnique).toHaveBeenCalledWith({
             where: { season: 3 },
         });
@@ -126,6 +126,6 @@ describe('queryGetRebroadcastSeason', () => {
 
         const result = await queryGetRebroadcastSeason(999);
 
-        expect(result.data).toBeNull();
+        expect(result.query).toBeNull();
     });
 });
