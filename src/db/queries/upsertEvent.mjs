@@ -12,7 +12,7 @@ export async function queryUpsertEvent(season, type, event) {
     if (!event) throw new Error('event is missing');
 
     // Skip if data is not from current season (cross-season events are preserved in rebroadcast_status)
-    if (event.season !== season) return null;
+    if (event.season !== season) return { ms: 0, query: null, skipped: true };
 
     const { data: upsertRecord, error } = await tryCatch(
         db.h1_event.upsert({
