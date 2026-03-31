@@ -13,10 +13,10 @@ export async function getApiKeysByUserId(userId) {
     const session = await auth();
 
     if (!session || !session.user) {
-        throw new Error('No session found');
+        return { ms: performanceTime(start), query: null, errors: { auth: 'No session found' } };
     }
     if (session.user.id !== userId) {
-        throw new Error('User does not match');
+        return { ms: performanceTime(start), query: null, errors: { auth: 'User does not match' } };
     }
 
     const { data: result, error } = await tryCatch(
@@ -132,7 +132,7 @@ export async function deleteApiKey(_, formData) {
     if (!check.success) {
         return {
             errors: check.error.flatten().fieldErrors,
-            data: formValues,
+            values: formValues,
             time: performanceTime(start),
         };
     }
