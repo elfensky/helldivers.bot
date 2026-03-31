@@ -1,5 +1,7 @@
 # Phase 7: Desktop & Wide Responsive Layout
 
+> **Note:** The sidebar scrolling, sticky map, dynamic max-width, and breakpoint-specific sidebar widths described below were superseded by Phase 9 timeline refinement. The sidebar and map are now static grid children (no independent scroll), the map sizes from viewport height, and the dashboard uses a single grid definition for all desktop breakpoints. See `docs/superpowers/specs/2026-03-30-timeline-refinement-design.md`.
+
 **Issue:** #168
 **Date:** 2026-03-30
 **Status:** Design approved

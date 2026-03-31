@@ -26,7 +26,7 @@ Two tablet tiers based on usage mode:
 | StatGrid     | 2 columns                | 4 columns                       | 2 columns (in sidebar)       |
 | EventCards   | 3 cols (480px+)          | 3 columns                       | Stacked in sidebar           |
 | Galaxy Map   | Full width, max-h-[85vh] | max-width constrained, centered | Fills left column            |
-| Timeline     | Below cards              | Below cards                     | Full-width below map+sidebar |
+| Timeline     | Below cards              | Below cards                     | Full-width section below dashboard (Phase 9 refinement) |
 | main padding | pb-[48px]                | pb-[48px]                       | pb-0                         |
 
 ### md: (768px) — Portrait Tablet
@@ -46,7 +46,7 @@ Map + sidebar layout. This is the shift from app-mode to website-mode:
 
 - **Layout:** Flexbox row — map on the left (`flex: 1`), sidebar on the right (`flex: 0 0 ~220-260px`).
 - **Sidebar contents (top to bottom):** FactionTabs (icon-only, labels hidden — sidebar too narrow for text) → StatGrid (2 columns) → EventCards (stacked vertically).
-- **Timeline:** Full-width section below the map+sidebar row. Less prominent — it's historical context, not live status.
+- **Timeline:** Now a dedicated `TimelineSection` component with vertical rail, date grouping, and responsive multi-column grid. Full-width section below the dashboard, accessible via smooth-scroll button. See Phase 9 timeline specs for current implementation.
 - **BottomNav:** Hidden (`lg:hidden`). Portrait = PWA single-thumb mode, landscape = website dual-hand mode.
 - **Header navigation:** At `lg:`, header gains inline text links: "Live" (red dot with `live-blink` pulse animation, matching BottomNav's `--color-danger` styling), "History", "About". Active page gets accent underline. Links appear between logo and existing icon group, separated by a divider.
 - **main padding:** Remove `pb-[48px]` at `lg:` since BottomNav is gone → `lg:pb-0`.

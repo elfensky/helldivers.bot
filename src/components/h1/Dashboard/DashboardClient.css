@@ -4,7 +4,6 @@
     display: grid;
     grid-template-areas:
         'alerts'
-        'updated'
         'map'
         'sidebar';
     grid-template-columns: 1fr;
@@ -17,10 +16,6 @@
     grid-area: alerts;
 }
 
-.dashboard-updated {
-    grid-area: updated;
-}
-
 .dashboard-map {
     grid-area: map;
 }
@@ -30,6 +25,18 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+}
+
+.dashboard-scroll-hint {
+    grid-area: hint;
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.dashboard-scroll-hint:hover {
+    opacity: 0.8;
 }
 
 /* === Sector Grid (campaign cards) === */
@@ -53,68 +60,36 @@
     .dashboard {
         grid-template-areas:
             'alerts  alerts'
-            'updated updated'
-            'sidebar map';
-        grid-template-columns: 260px minmax(0, 1fr);
-        grid-template-rows: auto auto minmax(0, 1fr);
-        width: 100%;
-        max-width: calc(100dvh - 80px - 2rem + 260px + 1rem);
-        margin-left: auto;
-        margin-right: auto;
-        padding-inline: 1.5rem;
+            'sidebar map'
+            'hint    hint';
+        grid-template-columns: minmax(260px, 1fr) minmax(0, calc((100dvh - 80px) * 806.93 / 868.81));
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        column-gap: 6rem;
         height: calc(100dvh - 80px);
     }
 
     .dashboard-map {
-        position: sticky;
-        top: calc(80px + 1.5rem);
-        align-self: start;
-        max-width: none;
+        display: flex;
+        align-items: center;
+        justify-content: end;
         max-height: 100%;
         min-height: 0;
-        overflow: hidden;
         margin: 0;
-    }
-
-    .dashboard-sidebar {
-        overflow-y: auto;
-        min-height: 0;
     }
 
     .sector-grid {
         grid-template-columns: 1fr;
     }
-}
 
-/* === Wide desktop: wider sidebar (xl: 1280px) === */
-
-@media (min-width: 1280px) {
-    .dashboard {
-        grid-template-columns: 300px minmax(0, 1fr);
-        max-width: calc(100dvh - 80px - 2rem + 300px + 1rem);
+    .dashboard-scroll-hint {
+        display: flex;
+        justify-content: center;
+        padding: 0.5rem;
+        color: var(--color-text-muted);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        opacity: 0.5;
     }
 }
 
-/* === Ultrawide: widest sidebar (3xl: 1920px) === */
 
-@media (min-width: 1920px) {
-    .dashboard {
-        grid-template-columns: 360px minmax(0, 1fr);
-        max-width: calc(100dvh - 80px - 2rem + 360px + 1rem);
-    }
-}
-
-/* === Sidebar scrollbar === */
-
-.dashboard-sidebar::-webkit-scrollbar {
-    width: 4px;
-}
-
-.dashboard-sidebar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.dashboard-sidebar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-}

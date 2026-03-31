@@ -8,7 +8,7 @@
 
 @media (min-width: 768px) {
     .stat-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -54,4 +54,12 @@
 
 .stat-card-accent {
     background: var(--color-primary);
+}
+
+.stat-card-accent-success {
+    background: var(--color-success);
+}
+
+.stat-card-accent-danger {
+    background: var(--color-danger);
 }

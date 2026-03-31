@@ -1,3 +1,5 @@
+> **Note:** The Event Timeline section in DashboardClient (Task 7) was later moved to a standalone `TimelineSection` component in Phase 9. See Phase 9 timeline specs for current implementation.
+
 # Phase 7: Tablet Responsive Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
