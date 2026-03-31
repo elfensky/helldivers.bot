@@ -45,21 +45,6 @@ export async function POST(request) {
     const formData = await request.formData();
     formValues = formDataToObject(formData);
 
-    after(async () => {
-        const data = {
-            action: formValues.action,
-            ms: roundedPerformanceTime(start),
-        };
-        if (data?.action === 'get_snapshots') {
-            data.season = formValues.season;
-        }
-        await umamiTrackEvent(
-            'API | Rebroadcast',
-            '/api/h1/rebroadcast',
-            'rebroadcast',
-            data,
-        );
-    });
     if (typeof formValues.action !== 'string') {
         return errorResponse(400, start, 'No action set');
     }
@@ -79,6 +64,22 @@ export async function POST(request) {
     if (formValues?.season) {
         formValues.season = Number(formValues.season);
     }
+
+    after(async () => {
+        const data = {
+            action: formValues.action,
+            ms: roundedPerformanceTime(start),
+        };
+        if (data?.action === 'get_snapshots') {
+            data.season = formValues.season;
+        }
+        await umamiTrackEvent(
+            'API | Rebroadcast',
+            '/api/h1/rebroadcast',
+            'rebroadcast',
+            data,
+        );
+    });
 
     //4. attempt to get data from db
     let data = undefined;
