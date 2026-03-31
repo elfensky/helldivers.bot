@@ -1,3 +1,5 @@
+> **PARTIALLY SUPERSEDED** -- Tasks 2 (WarSummary), 5 (DashboardClient snap scroll), and 6 (snap scroll container) were reworked by the timeline refinement. See `docs/superpowers/specs/2026-03-30-timeline-refinement-design.md`. Tasks 1 (groupEventsByDay), 3 (compact Event), and 4 (TimelineSection) remain as implemented.
+
 # Timeline Visual Redesign Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

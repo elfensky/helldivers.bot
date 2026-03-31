@@ -1,8 +1,17 @@
 # Phase 9: Timeline Visual Redesign
 
+> **PARTIALLY SUPERSEDED** — This spec was partially superseded by the timeline refinement. Specifically:
+> - Snap scroll was removed -- now normal page flow with smooth-scroll button
+> - WarSummary was deleted -- replaced by WON/LOST stat cards in StatGrid
+> - Sidebar scroll and sticky map were removed -- sidebar and map are now static grid children in a unified layout
+> - Map sizing changed from `max-h-[85vh]` to viewport-height-derived grid column (`minmax(0, calc((100dvh - 80px) * 806.93 / 868.81))`)
+> - The TimelineSection, Event compact variant, date grouping, and vertical rail from this spec are still in use
+>
+> See `docs/superpowers/specs/2026-03-30-timeline-refinement-design.md` for the current design.
+
 **Issue:** #165
 **Date:** 2026-03-30
-**Status:** Design approved
+**Status:** Partially superseded -- see 2026-03-30-timeline-refinement-design.md
 
 ## Summary
 
