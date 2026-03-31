@@ -1,4 +1,3 @@
-'use server';
 import { z } from 'zod';
 import db from '@/db/db';
 import { auth } from '@/auth';
@@ -37,6 +36,7 @@ export async function getApiKeysByUserId(userId) {
 }
 
 export async function generateApiKey(_, formData) {
+    'use server';
     const start = performance.now();
 
     const session = await auth();
@@ -109,6 +109,7 @@ export async function generateApiKey(_, formData) {
 }
 
 export async function deleteApiKey(_, formData) {
+    'use server';
     const start = performance.now();
 
     const session = await auth();
