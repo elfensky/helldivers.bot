@@ -6,7 +6,7 @@ main {
 
 main::before {
     content: '';
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: rgba(19, 19, 19, 0.85);
     z-index: 0;
@@ -18,13 +18,7 @@ main > * {
     z-index: 1;
 }
 
-/* At desktop, shrink main and hide footer — dashboard fills viewport, no page scroll */
-@media (min-width: 1024px) {
-    main {
-        min-height: auto;
-    }
-
-    footer {
-        display: none;
-    }
+.live-page {
+    max-width: 1920px;
+    margin-inline: auto;
 }

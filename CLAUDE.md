@@ -12,6 +12,12 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit:run`.
 - **Never start the dev server.** Ask the user to start it separately if needed (e.g., for smoke tests).
 - **Chrome DevTools MCP** is available for debugging live pages. Use `evaluate_script` to inspect DOM state (e.g., sector CSS classes) and extract RSC payload data. Useful for verifying map state, comparing field values, and debugging visual issues without screenshots. **Always verify CSS issues via DevTools before guessing** — use `getComputedStyle()` to check actual applied values, and inspect which rules win in specificity conflicts.
+- **Post-implementation DevTools verification** — after any frontend/CSS change, verify via Chrome DevTools MCP before declaring done. Ask the user to start the dev server, navigate to the page, then use `evaluate_script` to check:
+  - `getComputedStyle()` on modified elements — confirm CSS properties match intent (e.g., `overflow`, `position`, `display`, `justify-self`)
+  - `getBoundingClientRect()` on layout elements — confirm sizing, no unexpected shrinking or overflow
+  - For map/SVG: verify `isFullyVisible` (SVG rect within container rect on all sides)
+  - For grid/flex changes: check parent-child sizing chain (container → wrapper → content)
+  - For interactive changes: programmatically trigger state changes (e.g., click tabs) and verify DOM updates
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 
 ## Git Workflow
@@ -95,8 +101,10 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`:
 - **Node version:** Volta pins node@22 and npm@11.
 - **Server actions:** Most utilities use `'use server'` directive.
 - **Design tokens:** CSS custom properties in `src/styles/tokens.css`, integrated into Tailwind v4 `@theme` block in `src/app/layout.css`. See `/brandkit` for visual reference.
-- **Mobile-first layout:** Phase 6 mobile-first single-column dashboard. Phase 7 added tablet responsive (md: portrait, lg: landscape with map+sidebar). Key components: `BottomNav` (hidden at lg:), `HeaderNav` (page links at lg:), `FactionTabs`, `StatGrid`, `DashboardClient`, `EventCard`.
-- **Component patterns:** Data cards use CSS Grid with right-side accent lines. All border-radius is 0px via `@theme` override. **Grid columns must use `minmax(0, 1fr)` not bare `1fr`** to prevent overflow.
+- **Mobile-first layout:** Phase 6 mobile-first single-column dashboard. Phase 7 added tablet responsive (md: portrait, lg: landscape with map+sidebar). Phase 9 removed snap scroll, added hero section pattern, and replaced `WarSummary` with WON/LOST stat cards in StatGrid. Key components: `BottomNav` (hidden at lg:), `HeaderNav` (page links at lg:), `FactionTabs`, `StatGrid`, `DashboardClient`, `EventCard`, `TimelineSection`.
+- **Dashboard hero section:** At lg:, the dashboard fills viewport height (`height: calc(100dvh - 80px)`) as a hero section. Sidebar (hero text + regions + stats with WON/LOST cards) on the left, galaxy map on the right. Normal page scroll to `TimelineSection` below. A smooth-scroll button ("down arrow event log") provides navigation.
+- **Map sizing:** Map column sized from viewport height via `minmax(0, calc((100dvh - 80px) * 806.93 / 868.81))`. SVG uses `preserveAspectRatio="xMaxYMid meet"` for right-alignment. Galaxy wrapper uses `w-full h-full`.
+- **Component patterns:** Data cards use CSS Grid with right-side accent lines. All border-radius is 0px via `@theme` override. **Grid columns must use `minmax(0, 1fr)` not bare `1fr`** to prevent overflow. Dashboard grid uses `minmax(260px, 1fr) minmax(0, calc(...))` -- sidebar fills remaining space (min 260px), map column sized from viewport height. Single grid definition for all desktop breakpoints (no per-breakpoint sidebar width overrides).
 - **Shared utilities:** `formatNumber` (`src/utils/formatNumber.mjs`) for compact numbers (12.3M, 1.2K). `formatTimeAgo` (`src/utils/formatTimeAgo.mjs`) for relative timestamps ("Updated 3m ago").
 - **Map state:** `computeMapState` (`src/utils/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 come from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — completed events are already in the score.
 - **On-demand season fetching:** `/archives` page derives SeasonSelector from current season number (not DB query). Missing seasons are fetched from the official API on first request via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`).

@@ -25,7 +25,8 @@ export default function Map({ svgRef, map }) {
                 data-name="Layer 2"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox={viewBox}
-                className="max-h-[85vh]"
+                preserveAspectRatio="xMaxYMid meet"
+                className="w-full h-full"
             >
                 <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
