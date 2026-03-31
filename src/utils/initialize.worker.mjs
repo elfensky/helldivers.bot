@@ -66,4 +66,6 @@ export async function initializeWorker() {
             return false;
         }
     }
+
+    return false;
 }

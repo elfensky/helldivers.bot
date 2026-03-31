@@ -9,7 +9,7 @@ export function performanceTime(start) {
  * Used to track overall performance metrics using umami events
  *
  * @param {number} start - The starting time value to calculate elapsed time from.
- * @returns {number} The elapsed time rounded up to the nearest hundred.
+ * @returns {number} The elapsed time rounded up to the nearest 50.
  */
 export function roundedPerformanceTime(start) {
     const elapsed = performanceTime(start);
