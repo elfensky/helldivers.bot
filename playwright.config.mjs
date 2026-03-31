@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
+    globalSetup: './src/__tests__/e2e/global-setup.mjs',
     testDir: './src/__tests__/e2e',
     outputDir: './playwright/test-results',
     timeout: 30_000,
