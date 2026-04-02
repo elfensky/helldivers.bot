@@ -58,8 +58,7 @@
 
 /* === Rail elements — hidden on mobile === */
 
-.rail-circle,
-.rail-dots,
+.rail,
 .rail-separator {
     display: none;
 }
@@ -96,28 +95,36 @@
         gap: 0 1rem;
     }
 
-    /* Row 1, col 1: day marker circle */
-    .rail-circle {
-        display: flex;
-        grid-row: 1;
+    /* Rail: spans both rows in col 1 */
+    .rail {
+        display: block;
+        grid-row: 1 / -1;
         grid-column: 1;
+        position: relative;
+    }
+
+    .rail-circle {
         width: 10px;
         height: 10px;
         border: 2px solid var(--color-ghost);
         border-radius: 50%;
         background: var(--color-surface-0);
-        justify-self: center;
-        align-self: center;
-        position: relative;
+        position: absolute;
+        top: 4px;
+        left: 50%;
+        transform: translateX(-50%);
         z-index: 1;
     }
 
-    /* Row 2, col 1: dots container */
-    .rail-dots {
-        display: block;
-        grid-row: 2;
-        grid-column: 1;
-        position: relative;
+    .rail-circle::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 100%;
+        width: 6px;
+        height: 2px;
+        background: var(--color-ghost);
+        transform: translateY(-50%);
     }
 
     .rail-separator {

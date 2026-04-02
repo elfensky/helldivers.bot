@@ -39,18 +39,8 @@ export default function TimelineSection({ events }) {
                                 <Fragment key={group.date}>
                                     {gapBefore && <div className="rail-separator" aria-hidden="true" />}
                                     <div className="timeline-day">
-                                        <div className="rail-circle" aria-hidden="true" />
-                                        <div className="timeline-day-header">
-                                            <span className="timeline-day-label">
-                                                {group.label}
-                                            </span>
-                                            {(wins > 0 || losses > 0) && (
-                                                <span className="timeline-day-summary">
-                                                    {wins}W / {losses}L
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="rail-dots" aria-hidden="true">
+                                        <div className="rail" aria-hidden="true">
+                                            <div className="rail-circle" />
                                             {chronological.map((event) => {
                                                 const t = event.start_time % 86400;
                                                 const pct = range > 0 ? ((t - minT) / range) * 100 : 0;
@@ -62,6 +52,16 @@ export default function TimelineSection({ events }) {
                                                     />
                                                 );
                                             })}
+                                        </div>
+                                        <div className="timeline-day-header">
+                                            <span className="timeline-day-label">
+                                                {group.label}
+                                            </span>
+                                            {(wins > 0 || losses > 0) && (
+                                                <span className="timeline-day-summary">
+                                                    {wins}W / {losses}L
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="timeline-day-grid">
                                             {group.events.map((event) => (
