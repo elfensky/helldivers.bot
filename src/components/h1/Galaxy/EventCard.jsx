@@ -47,7 +47,7 @@ export function computeFrontier(campaignData, factionMap) {
 const PACE_COLORS = {
     ahead: 'var(--color-success)',
     behind: 'var(--color-danger)',
-    on_track: 'var(--color-primary)',
+    on_track: '#ffffff',
 };
 
 export default function EventCard({

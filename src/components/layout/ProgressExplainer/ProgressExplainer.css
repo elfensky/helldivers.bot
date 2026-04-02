@@ -111,8 +111,8 @@
 }
 
 .progress-badge--on_track {
-    background: rgba(255, 224, 0, 0.15);
-    color: var(--color-primary);
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
 }
 
 .progress-badge--behind {

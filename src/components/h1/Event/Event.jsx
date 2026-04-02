@@ -27,10 +27,16 @@ const TYPE_BG = {
     [EVENT_TYPE.ATTACK]: 'bg-[rgba(0,20,0,0.3)]',
 };
 
+const PACE_COLORS = {
+    ahead: 'var(--color-success)',
+    behind: 'var(--color-danger)',
+    on_track: '#ffffff',
+};
+
 export default function Event({ event, compact = false }) {
     const remaining = event.end_time - Math.floor(Date.now() / 1000);
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
-    const progress = evaluateProgress(event)?.label;
+    const progress = evaluateProgress(event);
     const faction = factions[event.enemy];
 
     const timeText =
@@ -68,7 +74,9 @@ export default function Event({ event, compact = false }) {
                 <div className="flex items-baseline justify-between text-[0.6875rem]">
                     <span className="text-text-muted">{timeText}</span>
                     {!showCompact && progress && (
-                        <span className="text-primary">{progress}</span>
+                        <span style={{ color: PACE_COLORS[progress.status] }}>
+                            {progress.label}
+                        </span>
                     )}
                 </div>
                 {!showCompact && (
