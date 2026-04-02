@@ -85,7 +85,7 @@ export default function RootLayout({ children }) {
                 <Header />
                 <main
                     id="main"
-                    className="flex min-h-screen w-full flex-col pb-[48px] md:pb-0"
+                    className="flex min-h-screen w-full flex-col pb-[48px] md:pt-[80px] md:pb-0"
                 >
                     {children}
                 </main>

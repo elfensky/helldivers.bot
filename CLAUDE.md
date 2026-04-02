@@ -96,6 +96,10 @@ All external data validated with Zod schemas (`src/validators/`) before database
 
 Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` once before committing, not during development.
 
+### Styling
+
+Tailwind-first: use utility classes and theme tokens (`bg-primary`, `border-ghost`, `text-text-muted`, etc.) before reaching for custom CSS. Only create a `.css` file when Tailwind cannot express the style (complex animations, pseudo-element content, multi-selector cascades). If a CSS custom property is used in more than one component, add it to the `@theme` block in `layout.css` so it's available as a utility.
+
 ### Design Tokens
 
 All visual properties use CSS custom properties from `src/styles/tokens.css`, integrated into Tailwind v4 `@theme` block in `src/app/layout.css`. See `/brandkit` for visual reference.
@@ -146,10 +150,7 @@ All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/
 
 ## Specs & Plans
 
-For every phase or feature, create both files in `docs/superpowers/`:
-
-- **Spec** (`specs/{date}-phase-{N}-{name}.md`) — what and why: requirements, design decisions, schema changes, rationale.
-- **Plan** (`plans/{date}-phase-{N}-{name}.md`) — how and in what order: step-by-step implementation with specific files to create/modify.
+For every phase or feature, use the `/superpowers:brainstorming` skill to explore requirements and design, then `/octo:embrace` to execute a full Discovery → Define → Develop → Deliver workflow. These skills generate specs and plans as conversation artifacts — no separate doc files needed.
 
 ## Reference Docs
 

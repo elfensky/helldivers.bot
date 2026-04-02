@@ -9,9 +9,9 @@ export default function Footer() {
         <footer className="footer">
             <div className="footer-inner p-gutters">
                 <div className="footer-brand">
-                    <span className="footer-brand-name">Helldivers Bot</span>
+                    <span className="footer-brand-name">Ministry of Truth</span>
                     <p className="footer-brand-tagline">
-                        The best way to track progress in Helldivers
+                        Super Earth&apos;s #1 source for approved galactic intelligence.
                     </p>
                     <div className="footer-brand-contact">
                         <span>Contact me through Github or via my Portfolio</span>
@@ -130,8 +130,8 @@ export default function Footer() {
             </div>
 
             <div className="footer-separator p-gutters">
-                <span>Helldivers Bot</span>
-                <span>Not affiliated with Arrowhead Game Studios</span>
+                <span>Ministry of Truth</span>
+                <span>Not affiliated with Arrowhead Game Studios or Sony Interactive Entertainment</span>
             </div>
         </footer>
     );

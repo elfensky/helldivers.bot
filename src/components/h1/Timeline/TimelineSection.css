@@ -22,14 +22,14 @@
     flex-direction: column;
 }
 
-/* === Day header (mobile: grey left border as rail segment) === */
+/* === Day header (mobile: grey right accent) === */
 
 .timeline-day-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    border-left: 4px solid var(--color-surface-3);
-    padding: 0.5rem 0 0.25rem 0.75rem;
+    box-shadow: inset -6px 0 0 0 var(--color-ghost);
+    padding: 1rem calc(12px + 6px) 0.25rem 0;
 }
 
 .timeline-day-label {
@@ -40,13 +40,6 @@
     letter-spacing: 0.05em;
     text-transform: uppercase;
     white-space: nowrap;
-}
-
-.timeline-day-header::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
 }
 
 .timeline-day-summary {
@@ -63,13 +56,14 @@
     flex-direction: column;
 }
 
-/* === Desktop rail column — hidden on mobile === */
+/* === Rail elements — hidden on mobile === */
 
-.timeline-day-rail {
+.rail,
+.rail-separator {
     display: none;
 }
 
-/* === Desktop: lg: (1024px+) === */
+/* === Desktop: md: (768px+) === */
 
 @media (min-width: 768px) {
     .timeline-section {
@@ -78,7 +72,7 @@
     }
 
     .timeline-days {
-        gap: 2rem;
+        gap: 1.25rem;
         position: relative;
     }
 
@@ -93,69 +87,113 @@
         background: rgba(255, 255, 255, 0.08);
     }
 
-    /* Each day: rail + content side by side */
+    /* Each day: 2-row grid — circle+header, then dots+cards */
     .timeline-day {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        grid-template-rows: auto 1fr;
+        gap: 0 1rem;
     }
 
-    /* Show desktop rail */
-    .timeline-day-rail {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 18px;
-        flex-shrink: 0;
+    /* Rail: spans both rows in col 1 */
+    .rail {
+        display: block;
+        grid-row: 1 / -1;
+        grid-column: 1;
+        position: relative;
     }
 
     .rail-circle {
-        width: 12px;
-        height: 12px;
-        border: 2px solid rgba(255, 255, 255, 0.35);
+        width: 10px;
+        height: 10px;
+        border: 2px solid var(--color-ghost);
         border-radius: 50%;
         background: var(--color-surface-0);
-        position: relative;
+        position: absolute;
+        top: 4px;
+        left: 50%;
+        transform: translateX(-50%);
         z-index: 1;
-        flex-shrink: 0;
-        margin-top: 3px;
     }
 
-    .rail-block {
+    .rail-circle::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 100%;
         width: 6px;
-        height: 14px;
-        flex-shrink: 0;
-        margin-top: 2px;
+        height: 2px;
+        background: var(--color-ghost);
+        transform: translateY(-50%);
+    }
+
+    .rail-separator {
+        display: block;
+        width: 14px;
+        height: 2px;
+        background: var(--color-ghost);
+        margin-left: calc(8px - 7px);
         position: relative;
         z-index: 1;
     }
 
-    .rail-block--success {
+    .rail-separator + .rail-separator {
+        margin-top: calc(-1.25rem + 4px);
+    }
+
+    .rail-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .rail-dot[data-highlighted] {
+        transform: translateX(-50%) scale(1.75);
+        z-index: 2;
+    }
+
+    .rail-dot--success[data-highlighted] {
+        box-shadow: 0 0 6px 2px var(--color-success);
+    }
+
+    .rail-dot--fail[data-highlighted] {
+        box-shadow: 0 0 6px 2px var(--color-danger);
+    }
+
+    .rail-dot--active[data-highlighted] {
+        box-shadow: 0 0 6px 2px var(--color-primary);
+    }
+
+    .rail-dot--success {
         background: var(--color-success);
     }
 
-    .rail-block--fail {
+    .rail-dot--fail {
         background: var(--color-danger);
     }
 
-    .rail-block--active {
+    .rail-dot--active {
         background: var(--color-primary);
     }
 
-    .rail-connector {
-        flex: 1;
-        min-height: 1rem;
-    }
-
-    /* Desktop: remove mobile border-left rail from header */
+    /* Row 1, col 2: day header */
     .timeline-day-header {
-        border-left: none;
+        grid-row: 1;
+        grid-column: 2;
+        box-shadow: none;
+        flex-direction: row;
         padding: 0 0 0.25rem 0;
     }
 
-    .timeline-day-content {
-        flex: 1;
-        min-width: 0;
+    /* Row 2, col 2: event card grid */
+    .timeline-day-grid {
+        grid-row: 2;
+        grid-column: 2;
     }
 
     /* Desktop: switch to grid layout for cards */

@@ -21,6 +21,7 @@
     --color-faction-bugs: #e8822a;
     --color-faction-cyborgs: #8b2d2d;
     --color-faction-illuminate: #7ec8e3;
+    --color-ghost: rgba(255, 255, 255, 0.15);
 
     /* Typography */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
@@ -47,7 +48,7 @@
 }
 
 .gutters {
-    @apply mx-4 sm:mx-12 md:mx-16 lg:mx-24;
+    @apply mx-auto w-full max-w-[1536px] px-4 sm:px-12 md:px-16 lg:px-24;
 }
 .gutters--left {
     @apply ml-4 sm:ml-12 md:ml-16 lg:ml-24;
@@ -134,11 +135,28 @@ section {
 }
 .card {
     background: var(--color-surface-1);
-    border: 1px solid var(--color-ghost-border);
+    border: 1px solid var(--color-ghost);
 }
 
 p {
     @apply mb-4;
+}
+
+#tooltip {
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 2px solid var(--color-ghost);
+
+    progress {
+        /* Remove default appearance */
+        appearance: none;
+        -webkit-appearance: none;
+        width: 300px;
+        height: 20px;
+        border: none;
+        background-color: var(--color-surface-4);
+        border-radius: 0;
+        overflow: hidden;
+    }
 }
 
 /* BACKGROUND OF PROGRESS */
@@ -160,7 +178,40 @@ progress::-webkit-progress-value {
 }
 
 header {
+    transition: background-color 0.15s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+header.header-glass {
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(8.8px);
-    /* -webkit-backdrop-filter: blur(8.8px); */
+}
+
+@keyframes live-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.2;
+    }
+}
+
+main {
+    background: url('/images/background.webp') no-repeat center center fixed;
+    background-size: cover;
+    position: relative;
+}
+
+main::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(19, 19, 19, 0.85);
+    z-index: 0;
+    pointer-events: none;
+}
+
+main > * {
+    position: relative;
+    z-index: 1;
 }

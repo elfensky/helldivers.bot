@@ -47,7 +47,7 @@ export function computeFrontier(campaignData, factionMap) {
 const PACE_COLORS = {
     ahead: 'var(--color-success)',
     behind: 'var(--color-danger)',
-    on_track: 'var(--color-primary)',
+    on_track: '#ffffff',
 };
 
 export default function EventCard({
@@ -65,7 +65,7 @@ export default function EventCard({
     const safePct = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
 
     return (
-        <div className="sector-card" style={{ '--accent-color': color }}>
+        <div className={'sector-card' + (isEvent ? ' sector-card-event' : '')} style={{ '--accent-color': color }}>
             <div className="sector-card-content">
                 <div className="sector-card-header">
                     <img
@@ -77,16 +77,17 @@ export default function EventCard({
                     <span className="sector-card-label" style={{ color: labelColor }}>
                         {label}
                     </span>
+                    {isEvent && <span className="sector-card-alert">{'\u26A0'}</span>}
+                    {pace && (
+                        <span
+                            className="sector-card-pace"
+                            style={{ color: PACE_COLORS[pace.status] }}
+                        >
+                            {pace.label}
+                        </span>
+                    )}
                 </div>
                 <span className="sector-card-region">{region}</span>
-                {pace && (
-                    <span
-                        className="sector-card-pace"
-                        style={{ color: PACE_COLORS[pace.status] }}
-                    >
-                        {pace.label}
-                    </span>
-                )}
                 <div className="sector-card-bar-wrap">
                     <div
                         className="sector-card-bar"

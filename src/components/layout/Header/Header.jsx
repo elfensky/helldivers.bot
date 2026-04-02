@@ -1,17 +1,18 @@
-import './Header.css';
 //next
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
 //components
 import Navigation from '@/components/layout/Navigation/Navigation';
 
 export default async function Header() {
     return (
-        <header id="header" className="z-50 flex h-[50px] w-full text-white sm:h-[80px]">
-            <div className="p-gutters mx-auto flex w-full max-w-[1920px] items-center justify-between">
+        <header id="header" className="z-50 flex h-[50px] w-full text-white sm:h-[80px] md:fixed md:top-0">
+            <div className="p-gutters mx-auto flex w-full max-w-[1536px] items-center justify-between">
                 <Logo />
                 <Navigation />
             </div>
+            <Script src="/scripts/headerGPU.js" strategy="afterInteractive" />
         </header>
     );
 }

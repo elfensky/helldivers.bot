@@ -52,12 +52,24 @@
     animation: live-blink 1.5s ease-in-out infinite;
 }
 
-@keyframes live-blink {
-    0%,
-    100% {
-        opacity: 1;
+.heartbeat-line {
+    stroke-dasharray: 60;
+    stroke-dashoffset: 0;
+    animation: heartbeat-trace 5s linear 3s infinite;
+}
+
+@keyframes heartbeat-trace {
+    0% {
+        stroke-dashoffset: 0;
     }
-    50% {
-        opacity: 0.2;
+    /* Sweep plays during first 25% (~1.25s) */
+    25% {
+        stroke-dashoffset: 120;
+    }
+    /* Fully visible and idle for the rest */
+    25.1%,
+    100% {
+        stroke-dashoffset: 0;
     }
 }
+

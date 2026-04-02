@@ -1,8 +1,20 @@
+'use client';
+
+import { Fragment, useState } from 'react';
 import './TimelineSection.css';
 import Event from '@/components/h1/Event/Event';
 import { groupEventsByDay } from '@/utils/groupEventsByDay.mjs';
 
+/**
+ * Event log with vertical timeline rail (desktop only).
+ * Groups events by calendar day, renders status-colored dots on a rail
+ * with proportional vertical positioning (top = most recent, bottom = oldest).
+ * Hovering an event card highlights its corresponding rail dot.
+ *
+ * @param {{ events: Array<{ event_id: number, start_time: number, end_time: number, status: string, type: string, enemy: number, region: number, points: number, points_max: number }> }} props
+ */
 export default function TimelineSection({ events }) {
+    const [hoveredEventId, setHoveredEventId] = useState(null);
     const groups = groupEventsByDay(events);
 
     return (
@@ -13,7 +25,7 @@ export default function TimelineSection({ events }) {
                     <p className="timeline-empty">No events recorded yet.</p>
                 ) : (
                     <div className="timeline-days">
-                        {groups.map((group) => {
+                        {groups.map((group, i) => {
                             const wins = group.events.filter(
                                 (e) => e.status === 'success',
                             ).length;
@@ -21,22 +33,39 @@ export default function TimelineSection({ events }) {
                                 (e) => e.status === 'fail',
                             ).length;
 
+                            const dayMs = 86_400_000;
+                            const thisMs = new Date(group.date).getTime();
+                            const prevMs = groups[i - 1] && new Date(groups[i - 1].date).getTime();
+                            const nextMs = groups[i + 1] && new Date(groups[i + 1].date).getTime();
+                            const gapBefore = prevMs != null && prevMs - thisMs > dayMs;
+                            const gapAfter = nextMs != null && thisMs - nextMs > dayMs;
+
+                            // Dot positioning: map time-of-day to vertical %, inverted so top = most recent
+                            const chronological = [...group.events].sort((a, b) => a.start_time - b.start_time);
+                            const times = chronological.map((e) => (e.start_time % 86400));
+                            const minT = Math.min(...times);
+                            const maxT = Math.max(...times);
+                            const range = maxT - minT;
+
                             return (
-                                <div key={group.date} className="timeline-day">
-                                    <div
-                                        className="timeline-day-rail"
-                                        aria-hidden="true"
-                                    >
-                                        <div className="rail-circle" />
-                                        {group.events.map((event) => (
-                                            <div
-                                                key={event.event_id}
-                                                className={`rail-block rail-block--${event.status}`}
-                                            />
-                                        ))}
-                                        <div className="rail-connector" />
-                                    </div>
-                                    <div className="timeline-day-content">
+                                <Fragment key={group.date}>
+                                    {gapBefore && <div className="rail-separator" aria-hidden="true" />}
+                                    <div className="timeline-day">
+                                        <div className="rail" aria-hidden="true">
+                                            <div className="rail-circle" />
+                                            {chronological.map((event) => {
+                                                const t = event.start_time % 86400;
+                                                const pct = range > 0 ? ((maxT - t) / range) * 100 : 0;
+                                                return (
+                                                    <div
+                                                        key={event.event_id}
+                                                        className={`rail-dot rail-dot--${event.status}`}
+                                                        style={{ top: `calc(${pct}% - ${pct * 8 / 100}px)` }}
+                                                        data-highlighted={hoveredEventId === event.event_id ? '' : undefined}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
                                         <div className="timeline-day-header">
                                             <span className="timeline-day-label">
                                                 {group.label}
@@ -53,11 +82,14 @@ export default function TimelineSection({ events }) {
                                                     key={event.event_id}
                                                     event={event}
                                                     compact
+                                                    onMouseEnter={() => setHoveredEventId(event.event_id)}
+                                                    onMouseLeave={() => setHoveredEventId(null)}
                                                 />
                                             ))}
                                         </div>
                                     </div>
-                                </div>
+                                    {gapAfter && <div className="rail-separator" aria-hidden="true" />}
+                                </Fragment>
                             );
                         })}
                     </div>

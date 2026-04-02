@@ -2,7 +2,7 @@
     display: flex;
     width: 100%;
     background: var(--color-surface-1);
-    border: 1px solid var(--color-ghost-border);
+    border: 1px solid var(--color-ghost);
 }
 
 .faction-tab {
