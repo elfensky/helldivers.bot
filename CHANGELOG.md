@@ -1,5 +1,167 @@
 # Changelog
 
+## Unreleased
+
+### Phase 9: Timeline Visual Refinement & Dashboard Polish
+
+#### Features
+
+- Proportional timeline rail: replace block segments with proportional dots, ghost day circles, and gap-aware separators
+- Merge rail into single container with overlapping dots and tick marks
+- Sticky galaxy map on desktop when sidebar overflows
+- Sticky scroll hint with animated arrow on desktop hero layout
+- Right-align timeline day header accent on mobile
+- Show active faction label in Stats heading
+- Rebrand footer to "Ministry of Truth" with full-width accent line
+- Add ghost-border color to Tailwind theme
+- Add ProgressExplainer component with heartbeat animation and recharts dependency
+
+#### Bug Fixes
+
+- Top-align galaxy map by spanning it across alerts row
+- Increase top-padding on timeline day headers for clearer separation
+- Left-align timeline day header text on mobile
+- Inline pace text with due-time on active event cards
+- Rename `--color-ghost-border` to `--color-ghost` for Tailwind v4 compatibility
+- Stretch EventCard to fill grid row height
+- Remove left accent and right ghost-border from event cards
+- Scope background overlay to main element only
+- Migrate Event component to Tailwind with status-based accent colors
+- Move pace indicator inline with event label in EventCard
+- Map attack animation turns black — add glow and alert indicators
+- Update CSP to allow external analytics and error tracking scripts
+- Add HSTS header to close Checkmarx security finding
+
+#### Infrastructure
+
+- Replace Playwright with Vitest smoke tests, update docker-compose for local dev (#202)
+- Consolidate package.json scripts — remove 4 redundant commands (#201)
+- Automate production releases with release-please
+
+#### Code Quality (desloppify)
+
+- Fix server action directives — remove from pipeline, standardize in queries
+- Refactor rebroadcast queries and route validation order
+- Standardize query return shapes across `db/queries/`
+- Standardize auth/error handling in `api.mjs`
+- Fix contract lies in utils — explicit returns, docstrings, error logging
+- Restore module-level `'use server'` on `api.mjs` — required for client imports
+
+#### Chores
+
+- Consolidate CSS files and reintroduce responsive header scroll-hide
+- Replace gutters wrapper with fragment on home page
+- Disable link prefetching, reorganize README security section
+- Self-heal missing migrate image in staging CI
+
+## 0.20.0 (2026-03-31)
+
+### Phase 8: Timeline Visual Redesign
+
+#### Features
+
+- Add TimelineSection with vertical rail and date grouping below dashboard
+- Add WarSummary component with win/loss counts (replaces timeline in sidebar)
+- Add compact variant to Event card for resolved events
+- Add `groupEventsByDay` utility with date labeling
+- Add snap scroll container with TimelineSection below dashboard
+- Refine timeline layout — unified scroll, smart map fit, season events in StatGrid
+- Redesign timeline rail — per-segment mobile, circle+line desktop (#186)
+
+#### Bug Fixes
+
+- Match sidebar-map column gap to page gutters (6rem / 96px)
+- Timeline rail polish — alignment, breakpoints, grid scaling
+
+## 0.19.0 (2026-03-30)
+
+### Phase 7b: Responsive Polish & SEO
+
+#### Features
+
+- Rename `/war` to `/archives` with in-universe SEO copy
+- Add permanent redirect `/war` → `/archives`
+- Add canonical URLs and `og:url` to all pages
+- Add in-universe Super Earth propaganda copy to error and placeholder pages
+- Show FactionTabs icon + text together at sm:+
+- Show FactionTabs icons in sidebar at lg: (#167)
+- Desktop & wide responsive layout (#168)
+
+#### Bug Fixes
+
+- Small phone responsive — faction icons, grid overflow, viewport warning
+- Map invisible on `/war` at md:, move nav switch to md: breakpoint
+- CSS audit — delete global button styles, unify overlays, fix tokens
+- Show header Status/GitHub icons above 250px instead of sm:
+- Hide BottomNav at lg: via unlayered CSS media query
+- Add horizontal and vertical padding to desktop dashboard grid
+- Restore sr-only h1 lost during sidebar restructure (#167)
+
+#### Security
+
+- Fix timing attack vulnerability in password comparison
+
+#### Refactoring
+
+- Simplify responsive overrides after review
+- Extract map callbacks to named functions
+
+## 0.18.0 (2026-03-30)
+
+### Phase 7a: Tablet Responsive & Accessibility
+
+#### Features
+
+- Dashboard sidebar layout at lg: breakpoint (#167)
+- Add header page navigation links at lg: (#167)
+- Galaxy map max-width at md:, reset at lg: (#167)
+- StatGrid 4 columns at md: (#167)
+- Alerts horizontal scroll at md: (#167)
+- Hide BottomNav at lg: breakpoint (#167)
+- Add md: gutter breakpoint and lg:pb-0 on main (#167)
+- Restore SEO content on homepage, expand sitemap, fix noindex gaps (#123)
+
+#### Bug Fixes
+
+- Page-level WCAG accessibility fixes (#152)
+- Semantic HTML improvements for screen readers (#150)
+- Form accessibility — error linking, table headers, avatar alt (#151)
+- Add missing h1 headings across all pages (#149)
+
+#### Chores
+
+- Delete redirect stubs for `/api` and `/docs` pages
+- Delete unused Button component (#169)
+- Clean up api-reference documentation
+
+## 0.17.0 (2026-03-29)
+
+### Phase 6b: Mobile Polish & Documentation
+
+#### Features
+
+- Add interactive data-flow architecture page
+- Refactor `evaluateProgress()` to structured return, fix div-by-zero, surface pace in UI
+- Mobile carousel for WarTimeline — swipeable cards replace range slider
+- Apply brandkit design tokens to all pages
+- Restyle BottomNav — horizontal layout, spacing, font sizes
+- Migrate OG image from static PNG + API route to file convention
+
+#### Bug Fixes
+
+- Add CSP headers to `next.config.mjs` to unblock sign-in page
+- Remove awkward "On track by 0 points" label
+
+#### Refactoring
+
+- Centralize event/status constants and remove prototype code
+
+#### Chores
+
+- Update doc references to wiki, fix Mermaid FK-UK syntax
+- Move loadout builder spec + plan to GitHub issue #162
+- Add grouping and schedule alignment to dependabot config
+
 ## 0.16.0 (2026-03-28)
 
 ### Infrastructure
@@ -138,10 +300,6 @@
 - Implement fluid typography with CSS `clamp()` for responsive text scaling
 - Add ESM `"type": "module"` to `package.json`
 - Add Playwright smoke tests (`npm run test:smoke`)
-
-## x.x.x (YYYY-MM-DD)
-
-- To be copied from RELEASE.md
 
 ## 0.7.4 (2025-12-09)
 
