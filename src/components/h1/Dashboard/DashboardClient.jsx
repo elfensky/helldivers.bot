@@ -10,6 +10,7 @@ import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import { formatTimeAgo } from '@/utils/formatTimeAgo.mjs';
 
 const factionIndices = [0, 1, 2];
+const FACTION_LABELS = { global: 'Global', bugs: 'Bugs', cyborgs: 'Cyborgs', illuminate: 'Illuminate' };
 
 export default function DashboardClient({ data, mapState }) {
     const [faction, setFaction] = useState('global');
@@ -106,7 +107,7 @@ export default function DashboardClient({ data, mapState }) {
                     </ul>
                 </section>
                 <section className="flex flex-col gap-2">
-                    <h2>Stats</h2>
+                    <h2>Stats — {FACTION_LABELS[faction]}</h2>
                     <FactionTabs active={faction} onChange={setFaction} />
                     <StatGrid live={data.live} faction={faction} events={events} />
                 </section>
