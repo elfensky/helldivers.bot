@@ -35,6 +35,7 @@ export default function TimelineSection({ events }) {
                                         aria-hidden="true"
                                     >
                                         {gapBefore && <div className="rail-separator" />}
+                                        <div className="rail-circle" />
                                         {group.events.map((event) => (
                                             <div
                                                 key={event.event_id}
