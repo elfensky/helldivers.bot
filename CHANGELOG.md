@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-### Phase 9: Timeline Visual Refinement & Dashboard Polish
+## 0.22.0 (2026-04-02)
+
+### Phase 9: Dashboard & Timeline Polish
 
 #### Features
 
@@ -31,19 +33,33 @@
 - Migrate Event component to Tailwind with status-based accent colors
 - Move pace indicator inline with event label in EventCard
 - Map attack animation turns black — add glow and alert indicators
-- Update CSP to allow external analytics and error tracking scripts
-- Add HSTS header to close Checkmarx security finding
 - Fix timeline rail dot ordering — invert vertical axis so top = most recent
 
 #### Refactors
 
 - Remove redundant galaxy map hover tooltip component
 
+#### Chores
+
+- Delete AI working docs (plans, specs, debates) — tracked in wiki instead
+- Consolidate CSS files and reintroduce responsive header scroll-hide
+- Replace gutters wrapper with fragment on home page
+
+## 0.21.0 (2026-04-02)
+
+### Infrastructure & Code Quality
+
+#### Security
+
+- Add HSTS header to close Checkmarx security finding
+- Update CSP to allow external analytics and error tracking scripts
+
 #### Infrastructure
 
 - Replace Playwright with Vitest smoke tests, update docker-compose for local dev (#202)
 - Consolidate package.json scripts — remove 4 redundant commands (#201)
 - Automate production releases with release-please
+- Self-heal missing migrate image in staging CI
 
 #### Code Quality (desloppify)
 
@@ -56,11 +72,7 @@
 
 #### Chores
 
-- Delete AI working docs (plans, specs, debates) — tracked in wiki instead
-- Consolidate CSS files and reintroduce responsive header scroll-hide
-- Replace gutters wrapper with fragment on home page
 - Disable link prefetching, reorganize README security section
-- Self-heal missing migrate image in staging CI
 
 ## 0.20.0 (2026-03-31)
 
