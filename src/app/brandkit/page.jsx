@@ -90,9 +90,9 @@ function Palette() {
                     token="--color-outline-variant"
                 />
                 <Swatch
-                    color="var(--color-ghost-border)"
+                    color="var(--color-ghost)"
                     name="Ghost"
-                    token="--color-ghost-border"
+                    token="--color-ghost"
                 />
             </div>
 

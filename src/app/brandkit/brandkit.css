@@ -51,7 +51,7 @@
 
 .bk-rule {
     background: var(--color-surface-1);
-    border: 1px solid var(--color-ghost-border);
+    border: 1px solid var(--color-ghost);
     padding: 0.75rem 1rem;
     display: flex;
     flex-direction: column;
@@ -82,7 +82,7 @@
 }
 
 .bk-swatch {
-    border: 1px solid var(--color-ghost-border);
+    border: 1px solid var(--color-ghost);
 }
 
 .bk-swatch-color {
@@ -119,7 +119,7 @@
     flex: 1;
     min-width: 80px;
     padding: 0.5rem;
-    border: 1px solid var(--color-ghost-border);
+    border: 1px solid var(--color-ghost);
     text-align: center;
     font-size: 0.75rem;
 }
@@ -166,7 +166,7 @@
     margin-top: 1rem;
     padding: 0.75rem;
     background: var(--color-surface-1);
-    border: 1px solid var(--color-ghost-border);
+    border: 1px solid var(--color-ghost);
 }
 
 .bk-font-row > div {
@@ -260,7 +260,7 @@
     display: grid;
     grid-template-columns: 1fr 4px;
     background: var(--color-surface-1);
-    border: 1px solid var(--color-ghost-border);
+    border: 1px solid var(--color-ghost);
     transition: background 0.2s ease;
 }
 

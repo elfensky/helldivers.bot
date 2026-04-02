@@ -98,7 +98,7 @@ Prettier with tailwindcss plugin. No ESLint configured. Run `npm run format` onc
 
 ### Styling
 
-Tailwind-first: use utility classes and theme tokens (`bg-primary`, `border-ghost-border`, `text-text-muted`, etc.) before reaching for custom CSS. Only create a `.css` file when Tailwind cannot express the style (complex animations, pseudo-element content, multi-selector cascades). If a CSS custom property is used in more than one component, add it to the `@theme` block in `layout.css` so it's available as a utility.
+Tailwind-first: use utility classes and theme tokens (`bg-primary`, `border-ghost`, `text-text-muted`, etc.) before reaching for custom CSS. Only create a `.css` file when Tailwind cannot express the style (complex animations, pseudo-element content, multi-selector cascades). If a CSS custom property is used in more than one component, add it to the `@theme` block in `layout.css` so it's available as a utility.
 
 ### Design Tokens
 

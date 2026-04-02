@@ -7,12 +7,12 @@ import { EVENT_TYPE } from '@/enums/events';
 const STATUS_STYLES = {
     success: {
         bg: 'bg-[rgba(0,20,0,0.4)]',
-        border: 'border-ghost-border',
+        border: 'border-ghost',
         accent: 'bg-success',
     },
     fail: {
         bg: 'bg-[rgba(40,0,0,0.5)]',
-        border: 'border-ghost-border',
+        border: 'border-ghost',
         accent: 'bg-danger',
     },
     active: {
@@ -65,10 +65,12 @@ export default function Event({ event, compact = false }) {
                         />
                     )}
                 </div>
-                <div className="text-[0.6875rem] text-text-muted">{timeText}</div>
-                {!showCompact && progress && (
-                    <div className="text-[0.6875rem] text-primary">{progress}</div>
-                )}
+                <div className="flex items-baseline justify-between text-[0.6875rem]">
+                    <span className="text-text-muted">{timeText}</span>
+                    {!showCompact && progress && (
+                        <span className="text-primary">{progress}</span>
+                    )}
+                </div>
                 {!showCompact && (
                     <div className="h-1.5 w-full bg-danger">
                         <div
