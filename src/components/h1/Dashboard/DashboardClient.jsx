@@ -120,7 +120,7 @@ export default function DashboardClient({ data, mapState }) {
                         ?.scrollIntoView({ behavior: 'smooth' })
                 }
             >
-                ↓ event log
+                <span className="hint-arrow">↓</span> event log
             </button>
         </div>
     );
