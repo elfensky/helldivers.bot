@@ -1,16 +1,40 @@
-import './Event.css';
 import factions from '@/enums/factions.mjs';
 import map from '@/enums/map.mjs';
 import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import humanizeDuration from 'humanize-duration';
 import { EVENT_TYPE } from '@/enums/events';
 
+const STATUS_STYLES = {
+    success: {
+        bg: 'bg-[rgba(0,20,0,0.4)]',
+        borderLeft: 'border-l-success',
+        border: 'border-ghost-border',
+        accent: 'bg-success',
+    },
+    fail: {
+        bg: 'bg-[rgba(40,0,0,0.5)]',
+        borderLeft: 'border-l-danger',
+        border: 'border-ghost-border',
+        accent: 'bg-danger',
+    },
+    active: {
+        bg: 'bg-surface-1',
+        borderLeft: 'border-l-primary',
+        border: 'border-primary',
+        accent: 'bg-primary',
+    },
+};
+
+const TYPE_BG = {
+    [EVENT_TYPE.DEFEND]: 'bg-[rgba(40,0,0,0.4)]',
+    [EVENT_TYPE.ATTACK]: 'bg-[rgba(0,20,0,0.3)]',
+};
+
 export default function Event({ event, compact = false }) {
     const remaining = event.end_time - Math.floor(Date.now() / 1000);
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
     const progress = evaluateProgress(event)?.label;
     const faction = factions[event.enemy];
-    const isDefend = event.type === EVENT_TYPE.DEFEND;
 
     const timeText =
         remaining > 0 ?
@@ -24,41 +48,43 @@ export default function Event({ event, compact = false }) {
 
     const isResolved = event.status !== 'active';
     const showCompact = compact && isResolved;
+    const s = STATUS_STYLES[event.status] || STATUS_STYLES.active;
+    const typeBg = TYPE_BG[event.type] || '';
 
     return (
         <article
-            className={`event-card ${isDefend ? 'event-card--defend' : 'event-card--attack'} event-card--${event.status}${showCompact ? ' event-card--compact' : ''}`}
+            className={`grid grid-cols-[1fr_6px] border border-l-4 md:border-l ${s.border} ${s.borderLeft} ${s.bg || typeBg}`}
         >
-            <div className="event-card-content">
-                <div className="event-card-header">
-                    <span className="event-card-meta">
+            <div className={`flex flex-col gap-1 ${showCompact ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}>
+                <div className="flex items-center justify-between">
+                    <span className="font-body text-xs font-bold uppercase text-text">
                         {statusText} {event.type} Event
                     </span>
                     {faction && (
                         <img
                             src={faction.icon}
                             alt={faction.name}
-                            className="event-card-faction-icon"
+                            className="size-5"
                         />
                     )}
                 </div>
-                <div className="event-card-time">{timeText}</div>
+                <div className="text-[0.6875rem] text-text-muted">{timeText}</div>
                 {!showCompact && progress && (
-                    <div className="event-card-progress-text">{progress}</div>
+                    <div className="text-[0.6875rem] text-primary">{progress}</div>
                 )}
                 {!showCompact && (
-                    <div className="event-card-bar-track">
+                    <div className="h-1.5 w-full bg-danger">
                         <div
-                            className="event-card-bar-fill"
+                            className="h-full bg-primary"
                             style={{ width: `${Math.min(100, percent)}%` }}
                         />
                     </div>
                 )}
-                <div className="event-card-points">
+                <div className={`font-mono text-text-muted ${showCompact ? 'text-[0.5rem]' : 'text-[0.5625rem]'}`}>
                     {event.points} / {event.points_max} ({percent}%)
                 </div>
             </div>
-            <div className="event-card-accent" />
+            <div className={s.accent} />
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{
