@@ -73,6 +73,8 @@
     }
 
     .dashboard-map {
+        position: sticky;
+        top: 80px;
         display: flex;
         align-items: flex-start;
         justify-content: end;
