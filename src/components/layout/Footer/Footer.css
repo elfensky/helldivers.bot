@@ -1,7 +1,8 @@
 .footer {
     background: var(--color-surface-1);
     border-top: 2px solid;
-    border-image: linear-gradient(90deg, var(--color-primary) 40%, transparent 40%) 1;
+    border-image: none;
+    border-color: var(--color-primary);
     padding-top: var(--space-12);
 }
 
