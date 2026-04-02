@@ -42,9 +42,9 @@ export default async function HomePage() {
     const mapState = computeMapState(data.live, activeEvents);
 
     return (
-        <div className="gutters">
+        <>
             <DashboardClient data={data} mapState={mapState} />
             <TimelineSection events={data.events} />
-        </div>
+        </>
     );
 }
