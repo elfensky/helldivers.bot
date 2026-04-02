@@ -1,4 +1,3 @@
-import './page.css';
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { computeMapState } from '@/utils/computeMapState.mjs';
@@ -43,7 +42,7 @@ export default async function HomePage() {
     const mapState = computeMapState(data.live, activeEvents);
 
     return (
-        <div className="live-page">
+        <div className="gutters">
             <DashboardClient data={data} mapState={mapState} />
             <TimelineSection events={data.events} />
         </div>
