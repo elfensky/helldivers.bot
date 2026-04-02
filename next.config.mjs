@@ -73,6 +73,10 @@ const nextConfig = {
                         key: 'Referrer-Policy',
                         value: 'strict-origin-when-cross-origin',
                     },
+                    {
+                        key: 'Strict-Transport-Security',
+                        value: 'max-age=94608000; includeSubDomains; preload',
+                    },
                 ],
             },
             {
