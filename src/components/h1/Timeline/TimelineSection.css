@@ -28,7 +28,6 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex-direction: row-reverse;
     box-shadow: inset -6px 0 0 0 var(--color-ghost);
     padding: 0.5rem calc(12px + 6px) 0.25rem 0;
 }
