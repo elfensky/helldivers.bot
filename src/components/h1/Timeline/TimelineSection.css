@@ -29,7 +29,7 @@
     align-items: center;
     gap: 0.5rem;
     box-shadow: inset -6px 0 0 0 var(--color-ghost);
-    padding: 0.5rem calc(12px + 6px) 0.25rem 0;
+    padding: 1rem calc(12px + 6px) 0.25rem 0;
 }
 
 .timeline-day-label {
