@@ -26,7 +26,7 @@
     /* === OUTLINE === */
     --color-outline: #999077;
     --color-outline-variant: #4d4732;
-    --color-ghost-border: rgba(255, 255, 255, 0.15);
+    --color-ghost: rgba(255, 255, 255, 0.15);
 
     /* === FACTION (game-canonical — do not change) === */
     --color-faction-bugs: #e8822a;

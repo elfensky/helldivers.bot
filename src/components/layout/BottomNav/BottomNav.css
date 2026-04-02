@@ -7,7 +7,7 @@
     display: flex;
     height: 48px;
     background: var(--color-surface-1);
-    border-top: 1px solid var(--color-ghost-border);
+    border-top: 1px solid var(--color-ghost);
 }
 
 /* Unlayered CSS beats Tailwind's @layer utilities, so md:hidden won't work.

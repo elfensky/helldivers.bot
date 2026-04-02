@@ -1,6 +1,6 @@
 .event {
     background-color: rgba(0, 0, 0, 0.75);
-    border: 2px solid var(--color-ghost-border);
+    border: 2px solid var(--color-ghost);
 }
 
 .event.success {

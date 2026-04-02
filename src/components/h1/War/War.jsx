@@ -9,7 +9,7 @@ export function WarOutcome({ data }) {
 
     return (
         <div
-            className={`flex flex-1 items-center border-2 border-ghost-border bg-surface-1 px-4 py-2 font-display text-xl font-black uppercase ${outcome === 'victory' ? 'border-primary text-primary' : 'border-danger text-danger'}`}
+            className={`flex flex-1 items-center border-2 border-ghost bg-surface-1 px-4 py-2 font-display text-xl font-black uppercase ${outcome === 'victory' ? 'border-primary text-primary' : 'border-danger text-danger'}`}
         >
             <span className="font-bold">
                 {outcome === 'victory' ? 'Victory' : 'Defeat'}
@@ -45,7 +45,7 @@ function generateGlobalWarStats(statistics) {
     });
 
     return (
-        <article className="flex flex-col gap-1 border border-ghost-border bg-surface-1 p-4">
+        <article className="flex flex-col gap-1 border border-ghost bg-surface-1 p-4">
             <div className="flex items-center justify-start gap-2">
                 <img
                     src={`/icons/faction3.webp`}
@@ -66,7 +66,7 @@ function generateGlobalWarStats(statistics) {
 }
 function generateWarStats(statistic) {
     return (
-        <article key={statistic.enemy} className="flex flex-col gap-1 border border-ghost-border bg-surface-1 p-4">
+        <article key={statistic.enemy} className="flex flex-col gap-1 border border-ghost bg-surface-1 p-4">
             <div className="flex items-center justify-start gap-2">
                 <img
                     src={`/icons/faction${statistic.enemy}.webp`}

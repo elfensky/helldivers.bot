@@ -21,7 +21,7 @@
     --color-faction-bugs: #e8822a;
     --color-faction-cyborgs: #8b2d2d;
     --color-faction-illuminate: #7ec8e3;
-    --color-ghost-border: rgba(255, 255, 255, 0.15);
+    --color-ghost: rgba(255, 255, 255, 0.15);
 
     /* Typography */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
@@ -135,7 +135,7 @@ section {
 }
 .card {
     background: var(--color-surface-1);
-    border: 1px solid var(--color-ghost-border);
+    border: 1px solid var(--color-ghost);
 }
 
 p {
@@ -144,7 +144,7 @@ p {
 
 #tooltip {
     background-color: rgba(0, 0, 0, 0.75);
-    border: 2px solid var(--color-ghost-border);
+    border: 2px solid var(--color-ghost);
 
     progress {
         /* Remove default appearance */
