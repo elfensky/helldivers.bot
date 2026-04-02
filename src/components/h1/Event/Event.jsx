@@ -7,19 +7,16 @@ import { EVENT_TYPE } from '@/enums/events';
 const STATUS_STYLES = {
     success: {
         bg: 'bg-[rgba(0,20,0,0.4)]',
-        borderLeft: 'border-l-success',
         border: 'border-ghost-border',
         accent: 'bg-success',
     },
     fail: {
         bg: 'bg-[rgba(40,0,0,0.5)]',
-        borderLeft: 'border-l-danger',
         border: 'border-ghost-border',
         accent: 'bg-danger',
     },
     active: {
         bg: 'bg-surface-1',
-        borderLeft: 'border-l-primary',
         border: 'border-primary',
         accent: 'bg-primary',
     },
@@ -53,7 +50,7 @@ export default function Event({ event, compact = false }) {
 
     return (
         <article
-            className={`grid grid-cols-[1fr_6px] border border-l-4 md:border-l ${s.border} ${s.borderLeft} ${s.bg || typeBg}`}
+            className={`grid grid-cols-[1fr_6px] border border-r-0 ${s.border} ${s.bg || typeBg}`}
         >
             <div className={`flex flex-col gap-1 ${showCompact ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}>
                 <div className="flex items-center justify-between">
