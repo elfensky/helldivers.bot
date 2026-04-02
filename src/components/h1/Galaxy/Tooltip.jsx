@@ -1,4 +1,3 @@
-import './Tooltip.css';
 import { useState, useEffect } from 'react';
 
 export default function Tooltip({ svgRef, map }) {

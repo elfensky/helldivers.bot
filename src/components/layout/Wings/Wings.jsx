@@ -1,5 +1,3 @@
-import './Wings.css';
-
 export default function Wings({ as = 'h2', children }) {
     const Heading = as;
 

@@ -50,6 +50,15 @@ export default function Map({ svgRef, map }) {
                             <feMergeNode in="SourceGraphic"></feMergeNode>
                         </feMerge>
                     </filter>
+                    <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="6" />
+                        <feFlood floodColor="rgba(255,0,0,0.6)" result="color" />
+                        <feComposite in="color" in2="blur" operator="in" result="redGlow" />
+                        <feMerge>
+                            <feMergeNode in="redGlow" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
                 </defs>
                 {factions.map(({ id, index, paths }) => (
                     <g key={id} id={id}>

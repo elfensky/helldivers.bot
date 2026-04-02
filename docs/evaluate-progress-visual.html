@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>evaluateProgress — Visual Explainer</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --ahead: #3fb950;
+    --on-track: #d29922;
+    --behind: #f85149;
+    --expected: #58a6ff;
+    --buffer: rgba(61,194,80,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 2rem; line-height: 1.6; }
+  h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.9rem; }
+  .grid { display: grid; grid-template-columns: 1fr 320px; gap: 2rem; max-width: 1100px; margin: 0 auto; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; }
+  .controls { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+  .control label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .control input[type=range] { width: 100%; accent-color: var(--expected); }
+  .control .val { font-size: 0.95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .result { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; font-size: 0.85rem; }
+  .result-grid dt { color: var(--muted); }
+  .result-grid dd { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+  .status-badge { display: inline-block; padding: 0.2em 0.7em; border-radius: 4px; font-weight: 700; font-size: 0.85rem; }
+  .status-ahead { background: rgba(63,185,80,0.15); color: var(--ahead); }
+  .status-on_track { background: rgba(210,153,34,0.15); color: var(--on-track); }
+  .status-behind { background: rgba(248,81,73,0.15); color: var(--behind); }
+  .legend-note { font-size: 0.78rem; color: var(--muted); margin-top: 0.5rem; line-height: 1.5; }
+  .formula { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.78rem; line-height: 1.8; color: var(--muted); }
+  .formula strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<h1>evaluateProgress() — Visual Explainer</h1>
+<p class="subtitle">How the ahead / on_track / behind calculation works for Helldivers campaign events</p>
+
+<div class="grid">
+  <div class="chart-wrap">
+    <canvas id="chart"></canvas>
+    <p class="legend-note">
+      <strong style="color:var(--expected)">Blue line</strong> = linear expected schedule &nbsp;
+      <strong style="color:var(--on-track)">Yellow zone</strong> = on_track buffer (0–10% above expected) &nbsp;
+      <strong>Dot</strong> = actual points (<strong style="color:var(--ahead)">green</strong>=ahead, <strong style="color:var(--on-track)">yellow</strong>=on_track, <strong style="color:var(--behind)">red</strong>=behind)
+    </p>
+  </div>
+
+  <div class="controls">
+    <div class="control">
+      <label>Total Duration (hours)</label>
+      <input type="range" id="duration" min="1" max="72" value="24" step="1">
+      <span class="val" id="duration-val">24h</span>
+    </div>
+    <div class="control">
+      <label>Points Max (target)</label>
+      <input type="range" id="pointsMax" min="1000" max="100000" value="50000" step="1000">
+      <span class="val" id="pointsMax-val">50,000</span>
+    </div>
+    <div class="control">
+      <label>Time Elapsed (%)</label>
+      <input type="range" id="elapsed" min="1" max="99" value="50" step="1">
+      <span class="val" id="elapsed-val">50%</span>
+    </div>
+    <div class="control">
+      <label>Actual Points</label>
+      <input type="range" id="actual" min="0" max="100000" value="25000" step="500">
+      <span class="val" id="actual-val">25,000</span>
+    </div>
+
+    <div class="result">
+      <div style="margin-bottom:0.75rem">
+        Status: <span id="badge" class="status-badge">—</span>
+      </div>
+      <dl class="result-grid">
+        <dt>Expected pts</dt><dd id="r-expected">—</dd>
+        <dt>Actual pts</dt><dd id="r-actual">—</dd>
+        <dt>Delta</dt><dd id="r-delta">—</dd>
+        <dt>Delta %</dt><dd id="r-deltaPct">—</dd>
+        <dt>Current rate</dt><dd id="r-curRate">—</dd>
+        <dt>Required rate</dt><dd id="r-reqRate">—</dd>
+      </dl>
+    </div>
+
+    <div class="formula">
+      <strong>expectedRate</strong> = points_max / totalTime<br>
+      <strong>expectedPts</strong> = expectedRate × elapsed<br>
+      <strong>buffer</strong> = expectedPts × 0.10<br><br>
+      if actual &gt; expected + buffer → <strong style="color:var(--ahead)">ahead</strong><br>
+      if actual &lt; expected → <strong style="color:var(--behind)">behind</strong><br>
+      else → <strong style="color:var(--on-track)">on_track</strong>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString('en-US', { maximumFractionDigits: 1 });
+
+const ctx = $('chart').getContext('2d');
+
+// Generate time labels (0% to 100%)
+const STEPS = 100;
+const labels = Array.from({ length: STEPS + 1 }, (_, i) => i);
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: 'Expected (linear)',
+        data: [],
+        borderColor: '#58a6ff',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        order: 2,
+      },
+      {
+        label: 'Buffer ceiling (+10%)',
+        data: [],
+        borderColor: 'rgba(63,185,80,0.3)',
+        borderWidth: 1,
+        borderDash: [4, 4],
+        pointRadius: 0,
+        fill: {
+          target: 0, // fill between this and expected
+          above: 'rgba(210,153,34,0.25)',
+        },
+        order: 3,
+      },
+      {
+        label: 'Actual',
+        data: [],
+        borderColor: '#3fb950',
+        backgroundColor: '#3fb950',
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        borderWidth: 0,
+        showLine: false,
+        order: 1,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    animation: { duration: 0 },
+    interaction: { mode: 'nearest', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: ctx => `${ctx[0].parsed.x}% elapsed`,
+          label: ctx => `${ctx.dataset.label}: ${fmt(ctx.parsed.y)} pts`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'Time elapsed (%)', color: '#8b949e' },
+        ticks: { color: '#8b949e', callback: v => v % 20 === 0 ? v + '%' : '' },
+        grid: { color: '#21262d' },
+      },
+      y: {
+        title: { display: true, text: 'Points', color: '#8b949e' },
+        ticks: { color: '#8b949e', callback: v => v >= 1000 ? (v/1000) + 'k' : v },
+        grid: { color: '#21262d' },
+        beginAtZero: true,
+      },
+    },
+  },
+});
+
+function update() {
+  const duration = +$('duration').value;
+  const pointsMax = +$('pointsMax').value;
+  const elapsedPct = +$('elapsed').value;
+  const actual = Math.min(+$('actual').value, pointsMax);
+
+  // Update display values
+  $('duration-val').textContent = duration + 'h';
+  $('pointsMax-val').textContent = fmt(pointsMax);
+  $('elapsed-val').textContent = elapsedPct + '%';
+  $('actual').max = pointsMax;
+  $('actual-val').textContent = fmt(actual);
+
+  // Compute expected line and buffer
+  const expectedLine = labels.map(pct => (pct / 100) * pointsMax);
+  const bufferLine = expectedLine.map(v => v * 1.1);
+
+  // Actual point — single dot at elapsed position
+  const actualData = labels.map(pct => pct === elapsedPct ? actual : null);
+
+  chart.data.datasets[0].data = expectedLine;
+  chart.data.datasets[1].data = bufferLine;
+  chart.data.datasets[2].data = actualData;
+
+  // Determine status
+  const expectedPts = (elapsedPct / 100) * pointsMax;
+  const buffer = expectedPts * 0.1;
+  let status, color;
+  if (actual > expectedPts + buffer) { status = 'ahead'; color = '#3fb950'; }
+  else if (actual < expectedPts)     { status = 'behind'; color = '#f85149'; }
+  else                               { status = 'on_track'; color = '#d29922'; }
+
+  // Style the dot
+  chart.data.datasets[2].borderColor = color;
+  chart.data.datasets[2].backgroundColor = color;
+  chart.data.datasets[2].pointRadius = labels.map(pct => pct === elapsedPct ? 8 : 0);
+
+  chart.options.scales.y.max = pointsMax;
+  chart.update();
+
+  // Compute rates
+  const totalTimeSec = duration * 3600;
+  const elapsedSec = totalTimeSec * (elapsedPct / 100);
+  const remainingSec = totalTimeSec - elapsedSec;
+  const currentRate = elapsedSec > 0 ? actual / elapsedSec : 0;
+  const remainingPts = pointsMax - actual;
+  const requiredRate = remainingSec > 0 ? remainingPts / remainingSec : Infinity;
+
+  const delta = Math.abs(Math.round(expectedPts - actual));
+  const deltaPct = expectedPts > 0 ? Math.round(((actual - expectedPts) / expectedPts) * 100) : 0;
+
+  // Update results
+  const badge = $('badge');
+  badge.textContent = status.replace('_', ' ');
+  badge.className = 'status-badge status-' + status;
+
+  $('r-expected').textContent = fmt(Math.round(expectedPts));
+  $('r-actual').textContent = fmt(actual);
+  $('r-delta').textContent = (status === 'on_track' ? '±' : status === 'ahead' ? '+' : '−') + fmt(delta);
+  $('r-delta').style.color = color;
+  $('r-deltaPct').textContent = (deltaPct >= 0 ? '+' : '') + deltaPct + '%';
+  $('r-deltaPct').style.color = color;
+  $('r-curRate').textContent = fmt(currentRate) + ' pts/s';
+  $('r-reqRate').textContent = requiredRate === Infinity ? '∞' : fmt(requiredRate) + ' pts/s';
+}
+
+// Bind sliders
+['duration', 'pointsMax', 'elapsed', 'actual'].forEach(id => {
+  $(id).addEventListener('input', update);
+});
+
+update();
+</script>
+</body>
+</html>

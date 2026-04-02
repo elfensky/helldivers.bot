@@ -1,4 +1,3 @@
-import './archives.css';
 import { redirect } from 'next/navigation';
 //db
 import { tryCatch } from '@/utils/tryCatch.mjs';
@@ -32,7 +31,7 @@ export default async function WarHistoryPage({ searchParams }) {
     if (activeError !== null || !activeCampaign) {
         console.error('getCampaign (active) failed:', activeError);
         return (
-            <div className="flex min-h-full w-full flex-col justify-center">
+            <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
                 Unable to load campaign data. Please try again later.
             </div>
         );
@@ -62,7 +61,7 @@ export default async function WarHistoryPage({ searchParams }) {
         if (seedError) {
             console.error('fetchAndSeedSeason failed:', seedError);
             return (
-                <div className="flex min-h-full w-full flex-col justify-center">
+                <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
                     Unable to fetch season {resolvedSeason} from the official API.
                 </div>
             );
@@ -74,7 +73,7 @@ export default async function WarHistoryPage({ searchParams }) {
     if (error !== null) {
         console.error('getCampaign failed:', error);
         return (
-            <div className="flex min-h-full w-full flex-col justify-center">
+            <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
                 Unable to load campaign data. Please try again later.
             </div>
         );
@@ -82,7 +81,7 @@ export default async function WarHistoryPage({ searchParams }) {
 
     if (!data) {
         return (
-            <div className="flex min-h-full w-full flex-col justify-center">
+            <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
                 No data available for season {resolvedSeason}.
             </div>
         );
