@@ -35,48 +35,38 @@
     fill: rgba(126, 200, 227, 0.35);
 }
 
-/* #bugs .in_progress,
-#cyborgs .in_progress,
-#illuminate .in_progress, */
+#bugs .active {
+    fill: rgba(232, 130, 42, 0.35);
+}
+
+#cyborgs .active {
+    fill: rgba(139, 45, 45, 0.35);
+}
+
+#illuminate .active {
+    fill: rgba(126, 200, 227, 0.35);
+}
+
 #bugs .active,
 #cyborgs .active,
 #illuminate .active,
 #superearth .active {
-    /* fill: rgba(255, 213, 0, 0.33); */
-    /* stroke: rgba(255, 0, 0, 0.99); */
-
-    animation: map-pulse-red 3s infinite alternate;
+    stroke: rgba(255, 225, 0, 0.99);
+    animation: map-pulse-red 3s ease-in-out infinite;
 }
 
 @keyframes map-pulse-red {
-    0% {
+    0%,
+    100% {
         stroke: rgba(255, 225, 0, 0.99);
         stroke-width: 2px;
-        fill: red;
+        filter: none;
     }
 
-    10% {
-        stroke: rgba(255, 225, 0, 0.99);
-        stroke-width: 2px;
-    }
-
-    20% {
+    50% {
         stroke: rgba(255, 0, 0, 0.99);
         stroke-width: 4px;
-    }
-
-    25% {
-        stroke: rgba(255, 0, 0, 0.66);
-        stroke-width: 4px;
-    }
-
-    30% {
-        stroke: rgba(255, 0, 0, 0.99);
-        stroke-width: 4px;
-    }
-
-    40% {
-        stroke: rgba(255, 225, 0, 0.99);
-        stroke-width: 2px;
+        fill: rgba(255, 0, 0, 0.35);
+        filter: url(#glow-red);
     }
 }

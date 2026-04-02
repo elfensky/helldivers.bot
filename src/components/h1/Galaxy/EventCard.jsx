@@ -65,7 +65,7 @@ export default function EventCard({
     const safePct = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
 
     return (
-        <div className="sector-card" style={{ '--accent-color': color }}>
+        <div className={'sector-card' + (isEvent ? ' sector-card-event' : '')} style={{ '--accent-color': color }}>
             <div className="sector-card-content">
                 <div className="sector-card-header">
                     <img
@@ -77,6 +77,7 @@ export default function EventCard({
                     <span className="sector-card-label" style={{ color: labelColor }}>
                         {label}
                     </span>
+                    {isEvent && <span className="sector-card-alert">{'\u26A0'}</span>}
                 </div>
                 <span className="sector-card-region">{region}</span>
                 {pace && (
