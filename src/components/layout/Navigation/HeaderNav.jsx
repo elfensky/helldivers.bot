@@ -20,6 +20,7 @@ export default function HeaderNav() {
                     <Link
                         key={href}
                         href={href}
+                        prefetch={false}
                         className={`header-nav-link ${isActive ? 'header-nav-link--active' : ''}`}
                     >
                         {live && <span className="bottom-nav-live">●</span>}

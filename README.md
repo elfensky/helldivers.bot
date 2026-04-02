@@ -128,7 +128,7 @@ docker build -f ./Dockerfile.app -t ghcr.io/elfensky/helldiversbot:local .
 --no-cache --progress=plain
 
 - Use `docker build -t ghcr.io/elfensky/helldiversbot:staging .` to build the image locally for local hardware
-    <!-- - Use `docker build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` -->
+      <!-- - Use `docker build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` -->
 - Use `docker buildx build --platform linux/amd64 -t ghcr.io/elfensky/helldiversbot:staging .` to build the image for standard x86_64 hardware
 - Use `docker compose up` to run the container locally.
 
@@ -157,4 +157,12 @@ Purpose: This command is used to push your current Prisma schema to the database
 Use Case: It’s particularly useful during the development phase when you want to quickly sync your database schema with your Prisma schema without worrying about migration history.
 Caution: It can overwrite data if your schema changes affect existing tables or columns, so it’s best for early-stage development or prototyping.
 
-cx scan create --project-name "helldivers.bot" --branch "develop" --scan-types "sast, sca, iac-security, container-security" --container-images "helldiversbot:local" --containers-local-resolution -s .
+## Security
+
+### SAST, SCA, IAC
+
+cx scan create --project-name "helldivers.bot" --branch "develop" --scan-types "sast, sca, iac-security" -s . --debug
+
+### Containers
+
+cx scan create --project-name "helldivers.bot" --branch "develop" --scan-types "container-security" --containers-local-resolution --container-images "ghcr.io/elfensky/helldiversbot:local" -s . --debug

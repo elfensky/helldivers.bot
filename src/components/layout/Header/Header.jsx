@@ -20,6 +20,7 @@ function Logo() {
     return (
         <Link
             href="/"
+            prefetch={false}
             data-umami-event={'header-home'}
             aria-label="Go to homepage"
             className="z-50 flex flex-row items-center justify-center gap-2 text-[clamp(1.1rem,0.9rem+1vw,1.5rem)] font-bold"
