@@ -204,7 +204,7 @@ main {
 
 main::before {
     content: '';
-    position: fixed;
+    position: absolute;
     inset: 0;
     background: rgba(19, 19, 19, 0.85);
     z-index: 0;
