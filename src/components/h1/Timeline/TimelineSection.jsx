@@ -13,7 +13,7 @@ export default function TimelineSection({ events }) {
                     <p className="timeline-empty">No events recorded yet.</p>
                 ) : (
                     <div className="timeline-days">
-                        {groups.map((group) => {
+                        {groups.map((group, i) => {
                             const wins = group.events.filter(
                                 (e) => e.status === 'success',
                             ).length;
@@ -21,20 +21,27 @@ export default function TimelineSection({ events }) {
                                 (e) => e.status === 'fail',
                             ).length;
 
+                            const dayMs = 86_400_000;
+                            const thisMs = new Date(group.date).getTime();
+                            const prevMs = groups[i - 1] && new Date(groups[i - 1].date).getTime();
+                            const nextMs = groups[i + 1] && new Date(groups[i + 1].date).getTime();
+                            const gapBefore = prevMs != null && prevMs - thisMs > dayMs;
+                            const gapAfter = nextMs != null && thisMs - nextMs > dayMs;
+
                             return (
                                 <div key={group.date} className="timeline-day">
                                     <div
                                         className="timeline-day-rail"
                                         aria-hidden="true"
                                     >
-                                        <div className="rail-circle" />
+                                        {gapBefore && <div className="rail-separator" />}
                                         {group.events.map((event) => (
                                             <div
                                                 key={event.event_id}
-                                                className={`rail-block rail-block--${event.status}`}
+                                                className={`rail-dot rail-dot--${event.status}`}
                                             />
                                         ))}
-                                        <div className="rail-connector" />
+                                        {gapAfter && <div className="rail-separator" />}
                                     </div>
                                     <div className="timeline-day-content">
                                         <div className="timeline-day-header">
