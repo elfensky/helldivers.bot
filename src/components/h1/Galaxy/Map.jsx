@@ -14,13 +14,12 @@ const factions = [
     { id: 'illuminate', index: 2, paths: illuminatePaths },
 ];
 
-export default function Map({ svgRef, map }) {
+export default function Map({ map }) {
     const superearth = 3;
 
     return (
         <div id="map" className="max-h-full w-full">
             <svg
-                ref={svgRef}
                 id="Layer_2"
                 data-name="Layer 2"
                 xmlns="http://www.w3.org/2000/svg"
