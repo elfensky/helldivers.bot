@@ -22,7 +22,7 @@ export async function queryCreateEventSnapshot(season, type, event, time) {
     if (!time) throw new Error('time is missing');
 
     // Skip cross-season events
-    if (event.season !== season) return null;
+    if (event.season !== season) return { ms: 0, query: null, skipped: true };
 
     const { data: record, error } = await tryCatch(
         db.h1_event_snapshot.upsert({

@@ -65,6 +65,7 @@ function Architecture() {
             </p>
             <Link
                 href="/architecture"
+                prefetch={false}
                 className="mt-2 inline-block text-[var(--color-primary)] hover:underline"
             >
                 View data flow diagram &rarr;

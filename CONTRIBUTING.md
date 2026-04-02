@@ -48,12 +48,12 @@ develop ──────●──●──●──●──●──── (s
 
 ## Release Process
 
-1. Ensure `develop` is stable
-2. Open PR from `develop` → `main`
-3. Bump version in `package.json`, update CHANGELOG.md
-4. Merge
-5. Tag `main`: `git tag -a vX.Y.0 -m "Release X.Y.0"` and push
-6. GitHub Actions builds Docker images and creates release
+Releases are automated via [release-please](https://github.com/googleapis/release-please):
+
+1. Merge PRs to `main` using conventional commits (`feat:`, `fix:`, etc.)
+2. release-please automatically creates/updates a Release PR with version bump + changelog
+3. Merge the Release PR when ready to ship
+4. GitHub Actions automatically: creates git tag, GitHub Release, and builds Docker images
 
 ## Hotfix Process
 
@@ -86,7 +86,9 @@ refactor: extract event handler base class
 
 ## CI/CD
 
-| Event                       | Action                                         |
-| --------------------------- | ---------------------------------------------- |
-| Push to `main` or `develop` | Build + deploy staging Docker image            |
-| Tag `v*.*.*`                | Build production Docker image + GitHub Release |
+| Event                       | Action                                                    |
+| --------------------------- | --------------------------------------------------------- |
+| Push to `main` or `develop` | Build + deploy staging Docker image                       |
+| Push to `main`              | release-please creates/updates Release PR                 |
+| Merge Release PR            | Creates git tag + GitHub Release                          |
+| Tag `v*.*.*`                | Build production Docker images (app + migrate)            |

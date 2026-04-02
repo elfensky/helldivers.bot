@@ -8,7 +8,7 @@ import Navigation from '@/components/layout/Navigation/Navigation';
 export default async function Header() {
     return (
         <header id="header" className="z-50 flex h-[50px] w-full text-white sm:h-[80px]">
-            <div className="gutters flex w-full items-center justify-between">
+            <div className="p-gutters mx-auto flex w-full max-w-[1920px] items-center justify-between">
                 <Logo />
                 <Navigation />
             </div>
@@ -20,6 +20,7 @@ function Logo() {
     return (
         <Link
             href="/"
+            prefetch={false}
             data-umami-event={'header-home'}
             aria-label="Go to homepage"
             className="z-50 flex flex-row items-center justify-center gap-2 text-[clamp(1.1rem,0.9rem+1vw,1.5rem)] font-bold"

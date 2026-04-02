@@ -1,4 +1,3 @@
-'use server';
 import { tryCatch } from '@/utils/tryCatch.mjs';
 import { performanceTime } from '@/utils/time';
 import { getSeasonFromStatus } from '@/utils/getSeason';

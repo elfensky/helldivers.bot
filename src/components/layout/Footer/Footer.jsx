@@ -45,22 +45,22 @@ export default function Footer() {
                     <div className="footer-section-label">Features</div>
                     <ul className="footer-links">
                         <li>
-                            <Link href="/" className="footer-link">
+                            <Link href="/" prefetch={false} className="footer-link">
                                 Campaign
                             </Link>
                         </li>
                         <li>
-                            <Link href="/archives" className="footer-link">
+                            <Link href="/archives" prefetch={false} className="footer-link">
                                 Archives
                             </Link>
                         </li>
                         <li>
-                            <Link href="/discord" className="footer-link">
+                            <Link href="/discord" prefetch={false} className="footer-link">
                                 Discord Bot
                             </Link>
                         </li>
                         <li>
-                            <Link href="/api" className="footer-link">
+                            <Link href="/api" prefetch={false} className="footer-link">
                                 API
                             </Link>
                         </li>
