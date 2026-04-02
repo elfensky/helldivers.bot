@@ -8,10 +8,10 @@
         "build": "next build",
         "start": "node .next/standalone/server.js",
         "format": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npx prettier --write .'",
-        "test": "vitest run && playwright test",
+        "test": "vitest run && vitest run --config vitest.smoke.config.mjs",
         "test:unit": "vitest run",
         "test:coverage": "vitest run --coverage",
-        "test:e2e": "playwright test"
+        "test:e2e": "vitest run --config vitest.smoke.config.mjs"
     },
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.4.3",
@@ -31,7 +31,6 @@
         "zod": "^4.3.6"
     },
     "devDependencies": {
-        "@playwright/test": "^1.58.2",
         "@tailwindcss/postcss": "^4.2.2",
         "@testing-library/jest-dom": "^6.9.1",
         "@vitest/coverage-v8": "^4.1.2",
