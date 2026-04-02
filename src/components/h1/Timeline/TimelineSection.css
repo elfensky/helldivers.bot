@@ -56,9 +56,11 @@
     flex-direction: column;
 }
 
-/* === Desktop rail column — hidden on mobile === */
+/* === Rail elements — hidden on mobile === */
 
-.timeline-day-rail {
+.rail-circle,
+.rail-dots,
+.rail-separator {
     display: none;
 }
 
@@ -86,40 +88,45 @@
         background: rgba(255, 255, 255, 0.08);
     }
 
-    /* Each day: rail + content side by side */
+    /* Each day: 2-row grid — circle+header, then dots+cards */
     .timeline-day {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        grid-template-rows: auto 1fr;
+        gap: 0 1rem;
     }
 
-    /* Show desktop rail */
-    .timeline-day-rail {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        width: 18px;
-        flex-shrink: 0;
-        align-self: stretch;
-    }
-
+    /* Row 1, col 1: day marker circle */
     .rail-circle {
+        display: flex;
+        grid-row: 1;
+        grid-column: 1;
         width: 10px;
         height: 10px;
         border: 2px solid var(--color-ghost);
         border-radius: 50%;
         background: var(--color-surface-0);
-        flex-shrink: 0;
+        justify-self: center;
+        align-self: center;
         position: relative;
         z-index: 1;
     }
 
+    /* Row 2, col 1: dots container */
+    .rail-dots {
+        display: block;
+        grid-row: 2;
+        grid-column: 1;
+        position: relative;
+    }
+
     .rail-separator {
+        display: block;
         width: 14px;
         height: 2px;
         background: var(--color-ghost);
-        flex-shrink: 0;
+        margin: 0.5rem 0;
+        margin-left: calc(8px - 7px);
         position: relative;
         z-index: 1;
     }
@@ -128,8 +135,9 @@
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        flex-shrink: 0;
-        position: relative;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
         z-index: 1;
     }
 
@@ -145,15 +153,19 @@
         background: var(--color-primary);
     }
 
+    /* Row 1, col 2: day header */
     .timeline-day-header {
+        grid-row: 1;
+        grid-column: 2;
         box-shadow: none;
         flex-direction: row;
         padding: 0 0 0.25rem 0;
     }
 
-    .timeline-day-content {
-        flex: 1;
-        min-width: 0;
+    /* Row 2, col 2: event card grid */
+    .timeline-day-grid {
+        grid-row: 2;
+        grid-column: 2;
     }
 
     /* Desktop: switch to grid layout for cards */
