@@ -78,16 +78,16 @@ export default function EventCard({
                         {label}
                     </span>
                     {isEvent && <span className="sector-card-alert">{'\u26A0'}</span>}
+                    {pace && (
+                        <span
+                            className="sector-card-pace"
+                            style={{ color: PACE_COLORS[pace.status] }}
+                        >
+                            {pace.label}
+                        </span>
+                    )}
                 </div>
                 <span className="sector-card-region">{region}</span>
-                {pace && (
-                    <span
-                        className="sector-card-pace"
-                        style={{ color: PACE_COLORS[pace.status] }}
-                    >
-                        {pace.label}
-                    </span>
-                )}
                 <div className="sector-card-bar-wrap">
                     <div
                         className="sector-card-bar"
