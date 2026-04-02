@@ -63,7 +63,7 @@
     display: none;
 }
 
-/* === Desktop: lg: (1024px+) === */
+/* === Desktop: md: (768px+) === */
 
 @media (min-width: 768px) {
     .timeline-section {
@@ -149,6 +149,24 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 1;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .rail-dot[data-highlighted] {
+        transform: translateX(-50%) scale(1.75);
+        z-index: 2;
+    }
+
+    .rail-dot--success[data-highlighted] {
+        box-shadow: 0 0 6px 2px var(--color-success);
+    }
+
+    .rail-dot--fail[data-highlighted] {
+        box-shadow: 0 0 6px 2px var(--color-danger);
+    }
+
+    .rail-dot--active[data-highlighted] {
+        box-shadow: 0 0 6px 2px var(--color-primary);
     }
 
     .rail-dot--success {

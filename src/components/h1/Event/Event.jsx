@@ -27,10 +27,22 @@ const TYPE_BG = {
     [EVENT_TYPE.ATTACK]: 'bg-[rgba(0,20,0,0.3)]',
 };
 
-export default function Event({ event, compact = false }) {
+const PACE_COLORS = {
+    ahead: 'var(--color-success)',
+    behind: 'var(--color-danger)',
+    on_track: '#ffffff',
+};
+
+/**
+ * Event card with status-colored accent bar and optional progress display.
+ * Compact mode hides the progress bar for resolved events in the timeline.
+ *
+ * @param {{ event: object, compact?: boolean, onMouseEnter?: () => void, onMouseLeave?: () => void }} props
+ */
+export default function Event({ event, compact = false, onMouseEnter, onMouseLeave }) {
     const remaining = event.end_time - Math.floor(Date.now() / 1000);
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
-    const progress = evaluateProgress(event)?.label;
+    const progress = evaluateProgress(event);
     const faction = factions[event.enemy];
 
     const timeText =
@@ -51,6 +63,8 @@ export default function Event({ event, compact = false }) {
     return (
         <article
             className={`grid grid-cols-[1fr_6px] border border-r-0 ${s.border} ${s.bg || typeBg}`}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
         >
             <div className={`flex flex-col gap-1 ${showCompact ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}>
                 <div className="flex items-center justify-between">
@@ -68,7 +82,9 @@ export default function Event({ event, compact = false }) {
                 <div className="flex items-baseline justify-between text-[0.6875rem]">
                     <span className="text-text-muted">{timeText}</span>
                     {!showCompact && progress && (
-                        <span className="text-primary">{progress}</span>
+                        <span style={{ color: PACE_COLORS[progress.status] }}>
+                            {progress.label}
+                        </span>
                     )}
                 </div>
                 {!showCompact && (

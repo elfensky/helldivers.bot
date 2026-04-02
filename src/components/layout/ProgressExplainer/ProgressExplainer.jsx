@@ -20,13 +20,13 @@ const COLORS = {
     buffer: 'rgba(255, 224, 0, 0.2)',
     bufferStroke: 'rgba(255, 224, 0, 0.35)',
     ahead: 'var(--color-success)',
-    on_track: 'var(--color-primary)',
+    on_track: '#ffffff',
     behind: 'var(--color-danger)',
 };
 
 const STATUS_COLORS = {
     ahead: '#22c55e',
-    on_track: '#ffe000',
+    on_track: '#ffffff',
     behind: '#ff0000',
 };
 

@@ -3,6 +3,12 @@ import factions from '@/enums/factions.mjs';
 import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import humanizeDuration from 'humanize-duration';
 
+const PACE_COLORS = {
+    ahead: 'var(--color-success)',
+    behind: 'var(--color-danger)',
+    on_track: '#ffffff',
+};
+
 export default function Alerts({ data }) {
     const active = data?.events
         ?.filter((e) => e.status === 'active')
@@ -25,7 +31,7 @@ function Alert({ event }) {
     const remaining = event.end_time - Math.floor(Date.now() / 1000);
     const percent = ((event.points / event.points_max) * 100).toFixed(1);
     const faction = factions[event.enemy];
-    const progress = evaluateProgress(event)?.label;
+    const progress = evaluateProgress(event);
     const timeText =
         remaining > 0 ?
             `Due in ${humanizeDuration(remaining * 1000, { largest: 2, round: true })}`
@@ -45,7 +51,14 @@ function Alert({ event }) {
             </div>
             <div className="alert-banner-body">
                 {faction?.name}: {event.points}/{event.points_max} ({percent}%)
-                {progress && ` — ${progress}`}
+                {progress && (
+                    <>
+                        {' — '}
+                        <span style={{ color: PACE_COLORS[progress.status] }}>
+                            {progress.label}
+                        </span>
+                    </>
+                )}
             </div>
             <div className="alert-banner-time">{timeText}</div>
             <div
