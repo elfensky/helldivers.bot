@@ -16,6 +16,7 @@ export default async function Navigation() {
             <HeaderNav />
             <Link
                 href="https://status.helldivers.bot"
+                prefetch={false}
                 data-umami-event="header-status"
                 title="Status"
                 aria-label="Status"
@@ -39,6 +40,7 @@ export default async function Navigation() {
             </Link>
             <Link
                 href="https://github.com/elfensky/helldivers1api"
+                prefetch={false}
                 data-umami-event="header-github"
                 aria-label="GitHub"
                 className="hidden min-[250px]:block"
@@ -79,7 +81,7 @@ async function User({ session }) {
 
     return (
         <div className="flex items-center gap-4">
-            <Link href="/dashboard" data-umami-event="header-dashboard">
+            <Link href="/dashboard" prefetch={false} data-umami-event="header-dashboard">
                 <Image
                     src={avatarUrl}
                     className="rounded-full"

@@ -20,6 +20,7 @@ export default function BottomNav() {
                     <Link
                         key={href}
                         href={href}
+                        prefetch={false}
                         className={`bottom-nav-tab ${isActive ? 'active' : ''}`}
                     >
                         <span
