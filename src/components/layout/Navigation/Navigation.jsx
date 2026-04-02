@@ -29,6 +29,7 @@ export default async function Navigation() {
                 >
                     <circle cx="12" cy="12" r="16" fill="#fff" />
                     <polyline
+                        className="heartbeat-line"
                         points="22 12 18 12 15 21 9 3 6 12 2 12"
                         fill="none"
                         stroke="#000"

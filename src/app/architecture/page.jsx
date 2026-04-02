@@ -1,4 +1,5 @@
 import DataFlowDiagram from '@/components/layout/DataFlowDiagram/DataFlowDiagram';
+import ProgressExplainerLoader from '@/components/layout/ProgressExplainer/ProgressExplainerLoader';
 
 export const metadata = {
     title: 'Architecture | Helldivers Bot',
@@ -24,9 +25,7 @@ export default function ArchitecturePage() {
                     details.
                 </p>
                 <DataFlowDiagram />
-            </section>
 
-            <section className="card w-full p-2 md:p-4">
                 <h2 className="font-[family-name:var(--font-display)]">Key Concepts</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div>
@@ -70,6 +69,18 @@ export default function ArchitecturePage() {
                         </p>
                     </div>
                 </div>
+            </section>
+
+            <section className="card w-full p-2 md:p-4">
+                <h2 className="font-[family-name:var(--font-display)]">
+                    Event Progress Calculation
+                </h2>
+                <p className="text-[var(--color-text-muted)]">
+                    How <code>evaluateProgress()</code> determines whether the
+                    community is ahead, behind, or on track during a campaign event.
+                    Drag the sliders to explore.
+                </p>
+                <ProgressExplainerLoader />
             </section>
         </div>
     );
