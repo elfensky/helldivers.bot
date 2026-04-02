@@ -15,6 +15,8 @@
 - Rebrand footer to "Ministry of Truth" with full-width accent line
 - Add ghost-border color to Tailwind theme
 - Add ProgressExplainer component with heartbeat animation and recharts dependency
+- Color-code evaluateProgress pace text by status (green/white/red)
+- Event card hover highlights corresponding timeline rail dot (glow + scale)
 
 #### Bug Fixes
 
@@ -31,6 +33,11 @@
 - Map attack animation turns black — add glow and alert indicators
 - Update CSP to allow external analytics and error tracking scripts
 - Add HSTS header to close Checkmarx security finding
+- Fix timeline rail dot ordering — invert vertical axis so top = most recent
+
+#### Refactors
+
+- Remove redundant galaxy map hover tooltip component
 
 #### Infrastructure
 
@@ -49,6 +56,7 @@
 
 #### Chores
 
+- Delete AI working docs (plans, specs, debates) — tracked in wiki instead
 - Consolidate CSS files and reintroduce responsive header scroll-hide
 - Replace gutters wrapper with fragment on home page
 - Disable link prefetching, reorganize README security section

@@ -1,9 +1,20 @@
-import { Fragment } from 'react';
+'use client';
+
+import { Fragment, useState } from 'react';
 import './TimelineSection.css';
 import Event from '@/components/h1/Event/Event';
 import { groupEventsByDay } from '@/utils/groupEventsByDay.mjs';
 
+/**
+ * Event log with vertical timeline rail (desktop only).
+ * Groups events by calendar day, renders status-colored dots on a rail
+ * with proportional vertical positioning (top = most recent, bottom = oldest).
+ * Hovering an event card highlights its corresponding rail dot.
+ *
+ * @param {{ events: Array<{ event_id: number, start_time: number, end_time: number, status: string, type: string, enemy: number, region: number, points: number, points_max: number }> }} props
+ */
 export default function TimelineSection({ events }) {
+    const [hoveredEventId, setHoveredEventId] = useState(null);
     const groups = groupEventsByDay(events);
 
     return (
@@ -29,6 +40,7 @@ export default function TimelineSection({ events }) {
                             const gapBefore = prevMs != null && prevMs - thisMs > dayMs;
                             const gapAfter = nextMs != null && thisMs - nextMs > dayMs;
 
+                            // Dot positioning: map time-of-day to vertical %, inverted so top = most recent
                             const chronological = [...group.events].sort((a, b) => a.start_time - b.start_time);
                             const times = chronological.map((e) => (e.start_time % 86400));
                             const minT = Math.min(...times);
@@ -43,12 +55,13 @@ export default function TimelineSection({ events }) {
                                             <div className="rail-circle" />
                                             {chronological.map((event) => {
                                                 const t = event.start_time % 86400;
-                                                const pct = range > 0 ? ((t - minT) / range) * 100 : 0;
+                                                const pct = range > 0 ? ((maxT - t) / range) * 100 : 0;
                                                 return (
                                                     <div
                                                         key={event.event_id}
                                                         className={`rail-dot rail-dot--${event.status}`}
                                                         style={{ top: `calc(${pct}% - ${pct * 8 / 100}px)` }}
+                                                        data-highlighted={hoveredEventId === event.event_id ? '' : undefined}
                                                     />
                                                 );
                                             })}
@@ -69,6 +82,8 @@ export default function TimelineSection({ events }) {
                                                     key={event.event_id}
                                                     event={event}
                                                     compact
+                                                    onMouseEnter={() => setHoveredEventId(event.event_id)}
+                                                    onMouseLeave={() => setHoveredEventId(null)}
                                                 />
                                             ))}
                                         </div>

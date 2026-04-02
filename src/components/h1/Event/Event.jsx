@@ -33,7 +33,13 @@ const PACE_COLORS = {
     on_track: '#ffffff',
 };
 
-export default function Event({ event, compact = false }) {
+/**
+ * Event card with status-colored accent bar and optional progress display.
+ * Compact mode hides the progress bar for resolved events in the timeline.
+ *
+ * @param {{ event: object, compact?: boolean, onMouseEnter?: () => void, onMouseLeave?: () => void }} props
+ */
+export default function Event({ event, compact = false, onMouseEnter, onMouseLeave }) {
     const remaining = event.end_time - Math.floor(Date.now() / 1000);
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
     const progress = evaluateProgress(event);
@@ -57,6 +63,8 @@ export default function Event({ event, compact = false }) {
     return (
         <article
             className={`grid grid-cols-[1fr_6px] border border-r-0 ${s.border} ${s.bg || typeBg}`}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
         >
             <div className={`flex flex-col gap-1 ${showCompact ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}>
                 <div className="flex items-center justify-between">
