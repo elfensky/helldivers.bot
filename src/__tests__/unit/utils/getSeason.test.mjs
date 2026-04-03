@@ -179,7 +179,7 @@ describe('getSeasonFromSnapshot', () => {
             attack_events: [],
         };
         expect(() => getSeasonFromSnapshot(data)).toThrow(
-            'No seasons found in status data',
+            'No seasons found in snapshot data',
         );
     });
 
