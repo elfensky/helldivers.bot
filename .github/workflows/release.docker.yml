@@ -6,7 +6,7 @@ on:
             - 'v*.*.*' # Triggers on version tags like v1.0.0
 
 permissions:
-    contents: read
+    contents: write
     packages: write
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
-                  password: ${{ secrets.ACCESS_TOKEN }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push Docker image
               uses: docker/build-push-action@v7
@@ -56,7 +56,7 @@ jobs:
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
-                  password: ${{ secrets.ACCESS_TOKEN }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push MIGRATE image
               uses: docker/build-push-action@v7
@@ -70,3 +70,33 @@ jobs:
                       ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:latest
                   build-args: |
                       NODE_ENV=production
+
+    github-release:
+        needs: [build-app, build-migrate]
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            - name: Extract changelog for this version
+              id: changelog
+              env:
+                  TAG_NAME: ${{ github.ref_name }}
+              run: |
+                  VERSION="${TAG_NAME#v}"
+                  # Extract the section for this version from CHANGELOG.md
+                  NOTES=$(awk "/^## ${VERSION}[[:space:]]/,/^## [0-9]/" CHANGELOG.md | sed '$ d')
+                  # Remove the version header line itself
+                  NOTES=$(echo "$NOTES" | tail -n +2)
+                  # Write to file to preserve multiline
+                  echo "$NOTES" > /tmp/release-notes.md
+
+            - name: Create GitHub Release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  TAG_NAME: ${{ github.ref_name }}
+              run: |
+                  gh release create "$TAG_NAME" \
+                    --title "$TAG_NAME" \
+                    --notes-file /tmp/release-notes.md

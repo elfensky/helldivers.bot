@@ -58,7 +58,7 @@
 
 - Replace Playwright with Vitest smoke tests, update docker-compose for local dev (#202)
 - Consolidate package.json scripts — remove 4 redundant commands (#201)
-- Automate production releases with release-please
+- Automate production releases with tag-triggered GitHub Releases
 - Self-heal missing migrate image in staging CI
 
 #### Code Quality (desloppify)
