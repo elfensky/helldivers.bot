@@ -6,27 +6,32 @@
 
 ### CI & Infrastructure
 
-- Upgrade from Node 22 to Node 24
+- Upgrade from Node 22 to Node 24 (ships npm 11 natively)
+- Remove npm@11 pin from CI and Dockerfiles — no longer needed
 - Pin GitHub Actions to commit SHAs and upgrade to latest versions
 - Add CI, CodeQL, and dependency review workflows with branch protections
 - Add SonarCloud scan with quality gate to CI workflow
-- Add prisma generate step to CI before build
+- Add Prisma generate step to CI before build
 - Fix duplicate CodeQL trigger on pull_request
-- Fix npm@11 pin in CI — Node 22.x bundles npm 11.x natively
 - Fix pagespeed workflow: push to orphan metrics branch, fix syntax errors
 - Remove commented-out metrics steps referencing METRICS_TOKEN
+- Add .prettierignore for auto-generated openapi.json
+- Set SonarCloud new code baseline to 30 days
 
 ### Tests
 
-- Add 22 unit test files covering utils, queries, routes, and pipeline
-- Add 11 React component tests with jsdom + @testing-library/react
-- Add 6 unit tests for previously untested critical modules
-- Strengthen assertions and close coverage gaps in 5 test files
+- Raise unit test coverage from 66% to 85% (619 tests across 69 files)
+- Add 9 new test files: Footer, Auth, Header, DocsClient, Navigation, Wings, formdata, initializeOpenapi, rebroadcast route
+- Extend utils and umami tests with edge cases and error paths
+- Fix vitest coverage exclusions (.js→.mjs glob mismatch)
+- Suppress console noise in test output via global mocks
 - Align smoke tests with new error schema, use TEST_SERVER_URL
 
 ### Code Quality
 
 - Extract shared helpers to reduce duplication
+- Remove debug console.log from initialize.worker.mjs
+- Simplify Event card and improve timeline date handling
 - Run Prettier
 
 ### Docs
