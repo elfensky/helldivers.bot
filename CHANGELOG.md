@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.22.2 (2026-04-03)
+
+- Include Docker pull commands in GitHub Release notes
+
 ## 0.22.1 (2026-04-03)
 
 ### Release Workflow Fix
