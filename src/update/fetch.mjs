@@ -6,13 +6,33 @@ function getApiURL() {
     return 'https://api.helldiversgame.com/1.0/';
 }
 
+function buildValidatedUrl(baseUrl) {
+    try {
+        const url = new URL(baseUrl);
+        
+        const allowedDomains = ['api.helldiversgame.com'];
+        if (!allowedDomains.includes(url.hostname)) {
+            throw new Error('Invalid host');
+        }
+        
+        if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('Invalid protocol');
+        }
+        
+        return url.href;
+    } catch {
+        throw new Error('Invalid URL');
+    }
+}
+
 async function fetchWithUntrustedCert(url, formData) {
+    const validatedUrl = buildValidatedUrl(url);
     const agent = new https.Agent({
         rejectUnauthorized: false, // disables SSL certificate validation
     });
 
     try {
-        const response = await axios.post(url, formData, {
+        const response = await axios.post(validatedUrl, formData, {
             httpsAgent: agent,
         });
 
