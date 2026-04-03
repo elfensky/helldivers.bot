@@ -78,6 +78,23 @@ vi.mock('@/db/db', () => ({
 // #region Next.js Mocks
 
 /**
+ * Mock Next.js cache utilities (server-side)
+ */
+vi.mock('next/cache', () => ({
+    revalidatePath: vi.fn(),
+    revalidateTag: vi.fn(),
+    unstable_cache: vi.fn((fn) => fn),
+}));
+
+/**
+ * Mock Next.js server utilities — preserves NextResponse, stubs `after`
+ */
+vi.mock('next/server', async (importOriginal) => {
+    const actual = await importOriginal();
+    return { ...actual, after: vi.fn((fn) => fn()) };
+});
+
+/**
  * Mock Next.js App Router navigation
  */
 vi.mock('next/navigation', () => ({
