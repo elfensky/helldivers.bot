@@ -85,12 +85,17 @@ jobs:
                   TAG_NAME: ${{ github.ref_name }}
               run: |
                   VERSION="${TAG_NAME#v}"
-                  # Extract the section for this version from CHANGELOG.md
-                  NOTES=$(awk "/^## ${VERSION}[[:space:]]/,/^## [0-9]/" CHANGELOG.md | sed '$ d')
-                  # Remove the version header line itself
-                  NOTES=$(echo "$NOTES" | tail -n +2)
-                  # Write to file to preserve multiline
-                  echo "$NOTES" > /tmp/release-notes.md
+                  # State-machine awk: find "## <version>" header, collect until next "## " header or EOF
+                  awk -v ver="$VERSION" '
+                    /^## / { if (found) exit; if (index($0, "## " ver) == 1) { found=1; next } }
+                    found { print }
+                  ' CHANGELOG.md > /tmp/release-notes.md
+
+                  # Fail if changelog section is missing or empty
+                  if [ ! -s /tmp/release-notes.md ] || [ -z "$(tr -d '[:space:]' < /tmp/release-notes.md)" ]; then
+                    echo "::warning::No changelog entry found for ${VERSION} — using tag name as release body"
+                    echo "Release ${TAG_NAME}" > /tmp/release-notes.md
+                  fi
 
             - name: Create GitHub Release
               env:
