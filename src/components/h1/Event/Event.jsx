@@ -1,6 +1,5 @@
 import factions from '@/enums/factions.mjs';
 import map from '@/enums/map.mjs';
-import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import humanizeDuration from 'humanize-duration';
 import { EVENT_TYPE } from '@/enums/events';
 
@@ -16,59 +15,37 @@ const STATUS_STYLES = {
         accent: 'bg-danger',
     },
     active: {
-        bg: 'bg-surface-1',
-        border: 'border-primary',
+        bg: 'bg-[rgba(40,35,0,0.4)]',
+        border: 'border-ghost',
         accent: 'bg-primary',
     },
 };
 
-const TYPE_BG = {
-    [EVENT_TYPE.DEFEND]: 'bg-[rgba(40,0,0,0.4)]',
-    [EVENT_TYPE.ATTACK]: 'bg-[rgba(0,20,0,0.3)]',
-};
-
-const PACE_COLORS = {
-    ahead: 'var(--color-success)',
-    behind: 'var(--color-danger)',
-    on_track: '#ffffff',
-};
-
 /**
- * Event card with status-colored accent bar and optional progress display.
- * Compact mode hides the progress bar for resolved events in the timeline.
- *
- * @param {{ event: object, compact?: boolean, onMouseEnter?: () => void, onMouseLeave?: () => void }} props
+ * Event card with status-colored accent bar.
+ * Three types: won (green), lost (red), active (gold).
  */
-export default function Event({ event, compact = false, onMouseEnter, onMouseLeave }) {
-    const remaining = event.end_time - Math.floor(Date.now() / 1000);
+export default function Event({ event, onMouseEnter, onMouseLeave }) {
+    const elapsed = Math.floor(Date.now() / 1000) - event.start_time;
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
-    const progress = evaluateProgress(event);
     const faction = factions[event.enemy];
 
-    const timeText =
-        remaining > 0 ?
-            `Due in ${humanizeDuration(remaining * 1000, { largest: 2, round: true })}`
-        :   `Finished ${humanizeDuration(Math.abs(remaining) * 1000, { largest: 2, round: true })} ago`;
+    const timeText = `Started ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`;
 
     const statusText =
         event.status === 'success' ? 'Won'
         : event.status === 'fail' ? 'Failed'
         : 'Active';
 
-    const isResolved = event.status !== 'active';
-    const showCompact = compact && isResolved;
     const s = STATUS_STYLES[event.status] || STATUS_STYLES.active;
-    const typeBg = TYPE_BG[event.type] || '';
 
     return (
         <article
-            className={`grid grid-cols-[1fr_6px] border border-r-0 ${s.border} ${s.bg || typeBg}`}
+            className={`grid grid-cols-[1fr_6px] border border-r-0 ${s.border} ${s.bg}`}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >
-            <div
-                className={`flex flex-col gap-1 ${showCompact ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}
-            >
+            <div className="flex flex-col gap-1 px-2.5 py-1.5">
                 <div className="flex items-center justify-between">
                     <span className="font-body text-xs font-bold text-text uppercase">
                         {statusText} {event.type} Event
@@ -77,25 +54,8 @@ export default function Event({ event, compact = false, onMouseEnter, onMouseLea
                         <img src={faction.icon} alt={faction.name} className="size-5" />
                     )}
                 </div>
-                <div className="flex items-baseline justify-between text-[0.6875rem]">
-                    <span className="text-text-muted">{timeText}</span>
-                    {!showCompact && progress && (
-                        <span style={{ color: PACE_COLORS[progress.status] }}>
-                            {progress.label}
-                        </span>
-                    )}
-                </div>
-                {!showCompact && (
-                    <div className="h-1.5 w-full bg-danger">
-                        <div
-                            className="h-full bg-primary"
-                            style={{ width: `${Math.min(100, percent)}%` }}
-                        />
-                    </div>
-                )}
-                <div
-                    className={`font-mono text-text-muted ${showCompact ? 'text-[0.5rem]' : 'text-[0.5625rem]'}`}
-                >
+                <span className="text-[0.6875rem] text-text-muted">{timeText}</span>
+                <div className="font-mono text-[0.5rem] text-text-muted">
                     {event.points} / {event.points_max} ({percent}%)
                 </div>
             </div>

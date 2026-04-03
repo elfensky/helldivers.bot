@@ -20,13 +20,20 @@ export function groupEventsByDay(events) {
         groups.get(date).push(event);
     }
 
-    return Array.from(groups.entries())
+    const sorted = Array.from(groups.entries())
         .sort(([a], [b]) => b.localeCompare(a))
         .map(([date, dayEvents]) => ({
             date,
             label: formatDayLabel(date),
             events: dayEvents.sort((a, b) => b.start_time - a.start_time),
         }));
+
+    const today = new Date().toISOString().slice(0, 10);
+    if (sorted.length === 0 || sorted[0].date !== today) {
+        sorted.unshift({ date: today, label: 'TODAY', events: [] });
+    }
+
+    return sorted;
 }
 
 export function formatDayLabel(dateStr) {
