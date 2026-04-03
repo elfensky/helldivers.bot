@@ -10,13 +10,12 @@
 - Remove npm@11 pin from CI and Dockerfiles — no longer needed
 - Pin GitHub Actions to commit SHAs and upgrade to latest versions
 - Add CI, CodeQL, and dependency review workflows with branch protections
-- Add SonarCloud scan with quality gate to CI workflow
+- Remove SonarCloud from CI — replaced by local vitest coverage
 - Add Prisma generate step to CI before build
 - Fix duplicate CodeQL trigger on pull_request
 - Fix pagespeed workflow: push to orphan metrics branch, fix syntax errors
 - Remove commented-out metrics steps referencing METRICS_TOKEN
 - Add .prettierignore for auto-generated openapi.json
-- Set SonarCloud new code baseline to 30 days
 
 ### Tests
 
