@@ -135,15 +135,30 @@ vi.mock('next/image', () => ({
 }));
 
 /**
- * Mock Next.js Link — renders as <a> element
+ * Mock Next.js Link — renders as <a> element, filtering Next.js-specific props
  */
 vi.mock('next/link', () => ({
-    default: vi.fn(({ children, ...props }) => React.createElement('a', props, children)),
+    default: vi.fn(({ children, prefetch, scroll, replace, shallow, ...props }) =>
+        React.createElement('a', props, children),
+    ),
 }));
 
 // #endregion
 
 // #region Global Test Lifecycle
+
+// Suppress console noise from source code during tests (error paths, debug logs).
+// Tests that need to assert console output can use vi.spyOn(console, 'error').
+beforeAll(() => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+});
+
+afterAll(() => {
+    vi.restoreAllMocks();
+});
 
 beforeEach(() => {
     vi.clearAllMocks();
