@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import React from 'react';
 import '@testing-library/jest-dom/vitest';
 
 // #region Auth Mocks
@@ -127,17 +128,17 @@ vi.mock('next/headers', () => ({
 }));
 
 /**
- * Mock Next.js Image — renders as plain <img>
+ * Mock Next.js Image — renders as <img> element
  */
 vi.mock('next/image', () => ({
-    default: vi.fn((props) => props),
+    default: vi.fn((props) => React.createElement('img', props)),
 }));
 
 /**
- * Mock Next.js Link — renders as plain <a>
+ * Mock Next.js Link — renders as <a> element
  */
 vi.mock('next/link', () => ({
-    default: vi.fn((props) => props),
+    default: vi.fn(({ children, ...props }) => React.createElement('a', props, children)),
 }));
 
 // #endregion
