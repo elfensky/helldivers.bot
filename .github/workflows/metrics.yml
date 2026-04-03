@@ -68,7 +68,7 @@ jobs:
 
             # https://github.com/lowlighter/metrics/tree/master/source/plugins/pagespeed
             - name: 'metrics: pagespeed'
-              uses: lowlighter/metrics@latest
+              uses: lowlighter/metrics@65836723097537a54cd8eb90f61839426b4266b6 # latest
               with:
                   token: NOT_NEEDED
                   filename: metrics.plugin.pagespeed.svg
