@@ -85,3 +85,33 @@ describe('umamiTrackEvent', () => {
         expect(body.payload.data).toEqual({ section: 'hero' });
     });
 });
+
+describe('sendUmamiEvent error handling', () => {
+    let originalFetch;
+
+    beforeEach(() => {
+        originalFetch = global.fetch;
+    });
+
+    afterEach(() => {
+        global.fetch = originalFetch;
+        vi.unstubAllEnvs();
+    });
+
+    test('catches and logs fetch errors without throwing', async () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        vi.stubEnv('UMAMI_SITE_URL', 'analytics.example.com');
+        vi.stubEnv('UMAMI_SITE_ID', 'test-id');
+
+        const networkError = new Error('Network failure');
+        global.fetch = vi.fn(() => Promise.reject(networkError));
+
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        // Should not throw despite fetch rejecting
+        await umamiTrackPage('Home', '/');
+
+        expect(consoleSpy).toHaveBeenCalledWith('Error:', networkError);
+        consoleSpy.mockRestore();
+    });
+});

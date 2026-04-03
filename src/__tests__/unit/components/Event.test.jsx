@@ -2,10 +2,6 @@
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-vi.mock('@/utils/evaluateProgress.mjs', () => ({
-    evaluateProgress: vi.fn(() => ({ status: 'ahead', label: 'Ahead by 50 points' })),
-}));
-
 import Event from '@/components/h1/Event/Event';
 
 const NOW = 1700000000;
@@ -42,16 +38,8 @@ describe('Event', () => {
         expect(screen.getByText(/500 \/ 1000/)).toBeInTheDocument();
     });
 
-    test('shows progress bar in non-compact mode', () => {
+    test('does not render a progress bar', () => {
         const { container } = render(<Event event={activeEvent} />);
-        // Progress bar is the div with bg-primary inside bg-danger
-        const bars = container.querySelectorAll('.bg-danger .bg-primary');
-        expect(bars.length).toBeGreaterThan(0);
-    });
-
-    test('hides progress bar in compact mode for resolved events', () => {
-        const resolvedEvent = { ...activeEvent, status: 'success' };
-        const { container } = render(<Event event={resolvedEvent} compact />);
         const bars = container.querySelectorAll('.bg-danger .bg-primary');
         expect(bars.length).toBe(0);
     });
@@ -74,5 +62,19 @@ describe('Event', () => {
         const icon = screen.getByAltText('Bugs');
         expect(icon).toBeInTheDocument();
         expect(icon.getAttribute('src')).toBe('/icons/faction0.webp');
+    });
+
+    test('renders won status with success styling', () => {
+        const wonEvent = { ...activeEvent, status: 'success' };
+        const { container } = render(<Event event={wonEvent} />);
+        expect(screen.getByText('Won defend Event')).toBeInTheDocument();
+        expect(container.querySelector('.bg-success')).toBeInTheDocument();
+    });
+
+    test('renders failed status with danger styling', () => {
+        const failedEvent = { ...activeEvent, status: 'fail' };
+        const { container } = render(<Event event={failedEvent} />);
+        expect(screen.getByText('Failed defend Event')).toBeInTheDocument();
+        expect(container.querySelector('.bg-danger')).toBeInTheDocument();
     });
 });

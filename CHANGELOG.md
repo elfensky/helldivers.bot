@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+## 0.22.3 (2026-04-04)
+
+### CI & Infrastructure
+
+- Upgrade from Node 22 to Node 24
+- Pin GitHub Actions to commit SHAs and upgrade to latest versions
+- Add CI, CodeQL, and dependency review workflows with branch protections
+- Add SonarCloud scan with quality gate to CI workflow
+- Add prisma generate step to CI before build
+- Fix duplicate CodeQL trigger on pull_request
+- Fix npm@11 pin in CI — Node 22.x bundles npm 11.x natively
+- Fix pagespeed workflow: push to orphan metrics branch, fix syntax errors
+- Remove commented-out metrics steps referencing METRICS_TOKEN
+
+### Tests
+
+- Add 22 unit test files covering utils, queries, routes, and pipeline
+- Add 11 React component tests with jsdom + @testing-library/react
+- Add 6 unit tests for previously untested critical modules
+- Strengthen assertions and close coverage gaps in 5 test files
+- Align smoke tests with new error schema, use TEST_SERVER_URL
+
+### Code Quality
+
+- Extract shared helpers to reduce duplication
+- Run Prettier
+
+### Docs
+
+- Explain why Production always builds migrate image (#217)
+- Clarify Prettier pre-commit command and CI check; fix README indent
+
 ## 0.22.2 (2026-04-03)
 
 - Include Docker pull commands in GitHub Release notes

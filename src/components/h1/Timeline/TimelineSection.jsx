@@ -101,7 +101,6 @@ export default function TimelineSection({ events }) {
                                                 <Event
                                                     key={event.event_id}
                                                     event={event}
-                                                    compact
                                                     onMouseEnter={() =>
                                                         setHoveredEventId(event.event_id)
                                                     }
