@@ -41,6 +41,9 @@ jobs:
                   build-args: |
                       NODE_ENV=production
 
+    # Always build migrate in Production — unlike staging, no skip logic here.
+    # Each tag needs a versioned image, releases are infrequent (~$3/yr CI cost),
+    # and a missing migration image causes broken deploys. Not worth optimizing.
     build-migrate:
         runs-on: ubuntu-latest
 
