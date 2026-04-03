@@ -10,7 +10,12 @@ import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import { formatTimeAgo } from '@/utils/formatTimeAgo.mjs';
 
 const factionIndices = [0, 1, 2];
-const FACTION_LABELS = { global: 'Global', bugs: 'Bugs', cyborgs: 'Cyborgs', illuminate: 'Illuminate' };
+const FACTION_LABELS = {
+    global: 'Global',
+    bugs: 'Bugs',
+    cyborgs: 'Cyborgs',
+    illuminate: 'Illuminate',
+};
 
 export default function DashboardClient({ data, mapState }) {
     const [faction, setFaction] = useState('global');
@@ -86,8 +91,7 @@ export default function DashboardClient({ data, mapState }) {
                     <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                         Don&apos;t miss a moment of the action! Follow the
                         Helldivers&apos; campaign progress as they battle the Bugs,
-                        Cyborgs, and Illuminate for peace, liberty, and managed
-                        democracy.
+                        Cyborgs, and Illuminate for peace, liberty, and managed democracy.
                     </p>
                     {timeAgo && (
                         <p

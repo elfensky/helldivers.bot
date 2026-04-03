@@ -149,7 +149,9 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 1;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        transition:
+            transform 0.15s ease,
+            box-shadow 0.15s ease;
     }
 
     .rail-dot[data-highlighted] {

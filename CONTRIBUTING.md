@@ -86,9 +86,9 @@ refactor: extract event handler base class
 
 ## CI/CD
 
-| Event                       | Action                                                    |
-| --------------------------- | --------------------------------------------------------- |
-| Push to `main` or `develop` | Build + deploy staging Docker image                       |
-| Push to `main`              | release-please creates/updates Release PR                 |
-| Merge Release PR            | Creates git tag + GitHub Release                          |
-| Tag `v*.*.*`                | Build production Docker images (app + migrate)            |
+| Event                       | Action                                         |
+| --------------------------- | ---------------------------------------------- |
+| Push to `main` or `develop` | Build + deploy staging Docker image            |
+| Push to `main`              | release-please creates/updates Release PR      |
+| Merge Release PR            | Creates git tag + GitHub Release               |
+| Tag `v*.*.*`                | Build production Docker images (app + migrate) |

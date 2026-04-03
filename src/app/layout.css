@@ -178,7 +178,10 @@ progress::-webkit-progress-value {
 }
 
 header {
-    transition: background-color 0.15s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+    transition:
+        background-color 0.15s ease,
+        box-shadow 0.3s ease,
+        backdrop-filter 0.3s ease;
 }
 
 header.header-glass {

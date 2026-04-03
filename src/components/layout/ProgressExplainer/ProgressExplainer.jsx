@@ -45,9 +45,7 @@ function evaluate(pointsMax, elapsedPct, actual) {
 
     const delta = Math.abs(Math.round(expectedPts - actual));
     const deltaPct =
-        expectedPts > 0
-            ? Math.round(((actual - expectedPts) / expectedPts) * 100)
-            : 0;
+        expectedPts > 0 ? Math.round(((actual - expectedPts) / expectedPts) * 100) : 0;
 
     return { status, expectedPts, delta, deltaPct };
 }
@@ -103,12 +101,13 @@ export default function ProgressExplainer() {
     const remainingSec = totalTimeSec - elapsedSec;
     const currentRate = elapsedSec > 0 ? clampedActual / elapsedSec : 0;
     const remainingPts = pointsMax - clampedActual;
-    const requiredRate =
-        remainingSec > 0 ? remainingPts / remainingSec : Infinity;
+    const requiredRate = remainingSec > 0 ? remainingPts / remainingSec : Infinity;
 
     const dotColor = STATUS_COLORS[status];
     const sign =
-        status === 'on_track' ? '±' : status === 'ahead' ? '+' : '−';
+        status === 'on_track' ? '±'
+        : status === 'ahead' ? '+'
+        : '−';
 
     return (
         <div className="progress-explainer">
@@ -194,8 +193,7 @@ export default function ProgressExplainer() {
                             dataKey="actual"
                             fill={dotColor}
                             isAnimationActive={false}
-                        >
-                        </Scatter>
+                        ></Scatter>
                     </ComposedChart>
                 </ResponsiveContainer>
 
@@ -273,9 +271,7 @@ export default function ProgressExplainer() {
                         value={clampedActual}
                         onChange={(e) => setActual(+e.target.value)}
                     />
-                    <span className="progress-control-val">
-                        {fmt(clampedActual)}
-                    </span>
+                    <span className="progress-control-val">{fmt(clampedActual)}</span>
                 </div>
 
                 <div className="progress-result">
@@ -304,9 +300,9 @@ export default function ProgressExplainer() {
                         <dd>{fmt(currentRate)} pts/s</dd>
                         <dt>Required rate</dt>
                         <dd>
-                            {requiredRate === Infinity
-                                ? '∞'
-                                : `${fmt(requiredRate)} pts/s`}
+                            {requiredRate === Infinity ?
+                                '∞'
+                            :   `${fmt(requiredRate)} pts/s`}
                         </dd>
                     </dl>
                 </div>
@@ -326,9 +322,7 @@ export default function ProgressExplainer() {
                     <strong style={{ color: STATUS_COLORS.behind }}>behind</strong>
                     <br />
                     else →{' '}
-                    <strong style={{ color: STATUS_COLORS.on_track }}>
-                        on_track
-                    </strong>
+                    <strong style={{ color: STATUS_COLORS.on_track }}>on_track</strong>
                 </div>
             </div>
         </div>

@@ -66,17 +66,15 @@ export default function Event({ event, compact = false, onMouseEnter, onMouseLea
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >
-            <div className={`flex flex-col gap-1 ${showCompact ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}>
+            <div
+                className={`flex flex-col gap-1 ${showCompact ? 'px-2.5 py-1.5' : 'px-3 py-2'}`}
+            >
                 <div className="flex items-center justify-between">
-                    <span className="font-body text-xs font-bold uppercase text-text">
+                    <span className="font-body text-xs font-bold text-text uppercase">
                         {statusText} {event.type} Event
                     </span>
                     {faction && (
-                        <img
-                            src={faction.icon}
-                            alt={faction.name}
-                            className="size-5"
-                        />
+                        <img src={faction.icon} alt={faction.name} className="size-5" />
                     )}
                 </div>
                 <div className="flex items-baseline justify-between text-[0.6875rem]">
@@ -95,7 +93,9 @@ export default function Event({ event, compact = false, onMouseEnter, onMouseLea
                         />
                     </div>
                 )}
-                <div className={`font-mono text-text-muted ${showCompact ? 'text-[0.5rem]' : 'text-[0.5625rem]'}`}>
+                <div
+                    className={`font-mono text-text-muted ${showCompact ? 'text-[0.5rem]' : 'text-[0.5625rem]'}`}
+                >
                     {event.points} / {event.points_max} ({percent}%)
                 </div>
             </div>

@@ -1,7 +1,19 @@
+import { vi } from 'vitest';
 import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 
 describe('evaluateProgress', () => {
-    const now = Math.floor(Date.now() / 1000);
+    // Pin Date.now() to avoid flaky timing between test setup and function call
+    const fakeNowMs = 1_700_000_000_000; // arbitrary fixed timestamp
+    const now = Math.floor(fakeNowMs / 1000);
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(fakeNowMs);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
 
     test('returns structured object with "ahead" status when points exceed expected + buffer', () => {
         const event = {

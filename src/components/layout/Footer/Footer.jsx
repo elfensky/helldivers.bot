@@ -50,12 +50,20 @@ export default function Footer() {
                             </Link>
                         </li>
                         <li>
-                            <Link href="/archives" prefetch={false} className="footer-link">
+                            <Link
+                                href="/archives"
+                                prefetch={false}
+                                className="footer-link"
+                            >
                                 Archives
                             </Link>
                         </li>
                         <li>
-                            <Link href="/discord" prefetch={false} className="footer-link">
+                            <Link
+                                href="/discord"
+                                prefetch={false}
+                                className="footer-link"
+                            >
                                 Discord Bot
                             </Link>
                         </li>
@@ -131,7 +139,10 @@ export default function Footer() {
 
             <div className="footer-separator p-gutters">
                 <span>Ministry of Truth</span>
-                <span>Not affiliated with Arrowhead Game Studios or Sony Interactive Entertainment</span>
+                <span>
+                    Not affiliated with Arrowhead Game Studios or Sony Interactive
+                    Entertainment
+                </span>
             </div>
         </footer>
     );

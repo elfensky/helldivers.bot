@@ -21,10 +21,9 @@ export default function TimelineSection({ events }) {
         <section id="event-log" className="timeline-section">
             <div className="timeline-content gutters">
                 <h2 className="timeline-heading">Event Log</h2>
-                {groups.length === 0 ? (
+                {groups.length === 0 ?
                     <p className="timeline-empty">No events recorded yet.</p>
-                ) : (
-                    <div className="timeline-days">
+                :   <div className="timeline-days">
                         {groups.map((group, i) => {
                             const wins = group.events.filter(
                                 (e) => e.status === 'success',
@@ -35,33 +34,54 @@ export default function TimelineSection({ events }) {
 
                             const dayMs = 86_400_000;
                             const thisMs = new Date(group.date).getTime();
-                            const prevMs = groups[i - 1] && new Date(groups[i - 1].date).getTime();
-                            const nextMs = groups[i + 1] && new Date(groups[i + 1].date).getTime();
+                            const prevMs =
+                                groups[i - 1] && new Date(groups[i - 1].date).getTime();
+                            const nextMs =
+                                groups[i + 1] && new Date(groups[i + 1].date).getTime();
                             const gapBefore = prevMs != null && prevMs - thisMs > dayMs;
                             const gapAfter = nextMs != null && thisMs - nextMs > dayMs;
 
                             // Dot positioning: map time-of-day to vertical %, inverted so top = most recent
-                            const chronological = [...group.events].sort((a, b) => a.start_time - b.start_time);
-                            const times = chronological.map((e) => (e.start_time % 86400));
+                            const chronological = [...group.events].sort(
+                                (a, b) => a.start_time - b.start_time,
+                            );
+                            const times = chronological.map((e) => e.start_time % 86400);
                             const minT = Math.min(...times);
                             const maxT = Math.max(...times);
                             const range = maxT - minT;
 
                             return (
                                 <Fragment key={group.date}>
-                                    {gapBefore && <div className="rail-separator" aria-hidden="true" />}
+                                    {gapBefore && (
+                                        <div
+                                            className="rail-separator"
+                                            aria-hidden="true"
+                                        />
+                                    )}
                                     <div className="timeline-day">
                                         <div className="rail" aria-hidden="true">
                                             <div className="rail-circle" />
                                             {chronological.map((event) => {
                                                 const t = event.start_time % 86400;
-                                                const pct = range > 0 ? ((maxT - t) / range) * 100 : 0;
+                                                const pct =
+                                                    range > 0 ?
+                                                        ((maxT - t) / range) * 100
+                                                    :   0;
                                                 return (
                                                     <div
                                                         key={event.event_id}
                                                         className={`rail-dot rail-dot--${event.status}`}
-                                                        style={{ top: `calc(${pct}% - ${pct * 8 / 100}px)` }}
-                                                        data-highlighted={hoveredEventId === event.event_id ? '' : undefined}
+                                                        style={{
+                                                            top: `calc(${pct}% - ${(pct * 8) / 100}px)`,
+                                                        }}
+                                                        data-highlighted={
+                                                            (
+                                                                hoveredEventId ===
+                                                                event.event_id
+                                                            ) ?
+                                                                ''
+                                                            :   undefined
+                                                        }
                                                     />
                                                 );
                                             })}
@@ -82,18 +102,27 @@ export default function TimelineSection({ events }) {
                                                     key={event.event_id}
                                                     event={event}
                                                     compact
-                                                    onMouseEnter={() => setHoveredEventId(event.event_id)}
-                                                    onMouseLeave={() => setHoveredEventId(null)}
+                                                    onMouseEnter={() =>
+                                                        setHoveredEventId(event.event_id)
+                                                    }
+                                                    onMouseLeave={() =>
+                                                        setHoveredEventId(null)
+                                                    }
                                                 />
                                             ))}
                                         </div>
                                     </div>
-                                    {gapAfter && <div className="rail-separator" aria-hidden="true" />}
+                                    {gapAfter && (
+                                        <div
+                                            className="rail-separator"
+                                            aria-hidden="true"
+                                        />
+                                    )}
                                 </Fragment>
                             );
                         })}
                     </div>
-                )}
+                }
             </div>
         </section>
     );

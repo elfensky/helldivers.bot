@@ -21,8 +21,8 @@
         header.style.top = offset + 'px';
 
         // Glass effect: fade out smoothly as we approach the top
-        var fadeEnd = headerHeight;           // glass fully gone at 80px
-        var fadeStart = headerHeight * 3;     // glass starts fading at 240px
+        var fadeEnd = headerHeight; // glass fully gone at 80px
+        var fadeStart = headerHeight * 3; // glass starts fading at 240px
 
         if (scrollTop <= fadeEnd) {
             // In the top zone — fully transparent, no glass
@@ -71,7 +71,10 @@
     function handleBreakpoint(e) {
         if (e.matches) {
             active = true;
-            lastScrollTop = Math.max(0, window.pageYOffset || document.documentElement.scrollTop);
+            lastScrollTop = Math.max(
+                0,
+                window.pageYOffset || document.documentElement.scrollTop,
+            );
             offset = 0;
         } else {
             active = false;

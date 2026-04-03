@@ -13,7 +13,11 @@ export default function NotFound() {
                 This area has been classified by Super Earth High Command. It either never
                 existed, or has been redacted for your safety.
             </p>
-            <Link href="/" prefetch={false} className="text-[var(--color-primary)] hover:underline">
+            <Link
+                href="/"
+                prefetch={false}
+                className="text-[var(--color-primary)] hover:underline"
+            >
                 Return to Managed Democracy →
             </Link>
         </div>
