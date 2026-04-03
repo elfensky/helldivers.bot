@@ -97,6 +97,20 @@ jobs:
                     echo "Release ${TAG_NAME}" > /tmp/release-notes.md
                   fi
 
+                  # Append Docker image references
+                  OWNER=$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+                  {
+                    echo ""
+                    echo "---"
+                    echo ""
+                    echo "### Docker Images"
+                    echo ""
+                    echo '```'
+                    echo "docker pull ghcr.io/${OWNER}/helldiversbot:${TAG_NAME}"
+                    echo "docker pull ghcr.io/${OWNER}/helldiversbot-migrate:${TAG_NAME}"
+                    echo '```'
+                  } >> /tmp/release-notes.md
+
             - name: Create GitHub Release
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
