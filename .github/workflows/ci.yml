@@ -26,9 +26,6 @@ jobs:
                   node-version-file: '.node-version'
                   cache: 'npm'
 
-            - name: Pin npm version
-              run: npm install -g npm@11
-
             - name: Install dependencies
               run: npm ci
 
@@ -62,9 +59,6 @@ jobs:
               with:
                   node-version-file: '.node-version'
                   cache: 'npm'
-
-            - name: Pin npm version
-              run: npm install -g npm@11
 
             - name: Install dependencies
               run: npm ci

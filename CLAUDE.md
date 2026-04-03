@@ -45,14 +45,14 @@ After any frontend/CSS change, verify via DevTools before declaring done:
 | Branch            | Purpose              | Deploys to            | Protected     |
 | ----------------- | -------------------- | --------------------- | ------------- |
 | `main`            | Production releases  | Production (via tags) | Yes — PR only |
-| `develop`         | Integration/staging  | Staging (auto)        | Yes — PR only |
+| `develop`         | Integration/staging  | Staging (auto)        | No            |
 | `feature/<desc>`  | New functionality    | —                     | No            |
 | `bugfix/<desc>`   | Non-urgent fixes     | —                     | No            |
 | `hotfix/<semver>` | Emergency prod fixes | —                     | No            |
 
 **Rules:**
 
-1. **Create feature/bugfix branches from `develop`**, merge back to `develop` via PR
+1. **Create feature/bugfix branches from `develop`**, merge back to `develop` via PR. Bugfix and chore branches can be pushed directly to `develop`; features require a PR.
 2. **Release process:** Merge `develop` → `main` via PR → tag `vX.Y.0` on main
 3. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
 4. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
