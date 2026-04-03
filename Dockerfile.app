@@ -1,9 +1,7 @@
 # LOCAL BUILD: docker build -f ./Dockerfile.app -t ghcr.io/elfensky/helldiversbot:staging .
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 # Install tini to avoid zombie processes
 RUN apk add --no-cache tini
-# upgrade npm to a specific version
-RUN npm i -g npm@11.7.0
 
 #region deps
 # Install dependencies only when needed

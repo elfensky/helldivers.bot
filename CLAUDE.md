@@ -118,7 +118,7 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`, in
 - **Auth:** NextAuth.js v5 with database sessions (not JWT). Discord + GitHub OAuth.
 - **React Compiler** enabled experimentally in `next.config.mjs`.
 - **Error tracking:** Sentry SDK configured for self-hosted Bugsink (`tracesSampleRate: 0`, no replays/logs).
-- **Node version:** mise pins node@22 and npm@11.
+- **Node version:** mise pins node@24 (ships with npm 11 natively).
 - **Server actions:** Most utilities use `'use server'` directive.
 - **Shared utilities:** `formatNumber` (`src/utils/formatNumber.mjs`) for compact numbers (12.3M, 1.2K). `formatTimeAgo` (`src/utils/formatTimeAgo.mjs`) for relative timestamps.
 - **Map state:** `computeMapState` (`src/utils/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — completed events are already in the score.
