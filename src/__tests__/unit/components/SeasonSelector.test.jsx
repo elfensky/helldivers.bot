@@ -26,9 +26,7 @@ describe('SeasonSelector', () => {
     });
 
     test('returns null when seasons is empty', () => {
-        const { container } = render(
-            <SeasonSelector seasons={[]} currentSeason={1} />,
-        );
+        const { container } = render(<SeasonSelector seasons={[]} currentSeason={1} />);
         expect(container.innerHTML).toBe('');
     });
 

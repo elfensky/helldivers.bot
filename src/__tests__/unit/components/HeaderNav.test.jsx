@@ -52,10 +52,7 @@ describe('HeaderNav', () => {
 
     test('links have correct href attributes', () => {
         render(<HeaderNav />);
-        expect(screen.getByRole('link', { name: /Live/i })).toHaveAttribute(
-            'href',
-            '/',
-        );
+        expect(screen.getByRole('link', { name: /Live/i })).toHaveAttribute('href', '/');
         expect(screen.getByRole('link', { name: /Archives/i })).toHaveAttribute(
             'href',
             '/archives',

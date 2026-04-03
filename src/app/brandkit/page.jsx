@@ -89,11 +89,7 @@ function Palette() {
                     name="Outline Var"
                     token="--color-outline-variant"
                 />
-                <Swatch
-                    color="var(--color-ghost)"
-                    name="Ghost"
-                    token="--color-ghost"
-                />
+                <Swatch color="var(--color-ghost)" name="Ghost" token="--color-ghost" />
             </div>
 
             <h3>Surfaces</h3>

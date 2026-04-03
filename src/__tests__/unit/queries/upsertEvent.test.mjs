@@ -23,11 +23,15 @@ describe('queryUpsertEvent', () => {
     });
 
     test('throws when type is missing', async () => {
-        await expect(queryUpsertEvent(5, null, mockEvent)).rejects.toThrow('type is missing');
+        await expect(queryUpsertEvent(5, null, mockEvent)).rejects.toThrow(
+            'type is missing',
+        );
     });
 
     test('throws when event is missing', async () => {
-        await expect(queryUpsertEvent(5, 'defend', null)).rejects.toThrow('event is missing');
+        await expect(queryUpsertEvent(5, 'defend', null)).rejects.toThrow(
+            'event is missing',
+        );
     });
 
     test('returns skipped when event season differs from provided season', async () => {
@@ -70,7 +74,9 @@ describe('queryUpsertEvent', () => {
     });
 
     test('propagates database errors', async () => {
-        vi.mocked(db.h1_event.upsert).mockRejectedValue(new Error('unique constraint violated'));
+        vi.mocked(db.h1_event.upsert).mockRejectedValue(
+            new Error('unique constraint violated'),
+        );
 
         await expect(queryUpsertEvent(5, 'defend', mockEvent)).rejects.toThrow(
             'unique constraint violated',

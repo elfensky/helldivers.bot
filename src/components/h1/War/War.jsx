@@ -66,7 +66,10 @@ function generateGlobalWarStats(statistics) {
 }
 function generateWarStats(statistic) {
     return (
-        <article key={statistic.enemy} className="flex flex-col gap-1 border border-ghost bg-surface-1 p-4">
+        <article
+            key={statistic.enemy}
+            className="flex flex-col gap-1 border border-ghost bg-surface-1 p-4"
+        >
             <div className="flex items-center justify-start gap-2">
                 <img
                     src={`/icons/faction${statistic.enemy}.webp`}

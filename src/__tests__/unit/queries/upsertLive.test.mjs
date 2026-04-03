@@ -65,7 +65,13 @@ describe('queryUpsertLive', () => {
         const mockFactionMap = { sectors: [1] };
         vi.mocked(db.h1_live.upsert).mockResolvedValue(mockRecord);
 
-        const result = await queryUpsertLive(5, 1, mockCampaign, mockStats, mockFactionMap);
+        const result = await queryUpsertLive(
+            5,
+            1,
+            mockCampaign,
+            mockStats,
+            mockFactionMap,
+        );
 
         const expectedFields = {
             points: mockCampaign.points,

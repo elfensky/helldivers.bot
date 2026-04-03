@@ -209,7 +209,10 @@ describe('fetchAndSeedSeason', () => {
         vi.mocked(fetchSeason).mockResolvedValue({
             ...mockSeasonData,
             defend_events: [mockDefendEvent, wrongSeasonEvent],
-            attack_events: [mockAttackEvent, { ...mockAttackEvent, season: 99, event_id: 99 }],
+            attack_events: [
+                mockAttackEvent,
+                { ...mockAttackEvent, season: 99, event_id: 99 },
+            ],
         });
 
         await fetchAndSeedSeason(5);

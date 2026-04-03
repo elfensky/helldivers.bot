@@ -25,8 +25,6 @@ describe('getGravatarUrl', () => {
 
     test('URL has correct format', () => {
         const url = getGravatarUrl('user@domain.org');
-        expect(url).toMatch(
-            /^https:\/\/www\.gravatar\.com\/avatar\/[a-f0-9]{32}\?s=64$/,
-        );
+        expect(url).toMatch(/^https:\/\/www\.gravatar\.com\/avatar\/[a-f0-9]{32}\?s=64$/);
     });
 });

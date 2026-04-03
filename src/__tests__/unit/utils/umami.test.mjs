@@ -6,7 +6,9 @@ describe('umamiTrackPage', () => {
 
     beforeEach(() => {
         originalFetch = global.fetch;
-        global.fetch = vi.fn(() => Promise.resolve({ text: () => Promise.resolve('ok') }));
+        global.fetch = vi.fn(() =>
+            Promise.resolve({ text: () => Promise.resolve('ok') }),
+        );
     });
 
     afterEach(() => {
@@ -46,7 +48,9 @@ describe('umamiTrackEvent', () => {
 
     beforeEach(() => {
         originalFetch = global.fetch;
-        global.fetch = vi.fn(() => Promise.resolve({ text: () => Promise.resolve('ok') }));
+        global.fetch = vi.fn(() =>
+            Promise.resolve({ text: () => Promise.resolve('ok') }),
+        );
     });
 
     afterEach(() => {

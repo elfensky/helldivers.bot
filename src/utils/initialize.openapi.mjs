@@ -22,7 +22,10 @@ async function generateOpenApiSpec() {
             JSON.parse(file);
             return true;
         } catch (error) {
-            console.error('generateOpenApiSpec: failed to parse generated OpenAPI spec', error.message);
+            console.error(
+                'generateOpenApiSpec: failed to parse generated OpenAPI spec',
+                error.message,
+            );
             return false;
         }
     } else {
@@ -51,7 +54,10 @@ async function checkOpenApiSpec() {
             JSON.parse(file);
             return true;
         } catch (error) {
-            console.error('checkOpenApiSpec: invalid JSON in OpenAPI spec', error.message);
+            console.error(
+                'checkOpenApiSpec: invalid JSON in OpenAPI spec',
+                error.message,
+            );
             return false;
         }
     } else {

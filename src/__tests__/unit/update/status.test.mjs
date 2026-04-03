@@ -14,7 +14,9 @@ vi.mock('@/db/queries/upsertIntroductionOrder', () => ({
     queryUpsertIntroductionOrder: vi.fn(),
 }));
 vi.mock('@/db/queries/upsertPointsMax', () => ({ queryUpsertPointsMax: vi.fn() }));
-vi.mock('@/db/queries/createLiveSnapshots', () => ({ queryCreateLiveSnapshots: vi.fn() }));
+vi.mock('@/db/queries/createLiveSnapshots', () => ({
+    queryCreateLiveSnapshots: vi.fn(),
+}));
 vi.mock('@/db/queries/createEventSnapshots', () => ({
     queryCreateEventSnapshot: vi.fn(),
 }));

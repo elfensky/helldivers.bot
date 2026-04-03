@@ -6,9 +6,9 @@ const validEvent = { season: 5, event_id: 42, points: 100, points_max: 500 };
 
 describe('queryCreateEventSnapshot', () => {
     test('throws when season is missing', async () => {
-        await expect(queryCreateEventSnapshot(null, 'defend', validEvent, 1000)).rejects.toThrow(
-            'season is missing',
-        );
+        await expect(
+            queryCreateEventSnapshot(null, 'defend', validEvent, 1000),
+        ).rejects.toThrow('season is missing');
     });
 
     test('throws when type is missing', async () => {
@@ -24,15 +24,20 @@ describe('queryCreateEventSnapshot', () => {
     });
 
     test('throws when time is missing', async () => {
-        await expect(queryCreateEventSnapshot(5, 'defend', validEvent, null)).rejects.toThrow(
-            'time is missing',
-        );
+        await expect(
+            queryCreateEventSnapshot(5, 'defend', validEvent, null),
+        ).rejects.toThrow('time is missing');
     });
 
     test('returns skipped result for cross-season events', async () => {
         const crossSeasonEvent = { season: 3, event_id: 10, points: 50, points_max: 200 };
 
-        const result = await queryCreateEventSnapshot(5, 'attack', crossSeasonEvent, 1000);
+        const result = await queryCreateEventSnapshot(
+            5,
+            'attack',
+            crossSeasonEvent,
+            1000,
+        );
 
         expect(result.skipped).toBe(true);
         expect(result.query).toBeNull();
@@ -40,7 +45,15 @@ describe('queryCreateEventSnapshot', () => {
     });
 
     test('upserts event snapshot and returns result', async () => {
-        const mockRecord = { id: 1, season: 5, type: 'defend', event_id: 42, time: 1000, points: 100, points_max: 500 };
+        const mockRecord = {
+            id: 1,
+            season: 5,
+            type: 'defend',
+            event_id: 42,
+            time: 1000,
+            points: 100,
+            points_max: 500,
+        };
         vi.mocked(db.h1_event_snapshot.upsert).mockResolvedValue(mockRecord);
 
         const result = await queryCreateEventSnapshot(5, 'defend', validEvent, 1000);
@@ -70,8 +83,8 @@ describe('queryCreateEventSnapshot', () => {
         const dbError = new Error('Unique constraint violation');
         vi.mocked(db.h1_event_snapshot.upsert).mockRejectedValue(dbError);
 
-        await expect(queryCreateEventSnapshot(5, 'defend', validEvent, 1000)).rejects.toThrow(
-            'Unique constraint violation',
-        );
+        await expect(
+            queryCreateEventSnapshot(5, 'defend', validEvent, 1000),
+        ).rejects.toThrow('Unique constraint violation');
     });
 });

@@ -154,7 +154,10 @@ describe('updateSeason', () => {
         expect(getSeasonFromSnapshot).toHaveBeenCalledWith(mockFetchedData);
 
         // 4. rebroadcast
-        expect(queryUpsertRebroadcastSeason).toHaveBeenCalledWith(SEASON, mockFetchedData);
+        expect(queryUpsertRebroadcastSeason).toHaveBeenCalledWith(
+            SEASON,
+            mockFetchedData,
+        );
 
         // 5.1 create season (first call with false)
         expect(queryUpsertSeason).toHaveBeenCalledWith(SEASON, false);
@@ -164,8 +167,14 @@ describe('updateSeason', () => {
             SEASON,
             mockFetchedData.introduction_order,
         );
-        expect(queryUpsertPointsMax).toHaveBeenCalledWith(SEASON, mockFetchedData.points_max);
-        expect(queryUpsertSnapshots).toHaveBeenCalledWith(SEASON, mockFetchedData.snapshots);
+        expect(queryUpsertPointsMax).toHaveBeenCalledWith(
+            SEASON,
+            mockFetchedData.points_max,
+        );
+        expect(queryUpsertSnapshots).toHaveBeenCalledWith(
+            SEASON,
+            mockFetchedData.snapshots,
+        );
 
         // 5.5 defend events
         expect(queryUpsertEvent).toHaveBeenCalledWith(SEASON, 'defend', {

@@ -3,7 +3,9 @@ import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 vi.mock('recharts', () => ({
-    ComposedChart: vi.fn(({ children }) => <div data-testid="composed-chart">{children}</div>),
+    ComposedChart: vi.fn(({ children }) => (
+        <div data-testid="composed-chart">{children}</div>
+    )),
     Area: vi.fn(() => null),
     Line: vi.fn(() => null),
     Scatter: vi.fn(() => null),
@@ -11,7 +13,9 @@ vi.mock('recharts', () => ({
     YAxis: vi.fn(() => null),
     CartesianGrid: vi.fn(() => null),
     Tooltip: vi.fn(() => null),
-    ResponsiveContainer: vi.fn(({ children }) => <div data-testid="responsive-container">{children}</div>),
+    ResponsiveContainer: vi.fn(({ children }) => (
+        <div data-testid="responsive-container">{children}</div>
+    )),
     ReferenceLine: vi.fn(() => null),
 }));
 

@@ -46,9 +46,7 @@ const mockEvents = [
 
 describe('StatGrid', () => {
     test('returns null when live is empty', () => {
-        const { container } = render(
-            <StatGrid live={[]} faction="global" events={[]} />,
-        );
+        const { container } = render(<StatGrid live={[]} faction="global" events={[]} />);
         expect(container.innerHTML).toBe('');
     });
 
@@ -59,9 +57,7 @@ describe('StatGrid', () => {
 
     describe('global view', () => {
         test('shows formatted totals', () => {
-            render(
-                <StatGrid live={mockLive} faction="global" events={mockEvents} />,
-            );
+            render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
             expect(screen.getByText('HELLDIVERS_ONLINE')).toBeInTheDocument();
             expect(screen.getByText('ENEMIES_KILLED')).toBeInTheDocument();
             expect(screen.getByText('HELLDIVERS_LOST')).toBeInTheDocument();
@@ -69,9 +65,7 @@ describe('StatGrid', () => {
         });
 
         test('shows correct aggregated values', () => {
-            render(
-                <StatGrid live={mockLive} faction="global" events={mockEvents} />,
-            );
+            render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
             // players: 100+200+150 = 450
             expect(screen.getByText('450')).toBeInTheDocument();
             // kills: 500+1000+750 = 2,250
@@ -83,9 +77,7 @@ describe('StatGrid', () => {
         });
 
         test('shows win/loss counts from all factions', () => {
-            render(
-                <StatGrid live={mockLive} faction="global" events={mockEvents} />,
-            );
+            render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
             expect(screen.getByText('WON')).toBeInTheDocument();
             expect(screen.getByText('LOST')).toBeInTheDocument();
             // wins: 3 (enemy0 success + enemy1 success + enemy1 success)
@@ -97,9 +89,7 @@ describe('StatGrid', () => {
 
     describe('faction view', () => {
         test('shows faction-specific stat labels', () => {
-            render(
-                <StatGrid live={mockLive} faction="bugs" events={mockEvents} />,
-            );
+            render(<StatGrid live={mockLive} faction="bugs" events={mockEvents} />);
             expect(screen.getByText('ONLINE')).toBeInTheDocument();
             expect(screen.getByText('MISSIONS')).toBeInTheDocument();
             expect(screen.getByText('DEATHS')).toBeInTheDocument();
@@ -107,9 +97,7 @@ describe('StatGrid', () => {
         });
 
         test('shows bugs faction values', () => {
-            render(
-                <StatGrid live={mockLive} faction="bugs" events={mockEvents} />,
-            );
+            render(<StatGrid live={mockLive} faction="bugs" events={mockEvents} />);
             // bugs: players=100, successful_missions=30, deaths=50, accidentals=10
             expect(screen.getByText('100')).toBeInTheDocument();
             expect(screen.getByText('30')).toBeInTheDocument();
@@ -118,9 +106,7 @@ describe('StatGrid', () => {
         });
 
         test('shows faction-filtered win/loss counts', () => {
-            render(
-                <StatGrid live={mockLive} faction="bugs" events={mockEvents} />,
-            );
+            render(<StatGrid live={mockLive} faction="bugs" events={mockEvents} />);
             // bugs (enemy=0): 1 success, 1 fail
             expect(screen.getByText('WON')).toBeInTheDocument();
             expect(screen.getByText('LOST')).toBeInTheDocument();
@@ -129,7 +115,9 @@ describe('StatGrid', () => {
         });
 
         test('returns null when faction not found in live data', () => {
-            const sparseData = [{ enemy: 0, players: 100, kills: 500, deaths: 50, accidentals: 10 }];
+            const sparseData = [
+                { enemy: 0, players: 100, kills: 500, deaths: 50, accidentals: 10 },
+            ];
             const { container } = render(
                 <StatGrid live={sparseData} faction="illuminate" events={[]} />,
             );

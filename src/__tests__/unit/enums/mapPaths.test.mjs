@@ -12,7 +12,9 @@ describe('mapPaths enum', () => {
     describe('viewBox', () => {
         test('is a valid SVG viewBox string', () => {
             expect(typeof viewBox).toBe('string');
-            expect(viewBox).toMatch(/^\d+(\.\d+)?\s+\d+(\.\d+)?\s+\d+(\.\d+)?\s+\d+(\.\d+)?$/);
+            expect(viewBox).toMatch(
+                /^\d+(\.\d+)?\s+\d+(\.\d+)?\s+\d+(\.\d+)?\s+\d+(\.\d+)?$/,
+            );
         });
     });
 

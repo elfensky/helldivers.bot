@@ -52,8 +52,7 @@ next-env.d.ts
 .serena/cache/
 
 # Claude
-.claude/worktrees
-.claude/projects/
+.claude
 .worktrees
 .superpowers
 

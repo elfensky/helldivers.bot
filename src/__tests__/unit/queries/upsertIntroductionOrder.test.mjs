@@ -10,7 +10,9 @@ describe('queryUpsertIntroductionOrder', () => {
     });
 
     test('throws when order is missing', async () => {
-        await expect(queryUpsertIntroductionOrder(5, null)).rejects.toThrow('order is missing');
+        await expect(queryUpsertIntroductionOrder(5, null)).rejects.toThrow(
+            'order is missing',
+        );
     });
 
     test('calls db.h1_introduction_order.upsert with correct args', async () => {

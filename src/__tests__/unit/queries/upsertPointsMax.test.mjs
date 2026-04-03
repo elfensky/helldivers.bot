@@ -34,6 +34,8 @@ describe('queryUpsertPointsMax', () => {
     test('propagates database errors', async () => {
         vi.mocked(db.h1_points_max.upsert).mockRejectedValue(new Error('disk full'));
 
-        await expect(queryUpsertPointsMax(5, { bugs: 50000 })).rejects.toThrow('disk full');
+        await expect(queryUpsertPointsMax(5, { bugs: 50000 })).rejects.toThrow(
+            'disk full',
+        );
     });
 });

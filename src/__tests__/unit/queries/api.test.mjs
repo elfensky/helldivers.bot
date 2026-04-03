@@ -36,7 +36,13 @@ describe('getApiKeysByUserId', () => {
     test('returns api keys for matching user', async () => {
         vi.mocked(auth).mockResolvedValue(session);
         const mockKeys = [
-            { id: 'k1', description: 'Test key', visible: 'ab12', createdAt: new Date(), enabled: true },
+            {
+                id: 'k1',
+                description: 'Test key',
+                visible: 'ab12',
+                createdAt: new Date(),
+                enabled: true,
+            },
         ];
         vi.mocked(db.ApiKey.findMany).mockResolvedValue(mockKeys);
 
@@ -108,7 +114,10 @@ describe('generateApiKey', () => {
         vi.mocked(auth).mockResolvedValue(session);
         vi.mocked(db.ApiKey.count).mockResolvedValue(5);
 
-        const result = await generateApiKey(null, createFormData({ userId, description: 'Another key' }));
+        const result = await generateApiKey(
+            null,
+            createFormData({ userId, description: 'Another key' }),
+        );
 
         expect(result.errors.general).toMatch(/maximum/i);
     });
@@ -116,10 +125,19 @@ describe('generateApiKey', () => {
     test('creates api key and revalidates on success', async () => {
         vi.mocked(auth).mockResolvedValue(session);
         vi.mocked(db.ApiKey.count).mockResolvedValue(2);
-        const mockCreated = { id: 'new-key-id', userId, description: 'My test API key', hash: 'abc', visible: '1234' };
+        const mockCreated = {
+            id: 'new-key-id',
+            userId,
+            description: 'My test API key',
+            hash: 'abc',
+            visible: '1234',
+        };
         vi.mocked(db.ApiKey.create).mockResolvedValue(mockCreated);
 
-        const result = await generateApiKey(null, createFormData({ userId, description: 'My test API key' }));
+        const result = await generateApiKey(
+            null,
+            createFormData({ userId, description: 'My test API key' }),
+        );
 
         expect(result.data).toBeDefined();
         expect(result.data.key).toBeDefined();
@@ -134,7 +152,10 @@ describe('generateApiKey', () => {
         vi.mocked(db.ApiKey.create).mockRejectedValue(new Error('Insert failed'));
 
         await expect(
-            generateApiKey(null, createFormData({ userId, description: 'Key description' })),
+            generateApiKey(
+                null,
+                createFormData({ userId, description: 'Key description' }),
+            ),
         ).rejects.toThrow('Insert failed');
     });
 });

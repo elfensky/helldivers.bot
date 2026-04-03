@@ -34,7 +34,15 @@ import DashboardClient from '@/components/h1/Dashboard/DashboardClient';
 
 const testData = {
     live: [
-        { enemy: 0, players: 100, kills: 500, deaths: 50, accidentals: 10, successful_missions: 30, missions: 40 },
+        {
+            enemy: 0,
+            players: 100,
+            kills: 500,
+            deaths: 50,
+            accidentals: 10,
+            successful_missions: 30,
+            missions: 40,
+        },
     ],
     events: [],
     last_updated: '2025-01-01',
