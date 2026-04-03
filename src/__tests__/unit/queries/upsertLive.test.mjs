@@ -60,22 +60,48 @@ describe('queryUpsertLive', () => {
         );
     });
 
-    test('calls db.h1_live.upsert with correct where clause', async () => {
+    test('calls db.h1_live.upsert with correct payload', async () => {
         const mockRecord = { id: 1, season: 5, enemy: 1 };
+        const mockFactionMap = { sectors: [1] };
         vi.mocked(db.h1_live.upsert).mockResolvedValue(mockRecord);
 
-        const result = await queryUpsertLive(5, 1, mockCampaign, mockStats, { sectors: [1] });
+        const result = await queryUpsertLive(5, 1, mockCampaign, mockStats, mockFactionMap);
 
-        expect(db.h1_live.upsert).toHaveBeenCalledWith(
-            expect.objectContaining({
-                where: {
-                    season_enemy: {
-                        season: 5,
-                        enemy: 1,
-                    },
-                },
-            }),
-        );
+        const expectedFields = {
+            points: mockCampaign.points,
+            points_taken: mockCampaign.points_taken,
+            points_max: mockCampaign.points_max,
+            status: mockCampaign.status,
+            introduction_order: mockCampaign.introduction_order,
+            season_duration: mockStats.season_duration,
+            players: mockStats.players,
+            total_unique_players: mockStats.total_unique_players,
+            missions: mockStats.missions,
+            successful_missions: mockStats.successful_missions,
+            total_mission_difficulty: mockStats.total_mission_difficulty,
+            completed_planets: mockStats.completed_planets,
+            defend_events: mockStats.defend_events,
+            successful_defend_events: mockStats.successful_defend_events,
+            attack_events: mockStats.attack_events,
+            successful_attack_events: mockStats.successful_attack_events,
+            deaths: mockStats.deaths,
+            kills: mockStats.kills,
+            accidentals: mockStats.accidentals,
+            shots: mockStats.shots,
+            hits: mockStats.hits,
+            map: mockFactionMap,
+        };
+
+        const callArg = db.h1_live.upsert.mock.calls[0][0];
+        expect(callArg.where).toEqual({
+            season_enemy: { season: 5, enemy: 1 },
+        });
+        expect(callArg.update).toEqual(expectedFields);
+        expect(callArg.create).toEqual({
+            season: 5,
+            enemy: 1,
+            ...expectedFields,
+        });
         expect(result).toHaveProperty('query', mockRecord);
         expect(result).toHaveProperty('ms');
     });

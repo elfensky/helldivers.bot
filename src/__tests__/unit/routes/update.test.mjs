@@ -57,7 +57,7 @@ describe('GET /api/h1/update', () => {
         expect(updateSeason).toHaveBeenCalledWith(5);
     });
 
-    test('returns 500 when updateStatus fails', async () => {
+    test('returns 500 when updateStatus fails and does not call updateSeason', async () => {
         vi.mocked(updateStatus).mockRejectedValue(new Error('API down'));
 
         const req = new Request('http://localhost/api/h1/update', {
@@ -66,6 +66,7 @@ describe('GET /api/h1/update', () => {
         const res = await GET(req);
 
         expect(res.status).toBe(500);
+        expect(updateSeason).not.toHaveBeenCalled();
     });
 
     test('returns 500 when updateSeason fails', async () => {

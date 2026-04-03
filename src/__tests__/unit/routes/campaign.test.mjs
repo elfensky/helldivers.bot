@@ -76,6 +76,18 @@ describe('GET /api/h1/campaign', () => {
         expect(res.status).toBe(404);
     });
 
+    test('returns 200 with null data when retry also returns null', async () => {
+        vi.mocked(getCampaign).mockResolvedValue(null);
+        vi.mocked(updateSeason).mockResolvedValue({});
+
+        const res = await GET(createRouteRequest('/api/h1/campaign?season=999'));
+
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expect(body.data).toBeNull();
+        expect(getCampaign).toHaveBeenCalledTimes(2);
+    });
+
     test('returns 500 when getCampaign throws', async () => {
         vi.mocked(getCampaign).mockRejectedValue(new Error('DB connection lost'));
 

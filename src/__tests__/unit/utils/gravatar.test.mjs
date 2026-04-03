@@ -11,12 +11,16 @@ describe('getGravatarUrl', () => {
 
     test('trims whitespace from email', () => {
         const url = getGravatarUrl('  test@example.com  ');
-        expect(url).toBe(getGravatarUrl('test@example.com'));
+        expect(url).toBe(
+            'https://www.gravatar.com/avatar/55502f40dc8b7c769880b10874abc9d0?s=64',
+        );
     });
 
     test('lowercases email before hashing', () => {
         const url = getGravatarUrl('Test@Example.COM');
-        expect(url).toBe(getGravatarUrl('test@example.com'));
+        expect(url).toBe(
+            'https://www.gravatar.com/avatar/55502f40dc8b7c769880b10874abc9d0?s=64',
+        );
     });
 
     test('URL has correct format', () => {

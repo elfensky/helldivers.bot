@@ -36,38 +36,27 @@ describe('initializeEnvironmentVariables', () => {
         expect(result).toBe(true);
     });
 
-    test('throws when POSTGRES_URL is missing', async () => {
-        vi.stubEnv('POSTGRES_URL', '');
+    test.each([
+        'POSTGRES_URL',
+        'UPDATE_KEY',
+        'UPDATE_INTERVAL',
+        'UMAMI_SITE_ID',
+        'SENTRY_AUTH_TOKEN',
+        'AUTH_SECRET',
+        'AUTH_TRUST_HOST',
+        'AUTH_DISCORD_ID',
+        'AUTH_DISCORD_SECRET',
+        'AUTH_GITHUB_ID',
+        'AUTH_GITHUB_SECRET',
+        'EMAIL_SERVER_USER',
+        'EMAIL_SERVER_PASSWORD',
+        'EMAIL_SERVER_HOST',
+        'EMAIL_SERVER_PORT',
+        'EMAIL_FROM',
+    ])('throws when %s is missing', async (envVar) => {
+        vi.stubEnv(envVar, '');
         await expect(initializeEnvironmentVariables()).rejects.toThrow(
-            'POSTGRES_URL is not set',
-        );
-    });
-
-    test('throws when UPDATE_KEY is missing', async () => {
-        vi.stubEnv('UPDATE_KEY', '');
-        await expect(initializeEnvironmentVariables()).rejects.toThrow(
-            'UPDATE_KEY is not set',
-        );
-    });
-
-    test('throws when UMAMI_SITE_ID is missing', async () => {
-        vi.stubEnv('UMAMI_SITE_ID', '');
-        await expect(initializeEnvironmentVariables()).rejects.toThrow(
-            'UMAMI_SITE_ID is not set',
-        );
-    });
-
-    test('throws when AUTH_SECRET is missing', async () => {
-        vi.stubEnv('AUTH_SECRET', '');
-        await expect(initializeEnvironmentVariables()).rejects.toThrow(
-            'AUTH_SECRET is not set',
-        );
-    });
-
-    test('throws when EMAIL_FROM is missing', async () => {
-        vi.stubEnv('EMAIL_FROM', '');
-        await expect(initializeEnvironmentVariables()).rejects.toThrow(
-            'EMAIL_FROM is not set',
+            `${envVar} is not set`,
         );
     });
 });
