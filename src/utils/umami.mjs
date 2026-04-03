@@ -1,14 +1,10 @@
-export async function umamiTrackPage(title, url) {
-    const isProduction = process.env.NODE_ENV === 'production';
-    if (!isProduction) {
-        return;
-    }
-    // const agent = `Node.js/${process.versions.node} (${process.platform} ${process.arch})`;
-    //use umami or something else to track usage
+async function sendUmamiEvent(payload) {
+    if (process.env.NODE_ENV !== 'production') return;
+
     await fetch(`https://${process.env.UMAMI_SITE_URL}/api/send`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json', // or 'text/plain' if required
+            'Content-Type': 'application/json',
             'User-Agent':
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
         },
@@ -19,58 +15,22 @@ export async function umamiTrackPage(title, url) {
                 hostname: getHostname(),
                 screen: '1x1',
                 language: 'en',
-                title: title,
-                url: url,
+                ...payload,
             },
         }),
-        // mode: 'cors', // optional, default for cross-origin
-        // credentials: 'include', // if cookies are needed
     })
-        .then((response) => response.text()) // or .json() if the response is JSON
-        // .then((data) => {
-        //     console.log('Response:', data);
-        // })
+        .then((response) => response.text())
         .catch((error) => {
             console.error('Error:', error);
         });
 }
 
-export async function umamiTrackEvent(title, url, name, data = {}) {
-    const isProduction = process.env.NODE_ENV === 'production';
-    if (!isProduction) {
-        return;
-    }
+export async function umamiTrackPage(title, url) {
+    await sendUmamiEvent({ title, url });
+}
 
-    await fetch(`https://${process.env.UMAMI_SITE_URL}/api/send`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json', // or 'text/plain' if required
-            'User-Agent':
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-        },
-        body: JSON.stringify({
-            type: 'event',
-            payload: {
-                website: process.env.UMAMI_SITE_ID,
-                hostname: getHostname(),
-                screen: '1x1',
-                language: 'en-US',
-                title: title,
-                url: url,
-                name: name,
-                data: data,
-            },
-        }),
-        // mode: 'cors', // optional, default for cross-origin
-        // credentials: 'include', // if cookies are needed
-    })
-        .then((response) => response.text()) // or .json() if the response is JSON
-        // .then((data) => {
-        //     console.log('Response:', data);
-        // })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
+export async function umamiTrackEvent(title, url, name, data = {}) {
+    await sendUmamiEvent({ title, url, name, data });
 }
 
 function getHostname() {
