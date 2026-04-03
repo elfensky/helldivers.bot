@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.22.1 (2026-04-03)
+
+### Release Workflow Fix
+
+- Switch Production Docker auth from expired PAT to `GITHUB_TOKEN`
+- Remove release-please (conflicted with manual tagging)
+- Add GitHub Release job with changelog extraction to Production workflow
+- Fix changelog extraction: use state-machine awk, add empty-body validation
+
 ## 0.22.0 (2026-04-02)
 
 ### Phase 9: Dashboard & Timeline Polish
