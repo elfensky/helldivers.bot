@@ -53,8 +53,8 @@ After any frontend/CSS change, verify via DevTools before declaring done:
 **Rules:**
 
 1. **Create feature/bugfix branches from `develop`**, merge back to `develop` via PR. Bugfix and chore branches can be pushed directly to `develop`; features require a PR.
-2. **Release process:** Merge `develop` → `main` via PR → tag `vX.Y.0` on main
-3. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
+2. **Release process:** Update `CHANGELOG.md` (move Unreleased items under new `## X.Y.Z` header) → merge `develop` → `main` via PR → tag `vX.Y.0` on main
+3. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
 4. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
 
 **Git Flow automation (git-workflow skill):**
