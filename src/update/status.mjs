@@ -60,7 +60,11 @@ function computeFactionMap(enemy, campaign, defendEvent, attackEvents, season) {
 }
 
 async function captureEventSnapshot(season, time, type, event, eventData) {
-    if (event.status !== 'active' && event.status !== 'success' && event.status !== 'fail')
+    if (
+        event.status !== 'active' &&
+        event.status !== 'success' &&
+        event.status !== 'fail'
+    )
         return;
     const { data: shouldSnapshot, error: timerError } = await tryCatch(
         shouldTakeEventSnapshot(type, event.event_id, time),
@@ -156,13 +160,10 @@ export async function updateStatus() {
     // Attack event snapshots
     for (const event of fetchedData.attack_events) {
         if (event.season !== season) continue;
-        await captureEventSnapshot(
-            season,
-            fetchedData.time,
-            EVENT_TYPE.ATTACK,
-            event,
-            { ...event, region: 11 },
-        );
+        await captureEventSnapshot(season, fetchedData.time, EVENT_TYPE.ATTACK, event, {
+            ...event,
+            region: 11,
+        });
     }
 
     //7. derive introduction_order and points_max from campaign_status
