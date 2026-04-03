@@ -1,6 +1,5 @@
 export async function initializeWorker() {
     'use server';
-    console.log(process.env.NEXT_RUNTIME);
 
     if (process.env.NEXT_RUNTIME === 'nodejs') {
         const key = process.env.UPDATE_KEY;
