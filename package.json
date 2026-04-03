@@ -34,9 +34,12 @@
     "devDependencies": {
         "@tailwindcss/postcss": "^4.2.2",
         "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
+        "@testing-library/user-event": "^14.6.1",
         "@vitest/coverage-v8": "^4.1.2",
         "babel-plugin-react-compiler": "^1.0.0",
         "chokidar-cli": "^3.0.0",
+        "jsdom": "^29.0.1",
         "prettier": "^3.8.1",
         "prettier-plugin-tailwindcss": "^0.7.2",
         "prisma": "^7.6.0",

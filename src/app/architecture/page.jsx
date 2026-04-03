@@ -76,9 +76,9 @@ export default function ArchitecturePage() {
                     Event Progress Calculation
                 </h2>
                 <p className="text-[var(--color-text-muted)]">
-                    How <code>evaluateProgress()</code> determines whether the
-                    community is ahead, behind, or on track during a campaign event.
-                    Drag the sliders to explore.
+                    How <code>evaluateProgress()</code> determines whether the community
+                    is ahead, behind, or on track during a campaign event. Drag the
+                    sliders to explore.
                 </p>
                 <ProgressExplainerLoader />
             </section>

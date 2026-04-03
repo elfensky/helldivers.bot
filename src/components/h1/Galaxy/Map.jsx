@@ -25,7 +25,7 @@ export default function Map({ map }) {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox={viewBox}
                 preserveAspectRatio="xMaxYMid meet"
-                className="w-full h-full"
+                className="h-full w-full"
             >
                 <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
@@ -50,9 +50,18 @@ export default function Map({ map }) {
                         </feMerge>
                     </filter>
                     <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="6" />
+                        <feGaussianBlur
+                            in="SourceGraphic"
+                            result="blur"
+                            stdDeviation="6"
+                        />
                         <feFlood floodColor="rgba(255,0,0,0.6)" result="color" />
-                        <feComposite in="color" in2="blur" operator="in" result="redGlow" />
+                        <feComposite
+                            in="color"
+                            in2="blur"
+                            operator="in"
+                            result="redGlow"
+                        />
                         <feMerge>
                             <feMergeNode in="redGlow" />
                             <feMergeNode in="SourceGraphic" />

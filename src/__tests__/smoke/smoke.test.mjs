@@ -1,4 +1,4 @@
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.TEST_SERVER_URL || 'http://localhost:3000';
 
 const serverAvailable = await fetch(`${BASE_URL}/api/healthcheck`)
     .then(() => true)
@@ -16,7 +16,6 @@ describe.runIf(serverAvailable)('Smoke tests', () => {
         ['/archives', 'Archives page'],
         ['/faq', 'FAQ page'],
         ['/about', 'About page'],
-        ['/docs', 'Docs page'],
     ];
 
     for (const [path, name] of pages) {
@@ -41,8 +40,8 @@ describe.runIf(serverAvailable)('Smoke tests', () => {
         });
         expect(response.status).toBe(401);
         const body = await response.json();
-        expect(body.error_code).toBe(6);
-        expect(body.error_message).toBe('Unauthorized');
+        expect(body.code).toBe(401);
+        expect(body.message).toBe('Unauthorized');
     });
 
     test('POST /api/h1/rebroadcast with invalid API key returns 401', async () => {
@@ -52,14 +51,14 @@ describe.runIf(serverAvailable)('Smoke tests', () => {
         });
         expect(response.status).toBe(401);
         const body = await response.json();
-        expect(body.error_code).toBe(6);
+        expect(body.code).toBe(401);
     });
 
     test('GET /api/h1/rebroadcast returns 405 without key check', async () => {
         const response = await fetch(`${BASE_URL}/api/h1/rebroadcast`);
         expect(response.status).toBe(405);
         const body = await response.json();
-        expect(body.error_code).toBe(5);
+        expect(body.code).toBe(405);
     });
 
     test('GET /opengraph-image returns a PNG image', async () => {

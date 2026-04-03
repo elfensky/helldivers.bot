@@ -1,4 +1,4 @@
-export default const icons = {
+const icons = {
     enemies: {
         0: '<:iconbug:1322324948706005022>',
         1: '<:iconcyborg:1322324966565478553>',
@@ -14,3 +14,5 @@ export default const icons = {
         0: '<:iconsuperearth:>',
     },
 };
+
+export default icons;

@@ -13,10 +13,18 @@ export async function getApiKeysByUserId(userId) {
     const session = await auth();
 
     if (!session || !session.user) {
-        return { ms: performanceTime(start), query: null, errors: { auth: 'No session found' } };
+        return {
+            ms: performanceTime(start),
+            query: null,
+            errors: { auth: 'No session found' },
+        };
     }
     if (session.user.id !== userId) {
-        return { ms: performanceTime(start), query: null, errors: { auth: 'User does not match' } };
+        return {
+            ms: performanceTime(start),
+            query: null,
+            errors: { auth: 'User does not match' },
+        };
     }
 
     const { data: result, error } = await tryCatch(

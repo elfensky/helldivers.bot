@@ -59,6 +59,31 @@ function computeFactionMap(enemy, campaign, defendEvent, attackEvents, season) {
     return factionMap;
 }
 
+async function captureEventSnapshot(season, time, type, event, eventData) {
+    if (
+        event.status !== 'active' &&
+        event.status !== 'success' &&
+        event.status !== 'fail'
+    )
+        return;
+    const { data: shouldSnapshot, error: timerError } = await tryCatch(
+        shouldTakeEventSnapshot(type, event.event_id, time),
+    );
+    if (timerError) {
+        console.error('Event snapshot timer error:', timerError.message);
+        return;
+    }
+    if (!shouldSnapshot) return;
+    const { error: snapError } = await tryCatch(
+        queryCreateEventSnapshot(season, type, eventData, time),
+    );
+    if (snapError) {
+        console.error(`${type} event snapshot error:`, snapError.message);
+    } else {
+        recordEventSnapshotTime(type, event.event_id, time);
+    }
+}
+
 export async function updateStatus() {
     const start = performance.now();
 
@@ -121,34 +146,11 @@ export async function updateStatus() {
     }
 
     //6.5 capture event snapshots (10-min throttle)
-    async function captureEventSnapshot(type, event, eventData) {
-        if (
-            event.status !== 'active' &&
-            event.status !== 'success' &&
-            event.status !== 'fail'
-        )
-            return;
-        const { data: shouldSnapshot, error: timerError } = await tryCatch(
-            shouldTakeEventSnapshot(type, event.event_id, fetchedData.time),
-        );
-        if (timerError) {
-            console.error('Event snapshot timer error:', timerError.message);
-            return;
-        }
-        if (!shouldSnapshot) return;
-        const { error: snapError } = await tryCatch(
-            queryCreateEventSnapshot(season, type, eventData, fetchedData.time),
-        );
-        if (snapError) {
-            console.error(`${type} event snapshot error:`, snapError.message);
-        } else {
-            recordEventSnapshotTime(type, event.event_id, fetchedData.time);
-        }
-    }
-
     // Defend event snapshot
     if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
         await captureEventSnapshot(
+            season,
+            fetchedData.time,
             EVENT_TYPE.DEFEND,
             fetchedData.defend_event,
             fetchedData.defend_event,
@@ -158,7 +160,10 @@ export async function updateStatus() {
     // Attack event snapshots
     for (const event of fetchedData.attack_events) {
         if (event.season !== season) continue;
-        await captureEventSnapshot(EVENT_TYPE.ATTACK, event, { ...event, region: 11 });
+        await captureEventSnapshot(season, fetchedData.time, EVENT_TYPE.ATTACK, event, {
+            ...event,
+            region: 11,
+        });
     }
 
     //7. derive introduction_order and points_max from campaign_status
