@@ -1,3 +1,5 @@
+import NotificationFlowDiagram from '@/features/notifications/NotificationFlowDiagram';
+
 export const metadata = {
     title: 'Notifications | Helldivers Bot',
     description:
@@ -22,6 +24,10 @@ Four notification layers, each serving a different purpose:
 | **Push Notifications** | Browser is closed   | OS notification    | Subscription |
 
 ## Data Flow
+
+How notifications travel from the official API to the user. Click any node for details. Use the filters to trace individual flows.
+
+<NotificationFlowDiagram />
 
 ### In-App (SSE + Toasts)
 
@@ -153,7 +159,7 @@ Server-initiated notifications that work when the browser is closed:
 
 ### Subscription Flow
 
-1. User clicks "Enable push" (`PushToggle` component)
+1. User clicks "Enable notifications" (`NotificationToggle` component — enables both web notifications and push in one action)
 2. Service worker registers, `pushManager.subscribe()` creates a subscription
 3. `POST /api/notifications/subscribe` stores it in `push_subscription` table
 4. Validated with Zod: endpoint URL max 2048 chars, keys base64 max 256 chars
@@ -194,8 +200,7 @@ Server-initiated notifications that work when the browser is closed:
 | `src/shared/hooks/useLiveData.mjs`                  | EventSource hook + BroadcastChannel leader |
 | `src/shared/utils/game/detectChanges.mjs`           | Event transition detection (shared)        |
 | `src/features/notifications/LiveToasts.jsx`         | Sonner toasts + Web Notifications          |
-| `src/features/notifications/NotificationToggle.jsx` | Web Notification permission UI             |
-| `src/features/notifications/PushToggle.jsx`         | Push subscription enable/disable           |
+| `src/features/notifications/NotificationToggle.jsx` | Combined notification + push toggle        |
 | `src/features/dashboard/ConnectionStatus.jsx`       | Live/reconnecting/offline pill             |
 | `src/update/pushNotifier.mjs`                       | Server-side push fan-out                   |
 | `src/app/api/notifications/subscribe/route.js`      | Push subscription CRUD                     |

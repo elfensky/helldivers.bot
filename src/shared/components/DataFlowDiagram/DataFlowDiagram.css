@@ -123,6 +123,57 @@ svg.diagram-flow {
     fill: #22d3ee;
 }
 
+/* Notification diagram categories */
+.cat-purple rect {
+    fill: var(--color-surface-1);
+    stroke: #a855f7;
+    stroke-width: 1.5;
+}
+
+.cat-purple text.label {
+    fill: #c084fc;
+}
+
+.cat-green rect {
+    fill: var(--color-surface-1);
+    stroke: #22c55e;
+    stroke-width: 1.5;
+}
+
+.cat-green text.label {
+    fill: #4ade80;
+}
+
+.cat-blue rect {
+    fill: var(--color-surface-1);
+    stroke: #3b82f6;
+    stroke-width: 1.5;
+}
+
+.cat-blue text.label {
+    fill: #60a5fa;
+}
+
+.cat-cyan rect {
+    fill: var(--color-surface-1);
+    stroke: #06b6d4;
+    stroke-width: 1.5;
+}
+
+.cat-cyan text.label {
+    fill: #22d3ee;
+}
+
+.cat-amber rect {
+    fill: var(--color-surface-1);
+    stroke: #f59e0b;
+    stroke-width: 1.5;
+}
+
+.cat-amber text.label {
+    fill: #fbbf24;
+}
+
 /* Arrow styles */
 .diagram-arrow {
     stroke-width: 1.5;
@@ -138,7 +189,7 @@ svg.diagram-flow {
 }
 
 .arrow-amber {
-    stroke: var(--color-faction-bugs);
+    stroke: #f59e0b;
 }
 
 .arrow-green {
@@ -147,6 +198,18 @@ svg.diagram-flow {
 
 .arrow-seed {
     stroke: #ec4899;
+}
+
+.arrow-purple {
+    stroke: #a855f7;
+}
+
+.arrow-blue {
+    stroke: #3b82f6;
+}
+
+.arrow-cyan {
+    stroke: #06b6d4;
 }
 
 .arrow-frontend {
