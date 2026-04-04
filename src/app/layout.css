@@ -37,11 +37,11 @@
     --color-faction-cyborgs-fill: rgba(139, 45, 45, 0.35);
     --color-faction-illuminate: #7ec8e3;
     --color-faction-illuminate-fill: rgba(126, 200, 227, 0.35);
-    --color-faction-superearth: #ffe000;
 
-    /* === MAP === */
-    --color-map-border: rgba(255, 225, 0, 0.99);
-    --color-map-region: rgba(255, 213, 0, 0.33);
+    /* === TINTS (status overlay backgrounds) === */
+    --color-danger-tint: rgba(40, 0, 0, 0.8);
+    --color-success-tint: rgba(0, 20, 0, 0.8);
+    --color-primary-tint: rgba(40, 35, 0, 0.8);
 
     /* === TYPOGRAPHY === */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
@@ -61,21 +61,6 @@
     /* === RADIUS === */
     --radius: 0px;
 
-    /* === LEGACY ALIASES (backward compat — migrate in Phase 6) === */
-    --orange: var(--color-primary);
-    --cyan: hsl(187, 100%, 33%); /* deprecated */
-    --blue: hsl(191, 97%, 11%); /* deprecated — use --color-surface-0 */
-    --black: rgba(0, 9, 19, 1); /* deprecated */
-    --text: var(--color-text);
-    --inactive: var(--color-text-muted);
-    --border: var(--color-map-border);
-    --region: var(--color-map-region);
-    --cyborgs: var(--color-faction-cyborgs-fill);
-    --bugs: var(--color-faction-bugs-fill);
-    --illuminate: var(--color-faction-illuminate-fill);
-    --background: hsla(60, 8%, 10%, 0.7);
-    --gradient-horizontal: linear-gradient(to right, #262427, #49494b, #262427);
-    --gradient-vertical: linear-gradient(to right, #262427, #49494b, #262427);
 }
 
 @theme {
@@ -99,6 +84,9 @@
     --color-faction-cyborgs: #8b2d2d;
     --color-faction-illuminate: #7ec8e3;
     --color-ghost: rgba(255, 255, 255, 0.15);
+    --color-danger-tint: rgba(40, 0, 0, 0.8);
+    --color-success-tint: rgba(0, 20, 0, 0.8);
+    --color-primary-tint: rgba(40, 35, 0, 0.8);
 
     /* Typography */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
@@ -157,7 +145,7 @@ body {
     line-height: 1.5;
     font-family: var(--font-body);
     background-color: var(--color-surface-0);
-    color: var(--text);
+    color: var(--color-text);
 }
 
 h1,
@@ -238,20 +226,20 @@ p {
 
 /* BACKGROUND OF PROGRESS */
 progress {
-    background: #ff0000;
+    background: var(--color-danger);
 }
 
 progress::-webkit-progress-bar {
-    background: #ff0000;
+    background: var(--color-danger);
 }
 
 /* THE ACTUAL PROGRESS */
 progress::-moz-progress-bar {
-    background: #ffd700;
+    background: var(--color-primary);
 }
 
 progress::-webkit-progress-value {
-    background: #ffd700;
+    background: var(--color-primary);
 }
 
 header {

@@ -6,17 +6,17 @@ import Link from 'next/link';
 export default function NotFound() {
     return (
         <div className="gutters flex min-h-[50vh] flex-col items-center justify-center gap-4">
-            <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-text)]">
+            <h1 className="font-display text-3xl text-text">
                 SECTOR NOT FOUND
             </h1>
-            <p className="text-[var(--color-text-muted)]">
+            <p className="text-text-muted">
                 This area has been classified by Super Earth High Command. It either never
                 existed, or has been redacted for your safety.
             </p>
             <Link
                 href="/"
                 prefetch={false}
-                className="text-[var(--color-primary)] hover:underline"
+                className="text-primary hover:underline"
             >
                 Return to Managed Democracy →
             </Link>

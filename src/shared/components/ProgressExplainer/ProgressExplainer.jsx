@@ -16,18 +16,18 @@ import {
 import './ProgressExplainer.css';
 
 const COLORS = {
-    expected: '#58a6ff',
+    expected: 'var(--color-text-muted)',
     buffer: 'rgba(255, 224, 0, 0.2)',
     bufferStroke: 'rgba(255, 224, 0, 0.35)',
     ahead: 'var(--color-success)',
-    on_track: '#ffffff',
+    on_track: 'var(--color-text)',
     behind: 'var(--color-danger)',
 };
 
 const STATUS_COLORS = {
-    ahead: '#22c55e',
-    on_track: '#ffffff',
-    behind: '#ff0000',
+    ahead: 'var(--color-success)',
+    on_track: 'var(--color-text)',
+    behind: 'var(--color-danger)',
 };
 
 function fmt(n) {

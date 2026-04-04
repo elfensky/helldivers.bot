@@ -4,11 +4,11 @@
 }
 
 .event.success {
-    background-color: rgba(0, 20, 0, 0.8);
+    background-color: var(--color-success-tint);
 }
 
 .event.fail {
-    background-color: rgba(40, 0, 0, 0.8);
+    background-color: var(--color-danger-tint);
 }
 
 .event.active {
@@ -29,17 +29,17 @@
 
     20% {
         border: 2px solid var(--color-danger);
-        background-color: rgb(200, 0, 0, 0.99);
+        background-color: var(--color-danger);
     }
 
     25% {
         border: 2px solid var(--color-danger);
-        background-color: rgba(200, 0, 0, 0.66);
+        background-color: color-mix(in srgb, var(--color-danger) 66%, transparent);
     }
 
     30% {
         border: 2px solid var(--color-danger);
-        background-color: rgb(200, 0, 0, 0.99);
+        background-color: var(--color-danger);
     }
 
     40% {

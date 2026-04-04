@@ -9,8 +9,6 @@ export const metadata = {
     robots: { index: false, follow: false },
 };
 
-const meta = 'font-mono text-[0.6875rem] text-outline uppercase tracking-[0.05em]';
-
 export default function BrandKitPage() {
     return (
         <div className="max-w-full overflow-hidden">
@@ -28,7 +26,7 @@ export default function BrandKitPage() {
 function Hero() {
     return (
         <section className="mb-10">
-            <p className={meta}>DESIGN_SYSTEM // TACTICAL_COMMAND_INTERFACE</p>
+            <h6 className="text-text-muted">Design System // Tactical Command Interface</h6>
             <h1>Brand Kit</h1>
             <p className="max-w-[600px] mb-4">
                 Visual reference for the Tactical Command Interface. Tokens defined in{' '}
@@ -156,16 +154,6 @@ function Palette() {
                     name="Illum. Fill"
                     token="--color-faction-illuminate-fill"
                 />
-                <Swatch
-                    color="var(--color-faction-superearth)"
-                    name="Super Earth"
-                    token="--color-faction-superearth"
-                />
-                <Swatch
-                    color="var(--color-map-border)"
-                    name="Map Border"
-                    token="--color-map-border"
-                />
             </div>
         </section>
     );
@@ -235,7 +223,7 @@ function TypeAndSpacing() {
 
             <div className="flex gap-6 flex-wrap mt-4 p-3 bg-surface-1 border border-ghost">
                 <div className="flex flex-col gap-0.5">
-                    <span className={meta}>DISPLAY</span>
+                    <h6 className="text-text-muted">Display</h6>
                     <span
                         style={{
                             fontFamily: 'var(--font-display)',
@@ -247,13 +235,13 @@ function TypeAndSpacing() {
                     </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                    <span className={meta}>BODY</span>
+                    <h6 className="text-text-muted">Body</h6>
                     <span style={{ fontFamily: 'var(--font-body)' }}>
                         Insignia / Inter / Arial
                     </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                    <span className={meta}>MONO</span>
+                    <h6 className="text-text-muted">Mono</h6>
                     <span style={{ fontFamily: 'var(--font-mono)' }}>Space Mono</span>
                 </div>
             </div>
@@ -337,7 +325,7 @@ function Components() {
             </div>
 
             <h3 className="mt-6 mb-2">Alert</h3>
-            <div className="bg-[rgba(119,1,1,0.9)] border-3 border-danger p-3 mb-4 animate-[alert-pulse_2s_infinite]">
+            <div className="bg-danger-tint border-3 border-danger p-3 mb-4 animate-[alert-pulse_2s_infinite]">
                 <h4 style={{ margin: 0, color: 'white' }}>Active Defend Event</h4>
                 <p
                     style={{
@@ -377,7 +365,7 @@ function DataCard({ label, stat, desc, accent = 'default' }) {
     return (
         <div className="grid grid-cols-[1fr_4px] bg-surface-1 border border-ghost transition-colors hover:bg-surface-2">
             <div className="p-3">
-                <div className={meta}>{label}</div>
+                <h6 className="text-text-muted">{label}</h6>
                 <div className="font-display text-2xl font-black text-primary uppercase leading-none my-1">
                     {stat}
                 </div>

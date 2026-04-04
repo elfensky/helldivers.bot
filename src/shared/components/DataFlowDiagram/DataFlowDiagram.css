@@ -32,7 +32,7 @@
 .diagram-controls button.active {
     border-color: var(--color-primary);
     color: var(--color-primary);
-    background: rgba(255, 224, 0, 0.08);
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 /* SVG canvas */

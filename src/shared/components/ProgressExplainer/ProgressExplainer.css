@@ -106,17 +106,17 @@
 }
 
 .progress-badge--ahead {
-    background: rgba(34, 197, 94, 0.15);
+    background: color-mix(in srgb, var(--color-success) 15%, transparent);
     color: var(--color-success);
 }
 
 .progress-badge--on_track {
-    background: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
+    background: var(--color-ghost);
+    color: var(--color-text);
 }
 
 .progress-badge--behind {
-    background: rgba(255, 0, 0, 0.15);
+    background: color-mix(in srgb, var(--color-danger) 15%, transparent);
     color: var(--color-danger);
 }
 

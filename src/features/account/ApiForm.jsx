@@ -44,7 +44,7 @@ export function GenerateApiKeyForm({ userId }) {
                 </fieldset>
 
                 <button
-                    className="cursor-pointer bg-[var(--color-primary)] px-4 py-2 text-[var(--color-on-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="cursor-pointer bg-primary px-4 py-2 text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={pending}
                 >
                     Generate
@@ -71,7 +71,7 @@ export function DeleteApiKeyForm({ userId, apikeyId }) {
                 <input type="hidden" name="apikeyId" value={apikeyId} readOnly hidden />
                 <button
                     type="submit"
-                    className="cursor-pointer text-[var(--color-danger)]"
+                    className="cursor-pointer text-danger"
                 >
                     {state?.errors?.auth ?
                         <span className="text-red-400">{state.errors.auth}</span>

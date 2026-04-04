@@ -6,67 +6,56 @@
 
 .lost {
     fill: rgba(255, 255, 255, 0.06);
-    stroke: rgba(255, 255, 255, 0.15);
+    stroke: var(--color-ghost);
     z-index: 10;
 }
 
 .captured {
-    /* fill: rgba(255, 213, 0, 0.33); */
-    fill: var(--region);
-    /* stroke: rgba(255, 225, 0, 0.99); */
-    stroke: var(--border);
+    fill: rgba(255, 224, 0, 0.33);
+    stroke: var(--color-primary);
     z-index: 20;
 }
 
 .in_progress {
-    stroke: rgba(255, 225, 0, 0.99);
+    stroke: var(--color-primary);
     z-index: 30;
 }
 
-#bugs .in_progress {
-    fill: rgba(232, 130, 42, 0.35);
-}
-
-#cyborgs .in_progress {
-    fill: rgba(139, 45, 45, 0.35);
-}
-
-#illuminate .in_progress {
-    fill: rgba(126, 200, 227, 0.35);
-}
-
+#bugs .in_progress,
 #bugs .active {
-    fill: rgba(232, 130, 42, 0.35);
+    fill: var(--color-faction-bugs-fill);
 }
 
+#cyborgs .in_progress,
 #cyborgs .active {
-    fill: rgba(139, 45, 45, 0.35);
+    fill: var(--color-faction-cyborgs-fill);
 }
 
+#illuminate .in_progress,
 #illuminate .active {
-    fill: rgba(126, 200, 227, 0.35);
+    fill: var(--color-faction-illuminate-fill);
 }
 
 #bugs .active,
 #cyborgs .active,
 #illuminate .active,
 #superearth .active {
-    stroke: rgba(255, 225, 0, 0.99);
+    stroke: var(--color-primary);
     animation: map-pulse-red 3s ease-in-out infinite;
 }
 
 @keyframes map-pulse-red {
     0%,
     100% {
-        stroke: rgba(255, 225, 0, 0.99);
+        stroke: var(--color-primary);
         stroke-width: 2px;
         filter: none;
     }
 
     50% {
-        stroke: rgba(255, 0, 0, 0.99);
+        stroke: var(--color-danger);
         stroke-width: 4px;
-        fill: rgba(255, 0, 0, 0.35);
+        fill: color-mix(in srgb, var(--color-danger) 35%, transparent);
         filter: url(#glow-red);
     }
 }

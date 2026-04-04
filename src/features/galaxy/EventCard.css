@@ -7,17 +7,17 @@
 }
 
 .sector-card-event {
-    border-color: rgba(255, 0, 0, 0.4);
+    border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
     animation: card-glow 3s ease-in-out infinite;
 }
 
 @keyframes card-glow {
     0%,
     100% {
-        box-shadow: 0 0 4px rgba(255, 0, 0, 0.15);
+        box-shadow: 0 0 4px color-mix(in srgb, var(--color-danger) 15%, transparent);
     }
     50% {
-        box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
+        box-shadow: 0 0 12px color-mix(in srgb, var(--color-danger) 40%, transparent);
     }
 }
 

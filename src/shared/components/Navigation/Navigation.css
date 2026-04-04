@@ -38,7 +38,7 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    color: #ff3b3b;
+    color: var(--color-danger);
     font-weight: 600;
 }
 
@@ -48,7 +48,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: #ff3b3b;
+    background-color: var(--color-danger);
     animation: live-blink 1.5s ease-in-out infinite;
 }
 

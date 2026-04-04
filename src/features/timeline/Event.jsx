@@ -5,17 +5,17 @@ import { EVENT_TYPE } from '@/shared/enums/events';
 
 const STATUS_STYLES = {
     success: {
-        bg: 'bg-[rgba(0,20,0,0.4)]',
+        bg: 'bg-success-tint/40',
         border: 'border-ghost',
         accent: 'bg-success',
     },
     fail: {
-        bg: 'bg-[rgba(40,0,0,0.5)]',
+        bg: 'bg-danger-tint/50',
         border: 'border-ghost',
         accent: 'bg-danger',
     },
     active: {
-        bg: 'bg-[rgba(40,35,0,0.4)]',
+        bg: 'bg-primary-tint/40',
         border: 'border-ghost',
         accent: 'bg-primary',
     },
