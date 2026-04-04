@@ -54,7 +54,9 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
                         <img src={faction.icon} alt={faction.name} className="size-5" />
                     )}
                 </div>
-                <span className="text-[0.6875rem] text-text-muted">{timeText}</span>
+                <span className="text-[0.6875rem] text-text-muted" suppressHydrationWarning>
+                    {timeText}
+                </span>
                 <div className="font-mono text-[0.5rem] text-text-muted">
                     {event.points} / {event.points_max} ({percent}%)
                 </div>
