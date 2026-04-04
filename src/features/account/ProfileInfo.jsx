@@ -1,4 +1,3 @@
-'use server';
 import Image from 'next/image';
 import db from '@/db/db';
 import { getGravatarUrl } from '@/shared/utils/gravatar';

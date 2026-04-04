@@ -1,4 +1,3 @@
-'use server';
 //db
 import { getApiKeysByUserId } from '@/db/queries/api';
 //forms

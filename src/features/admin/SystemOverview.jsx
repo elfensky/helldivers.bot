@@ -1,4 +1,3 @@
-'use server';
 import { getSystemStats } from '@/db/queries/admin';
 import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo';
 
