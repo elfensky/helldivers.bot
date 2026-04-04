@@ -8,7 +8,7 @@ async function getClient() {
 
     client = new pg.Client({
         connectionString: process.env.POSTGRES_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
+        ssl: process.env.POSTGRES_SSL === 'false' ? false : { rejectUnauthorized: true },
     });
 
     const { error } = await tryCatch(client.connect());

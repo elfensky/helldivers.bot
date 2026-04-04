@@ -46,9 +46,9 @@ class SSEManager {
         this.listener = new pg.Client({
             connectionString: process.env.POSTGRES_URL,
             ssl:
-                process.env.NODE_ENV === 'production' ?
-                    { rejectUnauthorized: true }
-                :   false,
+                process.env.POSTGRES_SSL === 'false' ?
+                    false
+                :   { rejectUnauthorized: true },
         });
 
         await this.listener.connect();
