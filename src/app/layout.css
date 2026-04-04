@@ -264,10 +264,19 @@ progress::-webkit-progress-value {
 }
 
 header {
+    background: var(--color-surface-1);
+    border-bottom: 1px solid var(--color-ghost);
     transition:
         background-color 0.15s ease,
         box-shadow 0.3s ease,
         backdrop-filter 0.3s ease;
+}
+
+@media (min-width: 768px) {
+    header {
+        background: transparent;
+        border-bottom: none;
+    }
 }
 
 header.header-glass {

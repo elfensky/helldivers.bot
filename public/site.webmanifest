@@ -1,6 +1,6 @@
 {
     "name": "Helldivers Bot",
-    "short_name": "HD Bot",
+    "short_name": "HD1 Bot",
     "start_url": "/",
     "scope": "/",
     "orientation": "portrait",
@@ -18,7 +18,7 @@
             "purpose": "any maskable"
         }
     ],
-    "theme_color": "#282828",
-    "background_color": "#282828",
+    "theme_color": "#1c1b1b",
+    "background_color": "#1c1b1b",
     "display": "standalone"
 }
