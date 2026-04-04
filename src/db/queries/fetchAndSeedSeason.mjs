@@ -25,19 +25,19 @@ export async function fetchAndSeedSeason(season) {
     const { data: seasonData, error: fetchError } = await tryCatch(fetchSeason(season));
     if (fetchError) throw fetchError;
 
-    const validation = isValidSeason(seasonData);
-    if (!validation.success) {
-        throw new Error(`Season ${season} API data failed validation`, {
-            cause: validation.error,
-        });
-    }
-
     const hasData =
         seasonData?.snapshots?.length > 0 ||
         seasonData?.defend_events?.length > 0 ||
         seasonData?.attack_events?.length > 0;
 
     if (!hasData) return;
+
+    const validation = isValidSeason(seasonData);
+    if (!validation.success) {
+        throw new Error(`Season ${season} API data failed validation`, {
+            cause: validation.error,
+        });
+    }
 
     // 1. Upsert season row (FK dependency)
     await queryUpsertSeason(season);

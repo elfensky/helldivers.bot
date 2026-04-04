@@ -26,7 +26,6 @@ const mockAttackEvent = {
     season: 5,
     start_time: 100,
     end_time: 200,
-    region: 11,
     enemy: 1,
     points_max: 2000,
     points: 1000,
@@ -37,10 +36,12 @@ const mockAttackEvent = {
 const mockSnapshot = {
     season: 5,
     time: 1000,
-    data: '{"test": true}',
+    data: JSON.stringify([{ points: 100, points_taken: 50, status: 'active' }]),
 };
 
 const mockSeasonData = {
+    time: 1700000000,
+    error_code: 0,
     introduction_order: [0, 1, 2],
     points_max: [100, 200, 300],
     defend_events: [mockDefendEvent],
@@ -229,10 +230,11 @@ describe('fetchAndSeedSeason', () => {
 
         await fetchAndSeedSeason(5);
 
+        const parsedData = [{ points: 100, points_taken: 50, status: 'active' }];
         expect(vi.mocked(db.h1_snapshot.upsert)).toHaveBeenCalledWith({
             where: { season_time: { season: 5, time: 1000 } },
-            update: { data: { test: true } },
-            create: { season: 5, time: 1000, data: { test: true } },
+            update: { data: parsedData },
+            create: { season: 5, time: 1000, data: parsedData },
         });
     });
 

@@ -7,11 +7,9 @@ const snapshotDataItemSchema = z.object({
     status: z.enum(['hidden', 'active', 'defeated']),
 });
 
-// Schema for the "snapshots" array
-const snapshotSchema = z.object({
-    season: z.number(),
-    time: z.number(),
-    data: z.string().refine(
+// Snapshot data: JSON string (from API) or already-parsed array/object
+const snapshotDataField = z.union([
+    z.string().refine(
         (val) => {
             try {
                 const arr = JSON.parse(val);
@@ -27,9 +25,18 @@ const snapshotSchema = z.object({
             message: 'data must be a stringified array of valid snapshot data items',
         },
     ),
+    z.array(snapshotDataItemSchema),
+    z.object({}).passthrough(),
+]);
+
+// Schema for the "snapshots" array
+const snapshotSchema = z.object({
+    season: z.number(),
+    time: z.number(),
+    data: snapshotDataField,
 });
 
-// Schema for defend_events and attack_events
+// Schema for defend_events and attack_events (shared base)
 const eventSchema = z.object({
     season: z.number(),
     event_id: z.number(),
@@ -40,7 +47,6 @@ const eventSchema = z.object({
     points: z.number(),
     status: z.enum(['fail', 'success', 'active']),
     players_at_start: z.number(),
-    // defend_events have region, attack_events do not
     region: z.number().optional(),
 });
 
@@ -48,13 +54,17 @@ const eventSchema = z.object({
 const rootSchema = z.object({
     time: z.number(),
     error_code: z.number(),
-    introduction_order: z.array(z.number()),
-    points_max: z.array(z.number()),
+    introduction_order: z.array(z.number()).nullable(),
+    points_max: z.array(z.number()).nullable(),
     snapshots: z.array(snapshotSchema),
     defend_events: z.array(
-        eventSchema.refine((e) => e.region !== undefined, {
-            message: 'defend_events must have region',
-        }),
+        eventSchema
+            .refine((e) => e.region !== undefined, {
+                message: 'defend_events must have region',
+            })
+            .refine((e) => e.status !== 'active', {
+                message: 'defend_events must be resolved (fail or success)',
+            }),
     ),
     attack_events: z.array(
         eventSchema.refine((e) => e.region === undefined, {
