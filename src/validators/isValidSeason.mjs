@@ -38,7 +38,7 @@ const eventSchema = z.object({
     enemy: z.number(),
     points_max: z.number(),
     points: z.number(),
-    status: z.enum(['fail', 'success']),
+    status: z.enum(['fail', 'success', 'active']),
     players_at_start: z.number(),
     // defend_events have region, attack_events do not
     region: z.number().optional(),

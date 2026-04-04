@@ -3,6 +3,7 @@ import { tryCatch } from '@/shared/utils/tryCatch';
 import { fetchSeason } from '@/update/fetch';
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { EVENT_TYPE } from '@/shared/enums/events';
+import { isValidSeason } from '@/validators/isValidSeason';
 
 /**
  * Fetches a single season from the official Helldivers API and seeds it into the DB.
@@ -23,6 +24,13 @@ export async function fetchAndSeedSeason(season) {
 
     const { data: seasonData, error: fetchError } = await tryCatch(fetchSeason(season));
     if (fetchError) throw fetchError;
+
+    const validation = isValidSeason(seasonData);
+    if (!validation.success) {
+        throw new Error(`Season ${season} API data failed validation`, {
+            cause: validation.error,
+        });
+    }
 
     const hasData =
         seasonData?.snapshots?.length > 0 ||
