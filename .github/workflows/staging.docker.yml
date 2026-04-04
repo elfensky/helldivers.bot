@@ -106,7 +106,7 @@ jobs:
               with:
                   account: user
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  image-names: "helldiversbot"
+                  image-names: 'helldiversbot'
                   tag-selection: untagged
                   cut-off: 30min
                   dry-run: false

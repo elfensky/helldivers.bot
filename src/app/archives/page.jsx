@@ -104,7 +104,10 @@ export default async function WarHistoryPage({ searchParams }) {
     );
 }
 
-function JsonLd() {
+async function JsonLd() {
+    const { headers } = await import('next/headers');
+    const nonce = (await headers()).get('x-nonce') ?? undefined;
+
     // Static JSON-LD structured data for SEO — no user input, safe to inline
     const structuredData = [
         {
@@ -138,7 +141,9 @@ function JsonLd() {
 
     return (
         <script
+            nonce={nonce}
             type="application/ld+json"
+            suppressHydrationWarning
             // eslint-disable-next-line react/no-danger -- static structured data, no user input
             dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
