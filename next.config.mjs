@@ -41,27 +41,10 @@ const nextConfig = {
         ];
     },
     async headers() {
-        const isDev = process.env.NODE_ENV === 'development';
-        const csp = [
-            "default-src 'self'",
-            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://umami.lavrenov.io https://static.cloudflareinsights.com`,
-            "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: https://authjs.dev https://cdn.discordapp.com https://avatars.githubusercontent.com https://www.gravatar.com",
-            "font-src 'self'",
-            "connect-src 'self' https://umami.lavrenov.io https://bugsink.lavrenov.cloud https://cloudflareinsights.com",
-            "form-action 'self'",
-            "frame-ancestors 'none'",
-            "base-uri 'self'",
-        ].join('; ');
-
         return [
             {
                 source: '/(.*)',
                 headers: [
-                    {
-                        key: 'Content-Security-Policy',
-                        value: csp,
-                    },
                     {
                         key: 'X-Frame-Options',
                         value: 'DENY',

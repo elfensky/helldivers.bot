@@ -1,6 +1,7 @@
 import './layout.css';
 //nextjs
 import Script from 'next/script';
+import { headers } from 'next/headers';
 import { Space_Grotesk, Inter } from 'next/font/google';
 //components
 import Header from '@/components/layout/Header/Header';
@@ -49,7 +50,8 @@ export const metadata = {
     },
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+    const nonce = (await headers()).get('x-nonce') ?? undefined;
     const isProduction = process.env.NODE_ENV === 'production';
 
     return (
@@ -66,7 +68,9 @@ export default function RootLayout({ children }) {
             </head> */}
             <body id="body" className="flex min-h-screen min-w-full flex-col antialiased">
                 <script
+                    nonce={nonce}
                     type="application/ld+json"
+                    suppressHydrationWarning
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
                 />
 
@@ -94,6 +98,7 @@ export default function RootLayout({ children }) {
 
                 {isProduction ?
                     <Script
+                        nonce={nonce}
                         // src="https://umami.lavrenov.io/script.js"
                         src="/stats.js"
                         data-website-id="9a916711-2868-43d2-9932-964fc9528824"

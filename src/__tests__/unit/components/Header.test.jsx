@@ -2,6 +2,13 @@
 import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
+vi.mock('next/headers', () => ({
+    headers: vi.fn(() =>
+        Promise.resolve({
+            get: (key) => (key === 'x-nonce' ? 'test-nonce' : null),
+        }),
+    ),
+}));
 vi.mock('@/components/layout/Navigation/Navigation', () => ({
     default: () => <nav data-testid="navigation" />,
 }));

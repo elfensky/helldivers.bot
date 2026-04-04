@@ -6,11 +6,16 @@ export const metadata = {
     openGraph: { url: '/discord' },
 };
 
-export default function BotPage() {
+export default async function BotPage() {
+    const { headers } = await import('next/headers');
+    const nonce = (await headers()).get('x-nonce') ?? undefined;
+
     return (
         <div className="gutters flex min-h-[50vh] flex-col items-center justify-center gap-4">
             <script
+                nonce={nonce}
                 type="application/ld+json"
+                suppressHydrationWarning
                 // Safe: schema is a hardcoded constant, not user input
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
             />

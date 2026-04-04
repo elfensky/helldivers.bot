@@ -2,10 +2,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import Script from 'next/script';
+import { headers } from 'next/headers';
 //components
 import Navigation from '@/components/layout/Navigation/Navigation';
 
 export default async function Header() {
+    const nonce = (await headers()).get('x-nonce') ?? undefined;
+
     return (
         <header
             id="header"
@@ -15,7 +18,11 @@ export default async function Header() {
                 <Logo />
                 <Navigation />
             </div>
-            <Script src="/scripts/headerGPU.js" strategy="afterInteractive" />
+            <Script
+                nonce={nonce}
+                src="/scripts/headerGPU.js"
+                strategy="afterInteractive"
+            />
         </header>
     );
 }
