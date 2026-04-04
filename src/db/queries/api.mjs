@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import db from '@/db/db';
 import { auth } from '@/auth';
+import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/shared/utils/time';
@@ -10,7 +11,7 @@ import { revalidatePath } from 'next/cache';
 
 export async function getApiKeysByUserId(userId) {
     const start = performance.now();
-    const session = await auth();
+    const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session || !session.user) {
         return {
@@ -47,7 +48,7 @@ export async function getApiKeysByUserId(userId) {
 export async function generateApiKey(_, formData) {
     const start = performance.now();
 
-    const session = await auth();
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session?.user) {
         return {
             errors: { auth: 'You must be signed in to generate an API key' },
@@ -119,7 +120,7 @@ export async function generateApiKey(_, formData) {
 export async function deleteApiKey(_, formData) {
     const start = performance.now();
 
-    const session = await auth();
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session?.user) {
         return {
             errors: { auth: "You don't have permission to delete this API key" },

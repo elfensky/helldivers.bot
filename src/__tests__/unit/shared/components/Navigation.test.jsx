@@ -4,7 +4,9 @@ import { render, screen, act } from '@testing-library/react';
 import { Suspense } from 'react';
 
 vi.mock('@/shared/components/Navigation/Navigation.css', () => ({}));
-vi.mock('@/auth', () => ({ auth: vi.fn() }));
+vi.mock('@/auth', () => ({
+    auth: { api: { getSession: vi.fn() } },
+}));
 vi.mock('@/shared/components/Auth/Auth', () => ({
     SignIn: () => <button>Sign In</button>,
     SignOut: () => <button>Sign Out</button>,
@@ -31,19 +33,19 @@ async function renderNavigation() {
 
 describe('Navigation', () => {
     test('renders HeaderNav', async () => {
-        vi.mocked(auth).mockResolvedValue(null);
+        vi.mocked(auth.api.getSession).mockResolvedValue(null);
         await renderNavigation();
         expect(screen.getByTestId('header-nav')).toBeInTheDocument();
     });
 
     test('shows SignIn when no session', async () => {
-        vi.mocked(auth).mockResolvedValue(null);
+        vi.mocked(auth.api.getSession).mockResolvedValue(null);
         await renderNavigation();
         expect(screen.getByText('Sign In')).toBeInTheDocument();
     });
 
     test('shows avatar and SignOut when session exists', async () => {
-        vi.mocked(auth).mockResolvedValue({
+        vi.mocked(auth.api.getSession).mockResolvedValue({
             user: {
                 name: 'Test',
                 email: 'test@test.com',
@@ -64,7 +66,7 @@ describe('Navigation', () => {
             () => 'https://www.gravatar.com/avatar/mock?s=64',
         );
 
-        vi.mocked(auth).mockResolvedValue({
+        vi.mocked(auth.api.getSession).mockResolvedValue({
             user: {
                 name: 'GravUser',
                 email: 'grav@test.com',

@@ -25,7 +25,7 @@ describe('getApiKeysByUserId', () => {
     });
 
     test('returns auth error when user id does not match', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
 
         const result = await getApiKeysByUserId(otherUserId);
 
@@ -34,7 +34,7 @@ describe('getApiKeysByUserId', () => {
     });
 
     test('returns api keys for matching user', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         const mockKeys = [
             {
                 id: 'k1',
@@ -65,7 +65,7 @@ describe('getApiKeysByUserId', () => {
     });
 
     test('propagates database errors', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         vi.mocked(db.ApiKey.findMany).mockRejectedValue(new Error('DB error'));
 
         await expect(getApiKeysByUserId(userId)).rejects.toThrow('DB error');
@@ -81,7 +81,7 @@ describe('generateApiKey', () => {
     });
 
     test('returns auth error when no session', async () => {
-        vi.mocked(auth).mockResolvedValue(null);
+        vi.mocked(auth.api.getSession).mockResolvedValue(null);
 
         const result = await generateApiKey(null, validFormData);
 
@@ -89,7 +89,7 @@ describe('generateApiKey', () => {
     });
 
     test('returns validation errors for invalid formData', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         const badFormData = createFormData({ userId: 'not-a-uuid', description: 'ab' });
 
         const result = await generateApiKey(null, badFormData);
@@ -99,7 +99,7 @@ describe('generateApiKey', () => {
     });
 
     test('returns permission error when user id does not match session', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         const mismatchFormData = createFormData({
             userId: otherUserId,
             description: 'Valid description',
@@ -111,7 +111,7 @@ describe('generateApiKey', () => {
     });
 
     test('returns max limit error when user has 5 keys', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         vi.mocked(db.ApiKey.count).mockResolvedValue(5);
 
         const result = await generateApiKey(
@@ -123,7 +123,7 @@ describe('generateApiKey', () => {
     });
 
     test('creates api key and revalidates on success', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         vi.mocked(db.ApiKey.count).mockResolvedValue(2);
         const mockCreated = {
             id: 'new-key-id',
@@ -147,7 +147,7 @@ describe('generateApiKey', () => {
     });
 
     test('propagates database errors from create', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         vi.mocked(db.ApiKey.count).mockResolvedValue(0);
         vi.mocked(db.ApiKey.create).mockRejectedValue(new Error('Insert failed'));
 
@@ -167,7 +167,7 @@ describe('deleteApiKey', () => {
     const validFormData = createFormData({ userId, apikeyId });
 
     test('returns auth error when no session', async () => {
-        vi.mocked(auth).mockResolvedValue(null);
+        vi.mocked(auth.api.getSession).mockResolvedValue(null);
 
         const result = await deleteApiKey(null, validFormData);
 
@@ -175,7 +175,7 @@ describe('deleteApiKey', () => {
     });
 
     test('returns validation errors for invalid formData', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         const badFormData = createFormData({ userId: 'bad', apikeyId: 'bad' });
 
         const result = await deleteApiKey(null, badFormData);
@@ -185,7 +185,7 @@ describe('deleteApiKey', () => {
     });
 
     test('returns permission error when user id does not match session', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         const mismatchFormData = createFormData({ userId: otherUserId, apikeyId });
 
         const result = await deleteApiKey(null, mismatchFormData);
@@ -194,7 +194,7 @@ describe('deleteApiKey', () => {
     });
 
     test('deletes api key and revalidates on success', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         const mockDeleted = { id: apikeyId, userId };
         vi.mocked(db.ApiKey.delete).mockResolvedValue(mockDeleted);
 
@@ -208,7 +208,7 @@ describe('deleteApiKey', () => {
     });
 
     test('propagates database errors from delete', async () => {
-        vi.mocked(auth).mockResolvedValue(session);
+        vi.mocked(auth.api.getSession).mockResolvedValue(session);
         vi.mocked(db.ApiKey.delete).mockRejectedValue(new Error('Record not found'));
 
         await expect(

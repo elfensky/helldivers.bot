@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import ApiDashboard from '@/features/account/ApiDashboard';
 
@@ -9,11 +10,10 @@ export const metadata = {
 };
 
 export default async function Dashboard() {
-    const session = await auth();
+    const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session || !session.user) {
-        const currentPath = '/dashboard';
-        redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(currentPath)}`);
+        redirect('/sign-in');
     }
 
     const user = session.user;

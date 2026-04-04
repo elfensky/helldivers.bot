@@ -35,82 +35,65 @@ model App {
 
 // #endregion
 
-// #region Authentication & Authorization - NextAuth (Auth.js)  
+// #region Authentication & Authorization - BetterAuth
 model Account {
-    id                       String  @id @default(uuid(7))
-    userId                   String  @unique
-    type                     String
-    provider                 String
-    providerAccountId        String
-    refresh_token            String? @db.Text
-    access_token             String? @db.Text
-    expires_at               Int?
-    token_type               String?
-    scope                    String?
-    id_token                 String? @db.Text
-    session_state            String?
-    refresh_token_expires_in Int?
-    user                     User?   @relation(fields: [userId], references: [id])
+    id                    String    @id @default(uuid(7))
+    userId                String
+    accountId             String
+    providerId            String
+    accessToken           String?   @db.Text
+    refreshToken          String?   @db.Text
+    accessTokenExpiresAt  DateTime?
+    refreshTokenExpiresAt DateTime?
+    idToken               String?   @db.Text
+    scope                 String?
+    password              String?
+    createdAt             DateTime  @default(now())
+    updatedAt             DateTime  @updatedAt
+    user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([provider, providerAccountId])
     @@index([userId])
 }
 
 model Session {
-    id           String   @id @default(uuid(7))
-    sessionToken String   @unique
-    userId       String
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id])
-
+    id        String   @id @default(uuid(7))
+    token     String   @unique
+    userId    String
+    expiresAt DateTime
+    ipAddress String?
+    userAgent String?
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@index([userId])
 }
 
-model VerificationToken {
+model Verification {
+    id         String   @id @default(uuid(7))
     identifier String
-    token      String
-    expires    DateTime
+    value      String
+    expiresAt  DateTime
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
 
-    @@unique([identifier, token])
-}
-
-// Optional for WebAuthn support
-model Authenticator {
-    credentialID         String  @unique
-    userId               String
-    providerAccountId    String
-    credentialPublicKey  String
-    counter              Int
-    credentialDeviceType String
-    credentialBackedUp   Boolean
-    transports           String?
-
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    @@id([userId, credentialID])
+    @@unique([identifier, value])
 }
 
 model User {
-    id            String          @id @default(uuid(7))
+    id            String    @id @default(uuid(7))
     name          String?
-    username      String?         @unique // take their discord username instead?
-    email         String?         @unique
-    emailVerified DateTime? //verify email
-    image         String? //show button in dashboard "use gravatar", it will load in the gravatar and they can then save it, which will write to this field.
-    role          String          @default("user")
+    username      String?   @unique
+    email         String?   @unique
+    emailVerified Boolean   @default(false)
+    image         String?
+    role          String    @default("user")
     accounts      Account[]
     sessions      Session[]
-    Authenticator Authenticator[] // Optional for WebAuthn support
-    createdAt     DateTime        @default(now())
-    updatedAt     DateTime        @updatedAt
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
 
-    //custom relations 
+    //custom relations
     settings Settings?
     reviews  Review[]
     apiKeys  ApiKey[]

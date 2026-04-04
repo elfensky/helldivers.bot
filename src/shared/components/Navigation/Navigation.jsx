@@ -2,6 +2,7 @@ import './Navigation.css';
 //auth
 import { auth } from '@/auth';
 //next
+import { headers } from 'next/headers';
 import Link from 'next/link';
 import Image from 'next/image';
 //
@@ -9,7 +10,7 @@ import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
 import HeaderNav from '@/shared/components/Navigation/HeaderNav';
 
 export default async function Navigation() {
-    const session = await auth();
+    const session = await auth.api.getSession({ headers: await headers() });
 
     return (
         <nav className="z-50 flex items-center gap-3">

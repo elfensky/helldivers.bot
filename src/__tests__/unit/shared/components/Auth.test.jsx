@@ -2,12 +2,15 @@
 import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-vi.mock('@/auth', () => ({ signIn: vi.fn(), signOut: vi.fn() }));
+vi.mock('@/auth-client', () => ({
+    signIn: vi.fn(),
+    signOut: vi.fn(),
+}));
 
 import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
 
 describe('SignIn', () => {
-    test('renders a form with "Sign In" button', () => {
+    test('renders a button with "Sign In"', () => {
         render(<SignIn />);
         expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
     });
@@ -20,7 +23,7 @@ describe('SignIn', () => {
 });
 
 describe('SignOut', () => {
-    test('renders a form with "Sign Out" button', () => {
+    test('renders a button with "Sign Out"', () => {
         render(<SignOut />);
         expect(screen.getByRole('button', { name: 'Sign Out' })).toBeInTheDocument();
     });

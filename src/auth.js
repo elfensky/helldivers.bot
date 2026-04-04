@@ -1,33 +1,30 @@
-import NextAuth from 'next-auth';
-//db
-import { PrismaAdapter } from '@auth/prisma-adapter';
+import { betterAuth } from 'better-auth';
+import { prismaAdapter } from 'better-auth/adapters/prisma';
 import db from '@/db/db';
-//providers
-import Discord from 'next-auth/providers/discord'; //discord oauth
-import GitHub from 'next-auth/providers/github'; //github oauth
-// import Nodemailer from 'next-auth/providers/nodemailer'; //magic links
-// import Google from 'next-auth/providers/google';
-// import Apple from 'next-auth/providers/apple';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-    secret: process.env.AUTH_SECRET,
-    adapter: PrismaAdapter(db),
-    session: {
-        strategy: 'database',
+export const auth = betterAuth({
+    secret: process.env.BETTER_AUTH_SECRET,
+    baseURL: process.env.BETTER_AUTH_URL,
+    database: prismaAdapter(db, {
+        provider: 'postgresql',
+    }),
+    socialProviders: {
+        discord: {
+            clientId: process.env.AUTH_DISCORD_ID,
+            clientSecret: process.env.AUTH_DISCORD_SECRET,
+        },
+        github: {
+            clientId: process.env.AUTH_GITHUB_ID,
+            clientSecret: process.env.AUTH_GITHUB_SECRET,
+        },
     },
-    providers: [
-        Discord,
-        GitHub,
-        // Nodemailer({
-        //     server: {
-        //         host: process.env.EMAIL_SERVER_HOST,
-        //         port: process.env.EMAIL_SERVER_PORT,
-        //         auth: {
-        //             user: process.env.EMAIL_SERVER_USER,
-        //             pass: process.env.EMAIL_SERVER_PASSWORD,
-        //         },
-        //     },
-        //     from: process.env.EMAIL_FROM,
-        // }),
-    ],
+    user: {
+        additionalFields: {
+            role: {
+                type: 'string',
+                defaultValue: 'user',
+                input: false,
+            },
+        },
+    },
 });

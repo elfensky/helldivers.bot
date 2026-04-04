@@ -40,12 +40,9 @@ function checkAnalytics() {
 }
 
 function checkAuth() {
-    //NEXT-AUTH
-    if (!process.env.AUTH_SECRET) {
-        throw new Error('AUTH_SECRET is not set');
-    }
-    if (!process.env.AUTH_TRUST_HOST) {
-        throw new Error('AUTH_TRUST_HOST is not set');
+    //BETTER-AUTH
+    if (!process.env.BETTER_AUTH_SECRET) {
+        throw new Error('BETTER_AUTH_SECRET is not set');
     }
     //AUTH-DISCORD
     if (!process.env.AUTH_DISCORD_ID) {
