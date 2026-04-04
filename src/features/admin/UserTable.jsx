@@ -9,7 +9,7 @@ import {
 } from '@/db/queries/admin';
 import { timeSince } from '@/shared/utils/time';
 
-export default function UserTable({ users }) {
+export default function UserTable({ users, adminCount, currentUserId }) {
     const [selectedUser, setSelectedUser] = useState(null);
     const [keys, setKeys] = useState(null);
 
@@ -48,6 +48,8 @@ export default function UserTable({ users }) {
                                     user={u}
                                     isSelected={selectedUser?.id === u.id}
                                     onShowKeys={() => handleShowKeys(u)}
+                                    adminCount={adminCount}
+                                    currentUserId={currentUserId}
                                 />
                             ))}
                         </tbody>
@@ -68,11 +70,15 @@ export default function UserTable({ users }) {
     );
 }
 
-function UserRow({ user, isSelected, onShowKeys }) {
+function UserRow({ user, isSelected, onShowKeys, adminCount, currentUserId }) {
     const [roleState, roleAction, rolePending] = useActionState(updateUserRole, null);
     const [banState, banAction, banPending] = useActionState(toggleUserBan, null);
 
     const isBanned = user.banned;
+    const isSelf = user.id === currentUserId;
+    const isLastAdmin = user.role === 'admin' && adminCount === 1;
+    const roleDisabled = rolePending || isSelf || isLastAdmin;
+    const banDisabled = banPending || isLastAdmin;
 
     return (
         <tr className={isBanned ? 'opacity-50' : ''}>
@@ -100,8 +106,15 @@ function UserRow({ user, isSelected, onShowKeys }) {
                         name="newRole"
                         defaultValue={user.role}
                         onChange={(e) => e.target.form.requestSubmit()}
-                        disabled={rolePending}
-                        className="bg-surface-2 px-2 py-0.5 text-xs text-text"
+                        disabled={roleDisabled}
+                        title={
+                            isSelf
+                                ? 'Cannot change your own role'
+                                : isLastAdmin
+                                  ? 'Cannot demote the last admin'
+                                  : undefined
+                        }
+                        className={`bg-surface-2 px-2 py-0.5 text-xs ${roleDisabled ? 'text-text-muted cursor-not-allowed' : 'text-text'}`}
                     >
                         <option value="user">user</option>
                         <option value="admin">admin</option>
@@ -122,25 +135,28 @@ function UserRow({ user, isSelected, onShowKeys }) {
                 </button>
             </td>
             <td className="py-2">
-                <form action={banAction}>
-                    <input type="hidden" name="userId" value={user.id} />
-                    <input
-                        type="hidden"
-                        name="banned"
-                        value={isBanned ? 'false' : 'true'}
-                    />
-                    <button
-                        type="submit"
-                        disabled={banPending}
-                        className={`cursor-pointer border px-2 py-0.5 text-xs disabled:cursor-not-allowed disabled:opacity-50 ${
-                            isBanned
-                                ? 'border-green-400 text-green-400'
-                                : 'border-danger text-danger'
-                        }`}
-                    >
-                        {isBanned ? 'Unban' : 'Ban'}
-                    </button>
-                </form>
+                {isSelf ? null : (
+                    <form action={banAction}>
+                        <input type="hidden" name="userId" value={user.id} />
+                        <input
+                            type="hidden"
+                            name="banned"
+                            value={isBanned ? 'false' : 'true'}
+                        />
+                        <button
+                            type="submit"
+                            disabled={banDisabled}
+                            title={isLastAdmin ? 'Cannot ban the last admin' : undefined}
+                            className={`cursor-pointer border px-2 py-0.5 text-xs disabled:cursor-not-allowed disabled:opacity-50 ${
+                                isBanned
+                                    ? 'border-green-400 text-green-400'
+                                    : 'border-danger text-danger'
+                            }`}
+                        >
+                            {isBanned ? 'Unban' : 'Ban'}
+                        </button>
+                    </form>
+                )}
             </td>
         </tr>
     );
