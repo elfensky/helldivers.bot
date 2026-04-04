@@ -8,6 +8,7 @@ import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';
 import { notifyUpdate } from '@/update/notifyClient';
+import { checkAndNotify } from '@/update/pushNotifier';
 
 export async function GET(request) {
     //INITIALIZE
@@ -40,6 +41,11 @@ export async function GET(request) {
 
     // Notify SSE clients that data has been updated
     await notifyUpdate();
+
+    // Fire-and-forget: check for event transitions and send push notifications
+    checkAndNotify().catch((err) =>
+        console.error('Push notification error:', err.message),
+    );
 
     //RESPONSE
     return successResponse(200, start, {

@@ -8,6 +8,7 @@ import { Toaster } from 'sonner';
 import Header from '@/shared/components/Header/Header';
 import Footer from '@/shared/components/Footer/Footer';
 import BottomNav from '@/shared/components/BottomNav/BottomNav';
+import ServiceWorkerRegister from '@/shared/components/ServiceWorkerRegister';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],
@@ -96,6 +97,7 @@ export default async function RootLayout({ children }) {
                 </main>
                 <Footer />
                 <BottomNav />
+                <ServiceWorkerRegister />
                 <Toaster
                     theme="dark"
                     position="bottom-right"

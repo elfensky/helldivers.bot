@@ -341,3 +341,16 @@ model h1_event_snapshot {
 }
 
 // #endregion
+
+// #region PUSH NOTIFICATIONS
+model push_subscription {
+    id          Int      @id @default(autoincrement())
+    endpoint    String   @unique
+    keys_p256dh String
+    keys_auth   String
+    created_at  DateTime @default(now())
+
+    @@index([endpoint])
+}
+
+// #endregion

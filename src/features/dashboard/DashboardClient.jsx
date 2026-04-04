@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Galaxy from '@/features/galaxy/Galaxy';
 import LiveToasts from '@/features/notifications/LiveToasts';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
+import PushToggle from '@/features/notifications/PushToggle';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
 import ConnectionStatus from '@/features/dashboard/ConnectionStatus';
@@ -114,6 +115,7 @@ export default function DashboardClient({ initialData, initialMapState }) {
                         )}
                         <ConnectionStatus status={status} />
                         <NotificationToggle />
+                        <PushToggle />
                     </div>
                 </div>
                 <section className="flex flex-col gap-2">
