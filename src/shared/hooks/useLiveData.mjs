@@ -1,5 +1,25 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+const CACHE_KEY = 'hd1-live-cache';
+
+function loadCachedState() {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+}
+
+function saveCachedState(data, mapState) {
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data, mapState, ts: Date.now() }));
+    } catch {
+        // localStorage full or unavailable — ignore
+    }
+}
 
 /**
  * Hook that connects to the SSE stream for live campaign data updates.
@@ -7,13 +27,21 @@ import { useState, useEffect, useRef, useCallback } from 'react';
  * First SSE message is treated as a silent baseline (no prevData set)
  * to avoid false change detection when SSR data is stale.
  *
- * @param {Object} initialData - Server-rendered campaign data
- * @param {Object} initialMapState - Server-rendered map state
+ * Falls back to localStorage cache when SSR data is unavailable (offline PWA).
+ *
+ * @param {Object} initialData - Server-rendered campaign data (null if offline)
+ * @param {Object} initialMapState - Server-rendered map state (null if offline)
  * @returns {{ data, mapState, status, prevData }}
  */
 export function useLiveData(initialData, initialMapState) {
-    const [data, setData] = useState(initialData);
-    const [mapState, setMapState] = useState(initialMapState);
+    const [data, setData] = useState(() => {
+        if (initialData) return initialData;
+        return loadCachedState()?.data ?? null;
+    });
+    const [mapState, setMapState] = useState(() => {
+        if (initialMapState) return initialMapState;
+        return loadCachedState()?.mapState ?? null;
+    });
     const [status, setStatus] = useState('connecting');
 
     const prevDataRef = useRef(null);
@@ -70,6 +98,9 @@ export function useLiveData(initialData, initialMapState) {
 
         es.onmessage = (event) => {
             const parsed = JSON.parse(event.data);
+
+            // Cache for offline use
+            saveCachedState(parsed.data, parsed.mapState);
 
             if (isFirstMessage.current) {
                 // Silent baseline — don't set prevData to avoid false diffs
