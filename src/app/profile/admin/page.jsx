@@ -20,11 +20,16 @@ export default async function AdminPage() {
 
     const result = await getAllUsers();
     const users = result.data ?? [];
+    const adminCount = users.filter((u) => u.role === 'admin').length;
 
     return (
         <div className="flex flex-col gap-4">
             <SystemOverview />
-            <UserTable users={users} />
+            <UserTable
+                users={users}
+                adminCount={adminCount}
+                currentUserId={session.user.id}
+            />
         </div>
     );
 }
