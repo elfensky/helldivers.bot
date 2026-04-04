@@ -11,7 +11,7 @@ export default async function ApiDashboard({ user }) {
     }
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
             <h2>API Keys</h2>
             <GenerateApiKeyForm userId={user.id} />
             <ApiKeysList userId={user.id} />
@@ -23,35 +23,52 @@ async function ApiKeysList({ userId }) {
     const result = await getApiKeysByUserId(userId);
     const apiKeys = result.query;
 
-    return (
-        <table>
-            <thead>
-                <tr>
-                    <th scope="col">Description</th>
-                    <th scope="col">Last 4 characters</th>
-                    <th scope="col">Created At</th>
-                    <th scope="col">Enabled</th>
-                    <th scope="col">
-                        <span className="sr-only">Actions</span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                {apiKeys
-                    .sort((a, b) => b.createdAt - a.createdAt)
-                    .map((apikey, index) => (
-                        <tr key={apikey.id}>
-                            <td>{apikey.description}</td>
+    if (!apiKeys || apiKeys.length === 0) {
+        return <p className="text-sm text-text-muted">No API keys yet.</p>;
+    }
 
-                            <td>{'********-****-****-****-********' + apikey.visible}</td>
-                            <td>{timeSince(apikey.createdAt)}</td>
-                            <td>{apikey.enabled ? 'Yes' : 'No'}</td>
-                            <td>
-                                <DeleteApiKeyForm userId={userId} apikeyId={apikey.id} />
-                            </td>
+    return (
+        <div className="grid grid-cols-[minmax(0,1fr)_4px] border border-ghost bg-surface-1">
+            <div className="overflow-x-auto p-3">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="text-left text-xs font-mono text-text-muted uppercase">
+                            <th scope="col" className="pb-2">Description</th>
+                            <th scope="col" className="pb-2">Last 4 characters</th>
+                            <th scope="col" className="pb-2">Created At</th>
+                            <th scope="col" className="pb-2">Enabled</th>
+                            <th scope="col" className="pb-2">
+                                <span className="sr-only">Actions</span>
+                            </th>
                         </tr>
-                    ))}
-            </tbody>
-        </table>
+                    </thead>
+                    <tbody>
+                        {apiKeys
+                            .sort((a, b) => b.createdAt - a.createdAt)
+                            .map((apikey) => (
+                                <tr key={apikey.id}>
+                                    <td className="py-1">{apikey.description}</td>
+                                    <td className="py-1 font-mono text-text-muted">
+                                        {'****' + apikey.visible}
+                                    </td>
+                                    <td className="py-1 text-text-muted">
+                                        {timeSince(apikey.createdAt)}
+                                    </td>
+                                    <td className="py-1 text-text-muted">
+                                        {apikey.enabled ? 'Yes' : 'No'}
+                                    </td>
+                                    <td className="py-1">
+                                        <DeleteApiKeyForm
+                                            userId={userId}
+                                            apikeyId={apikey.id}
+                                        />
+                                    </td>
+                                </tr>
+                            ))}
+                    </tbody>
+                </table>
+            </div>
+            <div className="bg-primary" />
+        </div>
     );
 }

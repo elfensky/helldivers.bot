@@ -31,55 +31,50 @@ export default function AccountActions({ user }) {
     }, [deleteState]);
 
     return (
-        <div className="grid grid-cols-[1fr_4px]">
-            <div className="flex flex-col gap-4 bg-surface-1 p-4">
-                <h2 className="font-semibold text-text">Your Data</h2>
+        <div className="flex flex-col gap-3">
+            <h2>Your Data</h2>
 
-                <div className="flex flex-col gap-2">
+            <button
+                type="button"
+                onClick={handleExport}
+                className="w-fit cursor-pointer border border-ghost px-3 py-1.5 text-sm text-text-muted hover:text-text"
+            >
+                Download My Data
+            </button>
+
+            <div className="border-t border-ghost pt-3">
+                <p className="text-sm text-text-muted">
+                    Permanently delete your account and all associated data. This cannot
+                    be undone.
+                </p>
+                {deleteState?.errors?.confirmEmail && (
+                    <span role="alert" className="text-sm text-danger">
+                        {deleteState.errors.confirmEmail}
+                    </span>
+                )}
+                {deleteState?.errors?.auth && (
+                    <span role="alert" className="text-sm text-danger">
+                        {deleteState.errors.auth}
+                    </span>
+                )}
+                <Form action={deleteAction} className="mt-2 flex items-center gap-2">
+                    <input type="hidden" name="userId" value={user.id} />
+                    <input
+                        type="email"
+                        name="confirmEmail"
+                        placeholder="Type your email to confirm"
+                        className="bg-surface-2 px-3 py-1.5 text-sm text-text placeholder:text-text-muted"
+                        required
+                    />
                     <button
-                        type="button"
-                        onClick={handleExport}
-                        className="w-fit cursor-pointer border border-ghost px-3 py-1.5 text-sm text-text-muted hover:text-text"
+                        type="submit"
+                        disabled={deletePending}
+                        className="cursor-pointer border border-danger px-3 py-1.5 text-sm text-danger hover:bg-danger hover:text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        Download My Data
+                        Delete Account
                     </button>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <p className="text-sm text-text-muted">
-                        Permanently delete your account and all associated data. This
-                        cannot be undone.
-                    </p>
-                    {deleteState?.errors?.confirmEmail && (
-                        <span role="alert" className="text-sm text-danger">
-                            {deleteState.errors.confirmEmail}
-                        </span>
-                    )}
-                    {deleteState?.errors?.auth && (
-                        <span role="alert" className="text-sm text-danger">
-                            {deleteState.errors.auth}
-                        </span>
-                    )}
-                    <Form action={deleteAction} className="flex items-center gap-2">
-                        <input type="hidden" name="userId" value={user.id} />
-                        <input
-                            type="email"
-                            name="confirmEmail"
-                            placeholder="Type your email to confirm"
-                            className="bg-surface-2 px-3 py-1.5 text-sm text-text placeholder:text-text-muted"
-                            required
-                        />
-                        <button
-                            type="submit"
-                            disabled={deletePending}
-                            className="cursor-pointer border border-danger px-3 py-1.5 text-sm text-danger hover:bg-danger hover:text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            Delete Account
-                        </button>
-                    </Form>
-                </div>
+                </Form>
             </div>
-            <div className="bg-danger" />
         </div>
     );
 }

@@ -11,13 +11,13 @@ import { timeSince } from '@/shared/utils/time';
 
 export default function UserTable({ users }) {
     return (
-        <div className="grid grid-cols-[1fr_4px]">
-            <div className="flex flex-col gap-2 bg-surface-1 p-4">
-                <h2 className="font-semibold text-text">User Management</h2>
-                <div className="overflow-x-auto">
+        <div className="flex flex-col gap-3">
+            <h2>User Management</h2>
+            <div className="grid grid-cols-[minmax(0,1fr)_4px] border border-ghost bg-surface-1">
+                <div className="overflow-x-auto p-3">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="text-left text-xs text-text-muted uppercase">
+                            <tr className="text-left text-xs font-mono text-text-muted uppercase">
                                 <th className="pb-2">User</th>
                                 <th className="pb-2">Email</th>
                                 <th className="pb-2">Role</th>
@@ -32,8 +32,8 @@ export default function UserTable({ users }) {
                         </tbody>
                     </table>
                 </div>
+                <div className="bg-primary" />
             </div>
-            <div className="bg-primary" />
         </div>
     );
 }
@@ -119,9 +119,9 @@ function UserRow({ user }) {
                             type="submit"
                             disabled={banPending}
                             className={`cursor-pointer border px-2 py-0.5 text-xs disabled:cursor-not-allowed disabled:opacity-50 ${
-                                isBanned ?
-                                    'border-green-400 text-green-400'
-                                :   'border-danger text-danger'
+                                isBanned
+                                    ? 'border-green-400 text-green-400'
+                                    : 'border-danger text-danger'
                             }`}
                         >
                             {isBanned ? 'Unban' : 'Ban'}
@@ -132,7 +132,7 @@ function UserRow({ user }) {
             {showKeys && keys && (
                 <tr>
                     <td colSpan={5} className="pb-2">
-                        <div className="ml-6 flex flex-col gap-1 bg-surface-2 p-2">
+                        <div className="ml-6 flex flex-col gap-1 border-l-2 border-ghost pl-3">
                             {keys.length === 0 && (
                                 <p className="text-xs text-text-muted">No API keys</p>
                             )}
