@@ -161,6 +161,57 @@ describe('toggleUserBan', () => {
             data: { banned: true },
         });
     });
+
+    test('prevents banning the last admin', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
+        vi.mocked(db.user.findUnique).mockResolvedValue({ role: 'admin' });
+        vi.mocked(db.user.count).mockResolvedValue(1);
+
+        const result = await toggleUserBan(
+            null,
+            createFormData({ userId: targetUserId, banned: 'true' }),
+        );
+        expect(result.errors.auth).toMatch(/last admin/i);
+        expect(db.user.update).not.toHaveBeenCalled();
+    });
+
+    test('allows banning admin when multiple admins exist', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
+        vi.mocked(db.user.findUnique).mockResolvedValue({ role: 'admin' });
+        vi.mocked(db.user.count).mockResolvedValue(2);
+        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, banned: true });
+
+        const result = await toggleUserBan(
+            null,
+            createFormData({ userId: targetUserId, banned: 'true' }),
+        );
+        expect(result.data).toBeDefined();
+    });
+
+    test('allows banning non-admin user without guard check', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
+        vi.mocked(db.user.findUnique).mockResolvedValue({ role: 'user' });
+        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, banned: true });
+
+        const result = await toggleUserBan(
+            null,
+            createFormData({ userId: targetUserId, banned: 'true' }),
+        );
+        expect(result.data).toBeDefined();
+        expect(db.user.count).not.toHaveBeenCalled();
+    });
+
+    test('allows unbanning without guard check', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
+        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, banned: false });
+
+        const result = await toggleUserBan(
+            null,
+            createFormData({ userId: targetUserId, banned: 'false' }),
+        );
+        expect(result.data).toBeDefined();
+        expect(db.user.findUnique).not.toHaveBeenCalled();
+    });
 });
 
 // ─── adminGetUserApiKeys ────────────────────────────────────────────

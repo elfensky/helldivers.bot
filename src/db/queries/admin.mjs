@@ -127,6 +127,31 @@ export async function toggleUserBan(_, formData) {
         };
     }
 
+    // Last-admin protection: block banning the only remaining admin
+    if (check.data.banned === true) {
+        const { data: target, error: targetError } = await tryCatch(
+            db.user.findUnique({
+                where: { id: check.data.userId },
+                select: { role: true },
+            }),
+        );
+        if (targetError) throw targetError;
+
+        if (target?.role === 'admin') {
+            const { data: adminCount, error: countError } = await tryCatch(
+                db.user.count({ where: { role: 'admin' } }),
+            );
+            if (countError) throw countError;
+
+            if (adminCount === 1) {
+                return {
+                    errors: { auth: 'Cannot ban the last admin' },
+                    time: performanceTime(start),
+                };
+            }
+        }
+    }
+
     const { data: updated, error } = await tryCatch(
         db.user.update({
             where: { id: check.data.userId },
