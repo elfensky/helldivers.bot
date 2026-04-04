@@ -84,6 +84,10 @@ vi.mock('@/db/db', () => ({
         h1_live: createModelMock(),
         h1_live_snapshot: createModelMock(),
         h1_event_snapshot: createModelMock(),
+        // Worker health
+        worker_heartbeat: createModelMock(),
+        // Push subscriptions
+        push_subscription: createModelMock(),
         // Prisma utilities
         $transaction: vi.fn((fn) => Promise.resolve(Array.isArray(fn) ? fn : fn())),
         $connect: vi.fn(() => Promise.resolve()),
