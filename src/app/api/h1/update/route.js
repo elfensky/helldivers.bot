@@ -3,6 +3,7 @@ import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/utils/time';
 import { errorResponse, successResponse } from '@/utils/responses';
+import { methodNotAllowed } from '@/utils/methodNotAllowed';
 //update
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';
@@ -48,12 +49,6 @@ export async function GET(request) {
         },
     });
 }
-
-// Custom handler for all other methods
-const methodNotAllowed = () => {
-    const start = performance.now();
-    return errorResponse(405, start);
-};
 
 export const POST = methodNotAllowed;
 export const PUT = methodNotAllowed;

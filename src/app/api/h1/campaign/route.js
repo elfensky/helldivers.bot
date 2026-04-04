@@ -2,6 +2,7 @@ import { tryCatch } from '@/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/utils/time';
 import { errorResponse, successResponse } from '@/utils/responses';
+import { methodNotAllowed } from '@/utils/methodNotAllowed';
 
 import { after } from 'next/server';
 //validators
@@ -79,11 +80,6 @@ export async function GET(request) {
     //4. return response
     return successResponse(200, start, data);
 }
-
-const methodNotAllowed = () => {
-    const start = performance.now();
-    return errorResponse(405, start);
-};
 
 export const POST = methodNotAllowed;
 export const PUT = methodNotAllowed;

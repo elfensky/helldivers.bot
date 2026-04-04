@@ -3,6 +3,7 @@ import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/utils/time';
 import { errorResponse, successResponse } from '@/utils/responses';
 import { after } from 'next/server';
+import { methodNotAllowed } from '@/utils/methodNotAllowed';
 //parsers
 import { formDataToObject } from '@/utils/formdata';
 //validators
@@ -126,12 +127,6 @@ export async function POST(request) {
     //6. return response
     return successResponse(200, start, data);
 }
-
-// Custom handler for all other methods
-const methodNotAllowed = () => {
-    const start = performance.now();
-    return errorResponse(405, start);
-};
 
 export const GET = methodNotAllowed;
 export const PUT = methodNotAllowed;
