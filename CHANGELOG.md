@@ -2,31 +2,110 @@
 
 ## Unreleased
 
+## 0.24.0 (2026-04-04)
+
+### Phase 8: Real-Time Updates
+
+#### Features
+
+- **SSE live data streaming** — dashboard updates automatically every 10-15 seconds without page reload (#41)
+- **Sonner toast notifications** — persistent, faction-colored toasts with glow animation on campaign start/win/lose (#229)
+- **Web Notifications** — native browser notifications when tab is backgrounded (BroadcastChannel leader election prevents duplicates)
+- **Push notifications** — server-initiated notifications via Web Push API when browser is closed (#24)
+- **PWA offline support** — service worker caches app shell, localStorage preserves last-known dashboard data for offline viewing
+- **Connection status indicator** — live/reconnecting/offline pill replaces "Updated X ago" when connected
+
+#### Architecture
+
+- Server-Sent Events (SSE) transport via Next.js Route Handler (`/api/h1/stream`)
+- Postgres LISTEN/NOTIFY for cross-process change broadcasting between worker and SSE manager
+- SSE manager singleton with connection limits (5/IP, 500 total), heartbeat, exponential backoff reconnection, and graceful shutdown
+- Client-side change detection (`detectChanges`) shared between toast and push notification paths
+- Push subscription API with Zod validation and stale subscription cleanup (410/404)
+- Server-side push notifier with concurrency-limited fan-out (max 50 concurrent)
+
+#### UI Changes
+
+- Remove `Alerts` banner component — persistent event status now shown in enhanced `EventCard` (progress bar, pace, countdown timer)
+- Single "Enable notifications" button enables both web notifications and push subscription
+- Shows "Notifications blocked" / "Notifications unavailable" when denied or unsupported
+- Toasts use right-side accent line matching brandkit convention
+
+#### Documentation
+
+- Add `/docs/notifications` page with interactive flow diagram (clickable nodes, flow filtering)
+- Add notification category styles to shared diagram CSS
+
+#### Dependencies
+
+- Add `sonner` (~5KB gzipped) for toast notifications
+- Add `web-push` (~15KB, server only) for push notification delivery
+
+#### Database
+
+- Add `push_subscription` table (endpoint, keys, created_at)
+
+#### Environment Variables (New)
+
+- `VAPID_PUBLIC_KEY` — Web Push VAPID public key
+- `VAPID_PRIVATE_KEY` — Web Push VAPID private key
+- `VAPID_SUBJECT` — VAPID subject (mailto: email)
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` — client-side VAPID public key
+
+## 0.23.0 (2026-04-04)
+
+### Security
+
+- Replace `unsafe-inline` CSP with nonce-based policy via custom server proxy (`proxy.js`) (#226)
+- Remove `unsafe-eval` from CSP in production; keep for dev only (#226)
+
+### Infrastructure
+
+- Run migration container as non-root user (#227)
+- Standardize Docker user to built-in `node` user (#228)
+- Rename Docker workflow display names for clarity
+- Consolidate duplicated code and extract shared utilities
+- Standardize quoting in CI workflows and reformat openapi.json
+
+### Frontend
+
+- Consolidate /about, /faq, /architecture, /brandkit, /discord into unified /docs section
+- Add MDX authoring support via @next/mdx with remark-gfm
+- Add docs layout with sidebar navigation (desktop persistent, mobile dropdown)
+- Migrate ProgressExplainer from architecture to FAQ page
+- Move API documentation (OpenAPI/Swagger) to /docs/api
+- Remove standalone /discord page (absorbed into /docs/about)
+- Update HeaderNav, BottomNav, Footer, and sitemap to reference /docs routes
+
 ## 0.22.3 (2026-04-04)
 
 ### CI & Infrastructure
 
-- Upgrade from Node 22 to Node 24
+- Upgrade from Node 22 to Node 24 (ships npm 11 natively)
+- Remove npm@11 pin from CI and Dockerfiles — no longer needed
 - Pin GitHub Actions to commit SHAs and upgrade to latest versions
 - Add CI, CodeQL, and dependency review workflows with branch protections
-- Add SonarCloud scan with quality gate to CI workflow
-- Add prisma generate step to CI before build
+- Remove SonarCloud from CI — replaced by local vitest coverage
+- Add Prisma generate step to CI before build
 - Fix duplicate CodeQL trigger on pull_request
-- Fix npm@11 pin in CI — Node 22.x bundles npm 11.x natively
 - Fix pagespeed workflow: push to orphan metrics branch, fix syntax errors
 - Remove commented-out metrics steps referencing METRICS_TOKEN
+- Add .prettierignore for auto-generated openapi.json
 
 ### Tests
 
-- Add 22 unit test files covering utils, queries, routes, and pipeline
-- Add 11 React component tests with jsdom + @testing-library/react
-- Add 6 unit tests for previously untested critical modules
-- Strengthen assertions and close coverage gaps in 5 test files
+- Raise unit test coverage from 66% to 85% (619 tests across 69 files)
+- Add 9 new test files: Footer, Auth, Header, DocsClient, Navigation, Wings, formdata, initializeOpenapi, rebroadcast route
+- Extend utils and umami tests with edge cases and error paths
+- Fix vitest coverage exclusions (.js→.mjs glob mismatch)
+- Suppress console noise in test output via global mocks
 - Align smoke tests with new error schema, use TEST_SERVER_URL
 
 ### Code Quality
 
 - Extract shared helpers to reduce duplication
+- Remove debug console.log from initialize.worker.mjs
+- Simplify Event card and improve timeline date handling
 - Run Prettier
 
 ### Docs

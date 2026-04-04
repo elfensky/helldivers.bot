@@ -1,7 +1,7 @@
 import db from '@/db/db';
-import { tryCatch } from '@/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/utils/time';
+import { performanceTime } from '@/shared/utils/time';
 
 async function upsertRebroadcast(model, season, data) {
     const start = performance.now();

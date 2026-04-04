@@ -1,400 +1,446 @@
 {
-    "openapi": "3.0.0",
-    "info": {
-        "title": "Helldivers 1 API",
-        "version": "0.11.0",
-        "description": "A simple API"
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Helldivers 1 API",
+    "version": "0.23.0",
+    "description": "A simple API"
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "number",
+            "description": "Time taken to process the request (ms)"
+          },
+          "code": {
+            "type": "number",
+            "description": "HTTP status code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable status message"
+          },
+          "error": {
+            "nullable": true,
+            "description": "Error details or null"
+          }
+        },
+        "required": [
+          "time",
+          "code",
+          "message"
+        ]
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "number",
+            "description": "Time taken to process the request (ms)"
+          },
+          "code": {
+            "type": "number",
+            "description": "HTTP status code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable status message"
+          },
+          "data": {
+            "nullable": true,
+            "description": "Response data"
+          }
+        },
+        "required": [
+          "time",
+          "code",
+          "message"
+        ]
+      },
+      "RebroadcastFormData": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "get_campaign_status",
+              "get_snapshots"
+            ],
+            "description": "The action to perform."
+          },
+          "season": {
+            "type": "integer",
+            "minimum": 1,
+            "exclusiveMinimum": true,
+            "description": "Required if action is get_snapshots."
+          }
+        },
+        "required": [
+          "action"
+        ]
+      }
     },
-    "components": {
-        "schemas": {
-            "ErrorResponse": {
-                "type": "object",
-                "properties": {
-                    "time": {
-                        "type": "number",
-                        "description": "Time taken to process the request (ms)"
-                    },
-                    "code": {
-                        "type": "number",
-                        "description": "HTTP status code"
-                    },
-                    "message": {
-                        "type": "string",
-                        "description": "Human-readable status message"
-                    },
-                    "error": {
-                        "nullable": true,
-                        "description": "Error details or null"
-                    }
-                },
-                "required": ["time", "code", "message"]
+    "parameters": {}
+  },
+  "paths": {
+    "/api/h1/campaign": {
+      "get": {
+        "summary": "Get campaign data for a specific season or the latest.",
+        "description": "Returns campaign data for a given season if the `season` query parameter is provided and valid. If no season is provided, returns the latest campaign data. If data is not found locally, attempts to fetch and update from a remote source.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "The season number to fetch campaign data for.",
+              "example": "1"
             },
-            "SuccessResponse": {
-                "type": "object",
-                "properties": {
+            "required": false,
+            "description": "The season number to fetch campaign data for.",
+            "name": "season",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaign data found and returned successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
                     "time": {
-                        "type": "number",
-                        "description": "Time taken to process the request (ms)"
+                      "type": "number",
+                      "description": "Time taken to process the request (ms)"
                     },
                     "code": {
-                        "type": "number",
-                        "description": "HTTP status code"
+                      "type": "number",
+                      "description": "HTTP status code"
                     },
                     "message": {
-                        "type": "string",
-                        "description": "Human-readable status message"
+                      "type": "string",
+                      "description": "Human-readable status message"
                     },
                     "data": {
-                        "nullable": true,
-                        "description": "Response data"
+                      "nullable": true,
+                      "description": "The campaign data object"
                     }
-                },
-                "required": ["time", "code", "message"]
-            },
-            "RebroadcastFormData": {
-                "type": "object",
-                "properties": {
-                    "action": {
-                        "type": "string",
-                        "enum": ["get_campaign_status", "get_snapshots"],
-                        "description": "The action to perform."
-                    },
-                    "season": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "exclusiveMinimum": true,
-                        "description": "Required if action is get_snapshots."
-                    }
-                },
-                "required": ["action"]
-            }
-        },
-        "parameters": {}
-    },
-    "paths": {
-        "/api/h1/campaign": {
-            "get": {
-                "summary": "Get campaign data for a specific season or the latest.",
-                "description": "Returns campaign data for a given season if the `season` query parameter is provided and valid. If no season is provided, returns the latest campaign data. If data is not found locally, attempts to fetch and update from a remote source.",
-                "parameters": [
-                    {
-                        "schema": {
-                            "type": "string",
-                            "description": "The season number to fetch campaign data for.",
-                            "example": "1"
-                        },
-                        "required": false,
-                        "description": "The season number to fetch campaign data for.",
-                        "name": "season",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Campaign data found and returned successfully.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "time": {
-                                            "type": "number",
-                                            "description": "Time taken to process the request (ms)"
-                                        },
-                                        "code": {
-                                            "type": "number",
-                                            "description": "HTTP status code"
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "description": "Human-readable status message"
-                                        },
-                                        "data": {
-                                            "nullable": true,
-                                            "description": "The campaign data object"
-                                        }
-                                    },
-                                    "required": ["time", "code", "message"]
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid season parameter.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Campaign data not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
+                  },
+                  "required": [
+                    "time",
+                    "code",
+                    "message"
+                  ]
                 }
+              }
             }
-        },
-        "/api/h1/rebroadcast": {
-            "post": {
-                "summary": "Perform a campaign status or snapshot action",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "$ref": "#/components/schemas/RebroadcastFormData"
-                            }
-                        },
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "$ref": "#/components/schemas/RebroadcastFormData"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Success",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "nullable": true
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request (content type, action, or arguments).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "time": {
-                                            "type": "number"
-                                        },
-                                        "error_code": {
-                                            "type": "number"
-                                        },
-                                        "error_message": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": ["time", "error_code", "error_message"]
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized. API key missing, malformed, or not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "time": {
-                                            "type": "number"
-                                        },
-                                        "error_code": {
-                                            "type": "number"
-                                        },
-                                        "error_message": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": ["time", "error_code", "error_message"]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden. API key found but disabled.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "time": {
-                                            "type": "number"
-                                        },
-                                        "error_code": {
-                                            "type": "number"
-                                        },
-                                        "error_message": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": ["time", "error_code", "error_message"]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "time": {
-                                            "type": "number"
-                                        },
-                                        "error_code": {
-                                            "type": "number"
-                                        },
-                                        "error_message": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": ["time", "error_code", "error_message"]
-                                }
-                            }
-                        }
-                    },
-                    "405": {
-                        "description": "Method not allowed.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "time": {
-                                            "type": "number"
-                                        },
-                                        "error_code": {
-                                            "type": "number"
-                                        },
-                                        "error_message": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": ["time", "error_code", "error_message"]
-                                }
-                            }
-                        }
-                    }
+          },
+          "400": {
+            "description": "Invalid season parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
+              }
             }
-        },
-        "/api/h1/update": {
-            "get": {
-                "summary": "Trigger current campaign status and snapshot updates",
-                "description": "**Internal-use-only.** This endpoint is used by a node (web) worker to continuously trigger status and season updates for the current campaign. It is not intended for external user consumption. Requires a valid `key` query parameter matching the server's `UPDATE_KEY` environment variable.",
-                "tags": ["Internal"],
-                "parameters": [
-                    {
-                        "schema": {
-                            "type": "string",
-                            "description": "Internal API key for authorization."
-                        },
-                        "required": true,
-                        "description": "Internal API key for authorization.",
-                        "name": "key",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Update successful. Returns the updated status and season data.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "time": {
-                                            "type": "number"
-                                        },
-                                        "code": {
-                                            "type": "number"
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "data": {
-                                            "type": "object",
-                                            "properties": {
-                                                "updated": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "status": {
-                                                            "nullable": true,
-                                                            "description": "The updated status data."
-                                                        },
-                                                        "season": {
-                                                            "nullable": true,
-                                                            "description": "The updated season data."
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            "required": ["updated"]
-                                        }
-                                    },
-                                    "required": ["time", "code", "message", "data"]
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request. Missing key parameter.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized. The provided key is missing or invalid.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "405": {
-                        "description": "Method Not Allowed. Only GET is supported.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
+          },
+          "404": {
+            "description": "Campaign data not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
+              }
             }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
         }
+      }
+    },
+    "/api/h1/rebroadcast": {
+      "post": {
+        "summary": "Perform a campaign status or snapshot action",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/RebroadcastFormData"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/RebroadcastFormData"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (content type, action, or arguments).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "time": {
+                      "type": "number"
+                    },
+                    "error_code": {
+                      "type": "number"
+                    },
+                    "error_message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "time",
+                    "error_code",
+                    "error_message"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. API key missing, malformed, or not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "time": {
+                      "type": "number"
+                    },
+                    "error_code": {
+                      "type": "number"
+                    },
+                    "error_message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "time",
+                    "error_code",
+                    "error_message"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden. API key found but disabled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "time": {
+                      "type": "number"
+                    },
+                    "error_code": {
+                      "type": "number"
+                    },
+                    "error_message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "time",
+                    "error_code",
+                    "error_message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "time": {
+                      "type": "number"
+                    },
+                    "error_code": {
+                      "type": "number"
+                    },
+                    "error_message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "time",
+                    "error_code",
+                    "error_message"
+                  ]
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "time": {
+                      "type": "number"
+                    },
+                    "error_code": {
+                      "type": "number"
+                    },
+                    "error_message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "time",
+                    "error_code",
+                    "error_message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/h1/update": {
+      "get": {
+        "summary": "Trigger current campaign status and snapshot updates",
+        "description": "**Internal-use-only.** This endpoint is used by a node (web) worker to continuously trigger status and season updates for the current campaign. It is not intended for external user consumption. Requires a valid `key` query parameter matching the server's `UPDATE_KEY` environment variable.",
+        "tags": [
+          "Internal"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Internal API key for authorization."
+            },
+            "required": true,
+            "description": "Internal API key for authorization.",
+            "name": "key",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update successful. Returns the updated status and season data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "time": {
+                      "type": "number"
+                    },
+                    "code": {
+                      "type": "number"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "updated": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "nullable": true,
+                              "description": "The updated status data."
+                            },
+                            "season": {
+                              "nullable": true,
+                              "description": "The updated season data."
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "updated"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "time",
+                    "code",
+                    "message",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Missing key parameter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. The provided key is missing or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method Not Allowed. Only GET is supported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
+  }
 }

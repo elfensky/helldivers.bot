@@ -1,7 +1,8 @@
 import db from '@/db/db';
-import { tryCatch } from '@/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/utils/time';
+import { performanceTime } from '@/shared/utils/time';
+import { mapStatsToDbFields } from '@/db/queries/mapStatsToDbFields';
 
 export async function queryUpsertLive(season, enemy, campaign, stats, factionMap) {
     'use server';
@@ -28,22 +29,7 @@ export async function queryUpsertLive(season, enemy, campaign, stats, factionMap
                 status: campaign.status,
                 introduction_order: campaign.introduction_order,
                 // statistics fields
-                season_duration: stats.season_duration,
-                players: stats.players,
-                total_unique_players: stats.total_unique_players,
-                missions: stats.missions,
-                successful_missions: stats.successful_missions,
-                total_mission_difficulty: stats.total_mission_difficulty,
-                completed_planets: stats.completed_planets,
-                defend_events: stats.defend_events,
-                successful_defend_events: stats.successful_defend_events,
-                attack_events: stats.attack_events,
-                successful_attack_events: stats.successful_attack_events,
-                deaths: stats.deaths,
-                kills: stats.kills,
-                accidentals: stats.accidentals,
-                shots: stats.shots,
-                hits: stats.hits,
+                ...mapStatsToDbFields(stats),
                 // computed map
                 map: factionMap ?? null,
             },
@@ -57,22 +43,7 @@ export async function queryUpsertLive(season, enemy, campaign, stats, factionMap
                 status: campaign.status,
                 introduction_order: campaign.introduction_order,
                 // statistics fields
-                season_duration: stats.season_duration,
-                players: stats.players,
-                total_unique_players: stats.total_unique_players,
-                missions: stats.missions,
-                successful_missions: stats.successful_missions,
-                total_mission_difficulty: stats.total_mission_difficulty,
-                completed_planets: stats.completed_planets,
-                defend_events: stats.defend_events,
-                successful_defend_events: stats.successful_defend_events,
-                attack_events: stats.attack_events,
-                successful_attack_events: stats.successful_attack_events,
-                deaths: stats.deaths,
-                kills: stats.kills,
-                accidentals: stats.accidentals,
-                shots: stats.shots,
-                hits: stats.hits,
+                ...mapStatsToDbFields(stats),
                 // computed map
                 map: factionMap ?? null,
             },

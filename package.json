@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.20.0",
+    "version": "0.24.0",
     "private": true,
     "type": "module",
     "scripts": {
@@ -16,6 +16,9 @@
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.4.3",
         "@auth/prisma-adapter": "^2.11.1",
+        "@mdx-js/loader": "^3.1.1",
+        "@mdx-js/react": "^3.1.1",
+        "@next/mdx": "^16.2.2",
         "@prisma/adapter-pg": "^7.6.0",
         "@prisma/client": "^7.6.0",
         "@sentry/nextjs": "^10.46.0",
@@ -28,7 +31,10 @@
         "react-dom": "^19.2.4",
         "react-icons": "^5.6.0",
         "recharts": "^3.8.1",
+        "remark-gfm": "^4.0.1",
+        "sonner": "^2.0.7",
         "swagger-ui-dist": "^5.32.1",
+        "web-push": "^3.6.7",
         "zod": "^4.3.6"
     },
     "devDependencies": {

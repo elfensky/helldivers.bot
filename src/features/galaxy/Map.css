@@ -1,0 +1,61 @@
+.sector {
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.lost {
+    fill: rgba(255, 255, 255, 0.06);
+    stroke: var(--color-ghost);
+    z-index: 10;
+}
+
+.captured {
+    fill: rgba(255, 224, 0, 0.33);
+    stroke: var(--color-primary);
+    z-index: 20;
+}
+
+.in_progress {
+    stroke: var(--color-primary);
+    z-index: 30;
+}
+
+#bugs .in_progress,
+#bugs .active {
+    fill: var(--color-faction-bugs-fill);
+}
+
+#cyborgs .in_progress,
+#cyborgs .active {
+    fill: var(--color-faction-cyborgs-fill);
+}
+
+#illuminate .in_progress,
+#illuminate .active {
+    fill: var(--color-faction-illuminate-fill);
+}
+
+#bugs .active,
+#cyborgs .active,
+#illuminate .active,
+#superearth .active {
+    stroke: var(--color-primary);
+    animation: map-pulse-red 3s ease-in-out infinite;
+}
+
+@keyframes map-pulse-red {
+    0%,
+    100% {
+        stroke: var(--color-primary);
+        stroke-width: 2px;
+        filter: none;
+    }
+
+    50% {
+        stroke: var(--color-danger);
+        stroke-width: 4px;
+        fill: color-mix(in srgb, var(--color-danger) 35%, transparent);
+        filter: url(#glow-red);
+    }
+}

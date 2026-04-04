@@ -1,6 +1,6 @@
 import db from '@/db/db';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/utils/time';
+import { performanceTime } from '@/shared/utils/time';
 import { isValidNumber } from '@/validators/isValidNumber';
 
 export async function queryUpsertSeason(season, complete = false) {

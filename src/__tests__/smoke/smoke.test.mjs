@@ -14,8 +14,9 @@ describe.runIf(serverAvailable)('Smoke tests', () => {
     const pages = [
         ['/', 'Homepage'],
         ['/archives', 'Archives page'],
-        ['/faq', 'FAQ page'],
-        ['/about', 'About page'],
+        ['/docs', 'Docs page'],
+        ['/docs/about', 'Docs About page'],
+        ['/docs/faq', 'Docs FAQ page'],
     ];
 
     for (const [path, name] of pages) {

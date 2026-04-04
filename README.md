@@ -109,7 +109,7 @@ The application uses nextjs running on node@22, prisma and postgres. It is deplo
 
 ### Local
 
-1. provide a `.env` file based on .example.env
+1. provide a `.env.development` file based on .example.env
 2. install dependencies with `npm install`
 3. run `npm run dev` to start the server locally
 

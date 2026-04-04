@@ -1,8 +1,8 @@
-import { tryCatch } from '@/utils/tryCatch'; //util
+import { tryCatch } from '@/shared/utils/tryCatch'; //util
 import { performance } from 'perf_hooks'; //util
-import { performanceTime } from '@/utils/time'; //util
-import { getSeasonFromSnapshot } from '@/utils/getSeason'; //util
-import { EVENT_TYPE } from '@/enums/events';
+import { performanceTime } from '@/shared/utils/time'; //util
+import { getSeasonFromSnapshot } from '@/shared/utils/getSeason'; //util
+import { EVENT_TYPE } from '@/shared/enums/events';
 import { fetchSeason } from '@/update/fetch'; //fetch
 import { isValidSeason } from '@/validators/isValidSeason'; //validators
 //db

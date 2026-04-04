@@ -1,4 +1,4 @@
-name: Staging
+name: Build Staging
 on:
     workflow_dispatch: # allows requesting workflow manually from the website
     push:
@@ -69,7 +69,6 @@ jobs:
                   build-args: |
                       NODE_ENV=staging
     build-app:
-        # needs: sonarqube # <--- This makes build wait for sonarqube to finish
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code

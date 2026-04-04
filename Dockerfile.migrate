@@ -16,7 +16,11 @@ RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma 
     npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg@$ADAPTER_PG_VERSION dotenv@$DOTENV_VERSION && \
     POSTGRES_URL=postgresql://dummy npx prisma generate
 
+# Run as non-root user (node user is built into node:*-alpine images)
+RUN chown -R node:node /app
+USER node
+
 # Set tini as the init system
-ENTRYPOINT ["/sbin/tini", "--"]   
+ENTRYPOINT ["/sbin/tini", "--"]
 # Run migrations and exit
 CMD sh -c "npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs"

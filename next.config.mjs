@@ -1,7 +1,9 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import createMDX from '@next/mdx';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    pageExtensions: ['js', 'jsx', 'mdx'],
     reactCompiler: true,
     output: 'standalone',
     images: {
@@ -41,26 +43,10 @@ const nextConfig = {
         ];
     },
     async headers() {
-        const csp = [
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://umami.lavrenov.io https://static.cloudflareinsights.com",
-            "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: https://authjs.dev https://cdn.discordapp.com https://avatars.githubusercontent.com https://www.gravatar.com",
-            "font-src 'self'",
-            "connect-src 'self' https://umami.lavrenov.io https://bugsink.lavrenov.cloud https://cloudflareinsights.com",
-            "form-action 'self'",
-            "frame-ancestors 'none'",
-            "base-uri 'self'",
-        ].join('; ');
-
         return [
             {
                 source: '/(.*)',
                 headers: [
-                    {
-                        key: 'Content-Security-Policy',
-                        value: csp,
-                    },
                     {
                         key: 'X-Frame-Options',
                         value: 'DENY',
@@ -137,7 +123,13 @@ const nextConfig = {
     },
 };
 
-export default withSentryConfig(nextConfig, {
+const withMDX = createMDX({
+    options: {
+        remarkPlugins: ['remark-gfm'],
+    },
+});
+
+export default withSentryConfig(withMDX(nextConfig), {
     silent: true,
     sourcemaps: {
         disable: true,
