@@ -81,7 +81,7 @@ export default function Footer() {
                         </li>
                         <li>
                             <a
-                                href="https://github.com/elfensky/helldivers1api"
+                                href="https://github.com/elfensky/helldivers.bot"
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -101,7 +101,7 @@ export default function Footer() {
                         </li>
                         <li>
                             <a
-                                href="https://github.com/elfensky/helldivers1api/issues"
+                                href="https://github.com/elfensky/helldivers.bot/issues"
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
