@@ -173,12 +173,99 @@ Server-initiated notifications that work when the browser is closed:
 
 ### Service Worker
 
-`public/sw.js` handles:
+`public/sw.js` handles five concerns:
 
-- **Push events**: Parses payload, shows `showNotification()`
+- **Push events**: Parses payload, validates icon is same-origin, shows `showNotification()`
 - **Notification clicks**: Focuses existing tab or opens new one
-- **App shell caching**: Stale-while-revalidate for static assets
+- **Controlled updates**: Waits for `SKIP_WAITING` message from client before activating (see below)
+- **Caching**: Network-first for HTML navigation, stale-while-revalidate for static assets
 - **API exclusion**: Never intercepts `/api/*` routes or the SSE stream
+
+## PWA & Offline
+
+The app is a Progressive Web App with offline support and controlled version updates.
+
+### App Update Lifecycle
+
+When a new service worker is deployed, the update follows a two-phase flow:
+
+```
+New SW detected by browser
+        |
+Install event fires (caches shell assets)
+        |
+SW enters 'waiting' state (does NOT skipWaiting)
+        |
+ServiceWorkerRegister.jsx detects waiting SW
+        |
+    ┌───┴───┐
+    |       |
+Toast:    30-min
+"Update   deadline
+available"  (visibility-
+  [Reload]   based)
+    |       |
+    └───┬───┘
+        |
+Posts { type: 'SKIP_WAITING' } to waiting SW
+        |
+SW calls skipWaiting() → activates
+        |
+'controllerchange' fires in ALL open tabs
+        |
+window.location.reload() (guarded by boolean flag)
+```
+
+**Key design decisions:**
+
+- **No immediate `skipWaiting`**: Prevents mid-session disruption while users are viewing live data
+- **Visibility-based deadline**: Stores a deadline timestamp instead of using `setTimeout`, because iOS Safari suspends timers in background tabs. Checks wall-clock time on `visibilitychange` events
+- **Boolean guard on `controllerchange`**: Only reloads if this client triggered the update — prevents reload loops on first-ever SW install
+- **Multi-tab**: All tabs reload simultaneously via `controllerchange`, ensuring consistent app version
+
+### Caching Strategy
+
+Two strategies based on request type:
+
+| Request Type                                 | Strategy                      | Rationale                                           |
+| -------------------------------------------- | ----------------------------- | --------------------------------------------------- |
+| Navigation (`request.mode === 'navigate'`)   | Network-first, cache fallback | HTML must match current `_next/static` chunk hashes |
+| Static assets (fonts, icons, images, JS/CSS) | Stale-while-revalidate        | Serve fast from cache, update in background         |
+| API routes (`/api/*`)                        | Bypass (no interception)      | Live data must never be served from cache           |
+| SSE stream (`/api/h1/stream`)                | Bypass                        | Long-lived connection, not cacheable                |
+
+### Shell Cache
+
+14 critical assets are precached on install for offline shell rendering:
+
+- App shell (`/`), manifest, icons (favicon, apple-icon)
+- Custom font (`insignia.regular.otf`)
+- All faction icons (`faction0-3.webp`, `superearth.webp`)
+- Game icons (`attack.webp`, `defend.webp`)
+- Logo and galaxy map SVG
+
+### Offline Behavior
+
+When offline, the app loads the cached shell and displays last known war data:
+
+1. **Shell**: SW serves cached HTML + assets → app renders visually complete
+2. **Data**: `useLiveData` hook falls back to `localStorage` (`hd1-live-cache`)
+3. **Status**: `ConnectionStatus` shows red "Offline" indicator
+4. **Timestamps**: "Last updated X ago" via `formatTimeAgo` shows data age
+
+No special offline code was needed — the existing SSE reconnection logic and localStorage fallback handle it naturally.
+
+### PWA Metadata
+
+The web app manifest (`src/app/site.webmanifest`) and layout metadata enable full PWA installability:
+
+- `display: standalone` — app launches without browser chrome
+- `orientation: portrait` — locked to portrait (mobile-first dashboard)
+- `start_url: /` — required for Chrome install prompt
+- Icon purpose `any maskable` — works in both standard and adaptive icon contexts
+- `themeColor: #282828` — colors browser chrome on mobile
+- `appleWebApp: capable` with `black-translucent` status bar — iOS standalone mode
+- 20 portrait iOS splash screens for branded cold-boot experience
 
 ## Connection States
 
@@ -204,4 +291,5 @@ Server-initiated notifications that work when the browser is closed:
 | `src/features/dashboard/ConnectionStatus.jsx`       | Live/reconnecting/offline pill             |
 | `src/update/pushNotifier.mjs`                       | Server-side push fan-out                   |
 | `src/app/api/notifications/subscribe/route.js`      | Push subscription CRUD                     |
-| `public/sw.js`                                      | Service worker (caching + push handler)    |
+| `public/sw.js`                                      | Service worker (caching + push + updates)  |
+| `src/app/site.webmanifest`                          | PWA manifest (install, icons, orientation) |

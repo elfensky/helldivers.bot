@@ -33,3 +33,7 @@ Each update cycle creates an unconfirmed season row, writes all child data, then
 ### On-Demand Fetching
 
 Missing seasons are fetched from the official API on first request. The `/archives` page derives available seasons from the current season number, not a database query.
+
+### PWA & Service Worker
+
+The app runs as an installable Progressive Web App with a hand-written service worker (`public/sw.js`). The SW uses network-first for HTML documents and stale-while-revalidate for static assets, ensuring the app shell loads offline while HTML always matches current build chunks. Version updates are controlled — new SWs wait for explicit client approval before activating. See [Notifications](/docs/notifications#pwa--offline) for the full update lifecycle and caching details.
