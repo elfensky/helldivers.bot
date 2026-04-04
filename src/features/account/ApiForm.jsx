@@ -37,6 +37,7 @@ export function GenerateApiKeyForm({ userId }) {
                         id="description"
                         name="description"
                         placeholder="used by [application name]"
+                        className="bg-surface-2 px-3 py-1.5 text-sm text-text placeholder:text-text-muted"
                         aria-describedby={
                             state?.errors?.description ? 'description-error' : undefined
                         }
