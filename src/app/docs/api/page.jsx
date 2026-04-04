@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import DocsClient from '@/components/layout/OpenAPI/DocsClient';
+import DocsClient from '@/shared/components/OpenAPI/DocsClient';
 
 export const metadata = {
     title: 'API Reference | Helldivers Bot',
@@ -17,10 +17,10 @@ export default function ApiReferencePage() {
 
     return (
         <>
-            <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-primary)]">
+            <h1 className="font-display text-3xl text-primary">
                 API Reference
             </h1>
-            <p className="mt-2 mb-4 leading-[1.7] text-[var(--color-text)]">
+            <p className="mt-2 mb-4 leading-[1.7] text-text">
                 Interactive documentation for the Helldivers Bot API. Log in to create an
                 API key, then use the endpoints below.
             </p>

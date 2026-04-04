@@ -1,7 +1,7 @@
-import { initializeEnvironmentVariables } from '@/utils/initialize.env';
-import { initializeOpenApiSpec } from '@/utils/initialize.openapi';
-import { initializeWorker } from '@/utils/initialize.worker';
-import { tryCatch } from '@/utils/tryCatch';
+import { initializeEnvironmentVariables } from '@/shared/utils/initialize.env';
+import { initializeOpenApiSpec } from '@/shared/utils/api/initialize.openapi';
+import { initializeWorker } from '@/shared/utils/initialize.worker';
+import { tryCatch } from '@/shared/utils/tryCatch';
 
 export async function initializeHelldivers1Api() {
     //ENVIRONMENT - are the required .env variables present and set

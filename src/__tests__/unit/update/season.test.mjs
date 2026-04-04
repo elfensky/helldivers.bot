@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 import { updateSeason } from '@/update/season';
 import { fetchSeason } from '@/update/fetch';
 import { isValidSeason } from '@/validators/isValidSeason';
-import { getSeasonFromSnapshot } from '@/utils/getSeason';
+import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
 import { queryUpsertRebroadcastSeason } from '@/db/queries/rebroadcast';
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { queryUpsertIntroductionOrder } from '@/db/queries/upsertIntroductionOrder';
@@ -12,7 +12,7 @@ import { queryUpsertEvent } from '@/db/queries/upsertEvent';
 
 vi.mock('@/update/fetch', () => ({ fetchSeason: vi.fn() }));
 vi.mock('@/validators/isValidSeason', () => ({ isValidSeason: vi.fn() }));
-vi.mock('@/utils/getSeason', () => ({ getSeasonFromSnapshot: vi.fn() }));
+vi.mock('@/shared/utils/getSeason', () => ({ getSeasonFromSnapshot: vi.fn() }));
 vi.mock('@/db/queries/rebroadcast', () => ({ queryUpsertRebroadcastSeason: vi.fn() }));
 vi.mock('@/db/queries/upsertSeason', () => ({ queryUpsertSeason: vi.fn() }));
 vi.mock('@/db/queries/upsertIntroductionOrder', () => ({

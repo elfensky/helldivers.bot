@@ -4,9 +4,9 @@ import Script from 'next/script';
 import { headers } from 'next/headers';
 import { Space_Grotesk, Inter } from 'next/font/google';
 //components
-import Header from '@/components/layout/Header/Header';
-import Footer from '@/components/layout/Footer/Footer';
-import BottomNav from '@/components/layout/BottomNav/BottomNav';
+import Header from '@/shared/components/Header/Header';
+import Footer from '@/shared/components/Footer/Footer';
+import BottomNav from '@/shared/components/BottomNav/BottomNav';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],
@@ -76,12 +76,12 @@ export default async function RootLayout({ children }) {
 
                 <a
                     href="#main"
-                    className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-[var(--color-primary)] focus:px-4 focus:py-2 focus:text-[var(--color-on-primary)]"
+                    className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary"
                 >
                     Skip to content
                 </a>
                 <div
-                    className="fixed inset-0 z-[999] flex items-center justify-center bg-[var(--color-surface-0)] p-4 text-center text-sm text-[var(--color-text-muted)] min-[200px]:hidden"
+                    className="fixed inset-0 z-[999] flex items-center justify-center bg-surface-0 p-4 text-center text-sm text-text-muted min-[200px]:hidden"
                     role="alert"
                 >
                     <p className="m-0">Please use a larger screen to view this site.</p>

@@ -42,18 +42,18 @@ export default function DocsSidebar() {
             {/* Mobile breadcrumb bar */}
             <button
                 onClick={() => setOpen(!open)}
-                className="flex w-full items-center gap-2 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-1)] px-4 py-3 text-sm lg:hidden"
+                className="flex w-full items-center gap-2 border-b border-outline-variant bg-surface-1 px-4 py-3 text-sm lg:hidden"
             >
-                <span className="text-[var(--color-text-muted)]">Docs /</span>
-                <span className="text-[var(--color-primary)]">{currentPage}</span>
-                <span className="ml-auto text-xs text-[var(--color-text-muted)]">
+                <span className="text-text-muted">Docs /</span>
+                <span className="text-primary">{currentPage}</span>
+                <span className="ml-auto text-xs text-text-muted">
                     {open ? '\u25B2' : '\u25BC'}
                 </span>
             </button>
 
             {/* Mobile dropdown */}
             {open && (
-                <nav className="border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-1)] py-4 lg:hidden">
+                <nav className="border-b border-outline-variant bg-surface-1 py-4 lg:hidden">
                     <SidebarContent
                         pathname={pathname}
                         onNavigate={() => setOpen(false)}
@@ -61,10 +61,26 @@ export default function DocsSidebar() {
                 </nav>
             )}
 
-            {/* Desktop sidebar */}
-            <nav className="hidden border-r border-[var(--color-outline-variant)] bg-[var(--color-surface-1)] py-5 lg:block">
-                <SidebarContent pathname={pathname} />
-            </nav>
+            {/* Desktop sidebar — glass panel fills column, nav content is sticky */}
+            <div
+                className="hidden border-r-2 border-primary lg:block"
+                style={{
+                    backdropFilter: 'blur(8.8px)',
+                    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+                }}
+            >
+                <nav
+                    className="p-gutters--left py-5"
+                    style={{
+                        position: 'sticky',
+                        top: '80px',
+                        maxHeight: 'calc(100dvh - 80px)',
+                        overflowY: 'auto',
+                    }}
+                >
+                    <SidebarContent pathname={pathname} />
+                </nav>
+            </div>
         </>
     );
 }
@@ -74,7 +90,7 @@ function SidebarContent({ pathname, onNavigate }) {
         <>
             {sections.map((section) => (
                 <div key={section.label} className="mb-5">
-                    <div className="px-4 pb-2 font-[family-name:var(--font-mono)] text-[10px] tracking-[1.5px] text-[var(--color-text-muted)] uppercase">
+                    <div className="px-4 pb-2 font-mono text-[10px] tracking-[1.5px] text-text-muted uppercase">
                         {section.label}
                     </div>
                     {section.items.map((item) => {
@@ -87,8 +103,8 @@ function SidebarContent({ pathname, onNavigate }) {
                                 onClick={onNavigate}
                                 className={`block border-l-2 px-4 py-1.5 text-sm ${
                                     isActive ?
-                                        'border-[var(--color-primary)] bg-[var(--color-surface-2)] text-[var(--color-primary)]'
-                                    :   'border-transparent text-[var(--color-text)] hover:bg-[var(--color-surface-2)]'
+                                        'border-primary bg-surface-2 text-primary'
+                                    :   'border-transparent text-text hover:bg-surface-2'
                                 }`}
                             >
                                 {item.label}

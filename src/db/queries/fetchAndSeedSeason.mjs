@@ -1,8 +1,8 @@
 import db from '@/db/db';
-import { tryCatch } from '@/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch';
 import { fetchSeason } from '@/update/fetch';
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { EVENT_TYPE } from '@/enums/events';
+import { EVENT_TYPE } from '@/shared/enums/events';
 
 /**
  * Fetches a single season from the official Helldivers API and seeds it into the DB.

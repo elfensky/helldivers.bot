@@ -3,7 +3,7 @@ import db from '@/db/db';
 import { fetchSeason } from '@/update/fetch';
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
-import { EVENT_TYPE } from '@/enums/events';
+import { EVENT_TYPE } from '@/shared/enums/events';
 
 vi.mock('@/update/fetch', () => ({ fetchSeason: vi.fn() }));
 vi.mock('@/db/queries/upsertSeason', () => ({ queryUpsertSeason: vi.fn() }));

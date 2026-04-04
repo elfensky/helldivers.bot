@@ -6,7 +6,7 @@ vi.mock('@/db/queries/rebroadcast', () => ({
 }));
 vi.mock('@/db/queries/validateApiKey', () => ({ validateApiKey: vi.fn() }));
 vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
-vi.mock('@/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
+vi.mock('@/shared/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
 vi.mock('next/server', async (importOriginal) => {
     const actual = await importOriginal();
     return {
