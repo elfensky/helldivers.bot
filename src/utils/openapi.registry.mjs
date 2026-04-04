@@ -285,7 +285,7 @@ export function generateOpenApiSpec() {
         openapi: '3.0.0',
         info: {
             title: 'Helldivers 1 API',
-            version: '0.11.0',
+            version: '0.22.3',
             description: 'A simple API',
         },
     });

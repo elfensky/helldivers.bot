@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Security
+
+- Replace `unsafe-inline` CSP with nonce-based policy via custom server proxy (`proxy.js`) (#226)
+- Remove `unsafe-eval` from CSP in production; keep for dev only (#226)
+
+### Infrastructure
+
+- Run migration container as non-root user (#227)
+- Standardize Docker user to built-in `node` user (#228)
+- Rename Docker workflow display names for clarity
+- Consolidate duplicated code and extract shared utilities
+- Standardize quoting in CI workflows and reformat openapi.json
+
 ## 0.22.3 (2026-04-04)
 
 ### CI & Infrastructure
