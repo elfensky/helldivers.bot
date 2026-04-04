@@ -20,20 +20,30 @@ vi.mock('next/form', () => ({
 import AccountActions from '@/features/account/AccountActions';
 
 describe('AccountActions', () => {
-    const user = { id: 'user-123', email: 'test@example.com' };
+    const user = { id: 'user-123', name: 'Test User', email: 'test@example.com' };
+    const avatarUrl = 'https://example.com/avatar.jpg';
+    const providers = ['discord'];
+    const props = { user, avatarUrl, providers };
+
+    test('renders profile info', () => {
+        render(<AccountActions {...props} />);
+        expect(screen.getByText('Test User')).toBeInTheDocument();
+        expect(screen.getByText('test@example.com')).toBeInTheDocument();
+        expect(screen.getByText('discord')).toBeInTheDocument();
+    });
 
     test('renders Download My Data button', () => {
-        render(<AccountActions user={user} />);
+        render(<AccountActions {...props} />);
         expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument();
     });
 
     test('renders Delete Account button', () => {
-        render(<AccountActions user={user} />);
+        render(<AccountActions {...props} />);
         expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
     });
 
     test('renders email confirmation input for delete', () => {
-        render(<AccountActions user={user} />);
+        render(<AccountActions {...props} />);
         expect(screen.getByPlaceholderText(/type your email/i)).toBeInTheDocument();
     });
 });

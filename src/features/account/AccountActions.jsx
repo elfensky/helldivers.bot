@@ -1,9 +1,10 @@
 'use client';
 import { useActionState, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import Form from 'next/form';
 import { exportUserData, deleteUserAccount } from '@/db/queries/account';
 
-export default function AccountActions({ user }) {
+export default function AccountActions({ user, avatarUrl, providers }) {
     const handleExport = useCallback(async () => {
         const result = await exportUserData(user.id);
         if (result.data) {
@@ -34,13 +35,38 @@ export default function AccountActions({ user }) {
         <div className="flex flex-col gap-3">
             <h2>Your Data</h2>
 
-            <button
-                type="button"
-                onClick={handleExport}
-                className="w-fit cursor-pointer border border-ghost px-3 py-1.5 text-sm text-text-muted hover:text-text"
-            >
-                Download My Data
-            </button>
+            <div className="flex items-center gap-4">
+                <Image
+                    src={avatarUrl}
+                    alt={`${user.name ?? 'User'} avatar`}
+                    width={48}
+                    height={48}
+                    className="rounded-full"
+                />
+                <div>
+                    <p className="font-semibold text-text">{user.name ?? 'Anonymous'}</p>
+                    <p className="text-sm text-text-muted">{user.email}</p>
+                    <p className="text-sm text-text-muted">
+                        Connected:{' '}
+                        {providers.map((p, i) => (
+                            <span key={p}>
+                                {i > 0 && ' · '}
+                                <span className="capitalize text-text">{p}</span>
+                            </span>
+                        ))}
+                    </p>
+                </div>
+            </div>
+
+            <div className="flex gap-2">
+                <button
+                    type="button"
+                    onClick={handleExport}
+                    className="w-fit cursor-pointer border border-ghost px-3 py-1.5 text-sm text-text-muted hover:text-text"
+                >
+                    Download My Data
+                </button>
+            </div>
 
             <div className="border-t border-ghost pt-3">
                 <p className="text-sm text-text-muted">
