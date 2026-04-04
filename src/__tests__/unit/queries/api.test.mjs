@@ -143,7 +143,7 @@ describe('generateApiKey', () => {
         expect(result.data.key).toBeDefined();
         expect(typeof result.data.key).toBe('string');
         expect(db.ApiKey.create).toHaveBeenCalledOnce();
-        expect(revalidatePath).toHaveBeenCalledWith('/profile', 'page');
+        expect(revalidatePath).toHaveBeenCalledWith('/profile');
     });
 
     test('propagates database errors from create', async () => {
@@ -204,7 +204,7 @@ describe('deleteApiKey', () => {
         expect(db.ApiKey.delete).toHaveBeenCalledWith({
             where: { id: apikeyId, userId },
         });
-        expect(revalidatePath).toHaveBeenCalledWith('/profile', 'page');
+        expect(revalidatePath).toHaveBeenCalledWith('/profile');
     });
 
     test('propagates database errors from delete', async () => {
