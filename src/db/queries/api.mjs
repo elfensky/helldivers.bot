@@ -62,7 +62,7 @@ export async function generateApiKey(_, formData) {
     };
 
     const schema = z.object({
-        userId: z.string().uuid(),
+        userId: z.string().min(1),
         description: z.string().min(3).max(200),
     });
     const check = schema.safeParse(formValues);
@@ -134,8 +134,8 @@ export async function deleteApiKey(_, formData) {
     };
 
     const schema = z.object({
-        userId: z.string().uuid(),
-        apikeyId: z.string().uuid(),
+        userId: z.string().min(1),
+        apikeyId: z.string().min(1),
     });
     const check = schema.safeParse(formValues);
     if (!check.success) {

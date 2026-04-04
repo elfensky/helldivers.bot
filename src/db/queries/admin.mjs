@@ -49,7 +49,7 @@ export async function updateUserRole(_, formData) {
     };
 
     const schema = z.object({
-        userId: z.string().uuid(),
+        userId: z.string().min(1),
         newRole: z.enum(['user', 'admin']),
     });
     const check = schema.safeParse(formValues);
@@ -90,7 +90,7 @@ export async function toggleUserBan(_, formData) {
     };
 
     const schema = z.object({
-        userId: z.string().uuid(),
+        userId: z.string().min(1),
         banned: z.enum(['true', 'false']).transform((v) => v === 'true'),
     });
     const check = schema.safeParse(formValues);
@@ -126,7 +126,7 @@ export async function adminGetUserApiKeys(_, formData) {
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const userId = formData.get('userId');
-    const schema = z.string().uuid();
+    const schema = z.string().min(1);
     const check = schema.safeParse(userId);
     if (!check.success) {
         return { errors: { userId: 'Invalid user ID' }, time: performanceTime(start) };
@@ -155,7 +155,7 @@ export async function adminRevokeApiKey(_, formData) {
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const apikeyId = formData.get('apikeyId');
-    const schema = z.string().uuid();
+    const schema = z.string().min(1);
     const check = schema.safeParse(apikeyId);
     if (!check.success) {
         return {

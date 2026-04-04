@@ -4,8 +4,8 @@ import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { getApiKeysByUserId, generateApiKey, deleteApiKey } from '@/db/queries/api.mjs';
 
-const userId = '550e8400-e29b-41d4-a716-446655440000';
-const otherUserId = '660e8400-e29b-41d4-a716-446655440099';
+const userId = '01908174-d3a5-7e50-b964-6f5e9e48c0a1';
+const otherUserId = '01908174-d3a5-7e50-b964-6f5e9e48c0a2';
 const session = { user: { id: userId } };
 
 function createFormData(entries) {
@@ -163,7 +163,7 @@ describe('generateApiKey', () => {
 // ─── deleteApiKey ────────────────────────────────────────────────────
 
 describe('deleteApiKey', () => {
-    const apikeyId = '770e8400-e29b-41d4-a716-446655440011';
+    const apikeyId = '01908174-d3a5-7e50-b964-6f5e9e48c0a3';
     const validFormData = createFormData({ userId, apikeyId });
 
     test('returns auth error when no session', async () => {
@@ -176,7 +176,7 @@ describe('deleteApiKey', () => {
 
     test('returns validation errors for invalid formData', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(session);
-        const badFormData = createFormData({ userId: 'bad', apikeyId: 'bad' });
+        const badFormData = createFormData({ userId: '', apikeyId: '' });
 
         const result = await deleteApiKey(null, badFormData);
 

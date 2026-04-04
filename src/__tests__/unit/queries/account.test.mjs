@@ -3,8 +3,8 @@ import db from '@/db/db';
 import { auth } from '@/auth';
 import { exportUserData, deleteUserAccount } from '@/db/queries/account.mjs';
 
-const userId = '550e8400-e29b-41d4-a716-446655440000';
-const otherUserId = '660e8400-e29b-41d4-a716-446655440099';
+const userId = '01908174-d3a5-7e50-b964-6f5e9e48c0a1';
+const otherUserId = '01908174-d3a5-7e50-b964-6f5e9e48c0a2';
 const email = 'test@example.com';
 const session = { user: { id: userId, email } };
 

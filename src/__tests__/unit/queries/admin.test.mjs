@@ -11,8 +11,8 @@ import {
     getSystemStats,
 } from '@/db/queries/admin.mjs';
 
-const adminId = '550e8400-e29b-41d4-a716-446655440000';
-const targetUserId = '660e8400-e29b-41d4-a716-446655440099';
+const adminId = '01908174-d3a5-7e50-b964-6f5e9e48c0a1';
+const targetUserId = '01908174-d3a5-7e50-b964-6f5e9e48c0a2';
 const adminSession = { user: { id: adminId, email: 'admin@test.com', role: 'admin' } };
 const userSession = { user: { id: adminId, email: 'user@test.com', role: 'user' } };
 
@@ -154,14 +154,14 @@ describe('adminGetUserApiKeys', () => {
 describe('adminRevokeApiKey', () => {
     test('returns auth error for non-admin', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(userSession);
-        const apikeyId = '770e8400-e29b-41d4-a716-446655440011';
+        const apikeyId = '01908174-d3a5-7e50-b964-6f5e9e48c0a3';
         const result = await adminRevokeApiKey(null, createFormData({ apikeyId }));
         expect(result.errors.auth).toBeDefined();
     });
 
     test('deletes api key on success', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        const apikeyId = '770e8400-e29b-41d4-a716-446655440011';
+        const apikeyId = '01908174-d3a5-7e50-b964-6f5e9e48c0a3';
         vi.mocked(db.ApiKey.delete).mockResolvedValue({ id: apikeyId });
 
         const result = await adminRevokeApiKey(null, createFormData({ apikeyId }));

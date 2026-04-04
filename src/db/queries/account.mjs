@@ -69,7 +69,7 @@ export async function deleteUserAccount(_, formData) {
     }
 
     const schema = z.object({
-        userId: z.string().uuid(),
+        userId: z.string().min(1),
         confirmEmail: z.string().email(),
     });
     const check = schema.safeParse(formValues);
