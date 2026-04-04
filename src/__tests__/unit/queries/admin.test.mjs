@@ -277,18 +277,79 @@ describe('getSystemStats', () => {
         expect(result.errors.auth).toBeDefined();
     });
 
-    test('returns stats for admin', async () => {
+    test('returns full stats shape for admin', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.count).mockResolvedValue(24);
-        vi.mocked(db.ApiKey.count).mockResolvedValue(47);
-        vi.mocked(db.h1_season.findFirst).mockResolvedValue({
-            last_updated: new Date(Date.now() - 10000),
+
+        vi.mocked(db.h1_season.findFirst).mockResolvedValue({ season: 12 });
+        vi.mocked(db.worker_heartbeat.findUnique).mockResolvedValue({
+            worker_type: 'cron_api_poller',
+            last_beat: new Date(Date.now() - 5000),
+            poll_duration_ms: 85,
+            last_error: null,
+            started_at: new Date(Date.now() - 3600000),
         });
+        vi.mocked(db.h1_live.count).mockResolvedValue(2);
+        vi.mocked(db.h1_event.count).mockResolvedValue(1842);
+        vi.mocked(db.h1_season.count).mockResolvedValue(8);
+        vi.mocked(db.user.count).mockResolvedValue(24);
+        vi.mocked(db.ApiKey.count).mockResolvedValue(9);
+        vi.mocked(db.push_subscription.count).mockResolvedValue(6);
 
         const result = await getSystemStats();
-        expect(result.data.totalUsers).toBe(24);
-        expect(result.data.totalApiKeys).toBe(47);
-        expect(result.data.lastPollTime).toBeDefined();
-        expect(typeof result.data.workerHealthy).toBe('boolean');
+        const d = result.data;
+
+        expect(d.heartbeat).toBeDefined();
+        expect(d.workerHealth.status).toBe('healthy');
+        expect(d.currentSeason).toBe(12);
+        expect(d.activeFactions).toBe(2);
+        expect(d.totalEvents).toBe(1842);
+        expect(d.seasonsStored).toBe(8);
+        expect(d.totalUsers).toBe(24);
+        expect(d.totalApiKeys).toBe(9);
+        expect(d.pushSubscribers).toBe(6);
+    });
+
+    test('returns healthy/degraded/down health states', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
+        vi.mocked(db.h1_season.findFirst).mockResolvedValue({ season: 1 });
+        vi.mocked(db.h1_live.count).mockResolvedValue(0);
+        vi.mocked(db.h1_event.count).mockResolvedValue(0);
+        vi.mocked(db.h1_season.count).mockResolvedValue(1);
+        vi.mocked(db.user.count).mockResolvedValue(1);
+        vi.mocked(db.ApiKey.count).mockResolvedValue(0);
+        vi.mocked(db.push_subscription.count).mockResolvedValue(0);
+
+        vi.mocked(db.worker_heartbeat.findUnique).mockResolvedValue(null);
+        let result = await getSystemStats();
+        expect(result.data.workerHealth.status).toBe('down');
+
+        vi.mocked(db.worker_heartbeat.findUnique).mockResolvedValue({
+            last_beat: new Date(), last_error: 'timeout',
+            started_at: new Date(), poll_duration_ms: 100,
+        });
+        result = await getSystemStats();
+        expect(result.data.workerHealth.status).toBe('degraded');
+
+        vi.mocked(db.worker_heartbeat.findUnique).mockResolvedValue({
+            last_beat: new Date(), last_error: null,
+            started_at: new Date(), poll_duration_ms: 50,
+        });
+        result = await getSystemStats();
+        expect(result.data.workerHealth.status).toBe('healthy');
+    });
+
+    test('handles missing season gracefully', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
+        vi.mocked(db.h1_season.findFirst).mockResolvedValue(null);
+        vi.mocked(db.worker_heartbeat.findUnique).mockResolvedValue(null);
+        vi.mocked(db.h1_event.count).mockResolvedValue(0);
+        vi.mocked(db.h1_season.count).mockResolvedValue(0);
+        vi.mocked(db.user.count).mockResolvedValue(1);
+        vi.mocked(db.ApiKey.count).mockResolvedValue(0);
+        vi.mocked(db.push_subscription.count).mockResolvedValue(0);
+
+        const result = await getSystemStats();
+        expect(result.data.currentSeason).toBeNull();
+        expect(result.data.activeFactions).toBe(0);
     });
 });

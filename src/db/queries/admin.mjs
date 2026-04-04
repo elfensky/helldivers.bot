@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch';
 import { performanceTime } from '@/shared/utils/time';
 import { revalidatePath } from 'next/cache';
+import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth';
 
 /**
  * Verify the current request is from an authenticated admin user.
@@ -222,25 +223,44 @@ export async function getSystemStats() {
     const { user, error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
+    // Step 1: Get current season (needed for active factions query)
+    const { data: latestSeason, error: seasonError } = await tryCatch(
+        db.h1_season.findFirst({ orderBy: { season: 'desc' }, select: { season: true } }),
+    );
+    if (seasonError) throw seasonError;
+
+    const currentSeason = latestSeason?.season ?? null;
+
+    // Step 2: All remaining queries in parallel
     const { data: results, error } = await tryCatch(
         Promise.all([
+            db.worker_heartbeat.findUnique({ where: { worker_type: 'cron_api_poller' } }),
+            currentSeason
+                ? db.h1_live.count({ where: { status: 'active', season: currentSeason } })
+                : Promise.resolve(0),
+            db.h1_event.count(),
+            db.h1_season.count(),
             db.user.count(),
             db.ApiKey.count(),
-            db.h1_season.findFirst({
-                orderBy: { last_updated: 'desc' },
-                select: { last_updated: true },
-            }),
+            db.push_subscription.count(),
         ]),
     );
     if (error) throw error;
 
-    const [totalUsers, totalApiKeys, latestSeason] = results;
-    const lastPollTime = latestSeason?.last_updated ?? null;
-    const workerHealthy =
-        lastPollTime ? Date.now() - new Date(lastPollTime).getTime() < 60000 : false;
+    const [heartbeat, activeFactions, totalEvents, seasonsStored, totalUsers, totalApiKeys, pushSubscribers] = results;
 
     return {
-        data: { totalUsers, totalApiKeys, lastPollTime, workerHealthy },
+        data: {
+            heartbeat,
+            workerHealth: computeWorkerHealth(heartbeat),
+            currentSeason,
+            activeFactions,
+            totalEvents,
+            seasonsStored,
+            totalUsers,
+            totalApiKeys,
+            pushSubscribers,
+        },
         time: performanceTime(start),
     };
 }
