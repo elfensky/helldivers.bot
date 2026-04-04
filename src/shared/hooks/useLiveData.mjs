@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, startTransition } from 'react';
 
 const CACHE_KEY = 'hd1-live-cache';
 
@@ -105,20 +105,24 @@ export function useLiveData(initialData, initialMapState) {
             // Cache for offline use
             saveCachedState(parsed.data, parsed.mapState);
 
-            if (isFirstMessage.current) {
-                // Silent baseline — don't set prevData to avoid false diffs
-                isFirstMessage.current = false;
-                setData(parsed.data);
-                setMapState(parsed.mapState);
-                return;
-            }
+            // Wrap in startTransition so SSE updates don't interrupt
+            // RSC stream processing during client-side navigation
+            startTransition(() => {
+                if (isFirstMessage.current) {
+                    // Silent baseline — don't set prevData to avoid false diffs
+                    isFirstMessage.current = false;
+                    setData(parsed.data);
+                    setMapState(parsed.mapState);
+                    return;
+                }
 
-            // Store previous data for change detection
-            setData((current) => {
-                prevDataRef.current = current;
-                return parsed.data;
+                // Store previous data for change detection
+                setData((current) => {
+                    prevDataRef.current = current;
+                    return parsed.data;
+                });
+                setMapState(parsed.mapState);
             });
-            setMapState(parsed.mapState);
         };
 
         es.onerror = () => {

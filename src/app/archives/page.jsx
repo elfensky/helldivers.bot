@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 //db
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
@@ -46,11 +45,6 @@ export default async function WarHistoryPage({ searchParams }) {
 
     // Default to the most recent completed season if no season param
     const resolvedSeason = seasonParam ?? seasons[0] ?? null;
-
-    // Populate ?season in URL so the link is always shareable
-    if (seasonParam === null && resolvedSeason !== null) {
-        redirect(`/archives?season=${resolvedSeason}`);
-    }
 
     // Fetch requested season from DB
     let { data, error } = await tryCatch(getCampaign(resolvedSeason));
