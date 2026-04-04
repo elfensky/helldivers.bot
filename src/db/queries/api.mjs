@@ -113,7 +113,7 @@ export async function generateApiKey(_, formData) {
 
     newApiKey['key'] = key;
 
-    revalidatePath('/profile');
+    revalidatePath('/profile', 'layout');
     return { data: newApiKey, time: performanceTime(start) };
 }
 
@@ -160,6 +160,6 @@ export async function deleteApiKey(_, formData) {
     );
     if (error) throw error;
 
-    revalidatePath('/profile');
+    revalidatePath('/profile', 'layout');
     return { data: deletedApiKey, time: performanceTime(start) };
 }

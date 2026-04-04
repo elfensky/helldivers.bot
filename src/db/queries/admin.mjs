@@ -75,7 +75,7 @@ export async function updateUserRole(_, formData) {
     );
     if (error) throw error;
 
-    revalidatePath('/profile/admin');
+    revalidatePath('/profile', 'layout');
     return { data: updated, time: performanceTime(start) };
 }
 
@@ -116,7 +116,7 @@ export async function toggleUserBan(_, formData) {
     );
     if (error) throw error;
 
-    revalidatePath('/profile/admin');
+    revalidatePath('/profile', 'layout');
     return { data: updated, time: performanceTime(start) };
 }
 
@@ -169,7 +169,7 @@ export async function adminRevokeApiKey(_, formData) {
     );
     if (error) throw error;
 
-    revalidatePath('/profile/admin');
+    revalidatePath('/profile', 'layout');
     return { data: deleted, time: performanceTime(start) };
 }
 

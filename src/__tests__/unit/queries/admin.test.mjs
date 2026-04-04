@@ -75,7 +75,7 @@ describe('updateUserRole', () => {
             where: { id: targetUserId },
             data: { role: 'admin' },
         });
-        expect(revalidatePath).toHaveBeenCalledWith('/profile/admin');
+        expect(revalidatePath).toHaveBeenCalledWith('/profile', 'layout');
     });
 });
 
