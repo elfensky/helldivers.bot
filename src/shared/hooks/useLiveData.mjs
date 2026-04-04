@@ -93,6 +93,7 @@ export function useLiveData(initialData, initialMapState) {
 
     // SSE connection
     useEffect(() => {
+        let closed = false;
         const es = new EventSource('/api/h1/stream');
 
         es.onopen = () => {
@@ -100,37 +101,75 @@ export function useLiveData(initialData, initialMapState) {
         };
 
         es.onmessage = (event) => {
+            if (closed) return;
             const parsed = JSON.parse(event.data);
 
-            // Cache for offline use
+            // Cache for offline use (always, even if state update is deferred)
             saveCachedState(parsed.data, parsed.mapState);
 
-            // Wrap in startTransition so SSE updates don't interrupt
-            // RSC stream processing during client-side navigation
-            startTransition(() => {
-                if (isFirstMessage.current) {
-                    // Silent baseline — don't set prevData to avoid false diffs
-                    isFirstMessage.current = false;
-                    setData(parsed.data);
-                    setMapState(parsed.mapState);
-                    return;
-                }
+            // Defer state updates to avoid interfering with RSC flight stream
+            // processing during client-side navigation. setTimeout pushes to
+            // the next event loop tick; startTransition marks as low-priority.
+            setTimeout(() => {
+                if (closed) return;
+                startTransition(() => {
+                    if (isFirstMessage.current) {
+                        isFirstMessage.current = false;
+                        setData(parsed.data);
+                        setMapState(parsed.mapState);
+                        return;
+                    }
 
-                // Store previous data for change detection
-                setData((current) => {
-                    prevDataRef.current = current;
-                    return parsed.data;
+                    setData((current) => {
+                        prevDataRef.current = current;
+                        return parsed.data;
+                    });
+                    setMapState(parsed.mapState);
                 });
-                setMapState(parsed.mapState);
-            });
+            }, 0);
         };
 
         es.onerror = () => {
             setStatus((current) => (current === 'live' ? 'reconnecting' : current));
         };
 
-        return () => {
+        // Close SSE before client-side navigation starts to prevent state
+        // updates from corrupting the RSC flight stream.
+        function closeSSE() {
+            closed = true;
             es.close();
+        }
+
+        // Navigation API (Chrome 102+) catches all navigation types
+        // including router.push, link clicks, and back/forward.
+        function handleNavigate(e) {
+            if (e.navigationType !== 'reload') closeSSE();
+        }
+        const hasNavAPI = typeof navigation !== 'undefined';
+        if (hasNavAPI) {
+            navigation.addEventListener('navigate', handleNavigate);
+        }
+
+        // Fallback: capture-phase click handler for link clicks (all browsers)
+        function handleNavClick(e) {
+            const anchor = e.target.closest?.('a[href]');
+            if (!anchor) return;
+            const href = anchor.getAttribute('href');
+            if (href && href.startsWith('/') && href !== window.location.pathname) {
+                closeSSE();
+            }
+        }
+        if (!hasNavAPI) {
+            document.addEventListener('click', handleNavClick, true);
+        }
+
+        return () => {
+            closeSSE();
+            if (hasNavAPI) {
+                navigation.removeEventListener('navigate', handleNavigate);
+            } else {
+                document.removeEventListener('click', handleNavClick, true);
+            }
         };
     }, []);
 

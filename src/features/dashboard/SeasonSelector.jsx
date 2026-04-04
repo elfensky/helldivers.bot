@@ -1,8 +1,34 @@
 'use client';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function SeasonSelector({ seasons, currentSeason }) {
     const router = useRouter();
+
+    // Sync URL with resolved season so the link is shareable.
+    // Defers via requestIdleCallback (with setTimeout fallback) to avoid
+    // interfering with RSC flight stream processing.
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.get('season') && currentSeason) {
+            const schedule =
+                typeof requestIdleCallback === 'function' ? requestIdleCallback : (
+                    setTimeout
+                );
+            const cancel =
+                typeof cancelIdleCallback === 'function' ? cancelIdleCallback : (
+                    clearTimeout
+                );
+            const id = schedule(() => {
+                window.history.replaceState(
+                    null,
+                    '',
+                    `/archives?season=${currentSeason}`,
+                );
+            });
+            return () => cancel(id);
+        }
+    }, [currentSeason]);
 
     if (!seasons || seasons.length === 0) return null;
 
