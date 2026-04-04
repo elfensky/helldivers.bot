@@ -61,10 +61,26 @@ export default function DocsSidebar() {
                 </nav>
             )}
 
-            {/* Desktop sidebar */}
-            <nav className="hidden border-r border-outline-variant bg-surface-1 p-gutters--left py-5 lg:block">
-                <SidebarContent pathname={pathname} />
-            </nav>
+            {/* Desktop sidebar — glass panel fills column, nav content is sticky */}
+            <div
+                className="hidden border-r-2 border-primary lg:block"
+                style={{
+                    backdropFilter: 'blur(8.8px)',
+                    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+                }}
+            >
+                <nav
+                    className="p-gutters--left py-5"
+                    style={{
+                        position: 'sticky',
+                        top: '80px',
+                        maxHeight: 'calc(100dvh - 80px)',
+                        overflowY: 'auto',
+                    }}
+                >
+                    <SidebarContent pathname={pathname} />
+                </nav>
+            </div>
         </>
     );
 }
