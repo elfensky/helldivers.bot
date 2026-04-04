@@ -9,11 +9,13 @@
 - Decouple Postgres SSL from `NODE_ENV` — new `POSTGRES_SSL` env var controls SSL independently of build mode
 - Add `platform: linux/amd64` to `docker-compose.yml` for ARM Mac compatibility
 - Fix README Docker build tags (`:local` → `:staging`)
+- Move `themeColor` from `metadata` to `viewport` export (Next.js 16 requirement)
 
 ### Chores
 
 - Remove unused `SKIP_MIGRATIONS` env var (never read by application)
 - Remove Prettier formatting check from CI
+- Normalize `docker-compose.yml` indentation, update host port
 
 ## 0.24.0 (2026-04-04)
 
