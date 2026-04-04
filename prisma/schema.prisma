@@ -338,3 +338,15 @@ model push_subscription {
 }
 
 // #endregion
+
+// #region WORKER HEALTH
+model worker_heartbeat {
+    worker_type      String   @id
+    last_beat        DateTime
+    poll_duration_ms Int?
+    last_error       String?
+    started_at       DateTime
+    updated_at       DateTime @updatedAt
+}
+
+// #endregion
