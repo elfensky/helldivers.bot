@@ -111,6 +111,17 @@
     font-display: swap;
 }
 
+/* Toast glow animation — matches EventCard contested region pulse */
+@keyframes toast-glow {
+    0%,
+    100% {
+        box-shadow: 0 0 4px color-mix(in srgb, var(--color-danger) 15%, transparent);
+    }
+    50% {
+        box-shadow: 0 0 12px color-mix(in srgb, var(--color-danger) 40%, transparent);
+    }
+}
+
 .gutters {
     @apply mx-auto w-full max-w-[1536px] px-4 sm:px-12 md:px-16 lg:px-24;
 }
