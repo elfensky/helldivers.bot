@@ -10,6 +10,21 @@ export const metadata = {
 
 # FAQ
 
+## How do I enable notifications?
+
+Click **"Enable notifications"** on the dashboard (next to the Live indicator). This enables both in-tab toast notifications and background push notifications in one step.
+
+If you see **"Notifications blocked"**, your browser has denied notification permission for this site. To fix it:
+
+- **Chrome:** Click the lock/tune icon in the address bar → Site settings → Notifications → Allow
+- **Firefox:** Click the lock icon → Connection secure → More information → Permissions → Notifications → Allow
+- **Safari:** Safari → Settings → Websites → Notifications → find helldivers.bot → Allow
+- **Edge:** Click the lock icon → Site permissions → Notifications → Allow
+
+After changing the permission, refresh the page. The button should now show "Enable notifications".
+
+If you see **"Notifications unavailable"**, your browser does not support the Notification API (e.g., some in-app browsers or older mobile browsers).
+
 ## How does progress tracking work?
 
 The `evaluateProgress()` function determines whether the community is ahead, behind, or on track during a campaign event. It compares actual progress against a linear expected pace, with a 10% buffer zone.
@@ -33,21 +48,6 @@ A dedicated worker thread polls the official API every 5-15 seconds. Data is val
 ## Can I use the API?
 
 Yes! Log in to create an API key. The API provides access to all campaign data and historic statistics. See the [API Reference](/docs/api) for interactive documentation.
-
-<h2 id="notifications">How do I enable notifications?</h2>
-
-Click **"Enable notifications"** on the dashboard (next to the Live indicator). This enables both in-tab toast notifications and background push notifications in one step.
-
-If you see **"Notifications blocked"**, your browser has denied notification permission for this site. To fix it:
-
-- **Chrome:** Click the lock/tune icon in the address bar → Site settings → Notifications → Allow
-- **Firefox:** Click the lock icon → Connection secure → More information → Permissions → Notifications → Allow
-- **Safari:** Safari → Settings → Websites → Notifications → find helldivers.bot → Allow
-- **Edge:** Click the lock icon → Site permissions → Notifications → Allow
-
-After changing the permission, refresh the page. The button should now show "Enable notifications".
-
-If you see **"Notifications unavailable"**, your browser does not support the Notification API (e.g., some in-app browsers or older mobile browsers).
 
 ## Is this project open source?
 

@@ -80,7 +80,7 @@ export default function NotificationToggle() {
             state === 'denied' ? 'Notifications blocked' : 'Notifications unavailable';
         return (
             <a
-                href="/docs/faq#notifications"
+                href="/docs/faq"
                 className="font-mono text-xs text-[var(--color-text-muted)] opacity-50 hover:opacity-80"
                 title="How to enable notifications"
             >
