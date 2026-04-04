@@ -44,17 +44,17 @@ async function ApiKeysList({ userId }) {
                     {apiKeys
                         .sort((a, b) => b.createdAt - a.createdAt)
                         .map((apikey) => (
-                            <tr key={apikey.id}>
-                                <td className="py-1 font-mono text-text-muted">
+                            <tr key={apikey.id} className="border-t border-ghost">
+                                <td className="py-2 font-mono text-text-muted">
                                     {'****' + apikey.visible}
                                 </td>
-                                <td className="py-1 text-text-muted">
+                                <td className="py-2 text-text-muted">
                                     {timeSince(apikey.createdAt)}
                                 </td>
-                                <td className="py-1 text-text-muted">
+                                <td className="py-2 text-text-muted">
                                     {apikey.enabled ? 'Yes' : 'No'}
                                 </td>
-                                <td className="py-1">
+                                <td className="py-2">
                                     <DeleteApiKeyForm
                                         userId={userId}
                                         apikeyId={apikey.id}
