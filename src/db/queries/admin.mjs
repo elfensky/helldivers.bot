@@ -54,11 +54,17 @@ export async function updateUserRole(_, formData) {
     });
     const check = schema.safeParse(formValues);
     if (!check.success) {
-        return { errors: check.error.flatten().fieldErrors, time: performanceTime(start) };
+        return {
+            errors: check.error.flatten().fieldErrors,
+            time: performanceTime(start),
+        };
     }
 
     if (user.id === formValues.userId) {
-        return { errors: { auth: 'Cannot change your own role' }, time: performanceTime(start) };
+        return {
+            errors: { auth: 'Cannot change your own role' },
+            time: performanceTime(start),
+        };
     }
 
     const { data: updated, error } = await tryCatch(
@@ -89,11 +95,17 @@ export async function toggleUserBan(_, formData) {
     });
     const check = schema.safeParse(formValues);
     if (!check.success) {
-        return { errors: check.error.flatten().fieldErrors, time: performanceTime(start) };
+        return {
+            errors: check.error.flatten().fieldErrors,
+            time: performanceTime(start),
+        };
     }
 
     if (user.id === check.data.userId) {
-        return { errors: { auth: 'Cannot ban your own account' }, time: performanceTime(start) };
+        return {
+            errors: { auth: 'Cannot ban your own account' },
+            time: performanceTime(start),
+        };
     }
 
     const { data: updated, error } = await tryCatch(
@@ -123,7 +135,13 @@ export async function adminGetUserApiKeys(_, formData) {
     const { data: keys, error } = await tryCatch(
         db.ApiKey.findMany({
             where: { userId },
-            select: { id: true, description: true, visible: true, createdAt: true, enabled: true },
+            select: {
+                id: true,
+                description: true,
+                visible: true,
+                createdAt: true,
+                enabled: true,
+            },
         }),
     );
     if (error) throw error;
@@ -140,10 +158,15 @@ export async function adminRevokeApiKey(_, formData) {
     const schema = z.string().uuid();
     const check = schema.safeParse(apikeyId);
     if (!check.success) {
-        return { errors: { apikeyId: 'Invalid API key ID' }, time: performanceTime(start) };
+        return {
+            errors: { apikeyId: 'Invalid API key ID' },
+            time: performanceTime(start),
+        };
     }
 
-    const { data: deleted, error } = await tryCatch(db.ApiKey.delete({ where: { id: apikeyId } }));
+    const { data: deleted, error } = await tryCatch(
+        db.ApiKey.delete({ where: { id: apikeyId } }),
+    );
     if (error) throw error;
 
     revalidatePath('/profile/admin');
@@ -159,14 +182,18 @@ export async function getSystemStats() {
         Promise.all([
             db.user.count(),
             db.ApiKey.count(),
-            db.h1_season.findFirst({ orderBy: { last_updated: 'desc' }, select: { last_updated: true } }),
+            db.h1_season.findFirst({
+                orderBy: { last_updated: 'desc' },
+                select: { last_updated: true },
+            }),
         ]),
     );
     if (error) throw error;
 
     const [totalUsers, totalApiKeys, latestSeason] = results;
     const lastPollTime = latestSeason?.last_updated ?? null;
-    const workerHealthy = lastPollTime ? Date.now() - new Date(lastPollTime).getTime() < 60000 : false;
+    const workerHealthy =
+        lastPollTime ? Date.now() - new Date(lastPollTime).getTime() < 60000 : false;
 
     return {
         data: { totalUsers, totalApiKeys, lastPollTime, workerHealthy },

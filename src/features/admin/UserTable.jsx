@@ -17,7 +17,7 @@ export default function UserTable({ users }) {
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="text-left text-xs uppercase text-text-muted">
+                            <tr className="text-left text-xs text-text-muted uppercase">
                                 <th className="pb-2">User</th>
                                 <th className="pb-2">Email</th>
                                 <th className="pb-2">Role</th>
@@ -44,7 +44,10 @@ function UserRow({ user }) {
 
     const [roleState, roleAction, rolePending] = useActionState(updateUserRole, null);
     const [banState, banAction, banPending] = useActionState(toggleUserBan, null);
-    const [revokeState, revokeAction, revokePending] = useActionState(adminRevokeApiKey, null);
+    const [revokeState, revokeAction, revokePending] = useActionState(
+        adminRevokeApiKey,
+        null,
+    );
 
     const handleShowKeys = async () => {
         if (showKeys) {
@@ -107,14 +110,18 @@ function UserRow({ user }) {
                 <td className="py-2">
                     <form action={banAction}>
                         <input type="hidden" name="userId" value={user.id} />
-                        <input type="hidden" name="banned" value={isBanned ? 'false' : 'true'} />
+                        <input
+                            type="hidden"
+                            name="banned"
+                            value={isBanned ? 'false' : 'true'}
+                        />
                         <button
                             type="submit"
                             disabled={banPending}
                             className={`cursor-pointer border px-2 py-0.5 text-xs disabled:cursor-not-allowed disabled:opacity-50 ${
-                                isBanned
-                                    ? 'border-green-400 text-green-400'
-                                    : 'border-danger text-danger'
+                                isBanned ?
+                                    'border-green-400 text-green-400'
+                                :   'border-danger text-danger'
                             }`}
                         >
                             {isBanned ? 'Unban' : 'Ban'}
@@ -139,7 +146,11 @@ function UserRow({ user }) {
                                         {timeSince(key.createdAt)}
                                     </span>
                                     <form action={revokeAction}>
-                                        <input type="hidden" name="apikeyId" value={key.id} />
+                                        <input
+                                            type="hidden"
+                                            name="apikeyId"
+                                            value={key.id}
+                                        />
                                         <button
                                             type="submit"
                                             disabled={revokePending}

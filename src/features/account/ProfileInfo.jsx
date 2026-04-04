@@ -29,7 +29,9 @@ export default async function ProfileInfo({ user }) {
                         className="rounded-full"
                     />
                     <div>
-                        <p className="font-semibold text-text">{user.name ?? 'Anonymous'}</p>
+                        <p className="font-semibold text-text">
+                            {user.name ?? 'Anonymous'}
+                        </p>
                         <p className="text-sm text-text-muted">{user.email}</p>
                     </div>
                 </div>
@@ -38,7 +40,7 @@ export default async function ProfileInfo({ user }) {
                     {providers.map((p, i) => (
                         <span key={p}>
                             {i > 0 && ' · '}
-                            <span className="capitalize text-text">{p}</span>
+                            <span className="text-text capitalize">{p}</span>
                         </span>
                     ))}
                 </p>

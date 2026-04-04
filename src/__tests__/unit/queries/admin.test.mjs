@@ -46,13 +46,19 @@ describe('getAllUsers', () => {
 describe('updateUserRole', () => {
     test('returns auth error for non-admin', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(userSession);
-        const result = await updateUserRole(null, createFormData({ userId: targetUserId, newRole: 'admin' }));
+        const result = await updateUserRole(
+            null,
+            createFormData({ userId: targetUserId, newRole: 'admin' }),
+        );
         expect(result.errors.auth).toBeDefined();
     });
 
     test('prevents self-demotion', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        const result = await updateUserRole(null, createFormData({ userId: adminId, newRole: 'user' }));
+        const result = await updateUserRole(
+            null,
+            createFormData({ userId: adminId, newRole: 'user' }),
+        );
         expect(result.errors.auth).toMatch(/own role/i);
     });
 
@@ -60,7 +66,10 @@ describe('updateUserRole', () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
         vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, role: 'admin' });
 
-        const result = await updateUserRole(null, createFormData({ userId: targetUserId, newRole: 'admin' }));
+        const result = await updateUserRole(
+            null,
+            createFormData({ userId: targetUserId, newRole: 'admin' }),
+        );
         expect(result.data).toBeDefined();
         expect(db.user.update).toHaveBeenCalledWith({
             where: { id: targetUserId },
@@ -75,13 +84,19 @@ describe('updateUserRole', () => {
 describe('toggleUserBan', () => {
     test('returns auth error for non-admin', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(userSession);
-        const result = await toggleUserBan(null, createFormData({ userId: targetUserId, banned: 'true' }));
+        const result = await toggleUserBan(
+            null,
+            createFormData({ userId: targetUserId, banned: 'true' }),
+        );
         expect(result.errors.auth).toBeDefined();
     });
 
     test('prevents self-ban', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        const result = await toggleUserBan(null, createFormData({ userId: adminId, banned: 'true' }));
+        const result = await toggleUserBan(
+            null,
+            createFormData({ userId: adminId, banned: 'true' }),
+        );
         expect(result.errors.auth).toMatch(/own account/i);
     });
 
@@ -89,7 +104,10 @@ describe('toggleUserBan', () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
         vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, banned: true });
 
-        const result = await toggleUserBan(null, createFormData({ userId: targetUserId, banned: 'true' }));
+        const result = await toggleUserBan(
+            null,
+            createFormData({ userId: targetUserId, banned: 'true' }),
+        );
         expect(result.data).toBeDefined();
         expect(db.user.update).toHaveBeenCalledWith({
             where: { id: targetUserId },
@@ -103,16 +121,30 @@ describe('toggleUserBan', () => {
 describe('adminGetUserApiKeys', () => {
     test('returns auth error for non-admin', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(userSession);
-        const result = await adminGetUserApiKeys(null, createFormData({ userId: targetUserId }));
+        const result = await adminGetUserApiKeys(
+            null,
+            createFormData({ userId: targetUserId }),
+        );
         expect(result.errors.auth).toBeDefined();
     });
 
     test('returns api keys for any user', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        const mockKeys = [{ id: 'k1', description: 'key', visible: 'ab12', createdAt: new Date(), enabled: true }];
+        const mockKeys = [
+            {
+                id: 'k1',
+                description: 'key',
+                visible: 'ab12',
+                createdAt: new Date(),
+                enabled: true,
+            },
+        ];
         vi.mocked(db.ApiKey.findMany).mockResolvedValue(mockKeys);
 
-        const result = await adminGetUserApiKeys(null, createFormData({ userId: targetUserId }));
+        const result = await adminGetUserApiKeys(
+            null,
+            createFormData({ userId: targetUserId }),
+        );
         expect(result.data).toEqual(mockKeys);
     });
 });

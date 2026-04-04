@@ -13,21 +13,21 @@ export default function ProfileNav({ role }) {
 
     return (
         <div className="flex items-baseline gap-3">
-            {onAdminPage ? (
+            {onAdminPage ?
                 <Link href="/profile" className="text-xl text-text-muted hover:text-text">
                     Profile
                 </Link>
-            ) : (
-                <h1 className="text-xl font-bold text-text">Profile</h1>
-            )}
+            :   <h1 className="text-xl font-bold text-text">Profile</h1>}
             <span className="text-xl text-ghost">|</span>
-            {onAdminPage ? (
+            {onAdminPage ?
                 <h1 className="text-xl font-bold text-text">Admin</h1>
-            ) : (
-                <Link href="/profile/admin" className="text-xl text-text-muted hover:text-text">
+            :   <Link
+                    href="/profile/admin"
+                    className="text-xl text-text-muted hover:text-text"
+                >
                     Admin
                 </Link>
-            )}
+            }
         </div>
     );
 }

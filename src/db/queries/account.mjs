@@ -21,10 +21,28 @@ export async function exportUserData(userId) {
         db.user.findUnique({
             where: { id: userId },
             include: {
-                accounts: { select: { providerId: true, accountId: true, createdAt: true } },
+                accounts: {
+                    select: { providerId: true, accountId: true, createdAt: true },
+                },
                 settings: { select: { settings: true } },
-                reviews: { select: { id: true, title: true, content: true, published: true, createdAt: true } },
-                apiKeys: { select: { id: true, description: true, visible: true, createdAt: true, enabled: true } },
+                reviews: {
+                    select: {
+                        id: true,
+                        title: true,
+                        content: true,
+                        published: true,
+                        createdAt: true,
+                    },
+                },
+                apiKeys: {
+                    select: {
+                        id: true,
+                        description: true,
+                        visible: true,
+                        createdAt: true,
+                        enabled: true,
+                    },
+                },
             },
         }),
     );
@@ -56,11 +74,17 @@ export async function deleteUserAccount(_, formData) {
     });
     const check = schema.safeParse(formValues);
     if (!check.success) {
-        return { errors: check.error.flatten().fieldErrors, time: performanceTime(start) };
+        return {
+            errors: check.error.flatten().fieldErrors,
+            time: performanceTime(start),
+        };
     }
 
     if (formValues.confirmEmail !== session.user.email) {
-        return { errors: { confirmEmail: 'Email does not match your account' }, time: performanceTime(start) };
+        return {
+            errors: { confirmEmail: 'Email does not match your account' },
+            time: performanceTime(start),
+        };
     }
 
     const { data: deleted, error } = await tryCatch(
