@@ -149,6 +149,7 @@ describe('toggleUserBan', () => {
 
     test('toggles ban on success', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
+        vi.mocked(db.user.findUnique).mockResolvedValue({ role: 'user' });
         vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, banned: true });
 
         const result = await toggleUserBan(

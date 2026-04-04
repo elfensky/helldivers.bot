@@ -1,3 +1,4 @@
+// Allow 2 missed polls at 15s cadence before marking down
 const HEALTH_THRESHOLD_MS = 30_000;
 
 export function computeWorkerHealth(heartbeat) {
