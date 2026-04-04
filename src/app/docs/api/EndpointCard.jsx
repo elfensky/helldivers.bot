@@ -203,7 +203,7 @@ export default function EndpointCard({ path, methods, schemas }) {
             id={slug}
             className="group border border-ghost bg-surface-1 transition-colors"
         >
-            <summary className="grid cursor-pointer list-none grid-cols-[1fr_4px] hover:bg-surface-2">
+            <summary className="grid cursor-pointer list-none grid-cols-[minmax(0,1fr)_4px] hover:bg-surface-2">
                 <div className="flex flex-wrap items-center gap-2 px-4 py-3">
                     {methodEntries.map(([method]) => (
                         <MethodBadge key={method} method={method} />

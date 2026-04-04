@@ -90,8 +90,8 @@
     /* Each day: 2-row grid — circle+header, then dots+cards */
     .timeline-day {
         display: grid;
-        grid-template-columns: 18px 1fr;
-        grid-template-rows: auto 1fr;
+        grid-template-columns: 18px minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
         gap: 0 1rem;
     }
 

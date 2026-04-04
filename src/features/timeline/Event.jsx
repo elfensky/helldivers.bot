@@ -41,7 +41,7 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
 
     return (
         <article
-            className={`grid grid-cols-[1fr_6px] border border-r-0 ${s.border} ${s.bg}`}
+            className={`grid grid-cols-[minmax(0,1fr)_6px] border border-r-0 ${s.border} ${s.bg}`}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >
