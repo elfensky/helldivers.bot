@@ -74,7 +74,23 @@ export default function NotificationToggle() {
         }
     }, []);
 
-    if (state === 'loading' || state === 'unsupported' || state === 'denied') return null;
+    if (state === 'loading') return null;
+
+    if (state === 'unsupported') {
+        return (
+            <span className="font-mono text-xs text-[var(--color-text-muted)] opacity-50">
+                Notifications unavailable
+            </span>
+        );
+    }
+
+    if (state === 'denied') {
+        return (
+            <span className="font-mono text-xs text-[var(--color-text-muted)] opacity-50">
+                Notifications blocked
+            </span>
+        );
+    }
 
     async function enable() {
         setBusy(true);
