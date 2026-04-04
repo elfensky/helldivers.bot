@@ -36,7 +36,7 @@ const inter = Inter({
 // }
 
 export const viewport = {
-    themeColor: '#282828',
+    themeColor: '#1c1b1b',
 };
 
 export const metadata = {
@@ -198,7 +198,7 @@ export default async function RootLayout({ children }) {
                 <Header />
                 <main
                     id="main"
-                    className="flex min-h-screen w-full flex-col pb-[48px] md:pt-[80px] md:pb-0"
+                    className="flex min-h-screen w-full flex-col pt-[50px] pb-[48px] sm:pt-[80px] md:pb-0"
                 >
                     {children}
                 </main>

@@ -12,7 +12,7 @@ export default async function Header() {
     return (
         <header
             id="header"
-            className="z-50 flex h-[50px] w-full text-white sm:h-[80px] md:fixed md:top-0"
+            className="fixed top-0 z-50 flex h-[50px] w-full text-white sm:h-[80px]"
         >
             <div className="p-gutters mx-auto flex w-full max-w-[1536px] items-center justify-between">
                 <Logo />
