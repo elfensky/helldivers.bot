@@ -1,13 +1,29 @@
-const CACHE_NAME = 'hd1-shell-v1';
-const SHELL_ASSETS = ['/', '/icon.svg', '/apple-icon.png'];
+const CACHE_NAME = 'hd1-shell-v2';
 
-// Install — cache app shell
+// If you add icons or static assets to public/, update this list.
+const SHELL_ASSETS = [
+    '/',
+    '/icon.svg',
+    '/apple-icon.png',
+    '/site.webmanifest',
+    '/fonts/insignia.regular.otf',
+    '/icons/superearth.webp',
+    '/icons/faction0.webp',
+    '/icons/faction1.webp',
+    '/icons/faction2.webp',
+    '/icons/faction3.webp',
+    '/icons/attack.webp',
+    '/icons/defend.webp',
+    '/images/logo.webp',
+    '/svgs/galaxy.svg',
+];
+
+// Install — cache app shell (do NOT skipWaiting — controlled by client)
 self.addEventListener('install', (event) => {
     event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS)));
-    self.skipWaiting();
 });
 
-// Activate — clean old caches
+// Activate — clean old caches, claim clients
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches
@@ -23,7 +39,14 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch — stale-while-revalidate for shell, skip API routes
+// Message — controlled update: client tells us when to activate
+self.addEventListener('message', (event) => {
+    if (event.data?.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
+});
+
+// Fetch — network-first for navigation, stale-while-revalidate for assets
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
@@ -36,11 +59,36 @@ self.addEventListener('fetch', (event) => {
     // Skip non-same-origin requests
     if (url.origin !== self.location.origin) return;
 
+    // Navigation requests (HTML documents) — network-first with cache fallback
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    if (response.ok) {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, clone);
+                        });
+                    }
+                    return response;
+                })
+                .catch(() =>
+                    caches
+                        .match(event.request)
+                        .then(
+                            (cached) =>
+                                cached || new Response('Offline', { status: 503 }),
+                        ),
+                ),
+        );
+        return;
+    }
+
+    // Static assets — stale-while-revalidate
     event.respondWith(
         caches.match(event.request).then((cached) => {
             const fetchPromise = fetch(event.request)
                 .then((response) => {
-                    // Cache successful responses for shell assets
                     if (response.ok) {
                         const clone = response.clone();
                         caches.open(CACHE_NAME).then((cache) => {
@@ -56,7 +104,7 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Push — show native notification
+// Push — show native notification (validate payload)
 self.addEventListener('push', (event) => {
     if (!event.data) return;
 
@@ -67,10 +115,18 @@ self.addEventListener('push', (event) => {
         payload = { title: 'Helldivers Bot', body: event.data.text() };
     }
 
+    // Validate icon is same-origin (prevent spoofing via compromised push endpoint)
+    let icon = '/icon.svg';
+    if (payload.icon && typeof payload.icon === 'string') {
+        if (payload.icon.startsWith('/') && !payload.icon.startsWith('//')) {
+            icon = payload.icon;
+        }
+    }
+
     event.waitUntil(
         self.registration.showNotification(payload.title || 'Helldivers Bot', {
             body: payload.body || '',
-            icon: payload.icon || '/icon.svg',
+            icon,
             badge: '/icon.svg',
             data: payload.data,
         }),
