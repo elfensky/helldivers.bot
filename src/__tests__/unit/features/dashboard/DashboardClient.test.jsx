@@ -12,8 +12,11 @@ vi.mock('@/shared/hooks/useLiveData.mjs', () => ({
         isLeader: true,
     }),
 }));
-vi.mock('@/features/stats/Alerts', () => ({
-    default: () => <div data-testid="alerts" />,
+vi.mock('@/features/notifications/LiveToasts', () => ({
+    default: () => null,
+}));
+vi.mock('@/features/notifications/NotificationToggle', () => ({
+    default: () => null,
 }));
 vi.mock('@/features/dashboard/ConnectionStatus', () => ({
     default: ({ status }) => <span data-testid="connection-status">{status}</span>,
@@ -65,7 +68,6 @@ const testMapState = { 0: {}, 1: {}, 2: {} };
 describe('DashboardClient', () => {
     test('renders child components', () => {
         render(<DashboardClient initialData={testData} initialMapState={testMapState} />);
-        expect(screen.getByTestId('alerts')).toBeInTheDocument();
         expect(screen.getByTestId('galaxy')).toBeInTheDocument();
         expect(screen.getByTestId('faction-tabs')).toBeInTheDocument();
         expect(screen.getByTestId('stat-grid')).toBeInTheDocument();

@@ -3,6 +3,7 @@ import './layout.css';
 import Script from 'next/script';
 import { headers } from 'next/headers';
 import { Space_Grotesk, Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 //components
 import Header from '@/shared/components/Header/Header';
 import Footer from '@/shared/components/Footer/Footer';
@@ -95,6 +96,19 @@ export default async function RootLayout({ children }) {
                 </main>
                 <Footer />
                 <BottomNav />
+                <Toaster
+                    theme="dark"
+                    position="bottom-right"
+                    toastOptions={{
+                        style: {
+                            borderRadius: '0px',
+                            background: 'var(--color-surface-1)',
+                            color: 'var(--color-text)',
+                            border: '1px solid var(--color-ghost)',
+                            fontFamily: 'var(--font-body)',
+                        },
+                    }}
+                />
 
                 {isProduction ?
                     <Script

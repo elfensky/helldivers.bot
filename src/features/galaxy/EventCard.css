@@ -88,6 +88,12 @@
     font-weight: 600;
 }
 
+.sector-card-countdown {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.5rem;
+    color: var(--color-text-muted);
+}
+
 .sector-card-alert {
     font-size: 0.5625rem;
     color: var(--color-danger);

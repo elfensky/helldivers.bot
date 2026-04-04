@@ -3,17 +3,12 @@
 .dashboard {
     display: grid;
     grid-template-areas:
-        'alerts'
         'map'
         'sidebar';
     grid-template-columns: 1fr;
     gap: 1rem;
     padding-top: 1rem;
     padding-bottom: 1rem;
-}
-
-.dashboard-alerts {
-    grid-area: alerts;
 }
 
 .dashboard-map {
@@ -59,14 +54,13 @@
 @media (min-width: 1024px) {
     .dashboard {
         grid-template-areas:
-            'alerts  map'
             'sidebar map'
             'hint    hint';
         grid-template-columns: minmax(260px, 1fr) minmax(
                 0,
                 calc((100dvh - 80px) * 806.93 / 868.81)
             );
-        grid-template-rows: auto minmax(0, 1fr) auto;
+        grid-template-rows: minmax(0, 1fr) auto;
         column-gap: 6rem;
         min-height: calc(100dvh - 80px);
         position: relative;

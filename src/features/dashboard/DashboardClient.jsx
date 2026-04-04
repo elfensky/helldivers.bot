@@ -1,8 +1,9 @@
 'use client';
 import './DashboardClient.css';
 import { useState } from 'react';
-import Alerts from '@/features/stats/Alerts';
 import Galaxy from '@/features/galaxy/Galaxy';
+import LiveToasts from '@/features/notifications/LiveToasts';
+import NotificationToggle from '@/features/notifications/NotificationToggle';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
 import ConnectionStatus from '@/features/dashboard/ConnectionStatus';
@@ -22,7 +23,10 @@ const FACTION_LABELS = {
 };
 
 export default function DashboardClient({ initialData, initialMapState }) {
-    const { data, mapState, status } = useLiveData(initialData, initialMapState);
+    const { data, mapState, status, prevData, isLeader } = useLiveData(
+        initialData,
+        initialMapState,
+    );
     const [faction, setFaction] = useState('global');
 
     const events = sortEventsByRecent(data?.events);
@@ -53,6 +57,7 @@ export default function DashboardClient({ initialData, initialMapState }) {
                     pointsMax={frontier.pointsMax}
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
+                    endTime={activeEvent?.end_time}
                 />
             </li>
         );
@@ -75,6 +80,7 @@ export default function DashboardClient({ initialData, initialMapState }) {
                     pointsMax={homeworld.points_max}
                     factionIndex={index}
                     pace={attackEvent ? evaluateProgress(attackEvent) : null}
+                    endTime={attackEvent?.end_time}
                 />
             </li>
         );
@@ -82,9 +88,7 @@ export default function DashboardClient({ initialData, initialMapState }) {
 
     return (
         <div className="dashboard gutters">
-            <div className="dashboard-alerts">
-                <Alerts data={data} />
-            </div>
+            <LiveToasts prevData={prevData} data={data} isLeader={isLeader} />
             <div className="dashboard-map">
                 <Galaxy mapState={mapState} />
             </div>
@@ -109,6 +113,7 @@ export default function DashboardClient({ initialData, initialMapState }) {
                             </p>
                         )}
                         <ConnectionStatus status={status} />
+                        <NotificationToggle />
                     </div>
                 </div>
                 <section className="flex flex-col gap-2">
