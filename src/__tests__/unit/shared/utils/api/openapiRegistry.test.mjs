@@ -11,15 +11,29 @@ describe('generateOpenApiSpec', () => {
         expect(spec.info.title).toBe('Helldivers 1 API');
     });
 
-    test('has paths for /api/h1/campaign, /api/h1/rebroadcast, and /api/h1/update', () => {
+    test('has all expected API paths', () => {
         expect(spec.paths).toHaveProperty('/api/h1/campaign');
         expect(spec.paths).toHaveProperty('/api/h1/rebroadcast');
         expect(spec.paths).toHaveProperty('/api/h1/update');
+        expect(spec.paths).toHaveProperty('/api/h1/stream');
+        expect(spec.paths).toHaveProperty('/api/notifications/subscribe');
     });
 
-    test('has component schemas for ErrorResponse and SuccessResponse', () => {
+    test('/api/h1/stream has GET with text/event-stream response', () => {
+        const stream = spec.paths['/api/h1/stream'].get;
+        expect(stream.responses['200'].content).toHaveProperty('text/event-stream');
+    });
+
+    test('/api/notifications/subscribe has both POST and DELETE', () => {
+        const subscribe = spec.paths['/api/notifications/subscribe'];
+        expect(subscribe).toHaveProperty('post');
+        expect(subscribe).toHaveProperty('delete');
+    });
+
+    test('has component schemas for ErrorResponse, SuccessResponse, and PushSubscription', () => {
         const schemaNames = Object.keys(spec.components?.schemas ?? {});
         expect(schemaNames).toContain('ErrorResponse');
         expect(schemaNames).toContain('SuccessResponse');
+        expect(schemaNames).toContain('PushSubscription');
     });
 });
