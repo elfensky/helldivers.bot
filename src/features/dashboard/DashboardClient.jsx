@@ -5,7 +5,9 @@ import Alerts from '@/features/stats/Alerts';
 import Galaxy from '@/features/galaxy/Galaxy';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
+import ConnectionStatus from '@/features/dashboard/ConnectionStatus';
 import StatGrid from '@/features/stats/StatGrid';
+import { useLiveData } from '@/shared/hooks/useLiveData.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo.mjs';
 import { sortEventsByRecent } from '@/shared/utils/game/eventFilters.mjs';
@@ -19,7 +21,8 @@ const FACTION_LABELS = {
     illuminate: 'Illuminate',
 };
 
-export default function DashboardClient({ data, mapState }) {
+export default function DashboardClient({ initialData, initialMapState }) {
+    const { data, mapState, status } = useLiveData(initialData, initialMapState);
     const [faction, setFaction] = useState('global');
 
     const events = sortEventsByRecent(data?.events);
@@ -95,15 +98,18 @@ export default function DashboardClient({ data, mapState }) {
                         Helldivers&apos; campaign progress as they battle the Bugs,
                         Cyborgs, and Illuminate for peace, liberty, and managed democracy.
                     </p>
-                    {timeAgo && (
-                        <p
-                            className="mt-2 font-mono text-xs"
-                            style={{ color: 'var(--color-text-muted)' }}
-                            suppressHydrationWarning
-                        >
-                            {timeAgo}
-                        </p>
-                    )}
+                    <div className="mt-2 flex items-center gap-3">
+                        {timeAgo && (
+                            <p
+                                className="font-mono text-xs"
+                                style={{ color: 'var(--color-text-muted)' }}
+                                suppressHydrationWarning
+                            >
+                                {timeAgo}
+                            </p>
+                        )}
+                        <ConnectionStatus status={status} />
+                    </div>
                 </div>
                 <section className="flex flex-col gap-2">
                     <h2>Regions</h2>

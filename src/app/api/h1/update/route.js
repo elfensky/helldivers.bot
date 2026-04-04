@@ -7,6 +7,7 @@ import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
 //update
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';
+import { notifyUpdate } from '@/update/notifyClient';
 
 export async function GET(request) {
     //INITIALIZE
@@ -36,6 +37,9 @@ export async function GET(request) {
         return errorResponse(500, start, seasonError?.message);
     }
     const seasonTime = roundedPerformanceTime(start);
+
+    // Notify SSE clients that data has been updated
+    await notifyUpdate();
 
     //RESPONSE
     return successResponse(200, start, {
