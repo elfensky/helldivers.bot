@@ -1,5 +1,6 @@
 'use client';
-import { signIn, signOut } from '@/auth-client';
+import Link from 'next/link';
+import { signOut } from '@/auth-client';
 
 /**
  * Sign-in button. Triggers OAuth flow via BetterAuth client.
@@ -7,14 +8,9 @@ import { signIn, signOut } from '@/auth-client';
  */
 export function SignIn({ provider }) {
     return (
-        <button
-            type="button"
-            className="header-nav-link cursor-pointer"
-            data-umami-event="header-signin"
-            onClick={() => signIn(provider || 'discord')}
-        >
+        <Link href="/sign-in" className="header-nav-link" data-umami-event="header-signin">
             Sign In
-        </button>
+        </Link>
     );
 }
 

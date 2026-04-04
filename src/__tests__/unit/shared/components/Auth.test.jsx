@@ -10,15 +10,21 @@ vi.mock('@/auth-client', () => ({
 import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
 
 describe('SignIn', () => {
-    test('renders a button with "Sign In"', () => {
+    test('renders a link with "Sign In"', () => {
         render(<SignIn />);
-        expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Sign In' })).toBeInTheDocument();
     });
 
-    test('button has data-umami-event="header-signin"', () => {
+    test('link points to /sign-in', () => {
         render(<SignIn />);
-        const button = screen.getByRole('button', { name: 'Sign In' });
-        expect(button).toHaveAttribute('data-umami-event', 'header-signin');
+        const link = screen.getByRole('link', { name: 'Sign In' });
+        expect(link).toHaveAttribute('href', '/sign-in');
+    });
+
+    test('link has data-umami-event="header-signin"', () => {
+        render(<SignIn />);
+        const link = screen.getByRole('link', { name: 'Sign In' });
+        expect(link).toHaveAttribute('data-umami-event', 'header-signin');
     });
 });
 
