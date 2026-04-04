@@ -42,6 +42,12 @@ export default async function sitemap() {
             changeFrequency: 'monthly',
             priority: 0.3,
         },
+        {
+            url: 'https://helldivers.bot/docs/notifications',
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.3,
+        },
     ];
 }
 

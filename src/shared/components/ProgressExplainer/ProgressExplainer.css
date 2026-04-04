@@ -1,12 +1,12 @@
 .progress-explainer {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.5rem;
 }
 
 @media (min-width: 768px) {
     .progress-explainer {
-        grid-template-columns: 1fr 280px;
+        grid-template-columns: minmax(0, 1fr) 280px;
     }
 }
 
@@ -82,7 +82,7 @@
 
 .progress-result-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0.35rem 0.75rem;
     font-size: 0.8rem;
 }

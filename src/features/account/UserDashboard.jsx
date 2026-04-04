@@ -1,13 +1,12 @@
 import { auth } from '@/auth';
 //next
+import { headers } from 'next/headers';
 import Image from 'next/image';
-//db
-// import { updateUser } from '@/db/queries/user';
 //utils
 import { getGravatarUrl } from '@/shared/utils/gravatar';
 
 export default async function UserDashboard() {
-    const session = await auth();
+    const session = await auth.api.getSession({ headers: await headers() });
 
     const user = session.user;
 

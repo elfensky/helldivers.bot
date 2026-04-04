@@ -366,7 +366,7 @@ const accentColors = {
 
 function DataCard({ label, stat, desc, accent = 'default' }) {
     return (
-        <div className="grid grid-cols-[1fr_4px] border border-ghost bg-surface-1 transition-colors hover:bg-surface-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_4px] border border-ghost bg-surface-1 transition-colors hover:bg-surface-2">
             <div className="p-3">
                 <h6 className="text-text-muted">{label}</h6>
                 <div className="my-1 font-display text-2xl leading-none font-black text-primary uppercase">

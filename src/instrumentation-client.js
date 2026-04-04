@@ -23,4 +23,6 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 export const onRouterTransitionStart =
-    process.env.NODE_ENV === 'production' ? Sentry.captureRouterTransitionStart : () => {};
+    process.env.NODE_ENV === 'production' ?
+        Sentry.captureRouterTransitionStart
+    :   () => {};

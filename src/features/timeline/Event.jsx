@@ -41,7 +41,7 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
 
     return (
         <article
-            className={`grid grid-cols-[1fr_6px] border border-r-0 ${s.border} ${s.bg}`}
+            className={`grid grid-cols-[minmax(0,1fr)_6px] border border-r-0 ${s.border} ${s.bg}`}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >
@@ -54,7 +54,10 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
                         <img src={faction.icon} alt={faction.name} className="size-5" />
                     )}
                 </div>
-                <span className="text-[0.6875rem] text-text-muted" suppressHydrationWarning>
+                <span
+                    className="text-[0.6875rem] text-text-muted"
+                    suppressHydrationWarning
+                >
                     {timeText}
                 </span>
                 <div className="font-mono text-[0.5rem] text-text-muted">

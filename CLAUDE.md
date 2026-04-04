@@ -115,7 +115,7 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`, in
 - **Two-table strategy:** `rebroadcast_*` tables store raw API JSON; `h1_*` tables store normalized historical data. Both are needed.
 - **Worker thread** (`public/workers/cron.js`) uses `setTimeout` (not `setInterval`) to prevent overlapping requests.
 - **Prisma 7** with `@prisma/adapter-pg` driver adapter. Client outputs to `src/generated/prisma/`. CLI config in `prisma.config.mjs`.
-- **Auth:** NextAuth.js v5 with database sessions (not JWT). Discord + GitHub OAuth.
+- **Auth:** BetterAuth with database sessions (Prisma adapter). Discord + GitHub OAuth. Server config in `src/auth.js`, client utilities in `src/auth-client.js`.
 - **React Compiler** enabled experimentally in `next.config.mjs`.
 - **Error tracking:** Sentry SDK configured for self-hosted Bugsink (`tracesSampleRate: 0`, no replays/logs).
 - **Node version:** mise pins node@24 (ships with npm 11 natively).

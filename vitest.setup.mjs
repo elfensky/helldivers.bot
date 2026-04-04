@@ -5,16 +5,31 @@ import '@testing-library/jest-dom/vitest';
 // #region Auth Mocks
 
 /**
- * Mock NextAuth v5 server-side auth
+ * Mock BetterAuth server-side auth
  *
  * Defaults to null (logged-out). Override in tests:
- *   vi.mocked(auth).mockResolvedValue(createMockSession())
+ *   vi.mocked(auth.api.getSession).mockResolvedValue({ user: { ... } })
  */
 vi.mock('@/auth', () => ({
-    auth: vi.fn(() => Promise.resolve(null)),
+    auth: {
+        api: {
+            getSession: vi.fn(() => Promise.resolve(null)),
+        },
+    },
+}));
+
+/**
+ * Mock BetterAuth client-side auth
+ */
+vi.mock('@/auth-client', () => ({
+    authClient: {
+        signIn: { social: vi.fn() },
+        signOut: vi.fn(),
+        useSession: vi.fn(() => ({ data: null, isPending: false })),
+    },
     signIn: vi.fn(),
     signOut: vi.fn(),
-    handlers: { GET: vi.fn(), POST: vi.fn() },
+    useSession: vi.fn(() => ({ data: null, isPending: false })),
 }));
 
 // #endregion
@@ -43,12 +58,11 @@ const createModelMock = () => ({
 
 vi.mock('@/db/db', () => ({
     default: {
-        // Auth models
+        // Auth models (BetterAuth)
         user: createModelMock(),
         account: createModelMock(),
         session: createModelMock(),
-        verificationToken: createModelMock(),
-        authenticator: createModelMock(),
+        verification: createModelMock(),
         // App models
         app: createModelMock(),
         settings: createModelMock(),

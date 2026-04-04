@@ -44,7 +44,7 @@ describe('fetchStatus', () => {
     test('throws when response has no data', async () => {
         vi.mocked(axios.post).mockResolvedValue({ data: null });
 
-        await expect(fetchStatus()).rejects.toThrow('Failed to fetch data from axios');
+        await expect(fetchStatus()).rejects.toThrow('No data received from the API');
     });
 
     test('throws on axios error', async () => {
