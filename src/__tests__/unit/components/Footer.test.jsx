@@ -33,8 +33,7 @@ describe('Footer', () => {
         render(<Footer />);
         expect(screen.getByText('Campaign')).toBeInTheDocument();
         expect(screen.getByText('Archives')).toBeInTheDocument();
-        expect(screen.getByText('Discord Bot')).toBeInTheDocument();
-        expect(screen.getByText('API')).toBeInTheDocument();
+        expect(screen.getByText('Docs')).toBeInTheDocument();
     });
 
     test('renders social links', () => {

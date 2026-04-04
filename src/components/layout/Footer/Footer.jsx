@@ -60,16 +60,11 @@ export default function Footer() {
                         </li>
                         <li>
                             <Link
-                                href="/discord"
+                                href="/docs"
                                 prefetch={false}
                                 className="footer-link"
                             >
-                                Discord Bot
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/api" prefetch={false} className="footer-link">
-                                API
+                                Docs
                             </Link>
                         </li>
                     </ul>

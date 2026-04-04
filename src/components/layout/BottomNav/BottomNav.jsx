@@ -8,7 +8,7 @@ export default function BottomNav() {
     const tabs = [
         { href: '/', label: 'Live', icon: '●', live: true },
         { href: '/archives', label: 'Archives', icon: '◈' },
-        { href: '/about', label: 'About', icon: '◇' },
+        { href: '/docs', label: 'Docs', icon: '◇' },
     ];
 
     return (

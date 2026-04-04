@@ -1,7 +1,9 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import createMDX from '@next/mdx';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    pageExtensions: ['js', 'jsx', 'mdx'],
     reactCompiler: true,
     output: 'standalone',
     images: {
@@ -121,7 +123,13 @@ const nextConfig = {
     },
 };
 
-export default withSentryConfig(nextConfig, {
+const withMDX = createMDX({
+    options: {
+        remarkPlugins: ['remark-gfm'],
+    },
+});
+
+export default withSentryConfig(withMDX(nextConfig), {
     silent: true,
     sourcemaps: {
         disable: true,

@@ -20,7 +20,7 @@ describe('HeaderNav', () => {
         render(<HeaderNav />);
         expect(screen.getByText('Live')).toBeInTheDocument();
         expect(screen.getByText('Archives')).toBeInTheDocument();
-        expect(screen.getByText('About')).toBeInTheDocument();
+        expect(screen.getByText('Docs')).toBeInTheDocument();
     });
 
     test('active link has "header-nav-link--active" class on home', () => {
@@ -41,7 +41,7 @@ describe('HeaderNav', () => {
     });
 
     test('non-active links do not have "header-nav-link--active" class', () => {
-        vi.mocked(usePathname).mockReturnValue('/about');
+        vi.mocked(usePathname).mockReturnValue('/docs');
         render(<HeaderNav />);
         const homeLink = screen.getByRole('link', { name: /Live/i });
         expect(homeLink.className).not.toContain('header-nav-link--active');
@@ -57,9 +57,9 @@ describe('HeaderNav', () => {
             'href',
             '/archives',
         );
-        expect(screen.getByRole('link', { name: /About/i })).toHaveAttribute(
+        expect(screen.getByRole('link', { name: /Docs/i })).toHaveAttribute(
             'href',
-            '/about',
+            '/docs',
         );
     });
 });

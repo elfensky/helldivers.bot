@@ -1,0 +1,38 @@
+import ProgressExplainerLoader from '@/components/layout/ProgressExplainer/ProgressExplainerLoader';
+
+export const metadata = {
+    title: 'FAQ | Helldivers Bot',
+    description: 'Frequently asked questions about helldivers.bot and how the galactic war progress is tracked.',
+    alternates: { canonical: '/docs/faq' },
+    openGraph: { url: '/docs/faq' },
+};
+
+# FAQ
+
+## How does progress tracking work?
+
+The `evaluateProgress()` function determines whether the community is ahead, behind, or on track during a campaign event. It compares actual progress against a linear expected pace, with a 10% buffer zone.
+
+- **Ahead** — actual points exceed the expected pace plus the buffer
+- **On Track** — actual points are within the buffer zone of expected pace
+- **Behind** — actual points fall below the expected pace minus the buffer
+
+Drag the sliders below to explore how different scenarios affect the evaluation:
+
+<ProgressExplainerLoader />
+
+## What data does this site track?
+
+The site caches the official Helldivers 1 API and stores historic game data. This includes campaign status, defend events, attack events, player counts, and season statistics. See the [Architecture](/docs/architecture) page for details on how data flows through the system.
+
+## How often is the data updated?
+
+A dedicated worker thread polls the official API every 5-15 seconds. Data is validated with Zod schemas before being written to the database.
+
+## Can I use the API?
+
+Yes! Log in to create an API key. The API provides access to all campaign data and historic statistics. See the [API Reference](/docs/api) for interactive documentation.
+
+## Is this project open source?
+
+Yes, the project is open source and hosted on [GitHub](https://github.com/elfensky/helldivers.bot).

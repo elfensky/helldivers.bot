@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 const tabs = [
     { href: '/', label: 'Live', live: true },
     { href: '/archives', label: 'Archives' },
-    { href: '/about', label: 'About' },
+    { href: '/docs', label: 'Docs' },
 ];
 
 export default function HeaderNav() {

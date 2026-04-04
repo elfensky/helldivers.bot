@@ -22,7 +22,7 @@ describe('BottomNav', () => {
         render(<BottomNav />);
         expect(screen.getByText('Live')).toBeInTheDocument();
         expect(screen.getByText('Archives')).toBeInTheDocument();
-        expect(screen.getByText('About')).toBeInTheDocument();
+        expect(screen.getByText('Docs')).toBeInTheDocument();
     });
 
     test('home link is active when pathname is "/"', () => {
@@ -42,10 +42,10 @@ describe('BottomNav', () => {
         expect(homeLink.className).not.toContain('active');
     });
 
-    test('about link is active when pathname starts with /about', () => {
-        vi.mocked(usePathname).mockReturnValue('/about');
+    test('about link is active when pathname starts with /docs', () => {
+        vi.mocked(usePathname).mockReturnValue('/docs');
         render(<BottomNav />);
-        const aboutLink = screen.getByRole('link', { name: /About/i });
+        const aboutLink = screen.getByRole('link', { name: /Docs/i });
         expect(aboutLink.className).toContain('active');
     });
 
@@ -56,9 +56,9 @@ describe('BottomNav', () => {
             'href',
             '/archives',
         );
-        expect(screen.getByRole('link', { name: /About/i })).toHaveAttribute(
+        expect(screen.getByRole('link', { name: /Docs/i })).toHaveAttribute(
             'href',
-            '/about',
+            '/docs',
         );
     });
 });

@@ -4,12 +4,14 @@ export const metadata = {
     title: 'Brand Kit | Helldivers Bot',
     description:
         'Tactical Command Interface — design system reference for Helldivers Bot.',
+    alternates: { canonical: '/docs/brandkit' },
+    openGraph: { url: '/docs/brandkit' },
     robots: { index: false, follow: false },
 };
 
 export default function BrandKitPage() {
     return (
-        <div className="gutters brandkit py-8">
+        <div className="brandkit">
             <Hero />
             <Palette />
             <TypeAndSpacing />
