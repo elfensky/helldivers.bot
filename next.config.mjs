@@ -38,7 +38,7 @@ const nextConfig = {
         return [
             {
                 source: '/stats.js',
-                destination: 'https://umami.lavrenov.io/script.js',
+                destination: 'https://umami.lav.ren/script.js',
             },
         ];
     },
