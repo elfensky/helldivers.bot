@@ -15,7 +15,10 @@ function loadCachedState() {
 
 function saveCachedState(data, mapState) {
     try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ data, mapState, ts: Date.now() }));
+        localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({ data, mapState, ts: Date.now() }),
+        );
     } catch {
         // localStorage full or unavailable — ignore
     }
