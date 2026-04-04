@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.24.1 (2026-04-04)
+
+### Fixes
+
+- Decouple Postgres SSL from `NODE_ENV` — new `POSTGRES_SSL` env var controls SSL independently of build mode
+- Add `platform: linux/amd64` to `docker-compose.yml` for ARM Mac compatibility
+- Fix README Docker build tags (`:local` → `:staging`)
+
+### Chores
+
+- Remove unused `SKIP_MIGRATIONS` env var (never read by application)
+- Remove Prettier formatting check from CI
+
 ## 0.24.0 (2026-04-04)
 
 ### Phase 8: Real-Time Updates
