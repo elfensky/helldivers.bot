@@ -7,6 +7,10 @@ import { tryCatch } from '@/shared/utils/tryCatch';
 import { performanceTime } from '@/shared/utils/time';
 import { revalidatePath } from 'next/cache';
 
+/**
+ * Verify the current request is from an authenticated admin user.
+ * @returns {Promise<{ user: object } | { error: string }>} User object or error message
+ */
 async function requireAdmin() {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session.user) return { error: 'Not authenticated' };

@@ -6,6 +6,11 @@ import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch';
 import { performanceTime } from '@/shared/utils/time';
 
+/**
+ * Export all data for the authenticated user (profile, accounts, settings, reviews, API keys).
+ * Auth guard: session must exist and match the requested userId.
+ * @param {string} userId - User ID to export data for
+ */
 export async function exportUserData(userId) {
     const start = performance.now();
     const session = await auth.api.getSession({ headers: await headers() });
@@ -51,6 +56,12 @@ export async function exportUserData(userId) {
     return { data: userData, time: performanceTime(start) };
 }
 
+/**
+ * Delete the authenticated user's account. Requires email confirmation.
+ * Revokes session before cascade-deleting all user data.
+ * @param {*} _ - Unused (server action signature)
+ * @param {FormData} formData - Must contain userId and confirmEmail fields
+ */
 export async function deleteUserAccount(_, formData) {
     const start = performance.now();
     const session = await auth.api.getSession({ headers: await headers() });

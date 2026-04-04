@@ -9,6 +9,11 @@ export const metadata = {
     robots: { index: false, follow: false },
 };
 
+/**
+ * Profile layout with server-side auth guard.
+ * Redirects unauthenticated users to /sign-in.
+ * Revokes session and redirects banned users to /.
+ */
 export default async function ProfileLayout({ children }) {
     const session = await auth.api.getSession({ headers: await headers() });
 

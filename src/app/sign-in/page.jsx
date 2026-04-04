@@ -1,6 +1,7 @@
 'use client';
 import { signIn } from '@/auth-client';
 
+/** Sign-in page with Discord and GitHub OAuth buttons. */
 export default function SignInPage() {
     return (
         <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-6">
