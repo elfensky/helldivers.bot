@@ -32,8 +32,9 @@ async function ApiKeysList({ userId }) {
             <table className="w-full text-sm">
                 <thead>
                     <tr className="text-left text-xs font-mono text-text-muted uppercase">
-                        <th scope="col" className="pb-2">Last 4 characters</th>
-                        <th scope="col" className="pb-2">Created At</th>
+                        <th scope="col" className="pb-2">Name</th>
+                        <th scope="col" className="pb-2">Key</th>
+                        <th scope="col" className="pb-2">Created</th>
                         <th scope="col" className="pb-2">Enabled</th>
                         <th scope="col" className="pb-2">
                             <span className="sr-only">Actions</span>
@@ -45,6 +46,9 @@ async function ApiKeysList({ userId }) {
                         .sort((a, b) => b.createdAt - a.createdAt)
                         .map((apikey) => (
                             <tr key={apikey.id} className="border-t border-ghost">
+                                <td className="py-2 text-text">
+                                    {apikey.description}
+                                </td>
                                 <td className="py-2 font-mono text-text-muted">
                                     {'****' + apikey.visible}
                                 </td>

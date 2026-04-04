@@ -27,7 +27,7 @@ export function GenerateApiKeyForm({ userId }) {
                 <input type="text" name="userId" value={userId} readOnly hidden />
                 <fieldset className="flex flex-1 flex-col">
                     <label htmlFor="description">
-                        Description
+                        Key Name
                         {state?.errors?.description ?
                             <span id="description-error" className="ml-2 text-sm text-danger">
                                 {state.errors.description}
@@ -38,7 +38,7 @@ export function GenerateApiKeyForm({ userId }) {
                         type="text"
                         id="description"
                         name="description"
-                        placeholder="used by [application name]"
+                        placeholder="e.g. My Discord Bot, Personal Project"
                         className="w-full bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-muted"
                         aria-describedby={
                             state?.errors?.description ? 'description-error' : undefined
