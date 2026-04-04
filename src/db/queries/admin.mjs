@@ -71,6 +71,21 @@ export async function updateUserRole(_, formData) {
         };
     }
 
+    // Last-admin protection: block demotion if this is the only admin
+    if (formValues.newRole === 'user') {
+        const { data: adminCount, error: countError } = await tryCatch(
+            db.user.count({ where: { role: 'admin' } }),
+        );
+        if (countError) throw countError;
+
+        if (adminCount === 1) {
+            return {
+                errors: { auth: 'Cannot demote the last admin' },
+                time: performanceTime(start),
+            };
+        }
+    }
+
     const { data: updated, error } = await tryCatch(
         db.user.update({
             where: { id: formValues.userId },
