@@ -5,7 +5,7 @@ export const authClient = createAuthClient();
 export const signIn = (provider, options = {}) =>
     authClient.signIn.social({
         provider,
-        callbackURL: options.callbackURL || '/dashboard',
+        callbackURL: options.callbackURL || '/profile',
     });
 
 export const signOut = () =>

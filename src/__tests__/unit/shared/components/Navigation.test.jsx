@@ -20,6 +20,9 @@ vi.mock('next/link', () => ({
 vi.mock('next/image', () => ({
     default: (props) => <img {...props} />,
 }));
+vi.mock('@/shared/utils/gravatar', () => ({
+    getGravatarUrl: vi.fn(() => 'https://www.gravatar.com/avatar/mock?s=64'),
+}));
 
 import Navigation from '@/shared/components/Navigation/Navigation';
 import { auth } from '@/auth';
@@ -57,15 +60,11 @@ describe('Navigation', () => {
         const avatar = screen.getByAltText('Test avatar');
         expect(avatar).toBeInTheDocument();
         expect(avatar).toHaveAttribute('src', 'https://example.com/avatar.jpg');
+        const link = avatar.closest('a');
+        expect(link).toHaveAttribute('href', '/profile');
     });
 
     test('uses gravatar when session.user.image is null', async () => {
-        // Note: Navigation.jsx calls getGravatarUrl without importing it.
-        // We define it on globalThis so the component can find it.
-        globalThis.getGravatarUrl = vi.fn(
-            () => 'https://www.gravatar.com/avatar/mock?s=64',
-        );
-
         vi.mocked(auth.api.getSession).mockResolvedValue({
             user: {
                 name: 'GravUser',
@@ -76,8 +75,5 @@ describe('Navigation', () => {
         await renderNavigation();
         const avatar = screen.getByAltText('GravUser avatar');
         expect(avatar).toBeInTheDocument();
-        expect(avatar.getAttribute('src')).toContain('gravatar.com');
-
-        delete globalThis.getGravatarUrl;
     });
 });

@@ -8,6 +8,7 @@ import Image from 'next/image';
 //
 import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
 import HeaderNav from '@/shared/components/Navigation/HeaderNav';
+import { getGravatarUrl } from '@/shared/utils/gravatar';
 
 export default async function Navigation() {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -93,9 +94,9 @@ async function User({ session }) {
     return (
         <>
             <Link
-                href="/dashboard"
+                href="/profile"
                 prefetch={false}
-                data-umami-event="header-dashboard"
+                data-umami-event="header-profile"
                 className="flex items-center opacity-70 transition-[opacity,transform] hover:opacity-100 active:scale-95"
             >
                 <Image
