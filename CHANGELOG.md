@@ -2,6 +2,37 @@
 
 ## Unreleased
 
+## 0.25.0 (2026-04-04)
+
+### Phase 10: Auth Migration
+
+#### Features
+
+- **Migrate from NextAuth v5 to BetterAuth** — replace pre-release `next-auth@5.0.0-beta.30` with stable `better-auth` (#198)
+- **New `/sign-in` page** — dedicated sign-in page with Discord and GitHub OAuth buttons
+- **Client-side auth** — new `src/auth-client.js` with `signIn`, `signOut`, `useSession` exports via `better-auth/react`
+
+#### Breaking Changes
+
+- Auth tables dropped and recreated — all existing users, sessions, and API keys are lost
+- `AUTH_SECRET` env var renamed to `BETTER_AUTH_SECRET`
+- `AUTH_TRUST_HOST` env var removed
+- New `BETTER_AUTH_URL` env var required
+
+#### Architecture
+
+- Server auth config (`src/auth.js`) uses `betterAuth()` with Prisma adapter and social providers
+- Session retrieval: `auth()` → `auth.api.getSession({ headers: await headers() })`
+- Sign-in/sign-out converted from server actions to client component using `better-auth/react`
+- Route handler moved from `[...nextauth]` to `[...all]` with `toNextJsHandler`
+- Prisma schema: Account uses `accessTokenExpiresAt`/`refreshTokenExpiresAt`, Session uses `token`/`expiresAt`, new Verification model
+
+#### Chores
+
+- Update CI workflow env vars (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`)
+- Update env validation in `initialize.env.mjs`
+- Update all test mocks for BetterAuth session pattern
+
 ## 0.24.1 (2026-04-04)
 
 ### Fixes
