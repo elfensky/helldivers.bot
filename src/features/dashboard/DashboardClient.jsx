@@ -103,16 +103,10 @@ export default function DashboardClient({ initialData, initialMapState }) {
                         Cyborgs, and Illuminate for peace, liberty, and managed democracy.
                     </p>
                     <div className="mt-2 flex items-center gap-3">
-                        {timeAgo && (
-                            <p
-                                className="font-mono text-xs"
-                                style={{ color: 'var(--color-text-muted)' }}
-                                suppressHydrationWarning
-                            >
-                                {timeAgo}
-                            </p>
-                        )}
-                        <ConnectionStatus status={status} />
+                        <ConnectionStatus
+                            status={status}
+                            timeAgo={status === 'live' ? null : timeAgo}
+                        />
                         <NotificationToggle />
                     </div>
                 </div>

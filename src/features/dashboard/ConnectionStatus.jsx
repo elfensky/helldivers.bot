@@ -7,15 +7,19 @@ const STATUS_CONFIG = {
     offline: { label: 'Offline', color: 'bg-red-500', pulse: false },
 };
 
-export default function ConnectionStatus({ status }) {
+export default function ConnectionStatus({ status, timeAgo }) {
     const config = STATUS_CONFIG[status] || STATUS_CONFIG.offline;
+    const label = timeAgo || config.label;
 
     return (
-        <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[var(--color-text-muted)]">
+        <span
+            className="inline-flex items-center gap-1.5 font-mono text-xs text-[var(--color-text-muted)]"
+            suppressHydrationWarning
+        >
             <span
                 className={`inline-block h-1.5 w-1.5 rounded-full ${config.color} ${config.pulse ? 'animate-pulse' : ''}`}
             />
-            {config.label}
+            {label}
         </span>
     );
 }
