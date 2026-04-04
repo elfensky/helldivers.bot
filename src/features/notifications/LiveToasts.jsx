@@ -72,34 +72,5 @@ export default function LiveToasts({ prevData, data, isLeader }) {
         }
     }, [data, prevData, isLeader]);
 
-    // DEV ONLY — remove before merging
-    if (process.env.NODE_ENV === 'development') {
-        return (
-            <button
-                onClick={() => {
-                    const fakeStarted = { enemy: 2, type: 'attack', event_id: 999 };
-                    const fakeWon = { enemy: 0, type: 'defend', event_id: 998 };
-                    const fakeLost = { enemy: 1, type: 'defend', event_id: 997 };
-
-                    toast(EVENT_LABELS.event_started(fakeStarted), {
-                        duration: Infinity,
-                        style: TOAST_STYLE(FACTION_COLORS[2]),
-                    });
-                    toast.success(EVENT_LABELS.event_won(fakeWon), {
-                        duration: Infinity,
-                        style: TOAST_STYLE(FACTION_COLORS[0]),
-                    });
-                    toast.error(EVENT_LABELS.event_lost(fakeLost), {
-                        duration: Infinity,
-                        style: TOAST_STYLE(FACTION_COLORS[1]),
-                    });
-                }}
-                className="fixed bottom-4 left-4 z-50 border border-ghost bg-surface-2 px-3 py-1 font-mono text-xs text-text-muted hover:text-text"
-            >
-                Test Toasts
-            </button>
-        );
-    }
-
     return null;
 }
