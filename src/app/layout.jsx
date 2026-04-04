@@ -4,9 +4,9 @@ import Script from 'next/script';
 import { headers } from 'next/headers';
 import { Space_Grotesk, Inter } from 'next/font/google';
 //components
-import Header from '@/components/layout/Header/Header';
-import Footer from '@/components/layout/Footer/Footer';
-import BottomNav from '@/components/layout/BottomNav/BottomNav';
+import Header from '@/shared/components/Header/Header';
+import Footer from '@/shared/components/Footer/Footer';
+import BottomNav from '@/shared/components/BottomNav/BottomNav';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],

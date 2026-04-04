@@ -1,14 +1,14 @@
 import { redirect } from 'next/navigation';
 //db
-import { tryCatch } from '@/utils/tryCatch.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
 //utils
-import { computeMapState } from '@/utils/computeMapState.mjs';
+import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 //components
-import { WarOutcome } from '@/components/h1/War/War';
-import WarTimeline from '@/components/h1/WarTimeline/WarTimeline';
-import SeasonSelector from '@/components/h1/SeasonSelector/SeasonSelector';
+import { WarOutcome } from '@/features/archives/War';
+import WarTimeline from '@/features/archives/WarTimeline';
+import SeasonSelector from '@/features/dashboard/SeasonSelector';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
 export const dynamic = 'force-dynamic';

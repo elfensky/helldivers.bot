@@ -1,5 +1,5 @@
 import db from '@/db/db';
-import { tryCatch } from '@/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch';
 import { createHash } from 'crypto';
 
 /**

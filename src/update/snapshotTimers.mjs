@@ -1,5 +1,5 @@
 import db from '@/db/db';
-import { tryCatch } from '@/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch';
 
 // In-memory last-snapshot timestamps. Keyed by type.
 // Seeded from DB on first check, updated in memory after each write.

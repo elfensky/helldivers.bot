@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import db from '@/db/db';
-import { tryCatch } from '@/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
 
 export const getCampaign = cache(async function getCampaign(season = null) {

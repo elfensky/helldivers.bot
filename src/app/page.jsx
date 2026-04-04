@@ -1,9 +1,9 @@
-import { tryCatch } from '@/utils/tryCatch.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
-import { computeMapState } from '@/utils/computeMapState.mjs';
-import { EVENT_STATUS } from '@/enums/events';
-import DashboardClient from '@/components/h1/Dashboard/DashboardClient';
-import TimelineSection from '@/components/h1/Timeline/TimelineSection';
+import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { EVENT_STATUS } from '@/shared/enums/events';
+import DashboardClient from '@/features/dashboard/DashboardClient';
+import TimelineSection from '@/features/timeline/TimelineSection';
 
 export const dynamic = 'force-dynamic';
 

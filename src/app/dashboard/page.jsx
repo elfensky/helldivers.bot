@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import ApiDashboard from '@/components/dashboard/ApiDashboard';
+import ApiDashboard from '@/features/account/ApiDashboard';
 
 export const metadata = {
     title: 'Dashboard | Helldivers Bot',

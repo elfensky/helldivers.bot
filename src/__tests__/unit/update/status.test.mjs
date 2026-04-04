@@ -5,7 +5,7 @@ import { updateStatus } from '@/update/status.mjs';
 
 vi.mock('@/update/fetch.mjs', () => ({ fetchStatus: vi.fn() }));
 vi.mock('@/validators/isValidStatus', () => ({ isValidStatus: vi.fn() }));
-vi.mock('@/utils/getSeason', () => ({ getSeasonFromStatus: vi.fn() }));
+vi.mock('@/shared/utils/getSeason', () => ({ getSeasonFromStatus: vi.fn() }));
 vi.mock('@/db/queries/rebroadcast', () => ({ queryUpsertRebroadcastStatus: vi.fn() }));
 vi.mock('@/db/queries/upsertSeason', () => ({ queryUpsertSeason: vi.fn() }));
 vi.mock('@/db/queries/upsertEvent', () => ({ queryUpsertEvent: vi.fn() }));
@@ -26,7 +26,7 @@ vi.mock('@/update/snapshotTimers', () => ({
     shouldTakeEventSnapshot: vi.fn(),
     recordEventSnapshotTime: vi.fn(),
 }));
-vi.mock('@/enums/map', () => ({
+vi.mock('@/shared/enums/map', () => ({
     default: {
         0: { 1: { status: null }, 11: { status: null } },
         1: { 1: { status: null }, 11: { status: null } },
@@ -38,7 +38,7 @@ vi.mock('@/enums/map', () => ({
 
 import { fetchStatus } from '@/update/fetch.mjs';
 import { isValidStatus } from '@/validators/isValidStatus';
-import { getSeasonFromStatus } from '@/utils/getSeason';
+import { getSeasonFromStatus } from '@/shared/utils/getSeason';
 import { queryUpsertRebroadcastStatus } from '@/db/queries/rebroadcast';
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { queryUpsertEvent } from '@/db/queries/upsertEvent';

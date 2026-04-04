@@ -5,7 +5,7 @@ import { updateSeason } from '@/update/season';
 
 vi.mock('@/db/queries/getCampaign', () => ({ getCampaign: vi.fn() }));
 vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
-vi.mock('@/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
+vi.mock('@/shared/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
 
 function createRouteRequest(path) {
     const url = new URL(path, 'http://localhost');

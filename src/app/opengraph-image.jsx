@@ -1,16 +1,16 @@
 import { ImageResponse } from 'next/og';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
-import { computeMapState } from '@/utils/computeMapState.mjs';
-import { tryCatch } from '@/utils/tryCatch.mjs';
-import { EVENT_STATUS } from '@/enums/events';
-import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
+import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { EVENT_STATUS } from '@/shared/enums/events';
+import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import {
     bugPaths,
     cyborgPaths,
     illuminatePaths,
     superEarthCircle,
     viewBox,
-} from '@/enums/mapPaths.mjs';
+} from '@/features/galaxy/mapPaths.mjs';
 
 // --- File convention exports ---
 export const revalidate = 300;

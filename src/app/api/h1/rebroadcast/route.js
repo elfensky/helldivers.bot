@@ -1,11 +1,11 @@
-import { tryCatch } from '@/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/utils/time';
-import { errorResponse, successResponse } from '@/utils/responses';
+import { roundedPerformanceTime } from '@/shared/utils/time';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses';
 import { after } from 'next/server';
-import { methodNotAllowed } from '@/utils/methodNotAllowed';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
 //parsers
-import { formDataToObject } from '@/utils/formdata';
+import { formDataToObject } from '@/shared/utils/formdata';
 //validators
 import { isValidContentType } from '@/validators/isValidContentType';
 import { isValidFormData } from '@/validators/isValidFormData';
@@ -18,7 +18,7 @@ import { updateSeason } from '@/update/season';
 //auth
 import { validateApiKey } from '@/db/queries/validateApiKey';
 //track
-import { umamiTrackEvent } from '@/utils/umami';
+import { umamiTrackEvent } from '@/shared/utils/umami';
 
 export async function POST(request) {
     //0. initialize

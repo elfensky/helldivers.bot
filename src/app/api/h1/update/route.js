@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
-import { tryCatch } from '@/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/utils/time';
-import { errorResponse, successResponse } from '@/utils/responses';
-import { methodNotAllowed } from '@/utils/methodNotAllowed';
+import { roundedPerformanceTime } from '@/shared/utils/time';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
 //update
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';

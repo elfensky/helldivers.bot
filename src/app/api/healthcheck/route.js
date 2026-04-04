@@ -1,6 +1,6 @@
 import { performance } from 'perf_hooks';
-import { successResponse } from '@/utils/responses';
-import { methodNotAllowed } from '@/utils/methodNotAllowed';
+import { successResponse } from '@/shared/utils/api/responses';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
 
 export async function GET(request) {
     const start = performance.now();

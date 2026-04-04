@@ -2,9 +2,9 @@
 import { z } from 'zod';
 import db from '@/db/db';
 import { auth } from '@/auth';
-import { tryCatch } from '@/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/utils/time';
+import { performanceTime } from '@/shared/utils/time';
 import { randomUUID, createHash } from 'crypto';
 import { revalidatePath } from 'next/cache';
 
