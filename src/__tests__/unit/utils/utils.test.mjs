@@ -1,4 +1,4 @@
-import { addOrdinalSuffix } from '@/utils/utils.mjs';
+import { addOrdinalSuffix } from '@/utils/addOrdinalSuffix.mjs';
 import { formatNumber } from '@/utils/formatNumber.mjs';
 
 describe('addOrdinalSuffix', () => {

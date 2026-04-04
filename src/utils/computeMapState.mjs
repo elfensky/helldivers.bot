@@ -1,5 +1,6 @@
 import mapTemplate from '@/enums/map';
 import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/enums/events';
+import { SECTOR_COUNT } from '@/enums/worlds.mjs';
 
 /**
  * Compute map state from faction data and events at a point in time.
@@ -24,10 +25,9 @@ export function computeMapState(factionStates, events = []) {
     // Process campaigns
     for (const campaign of factionStates) {
         const faction = campaign.enemy;
-        const sectorCount = 10;
         const pointsMax = campaign.points_max > 0 ? campaign.points_max : 1;
         const points = campaign.points;
-        const pointsPerSector = pointsMax / sectorCount;
+        const pointsPerSector = pointsMax / SECTOR_COUNT;
         const sectorsEarned = Math.trunc(points / pointsPerSector);
         const sectorsInProgress = sectorsEarned + 1;
 

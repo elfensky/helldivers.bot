@@ -4,4 +4,7 @@ const worlds = {
     2: "<:iconilluminate:1322324980716933242> Squ'bai Shrine",
 };
 
+export const SECTOR_COUNT = 10;
+export const HOMEWORLD_REGION = 11;
+
 export default worlds;

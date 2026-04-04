@@ -1,18 +1,12 @@
 import './Alerts.css';
 import factions from '@/enums/factions.mjs';
+import { PACE_COLORS } from '@/enums/colors.mjs';
 import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
+import { getActiveEvents } from '@/utils/eventFilters.mjs';
 import humanizeDuration from 'humanize-duration';
 
-const PACE_COLORS = {
-    ahead: 'var(--color-success)',
-    behind: 'var(--color-danger)',
-    on_track: '#ffffff',
-};
-
 export default function Alerts({ data }) {
-    const active = data?.events
-        ?.filter((e) => e.status === 'active')
-        ?.sort((a, b) => a.end_time - b.end_time);
+    const active = getActiveEvents(data?.events)?.sort((a, b) => a.end_time - b.end_time);
 
     if (!active?.length) return null;
 

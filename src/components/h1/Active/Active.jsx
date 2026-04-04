@@ -1,12 +1,10 @@
 import Event from '@/components/h1/Event/Event';
 import Wings from '@/components/layout/Wings/Wings';
+import { getActiveEvents, sortEventsByRecent } from '@/utils/eventFilters.mjs';
 
 export default function Active({ data }) {
-    const events = [...data.defend_events, ...data.attack_events]
-        // .filter((event) => event.status === 'active')
-        .sort((a, b) => b.start_time - a.start_time);
-
-    const active = events.filter((event) => event.status === 'active');
+    const events = sortEventsByRecent([...data.defend_events, ...data.attack_events]);
+    const active = getActiveEvents(events);
 
     const titleText = `${active} Active Events`.toString();
 

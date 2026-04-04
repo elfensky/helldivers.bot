@@ -1,5 +1,7 @@
 import './EventCard.css';
 import { formatNumber } from '@/utils/formatNumber.mjs';
+import { PACE_COLORS } from '@/enums/colors.mjs';
+import { SECTOR_COUNT } from '@/enums/worlds.mjs';
 
 const FACTION_COLORS = {
     0: 'var(--color-faction-bugs)',
@@ -18,14 +20,13 @@ const FACTION_COLORS = {
 export function computeFrontier(campaignData, factionMap) {
     if (!campaignData || !factionMap || campaignData.status !== 'active') return null;
 
-    const sectorCount = 10;
     const pointsMax = campaignData.points_max > 0 ? campaignData.points_max : 1;
     const points = campaignData.points;
-    const pointsPerSector = pointsMax / sectorCount;
+    const pointsPerSector = pointsMax / SECTOR_COUNT;
     const sectorsEarned = Math.trunc(points / pointsPerSector);
     const frontier = sectorsEarned + 1;
 
-    if (frontier > sectorCount) return null; // all sectors captured
+    if (frontier > SECTOR_COUNT) return null; // all sectors captured
 
     const pointsIntoFrontier = points - sectorsEarned * pointsPerSector;
     const percent = (pointsIntoFrontier / pointsPerSector) * 100;
@@ -40,15 +41,6 @@ export function computeFrontier(campaignData, factionMap) {
         event: sectorData?.event || '',
     };
 }
-
-/**
- * HTML info card showing sector capture/defend/attack progress.
- */
-const PACE_COLORS = {
-    ahead: 'var(--color-success)',
-    behind: 'var(--color-danger)',
-    on_track: '#ffffff',
-};
 
 export default function EventCard({
     label,

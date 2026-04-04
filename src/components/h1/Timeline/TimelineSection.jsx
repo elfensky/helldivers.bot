@@ -4,6 +4,7 @@ import { Fragment, useState } from 'react';
 import './TimelineSection.css';
 import Event from '@/components/h1/Event/Event';
 import { groupEventsByDay } from '@/utils/groupEventsByDay.mjs';
+import { countOutcomes } from '@/utils/eventFilters.mjs';
 
 /**
  * Event log with vertical timeline rail (desktop only).
@@ -25,12 +26,7 @@ export default function TimelineSection({ events }) {
                     <p className="timeline-empty">No events recorded yet.</p>
                 :   <div className="timeline-days">
                         {groups.map((group, i) => {
-                            const wins = group.events.filter(
-                                (e) => e.status === 'success',
-                            ).length;
-                            const losses = group.events.filter(
-                                (e) => e.status === 'fail',
-                            ).length;
+                            const { wins, losses } = countOutcomes(group.events);
 
                             const dayMs = 86_400_000;
                             const thisMs = new Date(group.date).getTime();

@@ -1,4 +1,5 @@
 import { formatNumber } from '@/utils/formatNumber.mjs';
+import { countOutcomes } from '@/utils/eventFilters.mjs';
 import './StatGrid.css';
 
 const factionMap = { bugs: 0, cyborgs: 1, illuminate: 2 };
@@ -14,8 +15,7 @@ export default function StatGrid({ live, faction, events }) {
             return e.status === 'success' || e.status === 'fail';
         }) ?? [];
 
-    const wins = resolved.filter((e) => e.status === 'success').length;
-    const losses = resolved.filter((e) => e.status === 'fail').length;
+    const { wins, losses } = countOutcomes(resolved);
 
     if (faction === 'global') {
         const totals = live.reduce(

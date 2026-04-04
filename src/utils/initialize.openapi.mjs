@@ -1,80 +1,46 @@
 import { generateOpenApiSpec as generateSpec } from '@/utils/openapi.registry';
 
-async function generateOpenApiSpec() {
-    if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'development') {
-        //imports
-        const fs = await import('fs/promises');
-
-        //generate
-        const swaggerSpec = generateSpec();
-        const filePath = 'public/openapi.json';
-
-        await fs.writeFile(filePath, JSON.stringify(swaggerSpec, null, 2), 'utf-8');
-        const file = await fs.readFile(filePath, 'utf-8');
-
-        //check file
-        if (!file) {
-            return false;
-        }
-
-        //check contents
-        try {
-            JSON.parse(file);
-            return true;
-        } catch (error) {
-            console.error(
-                'generateOpenApiSpec: failed to parse generated OpenAPI spec',
-                error.message,
-            );
-            return false;
-        }
-    } else {
-        console.error('generateOpenApiSpec()');
+function safeJsonParse(str) {
+    try {
+        return JSON.parse(str);
+    } catch {
+        return null;
     }
+}
+
+async function generateOpenApiSpec() {
+    const fs = await import('fs/promises');
+
+    const swaggerSpec = generateSpec();
+    const filePath = 'public/openapi.json';
+
+    await fs.writeFile(filePath, JSON.stringify(swaggerSpec, null, 2), 'utf-8');
+    const file = await fs.readFile(filePath, 'utf-8');
+
+    if (!file) return false;
+    return safeJsonParse(file) !== null;
 }
 
 async function checkOpenApiSpec() {
-    if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'production') {
-        //imports
-        const fs = await import('fs/promises');
-        const { performance } = await import('perf_hooks');
+    const fs = await import('fs/promises');
+    const filePath = 'public/openapi.json';
 
-        //initialize
-        const start = performance.now();
-        const filePath = 'public/openapi.json';
-
-        //check file
-        const file = await fs.readFile(filePath, 'utf-8');
-        if (!file) {
-            return false;
-        }
-
-        //check contents
-        try {
-            JSON.parse(file);
-            return true;
-        } catch (error) {
-            console.error(
-                'checkOpenApiSpec: invalid JSON in OpenAPI spec',
-                error.message,
-            );
-            return false;
-        }
-    } else {
-        console.error('checkOpenApiSpec()');
-    }
+    const file = await fs.readFile(filePath, 'utf-8');
+    if (!file) return false;
+    return safeJsonParse(file) !== null;
 }
 
 export async function initializeOpenApiSpec() {
-    //swagger uses JSDoc comments to generate the OpenAPI spec, so it's only possible to generate it during development.
-    //the production build will not have the JSDoc comments available, as it strips out all unneccesary code and contents.
-    if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'development') {
+    if (process.env.NEXT_RUNTIME !== 'nodejs') return false;
+
+    // Swagger uses JSDoc comments to generate the OpenAPI spec, so it's only possible
+    // to generate it during development. Production strips JSDoc, so we just validate
+    // the pre-built file.
+    if (process.env.NODE_ENV === 'development') {
         return await generateOpenApiSpec();
     }
 
-    //during production, the OpenAPI spec is already generated and stored in the public/openapi.json file.
-    //we simply need to check if it's present and valid JSON.
-    if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production') {
         return await checkOpenApiSpec();
     }
 

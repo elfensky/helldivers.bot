@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import './WarTimeline.css';
 import { computeMapState } from '@/utils/computeMapState.mjs';
+import { formatTimestamp } from '@/utils/time.mjs';
 import Galaxy from '@/components/h1/Galaxy/Galaxy';
 import factions from '@/enums/factions';
 
@@ -100,16 +101,6 @@ export function computeMomentMapState(moment, data) {
         }));
 
     return computeMapState(factionStates, activeEvents);
-}
-
-export function formatTimestamp(unixSeconds) {
-    return new Date(unixSeconds * 1000).toLocaleString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
 }
 
 function syncTimelineToUrl(idx) {

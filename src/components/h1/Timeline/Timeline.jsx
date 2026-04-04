@@ -2,9 +2,10 @@
 import './Timeline.css';
 //
 import Event from '@/components/h1/Event/Event';
+import { sortEventsByRecent } from '@/utils/eventFilters.mjs';
 
 export default function Timeline({ data }) {
-    const events = (data?.events || []).sort((a, b) => b.start_time - a.start_time);
+    const events = sortEventsByRecent(data?.events);
 
     if (events.length === 0) {
         return null;

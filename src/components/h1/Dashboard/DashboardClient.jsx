@@ -8,6 +8,8 @@ import FactionTabs from '@/components/h1/FactionTabs/FactionTabs';
 import StatGrid from '@/components/h1/StatGrid/StatGrid';
 import { evaluateProgress } from '@/utils/evaluateProgress.mjs';
 import { formatTimeAgo } from '@/utils/formatTimeAgo.mjs';
+import { sortEventsByRecent } from '@/utils/eventFilters.mjs';
+import { HOMEWORLD_REGION } from '@/enums/worlds.mjs';
 
 const factionIndices = [0, 1, 2];
 const FACTION_LABELS = {
@@ -20,7 +22,7 @@ const FACTION_LABELS = {
 export default function DashboardClient({ data, mapState }) {
     const [faction, setFaction] = useState('global');
 
-    const events = data?.events?.sort((a, b) => b.start_time - a.start_time);
+    const events = sortEventsByRecent(data?.events);
     const timeAgo = formatTimeAgo(data.last_updated);
 
     function renderFrontierCard(index) {
@@ -54,7 +56,7 @@ export default function DashboardClient({ data, mapState }) {
     }
 
     function renderHomeworldCard(index) {
-        const homeworld = mapState[index]?.[11];
+        const homeworld = mapState[index]?.[HOMEWORLD_REGION];
         if (homeworld?.event !== 'active') return null;
         const attackEvent = events?.find(
             (e) => e.enemy === index && e.type === 'attack' && e.status === 'active',
