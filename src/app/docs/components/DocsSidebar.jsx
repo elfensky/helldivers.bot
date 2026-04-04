@@ -17,6 +17,7 @@ const sections = [
         label: 'Technical',
         items: [
             { href: '/docs/architecture', label: 'Architecture' },
+            { href: '/docs/notifications', label: 'Notifications' },
             { href: '/docs/api', label: 'API Reference' },
             { href: '/docs/brandkit', label: 'Brand Kit' },
         ],
