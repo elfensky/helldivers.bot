@@ -20,7 +20,7 @@ export default function ApiReferencePage() {
             <h1 className="font-[family-name:var(--font-display)] text-3xl text-[var(--color-primary)]">
                 API Reference
             </h1>
-            <p className="mb-4 mt-2 leading-[1.7] text-[var(--color-text)]">
+            <p className="mt-2 mb-4 leading-[1.7] text-[var(--color-text)]">
                 Interactive documentation for the Helldivers Bot API. Log in to create an
                 API key, then use the endpoints below.
             </p>

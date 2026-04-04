@@ -74,7 +74,7 @@ function SidebarContent({ pathname, onNavigate }) {
         <>
             {sections.map((section) => (
                 <div key={section.label} className="mb-5">
-                    <div className="px-4 pb-2 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[1.5px] text-[var(--color-text-muted)]">
+                    <div className="px-4 pb-2 font-[family-name:var(--font-mono)] text-[10px] tracking-[1.5px] text-[var(--color-text-muted)] uppercase">
                         {section.label}
                     </div>
                     {section.items.map((item) => {
@@ -86,9 +86,9 @@ function SidebarContent({ pathname, onNavigate }) {
                                 prefetch={false}
                                 onClick={onNavigate}
                                 className={`block border-l-2 px-4 py-1.5 text-sm ${
-                                    isActive
-                                        ? 'border-[var(--color-primary)] bg-[var(--color-surface-2)] text-[var(--color-primary)]'
-                                        : 'border-transparent text-[var(--color-text)] hover:bg-[var(--color-surface-2)]'
+                                    isActive ?
+                                        'border-[var(--color-primary)] bg-[var(--color-surface-2)] text-[var(--color-primary)]'
+                                    :   'border-transparent text-[var(--color-text)] hover:bg-[var(--color-surface-2)]'
                                 }`}
                             >
                                 {item.label}

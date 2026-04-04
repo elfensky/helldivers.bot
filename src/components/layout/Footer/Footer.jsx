@@ -59,11 +59,7 @@ export default function Footer() {
                             </Link>
                         </li>
                         <li>
-                            <Link
-                                href="/docs"
-                                prefetch={false}
-                                className="footer-link"
-                            >
+                            <Link href="/docs" prefetch={false} className="footer-link">
                                 Docs
                             </Link>
                         </li>

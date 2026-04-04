@@ -65,9 +65,7 @@ export function useMDXComponents(components) {
                 {children}
             </blockquote>
         ),
-        hr: () => (
-            <hr className="my-8 border-[var(--color-outline-variant)]" />
-        ),
+        hr: () => <hr className="my-8 border-[var(--color-outline-variant)]" />,
         ...components,
     };
 }
