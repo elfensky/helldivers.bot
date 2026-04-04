@@ -43,7 +43,7 @@ export default async function HomePage() {
 
     return (
         <>
-            <DashboardClient data={data} mapState={mapState} />
+            <DashboardClient initialData={data} initialMapState={mapState} />
             <TimelineSection events={data.events} />
         </>
     );

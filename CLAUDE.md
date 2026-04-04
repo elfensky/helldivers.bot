@@ -123,11 +123,14 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`, in
 - **Shared utilities:** `formatNumber` (`src/utils/formatNumber.mjs`) for compact numbers (12.3M, 1.2K). `formatTimeAgo` (`src/utils/formatTimeAgo.mjs`) for relative timestamps.
 - **Map state:** `computeMapState` (`src/utils/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — completed events are already in the score.
 - **On-demand season fetching:** `/archives` page derives SeasonSelector from current season number (not DB query). Missing seasons fetched from official API on first request via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`).
+- **SSE live updates:** Worker polls API → DB write → `pg NOTIFY campaign_update` → SSE manager (`src/shared/utils/sse/sseManager.mjs`) broadcasts full campaign state via `/api/h1/stream` → `useLiveData` hook (`src/shared/hooks/useLiveData.mjs`) replaces React state. Postgres LISTEN/NOTIFY bridges worker thread and Next.js process (Prisma doesn't support LISTEN/NOTIFY — uses dedicated `pg.Client`).
+- **Notifications:** `detectChanges()` (`src/shared/utils/game/detectChanges.mjs`) detects event transitions (started/won/lost) on both client (Sonner toasts + Web Notifications) and server (push via `web-push`). Single "Enable notifications" button enables both web and push. Push subscriptions stored in `push_subscription` table.
+- **PWA:** Service worker (`public/sw.js`) caches app shell, handles push events. Last SSE payload cached in localStorage for offline fallback.
 
 ## Architecture — Frontend Layout
 
 - **Mobile-first layout:** Phase 6 single-column dashboard. Phase 7 added tablet responsive (md: portrait, lg: landscape with map+sidebar). Phase 9 removed snap scroll, added hero section, replaced `WarSummary` with WON/LOST stat cards in StatGrid.
-- **Key components:** `BottomNav` (hidden at md:), `HeaderNav` (page links at md:), `FactionTabs`, `StatGrid`, `DashboardClient`, `EventCard`, `TimelineSection`.
+- **Key components:** `BottomNav` (hidden at md:), `HeaderNav` (page links at md:), `FactionTabs`, `StatGrid`, `DashboardClient`, `EventCard`, `TimelineSection`, `ConnectionStatus`, `LiveToasts`, `NotificationToggle`.
 - **Dashboard hero section:** At lg:, fills viewport height (`height: calc(100dvh - 80px)`). Sidebar (hero text + regions + stats) left, galaxy map right. Normal scroll to `TimelineSection` below.
 - **Map sizing:** Map column sized from viewport height via `minmax(0, calc((100dvh - 80px) * 806.93 / 868.81))`. SVG uses `preserveAspectRatio="xMaxYMid meet"`. Galaxy wrapper uses `w-full h-full`.
 - **Grid rules:** Columns must use `minmax(0, 1fr)` not bare `1fr` to prevent overflow. Dashboard grid: `minmax(260px, 1fr) minmax(0, calc(...))` — single definition for all desktop breakpoints.
@@ -136,7 +139,7 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`, in
 
 All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and [helldiversbot project board](https://github.com/users/elfensky/projects/5).
 
-- **Milestones** group issues by phase (Phase 0–10, plus Shelved). Phase 4 and 11 are closed.
+- **Milestones** group issues by phase (Phase 0–11, plus Shelved). Phases 4, 7, and 11 are closed.
 - **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
 - **Board statuses**: `Backlog` → `In progress` → `Done`. Issue title prefixes: `Phase N:`, `Shelved:`.
 - **Board fields**: Status, Priority (`P0`/`P1`/`P2`), Size (`XS`/`S`/`M`/`L`/`XL`), Estimate (hours), Start/End date (skip weekends).
@@ -154,12 +157,13 @@ For every phase or feature, use the `/superpowers:brainstorming` skill to explor
 
 ## Reference Docs
 
-| Topic                              | Location                                                                                         |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Docker, CI/CD, init flow, env vars | [Wiki: Infrastructure](https://github.com/elfensky/helldivers.bot/wiki/Infrastructure)           |
-| Database schema & relationships    | [Wiki: Database-Schema](https://github.com/elfensky/helldivers.bot/wiki/Database-Schema)         |
-| Data pipeline & worker lifecycle   | [Wiki: Data-Flow](https://github.com/elfensky/helldivers.bot/wiki/Data-Flow)                     |
-| API endpoints & authentication     | [Wiki: API-Reference](https://github.com/elfensky/helldivers.bot/wiki/API-Reference)             |
-| Utilities & Zod validators         | [Wiki: Utilities-Reference](https://github.com/elfensky/helldivers.bot/wiki/Utilities-Reference) |
-| Testing infrastructure             | [Wiki: Testing](https://github.com/elfensky/helldivers.bot/wiki/Testing)                         |
-| Frontend design system & tokens    | `/brandkit` (visual) + `src/styles/tokens.css`                                                   |
+| Topic                              | Location                                                                                                                   |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Docker, CI/CD, init flow, env vars | [Wiki: Infrastructure](https://github.com/elfensky/helldivers.bot/wiki/Infrastructure)                                     |
+| Database schema & relationships    | [Wiki: Database-Schema](https://github.com/elfensky/helldivers.bot/wiki/Database-Schema)                                   |
+| Data pipeline & worker lifecycle   | [Wiki: Data-Flow](https://github.com/elfensky/helldivers.bot/wiki/Data-Flow)                                               |
+| API endpoints & authentication     | [Wiki: API-Reference](https://github.com/elfensky/helldivers.bot/wiki/API-Reference)                                       |
+| Utilities & Zod validators         | [Wiki: Utilities-Reference](https://github.com/elfensky/helldivers.bot/wiki/Utilities-Reference)                           |
+| Testing infrastructure             | [Wiki: Testing](https://github.com/elfensky/helldivers.bot/wiki/Testing)                                                   |
+| Real-time & notifications          | `/docs/notifications` (interactive diagram) + [Wiki: Real-Time](https://github.com/elfensky/helldivers.bot/wiki/Real-Time) |
+| Frontend design system & tokens    | `/docs/brandkit` (visual) + `src/app/layout.css`                                                                           |

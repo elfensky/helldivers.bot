@@ -1,0 +1,295 @@
+import NotificationFlowDiagram from '@/features/notifications/NotificationFlowDiagram';
+
+export const metadata = {
+    title: 'Notifications | Helldivers Bot',
+    description:
+        'How real-time notifications work in helldivers.bot — SSE live updates, Sonner toasts, Web Notifications, and push notifications.',
+    alternates: { canonical: '/docs/notifications' },
+    openGraph: { url: '/docs/notifications' },
+};
+
+# Notifications
+
+Real-time notification system that keeps the dashboard live and alerts users to campaign events.
+
+## Overview
+
+Four notification layers, each serving a different purpose:
+
+| Layer                  | When                | Persistence        | Requires     |
+| ---------------------- | ------------------- | ------------------ | ------------ |
+| **SSE Live Data**      | Page is open        | Continuous updates | Nothing      |
+| **Sonner Toasts**      | Event transition    | Until dismissed    | Nothing      |
+| **Web Notifications**  | Tab is backgrounded | OS notification    | Permission   |
+| **Push Notifications** | Browser is closed   | OS notification    | Subscription |
+
+## Data Flow
+
+How notifications travel from the official API to the user. Click any node for details. Use the filters to trace individual flows.
+
+<NotificationFlowDiagram />
+
+### In-App (SSE + Toasts)
+
+```
+Official HD1 API (~1s updates)
+        |
+Worker Thread (polls every 10-15s)
+        |
+POST /api/h1/update
+        |
+updateStatus() --> DB writes (h1_live, h1_event, snapshots)
+        |
+pg NOTIFY 'campaign_update'
+        |
+SSE Manager (dedicated pg.Client with LISTEN)
+        |
+getCampaign() + computeMapState() --> serialize + cache
+        |
+GET /api/h1/stream (Server-Sent Events)
+        |
+Browser EventSource (useLiveData hook)
+        |
+Full state replacement --> React re-render
+        |
+Client-side diff (detectChanges)
+        |                    |
+Sonner toast          Web Notification
+(always)              (only if tab hidden
+                       + leader tab
+                       + permission granted)
+```
+
+### Push (Separate Channel)
+
+```
+POST /api/h1/update
+        |
+checkAndNotify() (fire-and-forget, non-blocking)
+        |
+detectChanges(prevEvents, currentEvents)
+        |
+Query push_subscription table
+        |
+web-push fan-out (max 50 concurrent)
+        |
+Service Worker (push event handler)
+        |
+self.registration.showNotification()
+```
+
+## SSE Transport
+
+### Why SSE over WebSocket
+
+The dashboard is read-only — data flows one direction (server to client). SSE fits this perfectly:
+
+- Works natively in Next.js Route Handlers (no separate server)
+- Built-in reconnection via the `EventSource` API
+- No WebSocket upgrade handshake or proxy configuration
+- Plain HTTP — works through every reverse proxy and Docker setup
+
+### Postgres LISTEN/NOTIFY
+
+The worker thread runs as a separate Worker Thread that calls the update API via HTTP. The SSE manager runs in the main Next.js process. `LISTEN/NOTIFY` bridges them through PostgreSQL:
+
+- **NOTIFY side**: A dedicated `pg.Client` in the update route fires `NOTIFY campaign_update` after each successful update cycle
+- **LISTEN side**: The SSE manager holds a persistent `pg.Client` connection with `LISTEN campaign_update`
+- Neither goes through Prisma (which doesn't support LISTEN/NOTIFY)
+
+### SSE Manager
+
+Singleton (`src/shared/utils/sse/sseManager.mjs`) with:
+
+- **Dedup guard**: Skips re-query if NOTIFY arrives within 1 second of the last
+- **Connection limits**: 5 per IP, 500 total. Returns 429 when exceeded
+- **Heartbeat**: Sends `:keepalive` comment every 15 seconds (prevents proxy idle timeouts)
+- **Reconnection**: Exponential backoff (1s, 2s, 4s... up to 30s) on LISTEN connection loss
+- **Health flag**: SSE route returns 503 when the LISTEN connection is down
+- **Graceful shutdown**: Closes all connections on SIGTERM
+
+## Change Detection
+
+### Detected Transitions
+
+`detectChanges(prevEvents, nextEvents)` in `src/shared/utils/game/detectChanges.mjs`:
+
+| Transition       | Detection              | Toast Type |
+| ---------------- | ---------------------- | ---------- |
+| Campaign started | New `event_id` appears | Default    |
+| Campaign won     | `active` to `success`  | Success    |
+| Campaign lost    | `active` to `fail`     | Error      |
+
+Events are matched by both `event_id` and `type` (defend/attack).
+
+### Client vs Server
+
+- **Client-side** (`LiveToasts.jsx`): Compares `prevData` from `useLiveData` hook. Fires Sonner toasts and Web Notifications.
+- **Server-side** (`pushNotifier.mjs`): Keeps previous events in memory. Fires push notifications. Resets on server restart (acceptable — misses one transition at most).
+
+### First-Message Baseline
+
+The first SSE message after page load is treated as a silent state reset. No change detection runs against SSR data, preventing false toasts when the server-rendered snapshot is stale.
+
+## Toast Notifications
+
+- **Persistent**: `duration: Infinity` — toasts stay until manually dismissed
+- **Faction-colored**: Right-side accent line using design tokens (`--color-faction-bugs`, etc.)
+- **Animated**: Pulsing glow matching the contested region `card-glow` animation
+- **Positioned**: Bottom-right via Sonner's `<Toaster>` in the root layout
+- **Dark themed**: Styled with `--color-surface-1`, `--color-text`, `--color-ghost`
+
+## Web Notifications
+
+Browser-native notifications for when the tab is backgrounded:
+
+- **Permission**: Requested via `NotificationToggle` component (not on page load)
+- **Leader election**: `BroadcastChannel` ensures only one tab sends OS notifications (all tabs show Sonner toasts independently)
+- **Trigger**: Same `detectChanges` output as toasts, but only fires when `document.hidden === true`
+
+## Push Notifications
+
+Server-initiated notifications that work when the browser is closed:
+
+### Setup
+
+1. Generate VAPID keys: `npx web-push generate-vapid-keys`
+2. Set environment variables: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
+3. Set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` for the client
+
+### Subscription Flow
+
+1. User clicks "Enable notifications" (`NotificationToggle` component — enables both web notifications and push in one action)
+2. Service worker registers, `pushManager.subscribe()` creates a subscription
+3. `POST /api/notifications/subscribe` stores it in `push_subscription` table
+4. Validated with Zod: endpoint URL max 2048 chars, keys base64 max 256 chars
+
+### Push Delivery
+
+1. `checkAndNotify()` runs after each update (fire-and-forget)
+2. Detects event transitions using the same `detectChanges` function
+3. Fans out via `web-push` library with 50 concurrent request limit
+4. Stale subscriptions (410/404 responses) are automatically deleted
+
+### Service Worker
+
+`public/sw.js` handles five concerns:
+
+- **Push events**: Parses payload, validates icon is same-origin, shows `showNotification()`
+- **Notification clicks**: Focuses existing tab or opens new one
+- **Controlled updates**: Waits for `SKIP_WAITING` message from client before activating (see below)
+- **Caching**: Network-first for HTML navigation, stale-while-revalidate for static assets
+- **API exclusion**: Never intercepts `/api/*` routes or the SSE stream
+
+## PWA & Offline
+
+The app is a Progressive Web App with offline support and controlled version updates.
+
+### App Update Lifecycle
+
+When a new service worker is deployed, the update follows a two-phase flow:
+
+```
+New SW detected by browser
+        |
+Install event fires (caches shell assets)
+        |
+SW enters 'waiting' state (does NOT skipWaiting)
+        |
+ServiceWorkerRegister.jsx detects waiting SW
+        |
+    ┌───┴───┐
+    |       |
+Toast:    30-min
+"Update   deadline
+available"  (visibility-
+  [Reload]   based)
+    |       |
+    └───┬───┘
+        |
+Posts { type: 'SKIP_WAITING' } to waiting SW
+        |
+SW calls skipWaiting() → activates
+        |
+'controllerchange' fires in ALL open tabs
+        |
+window.location.reload() (guarded by boolean flag)
+```
+
+**Key design decisions:**
+
+- **No immediate `skipWaiting`**: Prevents mid-session disruption while users are viewing live data
+- **Visibility-based deadline**: Stores a deadline timestamp instead of using `setTimeout`, because iOS Safari suspends timers in background tabs. Checks wall-clock time on `visibilitychange` events
+- **Boolean guard on `controllerchange`**: Only reloads if this client triggered the update — prevents reload loops on first-ever SW install
+- **Multi-tab**: All tabs reload simultaneously via `controllerchange`, ensuring consistent app version
+
+### Caching Strategy
+
+Two strategies based on request type:
+
+| Request Type                                 | Strategy                      | Rationale                                           |
+| -------------------------------------------- | ----------------------------- | --------------------------------------------------- |
+| Navigation (`request.mode === 'navigate'`)   | Network-first, cache fallback | HTML must match current `_next/static` chunk hashes |
+| Static assets (fonts, icons, images, JS/CSS) | Stale-while-revalidate        | Serve fast from cache, update in background         |
+| API routes (`/api/*`)                        | Bypass (no interception)      | Live data must never be served from cache           |
+| SSE stream (`/api/h1/stream`)                | Bypass                        | Long-lived connection, not cacheable                |
+
+### Shell Cache
+
+14 critical assets are precached on install for offline shell rendering:
+
+- App shell (`/`), manifest, icons (favicon, apple-icon)
+- Custom font (`insignia.regular.otf`)
+- All faction icons (`faction0-3.webp`, `superearth.webp`)
+- Game icons (`attack.webp`, `defend.webp`)
+- Logo and galaxy map SVG
+
+### Offline Behavior
+
+When offline, the app loads the cached shell and displays last known war data:
+
+1. **Shell**: SW serves cached HTML + assets → app renders visually complete
+2. **Data**: `useLiveData` hook falls back to `localStorage` (`hd1-live-cache`)
+3. **Status**: `ConnectionStatus` shows red "Offline" indicator
+4. **Timestamps**: "Last updated X ago" via `formatTimeAgo` shows data age
+
+No special offline code was needed — the existing SSE reconnection logic and localStorage fallback handle it naturally.
+
+### PWA Metadata
+
+The web app manifest (`src/app/site.webmanifest`) and layout metadata enable full PWA installability:
+
+- `display: standalone` — app launches without browser chrome
+- `orientation: portrait` — locked to portrait (mobile-first dashboard)
+- `start_url: /` — required for Chrome install prompt
+- Icon purpose `any maskable` — works in both standard and adaptive icon contexts
+- `themeColor: #282828` — colors browser chrome on mobile
+- `appleWebApp: capable` with `black-translucent` status bar — iOS standalone mode
+- 20 portrait iOS splash screens for branded cold-boot experience
+
+## Connection States
+
+`ConnectionStatus` component shows:
+
+| State        | Indicator          | Meaning                                      |
+| ------------ | ------------------ | -------------------------------------------- |
+| Live         | Green dot          | Connected, receiving SSE updates             |
+| Reconnecting | Yellow pulsing dot | Connection lost, `EventSource` auto-retrying |
+| Offline      | Red dot            | Failed to connect                            |
+
+## Key Files
+
+| File                                                | Role                                       |
+| --------------------------------------------------- | ------------------------------------------ |
+| `src/update/notifyClient.mjs`                       | pg.Client for NOTIFY in update route       |
+| `src/shared/utils/sse/sseManager.mjs`               | LISTEN + broadcast manager (singleton)     |
+| `src/app/api/h1/stream/route.js`                    | SSE endpoint                               |
+| `src/shared/hooks/useLiveData.mjs`                  | EventSource hook + BroadcastChannel leader |
+| `src/shared/utils/game/detectChanges.mjs`           | Event transition detection (shared)        |
+| `src/features/notifications/LiveToasts.jsx`         | Sonner toasts + Web Notifications          |
+| `src/features/notifications/NotificationToggle.jsx` | Combined notification + push toggle        |
+| `src/features/dashboard/ConnectionStatus.jsx`       | Live/reconnecting/offline pill             |
+| `src/update/pushNotifier.mjs`                       | Server-side push fan-out                   |
+| `src/app/api/notifications/subscribe/route.js`      | Push subscription CRUD                     |
+| `public/sw.js`                                      | Service worker (caching + push + updates)  |
+| `src/app/site.webmanifest`                          | PWA manifest (install, icons, orientation) |

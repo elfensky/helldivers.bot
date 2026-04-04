@@ -9,9 +9,7 @@ export function useMDXComponents(components) {
         h3: ({ children }) => (
             <h3 className="mt-6 mb-2 font-display text-lg text-text">{children}</h3>
         ),
-        p: ({ children }) => (
-            <p className="mb-4 leading-[1.7] text-text">{children}</p>
-        ),
+        p: ({ children }) => <p className="mb-4 leading-[1.7] text-text">{children}</p>,
         a: ({ children, href }) => (
             <a
                 href={href}

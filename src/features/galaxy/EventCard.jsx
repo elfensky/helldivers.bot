@@ -2,6 +2,7 @@ import './EventCard.css';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { PACE_COLORS } from '@/shared/enums/colors.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
+import humanizeDuration from 'humanize-duration';
 
 const FACTION_COLORS = {
     0: 'var(--color-faction-bugs)',
@@ -42,6 +43,17 @@ export function computeFrontier(campaignData, factionMap) {
     };
 }
 
+function EventCountdown({ endTime }) {
+    const remaining = endTime - Math.floor(Date.now() / 1000);
+    if (remaining <= 0) return <span className="sector-card-countdown">Expired</span>;
+    const text = humanizeDuration(remaining * 1000, { largest: 2, round: true });
+    return (
+        <span className="sector-card-countdown" suppressHydrationWarning>
+            {text} left
+        </span>
+    );
+}
+
 export default function EventCard({
     label,
     region,
@@ -50,6 +62,7 @@ export default function EventCard({
     pointsMax,
     factionIndex,
     pace,
+    endTime,
 }) {
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = label === 'DEFENDING' || label === 'ATTACKING';
@@ -101,6 +114,7 @@ export default function EventCard({
                 <span className="sector-card-points">
                     {formatNumber(points)} / {formatNumber(pointsMax)}
                 </span>
+                {endTime && <EventCountdown endTime={endTime} />}
             </div>
             <div className="sector-card-accent" />
         </div>

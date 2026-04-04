@@ -1,11 +1,14 @@
 'use client';
 import './DashboardClient.css';
 import { useState } from 'react';
-import Alerts from '@/features/stats/Alerts';
 import Galaxy from '@/features/galaxy/Galaxy';
+import LiveToasts from '@/features/notifications/LiveToasts';
+import NotificationToggle from '@/features/notifications/NotificationToggle';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
+import ConnectionStatus from '@/features/dashboard/ConnectionStatus';
 import StatGrid from '@/features/stats/StatGrid';
+import { useLiveData } from '@/shared/hooks/useLiveData.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo.mjs';
 import { sortEventsByRecent } from '@/shared/utils/game/eventFilters.mjs';
@@ -19,7 +22,11 @@ const FACTION_LABELS = {
     illuminate: 'Illuminate',
 };
 
-export default function DashboardClient({ data, mapState }) {
+export default function DashboardClient({ initialData, initialMapState }) {
+    const { data, mapState, status, prevData, isLeader } = useLiveData(
+        initialData,
+        initialMapState,
+    );
     const [faction, setFaction] = useState('global');
 
     const events = sortEventsByRecent(data?.events);
@@ -50,6 +57,7 @@ export default function DashboardClient({ data, mapState }) {
                     pointsMax={frontier.pointsMax}
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
+                    endTime={activeEvent?.end_time}
                 />
             </li>
         );
@@ -72,6 +80,7 @@ export default function DashboardClient({ data, mapState }) {
                     pointsMax={homeworld.points_max}
                     factionIndex={index}
                     pace={attackEvent ? evaluateProgress(attackEvent) : null}
+                    endTime={attackEvent?.end_time}
                 />
             </li>
         );
@@ -79,9 +88,7 @@ export default function DashboardClient({ data, mapState }) {
 
     return (
         <div className="dashboard gutters">
-            <div className="dashboard-alerts">
-                <Alerts data={data} />
-            </div>
+            <LiveToasts prevData={prevData} data={data} isLeader={isLeader} />
             <div className="dashboard-map">
                 <Galaxy mapState={mapState} />
             </div>
@@ -95,15 +102,13 @@ export default function DashboardClient({ data, mapState }) {
                         Helldivers&apos; campaign progress as they battle the Bugs,
                         Cyborgs, and Illuminate for peace, liberty, and managed democracy.
                     </p>
-                    {timeAgo && (
-                        <p
-                            className="mt-2 font-mono text-xs"
-                            style={{ color: 'var(--color-text-muted)' }}
-                            suppressHydrationWarning
-                        >
-                            {timeAgo}
-                        </p>
-                    )}
+                    <div className="mt-2 flex items-center gap-3">
+                        <ConnectionStatus
+                            status={status}
+                            timeAgo={status === 'live' ? null : timeAgo}
+                        />
+                        <NotificationToggle />
+                    </div>
                 </div>
                 <section className="flex flex-col gap-2">
                     <h2>Regions</h2>

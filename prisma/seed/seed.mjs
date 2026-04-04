@@ -11,7 +11,9 @@
  * Requires POSTGRES_URL environment variable.
  */
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.development' });
+dotenv.config(); // fallback to .env (production/Docker)
 import { readdir, readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

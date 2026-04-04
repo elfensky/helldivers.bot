@@ -2,6 +2,58 @@
 
 ## Unreleased
 
+## 0.24.0 (2026-04-04)
+
+### Phase 8: Real-Time Updates
+
+#### Features
+
+- **SSE live data streaming** — dashboard updates automatically every 10-15 seconds without page reload (#41)
+- **Sonner toast notifications** — persistent, faction-colored toasts with glow animation on campaign start/win/lose (#229)
+- **Web Notifications** — native browser notifications when tab is backgrounded (BroadcastChannel leader election prevents duplicates)
+- **Push notifications** — server-initiated notifications via Web Push API when browser is closed (#24)
+- **PWA offline support** — service worker caches app shell, localStorage preserves last-known dashboard data for offline viewing
+- **Connection status indicator** — live/reconnecting/offline pill replaces "Updated X ago" when connected
+
+#### Architecture
+
+- Server-Sent Events (SSE) transport via Next.js Route Handler (`/api/h1/stream`)
+- Postgres LISTEN/NOTIFY for cross-process change broadcasting between worker and SSE manager
+- SSE manager singleton with connection limits (5/IP, 500 total), heartbeat, exponential backoff reconnection, and graceful shutdown
+- Client-side change detection (`detectChanges`) shared between toast and push notification paths
+- Push subscription API with Zod validation and stale subscription cleanup (410/404)
+- Server-side push notifier with concurrency-limited fan-out (max 50 concurrent)
+
+#### UI Changes
+
+- Remove `Alerts` banner component — persistent event status now shown in enhanced `EventCard` (progress bar, pace, countdown timer)
+- Single "Enable notifications" button enables both web notifications and push subscription
+- Shows "Notifications blocked" / "Notifications unavailable" when denied or unsupported
+- Toasts use right-side accent line matching brandkit convention
+
+#### Documentation
+
+- Add `/docs/notifications` page with interactive flow diagram (clickable nodes, flow filtering)
+- Add notification category styles to shared diagram CSS
+
+#### Dependencies
+
+- Add `sonner` (~5KB gzipped) for toast notifications
+- Add `web-push` (~15KB, server only) for push notification delivery
+
+#### Database
+
+- Add `push_subscription` table (endpoint, keys, created_at)
+
+#### Environment Variables (New)
+
+- `VAPID_PUBLIC_KEY` — Web Push VAPID public key
+- `VAPID_PRIVATE_KEY` — Web Push VAPID private key
+- `VAPID_SUBJECT` — VAPID subject (mailto: email)
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` — client-side VAPID public key
+
+## 0.23.0 (2026-04-04)
+
 ### Security
 
 - Replace `unsafe-inline` CSP with nonce-based policy via custom server proxy (`proxy.js`) (#226)
