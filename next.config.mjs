@@ -6,6 +6,7 @@ const nextConfig = {
     pageExtensions: ['js', 'jsx', 'mdx'],
     reactCompiler: true,
     output: 'standalone',
+    productionBrowserSourceMaps: true,
     images: {
         remotePatterns: [
             {
@@ -131,7 +132,10 @@ const withMDX = createMDX({
 
 export default withSentryConfig(withMDX(nextConfig), {
     silent: true,
-    sourcemaps: {
-        disable: true,
+    url: process.env.SENTRY_URL,
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    release: {
+        create: false,
     },
 });
