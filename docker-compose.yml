@@ -1,6 +1,7 @@
 services:
   migrate:
     container_name: helldiversbot-migrate
+    platform: linux/amd64
     image: ghcr.io/elfensky/helldiversbot-migrate:staging
     env_file:
       - .env.development
@@ -11,13 +12,12 @@ services:
     # this isn't neccesary, the dockerfile entrypoint takes care of that
     # init: true # replaces manually installing and using tini in the docker file.
     restart: unless-stopped
+    platform: linux/amd64
     image: ghcr.io/elfensky/helldiversbot:staging
     ports:
-      - "127.0.0.1:58102:3000" #security update, from '58102:3000'
+      - "127.0.0.1:50001:3000" #security update, from '58102:3000'
     env_file:
       - .env.development
-    environment:
-      - SKIP_MIGRATIONS=true
     depends_on:
       migrate:
         condition: service_completed_successfully

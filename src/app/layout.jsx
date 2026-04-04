@@ -35,13 +35,16 @@ const inter = Inter({
 //     }
 // }
 
+export const viewport = {
+    themeColor: '#282828',
+};
+
 export const metadata = {
     metadataBase: new URL('https://helldivers.bot'),
     title: 'Helldivers Bot - Live war dashboard for the original Helldivers',
     description:
         'Live Helldivers 1 war dashboard showing campaign progress, faction stats, active events, and an interactive galaxy map.',
     manifest: '/site.webmanifest',
-    themeColor: '#282828',
     appleWebApp: {
         capable: true,
         statusBarStyle: 'black-translucent',

@@ -94,7 +94,7 @@ All external data validated with Zod schemas (`src/validators/`) before database
 
 ### Formatting
 
-Prettier with tailwindcss plugin. No ESLint configured. **Always run `npx prettier --write .` before committing** — not during development. CI enforces `prettier --check` and will fail unformatted code.
+Prettier with tailwindcss plugin. No ESLint configured. **Always run `npx prettier --write .` before committing** — not during development.
 
 ### Styling
 
