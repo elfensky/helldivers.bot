@@ -53,7 +53,7 @@ After any frontend/CSS change, verify via DevTools before declaring done:
 **Rules:**
 
 1. **Create feature/bugfix/chore branches from `develop`.** Features merge back via PR. Bugfix and chore branches merge via fast-forward into `develop` (branch → commit → `git merge` into develop → push → delete branch). No PR needed.
-2. **Release process:** Update `CHANGELOG.md` (move Unreleased items under new `## X.Y.Z` header) → merge `develop` → `main` via PR → tag `vX.Y.0` on main
+2. **Release process:** Update `CHANGELOG.md` (move Unreleased items under new `## X.Y.Z` header) → merge `develop` → `main` via PR → **tag `vX.Y.Z` on the merge commit on `main`** → push tag. The production Docker build only triggers on version tags, so forgetting to tag means no deployment.
 3. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
 4. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
 
