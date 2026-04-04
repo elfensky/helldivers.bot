@@ -2,13 +2,15 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
-const AUTO_RELOAD_MS = 30 * 60 * 1000; // 30 minutes
+const AUTO_RELOAD_MS = 5 * 60 * 1000; // 5 minutes
+const TOAST_RESHOW_MS = 15 * 1000; // 15 seconds
 
 export default function ServiceWorkerRegister() {
     const registrationRef = useRef(null);
     const updateTriggeredRef = useRef(false);
     const deadlineRef = useRef(null);
-    const toastIdRef = useRef(null);
+    const toastIntervalRef = useRef(null);
+    const autoReloadTimerRef = useRef(null);
 
     useEffect(() => {
         if (!('serviceWorker' in navigator)) return;
@@ -20,16 +22,29 @@ export default function ServiceWorkerRegister() {
             waiting.postMessage({ type: 'SKIP_WAITING' });
         }
 
-        function onUpdateAvailable() {
-            deadlineRef.current = Date.now() + AUTO_RELOAD_MS;
-
-            toastIdRef.current = toast('App update available', {
+        function showUpdateToast() {
+            toast('App update available', {
+                id: 'sw-update',
                 duration: Infinity,
                 action: {
                     label: 'Reload',
                     onClick: triggerUpdate,
                 },
             });
+        }
+
+        function onUpdateAvailable() {
+            deadlineRef.current = Date.now() + AUTO_RELOAD_MS;
+
+            showUpdateToast();
+            toastIntervalRef.current = setInterval(
+                showUpdateToast,
+                TOAST_RESHOW_MS,
+            );
+
+            autoReloadTimerRef.current = setTimeout(() => {
+                triggerUpdate();
+            }, AUTO_RELOAD_MS);
         }
 
         // Reload when the new SW takes over (only if we triggered the update)
@@ -97,9 +112,11 @@ export default function ServiceWorkerRegister() {
                 'controllerchange',
                 onControllerChange,
             );
-            if (toastIdRef.current) {
-                toast.dismiss(toastIdRef.current);
-            }
+            if (toastIntervalRef.current)
+                clearInterval(toastIntervalRef.current);
+            if (autoReloadTimerRef.current)
+                clearTimeout(autoReloadTimerRef.current);
+            toast.dismiss('sw-update');
         };
     }, []);
 
