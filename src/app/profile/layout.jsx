@@ -17,6 +17,7 @@ export default async function ProfileLayout({ children }) {
     }
 
     if (session.user.banned) {
+        await auth.api.revokeSession({ headers: await headers() });
         redirect('/');
     }
 

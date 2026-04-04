@@ -14,6 +14,7 @@ vi.mock('@/auth', () => ({
     auth: {
         api: {
             getSession: vi.fn(() => Promise.resolve(null)),
+            revokeSession: vi.fn(() => Promise.resolve()),
         },
     },
 }));

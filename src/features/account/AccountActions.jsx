@@ -1,5 +1,5 @@
 'use client';
-import { useActionState, useCallback } from 'react';
+import { useActionState, useCallback, useEffect } from 'react';
 import Form from 'next/form';
 import { exportUserData, deleteUserAccount } from '@/db/queries/account';
 
@@ -23,6 +23,12 @@ export default function AccountActions({ user }) {
         deleteUserAccount,
         null,
     );
+
+    useEffect(() => {
+        if (deleteState?.data?.deleted) {
+            window.location.href = '/';
+        }
+    }, [deleteState]);
 
     return (
         <div className="grid grid-cols-[1fr_4px]">

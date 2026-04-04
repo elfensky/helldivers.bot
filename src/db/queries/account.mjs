@@ -87,6 +87,13 @@ export async function deleteUserAccount(_, formData) {
         };
     }
 
+    // Revoke session before deleting user (cascade will delete sessions from DB,
+    // but we need to clear the cookie so the browser doesn't hold a stale token)
+    const { error: revokeError } = await tryCatch(
+        auth.api.revokeSession({ headers: await headers() }),
+    );
+    if (revokeError) throw revokeError;
+
     const { data: deleted, error } = await tryCatch(
         db.user.delete({ where: { id: formValues.userId } }),
     );
