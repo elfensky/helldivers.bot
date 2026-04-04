@@ -15,6 +15,16 @@
 - Consolidate duplicated code and extract shared utilities
 - Standardize quoting in CI workflows and reformat openapi.json
 
+### Frontend
+
+- Consolidate /about, /faq, /architecture, /brandkit, /discord into unified /docs section
+- Add MDX authoring support via @next/mdx with remark-gfm
+- Add docs layout with sidebar navigation (desktop persistent, mobile dropdown)
+- Migrate ProgressExplainer from architecture to FAQ page
+- Move API documentation (OpenAPI/Swagger) to /docs/api
+- Remove standalone /discord page (absorbed into /docs/about)
+- Update HeaderNav, BottomNav, Footer, and sitemap to reference /docs routes
+
 ## 0.22.3 (2026-04-04)
 
 ### CI & Infrastructure
