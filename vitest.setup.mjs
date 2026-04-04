@@ -60,7 +60,9 @@ vi.mock('@/db/db', () => ({
     default: {
         // Auth models (BetterAuth)
         user: createModelMock(),
+        User: createModelMock(),
         account: createModelMock(),
+        Account: createModelMock(),
         session: createModelMock(),
         verification: createModelMock(),
         // App models
