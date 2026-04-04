@@ -94,7 +94,7 @@ export default function LiveToasts({ prevData, data, isLeader }) {
                         style: TOAST_STYLE(FACTION_COLORS[1]),
                     });
                 }}
-                className="fixed bottom-4 left-4 z-50 bg-surface-2 px-3 py-1 font-mono text-xs text-text-muted border border-ghost hover:text-text"
+                className="fixed bottom-4 left-4 z-50 border border-ghost bg-surface-2 px-3 py-1 font-mono text-xs text-text-muted hover:text-text"
             >
                 Test Toasts
             </button>

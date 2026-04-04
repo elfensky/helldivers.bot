@@ -69,10 +69,7 @@ export function DeleteApiKeyForm({ userId, apikeyId }) {
             <Form action={formAction}>
                 <input type="hidden" name="userId" value={userId} readOnly hidden />
                 <input type="hidden" name="apikeyId" value={apikeyId} readOnly hidden />
-                <button
-                    type="submit"
-                    className="cursor-pointer text-danger"
-                >
+                <button type="submit" className="cursor-pointer text-danger">
                     {state?.errors?.auth ?
                         <span className="text-red-400">{state.errors.auth}</span>
                     :   null}
