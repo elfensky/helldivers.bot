@@ -90,6 +90,7 @@ export default function EventCard({
                         <span
                             className="sector-card-pace"
                             style={{ color: PACE_COLORS[pace.status] }}
+                            suppressHydrationWarning
                         >
                             {pace.label}
                         </span>

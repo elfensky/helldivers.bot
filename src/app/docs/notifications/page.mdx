@@ -129,14 +129,20 @@ Events are matched by both `event_id` and `type` (defend/attack).
 
 ### First-Message Baseline
 
-The first SSE message after page load is treated as a silent state reset. No change detection runs against SSR data, preventing false toasts when the server-rendered snapshot is stale.
+The first SSE message after page load is treated as a silent state reset. No change detection runs against SSR data, preventing false transition toasts when the server-rendered snapshot is stale. Instead, `LiveToasts` fires separate catch-up toasts for any active events present in the initial data.
 
 ## Toast Notifications
 
-- **Persistent**: `duration: Infinity` — toasts stay until manually dismissed
+Two modes:
+
+- **Catch-up toasts**: On page load, shows an 8-second "in progress" toast for each active event
+- **Transition toasts**: Persistent (`duration: Infinity`) toasts when events start, are won, or are lost
+
+Styling:
+
 - **Faction-colored**: Right-side accent line using design tokens (`--color-faction-bugs`, etc.)
 - **Animated**: Pulsing glow matching the contested region `card-glow` animation
-- **Positioned**: Bottom-right via Sonner's `<Toaster>` in the root layout
+- **Positioned**: Bottom-right via Sonner's `<Toaster>`, co-located inside `LiveToasts` (not in root layout — required for module singleton sharing)
 - **Dark themed**: Styled with `--color-surface-1`, `--color-text`, `--color-ghost`
 
 ## Web Notifications

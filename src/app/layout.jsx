@@ -3,7 +3,6 @@ import './layout.css';
 import Script from 'next/script';
 import { headers } from 'next/headers';
 import { Space_Grotesk, Inter } from 'next/font/google';
-import { Toaster } from 'sonner';
 //components
 import Header from '@/shared/components/Header/Header';
 import Footer from '@/shared/components/Footer/Footer';
@@ -190,7 +189,7 @@ export default async function RootLayout({ children }) {
                     Skip to content
                 </a>
                 <div
-                    className="fixed inset-0 z-[999] flex items-center justify-center bg-surface-0 p-4 text-center text-sm text-text-muted min-[200px]:hidden"
+                    className="fixed inset-0 z-[999] flex items-center justify-center bg-surface-0 p-4 text-center text-body text-text-muted min-[200px]:hidden"
                     role="alert"
                 >
                     <p className="m-0">Please use a larger screen to view this site.</p>
@@ -205,19 +204,6 @@ export default async function RootLayout({ children }) {
                 <Footer />
                 <BottomNav />
                 <ServiceWorkerRegister />
-                <Toaster
-                    theme="dark"
-                    position="bottom-right"
-                    toastOptions={{
-                        style: {
-                            borderRadius: '0px',
-                            background: 'var(--color-surface-1)',
-                            color: 'var(--color-text)',
-                            border: '1px solid var(--color-ghost)',
-                            fontFamily: 'var(--font-body)',
-                        },
-                    }}
-                />
 
                 {isProduction ?
                     <Script
