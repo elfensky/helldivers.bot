@@ -13,12 +13,12 @@ export function GenerateApiKeyForm({ userId }) {
     return (
         <>
             {state?.data?.key ?
-                <span className="font-mono text-sm text-text">
+                <span className="font-mono text-body text-text">
                     Key: {state.data.key}
                 </span>
             :   null}
             {state?.errors?.general ?
-                <span role="alert" className="text-sm text-danger">
+                <span role="alert" className="text-body text-danger">
                     {state.errors.general}
                 </span>
             :   null}
@@ -29,7 +29,7 @@ export function GenerateApiKeyForm({ userId }) {
                     <label htmlFor="description">
                         Key Name
                         {state?.errors?.description ?
-                            <span id="description-error" className="ml-2 text-sm text-danger">
+                            <span id="description-error" className="ml-2 text-body text-danger">
                                 {state.errors.description}
                             </span>
                         :   null}
@@ -39,7 +39,7 @@ export function GenerateApiKeyForm({ userId }) {
                         id="description"
                         name="description"
                         placeholder="e.g. My Discord Bot, Personal Project"
-                        className="w-full bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-muted"
+                        className="w-full bg-surface-2 px-3 py-2 text-body text-text placeholder:text-text-muted"
                         aria-describedby={
                             state?.errors?.description ? 'description-error' : undefined
                         }
@@ -47,7 +47,7 @@ export function GenerateApiKeyForm({ userId }) {
                 </fieldset>
 
                 <button
-                    className="cursor-pointer bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    className="cursor-pointer border border-primary px-4 py-2 text-body font-semibold text-primary hover:bg-primary hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={pending}
                 >
                     Generate
@@ -66,7 +66,7 @@ export function DeleteApiKeyForm({ userId, apikeyId }) {
     return (
         <>
             {state?.errors?.auth ?
-                <span className="text-sm text-danger">{state.errors.auth}</span>
+                <span className="text-body text-danger">{state.errors.auth}</span>
             :   null}
             <Form action={formAction}>
                 <input type="hidden" name="userId" value={userId} />
@@ -74,7 +74,7 @@ export function DeleteApiKeyForm({ userId, apikeyId }) {
                 <button
                     type="submit"
                     disabled={pending}
-                    className="cursor-pointer text-sm text-danger hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                    className="cursor-pointer text-body text-danger hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     Delete
                 </button>

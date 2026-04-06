@@ -49,8 +49,8 @@ export default function AccountActions({ user, avatarUrl, providers }) {
                         <p className="font-semibold text-text">
                             {user.name ?? 'Anonymous'}
                         </p>
-                        <p className="text-sm text-text-muted">{user.email}</p>
-                        <p className="text-sm text-text-muted">
+                        <p className="text-body text-text-muted">{user.email}</p>
+                        <p className="text-body text-text-muted">
                             Connected:{' '}
                             {providers.map((p, i) => (
                                 <span key={p}>
@@ -67,23 +67,23 @@ export default function AccountActions({ user, avatarUrl, providers }) {
                     <button
                         type="button"
                         onClick={handleExport}
-                        className="w-fit cursor-pointer bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
+                        className="w-fit cursor-pointer border border-primary px-4 py-2 text-body font-semibold text-primary hover:bg-primary hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         Download My Data
                     </button>
 
                     <div className="border-t border-ghost pt-3">
-                        <p className="text-sm text-text-muted">
+                        <p className="text-body text-text-muted">
                             Permanently delete your account and all associated data.
                             This cannot be undone.
                         </p>
                         {deleteState?.errors?.confirmEmail && (
-                            <span role="alert" className="text-sm text-danger">
+                            <span role="alert" className="text-body text-danger">
                                 {deleteState.errors.confirmEmail}
                             </span>
                         )}
                         {deleteState?.errors?.auth && (
-                            <span role="alert" className="text-sm text-danger">
+                            <span role="alert" className="text-body text-danger">
                                 {deleteState.errors.auth}
                             </span>
                         )}
@@ -96,13 +96,13 @@ export default function AccountActions({ user, avatarUrl, providers }) {
                                 type="email"
                                 name="confirmEmail"
                                 placeholder="Type your email to confirm"
-                                className="flex-1 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-muted"
+                                className="flex-1 bg-surface-2 px-3 py-2 text-body text-text placeholder:text-text-muted"
                                 required
                             />
                             <button
                                 type="submit"
                                 disabled={deletePending}
-                                className="cursor-pointer border border-danger px-4 py-2 text-sm font-semibold text-danger hover:bg-danger hover:text-on-primary disabled:cursor-not-allowed disabled:opacity-50"
+                                className="cursor-pointer border border-danger px-4 py-2 text-body font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Delete Account
                             </button>

@@ -9,7 +9,6 @@
 :root {
     /* === PRIMARY === */
     --color-primary: #ffe000;
-    --color-on-primary: #131313;
     --color-danger: #ff0000;
     --color-success: #22c55e;
 
@@ -23,8 +22,6 @@
     /* === TEXT === */
     --color-text: hsl(0, 0%, 80%);
     --color-text-muted: hsl(0, 0%, 46%);
-    --color-text-on-primary: #131313;
-
     /* === OUTLINE === */
     --color-outline: #999077;
     --color-outline-variant: #4d4732;
@@ -67,7 +64,6 @@
 
     /* Colors — enables bg-primary, text-danger, border-surface-3, etc. */
     --color-primary: #ffe000;
-    --color-on-primary: #131313;
     --color-danger: #ff0000;
     --color-success: #22c55e;
     --color-surface-0: #131313;
@@ -92,15 +88,12 @@
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
     --font-mono: 'Space Mono', monospace;
 
-    /* Typography — fluid type scale */
-    --fs-h1: clamp(1.5rem, 1rem + 2vw, 2.5rem);
-    --fs-h2: clamp(1.25rem, 0.9rem + 1.5vw, 1.875rem);
-    --fs-h3: clamp(1.125rem, 0.9rem + 1vw, 1.5rem);
-    --fs-h4: clamp(1rem, 0.9rem + 0.5vw, 1.25rem);
-    --fs-h5: clamp(0.9375rem, 0.875rem + 0.25vw, 1.125rem);
-    --fs-h6: clamp(0.875rem, 0.85rem + 0.15vw, 1rem);
-    --fs-body: clamp(0.875rem, 0.8rem + 0.35vw, 1.0625rem);
-    --fs-small: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+    /* Typography — fluid type scale (5 steps) */
+    --text-h1: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+    --text-h2: clamp(1.125rem, 0.9rem + 1.2vw, 1.75rem);
+    --text-h3: clamp(0.875rem, 0.75rem + 0.5vw, 1.125rem);
+    --text-body: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+    --text-small: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
 
     /* Radius — 0px everywhere, makes all rounded-* classes no-ops */
     --radius-xs: 0px;
@@ -172,7 +165,7 @@ html::before {
 }
 
 body {
-    font-size: var(--fs-body);
+    font-size: var(--text-body);
     line-height: 1.5;
     font-family: var(--font-body);
     background-color: transparent;
@@ -192,37 +185,25 @@ h6 {
 }
 
 h1 {
-    font-size: var(--fs-h1);
+    font-size: var(--text-h1);
     line-height: 1.1;
 }
 
 h2 {
-    font-size: var(--fs-h2);
+    font-size: var(--text-h2);
     line-height: 1.2;
 }
 
-h3 {
-    font-size: var(--fs-h3);
-    line-height: 1.2;
-}
-
-h4 {
-    font-size: var(--fs-h4);
-    line-height: 1.3;
-}
-
-h5 {
-    font-size: var(--fs-h5);
-    line-height: 1.3;
-}
-
+h3,
+h4,
+h5,
 h6 {
-    font-size: var(--fs-h6);
+    font-size: var(--text-h3);
     line-height: 1.3;
 }
 
 small {
-    font-size: var(--fs-small);
+    font-size: var(--text-small);
     line-height: 1.4;
 }
 
