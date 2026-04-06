@@ -44,7 +44,7 @@
 
 .timeline-day-summary {
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: var(--fs-small);
     color: rgba(255, 255, 255, 0.25);
     white-space: nowrap;
 }

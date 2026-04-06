@@ -35,10 +35,10 @@
 
 .stat-card-label {
     font-family: var(--font-mono, monospace);
-    font-size: 0.5625rem;
+    font-size: var(--fs-small);
     color: var(--color-outline);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
