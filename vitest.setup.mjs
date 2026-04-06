@@ -175,6 +175,15 @@ vi.mock('next/image', () => ({
     default: vi.fn((props) => React.createElement('img', props)),
 }));
 
+/**
+ * Mock Next.js Link — renders as <a> element, filtering Next.js-specific props
+ */
+vi.mock('next/link', () => ({
+    default: vi.fn(({ children, prefetch, scroll, replace, shallow, ...props }) =>
+        React.createElement('a', props, children),
+    ),
+}));
+
 // #endregion
 
 // #region Global Test Lifecycle

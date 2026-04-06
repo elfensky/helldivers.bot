@@ -1,27 +1,22 @@
 // @vitest-environment jsdom
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { useRouter } from 'next/navigation';
 
 import SeasonSelector from '@/features/dashboard/SeasonSelector';
 
 describe('SeasonSelector', () => {
-    let locationHref;
+    const mockPush = vi.fn();
 
     beforeEach(() => {
-        locationHref = '';
-        Object.defineProperty(window, 'location', {
-            value: {
-                href: '',
-                search: '',
-                get href() {
-                    return locationHref;
-                },
-                set href(url) {
-                    locationHref = url;
-                },
-            },
-            writable: true,
-            configurable: true,
+        mockPush.mockClear();
+        vi.mocked(useRouter).mockReturnValue({
+            push: mockPush,
+            replace: vi.fn(),
+            refresh: vi.fn(),
+            back: vi.fn(),
+            forward: vi.fn(),
+            prefetch: vi.fn(),
         });
     });
 
@@ -50,10 +45,10 @@ describe('SeasonSelector', () => {
         expect(select.value).toBe('2');
     });
 
-    test('changing select navigates to correct URL', () => {
+    test('changing select calls router.push with correct URL', () => {
         render(<SeasonSelector seasons={[1, 2, 3]} currentSeason={1} />);
         const select = screen.getByRole('combobox');
         fireEvent.change(select, { target: { value: '3' } });
-        expect(locationHref).toBe('/archives?season=3');
+        expect(mockPush).toHaveBeenCalledWith('/archives?season=3');
     });
 });

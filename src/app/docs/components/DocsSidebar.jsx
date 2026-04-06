@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
@@ -96,9 +97,10 @@ function SidebarContent({ pathname, onNavigate }) {
                     {section.items.map((item) => {
                         const isActive = item.href === pathname;
                         return (
-                            <a
+                            <Link
                                 key={item.href}
                                 href={item.href}
+                                prefetch={false}
                                 onClick={onNavigate}
                                 className={`block border-l-2 px-4 py-1.5 text-body ${
                                     isActive ?
@@ -107,7 +109,7 @@ function SidebarContent({ pathname, onNavigate }) {
                                 }`}
                             >
                                 {item.label}
-                            </a>
+                            </Link>
                         );
                     })}
                 </div>

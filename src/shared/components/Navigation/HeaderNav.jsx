@@ -1,6 +1,5 @@
 'use client';
-// Uses <a> instead of next/link to avoid enqueueModel crashes caused
-// by startTransition racing with RSC Flight stream processing.
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import StatusDot from '@/shared/components/StatusDot';
 
@@ -19,14 +18,15 @@ export default function HeaderNav() {
                 const isActive =
                     href === '/' ? pathname === '/' : pathname.startsWith(href);
                 return (
-                    <a
+                    <Link
                         key={href}
                         href={href}
+                        prefetch={false}
                         className={`header-nav-link ${isActive ? 'header-nav-link--active' : ''}`}
                     >
                         {live && <StatusDot />}
                         {label}
-                    </a>
+                    </Link>
                 );
             })}
         </div>

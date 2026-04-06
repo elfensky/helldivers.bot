@@ -14,6 +14,9 @@ vi.mock('@/shared/components/Auth/Auth', () => ({
 vi.mock('@/shared/components/Navigation/HeaderNav', () => ({
     default: () => <nav data-testid="header-nav" />,
 }));
+vi.mock('next/link', () => ({
+    default: ({ children, ...props }) => <a {...props}>{children}</a>,
+}));
 vi.mock('next/image', () => ({
     default: (props) => <img {...props} />,
 }));
