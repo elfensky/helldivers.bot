@@ -157,6 +157,8 @@ For every phase or feature, use the `/superpowers:brainstorming` skill to explor
 
 ## Reference Docs
 
+> **Wiki local clone:** `../helldivers.bot.wiki` — edit locally, commit & push to update GitHub wiki.
+
 | Topic                              | Location                                                                                                                   |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Docker, CI/CD, init flow, env vars | [Wiki: Infrastructure](https://github.com/elfensky/helldivers.bot/wiki/Infrastructure)                                     |

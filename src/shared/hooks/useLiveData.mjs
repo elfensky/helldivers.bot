@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, startTransition } from 'react';
+import { useSyncExternalStore } from 'react';
 
 const CACHE_KEY = 'hd1-live-cache';
 
@@ -24,160 +24,232 @@ function saveCachedState(data, mapState) {
     }
 }
 
+// Cache loaded once for offline PWA fallback
+const cachedState = typeof window !== 'undefined' ? loadCachedState() : null;
+
+// --- External Store (module-level singleton) ---
+//
+// SSE data lives outside React's state system to avoid collisions with
+// the RSC Flight stream during client-side navigation. React pulls
+// snapshots via useSyncExternalStore when safe to render, rather than
+// having startTransition push updates into the Fiber queue mid-flight.
+
+const INITIAL_STORE = Object.freeze({
+    data: null,
+    mapState: null,
+    status: 'connecting',
+    prevData: null,
+    isLeader: false,
+});
+
+let store = INITIAL_STORE;
+let listeners = new Set();
+let es = null;
+let isFirstMessage = true;
+let leaderChannel = null;
+let leaderTimeout = null;
+
+/** Notify all useSyncExternalStore subscribers that the store changed. */
+function emit() {
+    for (const listener of listeners) {
+        listener();
+    }
+}
+
+function getSnapshot() {
+    return store;
+}
+
+function getServerSnapshot() {
+    return INITIAL_STORE;
+}
+
+// --- SSE Connection ---
+
+/**
+ * Opens an EventSource to /api/h1/stream. Guarded — no-ops if already connected.
+ *
+ * onopen resets isFirstMessage so the first message after every (re)connection
+ * is treated as a silent baseline, preventing false change detection.
+ *
+ * onmessage parses with try/catch — malformed data is silently dropped
+ * rather than killing the handler permanently.
+ */
+function connect() {
+    if (es) return;
+    isFirstMessage = true;
+
+    es = new EventSource('/api/h1/stream');
+
+    es.onopen = () => {
+        isFirstMessage = true;
+        store = { ...store, status: 'live' };
+        emit();
+    };
+
+    es.onmessage = (event) => {
+        let parsed;
+        try {
+            parsed = JSON.parse(event.data);
+        } catch {
+            return;
+        }
+        saveCachedState(parsed.data, parsed.mapState);
+
+        if (isFirstMessage) {
+            isFirstMessage = false;
+            store = { ...store, data: parsed.data, mapState: parsed.mapState };
+        } else {
+            store = {
+                ...store,
+                prevData: store.data,
+                data: parsed.data,
+                mapState: parsed.mapState,
+            };
+        }
+        emit();
+    };
+
+    es.onerror = () => {
+        if (store.status === 'live') {
+            store = { ...store, status: 'reconnecting' };
+            emit();
+        }
+    };
+}
+
+/** Close EventSource, reset store to initial state, and notify listeners. */
+function disconnect() {
+    if (es) {
+        es.close();
+        es = null;
+    }
+    store = INITIAL_STORE;
+    emit();
+}
+
+// --- BroadcastChannel Leader Election ---
+
+/**
+ * Elect one browser tab as leader for Web Notifications.
+ *
+ * Uses random-timeout election: each tab sets a random delay (0-500ms).
+ * First to fire claims leadership via BroadcastChannel. Other tabs
+ * cancel their timeouts on receiving the claim.
+ *
+ * Race resolution: if a leader receives another tab's claim, it yields
+ * and re-enters the election to ensure exactly one leader.
+ */
+function setupLeader() {
+    if (leaderChannel) return;
+
+    if (typeof BroadcastChannel === 'undefined') {
+        store = { ...store, isLeader: true };
+        return;
+    }
+
+    leaderChannel = new BroadcastChannel('hd1-sse-leader');
+
+    function claimLeadership() {
+        store = { ...store, isLeader: true };
+        leaderChannel.postMessage({ type: 'leader-claim' });
+        emit();
+    }
+
+    function startElection() {
+        store = { ...store, isLeader: false };
+        leaderTimeout = setTimeout(claimLeadership, Math.random() * 500);
+    }
+
+    leaderChannel.onmessage = (e) => {
+        if (e.data.type === 'leader-claim') {
+            clearTimeout(leaderTimeout);
+            if (store.isLeader) {
+                // Yield to the other tab's claim — re-elect
+                store = { ...store, isLeader: false };
+                leaderTimeout = setTimeout(claimLeadership, Math.random() * 500);
+                emit();
+            }
+        }
+        if (e.data.type === 'leader-ping' && store.isLeader) {
+            leaderChannel.postMessage({ type: 'leader-claim' });
+        }
+    };
+
+    startElection();
+}
+
+function teardownLeader() {
+    clearTimeout(leaderTimeout);
+    leaderTimeout = null;
+    if (leaderChannel) {
+        leaderChannel.close();
+        leaderChannel = null;
+    }
+}
+
+// --- Subscribe / Unsubscribe ---
+
+/**
+ * useSyncExternalStore subscribe function. Connects on first subscriber,
+ * disconnects when the last subscriber leaves.
+ * @param {Function} listener - React's re-render trigger
+ * @returns {Function} Unsubscribe callback
+ */
+function subscribe(listener) {
+    listeners.add(listener);
+    if (listeners.size === 1) {
+        connect();
+        setupLeader();
+    }
+    return () => {
+        listeners.delete(listener);
+        if (listeners.size === 0) {
+            disconnect();
+            teardownLeader();
+        }
+    };
+}
+
+// --- Hook ---
+
 /**
  * Hook that connects to the SSE stream for live campaign data updates.
  *
- * First SSE message is treated as a silent baseline (no prevData set)
- * to avoid false change detection when SSR data is stale.
+ * Architecture: useSyncExternalStore with a module-level singleton store.
+ * SSE data lives outside React — React pulls snapshots when safe to render.
+ * This eliminates the enqueueModel crash caused by startTransition racing
+ * with RSC Flight stream processing during client-side navigation.
  *
- * Falls back to localStorage cache when SSR data is unavailable (offline PWA).
+ * Key behaviors:
+ * - First SSE message after each (re)connection is a silent baseline —
+ *   prevData is not set, preventing false change detection from stale SSR.
+ * - Malformed SSE messages are silently dropped (JSON.parse failure).
+ * - BroadcastChannel leader election ensures only one tab fires OS
+ *   notifications. Leaders yield on conflicting claims to prevent dupes.
+ * - Falls back to localStorage cache when SSR data unavailable (offline PWA).
+ * - Fallback chain: live SSE → server-rendered → localStorage cache → null.
  *
  * @param {Object} initialData - Server-rendered campaign data (null if offline)
  * @param {Object} initialMapState - Server-rendered map state (null if offline)
- * @returns {{ data, mapState, status, prevData }}
+ * @returns {{ data: Object, mapState: Object, status: string, prevData: Object, isLeader: boolean }}
  */
 export function useLiveData(initialData, initialMapState) {
-    const [data, setData] = useState(() => {
-        if (initialData) return initialData;
-        return loadCachedState()?.data ?? null;
-    });
-    const [mapState, setMapState] = useState(() => {
-        if (initialMapState) return initialMapState;
-        return loadCachedState()?.mapState ?? null;
-    });
-    const [status, setStatus] = useState('connecting');
-
-    const prevDataRef = useRef(null);
-    const isFirstMessage = useRef(true);
-    const isLeaderRef = useRef(false);
-
-    // BroadcastChannel leader election for Web Notifications
-    useEffect(() => {
-        if (typeof BroadcastChannel === 'undefined') {
-            isLeaderRef.current = true;
-            return;
-        }
-
-        const channel = new BroadcastChannel('hd1-sse-leader');
-        let electionTimeout;
-
-        function claimLeadership() {
-            isLeaderRef.current = true;
-            channel.postMessage({ type: 'leader-claim' });
-        }
-
-        function startElection() {
-            isLeaderRef.current = false;
-            electionTimeout = setTimeout(claimLeadership, Math.random() * 500);
-        }
-
-        channel.onmessage = (e) => {
-            if (e.data.type === 'leader-claim' && !isLeaderRef.current) {
-                clearTimeout(electionTimeout);
-                isLeaderRef.current = false;
-            }
-            if (e.data.type === 'leader-ping') {
-                if (isLeaderRef.current) {
-                    channel.postMessage({ type: 'leader-claim' });
-                }
-            }
-        };
-
-        startElection();
-
-        return () => {
-            clearTimeout(electionTimeout);
-            channel.close();
-        };
-    }, []);
-
-    // SSE connection
-    useEffect(() => {
-        let closed = false;
-        const es = new EventSource('/api/h1/stream');
-
-        es.onopen = () => {
-            setStatus('live');
-        };
-
-        es.onmessage = (event) => {
-            if (closed) return;
-            const parsed = JSON.parse(event.data);
-
-            // Cache for offline use (always, even if state update is deferred)
-            saveCachedState(parsed.data, parsed.mapState);
-
-            // Defer state updates to avoid interfering with RSC flight stream
-            // processing during client-side navigation. setTimeout pushes to
-            // the next event loop tick; startTransition marks as low-priority.
-            setTimeout(() => {
-                if (closed) return;
-                startTransition(() => {
-                    if (isFirstMessage.current) {
-                        isFirstMessage.current = false;
-                        setData(parsed.data);
-                        setMapState(parsed.mapState);
-                        return;
-                    }
-
-                    setData((current) => {
-                        prevDataRef.current = current;
-                        return parsed.data;
-                    });
-                    setMapState(parsed.mapState);
-                });
-            }, 0);
-        };
-
-        es.onerror = () => {
-            setStatus((current) => (current === 'live' ? 'reconnecting' : current));
-        };
-
-        // Close SSE before client-side navigation starts to prevent state
-        // updates from corrupting the RSC flight stream.
-        function closeSSE() {
-            closed = true;
-            es.close();
-        }
-
-        // Navigation API (Chrome 102+) catches all navigation types
-        // including router.push, link clicks, and back/forward.
-        function handleNavigate(e) {
-            if (e.navigationType !== 'reload') closeSSE();
-        }
-        const hasNavAPI = typeof navigation !== 'undefined';
-        if (hasNavAPI) {
-            navigation.addEventListener('navigate', handleNavigate);
-        }
-
-        // Fallback: capture-phase click handler for link clicks (all browsers)
-        function handleNavClick(e) {
-            const anchor = e.target.closest?.('a[href]');
-            if (!anchor) return;
-            const href = anchor.getAttribute('href');
-            if (href && href.startsWith('/') && href !== window.location.pathname) {
-                closeSSE();
-            }
-        }
-        if (!hasNavAPI) {
-            document.addEventListener('click', handleNavClick, true);
-        }
-
-        return () => {
-            closeSSE();
-            if (hasNavAPI) {
-                navigation.removeEventListener('navigate', handleNavigate);
-            } else {
-                document.removeEventListener('click', handleNavClick, true);
-            }
-        };
-    }, []);
+    const snapshot = useSyncExternalStore(
+        subscribe,
+        getSnapshot,
+        getServerSnapshot,
+    );
 
     return {
-        data,
-        mapState,
-        status,
-        prevData: prevDataRef.current,
-        isLeader: isLeaderRef.current,
+        data: snapshot.data ?? initialData ?? cachedState?.data ?? null,
+        mapState:
+            snapshot.mapState ??
+            initialMapState ??
+            cachedState?.mapState ??
+            null,
+        status: snapshot.status,
+        prevData: snapshot.prevData,
+        isLeader: snapshot.isLeader,
     };
 }
