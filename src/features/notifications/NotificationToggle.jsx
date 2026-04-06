@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -81,13 +80,13 @@ export default function NotificationToggle() {
         const label =
             state === 'denied' ? 'Notifications blocked' : 'Notifications unavailable';
         return (
-            <Link
+            <a
                 href="/docs/faq"
-                className="font-mono text-xs text-[var(--color-text-muted)] opacity-50 hover:opacity-80"
+                className="font-mono text-small text-[var(--color-text-muted)] opacity-50 hover:opacity-80"
                 title="How to enable notifications"
             >
                 {label}
-            </Link>
+            </a>
         );
     }
 
@@ -113,7 +112,7 @@ export default function NotificationToggle() {
             <button
                 onClick={disable}
                 disabled={busy}
-                className="font-mono text-xs text-[var(--color-text-muted)] underline decoration-dotted hover:text-[var(--color-text)] disabled:opacity-50"
+                className="font-mono text-small text-[var(--color-text-muted)] underline decoration-dotted hover:text-[var(--color-text)] disabled:opacity-50"
             >
                 {busy ? '...' : 'Notifications on'}
             </button>
@@ -124,7 +123,7 @@ export default function NotificationToggle() {
         <button
             onClick={enable}
             disabled={busy}
-            className="font-mono text-xs text-[var(--color-text-muted)] underline decoration-dotted hover:text-[var(--color-text)] disabled:opacity-50"
+            className="font-mono text-small text-[var(--color-text-muted)] underline decoration-dotted hover:text-[var(--color-text)] disabled:opacity-50"
         >
             {busy ? '...' : 'Enable notifications'}
         </button>

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
@@ -43,7 +42,7 @@ export default function DocsSidebar() {
             {/* Mobile breadcrumb bar */}
             <button
                 onClick={() => setOpen(!open)}
-                className="flex w-full items-center gap-2 border-b border-outline-variant bg-surface-1 px-4 py-3 text-sm lg:hidden"
+                className="flex w-full items-center gap-2 border-b border-outline-variant bg-surface-1 px-4 py-3 text-body lg:hidden"
             >
                 <span className="text-text-muted">Docs /</span>
                 <span className="text-primary">{currentPage}</span>
@@ -91,25 +90,24 @@ function SidebarContent({ pathname, onNavigate }) {
         <>
             {sections.map((section) => (
                 <div key={section.label} className="mb-5">
-                    <div className="px-4 pb-2 font-mono text-[10px] tracking-[1.5px] text-text-muted uppercase">
+                    <div className="px-4 pb-2 font-mono text-small tracking-[1.5px] text-text-muted uppercase">
                         {section.label}
                     </div>
                     {section.items.map((item) => {
                         const isActive = item.href === pathname;
                         return (
-                            <Link
+                            <a
                                 key={item.href}
                                 href={item.href}
-                                prefetch={false}
                                 onClick={onNavigate}
-                                className={`block border-l-2 px-4 py-1.5 text-sm ${
+                                className={`block border-l-2 px-4 py-1.5 text-body ${
                                     isActive ?
                                         'border-primary bg-surface-2 text-primary'
                                     :   'border-transparent text-text hover:bg-surface-2'
                                 }`}
                             >
                                 {item.label}
-                            </Link>
+                            </a>
                         );
                     })}
                 </div>

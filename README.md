@@ -89,11 +89,9 @@ Using next js api routes, this contains various endpoints that provide helldiver
 
 ### User Features
 
+- Authentication via Discord or GitHub OAuth (powered by [BetterAuth](https://www.better-auth.com/))
 - Account Management
-    - Create an account
-    - Login
-    - Logout
-    - Change password
+    - Login / Logout via OAuth
     - Delete account
 - API Keys
     - Create an API key
@@ -105,7 +103,7 @@ Using next js api routes, this contains various endpoints that provide helldiver
 
 ## Development
 
-The application uses nextjs running on node@22, prisma and postgres. It is deployed on a VPS in a docker container.
+The application uses nextjs running on node@24, prisma and postgres. It is deployed on a VPS in a docker container.
 
 ### Local
 

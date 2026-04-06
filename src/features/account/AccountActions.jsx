@@ -1,0 +1,115 @@
+'use client';
+import { useActionState, useCallback, useEffect } from 'react';
+import Image from 'next/image';
+import Form from 'next/form';
+import { exportUserData, deleteUserAccount } from '@/db/queries/account';
+
+export default function AccountActions({ user, avatarUrl, providers }) {
+    const handleExport = useCallback(async () => {
+        const result = await exportUserData(user.id);
+        if (result.data) {
+            const blob = new Blob([JSON.stringify(result.data, null, 2)], {
+                type: 'application/json',
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `helldivers-bot-data-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    }, [user.id]);
+
+    const [deleteState, deleteAction, deletePending] = useActionState(
+        deleteUserAccount,
+        null,
+    );
+
+    useEffect(() => {
+        if (deleteState?.data?.deleted) {
+            window.location.href = '/';
+        }
+    }, [deleteState]);
+
+    return (
+        <div className="flex flex-col gap-3">
+            <h2>Your Data</h2>
+
+            <div className="grid gap-6 md:grid-cols-2">
+                {/* Left: account info */}
+                <div className="flex items-start gap-4">
+                    <Image
+                        src={avatarUrl}
+                        alt={`${user.name ?? 'User'} avatar`}
+                        width={48}
+                        height={48}
+                        className="rounded-full"
+                    />
+                    <div>
+                        <p className="font-semibold text-text">
+                            {user.name ?? 'Anonymous'}
+                        </p>
+                        <p className="text-body text-text-muted">{user.email}</p>
+                        <p className="text-body text-text-muted">
+                            Connected:{' '}
+                            {providers.map((p, i) => (
+                                <span key={p}>
+                                    {i > 0 && ' · '}
+                                    <span className="text-text capitalize">{p}</span>
+                                </span>
+                            ))}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Right: actions */}
+                <div className="flex flex-col gap-3">
+                    <button
+                        type="button"
+                        onClick={handleExport}
+                        className="w-fit cursor-pointer border border-primary px-4 py-2 text-body font-semibold text-primary hover:bg-primary hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Download My Data
+                    </button>
+
+                    <div className="border-t border-ghost pt-3">
+                        <p className="text-body text-text-muted">
+                            Permanently delete your account and all associated data. This
+                            cannot be undone.
+                        </p>
+                        {deleteState?.errors?.confirmEmail && (
+                            <span role="alert" className="text-body text-danger">
+                                {deleteState.errors.confirmEmail}
+                            </span>
+                        )}
+                        {deleteState?.errors?.auth && (
+                            <span role="alert" className="text-body text-danger">
+                                {deleteState.errors.auth}
+                            </span>
+                        )}
+                        <Form
+                            action={deleteAction}
+                            className="mt-2 flex items-center gap-2"
+                        >
+                            <input type="hidden" name="userId" value={user.id} />
+                            <input
+                                type="email"
+                                name="confirmEmail"
+                                placeholder="Type your email to confirm"
+                                className="flex-1 bg-surface-2 px-3 py-2 text-body text-text placeholder:text-text-muted"
+                                required
+                            />
+                            <button
+                                type="submit"
+                                disabled={deletePending}
+                                className="cursor-pointer border border-danger px-4 py-2 text-body font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Delete Account
+                            </button>
+                        </Form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

@@ -88,6 +88,7 @@ model User {
     emailVerified Boolean   @default(false)
     image         String?
     role          String    @default("user")
+    banned        Boolean   @default(false)
     accounts      Account[]
     sessions      Session[]
     createdAt     DateTime  @default(now())
@@ -107,7 +108,7 @@ model Settings {
     userId   String @id @unique
     settings Json
     //relations
-    user     User   @relation(fields: [userId], references: [id])
+    user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Review {
@@ -118,7 +119,7 @@ model Review {
     content   String?
     published Boolean  @default(false)
     authorId  String
-    author    User     @relation(fields: [authorId], references: [id])
+    author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }
 
 model ApiKey {
@@ -131,7 +132,7 @@ model ApiKey {
     createdAt DateTime @default(now())
     enabled   Boolean  @default(true)
     //relations
-    user      User     @relation(fields: [userId], references: [id])
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // #endregion
@@ -334,6 +335,18 @@ model push_subscription {
     created_at  DateTime @default(now())
 
     @@index([endpoint])
+}
+
+// #endregion
+
+// #region WORKER HEALTH
+model worker_heartbeat {
+    worker_type      String   @id
+    last_beat        DateTime
+    poll_duration_ms Int?
+    last_error       String?
+    started_at       DateTime
+    updated_at       DateTime @updatedAt
 }
 
 // #endregion

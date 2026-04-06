@@ -1,5 +1,6 @@
 'use client';
-import Link from 'next/link';
+// Uses <a> instead of next/link to avoid enqueueModel crashes caused
+// by startTransition racing with RSC Flight stream processing.
 import { usePathname } from 'next/navigation';
 
 const tabs = [
@@ -12,23 +13,21 @@ export default function HeaderNav() {
     const pathname = usePathname();
 
     return (
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
             {tabs.map(({ href, label, live }) => {
                 const isActive =
                     href === '/' ? pathname === '/' : pathname.startsWith(href);
                 return (
-                    <Link
+                    <a
                         key={href}
                         href={href}
-                        prefetch={false}
                         className={`header-nav-link ${isActive ? 'header-nav-link--active' : ''}`}
                     >
                         {live && <span className="bottom-nav-live">●</span>}
                         {label}
-                    </Link>
+                    </a>
                 );
             })}
-            <span className="header-nav-divider" />
         </div>
     );
 }

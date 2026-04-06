@@ -124,7 +124,7 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`, in
 - **Map state:** `computeMapState` (`src/utils/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — completed events are already in the score.
 - **On-demand season fetching:** `/archives` page derives SeasonSelector from current season number (not DB query). Missing seasons fetched from official API on first request via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`).
 - **SSE live updates:** Worker polls API → DB write → `pg NOTIFY campaign_update` → SSE manager (`src/shared/utils/sse/sseManager.mjs`) broadcasts full campaign state via `/api/h1/stream` → `useLiveData` hook (`src/shared/hooks/useLiveData.mjs`) replaces React state. Postgres LISTEN/NOTIFY bridges worker thread and Next.js process (Prisma doesn't support LISTEN/NOTIFY — uses dedicated `pg.Client`).
-- **Notifications:** `detectChanges()` (`src/shared/utils/game/detectChanges.mjs`) detects event transitions (started/won/lost) on both client (Sonner toasts + Web Notifications) and server (push via `web-push`). Single "Enable notifications" button enables both web and push. Push subscriptions stored in `push_subscription` table.
+- **Notifications:** `detectChanges()` (`src/shared/utils/game/detectChanges.mjs`) detects event transitions (started/won/lost) on both client (Sonner toasts + Web Notifications) and server (push via `web-push`). `LiveToasts` also shows catch-up toasts for active events on page load. The Sonner `<Toaster>` is co-located inside `LiveToasts` (not root layout) to share the same module singleton — rendering it from a server component creates a separate `ToastState`. Single "Enable notifications" button enables both web and push. Push subscriptions stored in `push_subscription` table.
 - **PWA:** Service worker (`public/sw.js`) caches app shell, handles push events. Last SSE payload cached in localStorage for offline fallback.
 
 ## Architecture — Frontend Layout
@@ -156,6 +156,8 @@ All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/
 For every phase or feature, use the `/superpowers:brainstorming` skill to explore requirements and design, then `/octo:embrace` to execute a full Discovery → Define → Develop → Deliver workflow. These skills generate specs and plans as conversation artifacts — no separate doc files needed.
 
 ## Reference Docs
+
+> **Wiki local clone:** `../helldivers.bot.wiki` — edit locally, commit & push to update GitHub wiki.
 
 | Topic                              | Location                                                                                                                   |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |

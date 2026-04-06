@@ -9,7 +9,7 @@
 
 .timeline-empty {
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: var(--text-small);
     color: var(--color-text-muted);
     text-align: center;
     padding: 2rem 0;
@@ -34,7 +34,7 @@
 
 .timeline-day-label {
     font-family: var(--font-mono);
-    font-size: 0.75rem;
+    font-size: var(--text-small);
     font-weight: 700;
     color: rgba(255, 255, 255, 0.65);
     letter-spacing: 0.05em;
@@ -44,7 +44,7 @@
 
 .timeline-day-summary {
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: var(--text-small);
     color: rgba(255, 255, 255, 0.25);
     white-space: nowrap;
 }

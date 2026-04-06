@@ -14,6 +14,7 @@ vi.mock('@/auth', () => ({
     auth: {
         api: {
             getSession: vi.fn(() => Promise.resolve(null)),
+            revokeSession: vi.fn(() => Promise.resolve()),
         },
     },
 }));
@@ -60,7 +61,9 @@ vi.mock('@/db/db', () => ({
     default: {
         // Auth models (BetterAuth)
         user: createModelMock(),
+        User: createModelMock(),
         account: createModelMock(),
+        Account: createModelMock(),
         session: createModelMock(),
         verification: createModelMock(),
         // App models
@@ -81,6 +84,10 @@ vi.mock('@/db/db', () => ({
         h1_live: createModelMock(),
         h1_live_snapshot: createModelMock(),
         h1_event_snapshot: createModelMock(),
+        // Worker health
+        worker_heartbeat: createModelMock(),
+        // Push subscriptions
+        push_subscription: createModelMock(),
         // Prisma utilities
         $transaction: vi.fn((fn) => Promise.resolve(Array.isArray(fn) ? fn : fn())),
         $connect: vi.fn(() => Promise.resolve()),
@@ -146,15 +153,6 @@ vi.mock('next/headers', () => ({
  */
 vi.mock('next/image', () => ({
     default: vi.fn((props) => React.createElement('img', props)),
-}));
-
-/**
- * Mock Next.js Link — renders as <a> element, filtering Next.js-specific props
- */
-vi.mock('next/link', () => ({
-    default: vi.fn(({ children, prefetch, scroll, replace, shallow, ...props }) =>
-        React.createElement('a', props, children),
-    ),
 }));
 
 // #endregion

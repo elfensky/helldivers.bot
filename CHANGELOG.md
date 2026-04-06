@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Features
+
+- **Catch-up toasts for active events** — show an "in progress" toast on page load when defend/attack events are already active (#LiveToasts)
+
+### Fixes
+
+- **Fix Sonner toast module duplication** — co-locate `<Toaster>` inside `LiveToasts` instead of root layout to share the same Sonner `ToastState` singleton across client components
+- **Fix hydration mismatch in EventCard** — add `suppressHydrationWarning` to pace label (computed via `Date.now()`, differs between SSR and client)
+- **Fix React Compiler swallowing catch-up effect** — add `'use no memo'` to `LiveToasts` to prevent the compiler from merging the two `useEffect` hooks
+
 ## 0.25.0 (2026-04-04)
 
 ### Phase 10: Auth Migration

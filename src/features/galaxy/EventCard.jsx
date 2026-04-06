@@ -90,6 +90,7 @@ export default function EventCard({
                         <span
                             className="sector-card-pace"
                             style={{ color: PACE_COLORS[pace.status] }}
+                            suppressHydrationWarning
                         >
                             {pace.label}
                         </span>
@@ -111,10 +112,17 @@ export default function EventCard({
                     </div>
                     <span className="sector-card-pct">{safePct.toFixed(1)}%</span>
                 </div>
-                <span className="sector-card-points">
-                    {formatNumber(points)} / {formatNumber(pointsMax)}
-                </span>
-                {endTime && <EventCountdown endTime={endTime} />}
+                <div className="sector-card-meta">
+                    <span className="sector-card-points">
+                        {formatNumber(points)} / {formatNumber(pointsMax)}
+                    </span>
+                    {endTime && (
+                        <>
+                            <span className="sector-card-sep">&middot;</span>
+                            <EventCountdown endTime={endTime} />
+                        </>
+                    )}
+                </div>
             </div>
             <div className="sector-card-accent" />
         </div>

@@ -27,7 +27,7 @@ describe('GenerateApiKeyForm', () => {
 
     test('renders form with description input', () => {
         render(<GenerateApiKeyForm userId="user-123" />);
-        expect(screen.getByLabelText(/Description/)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Key Name/)).toBeInTheDocument();
     });
 
     test('shows Generate button', () => {

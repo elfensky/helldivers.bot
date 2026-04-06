@@ -30,7 +30,7 @@
 
 .footer-brand-name {
     font-family: var(--font-display);
-    font-size: 1.25rem;
+    font-size: var(--text-h2);
     font-weight: 900;
     text-transform: uppercase;
     color: var(--color-primary);
@@ -38,13 +38,13 @@
 }
 
 .footer-brand-tagline {
-    font-size: 0.8125rem;
+    font-size: var(--text-small);
     color: var(--color-text);
     max-width: 280px;
 }
 
 .footer-brand-contact {
-    font-size: 0.75rem;
+    font-size: var(--text-small);
     color: var(--color-text);
 }
 
@@ -60,10 +60,10 @@
 /* Section labels — matches stat-card-label pattern */
 .footer-section-label {
     font-family: var(--font-mono, monospace);
-    font-size: 0.5625rem;
+    font-size: var(--text-small);
     color: var(--color-outline);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
     padding-bottom: var(--space-2);
     border-bottom: 1px solid var(--color-ghost);
     margin-bottom: var(--space-3);
@@ -83,7 +83,7 @@
 .footer-link {
     color: var(--color-text);
     text-decoration: none;
-    font-size: 0.8125rem;
+    font-size: var(--text-small);
     transition: color 0.15s ease;
 }
 
@@ -95,7 +95,7 @@
 .footer-link--disabled {
     color: var(--color-text-muted);
     cursor: default;
-    font-size: 0.8125rem;
+    font-size: var(--text-small);
 }
 
 /* Bottom separator bar */
@@ -110,8 +110,8 @@
     flex-wrap: wrap;
     gap: var(--space-3);
     font-family: var(--font-mono, monospace);
-    font-size: 0.5625rem;
+    font-size: var(--text-small);
     color: var(--color-text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
 }

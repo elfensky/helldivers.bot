@@ -27,15 +27,15 @@ export default function SchemaTable({ schema, schemas, depth = 0 }) {
         // Simple type (string, number, etc.) — show inline
         const label = getTypeLabel(resolved);
         if (label === 'any') return null;
-        return <span className="font-mono text-xs text-text-muted">{label}</span>;
+        return <span className="font-mono text-small text-text-muted">{label}</span>;
     }
 
     const required = resolved.required ?? [];
 
     return (
-        <table className="mt-2 w-full text-sm">
+        <table className="mt-2 w-full text-body">
             <thead>
-                <tr className="border-b border-ghost text-left text-xs tracking-wide text-text-muted uppercase">
+                <tr className="border-b border-ghost text-left text-small tracking-wide text-text-muted uppercase">
                     <th className="py-1.5 pr-3 font-semibold">Property</th>
                     <th className="py-1.5 pr-3 font-semibold">Type</th>
                     <th className="py-1.5 pr-3 font-semibold">Required</th>
@@ -53,7 +53,7 @@ export default function SchemaTable({ schema, schemas, depth = 0 }) {
                         <tr key={name} className="border-b border-ghost/50">
                             <td className="py-1.5 pr-3 align-top">
                                 <code
-                                    className="font-mono text-xs text-text"
+                                    className="font-mono text-small text-text"
                                     style={{
                                         paddingLeft: `${depth * 12}px`,
                                     }}
@@ -61,17 +61,17 @@ export default function SchemaTable({ schema, schemas, depth = 0 }) {
                                     {name}
                                 </code>
                             </td>
-                            <td className="py-1.5 pr-3 align-top font-mono text-xs text-text-muted">
+                            <td className="py-1.5 pr-3 align-top font-mono text-small text-text-muted">
                                 {refName ?
                                     <span title={`$ref: ${refName}`}>{refName}</span>
                                 :   getTypeLabel(resolvedProp)}
                             </td>
-                            <td className="py-1.5 pr-3 align-top text-xs">
+                            <td className="py-1.5 pr-3 align-top text-small">
                                 {isRequired ?
                                     <span className="text-primary">yes</span>
                                 :   <span className="text-text-muted">no</span>}
                             </td>
-                            <td className="py-1.5 align-top text-xs text-text-muted">
+                            <td className="py-1.5 align-top text-small text-text-muted">
                                 {resolvedProp?.description ?? ''}
                                 {hasNested && (
                                     <SchemaTable

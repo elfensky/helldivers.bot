@@ -9,6 +9,11 @@ import { performanceTime } from '@/shared/utils/time';
 import { randomUUID, createHash } from 'crypto';
 import { revalidatePath } from 'next/cache';
 
+/**
+ * Retrieve all API keys for the authenticated user.
+ * Auth guard: session must match the requested userId.
+ * @param {string} userId - User ID whose keys to retrieve
+ */
 export async function getApiKeysByUserId(userId) {
     const start = performance.now();
     const session = await auth.api.getSession({ headers: await headers() });
@@ -45,6 +50,12 @@ export async function getApiKeysByUserId(userId) {
     return { ms: performanceTime(start), query: result };
 }
 
+/**
+ * Generate a new API key for the authenticated user. Max 5 keys per user.
+ * Key is SHA-256 hashed before storage; plaintext shown once at creation.
+ * @param {*} _ - Unused (server action signature)
+ * @param {FormData} formData - Must contain userId and description fields
+ */
 export async function generateApiKey(_, formData) {
     const start = performance.now();
 
@@ -62,7 +73,7 @@ export async function generateApiKey(_, formData) {
     };
 
     const schema = z.object({
-        userId: z.string().uuid(),
+        userId: z.string().min(1),
         description: z.string().min(3).max(200),
     });
     const check = schema.safeParse(formValues);
@@ -113,10 +124,15 @@ export async function generateApiKey(_, formData) {
 
     newApiKey['key'] = key;
 
-    revalidatePath('/dashboard', 'page');
+    revalidatePath('/profile', 'layout');
     return { data: newApiKey, time: performanceTime(start) };
 }
 
+/**
+ * Delete an API key owned by the authenticated user.
+ * @param {*} _ - Unused (server action signature)
+ * @param {FormData} formData - Must contain userId and apikeyId fields
+ */
 export async function deleteApiKey(_, formData) {
     const start = performance.now();
 
@@ -134,8 +150,8 @@ export async function deleteApiKey(_, formData) {
     };
 
     const schema = z.object({
-        userId: z.string().uuid(),
-        apikeyId: z.string().uuid(),
+        userId: z.string().min(1),
+        apikeyId: z.string().min(1),
     });
     const check = schema.safeParse(formValues);
     if (!check.success) {
@@ -160,6 +176,6 @@ export async function deleteApiKey(_, formData) {
     );
     if (error) throw error;
 
-    revalidatePath('/dashboard', 'page');
+    revalidatePath('/profile', 'layout');
     return { data: deletedApiKey, time: performanceTime(start) };
 }

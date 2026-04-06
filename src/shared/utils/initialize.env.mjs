@@ -3,7 +3,6 @@ export async function initializeEnvironmentVariables() {
     checkUpdates();
     checkAnalytics();
     checkAuth();
-    checkEmail();
     return true;
 }
 
@@ -44,6 +43,9 @@ function checkAuth() {
     if (!process.env.BETTER_AUTH_SECRET) {
         throw new Error('BETTER_AUTH_SECRET is not set');
     }
+    if (!process.env.BETTER_AUTH_URL) {
+        throw new Error('BETTER_AUTH_URL is not set');
+    }
     //AUTH-DISCORD
     if (!process.env.AUTH_DISCORD_ID) {
         throw new Error('AUTH_DISCORD_ID is not set');
@@ -57,24 +59,5 @@ function checkAuth() {
     }
     if (!process.env.AUTH_GITHUB_SECRET) {
         throw new Error('AUTH_GITHUB_SECRET is not set');
-    }
-}
-
-function checkEmail() {
-    //EMAIL
-    if (!process.env.EMAIL_SERVER_USER) {
-        throw new Error('EMAIL_SERVER_USER is not set');
-    }
-    if (!process.env.EMAIL_SERVER_PASSWORD) {
-        throw new Error('EMAIL_SERVER_PASSWORD is not set');
-    }
-    if (!process.env.EMAIL_SERVER_HOST) {
-        throw new Error('EMAIL_SERVER_HOST is not set');
-    }
-    if (!process.env.EMAIL_SERVER_PORT) {
-        throw new Error('EMAIL_SERVER_PORT is not set');
-    }
-    if (!process.env.EMAIL_FROM) {
-        throw new Error('EMAIL_FROM is not set');
     }
 }

@@ -13,9 +13,6 @@ vi.mock('@/shared/components/Navigation/Navigation', () => ({
     default: () => <nav data-testid="navigation" />,
 }));
 vi.mock('next/script', () => ({ default: () => null }));
-vi.mock('next/link', () => ({
-    default: ({ children, ...props }) => <a {...props}>{children}</a>,
-}));
 
 import Header from '@/shared/components/Header/Header';
 

@@ -8,15 +8,11 @@ const ALL_REQUIRED_ENV_VARS = {
     UMAMI_SITE_ID: 'test-umami-id',
     SENTRY_AUTH_TOKEN: 'test-sentry-token',
     BETTER_AUTH_SECRET: 'test-auth-secret',
+    BETTER_AUTH_URL: 'http://localhost:3000',
     AUTH_DISCORD_ID: 'test-discord-id',
     AUTH_DISCORD_SECRET: 'test-discord-secret',
     AUTH_GITHUB_ID: 'test-github-id',
     AUTH_GITHUB_SECRET: 'test-github-secret',
-    EMAIL_SERVER_USER: 'test@example.com',
-    EMAIL_SERVER_PASSWORD: 'test-password',
-    EMAIL_SERVER_HOST: 'smtp.example.com',
-    EMAIL_SERVER_PORT: '587',
-    EMAIL_FROM: 'noreply@example.com',
 };
 
 describe('initializeEnvironmentVariables', () => {
@@ -42,15 +38,11 @@ describe('initializeEnvironmentVariables', () => {
         'UMAMI_SITE_ID',
         'SENTRY_AUTH_TOKEN',
         'BETTER_AUTH_SECRET',
+        'BETTER_AUTH_URL',
         'AUTH_DISCORD_ID',
         'AUTH_DISCORD_SECRET',
         'AUTH_GITHUB_ID',
         'AUTH_GITHUB_SECRET',
-        'EMAIL_SERVER_USER',
-        'EMAIL_SERVER_PASSWORD',
-        'EMAIL_SERVER_HOST',
-        'EMAIL_SERVER_PORT',
-        'EMAIL_FROM',
     ])('throws when %s is missing', async (envVar) => {
         vi.stubEnv(envVar, '');
         await expect(initializeEnvironmentVariables()).rejects.toThrow(

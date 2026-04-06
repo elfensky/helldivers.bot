@@ -1,6 +1,5 @@
 'use client';
 import './BottomNav.css';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function BottomNav() {
@@ -17,10 +16,9 @@ export default function BottomNav() {
                 const isActive =
                     href === '/' ? pathname === '/' : pathname.startsWith(href);
                 return (
-                    <Link
+                    <a
                         key={href}
                         href={href}
-                        prefetch={false}
                         className={`bottom-nav-tab ${isActive ? 'active' : ''}`}
                     >
                         <span
@@ -29,7 +27,7 @@ export default function BottomNav() {
                             {icon}
                         </span>
                         <span className="bottom-nav-label">{label}</span>
-                    </Link>
+                    </a>
                 );
             })}
         </nav>

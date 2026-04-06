@@ -3,9 +3,6 @@ import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 vi.mock('@/shared/components/Footer/Footer.css', () => ({}));
-vi.mock('next/link', () => ({
-    default: ({ children, ...props }) => <a {...props}>{children}</a>,
-}));
 
 import Footer from '@/shared/components/Footer/Footer';
 

@@ -47,20 +47,17 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
         >
             <div className="flex flex-col gap-1 px-2.5 py-1.5">
                 <div className="flex items-center justify-between">
-                    <span className="font-body text-xs font-bold text-text uppercase">
+                    <span className="font-body text-small font-bold text-text uppercase">
                         {statusText} {event.type} Event
                     </span>
                     {faction && (
                         <img src={faction.icon} alt={faction.name} className="size-5" />
                     )}
                 </div>
-                <span
-                    className="text-[0.6875rem] text-text-muted"
-                    suppressHydrationWarning
-                >
+                <span className="text-small text-text-muted" suppressHydrationWarning>
                     {timeText}
                 </span>
-                <div className="font-mono text-[0.5rem] text-text-muted">
+                <div className="font-mono text-small text-text-muted">
                     {event.points} / {event.points_max} ({percent}%)
                 </div>
             </div>

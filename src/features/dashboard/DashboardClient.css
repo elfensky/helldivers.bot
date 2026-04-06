@@ -89,13 +89,13 @@
         padding: 0.5rem;
         color: var(--color-text-muted);
         font-family: var(--font-mono);
-        font-size: 0.75rem;
+        font-size: var(--text-small);
         opacity: 0.5;
     }
 
     .hint-arrow {
         display: inline-block;
-        font-size: 1rem;
+        font-size: var(--text-body);
         margin-right: 0.25rem;
         margin-top: -3px;
         animation: hint-bob 5s ease-in-out infinite;
