@@ -5,6 +5,7 @@ import './TimelineSection.css';
 import Event from '@/features/timeline/Event';
 import { groupEventsByDay } from '@/features/timeline/groupEventsByDay.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
+import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 
 /**
  * Event log with vertical timeline rail (desktop only).
@@ -12,11 +13,13 @@ import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
  * with proportional vertical positioning (top = most recent, bottom = oldest).
  * Hovering an event card highlights its corresponding rail dot.
  *
- * @param {{ events: Array<{ event_id: number, start_time: number, end_time: number, status: string, type: string, enemy: number, region: number, points: number, points_max: number }> }} props
+ * Reads events from LiveDataContext — updates live as SSE delivers new data.
  */
-export default function TimelineSection({ events }) {
+export default function TimelineSection() {
+    const { data } = useLiveDataContext();
+    const events = data?.events;
     const [hoveredEventId, setHoveredEventId] = useState(null);
-    const groups = groupEventsByDay(events);
+    const groups = groupEventsByDay(events ?? []);
 
     return (
         <section id="event-log" className="timeline-section">

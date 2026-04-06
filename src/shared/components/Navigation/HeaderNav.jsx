@@ -2,6 +2,7 @@
 // Uses <a> instead of next/link to avoid enqueueModel crashes caused
 // by startTransition racing with RSC Flight stream processing.
 import { usePathname } from 'next/navigation';
+import StatusDot from '@/shared/components/StatusDot';
 
 const tabs = [
     { href: '/', label: 'Live', live: true },
@@ -23,7 +24,7 @@ export default function HeaderNav() {
                         href={href}
                         className={`header-nav-link ${isActive ? 'header-nav-link--active' : ''}`}
                     >
-                        {live && <span className="bottom-nav-live">●</span>}
+                        {live && <StatusDot />}
                         {label}
                     </a>
                 );

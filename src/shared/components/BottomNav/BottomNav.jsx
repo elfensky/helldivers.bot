@@ -1,11 +1,12 @@
 'use client';
 import './BottomNav.css';
 import { usePathname } from 'next/navigation';
+import StatusDot from '@/shared/components/StatusDot';
 
 export default function BottomNav() {
     const pathname = usePathname();
     const tabs = [
-        { href: '/', label: 'Live', icon: '●', live: true },
+        { href: '/', label: 'Live', live: true },
         { href: '/archives', label: 'Archives', icon: '◈' },
         { href: '/docs', label: 'Docs', icon: '◇' },
     ];
@@ -21,10 +22,10 @@ export default function BottomNav() {
                         href={href}
                         className={`bottom-nav-tab ${isActive ? 'active' : ''}`}
                     >
-                        <span
-                            className={`bottom-nav-icon${live ? ' bottom-nav-live' : ''}`}
-                        >
-                            {icon}
+                        <span className="bottom-nav-icon">
+                            {live ?
+                                <StatusDot />
+                            :   icon}
                         </span>
                         <span className="bottom-nav-label">{label}</span>
                     </a>

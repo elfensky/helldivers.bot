@@ -2,15 +2,12 @@
 import './DashboardClient.css';
 import { useState } from 'react';
 import Galaxy from '@/features/galaxy/Galaxy';
-import LiveToasts from '@/features/notifications/LiveToasts';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
-import ConnectionStatus from '@/features/dashboard/ConnectionStatus';
 import StatGrid from '@/features/stats/StatGrid';
-import { useLiveData } from '@/shared/hooks/useLiveData.mjs';
+import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
-import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo.mjs';
 import { sortEventsByRecent } from '@/shared/utils/game/eventFilters.mjs';
 import { HOMEWORLD_REGION } from '@/shared/enums/worlds.mjs';
 
@@ -22,15 +19,23 @@ const FACTION_LABELS = {
     illuminate: 'Illuminate',
 };
 
-export default function DashboardClient({ initialData, initialMapState }) {
-    const { data, mapState, status, prevData, isLeader } = useLiveData(
-        initialData,
-        initialMapState,
-    );
+export default function DashboardClient() {
+    const { data, mapState } = useLiveDataContext();
     const [faction, setFaction] = useState('global');
 
+    if (!data) {
+        return (
+            <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
+                <h1>SIGNAL LOST</h1>
+                <p>
+                    Communication with Super Earth High Command has been disrupted. This
+                    is not cause for alarm. Remain calm and await further instructions.
+                </p>
+            </div>
+        );
+    }
+
     const events = sortEventsByRecent(data?.events);
-    const timeAgo = formatTimeAgo(data.last_updated);
 
     function renderFrontierCard(index) {
         const campaignData = data.live?.find((l) => l.enemy === index);
@@ -88,7 +93,6 @@ export default function DashboardClient({ initialData, initialMapState }) {
 
     return (
         <div className="dashboard gutters">
-            <LiveToasts prevData={prevData} data={data} isLeader={isLeader} />
             <div className="dashboard-map">
                 <Galaxy mapState={mapState} />
             </div>
@@ -103,10 +107,6 @@ export default function DashboardClient({ initialData, initialMapState }) {
                         Cyborgs, and Illuminate for peace, liberty, and managed democracy.
                     </p>
                     <div className="mt-2 flex items-center gap-3">
-                        <ConnectionStatus
-                            status={status}
-                            timeAgo={status === 'live' ? null : timeAgo}
-                        />
                         <NotificationToggle />
                     </div>
                 </div>

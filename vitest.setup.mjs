@@ -97,6 +97,26 @@ vi.mock('@/db/db', () => ({
 
 // #endregion
 
+// #region Live Data Mocks
+
+/**
+ * Mock LiveDataContext — provides default live data for component tests.
+ * Override in tests:
+ *   vi.mocked(useLiveDataContext).mockReturnValue({ status: 'offline', ... })
+ */
+vi.mock('@/shared/providers/LiveDataContext.mjs', () => ({
+    LiveDataContext: React.createContext(null),
+    useLiveDataContext: vi.fn(() => ({
+        data: null,
+        mapState: null,
+        status: 'live',
+        prevData: null,
+        isLeader: false,
+    })),
+}));
+
+// #endregion
+
 // #region Next.js Mocks
 
 /**
