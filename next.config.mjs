@@ -1,8 +1,32 @@
+import { execSync } from 'node:child_process';
 import { withSentryConfig } from '@sentry/nextjs';
 import createMDX from '@next/mdx';
 
+const APP_VERSION = process.env.npm_package_version || '0.0.0';
+const COMMIT_SHA = (() => {
+    try {
+        return execSync('git rev-parse --short HEAD').toString().trim();
+    } catch {
+        return 'unknown';
+    }
+})();
+const COMMIT_MESSAGE = (() => {
+    try {
+        return execSync('git log -1 --format=%s').toString().trim();
+    } catch {
+        return '';
+    }
+})();
+
+console.log(`[helldivers.bot] v${APP_VERSION} (${COMMIT_SHA}) ${COMMIT_MESSAGE}`);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    env: {
+        NEXT_PUBLIC_APP_VERSION: APP_VERSION,
+        NEXT_PUBLIC_COMMIT_SHA: COMMIT_SHA,
+        NEXT_PUBLIC_COMMIT_MESSAGE: COMMIT_MESSAGE,
+    },
     pageExtensions: ['js', 'jsx', 'mdx'],
     reactCompiler: true,
     output: 'standalone',

@@ -125,7 +125,16 @@ export default function Footer() {
             </div>
 
             <div className="footer-separator p-gutters">
-                <span>Ministry of Truth</span>
+                <div className="flex flex-col gap-1">
+                    <span>Ministry of Truth</span>
+                    <span className="text-[0.625rem] normal-case tracking-normal opacity-50">
+                        v{process.env.NEXT_PUBLIC_APP_VERSION} &ndash;{' '}
+                        {process.env.NEXT_PUBLIC_COMMIT_SHA}
+                    </span>
+                    <span className="text-[0.625rem] normal-case tracking-normal opacity-50">
+                        {process.env.NEXT_PUBLIC_COMMIT_MESSAGE}
+                    </span>
+                </div>
                 <span>
                     Not affiliated with Arrowhead Game Studios or Sony Interactive
                     Entertainment
