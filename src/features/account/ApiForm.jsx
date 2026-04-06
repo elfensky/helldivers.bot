@@ -29,7 +29,10 @@ export function GenerateApiKeyForm({ userId }) {
                     <label htmlFor="description">
                         Key Name
                         {state?.errors?.description ?
-                            <span id="description-error" className="ml-2 text-body text-danger">
+                            <span
+                                id="description-error"
+                                className="ml-2 text-body text-danger"
+                            >
                                 {state.errors.description}
                             </span>
                         :   null}

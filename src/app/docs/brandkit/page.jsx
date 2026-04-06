@@ -277,7 +277,11 @@ function Components() {
             </h2>
 
             <div className="mb-4 flex flex-wrap gap-2">
-                <button className={`${btn} border border-primary text-primary hover:bg-primary hover:text-surface-0`}>Deploy</button>
+                <button
+                    className={`${btn} border border-primary text-primary hover:bg-primary hover:text-surface-0`}
+                >
+                    Deploy
+                </button>
                 <button
                     className={`${btn} border border-primary bg-transparent text-primary`}
                 >

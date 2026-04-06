@@ -94,10 +94,10 @@ export default function DashboardClient({ initialData, initialMapState }) {
             </div>
             <div className="dashboard-sidebar">
                 <div className="pb-2">
-                    <h1 className="font-display text-sm text-primary">
+                    <h1 className="font-display text-body text-primary">
                         Track Managed Democracy Across the Galaxy
                     </h1>
-                    <p className="mt-1 text-xs text-text-muted">
+                    <p className="mt-1 text-small text-text-muted">
                         Don&apos;t miss a moment of the action! Follow the
                         Helldivers&apos; campaign progress as they battle the Bugs,
                         Cyborgs, and Illuminate for peace, liberty, and managed democracy.

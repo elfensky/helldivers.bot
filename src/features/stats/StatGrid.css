@@ -35,7 +35,7 @@
 
 .stat-card-label {
     font-family: var(--font-mono, monospace);
-    font-size: var(--fs-small);
+    font-size: var(--text-small);
     color: var(--color-outline);
     text-transform: uppercase;
     letter-spacing: 0.02em;
@@ -46,7 +46,7 @@
 
 .stat-card-value {
     font-family: var(--font-display);
-    font-size: 1.25rem;
+    font-size: var(--text-h2);
     font-weight: 900;
     color: var(--color-primary);
     line-height: 1;

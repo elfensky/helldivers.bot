@@ -40,7 +40,7 @@
 
 .sector-card-label {
     font-family: var(--font-mono, monospace);
-    font-size: var(--fs-small);
+    font-size: var(--text-small);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.02em;
@@ -48,7 +48,7 @@
 
 .sector-card-region {
     font-family: var(--font-mono, monospace);
-    font-size: var(--fs-h6);
+    font-size: var(--text-h3);
     color: var(--color-text);
 }
 
@@ -72,7 +72,7 @@
 
 .sector-card-pct {
     font-family: var(--font-mono, monospace);
-    font-size: var(--fs-small);
+    font-size: var(--text-small);
     color: var(--color-text-muted);
 }
 
@@ -84,29 +84,29 @@
 
 .sector-card-points {
     font-family: var(--font-mono, monospace);
-    font-size: var(--fs-small);
+    font-size: var(--text-small);
     color: var(--color-text-muted);
 }
 
 .sector-card-sep {
     color: var(--color-text-muted);
-    font-size: var(--fs-small);
+    font-size: var(--text-small);
 }
 
 .sector-card-pace {
     font-family: var(--font-mono, monospace);
-    font-size: var(--fs-small);
+    font-size: var(--text-small);
     font-weight: 600;
 }
 
 .sector-card-countdown {
     font-family: var(--font-mono, monospace);
-    font-size: var(--fs-small);
+    font-size: var(--text-small);
     color: var(--color-text-muted);
 }
 
 .sector-card-alert {
-    font-size: var(--fs-small);
+    font-size: var(--text-small);
     color: var(--color-danger);
     animation: alert-flash 1.5s ease-in-out infinite;
 }

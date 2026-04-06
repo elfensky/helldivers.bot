@@ -16,15 +16,15 @@ export default function ApiReferencePage() {
 
     return (
         <>
-            <h1 className="font-display text-3xl text-primary">API Reference</h1>
+            <h1 className="font-display text-primary">API Reference</h1>
             <p className="mt-2 mb-6 leading-[1.7] text-text-muted">
                 Endpoint reference for the Helldivers Bot API. All responses follow a
                 standard envelope with{' '}
-                <code className="font-mono text-xs text-text">time</code>,{' '}
-                <code className="font-mono text-xs text-text">code</code>,{' '}
-                <code className="font-mono text-xs text-text">message</code>, and{' '}
-                <code className="font-mono text-xs text-text">data</code> /{' '}
-                <code className="font-mono text-xs text-text">error</code> fields.
+                <code className="font-mono text-small text-text">time</code>,{' '}
+                <code className="font-mono text-small text-text">code</code>,{' '}
+                <code className="font-mono text-small text-text">message</code>, and{' '}
+                <code className="font-mono text-small text-text">data</code> /{' '}
+                <code className="font-mono text-small text-text">error</code> fields.
             </p>
             <div className="flex flex-col gap-3">
                 {paths.map(([path, methods]) => (

@@ -55,7 +55,7 @@ export default function AccountActions({ user, avatarUrl, providers }) {
                             {providers.map((p, i) => (
                                 <span key={p}>
                                     {i > 0 && ' · '}
-                                    <span className="capitalize text-text">{p}</span>
+                                    <span className="text-text capitalize">{p}</span>
                                 </span>
                             ))}
                         </p>
@@ -74,8 +74,8 @@ export default function AccountActions({ user, avatarUrl, providers }) {
 
                     <div className="border-t border-ghost pt-3">
                         <p className="text-body text-text-muted">
-                            Permanently delete your account and all associated data.
-                            This cannot be undone.
+                            Permanently delete your account and all associated data. This
+                            cannot be undone.
                         </p>
                         {deleteState?.errors?.confirmEmail && (
                             <span role="alert" className="text-body text-danger">

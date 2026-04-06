@@ -1,6 +1,5 @@
 //next
 import Image from 'next/image';
-import Link from 'next/link';
 import Script from 'next/script';
 import { headers } from 'next/headers';
 //components
@@ -29,12 +28,11 @@ export default async function Header() {
 
 function Logo() {
     return (
-        <Link
+        <a
             href="/"
-            prefetch={false}
             data-umami-event={'header-home'}
             aria-label="Go to homepage"
-            className="z-50 flex flex-row items-center justify-center gap-2 text-[clamp(1.1rem,0.9rem+1vw,1.5rem)] font-bold"
+            className="z-50 flex flex-row items-center justify-center gap-2 text-h2 font-bold"
         >
             <figure className="relative m-0 flex flex-row items-center gap-2">
                 <Image
@@ -47,6 +45,6 @@ function Logo() {
                 />
                 <figcaption className="whitespace-nowrap">Helldivers Bot</figcaption>
             </figure>
-        </Link>
+        </a>
     );
 }

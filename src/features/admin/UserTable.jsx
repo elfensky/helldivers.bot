@@ -31,9 +31,9 @@ export default function UserTable({ users, adminCount, currentUserId }) {
             <h2>User Management</h2>
             <div className="grid grid-cols-[minmax(0,1fr)_4px] border border-ghost bg-surface-1">
                 <div className="overflow-x-auto p-3">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-body">
                         <thead>
-                            <tr className="text-left text-xs font-mono text-text-muted uppercase">
+                            <tr className="text-left font-mono text-small text-text-muted uppercase">
                                 <th className="pb-2">User</th>
                                 <th className="pb-2">Email</th>
                                 <th className="pb-2">Role</th>
@@ -60,7 +60,7 @@ export default function UserTable({ users, adminCount, currentUserId }) {
 
             {selectedUser && keys && (
                 <div className="flex flex-col gap-2">
-                    <h3 className="text-sm text-text-muted">
+                    <h3 className="text-body text-text-muted">
                         API Keys for {selectedUser.name ?? 'Anonymous'}
                     </h3>
                     <KeysList keys={keys} />
@@ -108,13 +108,12 @@ function UserRow({ user, isSelected, onShowKeys, adminCount, currentUserId }) {
                         onChange={(e) => e.target.form.requestSubmit()}
                         disabled={roleDisabled}
                         title={
-                            isSelf
-                                ? 'Cannot change your own role'
-                                : isLastAdmin
-                                  ? 'Cannot demote the last admin'
-                                  : undefined
+                            isSelf ? 'Cannot change your own role'
+                            : isLastAdmin ?
+                                'Cannot demote the last admin'
+                            :   undefined
                         }
-                        className={`bg-surface-2 px-2 py-0.5 text-xs ${roleDisabled ? 'text-text-muted cursor-not-allowed' : 'text-text'}`}
+                        className={`bg-surface-2 px-2 py-0.5 text-small ${roleDisabled ? 'cursor-not-allowed text-text-muted' : 'text-text'}`}
                     >
                         <option value="user">user</option>
                         <option value="admin">admin</option>
@@ -125,10 +124,10 @@ function UserRow({ user, isSelected, onShowKeys, adminCount, currentUserId }) {
                 <button
                     type="button"
                     onClick={onShowKeys}
-                    className={`cursor-pointer border px-2 py-0.5 text-xs ${
-                        isSelected
-                            ? 'border-primary text-primary'
-                            : 'border-ghost text-text-muted hover:text-text'
+                    className={`cursor-pointer border px-2 py-0.5 text-small ${
+                        isSelected ?
+                            'border-primary text-primary'
+                        :   'border-ghost text-text-muted hover:text-text'
                     }`}
                 >
                     {isSelected ? 'Hide' : `Keys (${user._count.apiKeys})`}
@@ -147,10 +146,10 @@ function UserRow({ user, isSelected, onShowKeys, adminCount, currentUserId }) {
                             type="submit"
                             disabled={banDisabled}
                             title={isLastAdmin ? 'Cannot ban the last admin' : undefined}
-                            className={`cursor-pointer border px-2 py-0.5 text-xs disabled:cursor-not-allowed disabled:opacity-50 ${
-                                isBanned
-                                    ? 'border-green-400 text-green-400'
-                                    : 'border-danger text-danger'
+                            className={`cursor-pointer border px-2 py-0.5 text-small disabled:cursor-not-allowed disabled:opacity-50 ${
+                                isBanned ?
+                                    'border-green-400 text-green-400'
+                                :   'border-danger text-danger'
                             }`}
                         >
                             {isBanned ? 'Unban' : 'Ban'}
@@ -169,7 +168,7 @@ function KeysList({ keys }) {
     );
 
     if (keys.length === 0) {
-        return <p className="text-xs text-text-muted">No API keys</p>;
+        return <p className="text-small text-text-muted">No API keys</p>;
     }
 
     return (
@@ -178,10 +177,11 @@ function KeysList({ keys }) {
                 {keys.map((key) => (
                     <div
                         key={key.id}
-                        className="flex items-center justify-between text-xs"
+                        className="flex items-center justify-between text-small"
                     >
                         <span className="text-text-muted">
-                            {key.description} · <span className="font-mono">****{key.visible}</span> ·{' '}
+                            {key.description} ·{' '}
+                            <span className="font-mono">****{key.visible}</span> ·{' '}
                             {timeSince(key.createdAt)} ·{' '}
                             {key.enabled ? 'Enabled' : 'Disabled'}
                         </span>

@@ -1,6 +1,5 @@
 import './Footer.css';
 import Image from 'next/image';
-import Link from 'next/link';
 
 export default function Footer() {
     const year = new Date().getFullYear();
@@ -45,23 +44,19 @@ export default function Footer() {
                     <div className="footer-section-label">Features</div>
                     <ul className="footer-links">
                         <li>
-                            <Link href="/" prefetch={false} className="footer-link">
+                            <a href="/" className="footer-link">
                                 Campaign
-                            </Link>
+                            </a>
                         </li>
                         <li>
-                            <Link
-                                href="/archives"
-                                prefetch={false}
-                                className="footer-link"
-                            >
+                            <a href="/archives" className="footer-link">
                                 Archives
-                            </Link>
+                            </a>
                         </li>
                         <li>
-                            <Link href="/docs" prefetch={false} className="footer-link">
+                            <a href="/docs" className="footer-link">
                                 Docs
-                            </Link>
+                            </a>
                         </li>
                     </ul>
                 </nav>

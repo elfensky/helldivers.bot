@@ -8,7 +8,7 @@ export default async function SystemOverview() {
     const result = await getSystemStats();
 
     if (result.errors) {
-        return <div className="text-sm text-danger">Failed to load system stats.</div>;
+        return <div className="text-body text-danger">Failed to load system stats.</div>;
     }
 
     const {
@@ -36,11 +36,10 @@ export default async function SystemOverview() {
                     label="Worker Status"
                     value={workerHealth.label}
                     accentColor={
-                        workerHealth.status === 'healthy'
-                            ? 'bg-green-400'
-                            : workerHealth.status === 'degraded'
-                              ? 'bg-yellow-400'
-                              : 'bg-danger'
+                        workerHealth.status === 'healthy' ? 'bg-green-400'
+                        : workerHealth.status === 'degraded' ?
+                            'bg-yellow-400'
+                        :   'bg-danger'
                     }
                 />
                 <StatCard
@@ -50,9 +49,9 @@ export default async function SystemOverview() {
                 <StatCard
                     label="Poll Duration"
                     value={
-                        heartbeat?.poll_duration_ms != null
-                            ? `${heartbeat.poll_duration_ms}ms`
-                            : '—'
+                        heartbeat?.poll_duration_ms != null ?
+                            `${heartbeat.poll_duration_ms}ms`
+                        :   '—'
                     }
                 />
                 <StatCard
@@ -62,8 +61,8 @@ export default async function SystemOverview() {
             </div>
 
             {heartbeat?.last_error && (
-                <div className="border border-danger bg-surface-1 p-3 text-sm text-danger">
-                    <span className="font-mono text-xs uppercase text-text-muted">
+                <div className="border border-danger bg-surface-1 p-3 text-body text-danger">
+                    <span className="font-mono text-small text-text-muted uppercase">
                         Last Error:{' '}
                     </span>
                     {heartbeat.last_error}
@@ -95,8 +94,8 @@ function StatCard({ label, value, accentColor = 'bg-primary' }) {
     return (
         <div className="grid grid-cols-[minmax(0,1fr)_4px] border border-ghost bg-surface-1">
             <div className="p-3">
-                <p className="font-mono text-xs uppercase text-text-muted">{label}</p>
-                <p className="font-display text-2xl font-black leading-none text-primary uppercase">
+                <p className="font-mono text-small text-text-muted uppercase">{label}</p>
+                <p className="font-display text-h1 leading-none font-black text-primary uppercase">
                     {value}
                 </p>
             </div>

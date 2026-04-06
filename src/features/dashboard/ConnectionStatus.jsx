@@ -13,7 +13,7 @@ export default function ConnectionStatus({ status, timeAgo }) {
 
     return (
         <span
-            className="inline-flex items-center gap-1.5 font-mono text-xs text-[var(--color-text-muted)]"
+            className="inline-flex items-center gap-1.5 font-mono text-small text-[var(--color-text-muted)]"
             suppressHydrationWarning
         >
             <span
