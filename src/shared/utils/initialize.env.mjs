@@ -33,6 +33,9 @@ function checkAnalytics() {
     if (!process.env.UMAMI_SITE_ID) {
         throw new Error('UMAMI_SITE_ID is not set');
     }
+    if (!process.env.SENTRY_AUTH_TOKEN) {
+        throw new Error('SENTRY_AUTH_TOKEN is not set');
+    }
 }
 
 function checkAuth() {

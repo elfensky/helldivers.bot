@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import createMDX from '@next/mdx';
 
 /** @type {import('next').NextConfig} */
@@ -129,4 +130,12 @@ const withMDX = createMDX({
     },
 });
 
-export default withMDX(nextConfig);
+export default withSentryConfig(withMDX(nextConfig), {
+    silent: true,
+    url: process.env.SENTRY_URL,
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    release: {
+        create: false,
+    },
+});
