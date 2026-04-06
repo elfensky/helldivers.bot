@@ -1,5 +1,6 @@
 'use client';
 import './BottomNav.css';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import StatusDot from '@/shared/components/StatusDot';
 
@@ -17,9 +18,10 @@ export default function BottomNav() {
                 const isActive =
                     href === '/' ? pathname === '/' : pathname.startsWith(href);
                 return (
-                    <a
+                    <Link
                         key={href}
                         href={href}
+                        prefetch={false}
                         className={`bottom-nav-tab ${isActive ? 'active' : ''}`}
                     >
                         <span className="bottom-nav-icon">
@@ -28,7 +30,7 @@ export default function BottomNav() {
                             :   icon}
                         </span>
                         <span className="bottom-nav-label">{label}</span>
-                    </a>
+                    </Link>
                 );
             })}
         </nav>

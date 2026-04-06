@@ -3,6 +3,7 @@ import './Navigation.css';
 import { auth } from '@/auth';
 //next
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import Image from 'next/image';
 //
 import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
@@ -16,8 +17,9 @@ export default async function Navigation() {
         <nav className="z-50 flex items-center gap-3">
             {/* External links */}
             <div className="hidden items-center gap-3 min-[250px]:flex">
-                <a
+                <Link
                     href="https://status.helldivers.bot"
+                    prefetch={false}
                     data-umami-event="header-status"
                     title="Status"
                     aria-label="Status"
@@ -39,9 +41,10 @@ export default async function Navigation() {
                             strokeLinejoin="round"
                         />
                     </svg>
-                </a>
-                <a
+                </Link>
+                <Link
                     href="https://github.com/elfensky/helldivers1api"
+                    prefetch={false}
                     data-umami-event="header-github"
                     aria-label="GitHub"
                     className="flex items-center opacity-70 transition-[opacity,transform] hover:opacity-100 active:scale-95"
@@ -60,7 +63,7 @@ export default async function Navigation() {
                             fill="#fff"
                         />
                     </svg>
-                </a>
+                </Link>
             </div>
             <span className="header-nav-divider hidden md:block" />
 
@@ -90,8 +93,9 @@ async function User({ session }) {
 
     return (
         <>
-            <a
+            <Link
                 href="/profile"
+                prefetch={false}
                 data-umami-event="header-profile"
                 className="flex items-center opacity-70 transition-[opacity,transform] hover:opacity-100 active:scale-95"
             >
@@ -103,7 +107,7 @@ async function User({ session }) {
                     height={24}
                     priority={true}
                 />
-            </a>
+            </Link>
             <SignOut />
         </>
     );

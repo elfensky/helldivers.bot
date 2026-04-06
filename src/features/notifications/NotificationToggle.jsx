@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -80,13 +81,14 @@ export default function NotificationToggle() {
         const label =
             state === 'denied' ? 'Notifications blocked' : 'Notifications unavailable';
         return (
-            <a
+            <Link
                 href="/docs/faq"
+                prefetch={false}
                 className="font-mono text-small text-[var(--color-text-muted)] opacity-50 hover:opacity-80"
                 title="How to enable notifications"
             >
                 {label}
-            </a>
+            </Link>
         );
     }
 
