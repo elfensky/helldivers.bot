@@ -66,14 +66,18 @@ describe('computeWorkerHealth', () => {
         expect(computeWorkerHealth(null).color).toBe('danger');
 
         const healthy = {
-            last_beat: new Date(), last_error: null,
-            started_at: new Date(), poll_duration_ms: 10,
+            last_beat: new Date(),
+            last_error: null,
+            started_at: new Date(),
+            poll_duration_ms: 10,
         };
         expect(computeWorkerHealth(healthy).color).toBe('green-400');
 
         const degraded = {
-            last_beat: new Date(), last_error: 'err',
-            started_at: new Date(), poll_duration_ms: 10,
+            last_beat: new Date(),
+            last_error: 'err',
+            started_at: new Date(),
+            poll_duration_ms: 10,
         };
         expect(computeWorkerHealth(degraded).color).toBe('yellow-400');
     });

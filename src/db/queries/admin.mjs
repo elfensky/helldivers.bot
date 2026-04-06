@@ -235,9 +235,9 @@ export async function getSystemStats() {
     const { data: results, error } = await tryCatch(
         Promise.all([
             db.worker_heartbeat.findUnique({ where: { worker_type: 'cron_api_poller' } }),
-            currentSeason
-                ? db.h1_live.count({ where: { status: 'active', season: currentSeason } })
-                : Promise.resolve(0),
+            currentSeason ?
+                db.h1_live.count({ where: { status: 'active', season: currentSeason } })
+            :   Promise.resolve(0),
             db.h1_event.count(),
             db.h1_season.count(),
             db.user.count(),
@@ -247,7 +247,15 @@ export async function getSystemStats() {
     );
     if (error) throw error;
 
-    const [heartbeat, activeFactions, totalEvents, seasonsStored, totalUsers, totalApiKeys, pushSubscribers] = results;
+    const [
+        heartbeat,
+        activeFactions,
+        totalEvents,
+        seasonsStored,
+        totalUsers,
+        totalApiKeys,
+        pushSubscribers,
+    ] = results;
 
     return {
         data: {

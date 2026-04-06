@@ -235,19 +235,11 @@ function subscribe(listener) {
  * @returns {{ data: Object, mapState: Object, status: string, prevData: Object, isLeader: boolean }}
  */
 export function useLiveData(initialData, initialMapState) {
-    const snapshot = useSyncExternalStore(
-        subscribe,
-        getSnapshot,
-        getServerSnapshot,
-    );
+    const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
     return {
         data: snapshot.data ?? initialData ?? cachedState?.data ?? null,
-        mapState:
-            snapshot.mapState ??
-            initialMapState ??
-            cachedState?.mapState ??
-            null,
+        mapState: snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
         status: snapshot.status,
         prevData: snapshot.prevData,
         isLeader: snapshot.isLeader,

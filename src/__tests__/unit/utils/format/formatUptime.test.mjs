@@ -17,7 +17,9 @@ describe('formatUptime', () => {
     });
 
     test('returns days and hours', () => {
-        const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 - 14 * 60 * 60 * 1000);
+        const threeDaysAgo = new Date(
+            Date.now() - 3 * 24 * 60 * 60 * 1000 - 14 * 60 * 60 * 1000,
+        );
         expect(formatUptime(threeDaysAgo)).toBe('3d 14h');
     });
 

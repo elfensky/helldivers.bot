@@ -325,15 +325,19 @@ describe('getSystemStats', () => {
         expect(result.data.workerHealth.status).toBe('down');
 
         vi.mocked(db.worker_heartbeat.findUnique).mockResolvedValue({
-            last_beat: new Date(), last_error: 'timeout',
-            started_at: new Date(), poll_duration_ms: 100,
+            last_beat: new Date(),
+            last_error: 'timeout',
+            started_at: new Date(),
+            poll_duration_ms: 100,
         });
         result = await getSystemStats();
         expect(result.data.workerHealth.status).toBe('degraded');
 
         vi.mocked(db.worker_heartbeat.findUnique).mockResolvedValue({
-            last_beat: new Date(), last_error: null,
-            started_at: new Date(), poll_duration_ms: 50,
+            last_beat: new Date(),
+            last_error: null,
+            started_at: new Date(),
+            poll_duration_ms: 50,
         });
         result = await getSystemStats();
         expect(result.data.workerHealth.status).toBe('healthy');

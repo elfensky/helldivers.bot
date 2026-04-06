@@ -69,9 +69,7 @@ export default function LiveToasts({ prevData, data, isLeader }) {
     useEffect(() => {
         if (hasRendered.current) return;
 
-        const activeEvents = data?.events?.filter(
-            (e) => e.status === 'active',
-        );
+        const activeEvents = data?.events?.filter((e) => e.status === 'active');
         if (!activeEvents?.length) {
             hasRendered.current = true;
             return;

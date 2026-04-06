@@ -37,10 +37,7 @@ export default function ServiceWorkerRegister() {
             deadlineRef.current = Date.now() + AUTO_RELOAD_MS;
 
             showUpdateToast();
-            toastIntervalRef.current = setInterval(
-                showUpdateToast,
-                TOAST_RESHOW_MS,
-            );
+            toastIntervalRef.current = setInterval(showUpdateToast, TOAST_RESHOW_MS);
 
             autoReloadTimerRef.current = setTimeout(() => {
                 triggerUpdate();
@@ -112,10 +109,8 @@ export default function ServiceWorkerRegister() {
                 'controllerchange',
                 onControllerChange,
             );
-            if (toastIntervalRef.current)
-                clearInterval(toastIntervalRef.current);
-            if (autoReloadTimerRef.current)
-                clearTimeout(autoReloadTimerRef.current);
+            if (toastIntervalRef.current) clearInterval(toastIntervalRef.current);
+            if (autoReloadTimerRef.current) clearTimeout(autoReloadTimerRef.current);
             toast.dismiss('sw-update');
         };
     }, []);
