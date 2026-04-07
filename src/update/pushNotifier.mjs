@@ -29,10 +29,15 @@ export function buildPayload(change) {
         event_lost: `${faction} ${change.event.type} event lost`,
     };
 
+    const eventId = change.event.event_id;
+    const tag = eventId != null ? `event-${eventId}` : undefined;
+
     return JSON.stringify({
         title: titles[change.kind] || 'Campaign Update',
         body: `Season ${change.event.season || ''}`,
-        icon: factions[change.event.enemy]?.icon || '/icon.svg',
+        icon: factions[change.event.enemy]?.icon || '/icons/superearth.webp',
+        badge: '/favicons/favicon-96x96.png',
+        ...(tag && { tag, renotify: true }),
     });
 }
 

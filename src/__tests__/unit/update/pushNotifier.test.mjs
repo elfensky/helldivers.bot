@@ -63,4 +63,29 @@ describe('buildPayload', () => {
         const payload = JSON.parse(buildPayload(unknownFaction));
         expect(payload.icon).toBe('/icons/superearth.webp');
     });
+
+    test('includes badge as favicon PNG', () => {
+        const payload = JSON.parse(buildPayload(bugAttackStarted));
+        expect(payload.badge).toBe('/favicons/favicon-96x96.png');
+    });
+
+    test('includes tag based on event_id', () => {
+        const payload = JSON.parse(buildPayload(bugAttackStarted));
+        expect(payload.tag).toBe('event-58291');
+    });
+
+    test('sets renotify to true', () => {
+        const payload = JSON.parse(buildPayload(bugAttackStarted));
+        expect(payload.renotify).toBe(true);
+    });
+
+    test('omits tag when event_id is missing', () => {
+        const noEventId = {
+            kind: 'event_started',
+            event: { enemy: 0, type: 'attack', season: 1 },
+        };
+        const payload = JSON.parse(buildPayload(noEventId));
+        expect(payload.tag).toBeUndefined();
+        expect(payload.renotify).toBeUndefined();
+    });
 });
