@@ -182,10 +182,10 @@ describe('EndpointCard', () => {
     test('renders SSE description for text/event-stream responses', () => {
         render(
             <EndpointCard
-                path="/api/h1/stream"
+                path="/api/example/stream"
                 methods={{
                     get: {
-                        summary: 'SSE stream',
+                        summary: 'Example SSE stream',
                         responses: {
                             200: {
                                 description: 'Stream opened',

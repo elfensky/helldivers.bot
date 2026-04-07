@@ -5,24 +5,14 @@
 export const notificationFlowConfig = {
     views: [
         { key: 'all', label: 'All Flows' },
-        { key: 'sse', label: 'SSE Live Data' },
+        { key: 'polling', label: 'Live Polling' },
         { key: 'toast', label: 'Toast Notifications' },
         { key: 'push', label: 'Push Notifications' },
     ],
 
     flows: {
-        sse: ['worker', 'update', 'notify', 'manager', 'stream', 'hook'],
-        toast: [
-            'worker',
-            'update',
-            'notify',
-            'manager',
-            'stream',
-            'hook',
-            'detect',
-            'toast',
-            'webnoti',
-        ],
+        polling: ['worker', 'update', 'live', 'hook'],
+        toast: ['worker', 'update', 'live', 'hook', 'detect', 'toast', 'webnoti'],
         push: ['worker', 'update', 'pushcheck', 'pushapi', 'sw'],
     },
 
@@ -36,7 +26,7 @@ export const notificationFlowConfig = {
 
     title: 'Notification Flow Diagram',
     description:
-        'Interactive diagram showing how notifications flow from the worker thread through SSE, toast, web notifications, and push notifications',
+        'Interactive diagram showing how notifications flow from the worker thread through polling, toast, web notifications, and push notifications',
 
     details: {
         worker: {
@@ -46,7 +36,7 @@ export const notificationFlowConfig = {
                 {
                     type: 'text',
                     content:
-                        'Dedicated Worker Thread that polls the official Helldivers 1 API every 10-15 seconds. Calls POST /api/h1/update via HTTP to the main Next.js process.',
+                        'Dedicated Worker Thread that polls the official Helldivers 1 API every ~20 seconds. Calls POST /api/h1/update via HTTP to the main Next.js process.',
                 },
                 {
                     type: 'table',
@@ -66,71 +56,32 @@ export const notificationFlowConfig = {
                 {
                     type: 'text',
                     content:
-                        'API route that runs updateStatus() and updateSeason(). After successful DB writes, fires pg NOTIFY and triggers push notification check (fire-and-forget).',
+                        'API route that runs updateStatus() and updateSeason(). After successful DB writes, triggers push notification check (fire-and-forget). Clients poll for fresh data independently.',
                 },
                 { type: 'heading', content: 'Sequence' },
                 {
                     type: 'text',
                     content:
-                        '1. Validate bearer token\n2. updateStatus() \u2192 DB writes\n3. updateSeason() \u2192 snapshot sync\n4. pg NOTIFY campaign_update\n5. checkAndNotify() (async, non-blocking)',
+                        '1. Validate bearer token\n2. updateStatus() \u2192 DB writes\n3. updateSeason() \u2192 snapshot sync\n4. checkAndNotify() (async, non-blocking)',
                 },
             ],
         },
-        notify: {
-            title: 'pg NOTIFY',
-            subtitle: 'src/update/notifyClient.mjs',
+        live: {
+            title: 'Live Endpoint',
+            subtitle: 'src/app/api/h1/live/route.js',
             sections: [
                 {
                     type: 'text',
                     content:
-                        "Dedicated pg.Client (not Prisma) that fires NOTIFY campaign_update after each successful update cycle. This is how the update route tells the SSE manager that fresh data is available.",
-                },
-                {
-                    type: 'text',
-                    content:
-                        "NOTIFY is a Postgres feature for inter-process messaging. It's lightweight (single SQL statement, <1ms) and doesn't go through Prisma since Prisma doesn't support LISTEN/NOTIFY.",
-                },
-            ],
-        },
-        manager: {
-            title: 'SSE Manager',
-            subtitle: 'src/shared/utils/sse/sseManager.mjs',
-            sections: [
-                {
-                    type: 'text',
-                    content:
-                        'Singleton that holds a persistent LISTEN connection and manages all SSE client connections. On each NOTIFY, queries getCampaign() once, caches the result, and broadcasts to all connected clients.',
-                },
-                { type: 'heading', content: 'Features' },
-                {
-                    type: 'table',
-                    headers: ['Feature', 'Detail'],
-                    rows: [
-                        ['Heartbeat', ':keepalive every 15s'],
-                        ['Dedup', 'Skip re-query within 1s window'],
-                        ['Limits', '5 per IP, 500 total'],
-                        ['Reconnect', 'Exponential backoff 1s\u219230s'],
-                        ['Shutdown', 'SIGTERM closes all connections'],
-                    ],
-                },
-            ],
-        },
-        stream: {
-            title: 'SSE Endpoint',
-            subtitle: 'src/app/api/h1/stream/route.js',
-            sections: [
-                {
-                    type: 'text',
-                    content:
-                        'Next.js Route Handler returning a ReadableStream with Content-Type: text/event-stream. No authentication required \u2014 serves the same public data as the homepage.',
+                        'Lightweight GET endpoint that returns current campaign data and computed map state. Called by the useLiveData hook every 10 seconds. No authentication required.',
                 },
                 {
                     type: 'table',
-                    headers: ['Header', 'Value'],
+                    headers: ['Property', 'Value'],
                     rows: [
-                        ['Content-Type', 'text/event-stream'],
-                        ['Cache-Control', 'no-cache, no-store'],
-                        ['X-Accel-Buffering', 'no (nginx)'],
+                        ['Response', '{ data, mapState } JSON'],
+                        ['Cache-Control', 'no-store'],
+                        ['Bigint handling', 'JSON.stringify replacer'],
                     ],
                 },
             ],
@@ -142,19 +93,25 @@ export const notificationFlowConfig = {
                 {
                     type: 'text',
                     content:
-                        'Client hook that connects to the SSE stream via EventSource. Returns live data, map state, connection status, and previous data for change detection.',
+                        'Client hook that polls /api/h1/live every 10 seconds via setInterval + fetch. Module-level singleton shared across all hook instances. Returns live data, map state, connection status, and previous data for change detection.',
                 },
                 { type: 'heading', content: 'First-Message Baseline' },
                 {
                     type: 'text',
                     content:
-                        'The first SSE message is treated as a silent state reset \u2014 no prevData is set. This prevents false toasts when the SSR snapshot is stale.',
+                        'The first successful poll is treated as a silent state reset \u2014 no prevData is set. This prevents false toasts when the SSR snapshot is stale.',
                 },
-                { type: 'heading', content: 'Leader Election' },
+                { type: 'heading', content: 'Features' },
                 {
-                    type: 'text',
-                    content:
-                        'BroadcastChannel elects one tab as the leader for Web Notifications. All tabs show Sonner toasts, but only the leader fires OS notifications.',
+                    type: 'table',
+                    headers: ['Feature', 'Detail'],
+                    rows: [
+                        ['Poll interval', '10 seconds (POLL_INTERVAL)'],
+                        ['Tab focus', 'visibilitychange fires immediate poll'],
+                        ['Status', 'polling / live / offline (tri-state)'],
+                        ['Leader election', 'BroadcastChannel for Web Notifications'],
+                        ['Offline fallback', 'localStorage cache (hd1-live-cache)'],
+                    ],
                 },
             ],
         },
@@ -244,12 +201,12 @@ export const notificationFlowConfig = {
         },
         sw: {
             title: 'Service Worker',
-            subtitle: 'public/sw.js',
+            subtitle: 'src/sw.js (Serwist)',
             sections: [
                 {
                     type: 'text',
                     content:
-                        'Handles push events (showNotification), app shell caching (stale-while-revalidate), and notification clicks (focus/open). Never intercepts /api/* or SSE stream.',
+                        'Serwist-managed service worker with automatic precache manifest. Handles push events (showNotification) and notification clicks (focus/open). API routes excluded via explicit NetworkOnly matcher.',
                 },
             ],
         },
