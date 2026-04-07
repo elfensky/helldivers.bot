@@ -11,8 +11,8 @@ export const notificationFlowConfig = {
     ],
 
     flows: {
-        polling: ['worker', 'update', 'live', 'hook'],
-        toast: ['worker', 'update', 'live', 'hook', 'detect', 'toast', 'webnoti'],
+        polling: ['worker', 'update', 'db', 'live', 'hook'],
+        toast: ['worker', 'update', 'db', 'live', 'hook', 'detect', 'toast', 'webnoti'],
         push: ['worker', 'update', 'pushcheck', 'pushapi', 'sw'],
     },
 

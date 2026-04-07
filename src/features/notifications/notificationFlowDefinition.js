@@ -25,10 +25,13 @@ const BODY = `
     toast["Sonner Toast<br/><small>persistent</small>"]
     webnoti["Web Notification<br/><small>leader tab only</small>"]
 
-    %% Polling path
+    %% Server: worker writes to DB
     worker -->|"HTTP"| update
-    update -->|"DB write"| live
+    update -->|"DB write"| db[("Database")]
+
+    %% Client: polls live endpoint which reads from DB
     hook -->|"fetch 10s"| live
+    live -->|"getCampaign"| db
     hook -->|"diff"| detect
 
     %% Toast + Web Notification from detectChanges
@@ -48,7 +51,7 @@ const BODY = `
     classDef notification fill:#1c1b1b,stroke:#f59e0b,color:#fbbf24
 
     class worker,update,pushcheck server
-    class pushapi database
+    class db,pushapi database
     class live transport
     class hook,detect client
     class toast,webnoti,sw notification
