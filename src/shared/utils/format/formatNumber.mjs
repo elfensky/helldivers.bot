@@ -1,3 +1,9 @@
+/**
+ * Formats a number for compact display (1.2B, 3.4M, or locale-grouped).
+ * Returns '—' for null, undefined, or non-finite values.
+ * @param {number|string|null|undefined} n
+ * @returns {string}
+ */
 export function formatNumber(n) {
     if (n === undefined || n === null) return '—';
     const num = Number(n);

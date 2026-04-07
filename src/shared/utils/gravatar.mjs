@@ -1,5 +1,10 @@
 import { createHash } from 'crypto';
 
+/**
+ * Generates a Gravatar URL for the given email address.
+ * @param {string} email
+ * @returns {string} Gravatar URL with 64px size parameter
+ */
 export function getGravatarUrl(email) {
     // Normalize the email address
     const normalizedEmail = email.trim().toLowerCase();

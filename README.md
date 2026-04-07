@@ -26,7 +26,7 @@
 
 This is an application that consumes the official Helldivers 1 API, caches and rebroadcasts it as to avoid high load on official servers.
 It also stores historic data that the official API discards, and offers account management and api keys for 3rd parties to access the API to build their own apps.
-The frontend also shows various data visualizations and notifies visitors of in-game events.
+The frontend also shows various data visualizations and notifies visitors of in-game events. All pages receive real-time campaign updates via Server-Sent Events (SSE), and the app supports PWA offline mode with service worker caching and push notifications.
 
 ### How it works.
 
@@ -96,6 +96,13 @@ Using next js api routes, this contains various endpoints that provide helldiver
 - API Keys
     - Create an API key
     - Delete an API key
+- Profile
+    - View connected OAuth providers and Gravatar
+    - GDPR data export (JSON download)
+    - GDPR account deletion
+- Admin Dashboard (admin role required)
+    - System overview: worker health, game data stats, user metrics
+    - User management: role changes, bans, API key oversight
 - Reviews
     - Create a review
     - Delete a review
