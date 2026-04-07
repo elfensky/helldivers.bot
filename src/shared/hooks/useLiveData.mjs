@@ -37,7 +37,10 @@ const cachedState = typeof window !== 'undefined' ? loadCachedState() : null;
 const INITIAL_STORE = Object.freeze({
     data: null,
     mapState: null,
-    status: 'live', // optimistic — first poll completes within ~100ms
+    status:
+        typeof navigator !== 'undefined' && !navigator.onLine ?
+            'offline'
+        :   'polling',
     prevData: null,
     isLeader: false,
 });
@@ -65,6 +68,11 @@ function emit() {
  * On failure: set status to 'offline', emit.
  */
 async function poll() {
+    if (store.status !== 'polling') {
+        store = { ...store, status: 'polling' };
+        emit();
+    }
+
     try {
         const res = await fetch('/api/h1/live');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -204,6 +212,9 @@ function teardownLeader() {
  * Architecture: module-level singleton store with React useState + useEffect.
  * A setInterval + fetch polls /api/h1/live, then calls listeners which invoke
  * setState. A visibilitychange listener fires an immediate poll on tab focus.
+ *
+ * Status tri-state: 'polling' (request in flight), 'live' (last poll succeeded),
+ * 'offline' (last poll failed or navigator.onLine is false at init).
  *
  * Key behaviors:
  * - First successful poll is a silent baseline — prevData is not set,
