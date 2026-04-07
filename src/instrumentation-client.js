@@ -4,18 +4,15 @@
 
 import * as Sentry from '@sentry/nextjs';
 
-if (process.env.NODE_ENV === 'production') {
-    Sentry.init({
-        dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-        sendDefaultPii: true,
-        tracesSampleRate: 0.25,
-        autoSessionTracking: false,
-        tunnel: '/api/glitchtip-tunnel',
-        debug: false,
-    });
-}
+// TODO: restore production-only guard after GlitchTip verification
+Sentry.init({
+    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    environment: process.env.NODE_ENV,
+    sendDefaultPii: true,
+    tracesSampleRate: 1.0,
+    autoSessionTracking: false,
+    tunnel: '/api/glitchtip',
+    debug: true,
+});
 
-export const onRouterTransitionStart =
-    process.env.NODE_ENV === 'production'
-        ? Sentry.captureRouterTransitionStart
-        : () => {};
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
