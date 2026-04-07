@@ -11,8 +11,7 @@
     --color-primary: #ffe000;
     --color-danger: #ff0000;
     --color-success: #22c55e;
-    --color-warning: #f59e0b;
-    --color-warning-orange: #f97316;
+    --color-warning: #f97316;
 
     /* === SURFACES (tonal layering — no shadows) === */
     --color-surface-0: #131313;
@@ -67,8 +66,7 @@
     --color-primary: #ffe000;
     --color-danger: #ff0000;
     --color-success: #22c55e;
-    --color-warning: #f59e0b;
-    --color-warning-orange: #f97316;
+    --color-warning: #f97316;
     --color-surface-0: #131313;
     --color-surface-1: #1c1b1b;
     --color-surface-2: #201f1f;

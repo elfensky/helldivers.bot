@@ -74,17 +74,24 @@ function Palette() {
             <h2 className="mb-4 border-b border-ghost pb-1 text-primary">
                 Palette
             </h2>
+            <h3 className="mb-2">Website</h3>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
                 <Swatch
                     color="var(--color-primary)"
                     name="Primary"
                     token="--color-primary"
                 />
+                <Swatch color="var(--color-text)" name="Text" token="--color-text" />
                 <Swatch
-                    color="var(--color-danger)"
-                    name="Danger"
-                    token="--color-danger"
+                    color="var(--color-text-muted)"
+                    name="Text Muted"
+                    token="--color-text-muted"
                 />
+                <Swatch color="var(--color-ghost)" name="Ghost" token="--color-ghost" />
+            </div>
+
+            <h3 className="mt-6 mb-2">Status</h3>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
                 <Swatch
                     color="var(--color-success)"
                     name="Success"
@@ -96,17 +103,10 @@ function Palette() {
                     token="--color-warning"
                 />
                 <Swatch
-                    color="var(--color-warning-orange)"
-                    name="Warning Orange"
-                    token="--color-warning-orange"
+                    color="var(--color-danger)"
+                    name="Danger"
+                    token="--color-danger"
                 />
-                <Swatch color="var(--color-text)" name="Text" token="--color-text" />
-                <Swatch
-                    color="var(--color-text-muted)"
-                    name="Text Muted"
-                    token="--color-text-muted"
-                />
-                <Swatch color="var(--color-ghost)" name="Ghost" token="--color-ghost" />
             </div>
 
             <h3 className="mt-6 mb-2">Surfaces</h3>
