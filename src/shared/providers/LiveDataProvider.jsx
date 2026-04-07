@@ -12,12 +12,13 @@ import LiveToasts from '@/features/notifications/LiveToasts';
  * component) so that LiveToasts and the Sonner Toaster share the
  * same module singleton.
  *
- * Data comes exclusively from SSE (with localStorage fallback for
- * offline/PWA). No server-rendered initial data — this keeps the
- * RSC Flight stream free of large campaign payloads.
+ * @param {{ initialData: Object|null, initialMapState: Object|null, children: React.ReactNode }} props
  */
-export default function LiveDataProvider({ children }) {
-    const { data, mapState, status, prevData, isLeader } = useLiveData();
+export default function LiveDataProvider({ initialData, initialMapState, children }) {
+    const { data, mapState, status, prevData, isLeader } = useLiveData(
+        initialData,
+        initialMapState,
+    );
 
     return (
         <LiveDataContext.Provider value={{ data, mapState, status, prevData, isLeader }}>

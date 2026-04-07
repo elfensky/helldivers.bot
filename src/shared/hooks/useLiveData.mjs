@@ -200,13 +200,13 @@ function teardownLeader() {
  * - Malformed SSE messages are silently dropped (JSON.parse failure).
  * - BroadcastChannel leader election ensures only one tab fires OS
  *   notifications. Leaders yield on conflicting claims to prevent dupes.
- * - localStorage cache is seeded into the store in useEffect (post-hydration)
- *   to avoid SSR mismatch.
- * - Fallback chain: live SSE → localStorage cache (post-hydration) → null.
+ * - Fallback chain: live SSE → server-rendered → localStorage cache → null.
  *
+ * @param {Object} initialData - Server-rendered campaign data (null if offline)
+ * @param {Object} initialMapState - Server-rendered map state (null if offline)
  * @returns {{ data: Object, mapState: Object, status: string, prevData: Object, isLeader: boolean }}
  */
-export function useLiveData() {
+export function useLiveData(initialData, initialMapState) {
     const [snapshot, setSnapshot] = useState(INITIAL_STORE);
 
     useEffect(() => {
@@ -236,8 +236,8 @@ export function useLiveData() {
     }, []);
 
     return {
-        data: snapshot.data ?? null,
-        mapState: snapshot.mapState ?? null,
+        data: snapshot.data ?? initialData ?? cachedState?.data ?? null,
+        mapState: snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
         status: snapshot.status,
         prevData: snapshot.prevData,
         isLeader: snapshot.isLeader,
