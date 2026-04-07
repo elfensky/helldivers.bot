@@ -76,7 +76,7 @@ function Palette() {
                 Palette
             </h2>
             <h3 className="mb-2">Website</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <Swatch
                     color="var(--color-primary)"
                     name="Primary"
@@ -92,7 +92,7 @@ function Palette() {
             </div>
 
             <h3 className="mt-6 mb-2">Status</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <Swatch
                     color="var(--color-success)"
                     name="Success"
@@ -111,7 +111,7 @@ function Palette() {
             </div>
 
             <h3 className="mt-6 mb-2">Factions</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <Swatch
                     color="var(--color-faction-bugs)"
                     name="Bugs"
@@ -195,7 +195,7 @@ function Surfaces() {
 
 function Swatch({ color, name, token }) {
     return (
-        <div className="min-w-[140px] border border-ghost">
+        <div className="border border-ghost">
             <div className="h-12" style={{ backgroundColor: color }} />
             <div className="bg-surface-2 px-1.5 py-1 text-small leading-[1.3]">
                 <span className="block font-body">{name}</span>
@@ -315,7 +315,7 @@ function Components() {
                 Components
             </h2>
 
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="mb-4 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <button
                     className={`${btn} border border-primary text-primary hover:bg-primary hover:text-surface-0`}
                 >
