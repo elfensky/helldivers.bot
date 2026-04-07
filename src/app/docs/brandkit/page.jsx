@@ -12,6 +12,7 @@ export default function BrandKitPage() {
         <div className="max-w-full overflow-hidden">
             <Hero />
             <Palette />
+            <Surfaces />
             <TypeAndSpacing />
             <Components />
         </div>
@@ -109,38 +110,6 @@ function Palette() {
                 />
             </div>
 
-            <h3 className="mt-6 mb-2">Surfaces</h3>
-            <div
-                className="border border-ghost p-4"
-                style={{ background: 'var(--color-surface-0)' }}
-            >
-                <code className="font-mono text-small text-text-muted">0 — surface-0</code>
-                <div
-                    className="mt-2 border border-ghost p-4"
-                    style={{ background: 'var(--color-surface-1)' }}
-                >
-                    <code className="font-mono text-small text-text-muted">1 — surface-1</code>
-                    <div
-                        className="mt-2 border border-ghost p-4"
-                        style={{ background: 'var(--color-surface-2)' }}
-                    >
-                        <code className="font-mono text-small text-text-muted">2 — surface-2</code>
-                        <div
-                            className="mt-2 border border-ghost p-4"
-                            style={{ background: 'var(--color-surface-3)' }}
-                        >
-                            <code className="font-mono text-small text-text-muted">3 — surface-3</code>
-                            <div
-                                className="mt-2 border border-ghost p-4"
-                                style={{ background: 'var(--color-surface-4)' }}
-                            >
-                                <code className="font-mono text-small text-text-muted">4 — surface-4</code>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <h3 className="mt-6 mb-2">Factions</h3>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
                 <Swatch
@@ -173,6 +142,52 @@ function Palette() {
                     name="Illum. Fill"
                     token="--color-faction-illuminate-fill"
                 />
+            </div>
+        </section>
+    );
+}
+
+/* ----------------------------------------------------------------
+   2b. Surfaces — Tonal depth layering
+   ---------------------------------------------------------------- */
+function Surfaces() {
+    return (
+        <section className="mb-10">
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">
+                Surfaces
+            </h2>
+            <p className="mb-4 text-small text-text-muted">
+                Tonal layering — depth via surface shifts, no shadows.
+            </p>
+            <div
+                className="border border-ghost p-4"
+                style={{ background: 'var(--color-surface-0)' }}
+            >
+                <code className="font-mono text-small text-text-muted">0 — surface-0</code>
+                <div
+                    className="mt-2 border border-ghost p-4"
+                    style={{ background: 'var(--color-surface-1)' }}
+                >
+                    <code className="font-mono text-small text-text-muted">1 — surface-1</code>
+                    <div
+                        className="mt-2 border border-ghost p-4"
+                        style={{ background: 'var(--color-surface-2)' }}
+                    >
+                        <code className="font-mono text-small text-text-muted">2 — surface-2</code>
+                        <div
+                            className="mt-2 border border-ghost p-4"
+                            style={{ background: 'var(--color-surface-3)' }}
+                        >
+                            <code className="font-mono text-small text-text-muted">3 — surface-3</code>
+                            <div
+                                className="mt-2 border border-ghost p-4"
+                                style={{ background: 'var(--color-surface-4)' }}
+                            >
+                                <code className="font-mono text-small text-text-muted">4 — surface-4</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     );
