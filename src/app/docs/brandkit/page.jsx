@@ -71,7 +71,7 @@ function Hero() {
 function Palette() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-outline-variant pb-1 text-primary">
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">
                 Palette
             </h2>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
@@ -105,16 +105,6 @@ function Palette() {
                     color="var(--color-text-muted)"
                     name="Text Muted"
                     token="--color-text-muted"
-                />
-                <Swatch
-                    color="var(--color-outline)"
-                    name="Outline"
-                    token="--color-outline"
-                />
-                <Swatch
-                    color="var(--color-outline-variant)"
-                    name="Outline Var"
-                    token="--color-outline-variant"
                 />
                 <Swatch color="var(--color-ghost)" name="Ghost" token="--color-ghost" />
             </div>
@@ -208,35 +198,35 @@ function Swatch({ color, name, token }) {
 function TypeAndSpacing() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-outline-variant pb-1 text-primary">
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">
                 Typography
             </h2>
             <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <h1 style={{ margin: 0 }}>Current Campaign</h1>
                     <code className="font-mono text-small whitespace-nowrap text-text-muted">
                         --text-h1: clamp(1.5rem, 1rem + 2vw, 2.5rem)
                     </code>
                 </div>
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <h2 style={{ margin: 0 }}>Current Defend Events</h2>
                     <code className="font-mono text-small whitespace-nowrap text-text-muted">
                         --text-h2: clamp(1.125rem, 0.9rem + 1.2vw, 1.75rem)
                     </code>
                 </div>
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <h3 style={{ margin: 0 }}>Global Stats</h3>
                     <code className="font-mono text-small whitespace-nowrap text-text-muted">
                         --text-h3: clamp(0.875rem, 0.75rem + 0.5vw, 1.125rem)
                     </code>
                 </div>
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <span>Bugs is active: 584/1000 (58.4%) current players: 332</span>
                     <code className="font-mono text-small whitespace-nowrap text-text-muted">
                         --text-body: clamp(0.875rem, 0.8rem + 0.35vw, 1rem)
                     </code>
                 </div>
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <small>Finished 10 hours, 43 minutes ago</small>
                     <code className="font-mono text-small whitespace-nowrap text-text-muted">
                         --text-small: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)
@@ -306,7 +296,7 @@ const btn =
 function Components() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-outline-variant pb-1 text-primary">
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">
                 Components
             </h2>
 
@@ -388,7 +378,7 @@ const accentColors = {
     bugs: 'bg-faction-bugs',
     cyborgs: 'bg-faction-cyborgs',
     illuminate: 'bg-faction-illuminate',
-    muted: 'bg-outline-variant',
+    muted: 'bg-ghost',
 };
 
 function DataCard({ label, stat, desc, accent = 'default' }) {

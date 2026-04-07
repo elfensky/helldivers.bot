@@ -4,7 +4,7 @@ const METHOD_COLORS = {
     get: 'text-primary',
     post: 'text-success',
     delete: 'text-danger',
-    put: 'text-outline',
+    put: 'text-text-muted',
     patch: 'text-text-muted',
 };
 
@@ -12,8 +12,8 @@ const METHOD_ACCENT = {
     get: 'bg-primary',
     post: 'bg-success',
     delete: 'bg-danger',
-    put: 'bg-outline',
-    patch: 'bg-outline-variant',
+    put: 'bg-ghost',
+    patch: 'bg-ghost',
 };
 
 function MethodBadge({ method }) {

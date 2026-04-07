@@ -44,7 +44,7 @@ export default function DocsSidebar() {
             <button
                 onClick={() => setOpen(!open)}
                 data-umami-event="docs-sidebar-toggle"
-                className="flex w-full items-center gap-2 border-b border-outline-variant bg-surface-1 px-4 py-3 text-body lg:hidden"
+                className="flex w-full items-center gap-2 border-b border-ghost bg-surface-1 px-4 py-3 text-body lg:hidden"
             >
                 <span className="text-text-muted">Docs /</span>
                 <span className="text-primary">{currentPage}</span>
@@ -55,7 +55,7 @@ export default function DocsSidebar() {
 
             {/* Mobile dropdown */}
             {open && (
-                <nav className="border-b border-outline-variant bg-surface-1 py-4 lg:hidden">
+                <nav className="border-b border-ghost bg-surface-1 py-4 lg:hidden">
                     <SidebarContent
                         pathname={pathname}
                         onNavigate={() => setOpen(false)}

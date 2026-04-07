@@ -24,9 +24,7 @@
     /* === TEXT === */
     --color-text: hsl(0, 0%, 80%);
     --color-text-muted: hsl(0, 0%, 46%);
-    /* === OUTLINE === */
-    --color-outline: #999077;
-    --color-outline-variant: #4d4732;
+    /* === BORDER === */
     --color-ghost: rgba(255, 255, 255, 0.15);
 
     /* === FACTION (game-canonical — do not change) === */
@@ -78,8 +76,6 @@
     --color-surface-4: #353534;
     --color-text: hsl(0, 0%, 80%);
     --color-text-muted: hsl(0, 0%, 46%);
-    --color-outline: #999077;
-    --color-outline-variant: #4d4732;
     --color-faction-bugs: #e8822a;
     --color-faction-cyborgs: #8b2d2d;
     --color-faction-illuminate: #7ec8e3;
