@@ -82,23 +82,28 @@ function applyFlowFilter(container, activeView, flows) {
         }
     });
 
-    // Highlight edges where both source and target are in the active flow
-    allEdgePaths.forEach((edge) => {
+    // Mermaid v11 renders multiple .edgeLabel elements per edge (background + text).
+    // Compute stride to map each edge path to its corresponding label group.
+    const labelsPerEdge =
+        allEdgePaths.length > 0 ? Math.round(allEdgeLabels.length / allEdgePaths.length) : 1;
+
+    // Highlight edges + their labels
+    allEdgePaths.forEach((edge, i) => {
         const dataId = edge.getAttribute('data-id');
         const endpoints = parseEdgeEndpoints(dataId, allNodeIds);
-        if (endpoints && activeNodeIds.has(endpoints.source) && activeNodeIds.has(endpoints.target)) {
-            edge.classList.remove('diagram-dimmed');
-            edge.classList.add('diagram-highlighted');
-        } else {
-            edge.classList.remove('diagram-highlighted');
-            edge.classList.add('diagram-dimmed');
-        }
-    });
+        const isActive =
+            endpoints && activeNodeIds.has(endpoints.source) && activeNodeIds.has(endpoints.target);
 
-    // Dim all edge labels (they don't carry source/target info)
-    allEdgeLabels.forEach((el) => {
-        el.classList.remove('diagram-highlighted');
-        el.classList.add('diagram-dimmed');
+        const applyClass = (el, active) => {
+            if (!el) return;
+            el.classList.remove(active ? 'diagram-dimmed' : 'diagram-highlighted');
+            el.classList.add(active ? 'diagram-highlighted' : 'diagram-dimmed');
+        };
+
+        applyClass(edge, isActive);
+        for (let j = 0; j < labelsPerEdge; j++) {
+            applyClass(allEdgeLabels[i * labelsPerEdge + j], isActive);
+        }
     });
 }
 

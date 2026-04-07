@@ -1,0 +1,412 @@
+export const metadata = {
+    title: 'Infrastructure | Helldivers Bot',
+    description: 'Docker strategy, CI/CD pipelines, initialization flow, and environment variables for helldivers.bot.',
+    alternates: { canonical: '/docs/infrastructure' },
+    openGraph: { url: '/docs/infrastructure' },
+};
+
+# Infrastructure
+
+Technical reference for the helldivers.bot infrastructure layer. Audience: project owner and AI assistants.
+
+```mermaid
+graph LR
+    subgraph Startup["Container Startup Order"]
+        direction TB
+        M["Dockerfile.migrate"] --> |"1. prisma migrate deploy"| MIG["Run Migrations"]
+        MIG --> |"2. seed.mjs"| SEED["Seed Historical Data"]
+        SEED --> |"exit 0"| DONE["Container Exits"]
+    end
+
+    subgraph App["Application Container"]
+        direction TB
+        A["Dockerfile"] --> |"npm start"| SERVER["Next.js Server"]
+        SERVER --> |"instrumentation.js"| WORKER["Worker Thread"]
+        WORKER --> |"setTimeout loop"| POLL["Poll Official API"]
+    end
+
+    Startup --> |"then"| App
+
+    style Startup fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+    style App fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+```
+
+---
+
+## Section 1: Docker Strategy
+
+The project uses two separate Dockerfiles. Migrations and the application server run in separate containers with a defined startup order.
+
+### Dockerfile.migrate
+
+**Image:** `ghcr.io/elfensky/helldiversbot-migrate:staging`
+
+**Purpose:** Runs `prisma migrate deploy` once and exits. It never stays alive.
+
+**Build process:**
+
+1. Base image: `node:22-alpine`
+2. Install `tini` via `apk` (init system for zombie process prevention)
+3. Upgrade npm to `11.7.0`
+4. `WORKDIR /app`
+5. Copy `package.json`, `package-lock.json`, `prisma/`, and `prisma.config.mjs`
+6. Extract the Prisma version from `package.json` at build time and install only that version — no full `npm ci`
+7. Run `npx prisma generate` to produce the client
+8. Entrypoint: `/sbin/tini --`
+9. CMD: `npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs` — runs migrations first, then seeds historical season data from JSON files in `prisma/seed/seasons/`. The seed uses upserts and is idempotent (safe to re-run on every deploy). If no season files exist, the seed exits gracefully.
+
+The Prisma version extraction uses a shell one-liner:
+
+```dockerfile
+COPY package.json package-lock.json ./
+COPY prisma ./prisma/
+COPY prisma.config.mjs ./
+RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma || require('./package.json').dependencies?.prisma") && \
+    ADAPTER_PG_VERSION=$(node -p "require('./package.json').dependencies?.['@prisma/adapter-pg'] || ''") && \
+    DOTENV_VERSION=$(node -p "require('./package.json').dependencies?.dotenv || ''") && \
+    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg@$ADAPTER_PG_VERSION dotenv@$DOTENV_VERSION && \
+    npx prisma generate
+```
+
+Prisma 7 CLI no longer auto-loads `.env` files. The `prisma.config.mjs` file imports `dotenv/config` to handle local env loading; in Docker, `POSTGRES_URL` is injected via `docker-compose`'s `env_file`.
+
+This keeps the migrate image small — it carries only the Prisma CLI, not the entire application dependency tree.
+
+### Dockerfile.app
+
+**Image:** `ghcr.io/elfensky/helldiversbot:staging`
+
+**Purpose:** Runs the Next.js standalone server. This container never touches migrations.
+
+**Build stages:**
+
+| Stage     | Base             | What it does                                                                                      |
+| --------- | ---------------- | ------------------------------------------------------------------------------------------------- |
+| `base`    | `node:22-alpine` | Installs `tini` and upgrades npm to `11.7.0`                                                      |
+| `deps`    | `base`           | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent                               |
+| `builder` | `base`           | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build` |
+| `runner`  | `base`           | Copies only `.next/standalone`, `.next/static`, and `public`; runs as non-root user               |
+
+**Runner stage details:**
+
+- `ARG NODE_ENV=production` — overridable at build time; staging CI passes `NODE_ENV=staging`
+- Creates system group `nodejs` (gid 1001) and user `nextjs` (uid 1001)
+- All copied files are `--chown=nextjs:nodejs`
+- `USER nextjs` is set before the entrypoint
+- OCI labels: `org.opencontainers.image.source`, `org.opencontainers.image.licenses`, `org.opencontainers.image.title`, `version`, `description`
+- Entrypoint: `/sbin/tini --`
+- CMD: `node server.js` (the Next.js standalone output file)
+- `EXPOSE 3000`, `ENV PORT=3000`, `ENV HOSTNAME="0.0.0.0"`
+- Healthcheck (Dockerfile-level): `curl -f http://0.0.0.0:3000/api/healthcheck` every 30s, timeout 5s, start period 5s, 3 retries
+
+### docker-compose.yml
+
+```
+migrate (helldiversbot-migrate:staging)
+  env_file: .docker.env
+  → runs once and exits
+
+helldiversbot (helldiversbot:staging)
+  env_file: .docker.env
+  environment: SKIP_MIGRATIONS=true
+  ports: 127.0.0.1:58102:3000
+  restart: unless-stopped
+  depends_on: migrate (condition: service_completed_successfully)
+  healthcheck: curl localhost:3000/api/healthcheck every 60s, timeout 10s, 3 retries, 10s start_period
+```
+
+The port binding `127.0.0.1:58102:3000` deliberately limits exposure to the host loopback interface. External traffic must arrive through a reverse proxy (e.g., nginx or Caddy) on the host.
+
+The `depends_on: condition: service_completed_successfully` ensures the app container does not start until migrations finish and the migrate container exits with code 0.
+
+`SKIP_MIGRATIONS=true` is passed to the app container environment to signal the initialization code that database setup has already been handled externally.
+
+### Why two containers
+
+Running migrations inside the app container creates a race condition when scaling to multiple replicas — each replica would attempt to apply migrations simultaneously. By delegating migrations to a one-shot container that must complete before the app starts, the compose startup sequence is deterministic and safe.
+
+---
+
+## Section 2: CI/CD Pipelines
+
+### Staging (`staging.docker.yml`)
+
+**Trigger:** Push to `main`, or manual `workflow_dispatch`
+
+**Jobs:** A `changes` job detects which files were modified. `build-app` always runs. `build-migrate` only runs when migration-related files changed (or on manual `workflow_dispatch`). A `cleanup` job runs after both builds complete (or are skipped).
+
+| Job             | Dockerfile           | Tag pushed                                       | Condition                                                                                                        |
+| --------------- | -------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `changes`       | ---                  | ---                                              | Always runs; outputs `migrate` boolean via `dorny/paths-filter`                                                  |
+| `build-migrate` | `Dockerfile.migrate` | `ghcr.io/elfensky/helldiversbot-migrate:staging` | Only when `prisma/**`, `prisma.config.mjs`, `package.json`, `package-lock.json`, or `Dockerfile.migrate` changed |
+| `build-app`     | `Dockerfile.app`     | `ghcr.io/elfensky/helldiversbot:staging`         | Always                                                                                                           |
+
+Both build jobs pass `NODE_ENV=staging` as a build arg.
+
+**Registry auth:** `secrets.GITHUB_TOKEN` — the default token with `contents: write` and `packages: write` permissions declared at the workflow level.
+
+**Cleanup job:** Uses `snok/container-retention-policy@v3.0.1`. Deletes untagged versions of both `helldiversbot` and `helldiversbot-migrate` packages that are older than 30 minutes. This keeps GHCR from accumulating dangling layers from every push.
+
+### Production (`release.docker.yml`)
+
+**Trigger:** Version tags matching the pattern `*.*.*` (e.g., `1.2.3`)
+
+**Jobs:** Single `build` job — only the app image is built; no migrate image is produced for production.
+
+**Tags pushed:**
+
+```
+ghcr.io/elfensky/helldiversbot:{git-tag}
+ghcr.io/elfensky/helldiversbot:production
+ghcr.io/elfensky/helldiversbot:latest
+```
+
+**Version extraction:** The workflow reads the version from `package.json` via `jq -r '.version' package.json` and injects it into the image via the `VERSION` ARG (used by the Dockerfile label `version="${VERSION}"`).
+
+**Registry auth:** `secrets.ACCESS_TOKEN` — a personal access token with elevated permissions. The default `GITHUB_TOKEN` is not used here because the job also creates a GitHub Release, which requires broader write access.
+
+**GitHub Release:** Created by `softprops/action-gh-release@v2`. The release body is sourced from `RELEASE.md` at the repository root.
+
+### Metrics (`metrics.yml`)
+
+**Trigger:** Scheduled (Mondays at 00:00 UTC, Fridays at 06:00 UTC), or manual dispatch.
+
+**Job:** Generates a PageSpeed Insights badge SVG using `lowlighter/metrics@latest` targeting `https://helldivers.bot`. The resulting `metrics.plugin.pagespeed.svg` is committed back to the repository. Requires `secrets.PAGESPEED_TOKEN`.
+
+---
+
+## Section 3: Initialization Flow
+
+**Entry point:** `src/instrumentation.js` — Next.js calls `register()` automatically on server startup via the instrumentation hook.
+
+### Full flow
+
+```
+register()   [src/instrumentation.js]
+│
+├── NEXT_RUNTIME === 'nodejs'
+│   └── import sentry.server.config.js     → Sentry.init() for server runtime
+│
+└── NEXT_RUNTIME === 'nodejs'
+    └── initializeHelldivers1Api()
+        │
+        ├── Step 1: initializeEnvironmentVariables()   [src/utils/initialize.env.mjs]
+        │   ├── checkDatabase()    → POSTGRES_URL                              ← REQUIRED, throws
+        │   ├── checkUpdates()     → UPDATE_KEY, UPDATE_INTERVAL               ← REQUIRED, throws (PORT optional)
+        │   ├── checkAnalytics()   → UMAMI_SITE_ID, SENTRY_DSN, SENTRY_AUTH_TOKEN  ← OPTIONAL, warns
+        │   ├── checkAuth()        → BETTER_AUTH_SECRET + 5 auth vars          ← OPTIONAL, warns (partial = throws)
+        │   └── Returns { auth: boolean, analytics: boolean }
+        │
+        ├── Step 2: initializeOpenApiSpec()            [src/utils/initialize.openapi.mjs]
+        │   ├── development: generates public/openapi.json from the OpenAPI registry, validates JSON
+        │   ├── production:  reads existing public/openapi.json, validates it parses as JSON
+        │   ├── staging:     falls through to false (neither branch matches NODE_ENV=staging)
+        │   └── false → throw (crashes the process)
+        │
+        └── Step 3: initializeWorker()                 [src/utils/initialize.worker.mjs]
+            ├── Resolves worker path:
+            │   ├── development: path.resolve(process.cwd(), 'public/workers/cron.js')
+            │   └── production:  path.resolve('/app/public/workers/cron.js')
+            ├── new Worker(workerPath)
+            ├── worker.postMessage({ key, interval, port })
+            ├── Attaches message/error/exit handlers
+            ├── Registers SIGINT/SIGTERM handlers that terminate the worker before exit
+            └── false → throw (crashes the process)
+```
+
+### Failure behavior
+
+Every initialization step fails hard: any error or falsy return causes a `throw new Error(...)` inside the `register()` function. Since Next.js does not catch errors thrown from `register()`, this crashes the process. There is no graceful degradation. The intent is that Docker's `restart: unless-stopped` will restart the container, giving the underlying problem (missing env var, bad database, missing OpenAPI spec) a chance to be resolved.
+
+### onRequestError export
+
+`src/instrumentation.js` also exports:
+
+```js
+export const onRequestError = Sentry.captureRequestError;
+```
+
+Next.js calls this hook for errors that occur inside Server Components, middleware, and proxied routes — errors that do not surface through the normal React error boundary. This is the server-side equivalent of `global-error.jsx`.
+
+---
+
+## Section 4: Error Tracking (Sentry / GlitchTip)
+
+The project uses the Sentry SDK (`@sentry/nextjs`) but targets a **self-hosted GlitchTip** instance rather than Sentry SaaS. GlitchTip is Sentry-protocol-compatible and supports error aggregation and performance traces but not session replay.
+
+### Configuration files
+
+| File                            | Runtime | Role                                                              |
+| ------------------------------- | ------- | ----------------------------------------------------------------- |
+| `sentry.server.config.js`       | Node.js | `Sentry.init()` called on server startup via `instrumentation.js` |
+| `src/instrumentation-client.js` | Browser | `Sentry.init()` called when a page loads in the browser           |
+| `src/app/api/glitchtip/route.js` | Node.js | Client tunnel — proxies Sentry envelopes to GlitchTip, bypassing ad blockers |
+
+### Shared SDK settings
+
+```js
+{
+    dsn: process.env.SENTRY_DSN,        // server: SENTRY_DSN, client: NEXT_PUBLIC_SENTRY_DSN
+    environment: process.env.NODE_ENV,  // "development" or "production" — filterable in GlitchTip
+    sendDefaultPii: true,               // safe on a self-hosted instance
+    tracesSampleRate: 1.0,              // 100% of requests traced
+    debug: false,
+}
+```
+
+Client-only additions: `autoSessionTracking: false` (GlitchTip doesn't support sessions), `tunnel: '/api/glitchtip'` (ad blocker bypass).
+
+### Client tunnel
+
+The `/api/glitchtip` route proxies Sentry envelope payloads to GlitchTip's ingest endpoint. This prevents ad blockers from blocking error reports since the SDK sends to the app's own domain. The tunnel extracts the DSN's public key and forwards to `https://<host>/api/<project>/envelope/?sentry_key=<key>&sentry_version=7`.
+
+### Error boundaries
+
+Three levels of error isolation:
+
+1. **`global-error.jsx`** — last-resort boundary wrapping the entire React tree. Renders its own `<html>`/`<body>` since the root layout is unavailable. Reuses the shared `RouteError` component.
+2. **Route-level `error.jsx`** — at root (`src/app/error.jsx`) and archives (`src/app/archives/error.jsx`). Thin wrappers around `RouteError` that catch errors within the layout.
+3. **`ComponentErrorBoundary`** — React class component wrapping Galaxy Map, Regions, Stats, Dashboard, and Timeline. Shows inline "failed to load" + retry button. Layout containers stay outside boundaries to preserve CSS grid/flex structure on error.
+
+Sentry captures errors automatically via its global handler — no manual `captureException` in any boundary.
+
+### Analytics proxy
+
+Umami v3 analytics use a same-origin proxy to bypass ad blockers:
+
+1. **Script proxy:** `/stats.js` → `umami.drunik.be/script.js` (Next.js rewrite in `next.config.mjs`)
+2. **Data proxy:** `/api/send` → `/api/umami` (Next.js rewrite) → `umami.drunik.be/api/send` (API route proxy)
+
+The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash. No external Umami domain appears in CSP — both `script-src` and `connect-src` only reference `'self'`.
+
+Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.drunik.be`), `UMAMI_SITE_ID` (website UUID).
+
+### CSP violation reporting
+
+The CSP in `src/proxy.js` includes a `report-uri` directive pointing to GlitchTip's security endpoint. Browser-native CSP violations appear as issues in GlitchTip alongside application errors.
+
+### next.config.mjs Sentry settings
+
+The `withSentryConfig` wrapper controls build-time behavior:
+
+```js
+export default withSentryConfig(withMDX(nextConfig), {
+    silent: true,
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    sentryUrl: process.env.SENTRY_URL,
+});
+```
+
+Source maps are uploaded to GlitchTip at build time for readable stack traces. The `authToken`, `org`, `project`, and `sentryUrl` env vars are only used during builds.
+
+---
+
+## Section 5: Environment Variables
+
+Variables are checked at startup by `initializeEnvironmentVariables()` in `src/utils/initialize.env.mjs`. The function uses **progressive enhancement**: core variables throw on missing (app cannot function), while auth and analytics variables warn and degrade gracefully. Returns `{ auth: boolean, analytics: boolean }` so the startup log shows which features are active.
+
+**Validation rules:**
+- **Core (database, worker):** Missing → throws, crashes the process.
+- **Auth:** `BETTER_AUTH_SECRET` absent → all auth disabled (warn). `BETTER_AUTH_SECRET` present but other auth vars missing → throws (partial config is a misconfiguration).
+- **Analytics:** Missing → warns. `SENTRY_DSN` set without `SENTRY_AUTH_TOKEN` → warns about degraded source maps.
+
+### Full variable reference
+
+| Variable                | Required    | Category       | Description                                                                                              |
+| ----------------------- | ----------- | -------------- | -------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_URL`          | **Yes**     | Database       | PostgreSQL connection string                                                                             |
+| `UPDATE_KEY`            | **Yes**     | Updates        | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests              |
+| `UPDATE_INTERVAL`       | **Yes**     | Updates        | Polling interval in seconds (e.g., `"20"`); passed to the worker thread                                  |
+| `PORT`                  | No          | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                     |
+| `UMAMI_SITE_ID`         | No          | Analytics      | Umami website tracking ID; if absent, Umami script not loaded and server-side tracking skipped            |
+| `UMAMI_SITE_URL`        | No          | Analytics      | Umami instance URL; used in server-side fetch calls                                                      |
+| `SENTRY_DSN`            | No          | Error tracking | Sentry DSN for server-side error reporting (points to GlitchTip); if absent, error tracking disabled     |
+| `NEXT_PUBLIC_SENTRY_DSN`| No          | Error tracking | Sentry DSN for client-side error reporting (same DSN, exposed to browser)                                |
+| `SENTRY_AUTH_TOKEN`     | No          | Error tracking | GlitchTip API token for source map uploads; if absent, `withSentryConfig` build plugin skipped           |
+| `SENTRY_URL`            | No          | Error tracking | GlitchTip instance URL; used by `withSentryConfig` for source map uploads                                |
+| `SENTRY_ORG`            | No          | Error tracking | GlitchTip organization slug; used for source map uploads                                                 |
+| `SENTRY_PROJECT`        | No          | Error tracking | GlitchTip project slug; used for source map uploads                                                      |
+| `GLITCHTIP_HEARTBEAT_URL`| No         | Error tracking | GlitchTip uptime heartbeat endpoint; worker POSTs after each successful update                           |
+| `BETTER_AUTH_SECRET`    | No (all-or-none) | Auth    | BetterAuth session encryption secret; 128+ chars recommended. If absent, all auth features disabled. If present, all other auth vars are required |
+| `BETTER_AUTH_URL`       | If auth     | Auth           | Base URL for BetterAuth (e.g., `http://localhost:3000`; production: `https://helldivers.bot`)            |
+| `AUTH_DISCORD_ID`       | If auth     | Auth           | Discord OAuth application client ID                                                                      |
+| `AUTH_DISCORD_SECRET`   | If auth     | Auth           | Discord OAuth application client secret                                                                  |
+| `AUTH_GITHUB_ID`        | If auth     | Auth           | GitHub OAuth application client ID                                                                       |
+| `AUTH_GITHUB_SECRET`    | If auth     | Auth           | GitHub OAuth application client secret                                                                   |
+| `VAPID_PUBLIC_KEY`      | No (all-or-none) | Push    | Web Push VAPID public key; if absent, push notifications disabled                                        |
+| `VAPID_PRIVATE_KEY`     | No          | Push           | Web Push VAPID private key                                                                               |
+| `VAPID_SUBJECT`         | No          | Push           | VAPID contact identifier (`mailto:` email)                                                               |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No   | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`)                                          |
+| `POSTGRES_SSL`          | No          | Database       | Set to `"false"` for local dev without SSL; defaults to SSL enabled                                      |
+| `SKIP_MIGRATIONS`       | No          | Docker         | Set to `"true"` in the app container; has no effect on initialization logic currently but signals intent |
+| `NODE_ENV`              | No          | App            | `development`, `staging`, or `production`; affects OpenAPI spec behavior and worker path resolution      |
+| `NEXT_RUNTIME`          | Internal    | Next.js        | Set automatically by Next.js; controls which Sentry config and init steps run                            |
+
+### Connection string formats
+
+Local development connects directly to the host machine:
+
+```
+postgresql://user:pass@127.0.0.1:5432/dbname
+```
+
+Inside Docker, the app container reaches the host's PostgreSQL via the special Docker DNS name:
+
+```
+postgresql://user:pass@host.docker.internal:5432/dbname
+```
+
+The `.docker.env` file (not checked into version control) holds the Docker-specific values and is referenced by both services in `docker-compose.yml`.
+
+### Behavior note on `NODE_ENV=staging`
+
+The staging CI workflow passes `NODE_ENV=staging` as a Docker build arg. At runtime this means `initializeOpenApiSpec()` returns `false` immediately (neither the `development` nor `production` branch matches), which causes `instrumentation.js` to throw and crash the process. In practice the OpenAPI spec is baked into the image at build time and the staging environment is expected to run with `NODE_ENV=production` at runtime, not at build time. The build arg is used only for labeling purposes.
+
+---
+
+## Section 6: PWA Assets
+
+The app is an installable Progressive Web App. PWA assets are static files that ship with the build — no build-time generation step is needed.
+
+### Web App Manifest
+
+Source: `src/app/site.webmanifest` (auto-served by Next.js from the app directory)
+
+Linked in `<head>` via `metadata.manifest` in `src/app/layout.jsx`. Contains `start_url`, `scope`, `orientation: portrait`, and two icons with `purpose: "any maskable"`.
+
+### iOS Splash Screens
+
+20 portrait PNG images in `public/splash/` covering all current iPhone and iPad device sizes. Generated once via `npx pwa-asset-generator` with solid `#282828` background + centered logo. Linked via `<link rel="apple-touch-startup-image">` tags with device-specific media queries in `layout.jsx`.
+
+To regenerate after logo changes:
+
+```bash
+npx pwa-asset-generator public/images/logo_square.png public/splash \
+  --splash-only --background "#282828" --padding "30%" --type png
+# Then delete landscape images (width > height) since orientation is portrait-only
+```
+
+### Cache Headers (next.config.mjs)
+
+Static assets served from `public/` have cache headers configured in `next.config.mjs`:
+
+| Asset Type | `max-age` | `immutable` |
+|------------|-----------|-------------|
+| Favicons | 1 day | Yes |
+| Fonts | 1 year | Yes |
+| Icons | 7 days | Yes |
+| Images | 7 days | Yes |
+| SVGs | 7 days | Yes |
+| Workers | 1 day | Yes |
+
+The service worker (`public/sw.js`) has a 1-day `max-age`, ensuring browsers check for new versions daily. The SW itself handles cache versioning via the `CACHE_NAME` constant.
+
+---
+
+## Cross-references
+
+- See [Data Flow](/docs/data-flow) for the worker thread's role in the continuous update pipeline
+- See [Database Schema](/docs/database) for the Prisma schema and migration strategy
+- See [Notifications](/docs/notifications) for the service worker update lifecycle, caching strategy, and PWA metadata details
