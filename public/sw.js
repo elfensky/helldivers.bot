@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hd1-shell-v2';
+const CACHE_NAME = 'hd1-shell-v3';
 
 // If you add icons or static assets to public/, update this list.
 const SHELL_ASSETS = [
