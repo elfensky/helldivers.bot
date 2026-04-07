@@ -15,6 +15,8 @@ export const metadata = {
  * Revokes session and redirects banned users to /.
  */
 export default async function ProfileLayout({ children }) {
+    if (!auth) redirect('/');
+
     const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session || !session.user) {

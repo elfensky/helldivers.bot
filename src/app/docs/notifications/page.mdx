@@ -1,4 +1,10 @@
-import NotificationFlowDiagram from '@/features/notifications/NotificationFlowDiagram';
+import MermaidDiagram from '@/shared/components/MermaidDiagram/MermaidDiagram';
+import { DEFINITION_LR, DEFINITION_TD } from '@/features/notifications/notificationFlowDefinition';
+import { notificationFlowConfig } from '@/features/notifications/notificationFlowConfig';
+import { DEFINITION_LR as INAPP_LR, DEFINITION_TD as INAPP_TD } from '@/features/notifications/inAppFlowDefinition';
+import { inAppFlowConfig } from '@/features/notifications/inAppFlowConfig';
+import { DEFINITION_LR as PUSH_LR, DEFINITION_TD as PUSH_TD } from '@/features/notifications/pushFlowDefinition';
+import { pushFlowConfig } from '@/features/notifications/pushFlowConfig';
 
 export const metadata = {
     title: 'Notifications | Helldivers Bot',
@@ -27,54 +33,15 @@ Four notification layers, each serving a different purpose:
 
 How notifications travel from the official API to the user. Click any node for details. Use the filters to trace individual flows.
 
-<NotificationFlowDiagram />
+<MermaidDiagram id="notification-flow" definition={DEFINITION_LR} mobileDefinition={DEFINITION_TD} config={notificationFlowConfig} />
 
 ### In-App (Polling + Toasts)
 
-```
-Official HD1 API (~1s updates)
-        |
-Worker Thread (polls every ~20s)
-        |
-POST /api/h1/update
-        |
-updateStatus() --> DB writes (h1_live, h1_event, snapshots)
-
-Client (every 10s):
-        |
-GET /api/h1/live
-        |
-getCampaign() + computeMapState() --> JSON response
-        |
-useLiveData hook (setInterval + fetch)
-        |
-Full state replacement --> React re-render
-        |
-Client-side diff (detectChanges)
-        |                    |
-Sonner toast          Web Notification
-(always)              (only if tab hidden
-                       + leader tab
-                       + permission granted)
-```
+<MermaidDiagram id="inapp-flow" definition={INAPP_LR} mobileDefinition={INAPP_TD} config={inAppFlowConfig} />
 
 ### Push (Separate Channel)
 
-```
-POST /api/h1/update
-        |
-checkAndNotify() (fire-and-forget, non-blocking)
-        |
-detectChanges(prevEvents, currentEvents)
-        |
-Query push_subscription table
-        |
-web-push fan-out (max 50 concurrent)
-        |
-Service Worker (push event handler)
-        |
-self.registration.showNotification()
-```
+<MermaidDiagram id="push-flow" definition={PUSH_LR} mobileDefinition={PUSH_TD} config={pushFlowConfig} />
 
 ## Live Data Transport
 
@@ -162,13 +129,19 @@ Server-initiated notifications that work when the browser is closed:
 
 Notifications for the same event (e.g., started → won) replace each other via matching `tag`, with `renotify: true` ensuring the user is re-alerted.
 
+### Admin Debug Buttons
+
+The admin dashboard (`/profile/admin`) has two debug buttons in the System Overview header:
+
+- **Test Push** — sends a test push notification to all subscribers via `web-push`, using the same `sendWithConcurrencyLimit` path as production. Reports `{ sent, stale }` counts.
+- **Test Toast** — fires a faction-colored Sonner toast locally to verify toast styling and `<Toaster>` connectivity.
+
 ### Service Worker
 
-`public/sw.js` handles five concerns:
+`src/sw.js` handles push-related concerns (Serwist manages caching):
 
 - **Push events**: Parses payload, validates `icon`/`badge` same-origin, passes `tag`/`renotify` to `showNotification()`
 - **Notification clicks**: Focuses existing tab or opens new one
-- **Controlled updates**: Waits for `SKIP_WAITING` message from client before activating (see below)
 - **Caching**: Serwist `defaultCache` provides Next.js-optimized runtime caching strategies
 - **API exclusion**: Explicit `NetworkOnly` route for `/api/*` — live data is never cached
 

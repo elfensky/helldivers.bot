@@ -12,6 +12,8 @@ export const metadata = {
 };
 
 export default async function AdminPage() {
+    if (!auth) redirect('/');
+
     const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session?.user || session.user.role !== 'admin') {

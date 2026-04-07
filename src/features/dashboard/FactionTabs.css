@@ -20,15 +20,17 @@
     border-bottom: 2px solid transparent;
     transition:
         color 0.15s ease,
-        border-color 0.15s ease;
+        border-color 0.15s ease,
+        background 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .faction-tab-icon {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
+    transition: transform 0.15s ease;
 }
 
 .faction-tab-label {
@@ -42,8 +44,8 @@
 
     .faction-tab-icon {
         display: inline;
-        width: 16px;
-        height: 16px;
+        width: 20px;
+        height: 20px;
     }
 
     .faction-tab-label {
@@ -55,6 +57,27 @@
     .dashboard-sidebar .faction-tab-label {
         display: none;
     }
+}
+
+.faction-tab:hover {
+    color: var(--color-text);
+    background: var(--color-surface-2);
+}
+
+.faction-tab:hover .faction-tab-icon {
+    transform: scale(1.1);
+}
+
+.faction-tab:nth-child(2):hover {
+    color: var(--color-faction-bugs);
+}
+
+.faction-tab:nth-child(3):hover {
+    color: var(--color-faction-cyborgs);
+}
+
+.faction-tab:nth-child(4):hover {
+    color: var(--color-faction-illuminate);
 }
 
 .faction-tab.active {

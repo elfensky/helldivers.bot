@@ -21,9 +21,18 @@ describe('Navigation', () => {
         expect(screen.getByTestId('header-nav')).toBeInTheDocument();
     });
 
-    test('renders UserSection', () => {
+    test('renders UserSection when auth is configured', () => {
+        vi.stubEnv('BETTER_AUTH_SECRET', 'test-secret');
         render(<Navigation />);
         expect(screen.getByTestId('user-section')).toBeInTheDocument();
+        vi.unstubAllEnvs();
+    });
+
+    test('hides UserSection when auth is not configured', () => {
+        vi.stubEnv('BETTER_AUTH_SECRET', '');
+        render(<Navigation />);
+        expect(screen.queryByTestId('user-section')).not.toBeInTheDocument();
+        vi.unstubAllEnvs();
     });
 
     test('renders external links', () => {

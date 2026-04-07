@@ -3,6 +3,7 @@ import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo';
 import { formatUptime } from '@/shared/utils/format/formatUptime';
 import { formatNumber } from '@/shared/utils/format/formatNumber';
 import RefreshButton from '@/features/admin/RefreshButton';
+import SendTestNotification from '@/features/admin/SendTestNotification';
 
 export default async function SystemOverview() {
     const result = await getSystemStats();
@@ -27,7 +28,10 @@ export default async function SystemOverview() {
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <h2>System Overview</h2>
-                <RefreshButton />
+                <div className="flex items-center gap-2">
+                    <SendTestNotification />
+                    <RefreshButton />
+                </div>
             </div>
 
             {/* Row 1 — Infrastructure */}
