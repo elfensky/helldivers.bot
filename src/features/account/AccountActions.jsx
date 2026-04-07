@@ -1,10 +1,40 @@
 'use client';
-import { useActionState, useCallback, useEffect } from 'react';
+import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Form from 'next/form';
 import { exportUserData, deleteUserAccount } from '@/db/queries/account';
+import { linkSocial, unlinkAccount } from '@/auth-client';
+import { tryCatch } from '@/shared/utils/tryCatch';
+
+const SOCIAL_PROVIDERS = ['discord', 'github'];
 
 export default function AccountActions({ user, avatarUrl, providers }) {
+    const router = useRouter();
+    const [loading, setLoading] = useState(null);
+    const [linkError, setLinkError] = useState(null);
+
+    const handleLink = async (provider) => {
+        setLoading(provider);
+        setLinkError(null);
+        const { error } = await tryCatch(linkSocial(provider));
+        if (error) {
+            setLinkError(`Failed to link ${provider}`);
+            setLoading(null);
+        }
+    };
+
+    const handleUnlink = async (providerId, accountId) => {
+        setLoading(providerId);
+        setLinkError(null);
+        const { error } = await tryCatch(unlinkAccount(providerId, accountId));
+        if (error) {
+            setLinkError(`Failed to unlink ${providerId}`);
+        }
+        setLoading(null);
+        router.refresh();
+    };
+
     const handleExport = useCallback(async () => {
         const result = await exportUserData(user.id);
         if (result.data) {
@@ -50,15 +80,67 @@ export default function AccountActions({ user, avatarUrl, providers }) {
                             {user.name ?? 'Anonymous'}
                         </p>
                         <p className="text-body text-text-muted">{user.email}</p>
-                        <p className="text-body text-text-muted">
-                            Connected:{' '}
-                            {providers.map((p, i) => (
-                                <span key={p}>
-                                    {i > 0 && ' · '}
-                                    <span className="text-text capitalize">{p}</span>
-                                </span>
-                            ))}
-                        </p>
+                        <div className="mt-1 flex flex-col gap-1">
+                            {SOCIAL_PROVIDERS.map((provider) => {
+                                const linked = providers.find(
+                                    (p) => p.providerId === provider,
+                                );
+                                const isOnlyAccount = providers.length <= 1;
+                                const isLoading = loading === provider;
+                                return (
+                                    <div
+                                        key={provider}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <span className="text-body capitalize text-text">
+                                            {provider}
+                                        </span>
+                                        {linked ? (
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleUnlink(
+                                                        provider,
+                                                        linked.accountId,
+                                                    )
+                                                }
+                                                disabled={
+                                                    isOnlyAccount || isLoading
+                                                }
+                                                title={
+                                                    isOnlyAccount
+                                                        ? 'Cannot unlink your only account'
+                                                        : ''
+                                                }
+                                                className="cursor-pointer border border-danger px-2 py-0.5 text-small font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {isLoading
+                                                    ? 'Unlinking…'
+                                                    : 'Unlink'}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleLink(provider)
+                                                }
+                                                disabled={isLoading}
+                                                className="cursor-pointer border border-primary px-2 py-0.5 text-small font-semibold text-primary hover:bg-primary hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {isLoading
+                                                    ? 'Linking…'
+                                                    : 'Link'}
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                            {linkError && (
+                                <p className="text-small text-danger">
+                                    {linkError}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
 
