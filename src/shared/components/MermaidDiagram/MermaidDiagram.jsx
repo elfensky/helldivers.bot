@@ -236,19 +236,21 @@ export default function MermaidDiagram({
 
     return (
         <div className={`diagram-wrapper ${className || ''}`}>
-            {/* Filter controls */}
-            <div className="diagram-controls">
-                {config.views.map((view) => (
-                    <button
-                        key={view.key}
-                        className={activeView === view.key ? 'active' : ''}
-                        data-umami-event={`diagram-${id}-${view.key}`}
-                        onClick={() => setActiveView(view.key)}
-                    >
-                        {view.label}
-                    </button>
-                ))}
-            </div>
+            {/* Filter controls (hidden for single-flow diagrams) */}
+            {config.views.length > 1 && (
+                <div className="diagram-controls">
+                    {config.views.map((view) => (
+                        <button
+                            key={view.key}
+                            className={activeView === view.key ? 'active' : ''}
+                            data-umami-event={`diagram-${id}-${view.key}`}
+                            onClick={() => setActiveView(view.key)}
+                        >
+                            {view.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Mermaid SVG */}
             <div

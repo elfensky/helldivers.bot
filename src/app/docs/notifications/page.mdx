@@ -1,11 +1,15 @@
 import MermaidDiagram from '@/shared/components/MermaidDiagram/MermaidDiagram';
 import { DEFINITION_LR, DEFINITION_TD } from '@/features/notifications/notificationFlowDefinition';
 import { notificationFlowConfig } from '@/features/notifications/notificationFlowConfig';
+import { DEFINITION_LR as INAPP_LR, DEFINITION_TD as INAPP_TD } from '@/features/notifications/inAppFlowDefinition';
+import { inAppFlowConfig } from '@/features/notifications/inAppFlowConfig';
+import { DEFINITION_LR as PUSH_LR, DEFINITION_TD as PUSH_TD } from '@/features/notifications/pushFlowDefinition';
+import { pushFlowConfig } from '@/features/notifications/pushFlowConfig';
 
 export const metadata = {
     title: 'Notifications | Helldivers Bot',
     description:
-        'How real-time notifications work in helldivers.bot — SSE live updates, Sonner toasts, Web Notifications, and push notifications.',
+        'How real-time notifications work in helldivers.bot — live polling, Sonner toasts, Web Notifications, and push notifications.',
     alternates: { canonical: '/docs/notifications' },
     openGraph: { url: '/docs/notifications' },
 };
@@ -20,7 +24,7 @@ Four notification layers, each serving a different purpose:
 
 | Layer                  | When                | Persistence        | Requires     |
 | ---------------------- | ------------------- | ------------------ | ------------ |
-| **SSE Live Data**      | Page is open        | Continuous updates | Nothing      |
+| **Live Polling**       | Page is open        | Updates every 10s  | Nothing      |
 | **Sonner Toasts**      | Event transition    | Until dismissed    | Nothing      |
 | **Web Notifications**  | Tab is backgrounded | OS notification    | Permission   |
 | **Push Notifications** | Browser is closed   | OS notification    | Subscription |
@@ -31,84 +35,27 @@ How notifications travel from the official API to the user. Click any node for d
 
 <MermaidDiagram id="notification-flow" definition={DEFINITION_LR} mobileDefinition={DEFINITION_TD} config={notificationFlowConfig} />
 
-### In-App (SSE + Toasts)
+### In-App (Polling + Toasts)
 
-```
-Official HD1 API (~1s updates)
-        |
-Worker Thread (polls every 10-15s)
-        |
-POST /api/h1/update
-        |
-updateStatus() --> DB writes (h1_live, h1_event, snapshots)
-        |
-pg NOTIFY 'campaign_update'
-        |
-SSE Manager (dedicated pg.Client with LISTEN)
-        |
-getCampaign() + computeMapState() --> serialize + cache
-        |
-GET /api/h1/stream (Server-Sent Events)
-        |
-Browser EventSource (useLiveData hook)
-        |
-Full state replacement --> React re-render
-        |
-Client-side diff (detectChanges)
-        |                    |
-Sonner toast          Web Notification
-(always)              (only if tab hidden
-                       + leader tab
-                       + permission granted)
-```
+<MermaidDiagram id="inapp-flow" definition={INAPP_LR} mobileDefinition={INAPP_TD} config={inAppFlowConfig} />
 
 ### Push (Separate Channel)
 
-```
-POST /api/h1/update
-        |
-checkAndNotify() (fire-and-forget, non-blocking)
-        |
-detectChanges(prevEvents, currentEvents)
-        |
-Query push_subscription table
-        |
-web-push fan-out (max 50 concurrent)
-        |
-Service Worker (push event handler)
-        |
-self.registration.showNotification()
-```
+<MermaidDiagram id="push-flow" definition={PUSH_LR} mobileDefinition={PUSH_TD} config={pushFlowConfig} />
 
-## SSE Transport
+## Live Data Transport
 
-### Why SSE over WebSocket
+The dashboard uses client-side polling to fetch live campaign data.
 
-The dashboard is read-only — data flows one direction (server to client). SSE fits this perfectly:
+### Polling Architecture
 
-- Works natively in Next.js Route Handlers (no separate server)
-- Built-in reconnection via the `EventSource` API
-- No WebSocket upgrade handshake or proxy configuration
-- Plain HTTP — works through every reverse proxy and Docker setup
+`useLiveData` hook (`src/shared/hooks/useLiveData.mjs`) polls `GET /api/h1/live` every 10 seconds via `setInterval` + `fetch`:
 
-### Postgres LISTEN/NOTIFY
-
-The worker thread runs as a separate Worker Thread that calls the update API via HTTP. The SSE manager runs in the main Next.js process. `LISTEN/NOTIFY` bridges them through PostgreSQL:
-
-- **NOTIFY side**: A dedicated `pg.Client` in the update route fires `NOTIFY campaign_update` after each successful update cycle
-- **LISTEN side**: The SSE manager holds a persistent `pg.Client` connection with `LISTEN campaign_update`
-- Neither goes through Prisma (which doesn't support LISTEN/NOTIFY)
-
-### SSE Manager
-
-Singleton (`src/shared/utils/sse/sseManager.mjs`) with:
-
-- **Dedup guard**: Skips re-query if NOTIFY arrives within 1 second of the last
-- **Connection limits**: 5 per IP, 500 total. Returns 429 when exceeded
-- **Heartbeat**: Sends `:keepalive` comment every 15 seconds (prevents proxy idle timeouts)
-- **Reconnection**: Exponential backoff (1s, 2s, 4s... up to 30s) on LISTEN connection loss
-- **Health flag**: SSE route returns 503 when the LISTEN connection is down
-- **Graceful shutdown**: Closes all connections on SIGTERM
+- **Lightweight endpoint**: `getCampaign()` + `computeMapState()` → JSON response
+- **Visibility-aware**: `visibilitychange` listener fires immediate poll on tab focus (browsers throttle `setInterval` in background tabs)
+- **Module-level singleton**: One poll interval per tab, shared across all hook instances
+- **Status tri-state**: `'polling'` (request in flight), `'live'` (last poll succeeded), `'offline'` (last poll failed or `navigator.onLine` is false)
+- **Leader election**: BroadcastChannel ensures only one tab fires Web Notifications
 
 ## Change Detection
 
@@ -131,7 +78,7 @@ Events are matched by both `event_id` and `type` (defend/attack).
 
 ### First-Message Baseline
 
-The first SSE message after page load is treated as a silent state reset. No change detection runs against SSR data, preventing false transition toasts when the server-rendered snapshot is stale. Instead, `LiveToasts` fires separate catch-up toasts for any active events present in the initial data.
+The first successful poll after page load is treated as a silent state reset. No change detection runs against SSR data, preventing false transition toasts when the server-rendered snapshot is stale. Instead, `LiveToasts` fires separate catch-up toasts for any active events present in the initial data.
 
 ## Toast Notifications
 
@@ -191,87 +138,43 @@ The admin dashboard (`/profile/admin`) has two debug buttons in the System Overv
 
 ### Service Worker
 
-`public/sw.js` handles five concerns:
+`src/sw.js` handles push-related concerns (Serwist manages caching):
 
 - **Push events**: Parses payload, validates `icon`/`badge` same-origin, passes `tag`/`renotify` to `showNotification()`
 - **Notification clicks**: Focuses existing tab or opens new one
-- **Controlled updates**: Waits for `SKIP_WAITING` message from client before activating (see below)
-- **Caching**: Network-first for HTML navigation, stale-while-revalidate for static assets
-- **API exclusion**: Never intercepts `/api/*` routes or the SSE stream
+- **Caching**: Serwist `defaultCache` provides Next.js-optimized runtime caching strategies
+- **API exclusion**: Explicit `NetworkOnly` route for `/api/*` — live data is never cached
 
 ## PWA & Offline
 
-The app is a Progressive Web App with offline support and controlled version updates.
+The app is a Progressive Web App with offline support powered by Serwist (`@serwist/next`).
 
-### App Update Lifecycle
+### Service Worker Updates
 
-When a new service worker is deployed, the update follows a two-phase flow:
-
-```
-New SW detected by browser
-        |
-Install event fires (caches shell assets)
-        |
-SW enters 'waiting' state (does NOT skipWaiting)
-        |
-ServiceWorkerRegister.jsx detects waiting SW
-        |
-    ┌───┴───┐
-    |       |
-Toast:    30-min
-"Update   deadline
-available"  (visibility-
-  [Reload]   based)
-    |       |
-    └───┬───┘
-        |
-Posts { type: 'SKIP_WAITING' } to waiting SW
-        |
-SW calls skipWaiting() → activates
-        |
-'controllerchange' fires in ALL open tabs
-        |
-window.location.reload() (guarded by boolean flag)
-```
-
-**Key design decisions:**
-
-- **No immediate `skipWaiting`**: Prevents mid-session disruption while users are viewing live data
-- **Visibility-based deadline**: Stores a deadline timestamp instead of using `setTimeout`, because iOS Safari suspends timers in background tabs. Checks wall-clock time on `visibilitychange` events
-- **Boolean guard on `controllerchange`**: Only reloads if this client triggered the update — prevents reload loops on first-ever SW install
-- **Multi-tab**: All tabs reload simultaneously via `controllerchange`, ensuring consistent app version
+The service worker uses `skipWaiting: true` and `clientsClaim: true` — new versions activate immediately on install without user interaction. Serwist handles registration automatically via the `register: true` config option.
 
 ### Caching Strategy
 
-Two strategies based on request type:
+Serwist manages two layers of caching:
 
-| Request Type                                 | Strategy                      | Rationale                                           |
-| -------------------------------------------- | ----------------------------- | --------------------------------------------------- |
-| Navigation (`request.mode === 'navigate'`)   | Network-first, cache fallback | HTML must match current `_next/static` chunk hashes |
-| Static assets (fonts, icons, images, JS/CSS) | Stale-while-revalidate        | Serve fast from cache, update in background         |
-| API routes (`/api/*`)                        | Bypass (no interception)      | Live data must never be served from cache           |
-| SSE stream (`/api/h1/stream`)                | Bypass                        | Long-lived connection, not cacheable                |
+**Precaching (build-time):** Serwist generates a precache manifest at build time with content hashes for all build output. Changed files get new hashes — cache busting is automatic on every deploy. No manual version bumps needed.
 
-### Shell Cache
+**Runtime caching:** Serwist's `defaultCache` from `@serwist/next/worker` provides Next.js-optimized strategies:
 
-14 critical assets are precached on install for offline shell rendering:
-
-- App shell (`/`), manifest, icons (favicon, apple-icon)
-- Custom font (`insignia.regular.otf`)
-- All faction icons (`faction0-3.webp`, `superearth.webp`)
-- Game icons (`attack.webp`, `defend.webp`)
-- Logo and galaxy map SVG
+| Request Type | Strategy | Rationale |
+| ------------ | -------- | --------- |
+| API routes (`/api/*`) | NetworkOnly (explicit) | Live data must never be served from cache |
+| Navigation | Network-first | HTML must match current build |
+| Static assets | Stale-while-revalidate | Serve fast from cache, update in background |
 
 ### Offline Behavior
 
-When offline, the app loads the cached shell and displays last known war data:
+When offline, the app loads precached assets and displays last known war data:
 
-1. **Shell**: SW serves cached HTML + assets → app renders visually complete
+1. **Shell**: SW serves precached HTML + assets → app renders visually complete
 2. **Data**: `useLiveData` hook falls back to `localStorage` (`hd1-live-cache`)
-3. **Status**: `ConnectionStatus` shows red "Offline" indicator
+3. **Status**: StatusDot shows red "offline" indicator (via `navigator.onLine` check)
 4. **Timestamps**: "Last updated X ago" via `formatTimeAgo` shows data age
-
-No special offline code was needed — the existing SSE reconnection logic and localStorage fallback handle it naturally.
 
 ### PWA Metadata
 
@@ -287,27 +190,26 @@ The web app manifest (`src/app/site.webmanifest`) and layout metadata enable ful
 
 ## Connection States
 
-`ConnectionStatus` component shows:
+`StatusDot` component shows poll status from `LiveDataContext`:
 
-| State        | Indicator          | Meaning                                      |
-| ------------ | ------------------ | -------------------------------------------- |
-| Live         | Green dot          | Connected, receiving SSE updates             |
-| Reconnecting | Yellow pulsing dot | Connection lost, `EventSource` auto-retrying |
-| Offline      | Red dot            | Failed to connect                            |
+| State   | Indicator  | Meaning                                          |
+| ------- | ---------- | ------------------------------------------------ |
+| live    | Green dot  | Last poll succeeded                              |
+| polling | Orange dot | Poll request in flight                           |
+| offline | Red dot    | Last poll failed or `navigator.onLine` is false  |
 
 ## Key Files
 
-| File                                                | Role                                       |
-| --------------------------------------------------- | ------------------------------------------ |
-| `src/update/notifyClient.mjs`                       | pg.Client for NOTIFY in update route       |
-| `src/shared/utils/sse/sseManager.mjs`               | LISTEN + broadcast manager (singleton)     |
-| `src/app/api/h1/stream/route.js`                    | SSE endpoint                               |
-| `src/shared/hooks/useLiveData.mjs`                  | EventSource hook + BroadcastChannel leader |
-| `src/shared/utils/game/detectChanges.mjs`           | Event transition detection (shared)        |
-| `src/features/notifications/LiveToasts.jsx`         | Sonner toasts + Web Notifications          |
-| `src/features/notifications/NotificationToggle.jsx` | Combined notification + push toggle        |
-| `src/features/dashboard/ConnectionStatus.jsx`       | Live/reconnecting/offline pill             |
-| `src/update/pushNotifier.mjs`                       | Server-side push fan-out                   |
-| `src/app/api/notifications/subscribe/route.js`      | Push subscription CRUD                     |
-| `public/sw.js`                                      | Service worker (caching + push + updates)  |
-| `src/app/site.webmanifest`                          | PWA manifest (install, icons, orientation) |
+| File                                                | Role                                           |
+| --------------------------------------------------- | ---------------------------------------------- |
+| `src/sw.js`                                         | Serwist SW source (precache + push handlers)   |
+| `serwist.config.js`                                 | Serwist build config (configurator mode)       |
+| `src/app/api/h1/live/route.js`                      | Polling endpoint (getCampaign + computeMapState) |
+| `src/shared/hooks/useLiveData.mjs`                  | Polling hook + BroadcastChannel leader         |
+| `src/shared/utils/game/detectChanges.mjs`           | Event transition detection (shared)            |
+| `src/features/notifications/LiveToasts.jsx`         | Sonner toasts + Web Notifications              |
+| `src/features/notifications/NotificationToggle.jsx` | Combined notification + push toggle            |
+| `src/shared/components/StatusDot.jsx`               | Tri-state connection indicator                 |
+| `src/update/pushNotifier.mjs`                       | Server-side push fan-out                       |
+| `src/app/api/notifications/subscribe/route.js`      | Push subscription CRUD                         |
+| `src/app/site.webmanifest`                          | PWA manifest (install, icons, orientation)     |
