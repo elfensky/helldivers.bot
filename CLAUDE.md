@@ -173,16 +173,16 @@ For every phase or feature, use the `/superpowers:brainstorming` skill to explor
 
 ## Reference Docs
 
-> **Wiki local clone:** `../helldivers.bot.wiki` — edit locally, commit & push to update GitHub wiki.
-
-| Topic                              | Location                                                                                                                   |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Docker, CI/CD, init flow, env vars | [Wiki: Infrastructure](https://github.com/elfensky/helldivers.bot/wiki/Infrastructure)                                     |
-| Database schema & relationships    | [Wiki: Database-Schema](https://github.com/elfensky/helldivers.bot/wiki/Database-Schema)                                   |
-| Data pipeline & worker lifecycle   | [Wiki: Data-Flow](https://github.com/elfensky/helldivers.bot/wiki/Data-Flow)                                               |
-| API endpoints & authentication     | [Wiki: API-Reference](https://github.com/elfensky/helldivers.bot/wiki/API-Reference)                                       |
-| Utilities & Zod validators         | [Wiki: Utilities-Reference](https://github.com/elfensky/helldivers.bot/wiki/Utilities-Reference)                           |
-| Testing infrastructure             | [Wiki: Testing](https://github.com/elfensky/helldivers.bot/wiki/Testing)                                                   |
-| Real-time & notifications          | `/docs/notifications` (Mermaid diagram) + [Wiki: Real-Time](https://github.com/elfensky/helldivers.bot/wiki/Real-Time)     |
-| Data flow architecture             | `/docs/architecture` (Mermaid diagram) + [Wiki: Data-Flow](https://github.com/elfensky/helldivers.bot/wiki/Data-Flow)      |
-| Frontend design system & tokens    | `/docs/brandkit` (visual) + `src/app/layout.css`                                                                           |
+| Topic                              | Location                                         |
+| ---------------------------------- | ------------------------------------------------ |
+| Docker, CI/CD, init flow, env vars | `/docs/infrastructure`                           |
+| Database schema & relationships    | `/docs/database`                                 |
+| Data pipeline & worker lifecycle   | `/docs/data-flow`                                |
+| API endpoints & authentication     | `/docs/api`                                      |
+| Utilities & Zod validators         | `/docs/utilities`                                |
+| Testing infrastructure             | `/docs/testing`                                  |
+| Real-time & notifications          | `/docs/notifications`                            |
+| Data flow architecture             | `/docs/architecture` (Mermaid diagram)           |
+| Authentication & roles             | `/docs/authentication`                           |
+| Frontend design system & tokens    | `/docs/brandkit` (visual) + `src/app/layout.css` |
+| Official HD1 API reference         | `/docs/hd1-api`                                  |
