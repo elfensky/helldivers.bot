@@ -132,6 +132,7 @@ export default function DashboardClient() {
             </div>
             <button
                 className="dashboard-scroll-hint"
+                data-umami-event="dashboard-scroll-to-log"
                 onClick={() =>
                     document
                         .getElementById('event-log')
