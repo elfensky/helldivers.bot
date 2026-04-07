@@ -1,0 +1,257 @@
+/**
+ * Configuration for the notification system flow diagram.
+ * Combines views, flow mappings, node details, and legend.
+ */
+export const notificationFlowConfig = {
+    views: [
+        { key: 'all', label: 'All Flows' },
+        { key: 'sse', label: 'SSE Live Data' },
+        { key: 'toast', label: 'Toast Notifications' },
+        { key: 'push', label: 'Push Notifications' },
+    ],
+
+    flows: {
+        sse: ['worker', 'update', 'notify', 'manager', 'stream', 'hook'],
+        toast: [
+            'worker',
+            'update',
+            'notify',
+            'manager',
+            'stream',
+            'hook',
+            'detect',
+            'toast',
+            'webnoti',
+        ],
+        push: ['worker', 'update', 'pushcheck', 'pushapi', 'sw'],
+    },
+
+    legend: [
+        { color: '#a855f7', label: 'Server / Worker' },
+        { color: '#22c55e', label: 'Database' },
+        { color: '#3b82f6', label: 'Transport' },
+        { color: '#06b6d4', label: 'Client' },
+        { color: '#f59e0b', label: 'Notification' },
+    ],
+
+    title: 'Notification Flow Diagram',
+    description:
+        'Interactive diagram showing how notifications flow from the worker thread through SSE, toast, web notifications, and push notifications',
+
+    details: {
+        worker: {
+            title: 'Worker Thread',
+            subtitle: 'public/workers/cron.js',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Dedicated Worker Thread that polls the official Helldivers 1 API every 10-15 seconds. Calls POST /api/h1/update via HTTP to the main Next.js process.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Setting', 'Value'],
+                    rows: [
+                        ['Poll interval', 'UPDATE_INTERVAL env (default 20s)'],
+                        ['Method', 'setTimeout (prevents overlap)'],
+                        ['Auth', 'Bearer token (UPDATE_KEY)'],
+                    ],
+                },
+            ],
+        },
+        update: {
+            title: 'Update Route',
+            subtitle: 'src/app/api/h1/update/route.js',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'API route that runs updateStatus() and updateSeason(). After successful DB writes, fires pg NOTIFY and triggers push notification check (fire-and-forget).',
+                },
+                { type: 'heading', content: 'Sequence' },
+                {
+                    type: 'text',
+                    content:
+                        '1. Validate bearer token\n2. updateStatus() \u2192 DB writes\n3. updateSeason() \u2192 snapshot sync\n4. pg NOTIFY campaign_update\n5. checkAndNotify() (async, non-blocking)',
+                },
+            ],
+        },
+        notify: {
+            title: 'pg NOTIFY',
+            subtitle: 'src/update/notifyClient.mjs',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        "Dedicated pg.Client (not Prisma) that fires NOTIFY campaign_update after each successful update cycle. This is how the update route tells the SSE manager that fresh data is available.",
+                },
+                {
+                    type: 'text',
+                    content:
+                        "NOTIFY is a Postgres feature for inter-process messaging. It's lightweight (single SQL statement, <1ms) and doesn't go through Prisma since Prisma doesn't support LISTEN/NOTIFY.",
+                },
+            ],
+        },
+        manager: {
+            title: 'SSE Manager',
+            subtitle: 'src/shared/utils/sse/sseManager.mjs',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Singleton that holds a persistent LISTEN connection and manages all SSE client connections. On each NOTIFY, queries getCampaign() once, caches the result, and broadcasts to all connected clients.',
+                },
+                { type: 'heading', content: 'Features' },
+                {
+                    type: 'table',
+                    headers: ['Feature', 'Detail'],
+                    rows: [
+                        ['Heartbeat', ':keepalive every 15s'],
+                        ['Dedup', 'Skip re-query within 1s window'],
+                        ['Limits', '5 per IP, 500 total'],
+                        ['Reconnect', 'Exponential backoff 1s\u219230s'],
+                        ['Shutdown', 'SIGTERM closes all connections'],
+                    ],
+                },
+            ],
+        },
+        stream: {
+            title: 'SSE Endpoint',
+            subtitle: 'src/app/api/h1/stream/route.js',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Next.js Route Handler returning a ReadableStream with Content-Type: text/event-stream. No authentication required \u2014 serves the same public data as the homepage.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Header', 'Value'],
+                    rows: [
+                        ['Content-Type', 'text/event-stream'],
+                        ['Cache-Control', 'no-cache, no-store'],
+                        ['X-Accel-Buffering', 'no (nginx)'],
+                    ],
+                },
+            ],
+        },
+        hook: {
+            title: 'useLiveData Hook',
+            subtitle: 'src/shared/hooks/useLiveData.mjs',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Client hook that connects to the SSE stream via EventSource. Returns live data, map state, connection status, and previous data for change detection.',
+                },
+                { type: 'heading', content: 'First-Message Baseline' },
+                {
+                    type: 'text',
+                    content:
+                        'The first SSE message is treated as a silent state reset \u2014 no prevData is set. This prevents false toasts when the SSR snapshot is stale.',
+                },
+                { type: 'heading', content: 'Leader Election' },
+                {
+                    type: 'text',
+                    content:
+                        'BroadcastChannel elects one tab as the leader for Web Notifications. All tabs show Sonner toasts, but only the leader fires OS notifications.',
+                },
+            ],
+        },
+        detect: {
+            title: 'Change Detection',
+            subtitle: 'src/shared/utils/game/detectChanges.mjs',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Pure function that compares previous and current event arrays. Used by both client (LiveToasts) and server (pushNotifier).',
+                },
+                {
+                    type: 'table',
+                    headers: ['Transition', 'Detection'],
+                    rows: [
+                        ['Campaign started', 'New event_id appears'],
+                        ['Campaign won', 'active \u2192 success'],
+                        ['Campaign lost', 'active \u2192 fail'],
+                    ],
+                },
+            ],
+        },
+        toast: {
+            title: 'Sonner Toasts',
+            subtitle: 'src/features/notifications/LiveToasts.jsx',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Fires persistent toast notifications (duration: Infinity) on event transitions. Styled with faction colors and the same glow animation as contested regions on the map.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Property', 'Value'],
+                    rows: [
+                        ['Duration', 'Infinite (until dismissed)'],
+                        ['Accent', 'Right-side, faction color'],
+                        ['Animation', 'card-glow pulse'],
+                        ['Position', 'Bottom-right'],
+                    ],
+                },
+            ],
+        },
+        webnoti: {
+            title: 'Web Notifications',
+            subtitle: 'Browser Notification API',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Native browser notifications for backgrounded tabs. Only fires when document.hidden is true and permission is granted. Leader tab only (BroadcastChannel election).',
+                },
+            ],
+        },
+        pushcheck: {
+            title: 'Push Notifier',
+            subtitle: 'src/update/pushNotifier.mjs',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Server-side change detection that runs after each update cycle (fire-and-forget). Keeps previous events in memory and sends web-push notifications on transitions.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Feature', 'Detail'],
+                    rows: [
+                        ['Concurrency', 'Max 50 simultaneous pushes'],
+                        ['Cleanup', 'Removes 410/404 subscriptions'],
+                        ['Blocking', 'Non-blocking (async)'],
+                        ['Reset', 'On server restart (ok)'],
+                    ],
+                },
+            ],
+        },
+        pushapi: {
+            title: 'Subscription API',
+            subtitle: 'src/app/api/notifications/subscribe/route.js',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'POST to subscribe (upserts endpoint + keys), DELETE to unsubscribe. Validated with Zod: endpoint URL max 2048, keys base64 max 256.',
+                },
+            ],
+        },
+        sw: {
+            title: 'Service Worker',
+            subtitle: 'public/sw.js',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Handles push events (showNotification), app shell caching (stale-while-revalidate), and notification clicks (focus/open). Never intercepts /api/* or SSE stream.',
+                },
+            ],
+        },
+    },
+};

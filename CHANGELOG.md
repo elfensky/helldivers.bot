@@ -19,6 +19,10 @@
 - **Zod validation for season seeding** — validate API responses with Zod schemas before database writes (#191)
 - **SEO polish** — improved sitemap, JSON-LD `mainEntity`, and breadcrumbs (#123)
 
+### Refactors
+
+- **Mermaid diagram system** — replace hand-crafted SVG diagram components (~1650 LOC) with reusable `MermaidDiagram` component powered by Mermaid syntax. Diagrams are now config-driven (definition string + config object). Same color conventions as wiki. Preserves flow filtering, clickable detail panels, and keyboard accessibility.
+
 ### Fixes
 
 - **Fix Sonner toast module duplication** — co-locate `<Toaster>` inside `LiveToasts` instead of root layout to share the same Sonner `ToastState` singleton across client components
