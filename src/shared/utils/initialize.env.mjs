@@ -42,6 +42,9 @@ function checkAnalytics() {
     if (!process.env.SENTRY_AUTH_TOKEN) {
         throw new Error('SENTRY_AUTH_TOKEN is not set');
     }
+    if (!process.env.SENTRY_DSN) {
+        throw new Error('SENTRY_DSN is not set');
+    }
 }
 
 function checkAuth() {

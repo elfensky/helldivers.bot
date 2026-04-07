@@ -8,7 +8,9 @@ if (process.env.NODE_ENV === 'production') {
     Sentry.init({
         dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
         sendDefaultPii: true,
-        tracesSampleRate: 0,
+        tracesSampleRate: 0.25,
+        autoSessionTracking: false,
+        tunnel: '/api/glitchtip-tunnel',
         debug: false,
     });
 }
