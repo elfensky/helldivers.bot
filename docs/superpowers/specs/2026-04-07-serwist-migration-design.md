@@ -1,7 +1,7 @@
 # Migrate Service Worker to Serwist
 
 **Date:** 2026-04-07
-**Status:** Draft
+**Status:** Approved (debate-reviewed)
 **Motivation:** The hand-written service worker (`public/sw.js`) requires manual `CACHE_NAME` version bumps on every deploy. Stale cached HTML caused the StatusDot to render as a static `●` bullet instead of the React component. Serwist (`@serwist/next`) provides automatic precache manifest generation with content hashes — changed files get new hashes, cache busting is automatic. No manual versioning ever.
 
 ## Requirements
@@ -27,7 +27,7 @@ npm install serwist @serwist/next
 import withSerwistInit from '@serwist/next';
 
 const withSerwist = withSerwistInit({
-    swSrc: 'src/sw.ts',
+    swSrc: 'src/sw.js',
     swDest: 'public/sw.js',
     register: true,
     reloadOnOnline: true,
@@ -43,9 +43,9 @@ export default withSerwist(nextConfig);
 - `reloadOnOnline: true`: reload when network reconnects
 - `cacheOnNavigation: true`: cache navigated pages for offline use
 
-### 3. Create `src/sw.ts`
+### 3. Create `src/sw.js`
 
-New Serwist service worker source (~50 lines). Uses `self.__SW_MANIFEST` (auto-injected at build) for precaching, `defaultCache` from `@serwist/next/worker` for runtime caching strategies (network-first for HTML, stale-while-revalidate for static assets, network-only for API routes).
+New Serwist service worker source (~50 lines). Uses `self.__SW_MANIFEST` (auto-injected at build) for precaching. Runtime caching uses an explicit `NetworkOnly` matcher for `/api/*` routes (debate finding: `defaultCache` does not auto-exclude API routes), followed by `defaultCache` from `@serwist/next/worker` for everything else.
 
 Custom `push` and `notificationclick` event listeners added after `serwist.addEventListeners()` — same logic as current `public/sw.js` push handler:
 - `push`: validate payload JSON, validate same-origin icon, `showNotification()`
@@ -54,7 +54,13 @@ Custom `push` and `notificationclick` event listeners added after `serwist.addEv
 Configuration:
 - `skipWaiting: true` — new SW activates immediately
 - `clientsClaim: true` — takes control of existing pages
-- `navigationPreload: true` — faster network-first responses
+- NO `navigationPreload` — deferred until RSC interaction is understood (debate finding)
+
+**Debate findings applied:**
+- `src/sw.js` not `.ts` — project has no TypeScript setup (`jsconfig.json`, no `typescript` dep)
+- Explicit `/api/*` NetworkOnly route — `defaultCache` does not auto-exclude API routes
+- `navigationPreload` removed — unclear interaction with Next.js 16 RSC payloads + `cacheOnNavigation`
+- Dockerfile verified safe — `public/` copied from builder stage after `next build`
 
 ### 4. Files to Delete
 
