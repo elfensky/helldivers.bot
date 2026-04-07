@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -13,6 +13,7 @@ export default function UserSection() {
     const isProfileActive = pathname.startsWith('/profile');
     const { data: session, isPending } = useSession();
     const [avatarUrl, setAvatarUrl] = useState(session?.user?.image ?? null);
+    const identifiedRef = useRef(false);
 
     useEffect(() => {
         if (session?.user && !session.user.image) {
@@ -21,6 +22,16 @@ export default function UserSection() {
             setAvatarUrl(session.user.image);
         }
     }, [session?.user?.image, session?.user?.email]);
+
+    useEffect(() => {
+        if (session?.user?.id && !identifiedRef.current && window.umami) {
+            identifiedRef.current = true;
+            const provider = session.user.image?.includes('discord') ? 'discord'
+                : session.user.image?.includes('github') ? 'github'
+                : 'unknown';
+            window.umami.identify(session.user.id, { provider });
+        }
+    }, [session?.user?.id, session?.user?.image]);
 
     if (isPending) {
         return <div className="user-section-skeleton" />;
