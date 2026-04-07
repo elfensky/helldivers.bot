@@ -195,9 +195,9 @@ function Surfaces() {
 
 function Swatch({ color, name, token }) {
     return (
-        <div className="border border-ghost">
+        <div className="flex flex-col border border-ghost">
             <div className="h-12" style={{ backgroundColor: color }} />
-            <div className="bg-surface-2 px-1.5 py-1 text-small leading-[1.3]">
+            <div className="flex-1 bg-surface-2 px-1.5 py-1 text-small leading-[1.3]">
                 <span className="block font-body">{name}</span>
                 <code className="block font-mono text-small text-text-muted">
                     {token}
