@@ -37,10 +37,7 @@ const cachedState = typeof window !== 'undefined' ? loadCachedState() : null;
 const INITIAL_STORE = Object.freeze({
     data: null,
     mapState: null,
-    status:
-        typeof navigator !== 'undefined' && !navigator.onLine ?
-            'offline'
-        :   'polling',
+    status: 'polling', // safe default for SSR — connect() checks navigator.onLine
     prevData: null,
     isLeader: false,
 });
@@ -115,7 +112,13 @@ function connect() {
     if (pollTimer) return;
     isFirstMessage = true;
 
-    // First poll immediately
+    // If browser knows it's offline (PWA, airplane mode), start as offline
+    if (!navigator.onLine) {
+        store = { ...store, status: 'offline' };
+        emit();
+    }
+
+    // First poll immediately (will fail fast if offline)
     poll();
 
     // Start interval
