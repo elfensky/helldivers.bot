@@ -83,11 +83,24 @@ describe('DashboardClient', () => {
         expect(button).toBeInTheDocument();
     });
 
-    test('shows SIGNAL LOST when data is null', () => {
+    test('shows loading skeleton while connecting', () => {
         vi.mocked(useLiveDataContext).mockReturnValue({
             data: null,
             mapState: null,
             status: 'connecting',
+            prevData: null,
+            isLeader: false,
+        });
+        const { container } = render(<DashboardClient />);
+        expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+        expect(screen.queryByText('SIGNAL LOST')).not.toBeInTheDocument();
+    });
+
+    test('shows SIGNAL LOST when live but no data', () => {
+        vi.mocked(useLiveDataContext).mockReturnValue({
+            data: null,
+            mapState: null,
+            status: 'live',
             prevData: null,
             isLeader: false,
         });

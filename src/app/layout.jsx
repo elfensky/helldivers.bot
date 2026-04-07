@@ -9,11 +9,6 @@ import Footer from '@/shared/components/Footer/Footer';
 import BottomNav from '@/shared/components/BottomNav/BottomNav';
 import ServiceWorkerRegister from '@/shared/components/ServiceWorkerRegister';
 import LiveDataProvider from '@/shared/providers/LiveDataProvider';
-//data
-import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { getCampaign } from '@/db/queries/getCampaign';
-import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
-import { EVENT_STATUS } from '@/shared/enums/events';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],
@@ -71,13 +66,6 @@ export default async function RootLayout({ children }) {
     const nonce = (await headers()).get('x-nonce') ?? undefined;
     const isProduction = process.env.NODE_ENV === 'production';
 
-    // Fetch campaign data for LiveDataProvider — failure yields null,
-    // handled gracefully by useLiveData's fallback chain.
-    const { data } = await tryCatch(getCampaign());
-    const activeEvents = (data?.events ?? []).filter(
-        (e) => e.status === EVENT_STATUS.ACTIVE,
-    );
-    const initialMapState = data ? computeMapState(data.live, activeEvents) : null;
 
     return (
         <html
@@ -208,10 +196,7 @@ export default async function RootLayout({ children }) {
                 >
                     <p className="m-0">Please use a larger screen to view this site.</p>
                 </div>
-                <LiveDataProvider
-                    initialData={data ?? null}
-                    initialMapState={initialMapState}
-                >
+                <LiveDataProvider>
                     <Header />
                     <main
                         id="main"

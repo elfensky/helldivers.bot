@@ -223,23 +223,21 @@ function subscribe(listener) {
  *
  * Key behaviors:
  * - First SSE message after each (re)connection is a silent baseline —
- *   prevData is not set, preventing false change detection from stale SSR.
+ *   prevData is not set, preventing false change detection.
  * - Malformed SSE messages are silently dropped (JSON.parse failure).
  * - BroadcastChannel leader election ensures only one tab fires OS
  *   notifications. Leaders yield on conflicting claims to prevent dupes.
- * - Falls back to localStorage cache when SSR data unavailable (offline PWA).
- * - Fallback chain: live SSE → server-rendered → localStorage cache → null.
+ * - Falls back to localStorage cache for offline PWA support.
+ * - Fallback chain: live SSE → localStorage cache → null.
  *
- * @param {Object} initialData - Server-rendered campaign data (null if offline)
- * @param {Object} initialMapState - Server-rendered map state (null if offline)
  * @returns {{ data: Object, mapState: Object, status: string, prevData: Object, isLeader: boolean }}
  */
-export function useLiveData(initialData, initialMapState) {
+export function useLiveData() {
     const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
     return {
-        data: snapshot.data ?? initialData ?? cachedState?.data ?? null,
-        mapState: snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
+        data: snapshot.data ?? cachedState?.data ?? null,
+        mapState: snapshot.mapState ?? cachedState?.mapState ?? null,
         status: snapshot.status,
         prevData: snapshot.prevData,
         isLeader: snapshot.isLeader,

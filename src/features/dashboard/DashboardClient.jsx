@@ -20,10 +20,13 @@ const FACTION_LABELS = {
 };
 
 export default function DashboardClient() {
-    const { data, mapState } = useLiveDataContext();
+    const { data, mapState, status } = useLiveDataContext();
     const [faction, setFaction] = useState('global');
 
     if (!data) {
+        if (status === 'connecting' || status === 'reconnecting') {
+            return <DashboardSkeleton />;
+        }
         return (
             <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
                 <h1>SIGNAL LOST</h1>
@@ -133,6 +136,41 @@ export default function DashboardClient() {
             >
                 <span className="hint-arrow">↓</span> event log
             </button>
+        </div>
+    );
+}
+
+function DashboardSkeleton() {
+    return (
+        <div className="dashboard gutters">
+            <div className="dashboard-map">
+                <div className="aspect-square w-full animate-pulse bg-surface-1" />
+            </div>
+            <div className="dashboard-sidebar">
+                <div className="flex flex-col gap-3 pb-2">
+                    <div className="h-6 w-3/4 animate-pulse bg-surface-1" />
+                    <div className="h-4 w-full animate-pulse bg-surface-1" />
+                    <div className="h-4 w-2/3 animate-pulse bg-surface-1" />
+                </div>
+                <div className="flex flex-col gap-2">
+                    <div className="h-5 w-24 animate-pulse bg-surface-1" />
+                    <div className="sector-grid">
+                        <div className="h-24 animate-pulse bg-surface-1" />
+                        <div className="h-24 animate-pulse bg-surface-1" />
+                        <div className="h-24 animate-pulse bg-surface-1" />
+                    </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <div className="h-5 w-32 animate-pulse bg-surface-1" />
+                    <div className="h-8 w-full animate-pulse bg-surface-1" />
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="h-16 animate-pulse bg-surface-1" />
+                        <div className="h-16 animate-pulse bg-surface-1" />
+                        <div className="h-16 animate-pulse bg-surface-1" />
+                        <div className="h-16 animate-pulse bg-surface-1" />
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
