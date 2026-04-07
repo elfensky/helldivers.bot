@@ -27,7 +27,12 @@ export default async function ProfilePage() {
     return (
         <div className="flex flex-col gap-6">
             <ApiDashboard user={user} />
-            <AccountActions user={user} avatarUrl={avatarUrl} providers={providers} />
+            <AccountActions
+                user={user}
+                avatarUrl={avatarUrl}
+                providers={providers}
+                canUnlink={providers.length > 1}
+            />
         </div>
     );
 }

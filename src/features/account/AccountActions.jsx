@@ -9,7 +9,7 @@ import { tryCatch } from '@/shared/utils/tryCatch';
 
 const SOCIAL_PROVIDERS = ['discord', 'github'];
 
-export default function AccountActions({ user, avatarUrl, providers }) {
+export default function AccountActions({ user, avatarUrl, providers, canUnlink }) {
     const router = useRouter();
     const [loading, setLoading] = useState(null);
     const [linkError, setLinkError] = useState(null);
@@ -85,7 +85,7 @@ export default function AccountActions({ user, avatarUrl, providers }) {
                                 const linked = providers.find(
                                     (p) => p.providerId === provider,
                                 );
-                                const isOnlyAccount = providers.length <= 1;
+                                const isOnlyAccount = !canUnlink;
                                 const isLoading = loading === provider;
                                 return (
                                     <div
@@ -96,28 +96,23 @@ export default function AccountActions({ user, avatarUrl, providers }) {
                                             {provider}
                                         </span>
                                         {linked ? (
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    handleUnlink(
-                                                        provider,
-                                                        linked.accountId,
-                                                    )
-                                                }
-                                                disabled={
-                                                    isOnlyAccount || isLoading
-                                                }
-                                                title={
-                                                    isOnlyAccount
-                                                        ? 'Cannot unlink your only account'
-                                                        : ''
-                                                }
-                                                className="cursor-pointer border border-danger px-2 py-0.5 text-small font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
-                                            >
-                                                {isLoading
-                                                    ? 'Unlinking…'
-                                                    : 'Unlink'}
-                                            </button>
+                                            !isOnlyAccount && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleUnlink(
+                                                            provider,
+                                                            linked.accountId,
+                                                        )
+                                                    }
+                                                    disabled={isLoading}
+                                                    className="cursor-pointer border border-danger px-2 py-0.5 text-small font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    {isLoading
+                                                        ? 'Unlinking…'
+                                                        : 'Unlink'}
+                                                </button>
+                                            )
                                         ) : (
                                             <button
                                                 type="button"
