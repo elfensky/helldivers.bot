@@ -156,10 +156,5 @@ const withMDX = createMDX({
 
 export default withSentryConfig(withMDX(nextConfig), {
     silent: true,
-    url: process.env.SENTRY_URL,
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
-    release: {
-        create: false,
-    },
+    sourcemaps: { disable: true },
 });

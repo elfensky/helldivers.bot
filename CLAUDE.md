@@ -117,7 +117,7 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`, in
 - **Prisma 7** with `@prisma/adapter-pg` driver adapter. Client outputs to `src/generated/prisma/`. CLI config in `prisma.config.mjs`.
 - **Auth:** BetterAuth with database sessions (Prisma adapter). Discord + GitHub OAuth. Server config in `src/auth.js`, client utilities in `src/auth-client.js`.
 - **React Compiler** enabled experimentally in `next.config.mjs`.
-- **Error tracking:** Sentry SDK configured for self-hosted Bugsink (`tracesSampleRate: 0`, no replays/logs).
+- **Error tracking:** Sentry SDK configured for self-hosted GlitchTip (`tracesSampleRate: 0`, no replays/logs). Route-level (`error.jsx`) and component-level (`ComponentErrorBoundary`) error boundaries for graceful degradation.
 - **Node version:** mise pins node@24 (ships with npm 11 natively).
 - **Server actions:** Most utilities use `'use server'` directive.
 - **Shared utilities:** `formatNumber` (`src/utils/formatNumber.mjs`) for compact numbers (12.3M, 1.2K). `formatTimeAgo` (`src/utils/formatTimeAgo.mjs`) for relative timestamps.

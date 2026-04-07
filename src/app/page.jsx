@@ -1,3 +1,4 @@
+import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 import DashboardClient from '@/features/dashboard/DashboardClient';
 import TimelineSection from '@/features/timeline/TimelineSection';
 
@@ -17,8 +18,12 @@ export const metadata = {
 export default function HomePage() {
     return (
         <>
-            <DashboardClient />
-            <TimelineSection />
+            <ComponentErrorBoundary name="Dashboard">
+                <DashboardClient />
+            </ComponentErrorBoundary>
+            <ComponentErrorBoundary name="Timeline">
+                <TimelineSection />
+            </ComponentErrorBoundary>
         </>
     );
 }
