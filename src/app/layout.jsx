@@ -7,7 +7,6 @@ import { Space_Grotesk, Inter } from 'next/font/google';
 import Header from '@/shared/components/Header/Header';
 import Footer from '@/shared/components/Footer/Footer';
 import BottomNav from '@/shared/components/BottomNav/BottomNav';
-import ServiceWorkerRegister from '@/shared/components/ServiceWorkerRegister';
 import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 //data
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
@@ -222,8 +221,6 @@ export default async function RootLayout({ children }) {
                     <Footer />
                     <BottomNav />
                 </LiveDataProvider>
-                <ServiceWorkerRegister />
-
                 {isProduction ?
                     <Script
                         nonce={nonce}

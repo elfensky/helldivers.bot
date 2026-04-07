@@ -23,6 +23,9 @@
 # production
 /build
 
+# Serwist — generated service worker (build artifact)
+public/sw.js
+
 # misc
 .DS_Store
 *.pem
