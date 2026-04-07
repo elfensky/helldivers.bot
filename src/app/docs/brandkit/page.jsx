@@ -41,13 +41,16 @@ function Hero() {
                         Radius — everywhere
                     </span>
                 </div>
-                <div className="flex min-w-[140px] flex-1 flex-col border border-ghost bg-surface-1 px-4 py-3">
-                    <span className="font-display text-h1 leading-none font-black text-primary uppercase">
-                        RIGHT
-                    </span>
-                    <span className="mt-1 text-small text-text-muted">
-                        Accent line — always right
-                    </span>
+                <div className="grid min-w-[140px] flex-1 grid-cols-[minmax(0,1fr)_4px] border border-ghost bg-surface-1">
+                    <div className="flex flex-col px-4 py-3">
+                        <span className="font-display text-h1 leading-none font-black text-primary uppercase">
+                            RIGHT
+                        </span>
+                        <span className="mt-1 text-small text-text-muted">
+                            Accent line — always right
+                        </span>
+                    </div>
+                    <div className="bg-primary" />
                 </div>
                 <div className="flex min-w-[140px] flex-1 flex-col border border-ghost bg-surface-1 px-4 py-3">
                     <span className="font-display text-h1 leading-none font-black text-primary uppercase">
