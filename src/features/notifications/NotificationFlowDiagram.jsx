@@ -418,6 +418,7 @@ export default function NotificationFlowDiagram() {
                     <button
                         key={view.key}
                         className={v === view.key ? 'active' : ''}
+                        data-umami-event={`diagram-notification-${view.key}`}
                         onClick={() => setActiveView(view.key)}
                     >
                         {view.label}

@@ -255,6 +255,7 @@ export default function DataFlowDiagram() {
                     <button
                         key={view.key}
                         className={activeView === view.key ? 'active' : ''}
+                        data-umami-event={`diagram-dataflow-${view.key}`}
                         onClick={() => setActiveView(view.key)}
                     >
                         {view.label}

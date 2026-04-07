@@ -10,6 +10,7 @@ export default function SignInPage() {
                 <button
                     className="flex w-64 cursor-pointer items-center justify-center gap-3 px-6 py-3 text-white transition-opacity hover:opacity-90 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                     style={{ backgroundColor: '#5865F2' }}
+                    data-umami-event="auth-signin-discord"
                     onClick={() => signIn('discord', { callbackURL: '/dashboard' })}
                 >
                     <svg width="20" height="15" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,6 +21,7 @@ export default function SignInPage() {
                 <button
                     className="flex w-64 cursor-pointer items-center justify-center gap-3 px-6 py-3 text-white transition-opacity hover:opacity-90 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                     style={{ backgroundColor: '#24292e' }}
+                    data-umami-event="auth-signin-github"
                     onClick={() => signIn('github', { callbackURL: '/dashboard' })}
                 >
                     <svg width="20" height="20" viewBox="0 0 98 96" fill="none" xmlns="http://www.w3.org/2000/svg">

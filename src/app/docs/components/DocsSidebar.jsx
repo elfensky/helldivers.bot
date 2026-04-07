@@ -8,18 +8,18 @@ const sections = [
     {
         label: 'General',
         items: [
-            { href: '/docs', label: 'Overview' },
-            { href: '/docs/about', label: 'About' },
-            { href: '/docs/faq', label: 'FAQ' },
+            { href: '/docs', label: 'Overview', track: 'docs-overview' },
+            { href: '/docs/about', label: 'About', track: 'docs-about' },
+            { href: '/docs/faq', label: 'FAQ', track: 'docs-faq' },
         ],
     },
     {
         label: 'Technical',
         items: [
-            { href: '/docs/architecture', label: 'Architecture' },
-            { href: '/docs/notifications', label: 'Notifications' },
-            { href: '/docs/api', label: 'API Reference' },
-            { href: '/docs/brandkit', label: 'Brand Kit' },
+            { href: '/docs/architecture', label: 'Architecture', track: 'docs-architecture' },
+            { href: '/docs/notifications', label: 'Notifications', track: 'docs-notifications' },
+            { href: '/docs/api', label: 'API Reference', track: 'docs-api' },
+            { href: '/docs/brandkit', label: 'Brand Kit', track: 'docs-brandkit' },
         ],
     },
 ];
@@ -43,6 +43,7 @@ export default function DocsSidebar() {
             {/* Mobile breadcrumb bar */}
             <button
                 onClick={() => setOpen(!open)}
+                data-umami-event="docs-sidebar-toggle"
                 className="flex w-full items-center gap-2 border-b border-outline-variant bg-surface-1 px-4 py-3 text-body lg:hidden"
             >
                 <span className="text-text-muted">Docs /</span>
@@ -101,6 +102,7 @@ function SidebarContent({ pathname, onNavigate }) {
                                 key={item.href}
                                 href={item.href}
                                 prefetch={false}
+                                data-umami-event={item.track}
                                 onClick={onNavigate}
                                 className={`block border-l-2 px-4 py-1.5 text-body ${
                                     isActive ?

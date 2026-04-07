@@ -86,6 +86,7 @@ export default function NotificationToggle() {
             <Link
                 href="/docs/faq"
                 prefetch={false}
+                data-umami-event="notification-faq"
                 className="font-mono text-small text-[var(--color-text-muted)] opacity-50 hover:opacity-80"
                 title="How to enable notifications"
             >

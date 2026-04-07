@@ -11,7 +11,7 @@ export default function NotFound() {
                 This area has been classified by Super Earth High Command. It either never
                 existed, or has been redacted for your safety.
             </p>
-            <Link href="/" prefetch={false} className="text-primary hover:underline">
+            <Link href="/" prefetch={false} data-umami-event="nav-404-home" className="text-primary hover:underline">
                 Return to Managed Democracy →
             </Link>
         </div>
