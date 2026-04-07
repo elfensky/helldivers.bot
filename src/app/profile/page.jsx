@@ -13,18 +13,26 @@ export default async function ProfilePage() {
     const { data: accounts, error } = await tryCatch(
         db.account.findMany({
             where: { userId: user.id },
-            select: { providerId: true },
+            select: { providerId: true, accountId: true },
         }),
     );
     if (error) throw error;
 
-    const providers = accounts.map((a) => a.providerId);
-    const avatarUrl = user.image ?? getGravatarUrl(user.email);
+    const providers = accounts.map((a) => ({
+        providerId: a.providerId,
+        accountId: a.accountId,
+    }));
+    const avatarUrl = user.image ?? (await getGravatarUrl(user.email));
 
     return (
         <div className="flex flex-col gap-6">
             <ApiDashboard user={user} />
-            <AccountActions user={user} avatarUrl={avatarUrl} providers={providers} />
+            <AccountActions
+                user={user}
+                avatarUrl={avatarUrl}
+                providers={providers}
+                canUnlink={providers.length > 1}
+            />
         </div>
     );
 }

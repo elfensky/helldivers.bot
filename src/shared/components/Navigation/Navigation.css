@@ -52,6 +52,41 @@
     animation: live-blink 1.5s ease-in-out infinite;
 }
 
+.user-section-skeleton {
+    height: 1.25rem;
+    width: 3.5rem;
+    border-radius: 4px;
+    background: var(--color-surface-2);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.user-section-wrapper {
+    transition: width 0.25s ease;
+}
+
+.user-section-content {
+    animation: user-fade-in 0.2s ease-out;
+}
+
+@keyframes user-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
 .heartbeat-line {
     stroke-dasharray: 60;
     stroke-dashoffset: 0;

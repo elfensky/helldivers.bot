@@ -31,5 +31,20 @@ export const signOut = () =>
         },
     });
 
+/**
+ * Initiate OAuth flow to link a new social provider to the current account.
+ * @param {string} provider - OAuth provider name ('discord' or 'github')
+ */
+export const linkSocial = (provider) =>
+    authClient.linkSocial({ provider, callbackURL: '/profile' });
+
+/**
+ * Unlink a social provider from the current account.
+ * @param {string} providerId - Provider name ('discord' or 'github')
+ * @param {string} accountId - The provider-specific account ID
+ */
+export const unlinkAccount = (providerId, accountId) =>
+    authClient.unlinkAccount({ providerId, accountId });
+
 /** React hook for accessing the current session in client components. */
 export const useSession = authClient.useSession;

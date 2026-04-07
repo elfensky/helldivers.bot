@@ -1,18 +1,10 @@
 import './Navigation.css';
-//auth
-import { auth } from '@/auth';
-//next
-import { headers } from 'next/headers';
+import { Suspense } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-//
-import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
 import HeaderNav from '@/shared/components/Navigation/HeaderNav';
-import { getGravatarUrl } from '@/shared/utils/gravatar';
+import UserSection from '@/shared/components/Navigation/UserSection';
 
-export default async function Navigation() {
-    const session = await auth.api.getSession({ headers: await headers() });
-
+export default function Navigation() {
     return (
         <nav className="z-50 flex items-center gap-3">
             {/* External links */}
@@ -72,43 +64,11 @@ export default async function Navigation() {
             <span className="header-nav-divider hidden sm:block" />
 
             {/* User section */}
-            <div className="hidden items-center gap-3 sm:flex">
-                <User session={session} />
+            <div className="user-section-wrapper hidden items-center gap-3 sm:flex">
+                <Suspense fallback={<div className="user-section-skeleton" />}>
+                    <UserSection />
+                </Suspense>
             </div>
         </nav>
-    );
-}
-
-async function User({ session }) {
-    if (!session || !session.user) {
-        return <SignIn />;
-    }
-
-    let avatarUrl = '';
-    if (session.user.image === null) {
-        avatarUrl = getGravatarUrl(session.user.email);
-    } else {
-        avatarUrl = session.user.image;
-    }
-
-    return (
-        <>
-            <Link
-                href="/profile"
-                prefetch={false}
-                data-umami-event="header-profile"
-                className="flex items-center opacity-70 transition-[opacity,transform] hover:opacity-100 active:scale-95"
-            >
-                <Image
-                    src={avatarUrl}
-                    className="rounded-full"
-                    alt={`${session.user.name ?? 'User'} avatar`}
-                    width={24}
-                    height={24}
-                    priority={true}
-                />
-            </Link>
-            <SignOut />
-        </>
     );
 }
