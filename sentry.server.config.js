@@ -4,11 +4,10 @@
 
 import * as Sentry from '@sentry/nextjs';
 
-// TODO: restore production-only guard after GlitchTip verification
 Sentry.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV,
     sendDefaultPii: true,
     tracesSampleRate: 1.0,
-    debug: true,
+    debug: false,
 });

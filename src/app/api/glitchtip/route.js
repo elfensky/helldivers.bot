@@ -27,18 +27,8 @@ export async function POST(request) {
     );
 
     if (error) {
-        console.error('[glitchtip-tunnel] fetch error:', error.message);
         return new Response('Tunnel error', { status: 502 });
     }
 
-    const responseText = await response.text();
-    console.info(
-        `[glitchtip-tunnel] ${response.status} ${response.statusText} → ${ingestUrl}`,
-        responseText,
-    );
-
-    return new Response(responseText, {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(null, { status: response.status });
 }
