@@ -1,5 +1,6 @@
 'use client';
 import './FactionTabs.css';
+import { useTrack } from '@/shared/hooks/useTrack.mjs';
 
 const TABS = [
     { id: 'global', label: 'Global', icon: '/icons/faction3.webp' },
@@ -9,13 +10,17 @@ const TABS = [
 ];
 
 export default function FactionTabs({ active, onChange }) {
+    const track = useTrack();
     return (
         <div className="faction-tabs">
             {TABS.map(({ id, label, icon }) => (
                 <button
                     key={id}
                     className={`faction-tab ${active === id ? 'active' : ''}`}
-                    onClick={() => onChange(id)}
+                    onClick={() => {
+                        onChange(id);
+                        track('faction-tab-switch', { faction: id });
+                    }}
                     aria-label={label}
                 >
                     <img src={icon} alt="" className="faction-tab-icon" />

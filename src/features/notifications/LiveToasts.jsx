@@ -83,6 +83,9 @@ export default function LiveToasts({ prevData, data, isLeader }) {
                 const color = FACTION_COLORS[event.enemy];
                 toast(label, { duration: 8000, style: TOAST_STYLE(color) });
             }
+            if (window.umami) {
+                window.umami.track('toast-catch-up', { count: activeEvents.length });
+            }
         }, 50);
 
         return () => clearTimeout(timer);

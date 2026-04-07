@@ -1,9 +1,11 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTrack } from '@/shared/hooks/useTrack.mjs';
 
 export default function SeasonSelector({ seasons, currentSeason }) {
     const router = useRouter();
+    const track = useTrack();
 
     // Sync URL with resolved season so the link is shareable.
     // Defers via requestIdleCallback (with setTimeout fallback) to avoid
@@ -36,7 +38,11 @@ export default function SeasonSelector({ seasons, currentSeason }) {
         <nav>
             <select
                 value={currentSeason}
-                onChange={(e) => router.push(`/archives?season=${e.target.value}`)}
+                onChange={(e) => {
+                    const season = e.target.value;
+                    router.push(`/archives?season=${season}`);
+                    track('archive-season-select', { season: Number(season) });
+                }}
                 className="rounded bg-white/10 px-3 py-2 text-body text-white accent-primary hover:bg-white/20"
             >
                 {seasons.map((s) => (
