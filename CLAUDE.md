@@ -84,6 +84,19 @@ if (error) {
 - Use `errorResponse(code, start, error)` and `successResponse(code, start, data)` from `src/utils/responses.mjs`
 - Measure execution time with `roundedPerformanceTime(start)` from `src/utils/time.mjs`
 
+### Analytics Tracking
+
+Every interactive element (links, buttons, nav items) must have Umami tracking. Use `category-action` naming:
+
+- **`data-umami-event="category-action"`** for simple clicks (nav links, buttons, toggles). Preferred — the tracker script handles it automatically.
+- **`useTrack()` hook** for dynamic interactions where event name or data depends on state (e.g., `track('faction-tab-switch', { faction: id })`).
+- **`window.umami?.track()`** inside `useEffect` callbacks where hooks can't be called.
+- **`sendUmamiEvent()`** for server-side API route tracking (called inside `after()` to avoid blocking responses).
+
+Categories: `nav`, `auth`, `footer`, `docs`, `diagram`, `faction`, `archive`, `notification`, `push`, `sw`, `toast`, `dashboard`, `api`.
+
+When adding a new interactive element, always add a `data-umami-event` attribute. When adding a new API route that serves external consumers, add a server-side `umamiTrackEvent` call.
+
 ### Validation
 
 All external data validated with Zod schemas (`src/validators/`) before database operations.
@@ -125,6 +138,7 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`, in
 - **On-demand season fetching:** `/archives` page derives SeasonSelector from current season number (not DB query). Missing seasons fetched from official API on first request via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`).
 - **SSE live updates:** Worker polls API → DB write → `pg NOTIFY campaign_update` → SSE manager (`src/shared/utils/sse/sseManager.mjs`) broadcasts full campaign state via `/api/h1/stream` → `useLiveData` hook (`src/shared/hooks/useLiveData.mjs`) replaces React state. Postgres LISTEN/NOTIFY bridges worker thread and Next.js process (Prisma doesn't support LISTEN/NOTIFY — uses dedicated `pg.Client`).
 - **Notifications:** `detectChanges()` (`src/shared/utils/game/detectChanges.mjs`) detects event transitions (started/won/lost) on both client (Sonner toasts + Web Notifications) and server (push via `web-push`). `LiveToasts` also shows catch-up toasts for active events on page load. The Sonner `<Toaster>` is co-located inside `LiveToasts` (not root layout) to share the same module singleton — rendering it from a server component creates a separate `ToastState`. Single "Enable notifications" button enables both web and push. Push subscriptions stored in `push_subscription` table.
+- **Analytics:** Umami v3 (self-hosted, cookieless). Three tracking layers: (1) `data-umami-event` HTML attributes for click tracking — the tracker script captures these automatically; (2) `useTrack` hook (`src/shared/hooks/useTrack.mjs`) or `window.umami?.track()` for dynamic JS interactions; (3) `sendUmamiEvent()` (`src/shared/utils/umami.mjs`) for server-side API route tracking. Client-side tracker posts through same-origin proxy (`/api/umami` route, `/api/send` rewrite) to bypass ad blockers. Authenticated users identified via `umami.identify()` in `UserSection.jsx`. Production-only — no tracking in dev/test.
 - **PWA:** Service worker (`public/sw.js`) caches app shell, handles push events. Last SSE payload cached in localStorage for offline fallback.
 
 ## Architecture — Frontend Layout

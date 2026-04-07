@@ -11,7 +11,7 @@ export function SignIn({ className }) {
         <Link
             href="/sign-in"
             className={`header-nav-link ${className ?? ''}`}
-            data-umami-event="header-signin"
+            data-umami-event="auth-signin"
         >
             Sign In
         </Link>
@@ -24,7 +24,7 @@ export function SignOut() {
         <button
             type="button"
             className="header-nav-link cursor-pointer"
-            data-umami-event="header-signout"
+            data-umami-event="auth-signout"
             onClick={() => signOut()}
         >
             Sign Out

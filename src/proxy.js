@@ -6,11 +6,11 @@ export function proxy(request) {
 
     const csp = [
         "default-src 'self'",
-        `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://umami.drunik.be https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ''}`,
+        `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ''}`,
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https://authjs.dev https://cdn.discordapp.com https://avatars.githubusercontent.com https://www.gravatar.com",
         "font-src 'self'",
-        "connect-src 'self' https://umami.drunik.be https://cloudflareinsights.com",
+        "connect-src 'self' https://cloudflareinsights.com",
         "form-action 'self'",
         "frame-ancestors 'none'",
         "base-uri 'self'",

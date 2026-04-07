@@ -21,10 +21,10 @@ describe('SignIn', () => {
         expect(link).toHaveAttribute('href', '/sign-in');
     });
 
-    test('link has data-umami-event="header-signin"', () => {
+    test('link has data-umami-event="auth-signin"', () => {
         render(<SignIn />);
         const link = screen.getByRole('link', { name: 'Sign In' });
-        expect(link).toHaveAttribute('data-umami-event', 'header-signin');
+        expect(link).toHaveAttribute('data-umami-event', 'auth-signin');
     });
 });
 
@@ -34,9 +34,9 @@ describe('SignOut', () => {
         expect(screen.getByRole('button', { name: 'Sign Out' })).toBeInTheDocument();
     });
 
-    test('button has data-umami-event="header-signout"', () => {
+    test('button has data-umami-event="auth-signout"', () => {
         render(<SignOut />);
         const button = screen.getByRole('button', { name: 'Sign Out' });
-        expect(button).toHaveAttribute('data-umami-event', 'header-signout');
+        expect(button).toHaveAttribute('data-umami-event', 'auth-signout');
     });
 });

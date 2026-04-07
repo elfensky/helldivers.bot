@@ -1,5 +1,7 @@
 import sseManager from '@/shared/utils/sse/sseManager';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { after } from 'next/server';
+import { umamiTrackEvent } from '@/shared/utils/umami';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,6 +17,10 @@ function getClientIp(request) {
 export async function GET(request) {
     // Initialize SSE manager on first request
     await sseManager.init();
+
+    after(async () => {
+        await umamiTrackEvent('API | Stream', '/api/h1/stream', 'api-sse-connect');
+    });
 
     if (!sseManager.healthy) {
         return new Response('SSE service unavailable', { status: 503 });
