@@ -21,7 +21,7 @@ function ensureVapid() {
     return true;
 }
 
-function buildPayload(change) {
+export function buildPayload(change) {
     const faction = factions[change.event.enemy]?.name ?? 'Unknown';
     const titles = {
         event_started: `${faction} ${change.event.type} event started`,
