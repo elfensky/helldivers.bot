@@ -11,6 +11,8 @@
 - **Sign-in polish** — provider branding (Discord/GitHub logos and colors), navigation link to sign-in page
 - **App version in footer** — shows package version, short commit SHA, and commit message in footer and dev console (auto-generated at build time by `next.config.mjs`)
 - **Catch-up toasts for active events** — show an "in progress" toast on page load when defend/attack events are already active (#LiveToasts)
+- **GlitchTip error tracking** — migrate from BugSink to GlitchTip with client tunnel (`/api/glitchtip`) to bypass ad blockers, CSP violation reporting via `report-uri`, and `environment` tagging to split dev/prod issues
+- **Error boundaries** — route-level (`error.jsx` at root + archives) and component-level (`ComponentErrorBoundary` wrapping Galaxy Map, Regions, Stats, Timeline) for graceful degradation
 - **Custom API docs** — replace SwaggerUI with lightweight server-rendered API documentation page
 - **Zod validation for season seeding** — validate API responses with Zod schemas before database writes (#191)
 - **SEO polish** — improved sitemap, JSON-LD `mainEntity`, and breadcrumbs (#123)
@@ -47,7 +49,7 @@
 ### Chores
 
 - Update Umami analytics URL to `umami.drunik.be`
-- Enable production source maps and upload to Bugsink
+- Enable production source maps and upload to GlitchTip
 - Apply Prettier formatting to source and test files
 - npm update (dependency refresh)
 - Add logo originals and normalize formatting in compose and client
