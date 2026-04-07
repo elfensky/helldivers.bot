@@ -5,6 +5,8 @@ import { toast, Toaster } from 'sonner';
 import factions from '@/shared/enums/factions.mjs';
 import { detectChanges } from '@/shared/utils/game/detectChanges.mjs';
 
+// Toast colors sourced from CSS custom properties in src/styles/tokens.css.
+// Inline style objects are required because Sonner's style prop doesn't accept Tailwind classes.
 const FACTION_COLORS = {
     0: 'var(--color-faction-bugs)',
     1: 'var(--color-faction-cyborgs)',

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { sendTestNotification } from '@/features/admin/actions';
 
 export default function SendTestNotification() {
@@ -26,6 +27,18 @@ export default function SendTestNotification() {
 
     const disabled = status !== 'idle';
 
+    // Toast colors use CSS custom properties from src/styles/tokens.css.
+    // Inline style objects are required because Sonner's style prop doesn't accept Tailwind classes.
+    function fireTestToast() {
+        toast('Bugs attack event started — Test', {
+            duration: 8000,
+            style: {
+                borderRight: '4px solid var(--color-faction-bugs)',
+                animation: 'toast-glow 3s ease-in-out infinite',
+            },
+        });
+    }
+
     return (
         <div className="flex items-center gap-2">
             <button
@@ -36,7 +49,14 @@ export default function SendTestNotification() {
             >
                 {status === 'sending' ? 'Sending...' :
                  status === 'cooldown' ? 'Sent' :
-                 'Test Notification'}
+                 'Test Push'}
+            </button>
+            <button
+                type="button"
+                onClick={fireTestToast}
+                className="cursor-pointer border border-ghost px-2 py-0.5 text-small text-text-muted hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                Test Toast
             </button>
             {message && (
                 <span className={`text-small ${message.isError ? 'text-danger' : 'text-text-muted'}`}>
