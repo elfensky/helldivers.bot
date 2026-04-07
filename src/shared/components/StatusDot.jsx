@@ -13,10 +13,10 @@ export default function StatusDot() {
 
     const color =
         {
-            live: 'bg-green-500',
-            polling: 'bg-primary',
-            offline: 'bg-red-500',
-        }[status] ?? 'bg-primary';
+            live: 'bg-success',
+            polling: 'bg-warning',
+            offline: 'bg-danger',
+        }[status] ?? 'bg-warning';
 
     const label =
         {
