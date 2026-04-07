@@ -8,7 +8,6 @@ import db from '@/db/db';
 //update
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';
-import { notifyUpdate } from '@/update/notifyClient';
 import { checkAndNotify } from '@/update/pushNotifier';
 
 async function writeHeartbeat(start, isStartup, errorMsg = null) {
@@ -66,9 +65,6 @@ export async function GET(request) {
         return errorResponse(500, start, seasonError?.message);
     }
     const seasonTime = roundedPerformanceTime(start);
-
-    // Notify SSE clients that data has been updated
-    await notifyUpdate();
 
     // Fire-and-forget: check for event transitions and send push notifications
     checkAndNotify().catch((err) =>
