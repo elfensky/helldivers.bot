@@ -25,6 +25,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Generate the Prisma client
 RUN POSTGRES_URL=postgresql://dummy npx prisma generate
+# Sentry/GlitchTip sourcemap upload (build-time only, not baked into final image)
+ARG SENTRY_AUTH_TOKEN
+ARG SENTRY_URL
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.

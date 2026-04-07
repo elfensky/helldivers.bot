@@ -1,5 +1,5 @@
 'use client';
-import { useSyncExternalStore } from 'react';
+import { useState, useEffect } from 'react';
 
 const CACHE_KEY = 'hd1-live-cache';
 
@@ -27,12 +27,12 @@ function saveCachedState(data, mapState) {
 // Cache loaded once for offline PWA fallback
 const cachedState = typeof window !== 'undefined' ? loadCachedState() : null;
 
-// --- External Store (module-level singleton) ---
+// --- Module-level singleton store ---
 //
-// SSE data lives outside React's state system to avoid collisions with
-// the RSC Flight stream during client-side navigation. React pulls
-// snapshots via useSyncExternalStore when safe to render, rather than
-// having startTransition push updates into the Fiber queue mid-flight.
+// SSE data lives in a module-level store shared across all hook instances.
+// React subscribes via useState + useEffect — setState is batched by React
+// 18+ and only processed when the scheduler is idle, preventing collisions
+// with RSC Flight stream processing during client-side navigation.
 
 const INITIAL_STORE = Object.freeze({
     data: null,
@@ -49,19 +49,11 @@ let isFirstMessage = true;
 let leaderChannel = null;
 let leaderTimeout = null;
 
-/** Notify all useSyncExternalStore subscribers that the store changed. */
+/** Notify all React subscribers with the current store value. */
 function emit() {
     for (const listener of listeners) {
-        listener();
+        listener(store);
     }
-}
-
-function getSnapshot() {
-    return store;
-}
-
-function getServerSnapshot() {
-    return INITIAL_STORE;
 }
 
 // --- SSE Connection ---
@@ -118,14 +110,13 @@ function connect() {
     };
 }
 
-/** Close EventSource, reset store to initial state, and notify listeners. */
+/** Close EventSource and reset store to initial state. */
 function disconnect() {
     if (es) {
         es.close();
         es = null;
     }
     store = INITIAL_STORE;
-    emit();
 }
 
 // --- BroadcastChannel Leader Election ---
@@ -188,46 +179,27 @@ function teardownLeader() {
     }
 }
 
-// --- Subscribe / Unsubscribe ---
-
-/**
- * useSyncExternalStore subscribe function. Connects on first subscriber,
- * disconnects when the last subscriber leaves.
- * @param {Function} listener - React's re-render trigger
- * @returns {Function} Unsubscribe callback
- */
-function subscribe(listener) {
-    listeners.add(listener);
-    if (listeners.size === 1) {
-        connect();
-        setupLeader();
-    }
-    return () => {
-        listeners.delete(listener);
-        if (listeners.size === 0) {
-            disconnect();
-            teardownLeader();
-        }
-    };
-}
-
 // --- Hook ---
 
 /**
  * Hook that connects to the SSE stream for live campaign data updates.
  *
- * Architecture: useSyncExternalStore with a module-level singleton store.
- * SSE data lives outside React — React pulls snapshots when safe to render.
- * This eliminates the enqueueModel crash caused by startTransition racing
- * with RSC Flight stream processing during client-side navigation.
+ * Architecture: module-level singleton store with React useState + useEffect.
+ * SSE mutates the store, then calls listeners which invoke setState.
+ *
+ * Note: react-server-dom-turbopack has a bug where any concurrent React
+ * activity during RSC Flight stream processing crashes with "enqueueModel
+ * is not a function" (vercel/next.js#92362). This affects Turbopack dev
+ * only — production builds use Webpack and are unaffected. The app uses
+ * native <a> links (not Next.js <Link>) to avoid client-side RSC
+ * navigation entirely until the upstream bug is fixed.
  *
  * Key behaviors:
  * - First SSE message after each (re)connection is a silent baseline —
- *   prevData is not set, preventing false change detection from stale SSR.
+ *   prevData is not set, preventing false change detection.
  * - Malformed SSE messages are silently dropped (JSON.parse failure).
  * - BroadcastChannel leader election ensures only one tab fires OS
  *   notifications. Leaders yield on conflicting claims to prevent dupes.
- * - Falls back to localStorage cache when SSR data unavailable (offline PWA).
  * - Fallback chain: live SSE → server-rendered → localStorage cache → null.
  *
  * @param {Object} initialData - Server-rendered campaign data (null if offline)
@@ -235,7 +207,33 @@ function subscribe(listener) {
  * @returns {{ data: Object, mapState: Object, status: string, prevData: Object, isLeader: boolean }}
  */
 export function useLiveData(initialData, initialMapState) {
-    const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+    const [snapshot, setSnapshot] = useState(INITIAL_STORE);
+
+    useEffect(() => {
+        // Seed from localStorage cache (runs after hydration — no SSR mismatch)
+        if (cachedState?.data && !store.data) {
+            store = { ...store, data: cachedState.data, mapState: cachedState.mapState };
+            setSnapshot(store);
+        }
+
+        // Subscribe: setState is batched by React — safe during Flight processing
+        function onStoreChange(next) {
+            setSnapshot(next);
+        }
+        listeners.add(onStoreChange);
+        if (listeners.size === 1) {
+            connect();
+            setupLeader();
+        }
+
+        return () => {
+            listeners.delete(onStoreChange);
+            if (listeners.size === 0) {
+                disconnect();
+                teardownLeader();
+            }
+        };
+    }, []);
 
     return {
         data: snapshot.data ?? initialData ?? cachedState?.data ?? null,

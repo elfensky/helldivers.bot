@@ -20,7 +20,7 @@
         "@next/mdx": "^16.2.2",
         "@prisma/adapter-pg": "^7.6.0",
         "@prisma/client": "^7.6.0",
-        "@sentry/nextjs": "^10.46.0",
+        "@sentry/nextjs": "^10.47.0",
         "axios": "^1.14.0",
         "better-auth": "^1.5.6",
         "dotenv": "^17.3.1",

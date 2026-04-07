@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 
 vi.mock('@/components/h1/Timeline/TimelineSection.css', () => ({}));
 vi.mock('@/features/timeline/groupEventsByDay.mjs', () => ({
@@ -22,9 +23,19 @@ import { groupEventsByDay } from '@/features/timeline/groupEventsByDay.mjs';
 import TimelineSection from '@/features/timeline/TimelineSection';
 
 describe('TimelineSection', () => {
+    beforeEach(() => {
+        vi.mocked(useLiveDataContext).mockReturnValue({
+            data: { events: [] },
+            mapState: null,
+            status: 'live',
+            prevData: null,
+            isLeader: false,
+        });
+    });
+
     test('shows "No events recorded yet" when no events', () => {
         groupEventsByDay.mockReturnValue([]);
-        render(<TimelineSection events={[]} />);
+        render(<TimelineSection />);
         expect(screen.getByText('No events recorded yet.')).toBeInTheDocument();
     });
 
@@ -59,7 +70,7 @@ describe('TimelineSection', () => {
                 ],
             },
         ]);
-        render(<TimelineSection events={[]} />);
+        render(<TimelineSection />);
         expect(screen.getByTestId('event-1')).toBeInTheDocument();
         expect(screen.getByTestId('event-2')).toBeInTheDocument();
     });
@@ -95,8 +106,21 @@ describe('TimelineSection', () => {
                 ],
             },
         ]);
-        render(<TimelineSection events={[]} />);
+        render(<TimelineSection />);
         expect(screen.getByText('Jan 15')).toBeInTheDocument();
         expect(screen.getByText('1W / 1L')).toBeInTheDocument();
+    });
+
+    test('handles null data gracefully', () => {
+        vi.mocked(useLiveDataContext).mockReturnValue({
+            data: null,
+            mapState: null,
+            status: 'connecting',
+            prevData: null,
+            isLeader: false,
+        });
+        groupEventsByDay.mockReturnValue([]);
+        render(<TimelineSection />);
+        expect(screen.getByText('No events recorded yet.')).toBeInTheDocument();
     });
 });

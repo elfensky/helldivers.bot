@@ -1,5 +1,6 @@
 import './Footer.css';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Footer() {
     const year = new Date().getFullYear();
@@ -44,19 +45,19 @@ export default function Footer() {
                     <div className="footer-section-label">Features</div>
                     <ul className="footer-links">
                         <li>
-                            <a href="/" className="footer-link">
+                            <Link href="/" prefetch={false} className="footer-link">
                                 Campaign
-                            </a>
+                            </Link>
                         </li>
                         <li>
-                            <a href="/archives" className="footer-link">
+                            <Link href="/archives" prefetch={false} className="footer-link">
                                 Archives
-                            </a>
+                            </Link>
                         </li>
                         <li>
-                            <a href="/docs" className="footer-link">
+                            <Link href="/docs" prefetch={false} className="footer-link">
                                 Docs
-                            </a>
+                            </Link>
                         </li>
                     </ul>
                 </nav>
@@ -124,7 +125,16 @@ export default function Footer() {
             </div>
 
             <div className="footer-separator p-gutters">
-                <span>Ministry of Truth</span>
+                <div className="flex flex-col gap-1">
+                    <span>Ministry of Truth</span>
+                    <span className="text-[0.625rem] normal-case tracking-normal opacity-50">
+                        v{process.env.NEXT_PUBLIC_APP_VERSION} &ndash;{' '}
+                        {process.env.NEXT_PUBLIC_COMMIT_SHA}
+                    </span>
+                    <span className="text-[0.625rem] normal-case tracking-normal opacity-50">
+                        {process.env.NEXT_PUBLIC_COMMIT_MESSAGE}
+                    </span>
+                </div>
                 <span>
                     Not affiliated with Arrowhead Game Studios or Sony Interactive
                     Entertainment

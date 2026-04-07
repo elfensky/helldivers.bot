@@ -1,5 +1,6 @@
 //next
 import Image from 'next/image';
+import Link from 'next/link';
 import Script from 'next/script';
 import { headers } from 'next/headers';
 //components
@@ -28,8 +29,9 @@ export default async function Header() {
 
 function Logo() {
     return (
-        <a
+        <Link
             href="/"
+            prefetch={false}
             data-umami-event={'header-home'}
             aria-label="Go to homepage"
             className="z-50 flex flex-row items-center justify-center gap-2 text-h2 font-bold"
@@ -45,6 +47,6 @@ function Logo() {
                 />
                 <figcaption className="whitespace-nowrap">Helldivers Bot</figcaption>
             </figure>
-        </a>
+        </Link>
     );
 }

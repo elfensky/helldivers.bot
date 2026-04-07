@@ -1,3 +1,9 @@
+/**
+ * Validates that all required environment variables are set at startup.
+ * Throws if any mandatory variable (database, update, analytics, auth) is missing.
+ * @returns {Promise<true>}
+ * @throws {Error} if a required env var is unset
+ */
 export async function initializeEnvironmentVariables() {
     checkDatabase();
     checkUpdates();
@@ -35,6 +41,9 @@ function checkAnalytics() {
     }
     if (!process.env.SENTRY_AUTH_TOKEN) {
         throw new Error('SENTRY_AUTH_TOKEN is not set');
+    }
+    if (!process.env.SENTRY_DSN) {
+        throw new Error('SENTRY_DSN is not set');
     }
 }
 

@@ -97,6 +97,26 @@ vi.mock('@/db/db', () => ({
 
 // #endregion
 
+// #region Live Data Mocks
+
+/**
+ * Mock LiveDataContext — provides default live data for component tests.
+ * Override in tests:
+ *   vi.mocked(useLiveDataContext).mockReturnValue({ status: 'offline', ... })
+ */
+vi.mock('@/shared/providers/LiveDataContext.mjs', () => ({
+    LiveDataContext: React.createContext(null),
+    useLiveDataContext: vi.fn(() => ({
+        data: null,
+        mapState: null,
+        status: 'live',
+        prevData: null,
+        isLeader: false,
+    })),
+}));
+
+// #endregion
+
 // #region Next.js Mocks
 
 /**
@@ -153,6 +173,15 @@ vi.mock('next/headers', () => ({
  */
 vi.mock('next/image', () => ({
     default: vi.fn((props) => React.createElement('img', props)),
+}));
+
+/**
+ * Mock Next.js Link — renders as <a> element, filtering Next.js-specific props
+ */
+vi.mock('next/link', () => ({
+    default: vi.fn(({ children, prefetch, scroll, replace, shallow, ...props }) =>
+        React.createElement('a', props, children),
+    ),
 }));
 
 // #endregion

@@ -1,3 +1,9 @@
+/**
+ * Formats a start timestamp into human-readable uptime (e.g. "3d 5h", "2h 14m", "7m").
+ * Returns '—' if no start time is provided.
+ * @param {string|Date|null} startedAt
+ * @returns {string}
+ */
 export function formatUptime(startedAt) {
     if (!startedAt) return '—';
     const ms = Date.now() - new Date(startedAt).getTime();

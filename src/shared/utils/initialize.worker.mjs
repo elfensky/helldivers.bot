@@ -1,3 +1,8 @@
+/**
+ * Spawns the cron worker thread that polls the API update endpoint on a timer.
+ * Only runs under the Node.js runtime; registers SIGINT/SIGTERM handlers for graceful shutdown.
+ * @returns {Promise<boolean>} true if the worker started, false otherwise
+ */
 export async function initializeWorker() {
     'use server';
 

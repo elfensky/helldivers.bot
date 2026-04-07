@@ -2,17 +2,15 @@
 import './DashboardClient.css';
 import { useState } from 'react';
 import Galaxy from '@/features/galaxy/Galaxy';
-import LiveToasts from '@/features/notifications/LiveToasts';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
-import ConnectionStatus from '@/features/dashboard/ConnectionStatus';
 import StatGrid from '@/features/stats/StatGrid';
-import { useLiveData } from '@/shared/hooks/useLiveData.mjs';
+import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
-import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo.mjs';
 import { sortEventsByRecent } from '@/shared/utils/game/eventFilters.mjs';
 import { HOMEWORLD_REGION } from '@/shared/enums/worlds.mjs';
+import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 
 const factionIndices = [0, 1, 2];
 const FACTION_LABELS = {
@@ -22,15 +20,23 @@ const FACTION_LABELS = {
     illuminate: 'Illuminate',
 };
 
-export default function DashboardClient({ initialData, initialMapState }) {
-    const { data, mapState, status, prevData, isLeader } = useLiveData(
-        initialData,
-        initialMapState,
-    );
+export default function DashboardClient() {
+    const { data, mapState } = useLiveDataContext();
     const [faction, setFaction] = useState('global');
 
+    if (!data) {
+        return (
+            <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
+                <h1>SIGNAL LOST</h1>
+                <p>
+                    Communication with Super Earth High Command has been disrupted. This
+                    is not cause for alarm. Remain calm and await further instructions.
+                </p>
+            </div>
+        );
+    }
+
     const events = sortEventsByRecent(data?.events);
-    const timeAgo = formatTimeAgo(data.last_updated);
 
     function renderFrontierCard(index) {
         const campaignData = data.live?.find((l) => l.enemy === index);
@@ -88,9 +94,10 @@ export default function DashboardClient({ initialData, initialMapState }) {
 
     return (
         <div className="dashboard gutters">
-            <LiveToasts prevData={prevData} data={data} isLeader={isLeader} />
             <div className="dashboard-map">
-                <Galaxy mapState={mapState} />
+                <ComponentErrorBoundary name="Galaxy Map">
+                    <Galaxy mapState={mapState} />
+                </ComponentErrorBoundary>
             </div>
             <div className="dashboard-sidebar">
                 <div className="pb-2">
@@ -103,24 +110,24 @@ export default function DashboardClient({ initialData, initialMapState }) {
                         Cyborgs, and Illuminate for peace, liberty, and managed democracy.
                     </p>
                     <div className="mt-2 flex items-center gap-3">
-                        <ConnectionStatus
-                            status={status}
-                            timeAgo={status === 'live' ? null : timeAgo}
-                        />
                         <NotificationToggle />
                     </div>
                 </div>
                 <section className="flex flex-col gap-2">
                     <h2>Regions</h2>
-                    <ul className="sector-grid list-none p-0">
-                        {factionIndices.map(renderFrontierCard)}
-                        {factionIndices.map(renderHomeworldCard)}
-                    </ul>
+                    <ComponentErrorBoundary name="Regions">
+                        <ul className="sector-grid list-none p-0">
+                            {factionIndices.map(renderFrontierCard)}
+                            {factionIndices.map(renderHomeworldCard)}
+                        </ul>
+                    </ComponentErrorBoundary>
                 </section>
                 <section className="flex flex-col gap-2">
-                    <h2>Stats — {FACTION_LABELS[faction]}</h2>
-                    <FactionTabs active={faction} onChange={setFaction} />
-                    <StatGrid live={data.live} faction={faction} events={events} />
+                    <ComponentErrorBoundary name="Stats">
+                        <h2>Stats — {FACTION_LABELS[faction]}</h2>
+                        <FactionTabs active={faction} onChange={setFaction} />
+                        <StatGrid live={data.live} faction={faction} events={events} />
+                    </ComponentErrorBoundary>
                 </section>
             </div>
             <button
