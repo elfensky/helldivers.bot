@@ -2,10 +2,10 @@
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 
 /**
- * Small connection-status dot that reads SSE status from LiveDataContext.
+ * Small connection-status dot that reads poll status from LiveDataContext.
  * Used by HeaderNav and BottomNav to show real connection state.
  *
- * Two states: green (live) or red (anything else — connecting, reconnecting, offline).
+ * Two states: green (live — last poll succeeded) or red (offline — last poll failed).
  */
 export default function StatusDot() {
     const { status } = useLiveDataContext();
