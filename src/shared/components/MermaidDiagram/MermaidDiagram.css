@@ -58,6 +58,13 @@
     filter: brightness(1.2);
 }
 
+/* Edge styling — thicker strokes matching standard Mermaid/GitHub look.
+   Uses svg[id] to match Mermaid's scoped selector specificity. */
+.diagram-canvas svg .flowchart-link {
+    stroke-width: 2px !important;
+    transition: opacity 0.3s;
+}
+
 /* Dim/highlight for filter views */
 .diagram-dimmed {
     opacity: 0.12;

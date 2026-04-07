@@ -1,27 +1,28 @@
 /**
  * Mermaid definition for the notification system flow diagram.
  * Same color conventions as the wiki (Real-Time.md).
+ *
+ * Two variants: LR (horizontal, desktop) and TD (vertical, mobile).
  */
-export const DEFINITION = `
-graph TD
-    %% Row 1: Server
+const BODY = `
+    %% Server
     worker["Worker Thread<br/><small>polls every 10-15s</small>"]
     update["Update Route<br/><small>/api/h1/update</small>"]
     notify["pg NOTIFY<br/><small>campaign_update</small>"]
     pushcheck["Push Notifier<br/><small>checkAndNotify()</small>"]
 
-    %% Row 2: Transport
+    %% Transport
     manager["SSE Manager<br/><small>LISTEN + broadcast</small>"]
     pushapi["Subscriptions<br/><small>push_subscription DB</small>"]
 
-    %% Row 3: Stream / Push delivery
+    %% Stream / Push delivery
     stream["SSE Stream<br/><small>/api/h1/stream</small>"]
     sw["Service Worker<br/><small>push handler</small>"]
 
-    %% Row 4: Client
+    %% Client
     hook["useLiveData<br/><small>EventSource hook</small>"]
 
-    %% Row 5: Change Detection + Outputs
+    %% Change Detection + Outputs
     detect["detectChanges<br/><small>client-side diff</small>"]
     toast["Sonner Toast<br/><small>persistent</small>"]
     webnoti["Web Notification<br/><small>leader tab only</small>"]
@@ -56,3 +57,9 @@ graph TD
     class hook,detect client
     class toast,webnoti,sw notification
 `;
+
+/** Horizontal layout (desktop) */
+export const DEFINITION_LR = `graph LR\n${BODY}`;
+
+/** Vertical layout (mobile) */
+export const DEFINITION_TD = `graph TD\n${BODY}`;

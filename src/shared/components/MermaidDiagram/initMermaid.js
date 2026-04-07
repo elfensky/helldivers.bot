@@ -15,13 +15,13 @@ export async function ensureMermaidInit() {
             primaryColor: '#1c1b1b',
             primaryBorderColor: '#2a2a2a',
             primaryTextColor: 'hsl(0, 0%, 80%)',
-            lineColor: '#4d4732',
+            lineColor: '#6b7280',
             fontFamily: 'Inter, Arial, sans-serif',
             fontSize: '13px',
         },
         flowchart: {
             useMaxWidth: true,
-            curve: 'linear',
+            curve: 'basis',
             htmlLabels: true,
         },
     });

@@ -21,24 +21,44 @@ function extractNodeId(nodeElement) {
 }
 
 /**
+ * Extract source and target node IDs from a Mermaid edge's data-id attribute.
+ * Format: "L_{source}_{target}_{index}" — e.g., "L_api_status_worker_0"
+ *
+ * Since node IDs can contain underscores, we match against known node IDs
+ * to find the correct split point.
+ */
+function parseEdgeEndpoints(dataId, knownNodeIds) {
+    if (!dataId || !dataId.startsWith('L_')) return null;
+    const body = dataId.slice(2); // strip "L_"
+    // Try each known node as the source prefix
+    for (const src of knownNodeIds) {
+        if (!body.startsWith(src + '_')) continue;
+        const rest = body.slice(src.length + 1); // strip "{source}_"
+        // Try each known node as the target
+        for (const tgt of knownNodeIds) {
+            if (rest === tgt + '_0' || rest.startsWith(tgt + '_')) {
+                return { source: src, target: tgt };
+            }
+        }
+    }
+    return null;
+}
+
+/**
  * Apply dim/highlight classes to SVG nodes and edges based on active flow filter.
  * Mermaid v11 DOM structure:
  *   - Nodes: g.node (each with a unique ID containing the node key)
- *   - Edges: g.edgePaths contains path.flowchart-link elements (no per-edge groups)
+ *   - Edges: path.flowchart-link with data-id="L_{source}_{target}_{index}"
  *   - Edge labels: g.edgeLabel elements
- *   - Subgraphs: g.cluster elements
+ *   - Subgraphs: g.cluster elements (never dimmed — opacity cascades to children)
  */
 function applyFlowFilter(container, activeView, flows) {
     const allNodes = container.querySelectorAll('.node');
     const allEdgeLabels = container.querySelectorAll('.edgeLabel');
-    const allClusters = container.querySelectorAll('.cluster');
-    // Individual edge paths (Mermaid v11 uses .flowchart-link on each path)
     const allEdgePaths = container.querySelectorAll('.flowchart-link');
 
-    const allElements = [...allNodes, ...allEdgeLabels, ...allClusters, ...allEdgePaths];
-
     if (activeView === 'all') {
-        allElements.forEach((el) => {
+        [...allNodes, ...allEdgeLabels, ...allEdgePaths].forEach((el) => {
             el.classList.remove('diagram-dimmed', 'diagram-highlighted');
         });
         return;
@@ -46,6 +66,11 @@ function applyFlowFilter(container, activeView, flows) {
 
     const activeNodeIds = new Set(flows[activeView] || []);
 
+    // Build set of all known node IDs for edge parsing
+    const allNodeIds = [];
+    allNodes.forEach((node) => allNodeIds.push(extractNodeId(node)));
+
+    // Highlight/dim nodes
     allNodes.forEach((node) => {
         const nodeId = extractNodeId(node);
         if (activeNodeIds.has(nodeId)) {
@@ -57,14 +82,21 @@ function applyFlowFilter(container, activeView, flows) {
         }
     });
 
-    // Dim all edges and labels, then selectively highlight
-    [...allEdgePaths, ...allEdgeLabels].forEach((el) => {
-        el.classList.remove('diagram-highlighted');
-        el.classList.add('diagram-dimmed');
+    // Highlight edges where both source and target are in the active flow
+    allEdgePaths.forEach((edge) => {
+        const dataId = edge.getAttribute('data-id');
+        const endpoints = parseEdgeEndpoints(dataId, allNodeIds);
+        if (endpoints && activeNodeIds.has(endpoints.source) && activeNodeIds.has(endpoints.target)) {
+            edge.classList.remove('diagram-dimmed');
+            edge.classList.add('diagram-highlighted');
+        } else {
+            edge.classList.remove('diagram-highlighted');
+            edge.classList.add('diagram-dimmed');
+        }
     });
 
-    // Dim subgraph clusters too
-    allClusters.forEach((el) => {
+    // Dim all edge labels (they don't carry source/target info)
+    allEdgeLabels.forEach((el) => {
         el.classList.remove('diagram-highlighted');
         el.classList.add('diagram-dimmed');
     });
@@ -98,14 +130,34 @@ function injectSvg(container, svgContent) {
  * @param {string} props.id - Unique diagram ID
  * @param {string} props.definition - Mermaid syntax string
  * @param {object} props.config - Diagram configuration (views, flows, details, legend)
+ * @param {string} [props.mobileDefinition] - Optional Mermaid definition for mobile (e.g., TD layout)
  * @param {string} [props.className]
  */
-export default function MermaidDiagram({ id, definition, config, className }) {
+export default function MermaidDiagram({
+    id,
+    definition,
+    mobileDefinition,
+    config,
+    className,
+}) {
     const [activeView, setActiveView] = useState('all');
     const [selectedNode, setSelectedNode] = useState(null);
     const containerRef = useRef(null);
     const track = useTrack();
-    const svgHtml = useMermaidRender(id, definition);
+
+    // Pick definition based on viewport width (mobile = vertical, desktop = horizontal)
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        if (!mobileDefinition) return;
+        const mql = window.matchMedia('(max-width: 768px)');
+        setIsMobile(mql.matches);
+        const handler = (e) => setIsMobile(e.matches);
+        mql.addEventListener('change', handler);
+        return () => mql.removeEventListener('change', handler);
+    }, [mobileDefinition]);
+
+    const activeDefinition = mobileDefinition && isMobile ? mobileDefinition : definition;
+    const svgHtml = useMermaidRender(id, activeDefinition);
 
     // Track whether SVG has been injected into the DOM
     const svgInjectedRef = useRef('');

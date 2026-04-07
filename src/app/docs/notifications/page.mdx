@@ -1,4 +1,6 @@
-import NotificationFlowDiagram from '@/features/notifications/NotificationFlowDiagram';
+import MermaidDiagram from '@/shared/components/MermaidDiagram/MermaidDiagram';
+import { DEFINITION_LR, DEFINITION_TD } from '@/features/notifications/notificationFlowDefinition';
+import { notificationFlowConfig } from '@/features/notifications/notificationFlowConfig';
 
 export const metadata = {
     title: 'Notifications | Helldivers Bot',
@@ -27,7 +29,7 @@ Four notification layers, each serving a different purpose:
 
 How notifications travel from the official API to the user. Click any node for details. Use the filters to trace individual flows.
 
-<NotificationFlowDiagram />
+<MermaidDiagram id="notification-flow" definition={DEFINITION_LR} mobileDefinition={DEFINITION_TD} config={notificationFlowConfig} />
 
 ### In-App (SSE + Toasts)
 

@@ -1,4 +1,6 @@
-import DataFlowDiagram from '@/shared/components/DataFlowDiagram/DataFlowDiagram';
+import MermaidDiagram from '@/shared/components/MermaidDiagram/MermaidDiagram';
+import { DEFINITION_LR, DEFINITION_TD } from '@/shared/components/DataFlowDiagram/dataFlowDefinition';
+import { dataFlowConfig } from '@/shared/components/DataFlowDiagram/dataFlowConfig';
 
 export const metadata = {
     title: 'Architecture | Helldivers Bot',
@@ -14,7 +16,7 @@ export const metadata = {
 
 How data moves from the official Helldivers 1 API through validation, storage, and normalization to the frontend. Click any node for details.
 
-<DataFlowDiagram />
+<MermaidDiagram id="data-flow" definition={DEFINITION_LR} mobileDefinition={DEFINITION_TD} config={dataFlowConfig} />
 
 ## Key Concepts
 

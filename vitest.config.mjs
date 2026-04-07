@@ -20,7 +20,6 @@ export default defineConfig({
                 'src/db/queries/initializeSeasons.mjs',
                 'src/db/db.js',
                 'src/shared/components/MermaidDiagram/**',
-                'src/shared/components/DataFlowDiagram/**',
                 // Next.js pages/layouts — server-rendered, tested via e2e/smoke
                 'src/app/layout.jsx',
                 'src/app/page.jsx',
