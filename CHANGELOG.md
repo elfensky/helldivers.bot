@@ -8,7 +8,10 @@
 - **Profile page** — view connected providers, manage API keys, GDPR data export and account deletion (#248)
 - **Admin dashboard** — system overview (worker health, game data, user metrics), user management with role/ban controls, last-admin guardrails, and RefreshButton (#248)
 - **Worker heartbeat monitoring** — cron worker writes heartbeat on each poll; `worker_heartbeat` table, `computeWorkerHealth` utility, health dot in admin dashboard
-- **Global live data** — SSE `LiveDataContext` wraps all pages so every route receives real-time campaign updates
+- **Global live data** — `LiveDataContext` wraps all pages so every route receives real-time campaign updates via polling
+- **Replace SSE with polling** — remove entire SSE infrastructure (sseManager, pg LISTEN/NOTIFY, `/api/h1/stream`). New `GET /api/h1/live` endpoint polled every 10s via `setInterval` + `fetch`. Eliminates RSC Flight stream conflicts (`enqueueModel` crashes)
+- **Tri-state status indicator** — StatusDot shows green (live), orange (polling), red (offline). Uses `navigator.onLine` to detect PWA offline state
+- **Serwist service worker** — migrate from hand-written `public/sw.js` to Serwist (`@serwist/next`) for automatic precache manifest with content hashes. No more manual `CACHE_NAME` version bumps. `skipWaiting` for immediate updates. Configurator mode for Turbopack compatibility
 - **Sign-in polish** — provider branding (Discord/GitHub logos and colors), navigation link to sign-in page
 - **App version in footer** — shows package version, short commit SHA, and commit message in footer and dev console (auto-generated at build time by `next.config.mjs`)
 - **Catch-up toasts for active events** — show an "in progress" toast on page load when defend/attack events are already active (#LiveToasts)
@@ -30,24 +33,22 @@
 - **Fix Sonner toast module duplication** — co-locate `<Toaster>` inside `LiveToasts` instead of root layout to share the same Sonner `ToastState` singleton across client components
 - **Fix hydration mismatch in EventCard** — add `suppressHydrationWarning` to pace label (computed via `Date.now()`, differs between SSR and client)
 - **Fix React Compiler swallowing catch-up effect** — add `'use no memo'` to `LiveToasts` to prevent the compiler from merging the two `useEffect` hooks
-- **Fix SSE navigation corruption** — close SSE before navigation and defer URL sync to prevent RSC stream corruption
-- **Fix archives redirect loop** — remove redirect loop, wrap SSE updates in `startTransition`
-- **Harden `useLiveData` SSE hook** — improved reconnection logic and inline documentation
+- **Fix hydration mismatch in StatusDot** — defer `navigator.onLine` check to `connect()` (client-side only) to prevent SSR/client status divergence
 - **Fix grid overflow** — replace bare `1fr` with `minmax(0, 1fr)` in grid layouts (#193)
 - **Fix healthcheck timing** — add `roundedPerformanceTime` to healthcheck route (#197)
 - **Fix profile page polish** — border separators, wider inputs, side-by-side layout, correct `.gutters` usage
 - **Fix RSC cache invalidation** — use `revalidatePath` without `'page'` scope to avoid RSC cache corruption
 - **Fix Zod ID validation** — replace `z.uuid()` with `z.string().min(1)` for Prisma CUID2 IDs
 - **Fix session revocation** — revoke session on ban and account deletion, redirect after delete
-- **Fix SW update toast** — make service worker update toast persistent, reduce auto-reload to 5 min
 - **Validate `BETTER_AUTH_URL` at startup** — remove unused email env vars
 
 ### Refactors
 
-- **SSE-only live data** — remove server-side Prisma query from layout; all campaign data now flows exclusively through SSE with localStorage fallback. Adds loading skeleton during SSE handshake (~100ms)
 - **`tryCatch()` wrapper adoption** — convert raw try/catch blocks to `tryCatch()` in fetch utilities (#194)
 - **Sentry SDK with native navigation** — re-add Sentry SDK while keeping native `next/link` navigation (replaces Sentry's custom Link wrapper)
-- **StatusDot simplification** — reduce to binary green/red connection state
+- **Design token cleanup** — add `--color-warning` (`#f97316`) and `--color-success` tokens; remove `--color-outline` and `--color-outline-variant` (replaced by `ghost` and `text-muted`); all raw Tailwind green/red/yellow colors replaced with theme tokens
+- **Brandkit overhaul** — grouped palette (Website/Status/Factions), nested surface demo, right accent line on rule card, equal-height swatches
+- **Delete ServiceWorkerRegister.jsx** — Serwist handles registration automatically via `register: true`
 - **Design system: fluid type scale** — add fluid type scale tokens to `@theme` with `--fs-small` floor
 - **Design system: button restyle** — remove `--color-on-primary` token, restyle buttons to outline-first
 - **Design system: font token rename** — rename `--fs-*` to `--text-*` and align all font sizes to 5-step scale
