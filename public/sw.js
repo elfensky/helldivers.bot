@@ -116,18 +116,33 @@ self.addEventListener('push', (event) => {
     }
 
     // Validate icon is same-origin (prevent spoofing via compromised push endpoint)
-    let icon = '/icon.svg';
+    let icon = '/icons/superearth.webp';
     if (payload.icon && typeof payload.icon === 'string') {
         if (payload.icon.startsWith('/') && !payload.icon.startsWith('//')) {
             icon = payload.icon;
         }
     }
 
+    // Validate badge is same-origin (same pattern as icon)
+    let badge = '/favicons/favicon-96x96.png';
+    if (payload.badge && typeof payload.badge === 'string') {
+        if (payload.badge.startsWith('/') && !payload.badge.startsWith('//')) {
+            badge = payload.badge;
+        }
+    }
+
+    // Tag and renotify — pass through if present
+    // renotify without a tag is invalid per spec and Chrome will throw
+    const tag = typeof payload.tag === 'string' ? payload.tag : undefined;
+    const renotify = tag ? Boolean(payload.renotify) : undefined;
+
     event.waitUntil(
         self.registration.showNotification(payload.title || 'Helldivers Bot', {
             body: payload.body || '',
             icon,
-            badge: '/icon.svg',
+            badge,
+            tag,
+            renotify,
             data: payload.data,
         }),
     );
