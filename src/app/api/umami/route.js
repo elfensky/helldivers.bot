@@ -1,5 +1,16 @@
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
 
+/**
+ * Same-origin proxy for Umami analytics. The client-side tracker script
+ * POSTs to /api/send (rewritten to /api/umami in next.config.mjs), and
+ * this route forwards the request to the self-hosted Umami instance.
+ *
+ * This bypasses ad blockers because the browser only sees first-party
+ * requests — no external domain in script-src or connect-src.
+ *
+ * X-Forwarded-For is forwarded so Umami can use the real client IP
+ * for its cookieless session hash (IP + UA + hostname).
+ */
 export async function POST(request) {
     const body = await request.text();
     const umamiUrl = `https://${process.env.UMAMI_SITE_URL}/api/send`;
