@@ -16,6 +16,7 @@ const SHELL_ASSETS = [
     '/icons/defend.webp',
     '/images/logo.webp',
     '/svgs/galaxy.svg',
+    '/favicons/favicon-96x96.png',
 ];
 
 // Install — cache app shell (do NOT skipWaiting — controlled by client)

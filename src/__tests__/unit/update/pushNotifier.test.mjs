@@ -88,4 +88,23 @@ describe('buildPayload', () => {
         expect(payload.tag).toBeUndefined();
         expect(payload.renotify).toBeUndefined();
     });
+
+    test('includes tag for event_id 0', () => {
+        const zeroId = {
+            kind: 'event_started',
+            event: { enemy: 0, type: 'attack', season: 1, event_id: 0 },
+        };
+        const payload = JSON.parse(buildPayload(zeroId));
+        expect(payload.tag).toBe('event-0');
+        expect(payload.renotify).toBe(true);
+    });
+
+    test('falls back to "Campaign Update" for unknown kind', () => {
+        const unknownKind = {
+            kind: 'event_unknown',
+            event: { enemy: 0, type: 'attack', season: 1, event_id: 1 },
+        };
+        const payload = JSON.parse(buildPayload(unknownKind));
+        expect(payload.title).toBe('Campaign Update');
+    });
 });
