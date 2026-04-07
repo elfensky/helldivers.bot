@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 
 const CACHE_KEY = 'hd1-live-cache';
+const POLL_INTERVAL = 10_000;
 
 function loadCachedState() {
     try {
@@ -29,25 +30,25 @@ const cachedState = typeof window !== 'undefined' ? loadCachedState() : null;
 
 // --- Module-level singleton store ---
 //
-// SSE data lives in a module-level store shared across all hook instances.
+// Live data lives in a module-level store shared across all hook instances.
 // React subscribes via useState + useEffect — setState is batched by React
-// 18+ and only processed when the scheduler is idle, preventing collisions
-// with RSC Flight stream processing during client-side navigation.
+// 18+ and only processed when the scheduler is idle.
 
 const INITIAL_STORE = Object.freeze({
     data: null,
     mapState: null,
-    status: 'connecting',
+    status: 'live', // optimistic — first poll completes within ~100ms
     prevData: null,
     isLeader: false,
 });
 
 let store = INITIAL_STORE;
 let listeners = new Set();
-let es = null;
+let pollTimer = null;
 let isFirstMessage = true;
 let leaderChannel = null;
 let leaderTimeout = null;
+let visibilityHandler = null;
 
 /** Notify all React subscribers with the current store value. */
 function emit() {
@@ -56,65 +57,78 @@ function emit() {
     }
 }
 
-// --- SSE Connection ---
+// --- Polling ---
 
 /**
- * Opens an EventSource to /api/h1/stream. Guarded — no-ops if already connected.
- *
- * onopen resets isFirstMessage so the first message after every (re)connection
- * is treated as a silent baseline, preventing false change detection.
- *
- * onmessage parses with try/catch — malformed data is silently dropped
- * rather than killing the handler permanently.
+ * Fetch live campaign data from the polling endpoint.
+ * On success: update store, cache to localStorage, emit to React.
+ * On failure: set status to 'offline', emit.
  */
-function connect() {
-    if (es) return;
-    isFirstMessage = true;
+async function poll() {
+    try {
+        const res = await fetch('/api/h1/live');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const parsed = await res.json();
 
-    es = new EventSource('/api/h1/stream');
-
-    es.onopen = () => {
-        isFirstMessage = true;
-        store = { ...store, status: 'live' };
-        emit();
-    };
-
-    es.onmessage = (event) => {
-        let parsed;
-        try {
-            parsed = JSON.parse(event.data);
-        } catch {
-            return;
-        }
         saveCachedState(parsed.data, parsed.mapState);
 
         if (isFirstMessage) {
             isFirstMessage = false;
-            store = { ...store, data: parsed.data, mapState: parsed.mapState };
+            store = {
+                ...store,
+                data: parsed.data,
+                mapState: parsed.mapState,
+                status: 'live',
+            };
         } else {
             store = {
                 ...store,
                 prevData: store.data,
                 data: parsed.data,
                 mapState: parsed.mapState,
+                status: 'live',
             };
         }
         emit();
-    };
-
-    es.onerror = () => {
-        if (store.status === 'live') {
-            store = { ...store, status: 'reconnecting' };
+    } catch {
+        if (store.status !== 'offline') {
+            store = { ...store, status: 'offline' };
             emit();
         }
-    };
+    }
 }
 
-/** Close EventSource and reset store to initial state. */
+/**
+ * Start polling. First fetch fires immediately, then every POLL_INTERVAL ms.
+ * Also registers a visibilitychange listener for immediate refresh on tab focus
+ * (browsers throttle setInterval to ~1min in background tabs).
+ */
+function connect() {
+    if (pollTimer) return;
+    isFirstMessage = true;
+
+    // First poll immediately
+    poll();
+
+    // Start interval
+    pollTimer = setInterval(poll, POLL_INTERVAL);
+
+    // Refresh on tab focus
+    visibilityHandler = () => {
+        if (!document.hidden) poll();
+    };
+    document.addEventListener('visibilitychange', visibilityHandler);
+}
+
+/** Stop polling and reset store. */
 function disconnect() {
-    if (es) {
-        es.close();
-        es = null;
+    if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+    if (visibilityHandler) {
+        document.removeEventListener('visibilitychange', visibilityHandler);
+        visibilityHandler = null;
     }
     store = INITIAL_STORE;
 }
@@ -158,7 +172,10 @@ function setupLeader() {
             if (store.isLeader) {
                 // Yield to the other tab's claim — re-elect
                 store = { ...store, isLeader: false };
-                leaderTimeout = setTimeout(claimLeadership, Math.random() * 500);
+                leaderTimeout = setTimeout(
+                    claimLeadership,
+                    Math.random() * 500,
+                );
                 emit();
             }
         }
@@ -182,25 +199,19 @@ function teardownLeader() {
 // --- Hook ---
 
 /**
- * Hook that connects to the SSE stream for live campaign data updates.
+ * Hook that polls for live campaign data updates.
  *
  * Architecture: module-level singleton store with React useState + useEffect.
- * SSE mutates the store, then calls listeners which invoke setState.
- *
- * Note: react-server-dom-turbopack has a bug where any concurrent React
- * activity during RSC Flight stream processing crashes with "enqueueModel
- * is not a function" (vercel/next.js#92362). This affects Turbopack dev
- * only — production builds use Webpack and are unaffected. The app uses
- * native <a> links (not Next.js <Link>) to avoid client-side RSC
- * navigation entirely until the upstream bug is fixed.
+ * A setInterval + fetch polls /api/h1/live, then calls listeners which invoke
+ * setState. A visibilitychange listener fires an immediate poll on tab focus.
  *
  * Key behaviors:
- * - First SSE message after each (re)connection is a silent baseline —
- *   prevData is not set, preventing false change detection.
- * - Malformed SSE messages are silently dropped (JSON.parse failure).
+ * - First successful poll is a silent baseline — prevData is not set,
+ *   preventing false change detection.
+ * - Malformed responses are treated as poll failures (status → 'offline').
  * - BroadcastChannel leader election ensures only one tab fires OS
  *   notifications. Leaders yield on conflicting claims to prevent dupes.
- * - Fallback chain: live SSE → server-rendered → localStorage cache → null.
+ * - Fallback chain: live poll → server-rendered → localStorage cache → null.
  *
  * @param {Object} initialData - Server-rendered campaign data (null if offline)
  * @param {Object} initialMapState - Server-rendered map state (null if offline)
@@ -212,7 +223,11 @@ export function useLiveData(initialData, initialMapState) {
     useEffect(() => {
         // Seed from localStorage cache (runs after hydration — no SSR mismatch)
         if (cachedState?.data && !store.data) {
-            store = { ...store, data: cachedState.data, mapState: cachedState.mapState };
+            store = {
+                ...store,
+                data: cachedState.data,
+                mapState: cachedState.mapState,
+            };
             setSnapshot(store);
         }
 
@@ -237,7 +252,8 @@ export function useLiveData(initialData, initialMapState) {
 
     return {
         data: snapshot.data ?? initialData ?? cachedState?.data ?? null,
-        mapState: snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
+        mapState:
+            snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
         status: snapshot.status,
         prevData: snapshot.prevData,
         isLeader: snapshot.isLeader,
