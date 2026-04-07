@@ -180,6 +180,13 @@ Server-initiated notifications that work when the browser is closed:
 
 Notifications for the same event (e.g., started → won) replace each other via matching `tag`, with `renotify: true` ensuring the user is re-alerted.
 
+### Admin Debug Buttons
+
+The admin dashboard (`/profile/admin`) has two debug buttons in the System Overview header:
+
+- **Test Push** — sends a test push notification to all subscribers via `web-push`, using the same `sendWithConcurrencyLimit` path as production. Reports `{ sent, stale }` counts.
+- **Test Toast** — fires a faction-colored Sonner toast locally to verify toast styling and `<Toaster>` connectivity.
+
 ### Service Worker
 
 `public/sw.js` handles five concerns:
