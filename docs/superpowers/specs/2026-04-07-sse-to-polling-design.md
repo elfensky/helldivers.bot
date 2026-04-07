@@ -31,7 +31,7 @@ Lightweight endpoint returning the same payload shape the SSE stream currently d
 1. Call `getCampaign()` (no season param — current season only). Note: `getCampaign` is wrapped in React's `cache()`, which deduplicates within a single request context — safe for API routes, each request gets its own call.
 2. Filter active events from `data.events`
 3. Call `computeMapState(data.live, activeEvents)`
-4. Serialize with bigint handling: `JSON.stringify({ data, mapState }, (_, v) => typeof v === 'bigint' ? Number(v) : v)`
+4. Serialize with bigint handling using the same `JSON.stringify` replacer pattern from `sseManager._fetchAndCache()`: `JSON.stringify({ data, mapState }, (_, v) => typeof v === 'bigint' ? Number(v) : v)`
 5. Return with `Cache-Control: no-store`
 
 **Not included:** No analytics tracking, no `?season` parameter, no remote-fetch fallback. This is an internal polling endpoint, not a public API.
@@ -53,8 +53,8 @@ Replace `EventSource` with `setInterval` + `fetch`. Everything else stays.
 - Fallback chain: live poll → server-rendered `initialData` → localStorage cache → null
 
 **Changed:**
-- `connect()`: executes first `fetch('/api/h1/live')` immediately, then starts `setInterval` at `POLL_INTERVAL` (10000ms)
-- `disconnect()`: calls `clearInterval`, resets store to `INITIAL_STORE`
+- `connect()`: executes first `fetch('/api/h1/live')` immediately, then starts `setInterval` at `POLL_INTERVAL` (10000ms). Also registers a `visibilitychange` listener that fires an immediate poll when the tab becomes visible — browsers throttle `setInterval` to ~1min in background tabs, so this ensures fresh data on tab focus.
+- `disconnect()`: calls `clearInterval`, removes `visibilitychange` listener, resets store to `INITIAL_STORE`
 - On fetch success: parse JSON, update store `data`/`mapState`, handle `prevData` (same first-message logic), set `status: 'live'`, call `saveCachedState()`, `emit()`
 - On fetch failure (network error or non-OK status): set `status: 'offline'`, `emit()`. Interval keeps firing — next success transitions back to `'live'`.
 - No reconnection/backoff logic needed. Each poll is independent.
