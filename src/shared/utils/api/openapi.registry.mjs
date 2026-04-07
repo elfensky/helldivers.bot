@@ -277,28 +277,27 @@ registry.registerPath({
     },
 });
 
-// /api/h1/stream - GET (SSE)
+// /api/h1/live - GET (polling)
 registry.registerPath({
     method: 'get',
-    path: '/api/h1/stream',
-    summary: 'Subscribe to real-time campaign updates via Server-Sent Events',
+    path: '/api/h1/live',
+    summary: 'Get current campaign state for live polling',
     description:
-        'Opens a persistent SSE connection that pushes `campaign_update` events whenever the campaign state changes. Connect using the browser `EventSource` API or the `useLiveData` hook.',
+        'Lightweight endpoint returning the current campaign data and computed map state. Designed for client-side polling via `useLiveData` hook at 10-second intervals.',
     responses: {
         200: {
-            description:
-                'SSE stream opened. Events are pushed as `event: campaign_update` with JSON data.',
+            description: 'Current campaign state with computed map ownership.',
             content: {
-                'text/event-stream': {
-                    schema: z.string().openapi({
-                        description:
-                            'Server-Sent Events stream. Each event: `event: campaign_update\\ndata: {…}\\n\\n`',
+                'application/json': {
+                    schema: z.object({
+                        data: z.any().openapi({ description: 'Full campaign object' }),
+                        mapState: z.array(z.any()).openapi({ description: 'Sector ownership array' }),
                     }),
                 },
             },
         },
-        503: {
-            description: 'SSE service is unhealthy or unavailable.',
+        500: {
+            description: 'Database error fetching campaign data.',
         },
     },
 });

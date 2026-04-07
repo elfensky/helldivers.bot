@@ -15,13 +15,13 @@ describe('generateOpenApiSpec', () => {
         expect(spec.paths).toHaveProperty('/api/h1/campaign');
         expect(spec.paths).toHaveProperty('/api/h1/rebroadcast');
         expect(spec.paths).toHaveProperty('/api/h1/update');
-        expect(spec.paths).toHaveProperty('/api/h1/stream');
+        expect(spec.paths).toHaveProperty('/api/h1/live');
         expect(spec.paths).toHaveProperty('/api/notifications/subscribe');
     });
 
-    test('/api/h1/stream has GET with text/event-stream response', () => {
-        const stream = spec.paths['/api/h1/stream'].get;
-        expect(stream.responses['200'].content).toHaveProperty('text/event-stream');
+    test('/api/h1/live has GET with application/json response', () => {
+        const live = spec.paths['/api/h1/live'].get;
+        expect(live.responses['200'].content).toHaveProperty('application/json');
     });
 
     test('/api/notifications/subscribe has both POST and DELETE', () => {
