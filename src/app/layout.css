@@ -11,6 +11,7 @@
     --color-primary: #ffe000;
     --color-danger: #ff0000;
     --color-success: #22c55e;
+    --color-warning: #f97316;
 
     /* === SURFACES (tonal layering — no shadows) === */
     --color-surface-0: #131313;
@@ -22,9 +23,7 @@
     /* === TEXT === */
     --color-text: hsl(0, 0%, 80%);
     --color-text-muted: hsl(0, 0%, 46%);
-    /* === OUTLINE === */
-    --color-outline: #999077;
-    --color-outline-variant: #4d4732;
+    /* === BORDER === */
     --color-ghost: rgba(255, 255, 255, 0.15);
 
     /* === FACTION (game-canonical — do not change) === */
@@ -38,6 +37,7 @@
     /* === TINTS (status overlay backgrounds) === */
     --color-danger-tint: rgba(40, 0, 0, 0.8);
     --color-success-tint: rgba(0, 20, 0, 0.8);
+    --color-warning-tint: rgba(40, 25, 0, 0.8);
     --color-primary-tint: rgba(40, 35, 0, 0.8);
 
     /* === TYPOGRAPHY === */
@@ -66,6 +66,7 @@
     --color-primary: #ffe000;
     --color-danger: #ff0000;
     --color-success: #22c55e;
+    --color-warning: #f97316;
     --color-surface-0: #131313;
     --color-surface-1: #1c1b1b;
     --color-surface-2: #201f1f;
@@ -73,14 +74,13 @@
     --color-surface-4: #353534;
     --color-text: hsl(0, 0%, 80%);
     --color-text-muted: hsl(0, 0%, 46%);
-    --color-outline: #999077;
-    --color-outline-variant: #4d4732;
     --color-faction-bugs: #e8822a;
     --color-faction-cyborgs: #8b2d2d;
     --color-faction-illuminate: #7ec8e3;
     --color-ghost: rgba(255, 255, 255, 0.15);
     --color-danger-tint: rgba(40, 0, 0, 0.8);
     --color-success-tint: rgba(0, 20, 0, 0.8);
+    --color-warning-tint: rgba(40, 25, 0, 0.8);
     --color-primary-tint: rgba(40, 35, 0, 0.8);
 
     /* Typography — font families */

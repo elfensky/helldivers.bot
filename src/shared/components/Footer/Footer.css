@@ -61,7 +61,7 @@
 .footer-section-label {
     font-family: var(--font-mono, monospace);
     font-size: var(--text-small);
-    color: var(--color-outline);
+    color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.02em;
     padding-bottom: var(--space-2);

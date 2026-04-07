@@ -148,7 +148,7 @@ function UserRow({ user, isSelected, onShowKeys, adminCount, currentUserId }) {
                             title={isLastAdmin ? 'Cannot ban the last admin' : undefined}
                             className={`cursor-pointer border px-2 py-0.5 text-small disabled:cursor-not-allowed disabled:opacity-50 ${
                                 isBanned ?
-                                    'border-green-400 text-green-400'
+                                    'border-success text-success'
                                 :   'border-danger text-danger'
                             }`}
                         >

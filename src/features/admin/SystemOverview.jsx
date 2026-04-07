@@ -36,9 +36,9 @@ export default async function SystemOverview() {
                     label="Worker Status"
                     value={workerHealth.label}
                     accentColor={
-                        workerHealth.status === 'healthy' ? 'bg-green-400'
+                        workerHealth.status === 'healthy' ? 'bg-success'
                         : workerHealth.status === 'degraded' ?
-                            'bg-yellow-400'
+                            'bg-warning'
                         :   'bg-danger'
                     }
                 />
