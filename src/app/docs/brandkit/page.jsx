@@ -82,6 +82,21 @@ function Palette() {
                     name="Danger"
                     token="--color-danger"
                 />
+                <Swatch
+                    color="var(--color-success)"
+                    name="Success"
+                    token="--color-success"
+                />
+                <Swatch
+                    color="var(--color-warning)"
+                    name="Warning"
+                    token="--color-warning"
+                />
+                <Swatch
+                    color="var(--color-warning-orange)"
+                    name="Warning Orange"
+                    token="--color-warning-orange"
+                />
                 <Swatch color="var(--color-text)" name="Text" token="--color-text" />
                 <Swatch
                     color="var(--color-text-muted)"
