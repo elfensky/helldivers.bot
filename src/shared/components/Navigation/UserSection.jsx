@@ -43,7 +43,7 @@ export default function UserSection() {
             <Link
                 href="/profile"
                 prefetch={false}
-                data-umami-event="header-profile"
+                data-umami-event="nav-profile"
                 className="flex items-center opacity-70 transition-[opacity,transform] hover:opacity-100 active:scale-95"
             >
                 <Image

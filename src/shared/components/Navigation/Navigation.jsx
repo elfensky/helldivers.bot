@@ -12,7 +12,7 @@ export default function Navigation() {
                 <Link
                     href="https://status.helldivers.bot"
                     prefetch={false}
-                    data-umami-event="header-status"
+                    data-umami-event="nav-status"
                     title="Status"
                     aria-label="Status"
                     className="flex items-center opacity-70 transition-[opacity,transform] hover:opacity-100 active:scale-95"
@@ -37,7 +37,7 @@ export default function Navigation() {
                 <Link
                     href="https://github.com/elfensky/helldivers1api"
                     prefetch={false}
-                    data-umami-event="header-github"
+                    data-umami-event="nav-github"
                     aria-label="GitHub"
                     className="flex items-center opacity-70 transition-[opacity,transform] hover:opacity-100 active:scale-95"
                 >
