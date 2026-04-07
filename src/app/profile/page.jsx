@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import db from '@/db/db';
 import { tryCatch } from '@/shared/utils/tryCatch';
 import { getGravatarUrl } from '@/shared/utils/gravatar';
@@ -7,6 +8,8 @@ import ApiDashboard from '@/features/account/ApiDashboard';
 import AccountActions from '@/features/account/AccountActions';
 
 export default async function ProfilePage() {
+    if (!auth) redirect('/');
+
     const session = await auth.api.getSession({ headers: await headers() });
     const user = session.user;
 

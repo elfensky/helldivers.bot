@@ -13,6 +13,7 @@ import { performanceTime } from '@/shared/utils/time';
  */
 export async function exportUserData(userId) {
     const start = performance.now();
+    if (!auth) return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
     const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session || !session.user) {
@@ -64,6 +65,7 @@ export async function exportUserData(userId) {
  */
 export async function deleteUserAccount(_, formData) {
     const start = performance.now();
+    if (!auth) return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
     const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session || !session.user) {

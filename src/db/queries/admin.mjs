@@ -13,6 +13,7 @@ import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth';
  * @returns {Promise<{ user: object } | { error: string }>} User object or error message
  */
 async function requireAdmin() {
+    if (!auth) return { error: 'Auth not configured' };
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session.user) return { error: 'Not authenticated' };
     if (session.user.role !== 'admin') return { error: 'Forbidden' };

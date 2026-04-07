@@ -224,7 +224,7 @@ export default async function RootLayout({ children }) {
                 </LiveDataProvider>
                 <ServiceWorkerRegister />
 
-                {isProduction ?
+                {isProduction && process.env.UMAMI_SITE_ID ?
                     <Script
                         nonce={nonce}
                         // src="https://umami.drunik.be/script.js"

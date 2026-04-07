@@ -63,12 +63,14 @@ export default function Navigation() {
             <HeaderNav />
             <span className="header-nav-divider hidden sm:block" />
 
-            {/* User section */}
-            <div className="user-section-wrapper hidden items-center gap-3 sm:flex">
-                <Suspense fallback={<div className="user-section-skeleton" />}>
-                    <UserSection />
-                </Suspense>
-            </div>
+            {/* User section — only render when auth is configured */}
+            {process.env.BETTER_AUTH_SECRET && (
+                <div className="user-section-wrapper hidden items-center gap-3 sm:flex">
+                    <Suspense fallback={<div className="user-section-skeleton" />}>
+                        <UserSection />
+                    </Suspense>
+                </div>
+            )}
         </nav>
     );
 }

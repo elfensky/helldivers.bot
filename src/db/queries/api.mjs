@@ -16,6 +16,7 @@ import { revalidatePath } from 'next/cache';
  */
 export async function getApiKeysByUserId(userId) {
     const start = performance.now();
+    if (!auth) return { ms: performanceTime(start), query: null, errors: { auth: 'Auth not configured' } };
     const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session || !session.user) {
@@ -58,6 +59,7 @@ export async function getApiKeysByUserId(userId) {
  */
 export async function generateApiKey(_, formData) {
     const start = performance.now();
+    if (!auth) return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
 
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session?.user) {
@@ -135,6 +137,7 @@ export async function generateApiKey(_, formData) {
  */
 export async function deleteApiKey(_, formData) {
     const start = performance.now();
+    if (!auth) return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
 
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session?.user) {
