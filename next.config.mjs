@@ -65,6 +65,10 @@ const nextConfig = {
                 source: '/stats.js',
                 destination: 'https://umami.drunik.be/script.js',
             },
+            {
+                source: '/api/send',
+                destination: '/api/umami',
+            },
         ];
     },
     async headers() {
