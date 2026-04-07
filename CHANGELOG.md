@@ -4,6 +4,7 @@
 
 ### Features
 
+- **Progressive env vars** — only `POSTGRES_URL`, `UPDATE_KEY`, and `UPDATE_INTERVAL` are required at startup; auth (BetterAuth + OAuth) and analytics (Umami, Sentry/GlitchTip) degrade gracefully when absent. Partial auth config (secret present but provider vars missing) still throws. `withSentryConfig` skipped without `SENTRY_AUTH_TOKEN`. Umami script conditional on `UMAMI_SITE_ID`.
 - **Profile page** — view connected providers, manage API keys, GDPR data export and account deletion (#248)
 - **Admin dashboard** — system overview (worker health, game data, user metrics), user management with role/ban controls, last-admin guardrails, and RefreshButton (#248)
 - **Worker heartbeat monitoring** — cron worker writes heartbeat on each poll; `worker_heartbeat` table, `computeWorkerHealth` utility, health dot in admin dashboard
