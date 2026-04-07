@@ -12,6 +12,7 @@
 - **App version in footer** — shows package version, short commit SHA, and commit message in footer and dev console (auto-generated at build time by `next.config.mjs`)
 - **Catch-up toasts for active events** — show an "in progress" toast on page load when defend/attack events are already active (#LiveToasts)
 - **Push notification improvements** — add `badge` (favicon PNG), per-event `tag` grouping, and `renotify` for status changes; fix icon fallback from SVG to raster; precache badge in service worker shell assets
+- **Umami analytics expansion** — comprehensive Level 2 feature engagement tracking with ad-blocker bypass via same-origin proxy (`/api/umami`), `useTrack` hook for dynamic interactions, `umami.identify()` for authenticated users, and `category-action` event naming convention across ~40 tracked elements
 - **GlitchTip error tracking** — migrate from BugSink to GlitchTip with client tunnel (`/api/glitchtip`) to bypass ad blockers, CSP violation reporting via `report-uri`, and `environment` tagging to split dev/prod issues
 - **Error boundaries** — route-level (`error.jsx` at root + archives) and component-level (`ComponentErrorBoundary` wrapping Galaxy Map, Regions, Stats, Timeline) for graceful degradation
 - **Custom API docs** — replace SwaggerUI with lightweight server-rendered API documentation page

@@ -32,7 +32,7 @@ function Logo() {
         <Link
             href="/"
             prefetch={false}
-            data-umami-event={'header-home'}
+            data-umami-event="nav-home"
             aria-label="Go to homepage"
             className="z-50 flex flex-row items-center justify-center gap-2 text-h2 font-bold"
         >

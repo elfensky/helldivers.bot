@@ -21,7 +21,7 @@ export async function GET(request) {
         const data = {
             ms: roundedPerformanceTime(start),
         };
-        await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'campaign', data);
+        await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'api-campaign', data);
     });
     let data = null;
     let season = null;

@@ -22,6 +22,7 @@ export default function Footer() {
                             href="https://lavrenov.io"
                             target="_blank"
                             rel="noopener noreferrer"
+                            data-umami-event="footer-portfolio"
                         >
                             Andrei Lavrenov
                         </a>
@@ -30,6 +31,7 @@ export default function Footer() {
                         href="https://ko-fi.com/H2H610Q1K"
                         target="_blank"
                         rel="noopener noreferrer"
+                        data-umami-event="footer-kofi"
                     >
                         <Image
                             src="/images/kofi.webp"
@@ -45,17 +47,17 @@ export default function Footer() {
                     <div className="footer-section-label">Features</div>
                     <ul className="footer-links">
                         <li>
-                            <Link href="/" prefetch={false} className="footer-link">
+                            <Link href="/" prefetch={false} data-umami-event="footer-campaign" className="footer-link">
                                 Campaign
                             </Link>
                         </li>
                         <li>
-                            <Link href="/archives" prefetch={false} className="footer-link">
+                            <Link href="/archives" prefetch={false} data-umami-event="footer-archives" className="footer-link">
                                 Archives
                             </Link>
                         </li>
                         <li>
-                            <Link href="/docs" prefetch={false} className="footer-link">
+                            <Link href="/docs" prefetch={false} data-umami-event="footer-docs" className="footer-link">
                                 Docs
                             </Link>
                         </li>
@@ -71,6 +73,7 @@ export default function Footer() {
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                data-umami-event="footer-discord"
                             >
                                 Helldivers Discord
                             </a>
@@ -81,6 +84,7 @@ export default function Footer() {
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                data-umami-event="footer-github"
                             >
                                 Github
                             </a>
@@ -91,6 +95,7 @@ export default function Footer() {
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                data-umami-event="footer-twitter"
                             >
                                 Twitter
                             </a>
@@ -101,6 +106,7 @@ export default function Footer() {
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                data-umami-event="footer-bugs"
                             >
                                 Report Bugs
                             </a>

@@ -77,7 +77,7 @@ export async function POST(request) {
         await umamiTrackEvent(
             'API | Rebroadcast',
             '/api/h1/rebroadcast',
-            'rebroadcast',
+            'api-rebroadcast',
             data,
         );
     });

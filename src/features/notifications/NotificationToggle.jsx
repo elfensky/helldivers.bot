@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTrack } from '@/shared/hooks/useTrack.mjs';
 
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -49,6 +50,7 @@ async function unsubscribeFromPush() {
 export default function NotificationToggle() {
     const [state, setState] = useState('loading'); // loading | unsupported | denied | enabled | disabled
     const [busy, setBusy] = useState(false);
+    const track = useTrack();
 
     useEffect(() => {
         if (typeof Notification === 'undefined') {
@@ -84,6 +86,7 @@ export default function NotificationToggle() {
             <Link
                 href="/docs/faq"
                 prefetch={false}
+                data-umami-event="notification-faq"
                 className="font-mono text-small text-[var(--color-text-muted)] opacity-50 hover:opacity-80"
                 title="How to enable notifications"
             >
@@ -96,8 +99,12 @@ export default function NotificationToggle() {
         setBusy(true);
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
+            track('notification-enable');
             await subscribeToPush();
+            track('push-subscribe');
             setState('enabled');
+        } else if (permission === 'denied') {
+            track('notification-permission-denied');
         }
         setBusy(false);
     }
@@ -105,6 +112,8 @@ export default function NotificationToggle() {
     async function disable() {
         setBusy(true);
         await unsubscribeFromPush();
+        track('notification-disable');
+        track('push-unsubscribe');
         setState('disabled');
         setBusy(false);
     }

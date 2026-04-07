@@ -19,6 +19,9 @@ export default function ServiceWorkerRegister() {
             const waiting = registrationRef.current?.waiting;
             if (!waiting || updateTriggeredRef.current) return;
             updateTriggeredRef.current = true;
+            if (window.umami) {
+                window.umami.track('sw-update-reload');
+            }
             waiting.postMessage({ type: 'SKIP_WAITING' });
         }
 
