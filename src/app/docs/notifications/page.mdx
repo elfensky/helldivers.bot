@@ -174,14 +174,17 @@ Server-initiated notifications that work when the browser is closed:
 
 1. `checkAndNotify()` runs after each update (fire-and-forget)
 2. Detects event transitions using the same `detectChanges` function
-3. Fans out via `web-push` library with 50 concurrent request limit
-4. Stale subscriptions (410/404 responses) are automatically deleted
+3. Builds payload with faction icon, badge, per-event tag, and renotify flag
+4. Fans out via `web-push` library with 50 concurrent request limit
+5. Stale subscriptions (410/404 responses) are automatically deleted
+
+Notifications for the same event (e.g., started → won) replace each other via matching `tag`, with `renotify: true` ensuring the user is re-alerted.
 
 ### Service Worker
 
 `public/sw.js` handles five concerns:
 
-- **Push events**: Parses payload, validates icon is same-origin, shows `showNotification()`
+- **Push events**: Parses payload, validates `icon`/`badge` same-origin, passes `tag`/`renotify` to `showNotification()`
 - **Notification clicks**: Focuses existing tab or opens new one
 - **Controlled updates**: Waits for `SKIP_WAITING` message from client before activating (see below)
 - **Caching**: Network-first for HTML navigation, stale-while-revalidate for static assets
