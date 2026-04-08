@@ -8,29 +8,63 @@ const STATUS_STYLES = {
         bg: 'bg-success-tint/40',
         border: 'border-ghost',
         accent: 'bg-success',
+        card: '',
+        pill: 'bg-success/10 text-success border border-success/20',
     },
     fail: {
+        bg: 'bg-surface-1',
+        border: 'border-ghost',
+        accent: 'bg-ghost',
+        card: '',
+        pill: 'bg-surface-3 text-text-muted border border-ghost',
+    },
+    active: {
         bg: 'bg-danger-tint/50',
         border: 'border-ghost',
         accent: 'bg-danger',
-    },
-    active: {
-        bg: 'bg-primary-tint/40',
-        border: 'border-ghost',
-        accent: 'bg-primary',
+        card: 'animate-[card-flash_3s_ease-in-out_infinite] motion-reduce:animate-none',
+        pill: 'bg-danger/12 text-danger border border-danger/25 animate-[pill-flash_1.5s_ease-in-out_infinite] motion-reduce:animate-none',
     },
 };
+
+const shortEnglish = {
+    y: () => 'y',
+    mo: () => 'mo',
+    w: () => 'w',
+    d: () => 'd',
+    h: () => 'h',
+    m: () => 'm',
+    s: () => 's',
+    ms: () => 'ms',
+};
+
+function formatCompactDuration(seconds) {
+    return humanizeDuration(seconds * 1000, {
+        largest: 2,
+        round: true,
+        spacer: '',
+        language: 'shortEn',
+        languages: { shortEn: shortEnglish },
+    });
+}
 
 /**
  * Event card with status-colored accent bar.
  * Three types: won (green), lost (red), active (gold).
  */
 export default function Event({ event, onMouseEnter, onMouseLeave }) {
-    const elapsed = Math.floor(Date.now() / 1000) - event.start_time;
+    const now = Math.floor(Date.now() / 1000);
+    const isCompleted = event.status === 'success' || event.status === 'fail';
+    const elapsed = isCompleted ? now - event.end_time : now - event.start_time;
+    const duration = isCompleted
+        ? event.end_time - event.start_time
+        : now - event.start_time;
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
     const faction = factions[event.enemy];
 
-    const timeText = `Started ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`;
+    const timeText = isCompleted
+        ? `Ended ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`
+        : `Started ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`;
 
     const statusText =
         event.status === 'success' ? 'Won'
@@ -41,7 +75,7 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
 
     return (
         <article
-            className={`grid grid-cols-[minmax(0,1fr)_6px] border border-r-0 ${s.border} ${s.bg}`}
+            className={`event-card border ${s.border} ${s.bg} ${s.card}`}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >
@@ -49,6 +83,12 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
                 <div className="flex items-center justify-between">
                     <span className="font-body text-small font-bold text-text uppercase">
                         {statusText} {event.type} Event
+                    </span>
+                    <span
+                        className={`font-mono text-[10px] px-1.5 py-px ${s.pill}`}
+                        suppressHydrationWarning
+                    >
+                        {formatCompactDuration(duration)}
                     </span>
                     {faction && (
                         <img src={faction.icon} alt={faction.name} className="size-5" />
@@ -61,7 +101,7 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
                     {event.points} / {event.points_max} ({percent}%)
                 </div>
             </div>
-            <div className={s.accent} />
+            <div className={`event-card-accent ${s.accent}`} />
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{

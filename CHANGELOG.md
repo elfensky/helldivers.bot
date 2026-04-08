@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 0.30.0
+
+### Features
+
+- **Timeline duration blocks** — replace rail dots with proportional duration blocks that visualize event length. Cards show compact duration pills (`2d3h`, `14h22m`). Active events pulse with danger color scheme. Empty days fill gaps between event groups for proportional timeline spacing.
+
+## 0.29.2
+
+### Fixes
+
+- **Docs overview Mermaid diagram** — replace raw `mermaid` code block on `/docs` with the shared `MermaidDiagram` component so it actually renders as an interactive diagram with consistent styling, detail panels, and accessibility
+- **Notification flow `db` node** — add missing details entry for the Database node in the notification-flow diagram so it's clickable like all other nodes
+
+## 0.29.1
+
+### Fixes
+
+- **Defer poll emissions to `requestIdleCallback`** — prevents `enqueueModel` crashes caused by `setState` firing during RSC Flight stream processing on navigation. Coalesces rapid-fire emissions to skip intermediate status flickers.
+
 ## 0.29.0 (retroactive)
 
 ### Features

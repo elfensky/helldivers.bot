@@ -76,7 +76,7 @@ export async function generateApiKey(_, formData) {
 
     const schema = z.object({
         userId: z.string().min(1),
-        description: z.string().min(3).max(200),
+        description: z.string().min(3).max(32),
     });
     const check = schema.safeParse(formValues);
     if (!check.success) {

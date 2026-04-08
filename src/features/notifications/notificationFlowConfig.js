@@ -210,5 +210,26 @@ export const notificationFlowConfig = {
                 },
             ],
         },
+        db: {
+            title: 'Database',
+            subtitle: 'PostgreSQL (Prisma 7)',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Central data store for all game state. The worker writes campaign status and snapshots via the Update Route. The Live Endpoint reads current campaign data for client polling.',
+                },
+                {
+                    type: 'table',
+                    headers: ['Table', 'Purpose'],
+                    rows: [
+                        ['rebroadcast_status', 'Raw API JSON (1 row/season)'],
+                        ['h1_live', 'Normalized campaigns + stats'],
+                        ['h1_event', 'Historical attack/defend events'],
+                        ['push_subscription', 'Web push subscription endpoints'],
+                    ],
+                },
+            ],
+        },
     },
 };

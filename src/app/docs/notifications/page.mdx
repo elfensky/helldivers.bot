@@ -81,11 +81,11 @@ The dashboard uses client-side polling to fetch live campaign data.
 - **Status tri-state**: `'polling'` (request in flight), `'live'` (last poll succeeded), `'offline'` (last poll failed or `navigator.onLine` is false)
 - **Leader election**: BroadcastChannel ensures only one tab fires Web Notifications
 
-### Why useSyncExternalStore
+### Deferred emissions
 
-Poll data lives outside React in a module-level store object. React pulls snapshots via `useSyncExternalStore` when it is safe to render — it never pushes updates into the Fiber queue. This prevents a crash (`Cannot read properties of null (reading 'enqueueModel')`) caused by state updates injecting into React's concurrent work queue during RSC Flight stream processing on client-side navigation (originally discovered with SSE, preserved in polling migration).
+Poll data lives outside React in a module-level store object. React subscribes via `useState` + `useEffect` — the `emit()` function notifies listeners when the store changes. To prevent a crash (`chunk.reason.enqueueModel is not a function`) caused by `setState` firing during RSC Flight stream processing on client-side navigation (`vercel/next.js#92362`), `emit()` defers listener notification to `requestIdleCallback` (with `setTimeout` fallback). Rapid-fire emissions are coalesced so listeners always receive the latest snapshot.
 
-`Object.freeze(INITIAL_STORE)` guarantees `getServerSnapshot` returns a stable reference for hydration. The `isFirstMessage` flag tracks whether the first successful poll has occurred, preventing false change detection on initial page load.
+`Object.freeze(INITIAL_STORE)` guarantees the initial state is a stable reference for hydration. The `isFirstMessage` flag tracks whether the first successful poll has occurred, preventing false change detection on initial page load.
 
 ### Data Fallback Chain
 

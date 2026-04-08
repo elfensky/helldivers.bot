@@ -49,12 +49,28 @@ let isFirstMessage = true;
 let leaderChannel = null;
 let leaderTimeout = null;
 let visibilityHandler = null;
+let emitScheduled = false;
 
-/** Notify all React subscribers with the current store value. */
+/**
+ * Notify all React subscribers with the current store value.
+ *
+ * Deferred to requestIdleCallback (setTimeout fallback) to prevent
+ * setState from firing during RSC Flight stream processing, which
+ * causes `chunk.reason.enqueueModel is not a function` crashes
+ * (vercel/next.js#92362). Coalesces rapid-fire calls so listeners
+ * always receive the latest store snapshot.
+ */
 function emit() {
-    for (const listener of listeners) {
-        listener(store);
-    }
+    if (emitScheduled) return;
+    emitScheduled = true;
+    const schedule =
+        typeof requestIdleCallback === 'function' ? requestIdleCallback : setTimeout;
+    schedule(() => {
+        emitScheduled = false;
+        for (const listener of listeners) {
+            listener(store);
+        }
+    });
 }
 
 // --- Polling ---
@@ -141,6 +157,7 @@ function disconnect() {
         document.removeEventListener('visibilitychange', visibilityHandler);
         visibilityHandler = null;
     }
+    emitScheduled = false;
     store = INITIAL_STORE;
 }
 
