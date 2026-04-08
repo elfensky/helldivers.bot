@@ -4,14 +4,16 @@ import { redirect } from 'next/navigation';
 import db from '@/db/db';
 import { tryCatch } from '@/shared/utils/tryCatch';
 import { getGravatarUrl } from '@/shared/utils/gravatar';
-import ApiDashboard from '@/features/account/ApiDashboard';
-import AccountActions from '@/features/account/AccountActions';
+import AdminSection from '@/features/admin/AdminSection';
+import AccountSection from '@/features/account/AccountSection';
 
 export default async function ProfilePage() {
     if (!auth) redirect('/');
 
     const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) redirect('/sign-in');
     const user = session.user;
+    const isAdmin = user.role === 'admin';
 
     const { data: accounts, error } = await tryCatch(
         db.account.findMany({
@@ -29,8 +31,8 @@ export default async function ProfilePage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <ApiDashboard user={user} />
-            <AccountActions
+            {isAdmin && <AdminSection currentUserId={user.id} />}
+            <AccountSection
                 user={user}
                 avatarUrl={avatarUrl}
                 providers={providers}

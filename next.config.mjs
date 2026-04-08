@@ -57,6 +57,11 @@ const nextConfig = {
                 destination: '/archives',
                 permanent: true,
             },
+            {
+                source: '/profile/admin',
+                destination: '/profile',
+                permanent: true,
+            },
         ];
     },
     async rewrites() {

@@ -220,9 +220,9 @@ Ensures users can only act on their own resources (API keys, account data).
 | Role    | Access                                             |
 | ------- | -------------------------------------------------- |
 | `user`  | Profile, API keys, reviews, account actions        |
-| `admin` | Everything above + admin panel at `/profile/admin` |
+| `admin` | Everything above + admin section on the profile page (`/profile`) |
 
-Roles are stored in `User.role` (string, default `"user"`). Admins can change roles via `updateUserRole()` but cannot demote themselves. The admin page (`/profile/admin`) checks `session.user.role === 'admin'` and redirects non-admins.
+Roles are stored in `User.role` (string, default `"user"`). Admins can change roles via `updateUserRole()` but cannot demote themselves. The admin section on the profile page is conditionally rendered when `session.user.role === 'admin'`.
 
 ---
 
