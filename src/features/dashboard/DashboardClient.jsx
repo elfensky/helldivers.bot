@@ -11,7 +11,7 @@ import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import { sortEventsByRecent } from '@/shared/utils/game/eventFilters.mjs';
 import { HOMEWORLD_REGION } from '@/shared/enums/worlds.mjs';
-import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
+import { CAMPAIGN_STATUS, EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 
 const factionIndices = [0, 1, 2];
@@ -44,11 +44,20 @@ export default function DashboardClient() {
         const campaignData = data.live?.find((l) => l.enemy === index);
 
         if (campaignData?.status === CAMPAIGN_STATUS.DEFEATED) {
+            const factionEvents = events?.filter((e) => e.enemy === index) ?? [];
+            const defeatEvent = factionEvents.find(
+                (e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.SUCCESS,
+            );
+            const earliestStart = factionEvents.reduce(
+                (min, e) => (e.start_time < min ? e.start_time : min),
+                Infinity,
+            );
             return (
                 <li key={`frontier-${index}`}>
                     <DefeatedCard
                         factionIndex={index}
-                        seasonDuration={campaignData.season_duration}
+                        startTime={earliestStart !== Infinity ? earliestStart : null}
+                        endTime={defeatEvent?.end_time ?? null}
                     />
                 </li>
             );

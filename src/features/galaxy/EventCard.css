@@ -143,9 +143,5 @@
 }
 
 .sector-card-defeated {
-    opacity: 0.55;
-}
-
-.sector-card-defeated .sector-card-accent {
-    background: var(--color-gold-muted);
+    opacity: 0.333;
 }
