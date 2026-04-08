@@ -7,8 +7,10 @@ import { usePathname } from 'next/navigation';
 import { useSession } from '@/auth-client';
 import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
 import { getGravatarUrl } from '@/shared/utils/gravatar';
+import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 
 export default function UserSection() {
+    const { status } = useLiveDataContext();
     const pathname = usePathname();
     const isProfileActive = pathname.startsWith('/profile');
     const { data: session, isPending } = useSession();
@@ -32,6 +34,10 @@ export default function UserSection() {
             window.umami.identify(session.user.id, { provider });
         }
     }, [session?.user?.id, session?.user?.image]);
+
+    if (status === 'offline') {
+        return null;
+    }
 
     if (isPending) {
         return <div className="user-section-skeleton" />;
