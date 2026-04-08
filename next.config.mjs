@@ -10,22 +10,13 @@ const COMMIT_SHA = (() => {
         return 'unknown';
     }
 })();
-const COMMIT_MESSAGE = (() => {
-    try {
-        return execSync('git log -1 --format=%s').toString().trim();
-    } catch {
-        return '';
-    }
-})();
-
-console.log(`[helldivers.bot] v${APP_VERSION} (${COMMIT_SHA}) ${COMMIT_MESSAGE}`);
+console.log(`[helldivers.bot] v${APP_VERSION} (${COMMIT_SHA})`);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     env: {
         NEXT_PUBLIC_APP_VERSION: APP_VERSION,
         NEXT_PUBLIC_COMMIT_SHA: COMMIT_SHA,
-        NEXT_PUBLIC_COMMIT_MESSAGE: COMMIT_MESSAGE,
     },
     pageExtensions: ['js', 'jsx', 'mdx'],
     reactCompiler: true,

@@ -137,9 +137,6 @@ export default function Footer() {
                         v{process.env.NEXT_PUBLIC_APP_VERSION} &ndash;{' '}
                         {process.env.NEXT_PUBLIC_COMMIT_SHA}
                     </span>
-                    <span className="text-[0.625rem] normal-case tracking-normal opacity-50">
-                        {process.env.NEXT_PUBLIC_COMMIT_MESSAGE}
-                    </span>
                 </div>
                 <span>
                     Not affiliated with Arrowhead Game Studios or Sony Interactive
