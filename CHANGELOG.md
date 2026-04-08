@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.32.0
+
+### Features
+
+- **Defeated faction cards** — show defeated factions in the Regions section with a muted gold "DEFEATED" label, faction name, full progress bar, and campaign duration instead of hiding them.
+
 ## 0.31.1
 
 ### Features
