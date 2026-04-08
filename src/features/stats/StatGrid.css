@@ -20,7 +20,7 @@
 
 .stat-card {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 4px;
+    grid-template-columns: minmax(0, 1fr) var(--card-accent-width);
     background: var(--color-surface-1);
     border: 1px solid var(--color-ghost);
     overflow: hidden;

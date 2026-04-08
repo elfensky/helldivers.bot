@@ -55,6 +55,9 @@
     --space-10: 2.25rem;
     --space-12: 3rem;
 
+    /* === CARD ACCENT === */
+    --card-accent-width: 6px;
+
     /* === RADIUS === */
     --radius: 0px;
 }
@@ -94,6 +97,9 @@
     --text-h3: clamp(0.875rem, 0.75rem + 0.5vw, 1.125rem);
     --text-body: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
     --text-small: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+
+    /* Card accent bar */
+    --card-accent-width: 6px;
 
     /* Radius — 0px everywhere, makes all rounded-* classes no-ops */
     --radius-xs: 0px;

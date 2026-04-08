@@ -44,7 +44,6 @@ export default function DashboardClient() {
         if (!frontier) return null;
 
         const isDefending = frontier.event === 'active';
-        const label = isDefending ? 'DEFENDING' : 'CAPTURING';
         const activeEvent =
             isDefending ?
                 events?.find(
@@ -56,11 +55,24 @@ export default function DashboardClient() {
         return (
             <li key={`frontier-${index}`}>
                 <EventCard
-                    label={label}
+                    action={isDefending ? 'defending' : 'capturing'}
+                    barLabel={isDefending ? 'CAPITAL_DEFENSE' : 'SECTOR_PROGRESS'}
                     region={frontier.region}
-                    percent={frontier.percent}
-                    points={frontier.points}
-                    pointsMax={frontier.pointsMax}
+                    percent={
+                        isDefending && activeEvent
+                            ? (activeEvent.points / activeEvent.points_max) * 100
+                            : frontier.percent
+                    }
+                    points={
+                        isDefending && activeEvent
+                            ? activeEvent.points
+                            : frontier.points
+                    }
+                    pointsMax={
+                        isDefending && activeEvent
+                            ? activeEvent.points_max
+                            : frontier.pointsMax
+                    }
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
                     endTime={activeEvent?.end_time}
@@ -79,11 +91,20 @@ export default function DashboardClient() {
         return (
             <li key={`attack-${index}`}>
                 <EventCard
-                    label="ATTACKING"
+                    action="capturing"
+                    barLabel="HOMEWORLD_ASSAULT"
                     region={homeworld.region}
-                    percent={homeworld.percent}
-                    points={homeworld.points}
-                    pointsMax={homeworld.points_max}
+                    percent={
+                        attackEvent
+                            ? (attackEvent.points / attackEvent.points_max) * 100
+                            : homeworld.percent
+                    }
+                    points={attackEvent ? attackEvent.points : homeworld.points}
+                    pointsMax={
+                        attackEvent
+                            ? attackEvent.points_max
+                            : homeworld.points_max
+                    }
                     factionIndex={index}
                     pace={attackEvent ? evaluateProgress(attackEvent) : null}
                     endTime={attackEvent?.end_time}

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.31.0
+
+### Features
+
+- **Region card redesign** — merge action label and region name into a single title line (`Capturing Wise Region`, `Defending Sirius Region`). Flashing red action word during events replaces the `⚠` alert icon. Defend events now show event defense progress instead of frontier progress. Always-visible meta line with points, countdown, and pace for consistent card height. Bar labels use stat-style snake case (`SECTOR_PROGRESS`, `CAPITAL_DEFENSE`, `HOMEWORLD_ASSAULT`).
+- **Card accent width token** — extract `--card-accent-width: 6px` to `layout.css` theme. All card types (EventCard, StatGrid, timeline Event) now share a single accent bar width.
+
 ## 0.30.0
 
 ### Features
