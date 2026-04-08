@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.29.1
+
+### Fixes
+
+- **Defer poll emissions to `requestIdleCallback`** — prevents `enqueueModel` crashes caused by `setState` firing during RSC Flight stream processing on navigation. Coalesces rapid-fire emissions to skip intermediate status flickers.
+
 ## 0.29.0 (retroactive)
 
 ### Features
