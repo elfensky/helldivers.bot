@@ -2,6 +2,7 @@ import webpush from 'web-push';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { detectChanges } from '@/shared/utils/game/detectChanges.mjs';
 import factions from '@/shared/enums/factions.mjs';
+import map from '@/shared/enums/map.mjs';
 import db from '@/db/db';
 
 const MAX_CONCURRENT = 50;
@@ -22,11 +23,20 @@ export function ensureVapid() {
 }
 
 export function buildPayload(change) {
-    const faction = factions[change.event.enemy]?.name ?? 'Unknown';
+    const region =
+        map[change.event.enemy]?.[change.event.region]?.region ?? 'Unknown Region';
+    const isDefend = change.event.type === 'defend';
+
     const titles = {
-        event_started: `${faction} ${change.event.type} event started`,
-        event_won: `${faction} ${change.event.type} event won!`,
-        event_lost: `${faction} ${change.event.type} event lost`,
+        event_started: isDefend ? `${region} under attack` : `Attacking ${region}`,
+        event_won: isDefend ? `${region} defended` : `${region} captured`,
+        event_lost: isDefend ? `${region} lost` : `${region} held`,
+    };
+
+    const subtitles = {
+        event_started: `${isDefend ? 'Defend' : 'Attack'} event started`,
+        event_won: `${isDefend ? 'Defend' : 'Attack'} event won!`,
+        event_lost: `${isDefend ? 'Defend' : 'Attack'} event lost`,
     };
 
     const eventId = change.event.event_id;
@@ -34,7 +44,7 @@ export function buildPayload(change) {
 
     return JSON.stringify({
         title: titles[change.kind] || 'Campaign Update',
-        body: `Season ${change.event.season || ''}`,
+        body: subtitles[change.kind] || `Season ${change.event.season || ''}`,
         icon: factions[change.event.enemy]?.icon || '/icons/superearth.webp',
         badge: '/favicons/favicon-96x96.png',
         ...(tag && { tag, renotify: true }),
@@ -84,7 +94,10 @@ export async function sendWithConcurrencyLimit(subscriptions, payload) {
         }
     }
 
-    return { sent: subscriptions.length - staleEndpoints.length, stale: staleEndpoints.length };
+    return {
+        sent: subscriptions.length - staleEndpoints.length,
+        stale: staleEndpoints.length,
+    };
 }
 
 /**
@@ -106,6 +119,7 @@ export async function checkAndNotify() {
                         event_id: true,
                         status: true,
                         enemy: true,
+                        region: true,
                         season: true,
                     },
                 },

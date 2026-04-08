@@ -3,29 +3,79 @@
 import { useEffect, useRef } from 'react';
 import { toast, Toaster } from 'sonner';
 import factions from '@/shared/enums/factions.mjs';
+import map from '@/shared/enums/map.mjs';
 import { detectChanges } from '@/shared/utils/game/detectChanges.mjs';
 
-// Toast colors sourced from CSS custom properties in src/styles/tokens.css.
-// Inline style objects are required because Sonner's style prop doesn't accept Tailwind classes.
 const FACTION_COLORS = {
     0: 'var(--color-faction-bugs)',
     1: 'var(--color-faction-cyborgs)',
     2: 'var(--color-faction-illuminate)',
 };
 
-const TOAST_STYLE = (color) => ({
+/** Resolve a human-readable region name from event data. */
+function regionName(event) {
+    return map[event.enemy]?.[event.region]?.region ?? 'Unknown Region';
+}
+
+/**
+ * Build title + subtitle for a toast based on event kind and type.
+ *
+ * @param {'event_started'|'event_won'|'event_lost'|'catch_up'} kind
+ * @param {{ enemy: number, region: number, type: string }} event
+ * @returns {{ title: string, subtitle: string }}
+ */
+function toastLabel(kind, event) {
+    const region = regionName(event);
+    const isDefend = event.type === 'defend';
+
+    const titles = {
+        event_started: isDefend ? `${region} under attack` : `Attacking ${region}`,
+        event_won: isDefend ? `${region} defended` : `${region} captured`,
+        event_lost: isDefend ? `${region} lost` : `${region} held`,
+        catch_up: isDefend ? `${region} under attack` : `Attacking ${region}`,
+    };
+
+    const subtitles = {
+        event_started: `${isDefend ? 'Defend' : 'Attack'} event started`,
+        event_won: `${isDefend ? 'Defend' : 'Attack'} event won!`,
+        event_lost: `${isDefend ? 'Defend' : 'Attack'} event lost`,
+        catch_up: `${isDefend ? 'Defend' : 'Attack'} event in progress`,
+    };
+
+    return {
+        title: titles[kind] ?? `${region}`,
+        subtitle: subtitles[kind] ?? 'Campaign update',
+    };
+}
+
+/** Build the JSX element passed as Sonner's first argument. */
+function ToastContent({ event, kind }) {
+    const { title, subtitle } = toastLabel(kind, event);
+    const icon = factions[event.enemy]?.icon;
+
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {icon && <img src={icon} alt="" width={24} height={24} />}
+            <div>
+                <div style={{ fontWeight: 600 }}>{title}</div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                    {subtitle}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/** Style object for transition toasts — flashing accent border. */
+const TRANSITION_STYLE = (color) => ({
     borderRight: `4px solid ${color}`,
-    animation: 'toast-glow 3s ease-in-out infinite',
+    animation: 'action-flash var(--duration-pulse-fast) ease-in-out infinite',
 });
 
-const EVENT_LABELS = {
-    event_started: (event) =>
-        `${factions[event.enemy]?.name ?? 'Unknown'} ${event.type} event started`,
-    event_won: (event) =>
-        `${factions[event.enemy]?.name ?? 'Unknown'} ${event.type} event won!`,
-    event_lost: (event) =>
-        `${factions[event.enemy]?.name ?? 'Unknown'} ${event.type} event lost`,
-};
+/** Style object for catch-up toasts — static accent border, no animation. */
+const CATCHUP_STYLE = (color) => ({
+    borderRight: `4px solid ${color}`,
+});
 
 function showWebNotification(message, event) {
     if (typeof Notification === 'undefined') return;
@@ -42,9 +92,9 @@ function showWebNotification(message, event) {
  * Toast notification layer and Sonner `<Toaster>` host.
  *
  * Two notification modes:
- * 1. **Catch-up** — on page load, shows an 8-second "in progress" toast for
- *    each active event so returning visitors know what's happening.
- * 2. **Transition** — on SSE updates, fires persistent toasts when events
+ * 1. **Catch-up** — on page load, shows an 8-second toast for each active
+ *    event so returning visitors know what's happening.
+ * 2. **Transition** — on data updates, fires persistent toasts when events
  *    start, are won, or are lost (via `detectChanges`).
  *
  * Architecture notes:
@@ -52,12 +102,6 @@ function showWebNotification(message, event) {
  *   the two `useEffect` hooks and breaks the catch-up toast.
  * - The `<Toaster>` is co-located here (not in the root layout) so that
  *   `toast()` and `<Toaster>` share the same Sonner module instance.
- *   Rendering `<Toaster>` from a server component (layout.jsx) creates a
- *   separate client chunk with its own `ToastState` singleton — toasts
- *   dispatched from other client components never reach it.
- * - Catch-up toasts use `setTimeout(…, 50)` to survive React strict mode's
- *   setup→cleanup→setup cycle (a synchronous toast in the first setup gets
- *   lost when Sonner's subscriber is cleaned up between cycles).
  *
  * @param {{ prevData: Object, data: Object, isLeader: boolean }} props
  */
@@ -65,9 +109,6 @@ export default function LiveToasts({ prevData, data, isLeader }) {
     const hasRendered = useRef(false);
 
     // Catch-up toasts: show active events already in progress on page load.
-    // Fires after a short delay so the Toaster's subscriber is ready
-    // (React strict mode runs setup→cleanup→setup; a synchronous toast
-    //  in the first setup gets lost when the subscriber is cleaned up).
     useEffect(() => {
         if (hasRendered.current) return;
 
@@ -80,10 +121,11 @@ export default function LiveToasts({ prevData, data, isLeader }) {
         const timer = setTimeout(() => {
             hasRendered.current = true;
             for (const event of activeEvents) {
-                const faction = factions[event.enemy]?.name ?? 'Unknown';
-                const label = `${faction} ${event.type} event in progress`;
                 const color = FACTION_COLORS[event.enemy];
-                toast(label, { duration: 8000, style: TOAST_STYLE(color) });
+                toast(
+                    <ToastContent event={event} kind="catch_up" />,
+                    { duration: 8000, style: CATCHUP_STYLE(color) },
+                );
             }
             if (window.umami) {
                 window.umami.track('toast-catch-up', { count: activeEvents.length });
@@ -93,7 +135,7 @@ export default function LiveToasts({ prevData, data, isLeader }) {
         return () => clearTimeout(timer);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Transition toasts: detect event state changes between SSE updates
+    // Transition toasts: detect event state changes between data updates
     useEffect(() => {
         if (!hasRendered.current) return;
         if (!prevData || !data) return;
@@ -101,24 +143,29 @@ export default function LiveToasts({ prevData, data, isLeader }) {
         const changes = detectChanges(prevData.events, data.events);
 
         for (const change of changes) {
-            const label = EVENT_LABELS[change.kind]?.(change.event);
-            if (!label) continue;
-
+            const { title } = toastLabel(change.kind, change.event);
             const color = FACTION_COLORS[change.event.enemy];
-
-            const opts = { duration: Infinity, style: TOAST_STYLE(color) };
+            const opts = { duration: Infinity, style: TRANSITION_STYLE(color) };
 
             if (change.kind === 'event_won') {
-                toast.success(label, opts);
+                toast.success(
+                    <ToastContent event={change.event} kind={change.kind} />,
+                    opts,
+                );
             } else if (change.kind === 'event_lost') {
-                toast.error(label, opts);
+                toast.error(
+                    <ToastContent event={change.event} kind={change.kind} />,
+                    opts,
+                );
             } else {
-                toast(label, opts);
+                toast(
+                    <ToastContent event={change.event} kind={change.kind} />,
+                    opts,
+                );
             }
 
-            // Web Notification only from leader tab
             if (isLeader) {
-                showWebNotification(label, change.event);
+                showWebNotification(title, change.event);
             }
         }
     }, [data, prevData, isLeader]);

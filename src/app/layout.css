@@ -132,14 +132,14 @@
     font-display: swap;
 }
 
-/* Toast glow animation — matches EventCard contested region pulse */
-@keyframes toast-glow {
+/* Shared pulse animation — used by EventCard and toast accent borders */
+@keyframes action-flash {
     0%,
     100% {
-        box-shadow: 0 0 4px color-mix(in srgb, var(--color-danger) 15%, transparent);
+        opacity: 1;
     }
     50% {
-        box-shadow: 0 0 12px color-mix(in srgb, var(--color-danger) 40%, transparent);
+        opacity: 0.2;
     }
 }
 

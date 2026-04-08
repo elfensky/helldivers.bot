@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.33.0
+
+### Features
+
+- **Region-centric toasts** — replace plain-text toast labels with JSX content showing faction icons, region names as titles, and event type as subtitle. Switch animation from `toast-glow` box-shadow pulse to `action-flash` opacity flash for transition toasts; catch-up toasts are now static. Push notification payloads updated to match.
+
 ## 0.32.0
 
 ### Features
