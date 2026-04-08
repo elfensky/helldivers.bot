@@ -143,6 +143,72 @@
     }
 }
 
+/*
+ * Toast right-border accent — two stacked layers on the right edge.
+ *
+ * ::before = solid faction-colored base (always visible, --faction-color)
+ * ::after  = alert-color overlay (--alert-color) that fades in/out via opacity
+ *
+ * Resting state: only ::before visible (solid faction color), ::after hidden.
+ * On appear/update: ::after fades in/out 3 times, revealing the alert color
+ * against the faction base — the border alternates between the two colors,
+ * never going transparent.
+ *
+ * Two identical keyframes with different names force the browser to restart
+ * the animation when we swap classes (Sonner re-renders toasts in-place via
+ * React, so a single animation-name wouldn't replay).
+ */
+@keyframes border-flash-a {
+    0%,
+    100% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+@keyframes border-flash-b {
+    0%,
+    100% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.toast-flash {
+    position: relative;
+    overflow: hidden;
+}
+/* Base layer — solid faction color, always visible */
+.toast-flash::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    background-color: var(--faction-color);
+}
+/* Alert overlay — fades in/out over the base during flash animation */
+.toast-flash::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    background-color: var(--alert-color, var(--faction-color));
+    opacity: 0;
+}
+.toast-flash--a::after {
+    animation: border-flash-a 0.5s ease-in-out 3;
+}
+.toast-flash--b::after {
+    animation: border-flash-b 0.5s ease-in-out 3;
+}
+
 .gutters {
     @apply mx-auto w-full max-w-[1536px] px-4 sm:px-12 md:px-16 lg:px-24;
 }

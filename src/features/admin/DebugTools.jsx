@@ -39,9 +39,10 @@ export default function DebugTools() {
             </div>,
             {
                 duration: 8000,
+                className: 'toast-flash toast-flash--a',
                 style: {
-                    borderRight: '4px solid var(--color-faction-bugs)',
-                    animation: 'action-flash var(--duration-pulse-fast) ease-in-out infinite',
+                    '--faction-color': 'var(--color-faction-bugs)',
+                    '--alert-color': 'var(--color-danger)',
                 },
             },
         );

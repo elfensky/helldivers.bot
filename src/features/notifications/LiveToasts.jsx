@@ -5,12 +5,22 @@ import { toast, Toaster } from 'sonner';
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
 import { detectChanges } from '@/shared/utils/game/detectChanges.mjs';
+import {
+    getDismissedEvents,
+    addDismissedEvent,
+} from '@/features/notifications/dismissedEvents.mjs';
 
 const FACTION_COLORS = {
     0: 'var(--color-faction-bugs)',
     1: 'var(--color-faction-cyborgs)',
     2: 'var(--color-faction-illuminate)',
 };
+
+/** Duration for the 3-blink entrance/update animation (3 × 0.5s). */
+const FLASH_DURATION_MS = 1500;
+
+/** Auto-dismiss duration for previously-dismissed toasts that reappear. */
+const SOFT_REAPPEAR_MS = 8000;
 
 /** Resolve a human-readable region name from event data. */
 function regionName(event) {
@@ -66,16 +76,10 @@ function ToastContent({ event, kind }) {
     );
 }
 
-/** Style object for transition toasts — flashing accent border. */
-const TRANSITION_STYLE = (color) => ({
-    borderRight: `4px solid ${color}`,
-    animation: 'action-flash var(--duration-pulse-fast) ease-in-out infinite',
-});
-
-/** Style object for catch-up toasts — static accent border, no animation. */
-const CATCHUP_STYLE = (color) => ({
-    borderRight: `4px solid ${color}`,
-});
+/** Build a stable toast ID from an event. */
+function toastId(event) {
+    return `event-${event.id}`;
+}
 
 function showWebNotification(message, event) {
     if (typeof Notification === 'undefined') return;
@@ -91,11 +95,14 @@ function showWebNotification(message, event) {
 /**
  * Toast notification layer and Sonner `<Toaster>` host.
  *
- * Two notification modes:
- * 1. **Catch-up** — on page load, shows an 8-second toast for each active
- *    event so returning visitors know what's happening.
- * 2. **Transition** — on data updates, fires persistent toasts when events
- *    start, are won, or are lost (via `detectChanges`).
+ * Resting state: solid faction-colored 4px right border, no animation.
+ * On appear or status change: border flashes 3 times (1.5s), then settles.
+ * Won/lost events flash result color (green/red), then revert to faction.
+ *
+ * Animation restart trick: Sonner updates toasts in-place (same React key),
+ * so a single CSS animation-name wouldn't replay. We toggle between two
+ * identical keyframes (`border-flash-a` / `border-flash-b`) via className
+ * to force the browser to restart the animation on each update.
  *
  * Architecture notes:
  * - `'use no memo'` opts out of the React Compiler, which otherwise merges
@@ -107,6 +114,69 @@ function showWebNotification(message, event) {
  */
 export default function LiveToasts({ prevData, data, isLeader }) {
     const hasRendered = useRef(false);
+    /** Alternates between 'a' and 'b' to force CSS animation restart. */
+    const flashToggle = useRef(false);
+    /** Pending settle/revert timeouts keyed by event ID. */
+    const settleTimers = useRef(new Map());
+
+    /** Cancel a pending settle timeout for an event. */
+    function cancelSettle(eventId) {
+        const id = settleTimers.current.get(eventId);
+        if (id != null) {
+            clearTimeout(id);
+            settleTimers.current.delete(eventId);
+        }
+    }
+
+    /**
+     * Fire (or replace) a toast for the given event.
+     *
+     * @param {Object}  event
+     * @param {string}  kind        - 'event_started'|'event_won'|'event_lost'|'catch_up'
+     * @param {Object}  [opts]
+     * @param {number}  [opts.duration]    - Sonner duration (Infinity = persistent)
+     * @param {string}  [opts.alertColor]  - Color for the flash overlay (defaults to faction)
+     * @param {boolean} [opts.animate]     - Whether to play the 3-blink entrance flash
+     */
+    function fireToast(event, kind, { duration = Infinity, alertColor, animate = true } = {}) {
+        const factionColor = FACTION_COLORS[event.enemy];
+        flashToggle.current = !flashToggle.current;
+        const suffix = flashToggle.current ? 'a' : 'b';
+        const className = animate
+            ? `toast-flash toast-flash--${suffix}`
+            : 'toast-flash';
+
+        toast(<ToastContent event={event} kind={kind} />, {
+            id: toastId(event),
+            duration,
+            className,
+            style: {
+                '--faction-color': factionColor,
+                '--alert-color': alertColor ?? factionColor,
+            },
+            onDismiss: () => {
+                addDismissedEvent(event.id);
+                cancelSettle(event.id);
+            },
+        });
+    }
+
+    /**
+     * Fire a toast with a flash, then settle to solid faction color after
+     * the animation finishes (1.5s). For won/lost, the flash overlay uses
+     * the result color (green/red) against the faction-colored base.
+     */
+    function fireAndSettle(event, kind, { duration = Infinity, alertColor } = {}) {
+        cancelSettle(event.id);
+        fireToast(event, kind, { duration, alertColor });
+
+        const settleId = setTimeout(() => {
+            settleTimers.current.delete(event.id);
+            // Re-fire with no animation — solid faction color resting state
+            fireToast(event, kind, { duration, animate: false });
+        }, FLASH_DURATION_MS);
+        settleTimers.current.set(event.id, settleId);
+    }
 
     // Catch-up toasts: show active events already in progress on page load.
     useEffect(() => {
@@ -120,12 +190,13 @@ export default function LiveToasts({ prevData, data, isLeader }) {
 
         const timer = setTimeout(() => {
             hasRendered.current = true;
+            const dismissed = getDismissedEvents();
+
             for (const event of activeEvents) {
-                const color = FACTION_COLORS[event.enemy];
-                toast(
-                    <ToastContent event={event} kind="catch_up" />,
-                    { duration: 8000, style: CATCHUP_STYLE(color) },
-                );
+                const wasDismissed = dismissed.has(String(event.id));
+                fireAndSettle(event, 'catch_up', {
+                    duration: wasDismissed ? SOFT_REAPPEAR_MS : Infinity,
+                });
             }
             if (window.umami) {
                 window.umami.track('toast-catch-up', { count: activeEvents.length });
@@ -143,29 +214,21 @@ export default function LiveToasts({ prevData, data, isLeader }) {
         const changes = detectChanges(prevData.events, data.events);
 
         for (const change of changes) {
-            const { title } = toastLabel(change.kind, change.event);
-            const color = FACTION_COLORS[change.event.enemy];
-            const opts = { duration: Infinity, style: TRANSITION_STYLE(color) };
+            const { event, kind } = change;
 
-            if (change.kind === 'event_won') {
-                toast.success(
-                    <ToastContent event={change.event} kind={change.kind} />,
-                    opts,
-                );
-            } else if (change.kind === 'event_lost') {
-                toast.error(
-                    <ToastContent event={change.event} kind={change.kind} />,
-                    opts,
-                );
-            } else {
-                toast(
-                    <ToastContent event={change.event} kind={change.kind} />,
-                    opts,
-                );
-            }
+            const alertColor =
+                kind === 'event_won'
+                    ? 'var(--color-success)'
+                    : kind === 'event_lost'
+                      ? 'var(--color-danger)'
+                      : undefined;
+
+            // Flash alert color overlay (or faction color), then settle to solid faction
+            fireAndSettle(event, kind, { alertColor });
 
             if (isLeader) {
-                showWebNotification(title, change.event);
+                const { title } = toastLabel(kind, event);
+                showWebNotification(title, event);
             }
         }
     }, [data, prevData, isLeader]);
