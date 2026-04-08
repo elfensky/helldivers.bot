@@ -1,6 +1,7 @@
 export const metadata = {
     title: 'Utilities | Helldivers Bot',
-    description: 'Shared utilities, Zod validators, formatting helpers, and analytics architecture for helldivers.bot.',
+    description:
+        'Shared utilities, Zod validators, formatting helpers, and analytics architecture for helldivers.bot.',
     alternates: { canonical: '/docs/utilities' },
     openGraph: { url: '/docs/utilities' },
 };
@@ -9,11 +10,52 @@ export const metadata = {
 
 Lookup reference for all shared utility functions and validation schemas — signatures, behavior, edge cases, and source locations.
 
+```mermaid
+graph TD
+    subgraph ErrorHandling["ERROR HANDLING"]
+        TC["tryCatch()"]
+        ER["errorResponse()"]
+        SR["successResponse()"]
+    end
+
+    subgraph Formatting["FORMATTING"]
+        FN["formatNumber()"]
+        FT["formatTimeAgo()"]
+        FU["formatUptime()"]
+        AO["addOrdinalSuffix()"]
+    end
+
+    subgraph GameLogic["GAME LOGIC"]
+        CMS["computeMapState()"]
+        DC["detectChanges()"]
+        EP["evaluateProgress()"]
+        GWO["getWarOutcome()"]
+    end
+
+    subgraph Validation["VALIDATION"]
+        VS["isValidStatus"]
+        VSN["isValidSeason"]
+        VFD["isValidFormData"]
+        VCT["isValidContentType"]
+        VN["isValidNumber"]
+    end
+
+    TC --> ER
+    TC --> SR
+    VS --> DC
+    CMS --> DC
+
+    style ErrorHandling fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+    style Formatting fill:#1a1a2e,stroke:#a855f7,color:#c084fc
+    style GameLogic fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+    style Validation fill:#1e293b,stroke:#3b82f6,color:#60a5fa
+```
+
 ---
 
 ## 1. Error Handling — `tryCatch`
 
-`src/utils/tryCatch.mjs`
+`src/shared/utils/tryCatch.mjs`
 
 ```js
 export async function tryCatch(promise) {
@@ -53,7 +95,7 @@ if (error) {
 
 ## 2. Response Helpers
 
-`src/utils/responses.mjs`
+`src/shared/utils/api/responses.mjs`
 
 Both helpers return a `NextResponse.json()` with a consistent envelope shape and include elapsed time via `performanceTime(start)`.
 
@@ -74,10 +116,10 @@ errorResponse(code: number, start: number, error?: any): NextResponse
 
 ```json
 {
-  "time": "<number>",
-  "code": "<number>",
-  "message": "<string>",
-  "error": "<any | null>"
+    "time": "<number>",
+    "code": "<number>",
+    "message": "<string>",
+    "error": "<any | null>"
 }
 ```
 
@@ -119,10 +161,10 @@ successResponse(code: number, start: number, data: any): NextResponse
 
 ```json
 {
-  "time": "<number>",
-  "code": "<number>",
-  "message": "<string>",
-  "data": "<any>"
+    "time": "<number>",
+    "code": "<number>",
+    "message": "<string>",
+    "data": "<any>"
 }
 ```
 
@@ -141,7 +183,7 @@ successResponse(code: number, start: number, data: any): NextResponse
 
 ## 3. Time Utilities
 
-`src/utils/time.mjs`
+`src/shared/utils/time.mjs`
 
 ### Performance measurement (server-side)
 
@@ -178,7 +220,7 @@ seconds = season_duration % 60
 
 ## 4. Season Extraction
 
-`src/utils/getSeason.mjs`
+`src/shared/utils/getSeason.mjs`
 
 Both functions extract the current season number from an already-validated API response object. They throw synchronously on error — callers must handle or wrap with `tryCatch`.
 
@@ -244,7 +286,7 @@ Snapshot data includes attack events because historical season data is already f
 
 ### `formatNumber(n)`
 
-`src/utils/formatNumber.mjs`
+`src/shared/utils/format/formatNumber.mjs`
 
 ```ts
 formatNumber(n: number | null | undefined): string
@@ -267,7 +309,7 @@ formatNumber(n: number | null | undefined): string
 
 ### `formatTimeAgo(date, now?)`
 
-`src/utils/formatTimeAgo.mjs`
+`src/shared/utils/format/formatTimeAgo.mjs`
 
 ```ts
 formatTimeAgo(date: Date | null, now?: Date): string | null
@@ -311,7 +353,7 @@ addOrdinalSuffix(num: number): string
 
 ### `formDataToObject(formData)`
 
-`src/utils/formdata.mjs`
+`src/shared/utils/formdata.mjs`
 
 ```ts
 formDataToObject(formData: FormData): Record<string, string>
@@ -323,7 +365,7 @@ Iterates `formData.entries()` and builds a plain object. The result is what gets
 
 ### `getGravatarUrl(email)`
 
-`src/utils/gravatar.mjs`
+`src/shared/utils/gravatar.mjs`
 
 ```ts
 getGravatarUrl(email: string): string
@@ -444,7 +486,7 @@ Same-origin proxy for the Umami tracker script. Receives POST from the client-si
 
 ## 7. War Outcome — `getWarOutcome`
 
-`src/utils/getWarOutcome.mjs`
+`src/features/archives/getWarOutcome.mjs`
 
 ```ts
 getWarOutcome(data: { snapshots?, events?, live? }): { outcome: 'victory'|'defeat', reason: string } | null
@@ -487,7 +529,7 @@ The `sector` field is a number to avoid string parsing from `id`.
 
 ## 9. Event Progress — `evaluateProgress`
 
-`src/utils/evaluateProgress.mjs`
+`src/features/stats/evaluateProgress.mjs`
 
 Evaluates how a live event is performing relative to the expected linear progress rate. Returns a human-readable status string for active events, or `null` for completed/inactive events.
 
@@ -823,7 +865,7 @@ Clears all in-memory state: sets `lastLiveSnapshotTime` to `null` and clears the
 
 ## 12. Map State — `computeMapState`
 
-`src/utils/computeMapState.mjs`
+`src/shared/utils/game/computeMapState.mjs`
 
 ```ts
 computeMapState(factionStates: Array, events?: Array): Object
@@ -868,11 +910,11 @@ Defend events are sorted by `end_time` (most recent wins per region):
 
 ### Used by
 
-| Caller | Events passed |
-|--------|--------------|
-| `src/app/page.jsx` (homepage) | Active only |
-| `src/app/api/og/route.js` (OG image) | Active only |
-| `src/app/war/page.jsx` (history) | None (`[]`) — timeline handles its own |
+| Caller                                          | Events passed                                     |
+| ----------------------------------------------- | ------------------------------------------------- |
+| `src/app/page.jsx` (homepage)                   | Active only                                       |
+| `src/app/api/og/route.js` (OG image)            | Active only                                       |
+| `src/app/archives/page.jsx` (history)           | None (`[]`) — timeline handles its own            |
 | `src/components/h1/WarTimeline/WarTimeline.jsx` | Time-filtered (active + completed at that moment) |
 
 ---
@@ -885,7 +927,7 @@ Defend events are sorted by `end_time` (most recent wins per region):
 fetchAndSeedSeason(season: number): Promise<void>
 ```
 
-Fetches a single season from the official Helldivers API and seeds it into the normalized `h1_*` tables. Called on-demand by the `/war` history page when a user requests a season not yet stored in the database.
+Fetches a single season from the official Helldivers API and seeds it into the normalized `h1_*` tables. Called on-demand by the `/archives` history page when a user requests a season not yet stored in the database.
 
 ### Behavior
 
@@ -898,7 +940,7 @@ Fetches a single season from the official Helldivers API and seeds it into the n
 ### Usage
 
 ```js
-// In /war page — fetch missing season on first request
+// In /archives page — fetch missing season on first request
 const { data, error } = await tryCatch(getCampaign(season));
 if (!error && !data) {
     await tryCatch(fetchAndSeedSeason(season));
@@ -909,7 +951,7 @@ if (!error && !data) {
 
 ### Season selector derivation
 
-The `/war` page no longer queries the database for available seasons. Instead, it derives the list from the current active season number:
+The `/archives` page no longer queries the database for available seasons. Instead, it derives the list from the current active season number:
 
 ```js
 const seasons = Array.from({ length: activeSeason - 1 }, (_, i) => activeSeason - 1 - i);

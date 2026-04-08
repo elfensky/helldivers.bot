@@ -1,6 +1,7 @@
 export const metadata = {
     title: 'Data Flow | Helldivers Bot',
-    description: 'Worker pipeline, two-table strategy, snapshot throttling, and data fetching architecture for helldivers.bot.',
+    description:
+        'Worker pipeline, two-table strategy, snapshot throttling, and data fetching architecture for helldivers.bot.',
     alternates: { canonical: '/docs/data-flow' },
     openGraph: { url: '/docs/data-flow' },
 };
@@ -115,6 +116,23 @@ There are two distinct pipelines that share this shape:
 Sources: `public/workers/cron.js`, `src/utils/initialize.worker.mjs`
 
 ### Startup
+
+```mermaid
+graph TD
+    INIT["instrumentation.js<br/><small>register()</small>"] --> ENV["initializeEnvironmentVariables()"]
+    ENV --> OAS["initializeOpenApiSpec()"]
+    OAS --> WORKER["initializeWorker()<br/><small>new Worker()</small>"]
+    WORKER --> MSG["postMessage<br/><small>{key, interval, port}</small>"]
+    MSG --> LOOP["doWork()"]
+    LOOP --> FETCH["fetch /api/h1/update"]
+    FETCH --> REPORT["Report result to parent"]
+    REPORT --> WAIT["setTimeout(doWork, interval)"]
+    WAIT --> LOOP
+
+    style INIT fill:#1e293b,stroke:#3b82f6,color:#60a5fa
+    style LOOP fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+    style WAIT fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+```
 
 `initializeWorker()` is called from `src/instrumentation.js` during application bootstrap. It guards against non-Node.js runtimes before doing anything:
 
@@ -501,13 +519,13 @@ After `updateSeason()` returns, the handler re-queries the database and returns 
 
 ### Frontend on-demand fetching
 
-The `/war` history page also fetches seasons on-demand via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`). When a user selects a season not yet in the database:
+The `/archives` history page also fetches seasons on-demand via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`). When a user selects a season not yet in the database:
 
 1. `getCampaign(season)` returns `null`
 2. `fetchAndSeedSeason(season)` calls `fetchSeason(season)` (official API) and upserts into `h1_season`, `h1_event`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`
 3. `getCampaign(season)` is re-queried and now returns the seeded data
 
-The season selector on `/war` is derived from the current season number (`Array.from({length: activeSeason - 1}, ...)`), not from a database query. This ensures all past seasons are always selectable regardless of what exists in the DB.
+The season selector on `/archives` is derived from the current season number (`Array.from({length: activeSeason - 1}, ...)`), not from a database query. This ensures all past seasons are always selectable regardless of what exists in the DB.
 
 ---
 
@@ -518,7 +536,7 @@ Every pipeline run writes the same data twice: once as raw JSON, once as normali
 ### Rebroadcast tables
 
 | Table                  | Populated by                   | Key               |
-| ---------------------- | ------------------------------ | ------------------ |
+| ---------------------- | ------------------------------ | ----------------- |
 | `rebroadcast_status`   | `queryUpsertRebroadcastStatus` | `season` (unique) |
 | `rebroadcast_snapshot` | `queryUpsertRebroadcastSeason` | `season` (unique) |
 

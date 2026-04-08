@@ -38,7 +38,7 @@ const BODY = `
     detect_changes --> sonner_toast
     detect_changes --> web_noti
 
-    %% Styles matching wiki color conventions
+    %% Styles matching docs color conventions
     classDef source fill:#1c1b1b,stroke:#3b82f6,color:#60a5fa
     classDef server fill:#1c1b1b,stroke:#a855f7,color:#c084fc
     classDef database fill:#1c1b1b,stroke:#22c55e,color:#4ade80

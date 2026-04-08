@@ -22,6 +22,31 @@ There are two servers the client connects to:
 - **api.helldiversgame.com** — global stats, events, and battlefield data
 - **helldivers.api.wwsga.me** — userdata (do not connect to this server)
 
+```mermaid
+graph LR
+    subgraph Official["OFFICIAL HELLDIVERS 1 API"]
+        EP["api.helldiversgame.com/1.0/"]
+    end
+
+    subgraph Actions["AVAILABLE ACTIONS"]
+        CS["get_campaign_status<br/><small>Live war state + stats</small>"]
+        SN["get_snapshots<br/><small>Historical time-series</small>"]
+        UN["get_usernames<br/><small>Steam/PSN player names</small>"]
+        LB["get_leaderboards<br/><small>Player rankings</small>"]
+        AE["get_available_entitlements<br/><small>DLC data</small>"]
+    end
+
+    CLIENT["HTTPS POST<br/><small>action=...</small>"] --> EP
+    EP --> CS
+    EP --> SN
+    EP --> UN
+    EP --> LB
+    EP --> AE
+
+    style Official fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+    style Actions fill:#1e293b,stroke:#3b82f6,color:#60a5fa
+```
+
 The client uses [libcurl](https://curl.haxx.se/download.html) with SSL. Certificate pinning may be in use.
 
 Global statistics are available via HTTPS POST to `https://api.helldiversgame.com/1.0/`.
@@ -48,85 +73,105 @@ Returns the current war state including campaign progress, events, and statistic
 
 **Response structure:**
 
-| Key               | Value                                                    |
-| ----------------- | -------------------------------------------------------- |
-| `time`            | Unix timestamp of request                                |
-| `error_code`      | `0`                                                      |
-| `campaign_status` | Array of faction status objects (see below)               |
-| `defend_event`    | Current/most recent defense event object                 |
-| `attack_events`   | Array of homeworld assault objects (one per faction)     |
-| `statistics`      | Array of global stats objects (one per faction)           |
+| Key               | Value                                                |
+| ----------------- | ---------------------------------------------------- |
+| `time`            | Unix timestamp of request                            |
+| `error_code`      | `0`                                                  |
+| `campaign_status` | Array of faction status objects (see below)          |
+| `defend_event`    | Current/most recent defense event object             |
+| `attack_events`   | Array of homeworld assault objects (one per faction) |
+| `statistics`      | Array of global stats objects (one per faction)      |
+
+```mermaid
+graph TD
+    RESP["API Response"] --> TIME["time<br/><small>Unix timestamp</small>"]
+    RESP --> ERR["error_code<br/><small>0 = success</small>"]
+    RESP --> CS["campaign_status[]<br/><small>3 factions</small>"]
+    RESP --> DE["defend_event<br/><small>Single object or null</small>"]
+    RESP --> AE["attack_events[]<br/><small>3 factions</small>"]
+    RESP --> STATS["statistics[]<br/><small>3 factions</small>"]
+
+    CS --> F0["[0] Bugs"]
+    CS --> F1["[1] Cyborgs"]
+    CS --> F2["[2] Illuminate"]
+
+    style RESP fill:#1e293b,stroke:#3b82f6,color:#60a5fa
+    style CS fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+    style DE fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+    style AE fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+    style STATS fill:#1a1a2e,stroke:#a855f7,color:#c084fc
+```
 
 ### campaign_status
 
 Array of 3 objects ordered by faction: index 0 = Bugs, 1 = Cyborgs, 2 = Illuminate.
 
-| Key                  | Data Type | Value                                                                                              |
-| -------------------- | :-------: | -------------------------------------------------------------------------------------------------- |
-| `season`             |  number   | Season / War number                                                                                |
-| `points`             |  number   | Current influence points (decreases over time)                                                     |
-| `points_taken`       |  number   | Total influence points gained by players                                                           |
-| `points_max`         |  number   | Points required to trigger a homeworld assault event                                               |
-| `status`             |  string   | `'active'`, `'defeated'`, or `'hidden'`                                                            |
-| `introduction_order` |  number   | Order in which faction was introduced to the war (255 if not yet introduced)                       |
+| Key                  | Data Type | Value                                                                        |
+| -------------------- | :-------: | ---------------------------------------------------------------------------- |
+| `season`             |  number   | Season / War number                                                          |
+| `points`             |  number   | Current influence points (decreases over time)                               |
+| `points_taken`       |  number   | Total influence points gained by players                                     |
+| `points_max`         |  number   | Points required to trigger a homeworld assault event                         |
+| `status`             |  string   | `'active'`, `'defeated'`, or `'hidden'`                                      |
+| `introduction_order` |  number   | Order in which faction was introduced to the war (255 if not yet introduced) |
 
 ### defend_event
 
 Single object for the most recent or currently active defense event.
 
-| Key          | Data Type | Value                                                                  |
-| ------------ | :-------: | ---------------------------------------------------------------------- |
-| `season`     |  number   | Season / War number                                                    |
-| `event_id`   |  number   | Defense event ID                                                       |
-| `start_time` |  number   | Unix timestamp of event start                                          |
-| `end_time`   |  number   | Unix timestamp of event deadline                                       |
-| `region`     |  number   | ID of the region containing the defended planet                        |
-| `enemy`      |  number   | Enemy faction ID (0=Bugs, 1=Cyborgs, 2=Illuminate)                    |
-| `points`     |  number   | Current influence points gained                                        |
-| `points_max` |  number   | Points needed for the defense to succeed                               |
-| `status`     |  string   | `'active'`, `'success'`, or `'failure'`                                |
+| Key          | Data Type | Value                                              |
+| ------------ | :-------: | -------------------------------------------------- |
+| `season`     |  number   | Season / War number                                |
+| `event_id`   |  number   | Defense event ID                                   |
+| `start_time` |  number   | Unix timestamp of event start                      |
+| `end_time`   |  number   | Unix timestamp of event deadline                   |
+| `region`     |  number   | ID of the region containing the defended planet    |
+| `enemy`      |  number   | Enemy faction ID (0=Bugs, 1=Cyborgs, 2=Illuminate) |
+| `points`     |  number   | Current influence points gained                    |
+| `points_max` |  number   | Points needed for the defense to succeed           |
+| `status`     |  string   | `'active'`, `'success'`, or `'failure'`            |
 
 ### attack_events
 
 Array of 3 objects (one per faction) for the most recent homeworld assault of each faction.
 
-| Key                | Data Type | Value                                                              |
-| ------------------ | :-------: | ------------------------------------------------------------------ |
-| `season`           |  number   | Season / War number                                                |
-| `event_id`         |  number   | Attack event ID                                                    |
-| `start_time`       |  number   | Unix timestamp of event start                                      |
-| `end_time`         |  number   | Unix timestamp of event deadline                                   |
-| `enemy`            |  number   | Enemy faction ID                                                   |
-| `points`           |  number   | Current influence points gained                                    |
-| `points_max`       |  number   | Points needed for the assault to succeed                           |
-| `status`           |  string   | `'active'`, `'success'`, or `'failure'`                            |
-| `players_at_start` |  number   | Players in mission when the event started                          |
-| `max_event_id`     |  number   | Same as `event_id` (purpose unclear)                               |
+| Key                | Data Type | Value                                     |
+| ------------------ | :-------: | ----------------------------------------- |
+| `season`           |  number   | Season / War number                       |
+| `event_id`         |  number   | Attack event ID                           |
+| `start_time`       |  number   | Unix timestamp of event start             |
+| `end_time`         |  number   | Unix timestamp of event deadline          |
+| `enemy`            |  number   | Enemy faction ID                          |
+| `points`           |  number   | Current influence points gained           |
+| `points_max`       |  number   | Points needed for the assault to succeed  |
+| `status`           |  string   | `'active'`, `'success'`, or `'failure'`   |
+| `players_at_start` |  number   | Players in mission when the event started |
+| `max_event_id`     |  number   | Same as `event_id` (purpose unclear)      |
 
 ### statistics
 
 Array of 3 objects (one per faction). Sum all three for global totals.
 
-| Key                        | Data Type | Value                                        |
-| -------------------------- | :-------: | -------------------------------------------- |
-| `season`                   |  number   | Season / War number                          |
-| `season_duration`          |  number   | Seconds the current war has been going       |
-| `enemy`                    |  number   | Enemy faction ID                             |
-| `players`                  |  number   | Players currently online                     |
-| `total_unique_players`     |  number   | Unique players this season                   |
-| `missions`                 |  number   | Total missions played                        |
-| `successful_missions`      |  number   | Successful missions                          |
-| `total_mission_difficulty` |  number   | Sum of difficulty of successful missions     |
-| `completed_planets`        |  number   | Planets where all missions were completed    |
-| `defend_events`            |  number   | Total defend events                          |
-| `successful_defend_events` |  number   | Successful defend events                     |
-| `attack_events`            |  number   | Total homeworld assaults                     |
-| `successful_attack_events` |  number   | Successful homeworld assaults                |
-| `deaths`                   |  number   | Player deaths                                |
-| `accidentals`              |  number   | Player-caused deaths (friendly fire)         |
-| `shots`                    |  number   | Shots fired                                  |
-| `hits`                     |  number   | Shots hit                                    |
-| `kills`                    |  number   | Enemies killed                               |
+| Key                        | Data Type | Value                                     |
+| -------------------------- | :-------: | ----------------------------------------- |
+| `season`                   |  number   | Season / War number                       |
+| `season_duration`          |  number   | Seconds the current war has been going    |
+| `enemy`                    |  number   | Enemy faction ID                          |
+| `players`                  |  number   | Players currently online                  |
+| `total_unique_players`     |  number   | Unique players this season                |
+| `missions`                 |  number   | Total missions played                     |
+| `successful_missions`      |  number   | Successful missions                       |
+| `total_mission_difficulty` |  number   | Sum of difficulty of successful missions  |
+| `completed_planets`        |  number   | Planets where all missions were completed |
+| `defend_events`            |  number   | Total defend events                       |
+| `successful_defend_events` |  number   | Successful defend events                  |
+| `attack_events`            |  number   | Total homeworld assaults                  |
+| `successful_attack_events` |  number   | Successful homeworld assaults             |
+| `deaths`                   |  number   | Player deaths                             |
+| `accidentals`              |  number   | Player-caused deaths (friendly fire)      |
+| `shots`                    |  number   | Shots fired                               |
+| `hits`                     |  number   | Shots hit                                 |
+| `kills`                    |  number   | Enemies killed                            |
 
 ---
 
@@ -134,11 +179,11 @@ Array of 3 objects (one per faction). Sum all three for global totals.
 
 **POST parameters:**
 
-| Key       | Value                                 |
-| --------- | ------------------------------------- |
-| `action`  | `'get_usernames'`                     |
+| Key       | Value                                   |
+| --------- | --------------------------------------- |
+| `action`  | `'get_usernames'`                       |
 | `network` | `'steam'` (PC) or `'psn'` (PlayStation) |
-| `count`   | Number of users to retrieve           |
+| `count`   | Number of users to retrieve             |
 
 **Response:**
 
@@ -146,7 +191,7 @@ Array of 3 objects (one per faction). Sum all three for global totals.
 | ------------ | :-------: | ------------------------- |
 | `time`       |  number   | Unix timestamp            |
 | `error_code` |  number   | `0`                       |
-| `usernames`  |  Array    | Array of user identifiers |
+| `usernames`  |   Array   | Array of user identifiers |
 
 For `network: 'steam'`, the array contains hex Steam IDs. For `network: 'psn'`, it contains PSN usernames.
 
@@ -164,31 +209,31 @@ Historical war data for a specific season.
 
 **POST parameters:**
 
-| Key      | Value                         |
-| -------- | ----------------------------- |
-| `action` | `'get_snapshots'`             |
-| `season` | Season number to retrieve     |
+| Key      | Value                     |
+| -------- | ------------------------- |
+| `action` | `'get_snapshots'`         |
+| `season` | Season number to retrieve |
 
 **Response:**
 
-| Key                  | Data Type | Value                                                  |
-| -------------------- | :-------: | ------------------------------------------------------ |
-| `time`               |  number   | Unix timestamp                                         |
-| `error_code`         |  number   | `0`                                                    |
-| `introduction_order` |  Array    | 3 numbers showing faction introduction order (0/1/2 or 255) |
-| `points_max`         |  Array    | Points needed per faction to trigger homeworld assault  |
-| `snapshots`          |  Array    | Time-series data points                                |
-| `defend_events`      |  Array    | Completed defense events                               |
-| `attack_events`      |  Array    | Completed homeworld assaults                           |
+| Key                  | Data Type | Value                                                       |
+| -------------------- | :-------: | ----------------------------------------------------------- |
+| `time`               |  number   | Unix timestamp                                              |
+| `error_code`         |  number   | `0`                                                         |
+| `introduction_order` |   Array   | 3 numbers showing faction introduction order (0/1/2 or 255) |
+| `points_max`         |   Array   | Points needed per faction to trigger homeworld assault      |
+| `snapshots`          |   Array   | Time-series data points                                     |
+| `defend_events`      |   Array   | Completed defense events                                    |
+| `attack_events`      |   Array   | Completed homeworld assaults                                |
 
 ### snapshots
 
 Each snapshot object has `season` (number), `time` (Unix timestamp), and `data` (stringified JSON array of 3 objects):
 
-| Key            | Data Type | Value                                    |
-| -------------- | :-------: | ---------------------------------------- |
-| `points`       |  number   | Points needed for homeworld assault      |
-| `points_taken` |  number   | Points players have gained               |
+| Key            | Data Type | Value                                            |
+| -------------- | :-------: | ------------------------------------------------ |
+| `points`       |  number   | Points needed for homeworld assault              |
+| `points_taken` |  number   | Points players have gained                       |
 | `status`       |  string   | `'hidden'`, `'active'`, `'success'`, or `'fail'` |
 
 ### defend_events / attack_events
@@ -201,18 +246,18 @@ Same structure as `defend_event` / `attack_events` in `get_campaign_status`, but
 
 **POST parameters:**
 
-| Key       | Value                                     |
-| --------- | ----------------------------------------- |
-| `action`  | `'get_leaderboards'`                      |
-| `network` | `'steam'` or `'psn'`                     |
-| `season`  | Season number                             |
+| Key       | Value                |
+| --------- | -------------------- |
+| `action`  | `'get_leaderboards'` |
+| `network` | `'steam'` or `'psn'` |
+| `season`  | Season number        |
 
 **Optional parameters:**
 
-| Key     | Value                                              |
-| ------- | -------------------------------------------------- |
-| `count` | Number of users to retrieve                        |
-| `users` | Array of Steam IDs to filter                       |
+| Key     | Value                        |
+| ------- | ---------------------------- |
+| `count` | Number of users to retrieve  |
+| `users` | Array of Steam IDs to filter |
 
 **Response:**
 
@@ -220,18 +265,18 @@ Same structure as `defend_event` / `attack_events` in `get_campaign_status`, but
 | ------------------- | :-------: | ---------------------------------------------------- |
 | `time`              |  number   | Unix timestamp                                       |
 | `error_code`        |  number   | `0`                                                  |
-| `leaderboards`      |  Array    | 4 arrays: Bugs, Cyborgs, Illuminate, Global          |
-| `user_leaderboards` |  Array    | Filtered leaderboard data (only if `users` provided) |
+| `leaderboards`      |   Array   | 4 arrays: Bugs, Cyborgs, Illuminate, Global          |
+| `user_leaderboards` |   Array   | Filtered leaderboard data (only if `users` provided) |
 
 ### Leaderboard entry
 
-| Key         | Data Type | Value                              |
-| ----------- | :-------: | ---------------------------------- |
-| `online_id` |  string   | Steam ID (hex) or PSN username     |
-| `playtime`  |  number   | Playtime in seconds                |
-| `planets`   |  number   | Liberated planets                  |
-| `score`     |  number   | Community points                   |
-| `player_xp` |  number   | Experience points                  |
+| Key         | Data Type | Value                          |
+| ----------- | :-------: | ------------------------------ |
+| `online_id` |  string   | Steam ID (hex) or PSN username |
+| `playtime`  |  number   | Playtime in seconds            |
+| `planets`   |  number   | Liberated planets              |
+| `score`     |  number   | Community points               |
+| `player_xp` |  number   | Experience points              |
 
 ---
 

@@ -1,7 +1,6 @@
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import ProfileNav from '@/features/account/ProfileNav';
 
 export const metadata = {
     title: 'Profile | Helldivers Bot',
@@ -30,7 +29,6 @@ export default async function ProfileLayout({ children }) {
 
     return (
         <section className="gutters flex flex-col gap-6 py-6">
-            <ProfileNav role={session.user.role} />
             {children}
         </section>
     );

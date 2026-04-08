@@ -6,7 +6,7 @@
 
 - **Progressive env vars** — only `POSTGRES_URL`, `UPDATE_KEY`, and `UPDATE_INTERVAL` are required at startup; auth (BetterAuth + OAuth) and analytics (Umami, Sentry/GlitchTip) degrade gracefully when absent. Partial auth config (secret present but provider vars missing) still throws. `withSentryConfig` skipped without `SENTRY_AUTH_TOKEN`. Umami script conditional on `UMAMI_SITE_ID`.
 - **Profile page** — view connected providers, manage API keys, GDPR data export and account deletion (#248)
-- **Admin dashboard** — system overview (worker health, game data, user metrics), user management with role/ban controls, last-admin guardrails, and RefreshButton (#248)
+- **Admin dashboard** — system overview, debug tools, user management (with provider/key columns), and all-keys table. Role-gated on `/profile` — no separate admin route. Each section loads independently via Suspense (#248)
 - **Worker heartbeat monitoring** — cron worker writes heartbeat on each poll; `worker_heartbeat` table, `computeWorkerHealth` utility, health dot in admin dashboard
 - **Global live data** — `LiveDataContext` wraps all pages so every route receives real-time campaign updates via polling
 - **Replace SSE with polling** — remove entire SSE infrastructure (sseManager, pg LISTEN/NOTIFY, `/api/h1/stream`). New `GET /api/h1/live` endpoint polled every 10s via `setInterval` + `fetch`. Eliminates RSC Flight stream conflicts (`enqueueModel` crashes)
@@ -16,7 +16,7 @@
 - **App version in footer** — shows package version, short commit SHA, and commit message in footer and dev console (auto-generated at build time by `next.config.mjs`)
 - **Catch-up toasts for active events** — show an "in progress" toast on page load when defend/attack events are already active (#LiveToasts)
 - **Push notification improvements** — add `badge` (favicon PNG), per-event `tag` grouping, and `renotify` for status changes; fix icon fallback from SVG to raster; precache badge in service worker shell assets
-- **Admin notification debug buttons** — "Test Push" sends a test push notification to all subscribers via `web-push`; "Test Toast" fires a faction-colored Sonner toast. Both in the admin dashboard System Overview header.
+- **Admin notification debug buttons** — "Test Push" sends a test push notification to all subscribers via `web-push`; "Test Toast" fires a faction-colored Sonner toast. Standalone Debug section in admin area.
 - **Umami analytics expansion** — comprehensive Level 2 feature engagement tracking with ad-blocker bypass via same-origin proxy (`/api/umami`), `useTrack` hook for dynamic interactions, `umami.identify()` for authenticated users, and `category-action` event naming convention across ~40 tracked elements
 - **GlitchTip error tracking** — migrate from BugSink to GlitchTip with client tunnel (`/api/glitchtip`) to bypass ad blockers, CSP violation reporting via `report-uri`, and `environment` tagging to split dev/prod issues
 - **Error boundaries** — route-level (`error.jsx` at root + archives) and component-level (`ComponentErrorBoundary` wrapping Galaxy Map, Regions, Stats, Timeline) for graceful degradation
@@ -26,7 +26,7 @@
 
 ### Refactors
 
-- **Mermaid diagram system** — replace hand-crafted SVG diagram components (~1650 LOC) with reusable `MermaidDiagram` component powered by Mermaid syntax. Diagrams are now config-driven (definition string + config object). Same color conventions as wiki. Preserves flow filtering, clickable detail panels, and keyboard accessibility.
+- **Mermaid diagram system** — replace hand-crafted SVG diagram components (~1650 LOC) with reusable `MermaidDiagram` component powered by Mermaid syntax. Diagrams are now config-driven (definition string + config object). Same color conventions as docs. Preserves flow filtering, clickable detail panels, and keyboard accessibility.
 
 ### Fixes
 
@@ -273,7 +273,7 @@
 
 #### Chores
 
-- Delete AI working docs (plans, specs, debates) — tracked in wiki instead
+- Delete AI working docs (plans, specs, debates) — tracked in docs instead
 - Consolidate CSS files and reintroduce responsive header scroll-hide
 - Replace gutters wrapper with fragment on home page
 
@@ -410,7 +410,7 @@
 
 #### Chores
 
-- Update doc references to wiki, fix Mermaid FK-UK syntax
+- Update doc references, fix Mermaid FK-UK syntax
 - Move loadout builder spec + plan to GitHub issue #162
 - Add grouping and schedule alignment to dependabot config
 

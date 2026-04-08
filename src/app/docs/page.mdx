@@ -10,6 +10,39 @@ export const metadata = {
 
 Welcome to the helldivers.bot documentation. This site caches the official Helldivers 1 API, stores historic game data, and provides API access along with frontend visualizations.
 
+```mermaid
+graph TB
+    subgraph Frontend["FRONTEND"]
+        DASH["Dashboard<br/><small>Live campaign view</small>"]
+        ARCH["/archives<br/><small>War history</small>"]
+        PROFILE["/profile<br/><small>Account & API keys</small>"]
+        DOCS["/docs<br/><small>Documentation</small>"]
+    end
+
+    subgraph Backend["BACKEND"]
+        API_LIVE["/api/h1/live<br/><small>Polling endpoint</small>"]
+        API_RB["/api/h1/rebroadcast<br/><small>API proxy</small>"]
+        API_UPDATE["/api/h1/update<br/><small>Worker trigger</small>"]
+        AUTH_API["/api/auth/*<br/><small>BetterAuth OAuth</small>"]
+    end
+
+    subgraph Data["DATA LAYER"]
+        WORKER["Worker Thread<br/><small>Polls every 10-20s</small>"]
+        DB[("PostgreSQL<br/><small>Prisma 7</small>")]
+        HD1["Official HD1 API<br/><small>api.helldiversgame.com</small>"]
+    end
+
+    DASH -->|"poll 10s"| API_LIVE
+    API_LIVE --> DB
+    WORKER -->|"setTimeout loop"| API_UPDATE
+    API_UPDATE --> DB
+    WORKER --> HD1
+
+    style Frontend fill:#1a1a2e,stroke:#a855f7,color:#c084fc
+    style Backend fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+    style Data fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+```
+
 ## Getting Started
 
 - [About](/docs/about) — learn about the project and its creator
@@ -33,4 +66,4 @@ Welcome to the helldivers.bot documentation. This site caches the official Helld
 ## Development
 
 - [Infrastructure](/docs/infrastructure) — Docker, CI/CD, initialization flow, and environment variables
-- [Testing](/docs/testing) — Vitest unit tests, Playwright E2E, and testing conventions
+- [Testing](/docs/testing) — Vitest unit tests, smoke tests, and testing conventions

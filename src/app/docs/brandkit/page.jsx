@@ -72,9 +72,7 @@ function Hero() {
 function Palette() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">
-                Palette
-            </h2>
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Palette</h2>
             <h3 className="mb-2">Website</h3>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <Swatch
@@ -153,9 +151,7 @@ function Palette() {
 function Surfaces() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">
-                Surfaces
-            </h2>
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Surfaces</h2>
             <p className="mb-4 text-small text-text-muted">
                 Tonal layering — depth via surface shifts, no shadows.
             </p>
@@ -163,27 +159,37 @@ function Surfaces() {
                 className="border border-ghost p-4"
                 style={{ background: 'var(--color-surface-0)' }}
             >
-                <code className="font-mono text-small text-text-muted">0 — surface-0</code>
+                <code className="font-mono text-small text-text-muted">
+                    0 — surface-0
+                </code>
                 <div
                     className="mt-2 border border-ghost p-4"
                     style={{ background: 'var(--color-surface-1)' }}
                 >
-                    <code className="font-mono text-small text-text-muted">1 — surface-1</code>
+                    <code className="font-mono text-small text-text-muted">
+                        1 — surface-1
+                    </code>
                     <div
                         className="mt-2 border border-ghost p-4"
                         style={{ background: 'var(--color-surface-2)' }}
                     >
-                        <code className="font-mono text-small text-text-muted">2 — surface-2</code>
+                        <code className="font-mono text-small text-text-muted">
+                            2 — surface-2
+                        </code>
                         <div
                             className="mt-2 border border-ghost p-4"
                             style={{ background: 'var(--color-surface-3)' }}
                         >
-                            <code className="font-mono text-small text-text-muted">3 — surface-3</code>
+                            <code className="font-mono text-small text-text-muted">
+                                3 — surface-3
+                            </code>
                             <div
                                 className="mt-2 border border-ghost p-4"
                                 style={{ background: 'var(--color-surface-4)' }}
                             >
-                                <code className="font-mono text-small text-text-muted">4 — surface-4</code>
+                                <code className="font-mono text-small text-text-muted">
+                                    4 — surface-4
+                                </code>
                             </div>
                         </div>
                     </div>
@@ -213,9 +219,7 @@ function Swatch({ color, name, token }) {
 function TypeAndSpacing() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">
-                Typography
-            </h2>
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Typography</h2>
             <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <h1 style={{ margin: 0 }}>Current Campaign</h1>
@@ -265,7 +269,7 @@ function TypeAndSpacing() {
                 <div className="flex flex-col gap-0.5">
                     <small className="text-text-muted">Body</small>
                     <span style={{ fontFamily: 'var(--font-body)' }}>
-                        Insignia / Inter / Arial
+                        Inter / Arial / Helvetica
                     </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
@@ -311,9 +315,7 @@ const btn =
 function Components() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">
-                Components
-            </h2>
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Components</h2>
 
             <div className="mb-4 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <button

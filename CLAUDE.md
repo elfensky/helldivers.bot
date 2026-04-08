@@ -116,7 +116,7 @@ Tailwind-first: use utility classes and theme tokens (`bg-primary`, `border-ghos
 
 ### Design Tokens
 
-All visual properties use CSS custom properties from `src/styles/tokens.css`, integrated into Tailwind v4 `@theme` block in `src/app/layout.css`. See `/brandkit` for visual reference.
+All visual properties use CSS custom properties defined in the Tailwind v4 `@theme` block in `src/app/layout.css`. See `/brandkit` for visual reference.
 
 - Colors: `--color-primary`, `--color-danger`, `--color-surface-0` through `--color-surface-4`, `--color-faction-*`
 - Fonts: `--font-display` (Insignia, titles only), `--font-body` (Inter), `--font-mono` (Space Mono)
@@ -141,7 +141,7 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`, in
 - **Notifications:** `detectChanges()` (`src/shared/utils/game/detectChanges.mjs`) detects event transitions (started/won/lost) on both client (Sonner toasts + Web Notifications) and server (push via `web-push`). `LiveToasts` also shows catch-up toasts for active events on page load. The Sonner `<Toaster>` is co-located inside `LiveToasts` (not root layout) to share the same module singleton — rendering it from a server component creates a separate `ToastState`. Single "Enable notifications" button enables both web and push. Push subscriptions stored in `push_subscription` table.
 - **Analytics (optional):** Umami v3 (self-hosted, cookieless). Umami `<Script>` tag conditional on `UMAMI_SITE_ID`. Three tracking layers: (1) `data-umami-event` HTML attributes for click tracking — the tracker script captures these automatically; (2) `useTrack` hook (`src/shared/hooks/useTrack.mjs`) or `window.umami?.track()` for dynamic JS interactions; (3) `sendUmamiEvent()` (`src/shared/utils/umami.mjs`) for server-side API route tracking. Client-side tracker posts through same-origin proxy (`/api/umami` route, `/api/send` rewrite) to bypass ad blockers. Authenticated users identified via `umami.identify()` in `UserSection.jsx`. Production-only — no tracking in dev/test.
 - **PWA:** Serwist (`@serwist/next`) generates service worker at build time with automatic precache manifest (content-hash based). Config in `serwist.config.js`, source in `src/sw.js`, output in `public/sw.js` (gitignored build artifact). `skipWaiting: true` for immediate updates. Custom push notification handlers in `src/sw.js`. Last poll payload cached in localStorage for offline fallback.
-- **Diagrams:** Mermaid-based via shared `MermaidDiagram` component (`src/shared/components/MermaidDiagram/`). Each diagram is a Mermaid definition string + config object (views, flows, node details, legend). Supports flow-based filtering (dim/highlight via CSS classes on SVG DOM nodes) and clickable detail panels. Node IDs must use underscores (Mermaid treats hyphens as minus). Colors match wiki conventions (`classDef` with same hex values). Mermaid loaded via dynamic `import()` — client-side only, no SSR. `ProgressExplainer` (Recharts) is separate.
+- **Diagrams:** Mermaid-based via shared `MermaidDiagram` component (`src/shared/components/MermaidDiagram/`). Each diagram is a Mermaid definition string + config object (views, flows, node details, legend). Supports flow-based filtering (dim/highlight via CSS classes on SVG DOM nodes) and clickable detail panels. Node IDs must use underscores (Mermaid treats hyphens as minus). Colors match docs conventions (`classDef` with same hex values). Mermaid loaded via dynamic `import()` — client-side only, no SSR. `ProgressExplainer` (Recharts) is separate.
 
 ## Architecture — Frontend Layout
 
@@ -173,16 +173,16 @@ For every phase or feature, use the `/superpowers:brainstorming` skill to explor
 
 ## Reference Docs
 
-| Topic                              | Location                                         |
-| ---------------------------------- | ------------------------------------------------ |
-| Docker, CI/CD, init flow, env vars | `/docs/infrastructure`                           |
-| Database schema & relationships    | `/docs/database`                                 |
-| Data pipeline & worker lifecycle   | `/docs/data-flow`                                |
-| API endpoints & authentication     | `/docs/api`                                      |
-| Utilities & Zod validators         | `/docs/utilities`                                |
-| Testing infrastructure             | `/docs/testing`                                  |
-| Real-time & notifications          | `/docs/notifications`                            |
-| Data flow architecture             | `/docs/architecture` (Mermaid diagram)           |
-| Authentication & roles             | `/docs/authentication`                           |
-| Frontend design system & tokens    | `/docs/brandkit` (visual) + `src/app/layout.css` |
-| Official HD1 API reference         | `/docs/hd1-api`                                  |
+| Topic                              | Location                                                  |
+| ---------------------------------- | --------------------------------------------------------- |
+| Docker, CI/CD, init flow, env vars | [`/docs/infrastructure`](/docs/infrastructure)            |
+| Database schema & relationships    | [`/docs/database`](/docs/database)                        |
+| Data pipeline & worker lifecycle   | [`/docs/data-flow`](/docs/data-flow)                      |
+| API endpoints & authentication     | [`/docs/api`](/docs/api)                                  |
+| Utilities & Zod validators         | [`/docs/utilities`](/docs/utilities)                      |
+| Testing infrastructure             | [`/docs/testing`](/docs/testing)                          |
+| Real-time & notifications          | [`/docs/notifications`](/docs/notifications)              |
+| Data flow architecture             | [`/docs/architecture`](/docs/architecture)                |
+| Authentication & roles             | [`/docs/authentication`](/docs/authentication)            |
+| Frontend design system & tokens    | [`/docs/brandkit`](/docs/brandkit) + `src/app/layout.css` |
+| Official HD1 API reference         | [`/docs/hd1-api`](/docs/hd1-api)                          |

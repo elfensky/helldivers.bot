@@ -1,6 +1,7 @@
 export const metadata = {
     title: 'Authentication | Helldivers Bot',
-    description: 'BetterAuth OAuth setup, sessions, roles, and API key authentication for helldivers.bot.',
+    description:
+        'BetterAuth OAuth setup, sessions, roles, and API key authentication for helldivers.bot.',
     alternates: { canonical: '/docs/authentication' },
     openGraph: { url: '/docs/authentication' },
 };
@@ -13,6 +14,32 @@ export const metadata = {
 ---
 
 ## 1. Architecture
+
+```mermaid
+graph LR
+    subgraph Client["CLIENT"]
+        UI["Sign-in Page"] -->|"signIn('discord')"| AC["authClient"]
+        AC -->|"OAuth redirect"| PROVIDER["Discord / GitHub"]
+    end
+
+    subgraph Server["SERVER"]
+        CALLBACK["/api/auth/callback"] -->|"Create session"| BA["BetterAuth"]
+        BA -->|"Prisma adapter"| DB["PostgreSQL"]
+        BA -->|"Set cookie"| REDIRECT["Redirect to /profile"]
+    end
+
+    subgraph Guards["AUTH GUARDS"]
+        LAYOUT["Layout Guard<br/><small>/profile/*</small>"] -->|"redirect"| SIGNIN["/sign-in"]
+        ADMIN["Admin Guard<br/><small>Server Actions</small>"] -->|"check role"| DENY["403 Forbidden"]
+        OWNER["Ownership Guard<br/><small>API keys, account</small>"] -->|"check userId"| DENY
+    end
+
+    PROVIDER -->|"OAuth callback"| CALLBACK
+
+    style Client fill:#1a1a2e,stroke:#a855f7,color:#c084fc
+    style Server fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+    style Guards fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+```
 
 Authentication is split across three files:
 
@@ -41,6 +68,7 @@ export const auth = betterAuth({
 ```
 
 Key points:
+
 - Prisma adapter connects to PostgreSQL (same `db` singleton used across the app)
 - `role` field added to `User` model as a custom BetterAuth field (not user-settable via input)
 - No email/password or magic link authentication configured
@@ -49,12 +77,12 @@ Key points:
 
 `src/auth-client.js`
 
-| Export       | Type     | Purpose                                              |
-| ------------ | -------- | ---------------------------------------------------- |
-| `authClient` | Object   | BetterAuth client instance from `createAuthClient()` |
+| Export       | Type     | Purpose                                                                               |
+| ------------ | -------- | ------------------------------------------------------------------------------------- |
+| `authClient` | Object   | BetterAuth client instance from `createAuthClient()`                                  |
 | `signIn`     | Function | `signIn(provider, options?)` — triggers OAuth flow. Default `callbackURL: '/profile'` |
-| `signOut`    | Function | Signs out and redirects to `/`                       |
-| `useSession` | Hook     | React hook for accessing session in client components |
+| `signOut`    | Function | Signs out and redirects to `/`                                                        |
+| `useSession` | Hook     | React hook for accessing session in client components                                 |
 
 ### Route Handler
 
@@ -163,6 +191,7 @@ Ensures users can only act on their own resources (API keys, account data).
 `src/app/sign-in/page.jsx` — client component with Discord and GitHub OAuth buttons.
 
 **Flow:**
+
 1. User clicks "Sign in with Discord" or "Sign in with GitHub"
 2. `signIn('discord')` from `@/auth-client` calls `authClient.signIn.social({ provider: 'discord', callbackURL: '/profile' })`
 3. BetterAuth redirects to the provider's OAuth consent page
@@ -175,6 +204,7 @@ Ensures users can only act on their own resources (API keys, account data).
 `src/shared/components/Auth/Auth.jsx` — `<SignIn>` and `<SignOut>` button components.
 
 **Flow:**
+
 1. User clicks "Sign out" in the header
 2. `signOut()` from `@/auth-client` calls `authClient.signOut()` with `onSuccess` redirect to `/`
 3. BetterAuth revokes the session and clears the cookie
@@ -187,12 +217,12 @@ Ensures users can only act on their own resources (API keys, account data).
 
 ## 5. Role System
 
-| Role    | Access                                      |
-| ------- | ------------------------------------------- |
-| `user`  | Profile, API keys, reviews, account actions |
-| `admin` | Everything above + admin panel at `/profile/admin` |
+| Role    | Access                                             |
+| ------- | -------------------------------------------------- |
+| `user`  | Profile, API keys, reviews, account actions        |
+| `admin` | Everything above + admin section on the profile page (`/profile`) |
 
-Roles are stored in `User.role` (string, default `"user"`). Admins can change roles via `updateUserRole()` but cannot demote themselves. The admin page (`/profile/admin`) checks `session.user.role === 'admin'` and redirects non-admins.
+Roles are stored in `User.role` (string, default `"user"`). Admins can change roles via `updateUserRole()` but cannot demote themselves. The admin section on the profile page is conditionally rendered when `session.user.role === 'admin'`.
 
 ---
 
@@ -202,7 +232,23 @@ API keys provide a separate authentication mechanism for the `/api/h1/rebroadcas
 
 `src/db/queries/validateApiKey.mjs`
 
+```mermaid
+graph LR
+    REQ["API Request<br/><small>Authorization: Bearer key</small>"] --> EXTRACT["Extract key"]
+    EXTRACT --> HASH["SHA-256(key)"]
+    HASH --> LOOKUP["Query ApiKey table<br/><small>by hash</small>"]
+    LOOKUP -->|"Found + enabled"| OK["✓ Authenticated<br/><small>{userId, keyId}</small>"]
+    LOOKUP -->|"Not found"| FAIL["✗ Invalid"]
+    LOOKUP -->|"Disabled"| DISABLED["✗ Disabled"]
+
+    style REQ fill:#1e293b,stroke:#3b82f6,color:#60a5fa
+    style OK fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+    style FAIL fill:#2d1b1b,stroke:#ef4444,color:#f87171
+    style DISABLED fill:#2d1b1b,stroke:#ef4444,color:#f87171
+```
+
 **Flow:**
+
 1. Client sends `Authorization: Bearer <key>` header
 2. `validateApiKey()` extracts the key, computes `SHA-256(key)`
 3. Looks up the hash in the `ApiKey` table
@@ -218,16 +264,17 @@ See [API Reference](/docs/api) section 4 for the rebroadcast endpoint's full aut
 
 Auth is **optional** — if `BETTER_AUTH_SECRET` is absent, all auth features are disabled (no sign-in UI, `/profile` redirects to home, auth API returns 503). If `BETTER_AUTH_SECRET` is present, all other auth vars are required (partial config throws at startup).
 
-| Variable               | Required        | Description                                  |
-| ---------------------- | --------------- | -------------------------------------------- |
-| `BETTER_AUTH_SECRET`   | No (all-or-none)| Session encryption secret (128+ chars). Controls whether auth is enabled. |
-| `BETTER_AUTH_URL`      | If auth enabled | Base URL (e.g., `http://localhost:3000`)      |
-| `AUTH_DISCORD_ID`      | If auth enabled | Discord OAuth app client ID                  |
-| `AUTH_DISCORD_SECRET`  | If auth enabled | Discord OAuth app client secret              |
-| `AUTH_GITHUB_ID`       | If auth enabled | GitHub OAuth app client ID                   |
-| `AUTH_GITHUB_SECRET`   | If auth enabled | GitHub OAuth app client secret               |
+| Variable              | Required         | Description                                                               |
+| --------------------- | ---------------- | ------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET`  | No (all-or-none) | Session encryption secret (128+ chars). Controls whether auth is enabled. |
+| `BETTER_AUTH_URL`     | If auth enabled  | Base URL (e.g., `http://localhost:3000`)                                  |
+| `AUTH_DISCORD_ID`     | If auth enabled  | Discord OAuth app client ID                                               |
+| `AUTH_DISCORD_SECRET` | If auth enabled  | Discord OAuth app client secret                                           |
+| `AUTH_GITHUB_ID`      | If auth enabled  | GitHub OAuth app client ID                                                |
+| `AUTH_GITHUB_SECRET`  | If auth enabled  | GitHub OAuth app client secret                                            |
 
 **When auth is disabled:**
+
 - `src/auth.js` exports `auth = null` (BetterAuth is never initialized)
 - `/api/auth/*` returns 503 `{ error: "Auth is not configured on this instance" }`
 - `/profile/*` routes redirect to `/`
@@ -242,20 +289,20 @@ See [Infrastructure](/docs/infrastructure) section 5 for the complete environmen
 
 The project migrated from NextAuth.js v5 (beta) to BetterAuth in v0.25.0 (2026-04-04). Key changes:
 
-| Aspect              | NextAuth.js v5                           | BetterAuth                                         |
-| ------------------- | ---------------------------------------- | -------------------------------------------------- |
-| Route handler path  | `/api/auth/[...nextauth]`                | `/api/auth/[...all]`                               |
-| Server session      | `auth()` (direct call)                   | `auth.api.getSession({ headers: await headers() })` |
-| Client auth         | Server actions                           | Client-side via `authClient.signIn.social()`       |
-| Env: secret         | `AUTH_SECRET`                            | `BETTER_AUTH_SECRET`                               |
-| Env: trust host     | `AUTH_TRUST_HOST` (required)             | Not needed                                         |
-| Env: base URL       | Not needed                               | `BETTER_AUTH_URL`                                  |
-| Account fields      | `provider` / `providerAccountId`         | `providerId` / `accountId`                         |
-| Session token field  | `sessionToken`                           | `token`                                            |
-| Session expiry field | `expires`                                | `expiresAt`                                        |
-| Verification model  | `VerificationToken` (no PK)              | `Verification` (has `id` PK)                       |
-| WebAuthn            | `Authenticator` model                    | Removed                                            |
-| Email auth          | Nodemailer (commented out)               | Removed entirely                                   |
+| Aspect               | NextAuth.js v5                   | BetterAuth                                          |
+| -------------------- | -------------------------------- | --------------------------------------------------- |
+| Route handler path   | `/api/auth/[...nextauth]`        | `/api/auth/[...all]`                                |
+| Server session       | `auth()` (direct call)           | `auth.api.getSession({ headers: await headers() })` |
+| Client auth          | Server actions                   | Client-side via `authClient.signIn.social()`        |
+| Env: secret          | `AUTH_SECRET`                    | `BETTER_AUTH_SECRET`                                |
+| Env: trust host      | `AUTH_TRUST_HOST` (required)     | Not needed                                          |
+| Env: base URL        | Not needed                       | `BETTER_AUTH_URL`                                   |
+| Account fields       | `provider` / `providerAccountId` | `providerId` / `accountId`                          |
+| Session token field  | `sessionToken`                   | `token`                                             |
+| Session expiry field | `expires`                        | `expiresAt`                                         |
+| Verification model   | `VerificationToken` (no PK)      | `Verification` (has `id` PK)                        |
+| WebAuthn             | `Authenticator` model            | Removed                                             |
+| Email auth           | Nodemailer (commented out)       | Removed entirely                                    |
 
 **Breaking:** The migration dropped and recreated all auth tables. Existing users, sessions, and API keys were lost.
 

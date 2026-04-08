@@ -1,6 +1,7 @@
 export const metadata = {
     title: 'Database Schema | Helldivers Bot',
-    description: 'Prisma 7 schema reference — models, relationships, indexes, and constraints for helldivers.bot.',
+    description:
+        'Prisma 7 schema reference — models, relationships, indexes, and constraints for helldivers.bot.',
     alternates: { canonical: '/docs/database' },
     openGraph: { url: '/docs/database' },
 };
@@ -221,9 +222,49 @@ erDiagram
         String version
         Int    active_season
     }
+
+    worker_heartbeat {
+        String   worker_type PK
+        DateTime last_beat
+        Int      poll_duration_ms "nullable"
+        String   last_error "nullable"
+        DateTime started_at
+        DateTime updated_at
+    }
+
+    push_subscription {
+        Int      id         PK "autoincrement"
+        String   endpoint   UK
+        String   keys_p256dh
+        String   keys_auth
+        DateTime created_at
+    }
 ```
 
 > `rebroadcast_status` and `rebroadcast_snapshot` link to game seasons via the `season` integer field but carry **no Prisma-level foreign key** to `h1_season`. They are intentionally independent: they can be written before an `h1_season` row exists, and they store raw API responses regardless of normalisation state.
+
+### Data Lifecycle
+
+```mermaid
+graph TD
+    subgraph Write["WRITE PATH"]
+        API["Official API Response"] --> RAW["rebroadcast_status<br/>rebroadcast_snapshot"]
+        API --> SEASON["h1_season<br/><small>unconfirmed</small>"]
+        SEASON --> CHILDREN["h1_event<br/>h1_live<br/>h1_introduction_order<br/>h1_points_max"]
+        CHILDREN --> SNAP["h1_event_snapshot<br/>h1_live_snapshot<br/>h1_snapshot"]
+        SNAP --> CONFIRM["h1_season<br/><small>confirmed</small>"]
+    end
+
+    subgraph Read["READ PATH"]
+        LIVE_Q["/api/h1/live"] --> SEASON_R["h1_season + h1_event + h1_live"]
+        RB_Q["/api/h1/rebroadcast"] --> RAW_R["rebroadcast_status<br/>rebroadcast_snapshot"]
+        CAMP_Q["/api/h1/campaign"] --> SEASON_R
+        ARCHIVE["/archives"] --> ALL["All h1_* tables"]
+    end
+
+    style Write fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+    style Read fill:#1e293b,stroke:#3b82f6,color:#60a5fa
+```
 
 ---
 
@@ -507,18 +548,18 @@ These models implement [BetterAuth](https://www.better-auth.com/) with the Prism
 
 Central user record. Extended beyond the BetterAuth baseline with `username`, `role`, `banned`, and application-specific relations.
 
-| Field           | Prisma Type | PostgreSQL Type | Constraints / Notes                                                       |
-| --------------- | ----------- | --------------- | ------------------------------------------------------------------------- |
-| `id`            | `String`    | `TEXT`          | `@id @default(uuid(7))`                                                   |
-| `name`          | `String?`   | `TEXT`          | Display name, optional                                                    |
-| `username`      | `String?`   | `TEXT`          | `@unique` — intended to hold the user's Discord username                  |
-| `email`         | `String?`   | `TEXT`          | `@unique`                                                                 |
-| `emailVerified` | `Boolean`   | `BOOLEAN`       | `@default(false)` — whether the user's email is confirmed                 |
-| `image`         | `String?`   | `TEXT`          | Avatar URL from OAuth provider or Gravatar fallback                       |
-| `role`          | `String`    | `TEXT`          | `@default("user")` — application role string, not an enum                 |
-| `banned`        | `Boolean`   | `BOOLEAN`       | `@default(false)` — banned users have sessions revoked on next request    |
-| `createdAt`     | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                         |
-| `updatedAt`     | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                                              |
+| Field           | Prisma Type | PostgreSQL Type | Constraints / Notes                                                    |
+| --------------- | ----------- | --------------- | ---------------------------------------------------------------------- |
+| `id`            | `String`    | `TEXT`          | `@id @default(uuid(7))`                                                |
+| `name`          | `String?`   | `TEXT`          | Display name, optional                                                 |
+| `username`      | `String?`   | `TEXT`          | `@unique` — intended to hold the user's Discord username               |
+| `email`         | `String?`   | `TEXT`          | `@unique`                                                              |
+| `emailVerified` | `Boolean`   | `BOOLEAN`       | `@default(false)` — whether the user's email is confirmed              |
+| `image`         | `String?`   | `TEXT`          | Avatar URL from OAuth provider or Gravatar fallback                    |
+| `role`          | `String`    | `TEXT`          | `@default("user")` — application role string, not an enum              |
+| `banned`        | `Boolean`   | `BOOLEAN`       | `@default(false)` — banned users have sessions revoked on next request |
+| `createdAt`     | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                      |
+| `updatedAt`     | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                                           |
 
 **Relations:**
 
@@ -536,21 +577,21 @@ Central user record. Extended beyond the BetterAuth baseline with `username`, `r
 
 BetterAuth OAuth account record. Links a user to an OAuth provider. Multiple providers per user are supported (e.g., both Discord and GitHub linked to one account).
 
-| Field                      | Prisma Type  | PostgreSQL Type | Constraints / Notes                                    |
-| -------------------------- | ------------ | --------------- | ------------------------------------------------------ |
-| `id`                       | `String`     | `TEXT`          | `@id @default(uuid(7))`                                |
-| `userId`                   | `String`     | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                    |
-| `accountId`                | `String`     | `TEXT`          | Provider's identifier for this account (replaces old `providerAccountId`) |
-| `providerId`               | `String`     | `TEXT`          | Provider name, e.g., `"discord"`, `"github"` (replaces old `provider`)   |
-| `accessToken`              | `String?`    | `TEXT`          | `@db.Text` — OAuth access token                       |
-| `refreshToken`             | `String?`    | `TEXT`          | `@db.Text` — OAuth refresh token                      |
-| `accessTokenExpiresAt`     | `DateTime?`  | `TIMESTAMPTZ`   | Access token expiry (replaces old integer `expires_at`) |
-| `refreshTokenExpiresAt`    | `DateTime?`  | `TIMESTAMPTZ`   | Refresh token expiry                                   |
-| `idToken`                  | `String?`    | `TEXT`          | `@db.Text` — OIDC identity token                      |
-| `scope`                    | `String?`    | `TEXT`          | OAuth scopes granted                                   |
-| `password`                 | `String?`    | `TEXT`          | Unused — present for BetterAuth email/password auth (not configured) |
-| `createdAt`                | `DateTime`   | `TIMESTAMPTZ`   | `@default(now())`                                      |
-| `updatedAt`                | `DateTime`   | `TIMESTAMPTZ`   | `@updatedAt`                                           |
+| Field                   | Prisma Type | PostgreSQL Type | Constraints / Notes                                                       |
+| ----------------------- | ----------- | --------------- | ------------------------------------------------------------------------- |
+| `id`                    | `String`    | `TEXT`          | `@id @default(uuid(7))`                                                   |
+| `userId`                | `String`    | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                                       |
+| `accountId`             | `String`    | `TEXT`          | Provider's identifier for this account (replaces old `providerAccountId`) |
+| `providerId`            | `String`    | `TEXT`          | Provider name, e.g., `"discord"`, `"github"` (replaces old `provider`)    |
+| `accessToken`           | `String?`   | `TEXT`          | `@db.Text` — OAuth access token                                           |
+| `refreshToken`          | `String?`   | `TEXT`          | `@db.Text` — OAuth refresh token                                          |
+| `accessTokenExpiresAt`  | `DateTime?` | `TIMESTAMPTZ`   | Access token expiry (replaces old integer `expires_at`)                   |
+| `refreshTokenExpiresAt` | `DateTime?` | `TIMESTAMPTZ`   | Refresh token expiry                                                      |
+| `idToken`               | `String?`   | `TEXT`          | `@db.Text` — OIDC identity token                                          |
+| `scope`                 | `String?`   | `TEXT`          | OAuth scopes granted                                                      |
+| `password`              | `String?`   | `TEXT`          | Unused — present for BetterAuth email/password auth (not configured)      |
+| `createdAt`             | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                         |
+| `updatedAt`             | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                                              |
 
 **Indexes:** `@@index([userId])`
 
@@ -562,16 +603,16 @@ BetterAuth OAuth account record. Links a user to an OAuth provider. Multiple pro
 
 BetterAuth database session. Each row represents an active session with metadata.
 
-| Field       | Prisma Type | PostgreSQL Type | Constraints / Notes                                       |
-| ----------- | ----------- | --------------- | --------------------------------------------------------- |
-| `id`        | `String`    | `TEXT`          | `@id @default(uuid(7))`                                   |
+| Field       | Prisma Type | PostgreSQL Type | Constraints / Notes                                            |
+| ----------- | ----------- | --------------- | -------------------------------------------------------------- |
+| `id`        | `String`    | `TEXT`          | `@id @default(uuid(7))`                                        |
 | `token`     | `String`    | `TEXT`          | `@unique` — opaque session token (replaces old `sessionToken`) |
-| `userId`    | `String`    | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                       |
-| `expiresAt` | `DateTime`  | `TIMESTAMPTZ`   | Session expiry (replaces old `expires`)                    |
-| `ipAddress` | `String?`   | `TEXT`          | Client IP at session creation                              |
-| `userAgent` | `String?`   | `TEXT`          | Client user agent at session creation                      |
-| `createdAt` | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                          |
-| `updatedAt` | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                               |
+| `userId`    | `String`    | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                            |
+| `expiresAt` | `DateTime`  | `TIMESTAMPTZ`   | Session expiry (replaces old `expires`)                        |
+| `ipAddress` | `String?`   | `TEXT`          | Client IP at session creation                                  |
+| `userAgent` | `String?`   | `TEXT`          | Client user agent at session creation                          |
+| `createdAt` | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                              |
+| `updatedAt` | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                                   |
 
 **Indexes:** `@@index([userId])`
 
@@ -581,14 +622,14 @@ BetterAuth database session. Each row represents an active session with metadata
 
 BetterAuth verification tokens for email verification and other confirmation flows.
 
-| Field        | Prisma Type | PostgreSQL Type | Constraints / Notes                        |
-| ------------ | ----------- | --------------- | ------------------------------------------ |
-| `id`         | `String`    | `TEXT`          | `@id @default(uuid(7))`                    |
-| `identifier` | `String`    | `TEXT`          | Typically the user's email address          |
+| Field        | Prisma Type | PostgreSQL Type | Constraints / Notes                             |
+| ------------ | ----------- | --------------- | ----------------------------------------------- |
+| `id`         | `String`    | `TEXT`          | `@id @default(uuid(7))`                         |
+| `identifier` | `String`    | `TEXT`          | Typically the user's email address              |
 | `value`      | `String`    | `TEXT`          | Verification token value (replaces old `token`) |
-| `expiresAt`  | `DateTime`  | `TIMESTAMPTZ`   | Token expiry                                |
-| `createdAt`  | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                           |
-| `updatedAt`  | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                |
+| `expiresAt`  | `DateTime`  | `TIMESTAMPTZ`   | Token expiry                                    |
+| `createdAt`  | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                               |
+| `updatedAt`  | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                    |
 
 **Constraints:** `@@unique([identifier, value])` — composite uniqueness on identifier + value pair.
 
@@ -625,15 +666,15 @@ Blog-style user-submitted content. Currently unpublished by default, suggesting 
 
 Application API keys for external consumers. A random UUID is generated as the key, SHA-256 hashed for storage. The plaintext key is shown once at creation and never stored, making the `visible` field the only partially-readable remnant.
 
-| Field         | Prisma Type | PostgreSQL Type | Constraints / Notes                                                                   |
-| ------------- | ----------- | --------------- | ------------------------------------------------------------------------------------- |
-| `id`          | `String`    | `TEXT`          | `@id @default(uuid(7))` — surrogate PK                                                |
+| Field         | Prisma Type | PostgreSQL Type | Constraints / Notes                                                                          |
+| ------------- | ----------- | --------------- | -------------------------------------------------------------------------------------------- |
+| `id`          | `String`    | `TEXT`          | `@id @default(uuid(7))` — surrogate PK                                                       |
 | `hash`        | `String`    | `TEXT`          | `@unique` — SHA-256 hash of the API key. Used for constant-time lookup on incoming requests. |
-| `visible`     | `String`    | `TEXT`          | Last 4 characters of the key, for display in the dashboard (e.g., `"...a3f2"`)        |
-| `userId`      | `String`    | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                                                   |
-| `description` | `String`    | `TEXT`          | User-provided label for the key                                                       |
-| `createdAt`   | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                                     |
-| `enabled`     | `Boolean`   | `BOOLEAN`       | `@default(true)` — keys can be disabled without deletion                              |
+| `visible`     | `String`    | `TEXT`          | Last 4 characters of the key, for display in the dashboard (e.g., `"...a3f2"`)               |
+| `userId`      | `String`    | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                                                          |
+| `description` | `String`    | `TEXT`          | User-provided label for the key                                                              |
+| `createdAt`   | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                                            |
+| `enabled`     | `Boolean`   | `BOOLEAN`       | `@default(true)` — keys can be disabled without deletion                                     |
 
 > **Security note:** SHA-256 is used as a one-way hash for key lookup. The key space is a random UUID (128 bits of entropy), which provides the actual security. The hash allows O(1) database lookups without storing the raw key. Validation logic is in `src/db/queries/validateApiKey.mjs`.
 
@@ -645,13 +686,13 @@ Application API keys for external consumers. A random UUID is generated as the k
 
 Stores Web Push API subscriptions for server-initiated push notifications. Subscriptions are anonymous (no user link required). Created via `POST /api/notifications/subscribe`, removed on unsubscribe or when the push service returns 410/404 (stale endpoint).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | Int | PK, auto-increment | Sequential identifier |
-| `endpoint` | String | Unique, indexed | Push service endpoint URL (max ~2048 chars) |
-| `keys_p256dh` | String | Required | ECDH public key (base64) |
-| `keys_auth` | String | Required | Auth secret (base64) |
-| `created_at` | DateTime | Default `now()` | Subscription creation time |
+| Column        | Type     | Constraints        | Description                                 |
+| ------------- | -------- | ------------------ | ------------------------------------------- |
+| `id`          | Int      | PK, auto-increment | Sequential identifier                       |
+| `endpoint`    | String   | Unique, indexed    | Push service endpoint URL (max ~2048 chars) |
+| `keys_p256dh` | String   | Required           | ECDH public key (base64)                    |
+| `keys_auth`   | String   | Required           | Auth secret (base64)                        |
+| `created_at`  | DateTime | Default `now()`    | Subscription creation time                  |
 
 **Relationships:** None (standalone table, not linked to User).
 
@@ -675,43 +716,67 @@ Several fields are commented out in the schema (`is_db_initialized`, `last_updat
 
 ---
 
-## 8. Index and Constraint Summary
+## 8. Worker Health
+
+### worker_heartbeat
+
+Single-row-per-worker health tracking table. The worker thread upserts its row on every poll cycle, enabling health checks and diagnostics. The `worker_type` string serves as both PK and discriminator (e.g., `"cron"`).
+
+| Field              | Prisma Type | PostgreSQL Type | Constraints / Notes                                                   |
+| ------------------ | ----------- | --------------- | --------------------------------------------------------------------- |
+| `worker_type`      | `String`    | `TEXT`          | `@id` — worker name, e.g., `"cron"`. One row per worker type.         |
+| `last_beat`        | `DateTime`  | `TIMESTAMPTZ`   | Timestamp of the most recent successful poll cycle                    |
+| `poll_duration_ms` | `Int?`      | `INTEGER`       | Nullable. Duration of the last poll in milliseconds                   |
+| `last_error`       | `String?`   | `TEXT`          | Nullable. Error message from the last failed poll, cleared on success |
+| `started_at`       | `DateTime`  | `TIMESTAMPTZ`   | Timestamp when the worker process started                             |
+| `updated_at`       | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt` — Prisma-managed timestamp                               |
+
+**Relationships:** None (standalone table, not linked to game data or users).
+
+**Used by:** `public/workers/cron.js` (upserts on each poll cycle), health check endpoints.
+
+---
+
+## 9. Index and Constraint Summary
 
 This table enumerates every uniqueness constraint and index across the schema.
 
-| Model                   | Constraint Type | Fields                          | Notes                                       |
-| ----------------------- | --------------- | ------------------------------- | ------------------------------------------- |
-| `h1_season`             | `@unique`       | `season`                        | Game season number is globally unique       |
-| `h1_season`             | `@@index`       | `[season]`                      |                                             |
-| `h1_season`             | `@@index`       | `[last_updated]`                |                                             |
-| `h1_introduction_order` | `@unique`       | `season`                        | Enforces one-to-one with `h1_season`        |
-| `h1_introduction_order` | `@@index`       | `[season]`                      |                                             |
-| `h1_points_max`         | `@unique`       | `season`                        | Enforces one-to-one with `h1_season`        |
-| `h1_points_max`         | `@@index`       | `[season]`                      |                                             |
-| `h1_snapshot`           | `@@unique`      | `[season, time]`                | One snapshot per timestamp per season       |
-| `h1_snapshot`           | `@@index`       | `[season]`                      |                                             |
-| `h1_event`              | `@@unique`      | `[type, event_id]`              | Compound unique on type + event ID          |
-| `h1_event`              | `@@index`       | `[season, type]`                |                                             |
-| `h1_event`              | `@@index`       | `[season, status]`              |                                             |
-| `h1_event`              | `@@index`       | `[season, enemy]`               |                                             |
-| `h1_event_snapshot`     | `@@unique`      | `[type, event_id, time]`        | One snapshot per event per timestamp        |
-| `h1_event_snapshot`     | `@@index`       | `[season, time]`                | Range queries by season and time window     |
-| `h1_event_snapshot`     | `@@index`       | `[event_id, time]`              | Time-series for a specific event            |
-| `h1_live`               | `@@unique`      | `[season, enemy]`               | One live row per enemy per season           |
-| `h1_live`               | `@@index`       | `[season]`                      |                                             |
-| `h1_live_snapshot`      | `@@unique`      | `[season, enemy, time]`         | One snapshot per enemy per timestamp        |
-| `h1_live_snapshot`      | `@@index`       | `[season, time]`                | Range queries by season and time window     |
-| `rebroadcast_status`    | `@unique`       | `season`                        | One raw status record per season            |
-| `rebroadcast_snapshot`  | `@unique`       | `season`                        | One raw snapshot record per season          |
-| `User`                  | `@unique`       | `username`                      |                                             |
-| `User`                  | `@unique`       | `email`                         |                                             |
-| `Account`               | `@@index`       | `[userId]`                      |                                             |
-| `Session`               | `@unique`       | `token`                         | Opaque session token                        |
-| `Session`               | `@@index`       | `[userId]`                      |                                             |
-| `Verification`          | `@@unique`      | `[identifier, value]`           | Composite uniqueness for verification tokens |
-| `Settings`              | `@id`           | `userId`                        | PK is also the FK                           |
-| `Settings`              | `@unique`       | `userId`                        | Redundant given `@id`, but explicit         |
-| `ApiKey`                | `@unique`       | `hash`                          | MD5 hash lookup                             |
+| Model                   | Constraint Type | Fields                   | Notes                                        |
+| ----------------------- | --------------- | ------------------------ | -------------------------------------------- |
+| `h1_season`             | `@unique`       | `season`                 | Game season number is globally unique        |
+| `h1_season`             | `@@index`       | `[season]`               |                                              |
+| `h1_season`             | `@@index`       | `[last_updated]`         |                                              |
+| `h1_introduction_order` | `@unique`       | `season`                 | Enforces one-to-one with `h1_season`         |
+| `h1_introduction_order` | `@@index`       | `[season]`               |                                              |
+| `h1_points_max`         | `@unique`       | `season`                 | Enforces one-to-one with `h1_season`         |
+| `h1_points_max`         | `@@index`       | `[season]`               |                                              |
+| `h1_snapshot`           | `@@unique`      | `[season, time]`         | One snapshot per timestamp per season        |
+| `h1_snapshot`           | `@@index`       | `[season]`               |                                              |
+| `h1_event`              | `@@unique`      | `[type, event_id]`       | Compound unique on type + event ID           |
+| `h1_event`              | `@@index`       | `[season, type]`         |                                              |
+| `h1_event`              | `@@index`       | `[season, status]`       |                                              |
+| `h1_event`              | `@@index`       | `[season, enemy]`        |                                              |
+| `h1_event_snapshot`     | `@@unique`      | `[type, event_id, time]` | One snapshot per event per timestamp         |
+| `h1_event_snapshot`     | `@@index`       | `[season, time]`         | Range queries by season and time window      |
+| `h1_event_snapshot`     | `@@index`       | `[event_id, time]`       | Time-series for a specific event             |
+| `h1_live`               | `@@unique`      | `[season, enemy]`        | One live row per enemy per season            |
+| `h1_live`               | `@@index`       | `[season]`               |                                              |
+| `h1_live_snapshot`      | `@@unique`      | `[season, enemy, time]`  | One snapshot per enemy per timestamp         |
+| `h1_live_snapshot`      | `@@index`       | `[season, time]`         | Range queries by season and time window      |
+| `rebroadcast_status`    | `@unique`       | `season`                 | One raw status record per season             |
+| `rebroadcast_snapshot`  | `@unique`       | `season`                 | One raw snapshot record per season           |
+| `User`                  | `@unique`       | `username`               |                                              |
+| `User`                  | `@unique`       | `email`                  |                                              |
+| `Account`               | `@@index`       | `[userId]`               |                                              |
+| `Session`               | `@unique`       | `token`                  | Opaque session token                         |
+| `Session`               | `@@index`       | `[userId]`               |                                              |
+| `Verification`          | `@@unique`      | `[identifier, value]`    | Composite uniqueness for verification tokens |
+| `Settings`              | `@id`           | `userId`                 | PK is also the FK                            |
+| `Settings`              | `@unique`       | `userId`                 | Redundant given `@id`, but explicit          |
+| `ApiKey`                | `@unique`       | `hash`                   | SHA-256 hash lookup                          |
+| `push_subscription`     | `@unique`       | `endpoint`               | One subscription per push endpoint           |
+| `push_subscription`     | `@@index`       | `[endpoint]`             |                                              |
+| `worker_heartbeat`      | `@id`           | `worker_type`            | One row per worker type                      |
 
 ---
 
