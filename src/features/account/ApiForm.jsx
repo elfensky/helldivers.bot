@@ -1,7 +1,10 @@
 'use client';
+import { useState } from 'react';
 import Form from 'next/form';
 import { useActionState } from 'react';
 import { generateApiKey, deleteApiKey } from '@/db/queries/api';
+
+const MAX_DESCRIPTION_LENGTH = 32;
 
 export function GenerateApiKeyForm({ userId }) {
     if (!userId) {
@@ -9,6 +12,7 @@ export function GenerateApiKeyForm({ userId }) {
     }
 
     const [state, formAction, pending] = useActionState(generateApiKey, null);
+    const [descLength, setDescLength] = useState(0);
 
     return (
         <>
@@ -41,12 +45,18 @@ export function GenerateApiKeyForm({ userId }) {
                         type="text"
                         id="description"
                         name="description"
-                        placeholder="e.g. My Discord Bot, Personal Project"
-                        className="w-full bg-surface-2 px-3 py-2 text-body text-text placeholder:text-text-muted"
+                        placeholder="e.g. My Discord Bot"
+                        maxLength={MAX_DESCRIPTION_LENGTH}
+                        onChange={(e) => setDescLength(e.target.value.length)}
+                        size={MAX_DESCRIPTION_LENGTH}
+                        className="bg-surface-2 px-3 py-2 text-body text-text placeholder:text-text-muted"
                         aria-describedby={
                             state?.errors?.description ? 'description-error' : undefined
                         }
                     />
+                    <span className={`text-small ${descLength >= MAX_DESCRIPTION_LENGTH ? 'text-danger' : 'text-text-muted'}`}>
+                        {descLength}/{MAX_DESCRIPTION_LENGTH}
+                    </span>
                 </fieldset>
 
                 <button
