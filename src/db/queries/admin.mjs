@@ -36,6 +36,7 @@ export async function getAllUsers() {
                 banned: true,
                 createdAt: true,
                 _count: { select: { apiKeys: true } },
+                accounts: { select: { providerId: true } },
             },
         }),
     );
@@ -272,4 +273,27 @@ export async function getSystemStats() {
         },
         time: performanceTime(start),
     };
+}
+
+export async function getAllApiKeys() {
+    const start = performance.now();
+    const { user, error: authError } = await requireAdmin();
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
+
+    const { data: keys, error } = await tryCatch(
+        db.ApiKey.findMany({
+            select: {
+                id: true,
+                description: true,
+                visible: true,
+                enabled: true,
+                createdAt: true,
+                user: { select: { email: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        }),
+    );
+    if (error) throw error;
+
+    return { data: keys, time: performanceTime(start) };
 }
