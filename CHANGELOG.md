@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.29.2
+
+### Fixes
+
+- **Docs overview Mermaid diagram** — replace raw `mermaid` code block on `/docs` with the shared `MermaidDiagram` component so it actually renders as an interactive diagram with consistent styling, detail panels, and accessibility
+- **Notification flow `db` node** — add missing details entry for the Database node in the notification-flow diagram so it's clickable like all other nodes
+
 ## 0.29.1
 
 ### Fixes
