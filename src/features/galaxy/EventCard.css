@@ -54,16 +54,6 @@
     animation: action-flash var(--duration-pulse-fast) ease-in-out infinite;
 }
 
-@keyframes action-flash {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.2;
-    }
-}
-
 .sector-card-title {
     font-family: var(--font-body, sans-serif);
     font-size: var(--text-h3);
