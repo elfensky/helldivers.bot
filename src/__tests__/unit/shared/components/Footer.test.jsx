@@ -26,7 +26,7 @@ describe('Footer', () => {
         render(<Footer />);
         const link = screen.getByText('Andrei Lavrenov');
         expect(link).toBeInTheDocument();
-        expect(link.closest('a')).toHaveAttribute('href', 'https://lavrenov.io');
+        expect(link.closest('a')).toHaveAttribute('href', 'https://lav.ren');
     });
 
     test('renders feature links', () => {

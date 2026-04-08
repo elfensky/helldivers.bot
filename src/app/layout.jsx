@@ -246,7 +246,7 @@ const schema = {
     author: {
         '@type': 'Person',
         name: 'Andrei Lavrenov',
-        url: 'https://lavrenov.io',
+        url: 'https://lav.ren',
     },
     description:
         'A website that provides dedicated real-time in-game status updates for the original Helldivers videogame.',
@@ -294,7 +294,7 @@ const schema = {
             creator: {
                 '@type': 'Person',
                 name: 'Andrei Lavrenov',
-                url: 'https://lavrenov.io',
+                url: 'https://lav.ren',
             },
             offers: {
                 '@type': 'Offer',
@@ -312,7 +312,7 @@ const schema = {
             provider: {
                 '@type': 'Person',
                 name: 'Andrei Lavrenov',
-                url: 'https://lavrenov.io',
+                url: 'https://lav.ren',
             },
         },
     ],

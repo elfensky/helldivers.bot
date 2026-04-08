@@ -56,15 +56,15 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
     const now = Math.floor(Date.now() / 1000);
     const isCompleted = event.status === 'success' || event.status === 'fail';
     const elapsed = isCompleted ? now - event.end_time : now - event.start_time;
-    const duration = isCompleted
-        ? event.end_time - event.start_time
-        : now - event.start_time;
+    const duration =
+        isCompleted ? event.end_time - event.start_time : now - event.start_time;
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
     const faction = factions[event.enemy];
 
-    const timeText = isCompleted
-        ? `Ended ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`
-        : `Started ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`;
+    const timeText =
+        isCompleted ?
+            `Ended ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`
+        :   `Started ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`;
 
     const statusText =
         event.status === 'success' ? 'Won'
@@ -85,7 +85,7 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
                         {statusText} {event.type} Event
                     </span>
                     <span
-                        className={`font-mono text-[10px] px-1.5 py-px ${s.pill}`}
+                        className={`px-1.5 py-px font-mono text-[10px] ${s.pill}`}
                         suppressHydrationWarning
                     >
                         {formatCompactDuration(duration)}
@@ -114,18 +114,45 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
 
 function schema(event, type) {
     if (type === EVENT_TYPE.ATTACK) {
-        const capital = map[event.enemy][11].capital;
+        const { capital, region } = map[event.enemy][11];
+        const faction = factions[event.enemy].name;
         return {
             '@context': 'https://schema.org',
             '@type': 'Event',
             name: `Attacking ${capital}`,
+            description: `The Helldivers have launched an assault on ${capital} in the ${region}. Join the fight to liberate this sector from ${faction} control!`,
+            startDate: new Date(event.start_time * 1000),
+            endDate: new Date(event.end_time * 1000),
             image: ['https://helldivers.bot/icons/attack.webp'],
+            location: {
+                '@type': 'VirtualLocation',
+                url: 'https://helldivers.bot',
+                name: `${capital}, ${region}`,
+            },
+            eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+            eventStatus: 'https://schema.org/EventScheduled',
+            performer: {
+                '@type': 'PerformingGroup',
+                name: 'Helldivers',
+            },
+            organizer: {
+                '@type': 'Organization',
+                name: factions[3].name,
+                url: factions[3].url,
+            },
+            offers: {
+                '@type': 'Offer',
+                url: 'https://helldivers.bot',
+                price: 0,
+                priceCurrency: 'EUR',
+                availability: 'https://schema.org/InStock',
+                validFrom: new Date(event.start_time * 1000),
+            },
         };
     }
     if (type === EVENT_TYPE.DEFEND) {
         const enemy = event.region === 0 ? 3 : event.enemy;
-        const capital = map[enemy][event.region].capital;
-        const region = map[enemy][event.region].region;
+        const { capital, region } = map[enemy][event.region];
         const faction = factions[enemy].name;
 
         return {
@@ -136,14 +163,25 @@ function schema(event, type) {
             startDate: new Date(event.start_time * 1000),
             endDate: new Date(event.end_time * 1000),
             image: ['https://helldivers.bot/icons/defend.webp'],
+            location: {
+                '@type': 'VirtualLocation',
+                url: 'https://helldivers.bot',
+                name: `${capital}, ${region}`,
+            },
+            eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+            eventStatus: 'https://schema.org/EventScheduled',
+            performer: {
+                '@type': 'PerformingGroup',
+                name: faction,
+            },
             organizer: {
                 '@type': 'Organization',
-                name: `${faction}`,
-                url: `${factions[enemy].url}`,
+                name: faction,
+                url: factions[enemy].url,
             },
             offers: {
                 '@type': 'Offer',
-                url: 'https://helldivers.bot/campaign',
+                url: 'https://helldivers.bot',
                 price: 0,
                 priceCurrency: 'EUR',
                 availability: 'https://schema.org/InStock',

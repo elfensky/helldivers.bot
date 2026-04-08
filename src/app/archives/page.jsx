@@ -5,6 +5,7 @@ import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
 //utils
 import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 //components
+import JsonLd from '@/shared/components/JsonLd';
 import { WarOutcome } from '@/features/archives/War';
 import WarTimeline from '@/features/archives/WarTimeline';
 import SeasonSelector from '@/features/dashboard/SeasonSelector';
@@ -87,7 +88,7 @@ export default async function WarHistoryPage({ searchParams }) {
     return (
         <div className="gutters flex flex-col gap-4 pb-4">
             <h1 className="sr-only">War History</h1>
-            <JsonLd />
+            <JsonLd data={archivesStructuredData} />
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-4">
                 <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
@@ -98,48 +99,33 @@ export default async function WarHistoryPage({ searchParams }) {
     );
 }
 
-async function JsonLd() {
-    const { headers } = await import('next/headers');
-    const nonce = (await headers()).get('x-nonce') ?? undefined;
-
-    // Static JSON-LD structured data for SEO — no user input, safe to inline
-    const structuredData = [
-        {
-            '@context': 'https://schema.org',
-            '@type': 'WebApplication',
-            applicationCategory: ['GameUtility', 'GameInformation', 'Entertainment'],
-            url: 'https://helldivers.bot/archives',
-            name: 'Archives | Helldivers Bot',
-            author: 'Andrei Lavrenov',
-            description:
-                'Browse the official Super Earth archives. All campaign records have been verified and approved by High Command.',
-            offers: {
-                '@type': 'Offer',
-                price: 0.0,
-                priceCurrency: 'EUR',
+const archivesStructuredData = [
+    {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        applicationCategory: ['GameUtility', 'GameInformation', 'Entertainment'],
+        url: 'https://helldivers.bot/archives',
+        name: 'Archives | Helldivers Bot',
+        author: 'Andrei Lavrenov',
+        description:
+            'Browse the official Super Earth archives. All campaign records have been verified and approved by High Command.',
+        operatingSystem: 'All',
+        offers: {
+            '@type': 'Offer',
+            price: 0.0,
+            priceCurrency: 'EUR',
+        },
+    },
+    {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Archives',
+                item: 'https://helldivers.bot/archives',
             },
-        },
-        {
-            '@context': 'https://schema.org',
-            '@type': 'BreadcrumbList',
-            itemListElement: [
-                {
-                    '@type': 'ListItem',
-                    position: 1,
-                    name: 'Archives',
-                    item: 'https://helldivers.bot/archives',
-                },
-            ],
-        },
-    ];
-
-    return (
-        <script
-            nonce={nonce}
-            type="application/ld+json"
-            suppressHydrationWarning
-            // eslint-disable-next-line react/no-danger -- static structured data, no user input
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-    );
-}
+        ],
+    },
+];

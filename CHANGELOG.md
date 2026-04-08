@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.34.0
+
+### Features
+
+- **SEO & JSON-LD structured data** — add shared `JsonLd` component with CSP nonce support. Add `WebApplication` + `BreadcrumbList` schemas to homepage, `WebPage` + `BreadcrumbList` to docs layout. Refactor archives page to use shared component. Fix Event schema validation: add `location` (VirtualLocation), `eventAttendanceMode`, `eventStatus`, and `performer` fields. Flesh out attack event schemas with full structured data. Add `operatingSystem` to archives WebApplication.
+
+### Chores
+
+- Update author URL from `lavrenov.io` to `lav.ren` across all schemas, footer, and README.
+
 ## 0.33.0
 
 ### Features
