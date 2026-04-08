@@ -20,7 +20,7 @@ const BODY = `
     web_push --> sw_push
     sw_push --> show_noti
 
-    %% Styles matching wiki color conventions
+    %% Styles matching docs color conventions
     classDef server fill:#1c1b1b,stroke:#a855f7,color:#c084fc
     classDef database fill:#1c1b1b,stroke:#22c55e,color:#4ade80
     classDef transport fill:#1c1b1b,stroke:#3b82f6,color:#60a5fa

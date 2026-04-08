@@ -1,6 +1,7 @@
 export const metadata = {
     title: 'Infrastructure | Helldivers Bot',
-    description: 'Docker strategy, CI/CD pipelines, initialization flow, and environment variables for helldivers.bot.',
+    description:
+        'Docker strategy, CI/CD pipelines, initialization flow, and environment variables for helldivers.bot.',
     alternates: { canonical: '/docs/infrastructure' },
     openGraph: { url: '/docs/infrastructure' },
 };
@@ -45,7 +46,7 @@ The project uses two separate Dockerfiles. Migrations and the application server
 
 **Build process:**
 
-1. Base image: `node:22-alpine`
+1. Base image: `node:24-alpine`
 2. Install `tini` via `apk` (init system for zombie process prevention)
 3. Upgrade npm to `11.7.0`
 4. `WORKDIR /app`
@@ -82,7 +83,7 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 
 | Stage     | Base             | What it does                                                                                      |
 | --------- | ---------------- | ------------------------------------------------------------------------------------------------- |
-| `base`    | `node:22-alpine` | Installs `tini` and upgrades npm to `11.7.0`                                                      |
+| `base`    | `node:24-alpine` | Installs `tini` and upgrades npm to `11.7.0`                                                      |
 | `deps`    | `base`           | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent                               |
 | `builder` | `base`           | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build` |
 | `runner`  | `base`           | Copies only `.next/standalone`, `.next/static`, and `public`; runs as non-root user               |
@@ -128,6 +129,25 @@ Running migrations inside the app container creates a race condition when scalin
 ---
 
 ## Section 2: CI/CD Pipelines
+
+```mermaid
+graph LR
+    subgraph Staging["STAGING PIPELINE"]
+        PUSH["Push to main"] --> CHANGES["Detect changes"]
+        CHANGES --> BUILD_APP["Build App Image<br/><small>ghcr.io/.../helldiversbot:staging</small>"]
+        CHANGES -->|"migration files changed"| BUILD_MIG["Build Migrate Image<br/><small>ghcr.io/.../helldiversbot-migrate:staging</small>"]
+        BUILD_APP --> CLEANUP["Cleanup untagged images"]
+        BUILD_MIG --> CLEANUP
+    end
+
+    subgraph Production["PRODUCTION PIPELINE"]
+        TAG["Push version tag<br/><small>v*.*.* on main</small>"] --> BUILD_PROD["Build App Image<br/><small>:tag, :production, :latest</small>"]
+        BUILD_PROD --> RELEASE["Create GitHub Release"]
+    end
+
+    style Staging fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+    style Production fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+```
 
 ### Staging (`staging.docker.yml`)
 
@@ -176,6 +196,25 @@ ghcr.io/elfensky/helldiversbot:latest
 ---
 
 ## Section 3: Initialization Flow
+
+```mermaid
+graph TD
+    REG["register()"] -->|"NEXT_RUNTIME=nodejs"| SENTRY["Sentry.init()"]
+    REG -->|"NEXT_RUNTIME=nodejs"| INIT["initializeHelldivers1Api()"]
+    INIT --> ENV["initializeEnvironmentVariables()"]
+    ENV -->|"POSTGRES_URL missing"| CRASH1["💥 Process crash"]
+    ENV -->|"All core vars present"| OAS["initializeOpenApiSpec()"]
+    OAS -->|"Spec invalid"| CRASH2["💥 Process crash"]
+    OAS -->|"Spec valid"| WORKER["initializeWorker()"]
+    WORKER -->|"Worker spawned"| POLL["Worker polling loop<br/><small>setTimeout(doWork, interval)</small>"]
+    WORKER -->|"Spawn failed"| CRASH3["💥 Process crash"]
+
+    style REG fill:#1e293b,stroke:#3b82f6,color:#60a5fa
+    style CRASH1 fill:#2d1b1b,stroke:#ef4444,color:#f87171
+    style CRASH2 fill:#2d1b1b,stroke:#ef4444,color:#f87171
+    style CRASH3 fill:#2d1b1b,stroke:#ef4444,color:#f87171
+    style POLL fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+```
 
 **Entry point:** `src/instrumentation.js` — Next.js calls `register()` automatically on server startup via the instrumentation hook.
 
@@ -236,10 +275,10 @@ The project uses the Sentry SDK (`@sentry/nextjs`) but targets a **self-hosted G
 
 ### Configuration files
 
-| File                            | Runtime | Role                                                              |
-| ------------------------------- | ------- | ----------------------------------------------------------------- |
-| `sentry.server.config.js`       | Node.js | `Sentry.init()` called on server startup via `instrumentation.js` |
-| `src/instrumentation-client.js` | Browser | `Sentry.init()` called when a page loads in the browser           |
+| File                             | Runtime | Role                                                                         |
+| -------------------------------- | ------- | ---------------------------------------------------------------------------- |
+| `sentry.server.config.js`        | Node.js | `Sentry.init()` called on server startup via `instrumentation.js`            |
+| `src/instrumentation-client.js`  | Browser | `Sentry.init()` called when a page loads in the browser                      |
 | `src/app/api/glitchtip/route.js` | Node.js | Client tunnel — proxies Sentry envelopes to GlitchTip, bypassing ad blockers |
 
 ### Shared SDK settings
@@ -308,41 +347,42 @@ Source maps are uploaded to GlitchTip at build time for readable stack traces. T
 Variables are checked at startup by `initializeEnvironmentVariables()` in `src/utils/initialize.env.mjs`. The function uses **progressive enhancement**: core variables throw on missing (app cannot function), while auth and analytics variables warn and degrade gracefully. Returns `{ auth: boolean, analytics: boolean }` so the startup log shows which features are active.
 
 **Validation rules:**
+
 - **Core (database, worker):** Missing → throws, crashes the process.
 - **Auth:** `BETTER_AUTH_SECRET` absent → all auth disabled (warn). `BETTER_AUTH_SECRET` present but other auth vars missing → throws (partial config is a misconfiguration).
 - **Analytics:** Missing → warns. `SENTRY_DSN` set without `SENTRY_AUTH_TOKEN` → warns about degraded source maps.
 
 ### Full variable reference
 
-| Variable                | Required    | Category       | Description                                                                                              |
-| ----------------------- | ----------- | -------------- | -------------------------------------------------------------------------------------------------------- |
-| `POSTGRES_URL`          | **Yes**     | Database       | PostgreSQL connection string                                                                             |
-| `UPDATE_KEY`            | **Yes**     | Updates        | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests              |
-| `UPDATE_INTERVAL`       | **Yes**     | Updates        | Polling interval in seconds (e.g., `"20"`); passed to the worker thread                                  |
-| `PORT`                  | No          | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                     |
-| `UMAMI_SITE_ID`         | No          | Analytics      | Umami website tracking ID; if absent, Umami script not loaded and server-side tracking skipped            |
-| `UMAMI_SITE_URL`        | No          | Analytics      | Umami instance URL; used in server-side fetch calls                                                      |
-| `SENTRY_DSN`            | No          | Error tracking | Sentry DSN for server-side error reporting (points to GlitchTip); if absent, error tracking disabled     |
-| `NEXT_PUBLIC_SENTRY_DSN`| No          | Error tracking | Sentry DSN for client-side error reporting (same DSN, exposed to browser)                                |
-| `SENTRY_AUTH_TOKEN`     | No          | Error tracking | GlitchTip API token for source map uploads; if absent, `withSentryConfig` build plugin skipped           |
-| `SENTRY_URL`            | No          | Error tracking | GlitchTip instance URL; used by `withSentryConfig` for source map uploads                                |
-| `SENTRY_ORG`            | No          | Error tracking | GlitchTip organization slug; used for source map uploads                                                 |
-| `SENTRY_PROJECT`        | No          | Error tracking | GlitchTip project slug; used for source map uploads                                                      |
-| `GLITCHTIP_HEARTBEAT_URL`| No         | Error tracking | GlitchTip uptime heartbeat endpoint; worker POSTs after each successful update                           |
-| `BETTER_AUTH_SECRET`    | No (all-or-none) | Auth    | BetterAuth session encryption secret; 128+ chars recommended. If absent, all auth features disabled. If present, all other auth vars are required |
-| `BETTER_AUTH_URL`       | If auth     | Auth           | Base URL for BetterAuth (e.g., `http://localhost:3000`; production: `https://helldivers.bot`)            |
-| `AUTH_DISCORD_ID`       | If auth     | Auth           | Discord OAuth application client ID                                                                      |
-| `AUTH_DISCORD_SECRET`   | If auth     | Auth           | Discord OAuth application client secret                                                                  |
-| `AUTH_GITHUB_ID`        | If auth     | Auth           | GitHub OAuth application client ID                                                                       |
-| `AUTH_GITHUB_SECRET`    | If auth     | Auth           | GitHub OAuth application client secret                                                                   |
-| `VAPID_PUBLIC_KEY`      | No (all-or-none) | Push    | Web Push VAPID public key; if absent, push notifications disabled                                        |
-| `VAPID_PRIVATE_KEY`     | No          | Push           | Web Push VAPID private key                                                                               |
-| `VAPID_SUBJECT`         | No          | Push           | VAPID contact identifier (`mailto:` email)                                                               |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No   | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`)                                          |
-| `POSTGRES_SSL`          | No          | Database       | Set to `"false"` for local dev without SSL; defaults to SSL enabled                                      |
-| `SKIP_MIGRATIONS`       | No          | Docker         | Set to `"true"` in the app container; has no effect on initialization logic currently but signals intent |
-| `NODE_ENV`              | No          | App            | `development`, `staging`, or `production`; affects OpenAPI spec behavior and worker path resolution      |
-| `NEXT_RUNTIME`          | Internal    | Next.js        | Set automatically by Next.js; controls which Sentry config and init steps run                            |
+| Variable                       | Required         | Category       | Description                                                                                                                                       |
+| ------------------------------ | ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_URL`                 | **Yes**          | Database       | PostgreSQL connection string                                                                                                                      |
+| `UPDATE_KEY`                   | **Yes**          | Updates        | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests                                                       |
+| `UPDATE_INTERVAL`              | **Yes**          | Updates        | Polling interval in seconds (e.g., `"20"`); passed to the worker thread                                                                           |
+| `PORT`                         | No               | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                                                              |
+| `UMAMI_SITE_ID`                | No               | Analytics      | Umami website tracking ID; if absent, Umami script not loaded and server-side tracking skipped                                                    |
+| `UMAMI_SITE_URL`               | No               | Analytics      | Umami instance URL; used in server-side fetch calls                                                                                               |
+| `SENTRY_DSN`                   | No               | Error tracking | Sentry DSN for server-side error reporting (points to GlitchTip); if absent, error tracking disabled                                              |
+| `NEXT_PUBLIC_SENTRY_DSN`       | No               | Error tracking | Sentry DSN for client-side error reporting (same DSN, exposed to browser)                                                                         |
+| `SENTRY_AUTH_TOKEN`            | No               | Error tracking | GlitchTip API token for source map uploads; if absent, `withSentryConfig` build plugin skipped                                                    |
+| `SENTRY_URL`                   | No               | Error tracking | GlitchTip instance URL; used by `withSentryConfig` for source map uploads                                                                         |
+| `SENTRY_ORG`                   | No               | Error tracking | GlitchTip organization slug; used for source map uploads                                                                                          |
+| `SENTRY_PROJECT`               | No               | Error tracking | GlitchTip project slug; used for source map uploads                                                                                               |
+| `GLITCHTIP_HEARTBEAT_URL`      | No               | Error tracking | GlitchTip uptime heartbeat endpoint; worker POSTs after each successful update                                                                    |
+| `BETTER_AUTH_SECRET`           | No (all-or-none) | Auth           | BetterAuth session encryption secret; 128+ chars recommended. If absent, all auth features disabled. If present, all other auth vars are required |
+| `BETTER_AUTH_URL`              | If auth          | Auth           | Base URL for BetterAuth (e.g., `http://localhost:3000`; production: `https://helldivers.bot`)                                                     |
+| `AUTH_DISCORD_ID`              | If auth          | Auth           | Discord OAuth application client ID                                                                                                               |
+| `AUTH_DISCORD_SECRET`          | If auth          | Auth           | Discord OAuth application client secret                                                                                                           |
+| `AUTH_GITHUB_ID`               | If auth          | Auth           | GitHub OAuth application client ID                                                                                                                |
+| `AUTH_GITHUB_SECRET`           | If auth          | Auth           | GitHub OAuth application client secret                                                                                                            |
+| `VAPID_PUBLIC_KEY`             | No (all-or-none) | Push           | Web Push VAPID public key; if absent, push notifications disabled                                                                                 |
+| `VAPID_PRIVATE_KEY`            | No               | Push           | Web Push VAPID private key                                                                                                                        |
+| `VAPID_SUBJECT`                | No               | Push           | VAPID contact identifier (`mailto:` email)                                                                                                        |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No               | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`)                                                                                   |
+| `POSTGRES_SSL`                 | No               | Database       | Set to `"false"` for local dev without SSL; defaults to SSL enabled                                                                               |
+| `SKIP_MIGRATIONS`              | No               | Docker         | Set to `"true"` in the app container; has no effect on initialization logic currently but signals intent                                          |
+| `NODE_ENV`                     | No               | App            | `development`, `staging`, or `production`; affects OpenAPI spec behavior and worker path resolution                                               |
+| `NEXT_RUNTIME`                 | Internal         | Next.js        | Set automatically by Next.js; controls which Sentry config and init steps run                                                                     |
 
 ### Connection string formats
 
@@ -393,13 +433,13 @@ npx pwa-asset-generator public/images/logo_square.png public/splash \
 Static assets served from `public/` have cache headers configured in `next.config.mjs`:
 
 | Asset Type | `max-age` | `immutable` |
-|------------|-----------|-------------|
-| Favicons | 1 day | Yes |
-| Fonts | 1 year | Yes |
-| Icons | 7 days | Yes |
-| Images | 7 days | Yes |
-| SVGs | 7 days | Yes |
-| Workers | 1 day | Yes |
+| ---------- | --------- | ----------- |
+| Favicons   | 1 day     | Yes         |
+| Fonts      | 1 year    | Yes         |
+| Icons      | 7 days    | Yes         |
+| Images     | 7 days    | Yes         |
+| SVGs       | 7 days    | Yes         |
+| Workers    | 1 day     | Yes         |
 
 The service worker (`public/sw.js`) has a 1-day `max-age`, ensuring browsers check for new versions daily. The SW itself handles cache versioning via the `CACHE_NAME` constant.
 

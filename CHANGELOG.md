@@ -26,7 +26,7 @@
 
 ### Refactors
 
-- **Mermaid diagram system** — replace hand-crafted SVG diagram components (~1650 LOC) with reusable `MermaidDiagram` component powered by Mermaid syntax. Diagrams are now config-driven (definition string + config object). Same color conventions as wiki. Preserves flow filtering, clickable detail panels, and keyboard accessibility.
+- **Mermaid diagram system** — replace hand-crafted SVG diagram components (~1650 LOC) with reusable `MermaidDiagram` component powered by Mermaid syntax. Diagrams are now config-driven (definition string + config object). Same color conventions as docs. Preserves flow filtering, clickable detail panels, and keyboard accessibility.
 
 ### Fixes
 
@@ -273,7 +273,7 @@
 
 #### Chores
 
-- Delete AI working docs (plans, specs, debates) — tracked in wiki instead
+- Delete AI working docs (plans, specs, debates) — tracked in docs instead
 - Consolidate CSS files and reintroduce responsive header scroll-hide
 - Replace gutters wrapper with fragment on home page
 
@@ -410,7 +410,7 @@
 
 #### Chores
 
-- Update doc references to wiki, fix Mermaid FK-UK syntax
+- Update doc references, fix Mermaid FK-UK syntax
 - Move loadout builder spec + plan to GitHub issue #162
 - Add grouping and schedule alignment to dependabot config
 

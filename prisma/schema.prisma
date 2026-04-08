@@ -124,7 +124,7 @@ model Review {
 
 model ApiKey {
     id          String @id @default(uuid(7)) //also used as the key
-    hash        String @unique //md5 hash of the key
+    hash        String @unique //sha-256 hash of the key
     visible     String //last 4 characters of the actual key for display purposes.
     userId      String
     description String

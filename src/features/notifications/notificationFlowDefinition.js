@@ -1,6 +1,6 @@
 /**
  * Mermaid definition for the notification system flow diagram.
- * Same color conventions as the wiki (Real-Time.md).
+ * Same color conventions as the docs (/docs/notifications).
  *
  * Two variants: LR (horizontal, desktop) and TD (vertical, mobile).
  */

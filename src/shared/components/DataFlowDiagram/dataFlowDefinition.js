@@ -1,6 +1,6 @@
 /**
  * Mermaid definition for the data flow architecture diagram.
- * Same color conventions as the wiki (Data-Flow.md).
+ * Same color conventions as the docs (/docs/architecture).
  * Node IDs use underscores (Mermaid treats hyphens as minus operators).
  *
  * Two variants: LR (horizontal, desktop) and TD (vertical, mobile).

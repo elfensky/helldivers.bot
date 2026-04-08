@@ -83,9 +83,9 @@ The dashboard uses client-side polling to fetch live campaign data.
 
 ### Why useSyncExternalStore
 
-Poll data lives outside React in a module-level store object. React pulls snapshots via `useSyncExternalStore` when it is safe to render — it never pushes updates into the Fiber queue. This prevents a crash (`Cannot read properties of null (reading 'enqueueModel')`) caused by state updates injecting into React's concurrent work queue during RSC Flight stream processing on client-side navigation.
+Poll data lives outside React in a module-level store object. React pulls snapshots via `useSyncExternalStore` when it is safe to render — it never pushes updates into the Fiber queue. This prevents a crash (`Cannot read properties of null (reading 'enqueueModel')`) caused by state updates injecting into React's concurrent work queue during RSC Flight stream processing on client-side navigation (originally discovered with SSE, preserved in polling migration).
 
-`Object.freeze(INITIAL_STORE)` guarantees `getServerSnapshot` returns a stable reference for hydration. The `isFirstMessage` flag resets in `onopen` to handle both initial connect and auto-reconnect without false change detection.
+`Object.freeze(INITIAL_STORE)` guarantees `getServerSnapshot` returns a stable reference for hydration. The `isFirstMessage` flag tracks whether the first successful poll has occurred, preventing false change detection on initial page load.
 
 ### Data Fallback Chain
 
