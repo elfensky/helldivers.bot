@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.31.1
+
+### Features
+
+- **Pace status shorthand** — move pace indicator (ahead/behind/on track) to the event type label row (e.g. `CAPITAL_DEFENSE · 1.2K ahead`), right-aligned via `space-between`. Shorten format from verbose "Ahead by 1234 points" to compact "1.2K ahead". Add live countdown timer to EventCountdown.
+
 ## 0.31.0
 
 ### Features
