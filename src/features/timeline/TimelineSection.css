@@ -216,7 +216,7 @@
     .rail-block--active {
         background: var(--color-danger);
         z-index: 3;
-        animation: rail-pulse 3s ease-in-out infinite;
+        animation: rail-pulse var(--duration-pulse-slow) ease-in-out infinite;
     }
 
     .rail-block--success[data-highlighted] {

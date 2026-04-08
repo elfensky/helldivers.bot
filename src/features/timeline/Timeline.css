@@ -13,7 +13,7 @@
 
 .event.active {
     border: 2px solid var(--color-primary);
-    animation: timeline-pulse-red 3s infinite alternate;
+    animation: timeline-pulse-red var(--duration-pulse-slow) infinite alternate;
 }
 
 @keyframes timeline-pulse-red {

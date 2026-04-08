@@ -8,7 +8,7 @@
 
 .sector-card-event {
     border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
-    animation: card-glow 3s ease-in-out infinite;
+    animation: card-glow var(--duration-pulse-slow) ease-in-out infinite;
 }
 
 @keyframes card-glow {
@@ -51,7 +51,7 @@
 }
 
 .sector-card-action-flash {
-    animation: action-flash 1.5s ease-in-out infinite;
+    animation: action-flash var(--duration-pulse-fast) ease-in-out infinite;
 }
 
 @keyframes action-flash {

@@ -58,6 +58,10 @@
     /* === CARD ACCENT === */
     --card-accent-width: 6px;
 
+    /* === ANIMATION DURATION === */
+    --duration-pulse-fast: 1.5s;
+    --duration-pulse-slow: 3s;
+
     /* === RADIUS === */
     --radius: 0px;
 }
@@ -110,6 +114,10 @@
     --radius-2xl: 0px;
     --radius-3xl: 0px;
     --radius-4xl: 0px;
+
+    /* Animation durations */
+    --duration-pulse-fast: 1.5s;
+    --duration-pulse-slow: 3s;
 }
 
 @font-face {

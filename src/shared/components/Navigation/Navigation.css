@@ -49,7 +49,7 @@
     height: 8px;
     border-radius: 50%;
     background-color: var(--color-danger);
-    animation: live-blink 1.5s ease-in-out infinite;
+    animation: live-blink var(--duration-pulse-fast) ease-in-out infinite;
 }
 
 .user-section-skeleton {
