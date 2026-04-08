@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.30.0
+
+### Features
+
+- **Timeline duration blocks** — replace rail dots with proportional duration blocks that visualize event length. Cards show compact duration pills (`2d3h`, `14h22m`). Active events pulse with danger color scheme. Empty days fill gaps between event groups for proportional timeline spacing.
+
 ## 0.29.2
 
 ### Fixes
