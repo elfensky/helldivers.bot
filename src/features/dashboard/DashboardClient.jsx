@@ -4,12 +4,14 @@ import { useState } from 'react';
 import Galaxy from '@/features/galaxy/Galaxy';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
+import DefeatedCard from '@/features/galaxy/DefeatedCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
 import StatGrid from '@/features/stats/StatGrid';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import { sortEventsByRecent } from '@/shared/utils/game/eventFilters.mjs';
 import { HOMEWORLD_REGION } from '@/shared/enums/worlds.mjs';
+import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 
 const factionIndices = [0, 1, 2];
@@ -40,6 +42,18 @@ export default function DashboardClient() {
 
     function renderFrontierCard(index) {
         const campaignData = data.live?.find((l) => l.enemy === index);
+
+        if (campaignData?.status === CAMPAIGN_STATUS.DEFEATED) {
+            return (
+                <li key={`frontier-${index}`}>
+                    <DefeatedCard
+                        factionIndex={index}
+                        seasonDuration={campaignData.season_duration}
+                    />
+                </li>
+            );
+        }
+
         const frontier = computeFrontier(campaignData, mapState[index]);
         if (!frontier) return null;
 

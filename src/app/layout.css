@@ -40,6 +40,9 @@
     --color-warning-tint: rgba(40, 25, 0, 0.8);
     --color-primary-tint: rgba(40, 35, 0, 0.8);
 
+    /* === STATE (defeated/completed) === */
+    --color-gold-muted: #8a7a3a;
+
     /* === TYPOGRAPHY === */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
@@ -89,6 +92,7 @@
     --color-success-tint: rgba(0, 20, 0, 0.8);
     --color-warning-tint: rgba(40, 25, 0, 0.8);
     --color-primary-tint: rgba(40, 35, 0, 0.8);
+    --color-gold-muted: #8a7a3a;
 
     /* Typography — font families */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
