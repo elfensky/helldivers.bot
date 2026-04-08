@@ -25,16 +25,26 @@ export default function DebugTools() {
         }
     }, []);
 
-    // Toast colors use CSS custom properties from src/styles/tokens.css.
-    // Inline style objects are required because Sonner's style prop doesn't accept Tailwind classes.
+    // Test toast using new JSX format with faction icon and region name.
     function handleTestToast() {
-        toast('Bugs attack event started — Test', {
-            duration: 8000,
-            style: {
-                borderRight: '4px solid var(--color-faction-bugs)',
-                animation: 'toast-glow 3s ease-in-out infinite',
+        toast(
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src="/icons/faction0.webp" alt="" width={24} height={24} />
+                <div>
+                    <div style={{ fontWeight: 600 }}>Wise Region under attack</div>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                        Defend event started
+                    </div>
+                </div>
+            </div>,
+            {
+                duration: 8000,
+                style: {
+                    borderRight: '4px solid var(--color-faction-bugs)',
+                    animation: 'action-flash var(--duration-pulse-fast) ease-in-out infinite',
+                },
             },
-        });
+        );
     }
 
     const pushDisabled = status !== 'idle';
