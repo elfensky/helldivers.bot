@@ -77,10 +77,10 @@ export async function deleteUserAccount(_, formData) {
         return { errors: { auth: 'Not authorized' }, time: performanceTime(start) };
     }
 
-    // Revoke session before deleting user (cascade will delete sessions from DB,
-    // but we need to clear the cookie so the browser doesn't hold a stale token)
+    // Revoke all sessions before deleting user (cascade will delete sessions from DB,
+    // but we need to clear the cookie so no device holds a stale token)
     const { error: revokeError } = await tryCatch(
-        auth.api.revokeSession({ headers: await headers() }),
+        auth.api.revokeSessions({ headers: await headers() }),
     );
     if (revokeError) throw revokeError;
 
