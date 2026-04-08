@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import './EventCard.css';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { PACE_COLORS } from '@/shared/enums/colors.mjs';
@@ -44,7 +45,16 @@ export function computeFrontier(campaignData, factionMap) {
 }
 
 function EventCountdown({ endTime }) {
-    const remaining = endTime - Math.floor(Date.now() / 1000);
+    const [remaining, setRemaining] = useState(() => endTime - Math.floor(Date.now() / 1000));
+
+    useEffect(() => {
+        setRemaining(endTime - Math.floor(Date.now() / 1000));
+        const id = setInterval(() => {
+            setRemaining(endTime - Math.floor(Date.now() / 1000));
+        }, 1000);
+        return () => clearInterval(id);
+    }, [endTime]);
+
     if (remaining <= 0) return <span className="sector-card-countdown">Expired</span>;
     const text = humanizeDuration(remaining * 1000, { largest: 2, round: true });
     return (
@@ -97,7 +107,21 @@ export default function EventCard({
                     <span className="sector-card-title">{region}</span>
                 </div>
                 {barLabel && (
-                    <span className="sector-card-bar-label">{barLabel}</span>
+                    <div className="sector-card-bar-label-row">
+                        <span className="sector-card-bar-label">{barLabel}</span>
+                        {pace && (
+                            <>
+                                <span className="sector-card-sep">&middot;</span>
+                                <span
+                                    className="sector-card-pace"
+                                    style={{ color: PACE_COLORS[pace.status] }}
+                                    suppressHydrationWarning
+                                >
+                                    {pace.label}
+                                </span>
+                            </>
+                        )}
+                    </div>
                 )}
                 <div className="sector-card-bar-wrap">
                     <div
@@ -124,7 +148,7 @@ export default function EventCard({
                             <EventCountdown endTime={endTime} />
                         </>
                     )}
-                    {pace && (
+                    {!barLabel && pace && (
                         <>
                             <span className="sector-card-sep">&middot;</span>
                             <span

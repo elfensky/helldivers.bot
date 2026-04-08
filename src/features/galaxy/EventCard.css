@@ -83,6 +83,13 @@
     color: var(--color-text-muted);
 }
 
+.sector-card-bar-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.375rem;
+}
+
 .sector-card-bar-wrap {
     display: flex;
     align-items: center;

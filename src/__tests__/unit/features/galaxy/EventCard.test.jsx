@@ -78,18 +78,33 @@ describe('EventCard', () => {
         expect(screen.queryByText('\u26A0')).toBeNull();
     });
 
-    test('pace appears in meta line', () => {
+    test('pace appears in bar-label row when barLabel is set', () => {
         const { container } = render(
             <EventCard
                 {...baseProps}
                 action="defending"
                 barLabel="CAPITAL_DEFENSE"
                 endTime={Math.floor(Date.now() / 1000) + 3600}
-                pace={{ status: 'ahead', label: 'Ahead by 500' }}
+                pace={{ status: 'ahead', label: '500 ahead' }}
             />,
         );
+        const labelRow = container.querySelector('.sector-card-bar-label-row');
+        expect(labelRow.textContent).toContain('500 ahead');
         const meta = container.querySelector('.sector-card-meta');
-        expect(meta.textContent).toContain('Ahead by 500');
+        expect(meta.textContent).not.toContain('500 ahead');
+    });
+
+    test('pace appears in meta line when no barLabel', () => {
+        const { container } = render(
+            <EventCard
+                {...baseProps}
+                barLabel={null}
+                pace={{ status: 'ahead', label: '500 ahead' }}
+            />,
+        );
+        expect(container.querySelector('.sector-card-bar-label-row')).toBeNull();
+        const meta = container.querySelector('.sector-card-meta');
+        expect(meta.textContent).toContain('500 ahead');
     });
 
     test('meta line always visible with points', () => {
