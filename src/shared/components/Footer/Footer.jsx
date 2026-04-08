@@ -22,6 +22,7 @@ export default function Footer() {
                             href="https://lavrenov.io"
                             target="_blank"
                             rel="noopener noreferrer"
+                            data-umami-event="footer-portfolio"
                         >
                             Andrei Lavrenov
                         </a>
@@ -30,6 +31,7 @@ export default function Footer() {
                         href="https://ko-fi.com/H2H610Q1K"
                         target="_blank"
                         rel="noopener noreferrer"
+                        data-umami-event="footer-kofi"
                     >
                         <Image
                             src="/images/kofi.webp"
@@ -45,21 +47,17 @@ export default function Footer() {
                     <div className="footer-section-label">Features</div>
                     <ul className="footer-links">
                         <li>
-                            <Link href="/" prefetch={false} className="footer-link">
+                            <Link href="/" prefetch={false} data-umami-event="footer-campaign" className="footer-link">
                                 Campaign
                             </Link>
                         </li>
                         <li>
-                            <Link
-                                href="/archives"
-                                prefetch={false}
-                                className="footer-link"
-                            >
+                            <Link href="/archives" prefetch={false} data-umami-event="footer-archives" className="footer-link">
                                 Archives
                             </Link>
                         </li>
                         <li>
-                            <Link href="/docs" prefetch={false} className="footer-link">
+                            <Link href="/docs" prefetch={false} data-umami-event="footer-docs" className="footer-link">
                                 Docs
                             </Link>
                         </li>
@@ -75,16 +73,18 @@ export default function Footer() {
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                data-umami-event="footer-discord"
                             >
                                 Helldivers Discord
                             </a>
                         </li>
                         <li>
                             <a
-                                href="https://github.com/elfensky/helldivers1api"
+                                href="https://github.com/elfensky/helldivers.bot"
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                data-umami-event="footer-github"
                             >
                                 Github
                             </a>
@@ -95,16 +95,18 @@ export default function Footer() {
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                data-umami-event="footer-twitter"
                             >
                                 Twitter
                             </a>
                         </li>
                         <li>
                             <a
-                                href="https://github.com/elfensky/helldivers1api/issues"
+                                href="https://github.com/elfensky/helldivers.bot/issues"
                                 className="footer-link"
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                data-umami-event="footer-bugs"
                             >
                                 Report Bugs
                             </a>
@@ -129,7 +131,13 @@ export default function Footer() {
             </div>
 
             <div className="footer-separator p-gutters">
-                <span>Ministry of Truth</span>
+                <div className="flex flex-col gap-1">
+                    <span>Ministry of Truth</span>
+                    <span className="text-[0.625rem] normal-case tracking-normal opacity-50">
+                        v{process.env.NEXT_PUBLIC_APP_VERSION} &ndash;{' '}
+                        {process.env.NEXT_PUBLIC_COMMIT_SHA}
+                    </span>
+                </div>
                 <span>
                     Not affiliated with Arrowhead Game Studios or Sony Interactive
                     Entertainment

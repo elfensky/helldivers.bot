@@ -12,6 +12,7 @@ export default function BrandKitPage() {
         <div className="max-w-full overflow-hidden">
             <Hero />
             <Palette />
+            <Surfaces />
             <TypeAndSpacing />
             <Components />
         </div>
@@ -24,9 +25,9 @@ export default function BrandKitPage() {
 function Hero() {
     return (
         <section className="mb-10">
-            <h6 className="text-text-muted">
+            <small className="text-text-muted">
                 Design System // Tactical Command Interface
-            </h6>
+            </small>
             <h1>Brand Kit</h1>
             <p className="mb-4 max-w-[600px]">
                 Visual reference for the Tactical Command Interface. Tokens defined in{' '}
@@ -34,26 +35,29 @@ function Hero() {
             </p>
             <div className="mt-4 flex flex-wrap gap-4">
                 <div className="flex min-w-[140px] flex-1 flex-col border border-ghost bg-surface-1 px-4 py-3">
-                    <span className="font-display text-2xl leading-none font-black text-primary uppercase">
+                    <span className="font-display text-h1 leading-none font-black text-primary uppercase">
                         0px
                     </span>
-                    <span className="mt-1 text-xs text-text-muted">
+                    <span className="mt-1 text-small text-text-muted">
                         Radius — everywhere
                     </span>
                 </div>
-                <div className="flex min-w-[140px] flex-1 flex-col border border-ghost bg-surface-1 px-4 py-3">
-                    <span className="font-display text-2xl leading-none font-black text-primary uppercase">
-                        RIGHT
-                    </span>
-                    <span className="mt-1 text-xs text-text-muted">
-                        Accent line — always right
-                    </span>
+                <div className="grid min-w-[140px] flex-1 grid-cols-[minmax(0,1fr)_4px] border border-ghost bg-surface-1">
+                    <div className="flex flex-col px-4 py-3">
+                        <span className="font-display text-h1 leading-none font-black text-primary uppercase">
+                            RIGHT
+                        </span>
+                        <span className="mt-1 text-small text-text-muted">
+                            Accent line — always right
+                        </span>
+                    </div>
+                    <div className="bg-primary" />
                 </div>
                 <div className="flex min-w-[140px] flex-1 flex-col border border-ghost bg-surface-1 px-4 py-3">
-                    <span className="font-display text-2xl leading-none font-black text-primary uppercase">
+                    <span className="font-display text-h1 leading-none font-black text-primary uppercase">
                         TONAL
                     </span>
-                    <span className="mt-1 text-xs text-text-muted">
+                    <span className="mt-1 text-small text-text-muted">
                         Depth — surface shifts, no shadows
                     </span>
                 </div>
@@ -68,24 +72,13 @@ function Hero() {
 function Palette() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-outline-variant pb-1 text-primary">
-                Palette
-            </h2>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Palette</h2>
+            <h3 className="mb-2">Website</h3>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <Swatch
                     color="var(--color-primary)"
                     name="Primary"
                     token="--color-primary"
-                />
-                <Swatch
-                    color="var(--color-danger)"
-                    name="Danger"
-                    token="--color-danger"
-                />
-                <Swatch
-                    color="var(--color-on-primary)"
-                    name="On Primary"
-                    token="--color-on-primary"
                 />
                 <Swatch color="var(--color-text)" name="Text" token="--color-text" />
                 <Swatch
@@ -93,37 +86,30 @@ function Palette() {
                     name="Text Muted"
                     token="--color-text-muted"
                 />
-                <Swatch
-                    color="var(--color-outline)"
-                    name="Outline"
-                    token="--color-outline"
-                />
-                <Swatch
-                    color="var(--color-outline-variant)"
-                    name="Outline Var"
-                    token="--color-outline-variant"
-                />
                 <Swatch color="var(--color-ghost)" name="Ghost" token="--color-ghost" />
             </div>
 
-            <h3 className="mt-6 mb-2">Surfaces</h3>
-            <div className="flex flex-wrap gap-2">
-                {[0, 1, 2, 3, 4].map((n) => (
-                    <div
-                        key={n}
-                        className="min-w-[80px] flex-1 border border-ghost p-2 text-center text-xs"
-                        style={{ background: `var(--color-surface-${n})` }}
-                    >
-                        <span className="block font-bold text-text">{n}</span>
-                        <code className="font-mono text-[0.5rem] text-text-muted">
-                            --color-surface-{n}
-                        </code>
-                    </div>
-                ))}
+            <h3 className="mt-6 mb-2">Status</h3>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
+                <Swatch
+                    color="var(--color-success)"
+                    name="Success"
+                    token="--color-success"
+                />
+                <Swatch
+                    color="var(--color-warning)"
+                    name="Warning"
+                    token="--color-warning"
+                />
+                <Swatch
+                    color="var(--color-danger)"
+                    name="Danger"
+                    token="--color-danger"
+                />
             </div>
 
             <h3 className="mt-6 mb-2">Factions</h3>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <Swatch
                     color="var(--color-faction-bugs)"
                     name="Bugs"
@@ -159,13 +145,67 @@ function Palette() {
     );
 }
 
+/* ----------------------------------------------------------------
+   2b. Surfaces — Tonal depth layering
+   ---------------------------------------------------------------- */
+function Surfaces() {
+    return (
+        <section className="mb-10">
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Surfaces</h2>
+            <p className="mb-4 text-small text-text-muted">
+                Tonal layering — depth via surface shifts, no shadows.
+            </p>
+            <div
+                className="border border-ghost p-4"
+                style={{ background: 'var(--color-surface-0)' }}
+            >
+                <code className="font-mono text-small text-text-muted">
+                    0 — surface-0
+                </code>
+                <div
+                    className="mt-2 border border-ghost p-4"
+                    style={{ background: 'var(--color-surface-1)' }}
+                >
+                    <code className="font-mono text-small text-text-muted">
+                        1 — surface-1
+                    </code>
+                    <div
+                        className="mt-2 border border-ghost p-4"
+                        style={{ background: 'var(--color-surface-2)' }}
+                    >
+                        <code className="font-mono text-small text-text-muted">
+                            2 — surface-2
+                        </code>
+                        <div
+                            className="mt-2 border border-ghost p-4"
+                            style={{ background: 'var(--color-surface-3)' }}
+                        >
+                            <code className="font-mono text-small text-text-muted">
+                                3 — surface-3
+                            </code>
+                            <div
+                                className="mt-2 border border-ghost p-4"
+                                style={{ background: 'var(--color-surface-4)' }}
+                            >
+                                <code className="font-mono text-small text-text-muted">
+                                    4 — surface-4
+                                </code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
 function Swatch({ color, name, token }) {
     return (
-        <div className="border border-ghost">
+        <div className="flex flex-col border border-ghost">
             <div className="h-12" style={{ backgroundColor: color }} />
-            <div className="bg-surface-2 px-1.5 py-1 text-xs leading-[1.3]">
+            <div className="flex-1 bg-surface-2 px-1.5 py-1 text-small leading-[1.3]">
                 <span className="block font-body">{name}</span>
-                <code className="block font-mono text-[0.5625rem] text-text-muted">
+                <code className="block font-mono text-small text-text-muted">
                     {token}
                 </code>
             </div>
@@ -179,51 +219,43 @@ function Swatch({ color, name, token }) {
 function TypeAndSpacing() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-outline-variant pb-1 text-primary">
-                Typography
-            </h2>
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Typography</h2>
             <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <h1 style={{ margin: 0 }}>Current Campaign</h1>
-                    <code className="font-mono text-[0.5625rem] whitespace-nowrap text-text-muted">
-                        clamp(1.5rem, 1rem + 2vw, 2.5rem)
+                    <code className="font-mono text-small whitespace-nowrap text-text-muted">
+                        --text-h1: clamp(1.5rem, 1rem + 2vw, 2.5rem)
                     </code>
                 </div>
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <h2 style={{ margin: 0 }}>Current Defend Events</h2>
-                    <code className="font-mono text-[0.5625rem] whitespace-nowrap text-text-muted">
-                        clamp(1.25rem, 0.9rem + 1.5vw, 1.875rem)
+                    <code className="font-mono text-small whitespace-nowrap text-text-muted">
+                        --text-h2: clamp(1.125rem, 0.9rem + 1.2vw, 1.75rem)
                     </code>
                 </div>
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <h3 style={{ margin: 0 }}>Global Stats</h3>
-                    <code className="font-mono text-[0.5625rem] whitespace-nowrap text-text-muted">
-                        clamp(1.125rem, 0.9rem + 1vw, 1.5rem)
+                    <code className="font-mono text-small whitespace-nowrap text-text-muted">
+                        --text-h3: clamp(0.875rem, 0.75rem + 0.5vw, 1.125rem)
                     </code>
                 </div>
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
-                    <h4 style={{ margin: 0 }}>Helldivers Discord</h4>
-                    <code className="font-mono text-[0.5625rem] whitespace-nowrap text-text-muted">
-                        clamp(1rem, 0.9rem + 0.5vw, 1.25rem)
-                    </code>
-                </div>
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <span>Bugs is active: 584/1000 (58.4%) current players: 332</span>
-                    <code className="font-mono text-[0.5625rem] whitespace-nowrap text-text-muted">
-                        clamp(0.875rem, 0.8rem + 0.35vw, 1.0625rem)
+                    <code className="font-mono text-small whitespace-nowrap text-text-muted">
+                        --text-body: clamp(0.875rem, 0.8rem + 0.35vw, 1rem)
                     </code>
                 </div>
-                <div className="flex flex-wrap items-baseline gap-4 border-b border-outline-variant py-2">
+                <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <small>Finished 10 hours, 43 minutes ago</small>
-                    <code className="font-mono text-[0.5625rem] whitespace-nowrap text-text-muted">
-                        clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)
+                    <code className="font-mono text-small whitespace-nowrap text-text-muted">
+                        --text-small: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)
                     </code>
                 </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-6 border border-ghost bg-surface-1 p-3">
                 <div className="flex flex-col gap-0.5">
-                    <h6 className="text-text-muted">Display</h6>
+                    <small className="text-text-muted">Display</small>
                     <span
                         style={{
                             fontFamily: 'var(--font-display)',
@@ -235,13 +267,13 @@ function TypeAndSpacing() {
                     </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                    <h6 className="text-text-muted">Body</h6>
+                    <small className="text-text-muted">Body</small>
                     <span style={{ fontFamily: 'var(--font-body)' }}>
-                        Insignia / Inter / Arial
+                        Inter / Arial / Helvetica
                     </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                    <h6 className="text-text-muted">Mono</h6>
+                    <small className="text-text-muted">Mono</small>
                     <span style={{ fontFamily: 'var(--font-mono)' }}>Space Mono</span>
                 </div>
             </div>
@@ -263,10 +295,10 @@ function TypeAndSpacing() {
                             className="h-4 shrink-0 bg-primary opacity-50"
                             style={{ width: `var(${token})` }}
                         />
-                        <code className="font-mono text-[0.625rem] text-text-muted">
+                        <code className="font-mono text-small text-text-muted">
                             {token}
                         </code>
-                        <span className="text-[0.625rem] text-text-muted">{px}</span>
+                        <span className="text-small text-text-muted">{px}</span>
                     </div>
                 ))}
             </div>
@@ -278,17 +310,19 @@ function TypeAndSpacing() {
    4. Components — Live demos
    ---------------------------------------------------------------- */
 const btn =
-    'inline-block py-1.5 px-3 font-body font-bold text-[0.8125rem] uppercase tracking-[0.02em] border-none cursor-pointer';
+    'inline-block py-1.5 px-3 font-body font-bold text-small uppercase tracking-[0.02em] border-none cursor-pointer';
 
 function Components() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-outline-variant pb-1 text-primary">
-                Components
-            </h2>
+            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Components</h2>
 
-            <div className="mb-4 flex flex-wrap gap-2">
-                <button className={`${btn} bg-primary text-on-primary`}>Deploy</button>
+            <div className="mb-4 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
+                <button
+                    className={`${btn} border border-primary text-primary hover:bg-primary hover:text-surface-0`}
+                >
+                    Deploy
+                </button>
                 <button
                     className={`${btn} border border-primary bg-transparent text-primary`}
                 >
@@ -296,7 +330,7 @@ function Components() {
                 </button>
                 <button className={`${btn} bg-danger text-white`}>Abort</button>
                 <button
-                    className={`${btn} cursor-not-allowed bg-primary text-on-primary opacity-40`}
+                    className={`${btn} cursor-not-allowed border border-primary text-primary opacity-40`}
                     disabled
                 >
                     Disabled
@@ -304,7 +338,7 @@ function Components() {
             </div>
 
             <h3 className="mt-6 mb-2">Data Cards</h3>
-            <p className="mb-2 block text-xs text-text-muted">
+            <p className="mb-2 block text-small text-text-muted">
                 4px right-side accent. Grid layout for swappable variants.
             </p>
             <div className="mb-4 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2">
@@ -347,7 +381,7 @@ function Components() {
                 <div className="mb-1 h-3.5 bg-danger">
                     <div className="h-full bg-primary" style={{ width: '58.4%' }} />
                 </div>
-                <code className="mb-2 block text-xs text-text-muted">
+                <code className="mb-2 block text-small text-text-muted">
                     584 / 1,000 (58.40%)
                 </code>
             </div>
@@ -361,18 +395,18 @@ const accentColors = {
     bugs: 'bg-faction-bugs',
     cyborgs: 'bg-faction-cyborgs',
     illuminate: 'bg-faction-illuminate',
-    muted: 'bg-outline-variant',
+    muted: 'bg-ghost',
 };
 
 function DataCard({ label, stat, desc, accent = 'default' }) {
     return (
-        <div className="grid grid-cols-[1fr_4px] border border-ghost bg-surface-1 transition-colors hover:bg-surface-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_4px] border border-ghost bg-surface-1 transition-colors hover:bg-surface-2">
             <div className="p-3">
-                <h6 className="text-text-muted">{label}</h6>
-                <div className="my-1 font-display text-2xl leading-none font-black text-primary uppercase">
+                <small className="text-text-muted">{label}</small>
+                <div className="my-1 font-display text-h1 leading-none font-black text-primary uppercase">
                     {stat}
                 </div>
-                <p className="m-0 text-xs text-text-muted">{desc}</p>
+                <p className="m-0 text-small text-text-muted">{desc}</p>
             </div>
             <div className={accentColors[accent]} />
         </div>

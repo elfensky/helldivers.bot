@@ -1,9 +1,9 @@
 import sitemap, { dynamic } from '@/app/sitemap.js';
 
 describe('sitemap', () => {
-    test('returns array of 7 entries', async () => {
+    test('returns array of 8 entries', async () => {
         const entries = await sitemap();
-        expect(entries).toHaveLength(7);
+        expect(entries).toHaveLength(8);
     });
 
     test('each entry has url, lastModified, changeFrequency, and priority', async () => {

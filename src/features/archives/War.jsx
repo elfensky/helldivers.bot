@@ -9,7 +9,7 @@ export function WarOutcome({ data }) {
 
     return (
         <div
-            className={`flex flex-1 items-center border-2 border-ghost bg-surface-1 px-4 py-2 font-display text-xl font-black uppercase ${outcome === 'victory' ? 'border-primary text-primary' : 'border-danger text-danger'}`}
+            className={`flex flex-1 items-center border-2 border-ghost bg-surface-1 px-4 py-2 font-display text-h2 font-black uppercase ${outcome === 'victory' ? 'border-primary text-primary' : 'border-danger text-danger'}`}
         >
             <span className="font-bold">
                 {outcome === 'victory' ? 'Victory' : 'Defeat'}

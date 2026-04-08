@@ -4,7 +4,7 @@
 
 [![Build](https://github.com/elfensky/helldivers1api/actions/workflows/staging.docker.yml/badge.svg?branch=main)](https://github.com/elfensky/helldivers1api/actions/workflows/staging.docker.yml)
 [![Release](https://github.com/elfensky/helldivers1api/actions/workflows/release.docker.yml/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/release.docker.yml)
-[![CodeQL](https://github.com/elfensky/helldivers1api/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/github-code-scanning/codeql)
+[![CodeQL](https://github.com/elfensky/helldivers.bot/actions/workflows/codeql.yml/badge.svg)](https://github.com/elfensky/helldivers.bot/actions/workflows/codeql.yml)
 [![Dependabot Updates](https://github.com/elfensky/helldivers1api/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/elfensky/helldivers1api/actions/workflows/dependabot/dependabot-updates)
 [![Time](https://wakapi.lavrenov.io/api/badge/elfensky/interval:any/project:helldivers1api)](https://wakapi.lavrenov.io/leaderboard)
 
@@ -26,7 +26,7 @@
 
 This is an application that consumes the official Helldivers 1 API, caches and rebroadcasts it as to avoid high load on official servers.
 It also stores historic data that the official API discards, and offers account management and api keys for 3rd parties to access the API to build their own apps.
-The frontend also shows various data visualizations and notifies visitors of in-game events.
+The frontend also shows various data visualizations and notifies visitors of in-game events. All pages receive real-time campaign updates via Server-Sent Events (SSE), and the app supports PWA offline mode with service worker caching and push notifications.
 
 ### How it works.
 
@@ -89,15 +89,20 @@ Using next js api routes, this contains various endpoints that provide helldiver
 
 ### User Features
 
+- Authentication via Discord or GitHub OAuth (powered by [BetterAuth](https://www.better-auth.com/))
 - Account Management
-    - Create an account
-    - Login
-    - Logout
-    - Change password
+    - Login / Logout via OAuth
     - Delete account
 - API Keys
     - Create an API key
     - Delete an API key
+- Profile
+    - View connected OAuth providers and Gravatar
+    - GDPR data export (JSON download)
+    - GDPR account deletion
+- Admin Dashboard (admin role required)
+    - System overview: worker health, game data stats, user metrics
+    - User management: role changes, bans, API key oversight
 - Reviews
     - Create a review
     - Delete a review
@@ -105,7 +110,7 @@ Using next js api routes, this contains various endpoints that provide helldiver
 
 ## Development
 
-The application uses nextjs running on node@22, prisma and postgres. It is deployed on a VPS in a docker container.
+The application uses nextjs running on node@24, prisma and postgres. It is deployed on a VPS in a docker container.
 
 ### Local
 

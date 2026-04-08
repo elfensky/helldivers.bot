@@ -1,11 +1,6 @@
-import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { getCampaign } from '@/db/queries/getCampaign';
-import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
-import { EVENT_STATUS } from '@/shared/enums/events';
+import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 import DashboardClient from '@/features/dashboard/DashboardClient';
 import TimelineSection from '@/features/timeline/TimelineSection';
-
-export const dynamic = 'force-dynamic';
 
 export const metadata = {
     title: 'Helldivers Bot — Live Galactic Campaign Dashboard',
@@ -20,31 +15,15 @@ export const metadata = {
     },
 };
 
-export default async function HomePage() {
-    const { data, error } = await tryCatch(getCampaign());
-
-    if (error || !data) {
-        return (
-            <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
-                <h1>SIGNAL LOST</h1>
-                <p>
-                    Communication with Super Earth High Command has been disrupted. This
-                    is not cause for alarm. Remain calm and await further instructions.
-                </p>
-            </div>
-        );
-    }
-
-    // Only pass active events — completed events are already reflected in the campaign score
-    const activeEvents = (data.events ?? []).filter(
-        (e) => e.status === EVENT_STATUS.ACTIVE,
-    );
-    const mapState = computeMapState(data.live, activeEvents);
-
+export default function HomePage() {
     return (
         <>
-            <DashboardClient initialData={data} initialMapState={mapState} />
-            <TimelineSection events={data.events} />
+            <ComponentErrorBoundary name="Dashboard">
+                <DashboardClient />
+            </ComponentErrorBoundary>
+            <ComponentErrorBoundary name="Timeline">
+                <TimelineSection />
+            </ComponentErrorBoundary>
         </>
     );
 }

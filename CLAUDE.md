@@ -25,6 +25,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Vitest:** `npm run test:unit` (single run), `npm run test:coverage` (with coverage).
 - **Playwright smoke tests:** `npm run test:e2e` to verify app builds and runs.
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
+- **Progressive env vars:** Only `POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL` are required. Auth and analytics are optional — see `.example.env` section headers.
 
 ### DevTools Verification
 
@@ -53,9 +54,10 @@ After any frontend/CSS change, verify via DevTools before declaring done:
 **Rules:**
 
 1. **Create feature/bugfix/chore branches from `develop`.** Features merge back via PR. Bugfix and chore branches merge via fast-forward into `develop` (branch → commit → `git merge` into develop → push → delete branch). No PR needed.
-2. **Release process:** Update `CHANGELOG.md` (move Unreleased items under new `## X.Y.Z` header) → merge `develop` → `main` via PR → tag `vX.Y.0` on main
-3. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
-4. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
+2. **Version on merge to `develop`:** When merging a branch into `develop`, **in the same commit** move its changelog entries from `## Unreleased` into a new `## X.Y.Z` section and bump `"version"` in `package.json` to match. Do not defer this to a separate commit or ask — it is part of the merge step. Use semver: patch for bugfixes, minor for features, major for breaking changes. Skipping version numbers between releases is fine — not every version on `develop` will be tagged on `main`.
+3. **Release process:** Merge `develop` → `main` via PR → **tag `vX.Y.Z` on the merge commit on `main`** (use the latest version from `CHANGELOG.md`) → push tag. The production Docker build only triggers on version tags, so forgetting to tag means no deployment.
+4. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` with new version section → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
+5. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
 
 **Git Flow automation (git-workflow skill):**
 
@@ -84,6 +86,19 @@ if (error) {
 - Use `errorResponse(code, start, error)` and `successResponse(code, start, data)` from `src/utils/responses.mjs`
 - Measure execution time with `roundedPerformanceTime(start)` from `src/utils/time.mjs`
 
+### Analytics Tracking
+
+Every interactive element (links, buttons, nav items) must have Umami tracking. Use `category-action` naming:
+
+- **`data-umami-event="category-action"`** for simple clicks (nav links, buttons, toggles). Preferred — the tracker script handles it automatically.
+- **`useTrack()` hook** for dynamic interactions where event name or data depends on state (e.g., `track('faction-tab-switch', { faction: id })`).
+- **`window.umami?.track()`** inside `useEffect` callbacks where hooks can't be called.
+- **`sendUmamiEvent()`** for server-side API route tracking (called inside `after()` to avoid blocking responses).
+
+Categories: `nav`, `auth`, `footer`, `docs`, `diagram`, `faction`, `archive`, `notification`, `push`, `sw`, `toast`, `dashboard`, `api`.
+
+When adding a new interactive element, always add a `data-umami-event` attribute. When adding a new API route that serves external consumers, add a server-side `umamiTrackEvent` call.
+
 ### Validation
 
 All external data validated with Zod schemas (`src/validators/`) before database operations.
@@ -102,7 +117,7 @@ Tailwind-first: use utility classes and theme tokens (`bg-primary`, `border-ghos
 
 ### Design Tokens
 
-All visual properties use CSS custom properties from `src/styles/tokens.css`, integrated into Tailwind v4 `@theme` block in `src/app/layout.css`. See `/brandkit` for visual reference.
+All visual properties use CSS custom properties defined in the Tailwind v4 `@theme` block in `src/app/layout.css`. See `/brandkit` for visual reference.
 
 - Colors: `--color-primary`, `--color-danger`, `--color-surface-0` through `--color-surface-4`, `--color-faction-*`
 - Fonts: `--font-display` (Insignia, titles only), `--font-body` (Inter), `--font-mono` (Space Mono)
@@ -115,17 +130,19 @@ All visual properties use CSS custom properties from `src/styles/tokens.css`, in
 - **Two-table strategy:** `rebroadcast_*` tables store raw API JSON; `h1_*` tables store normalized historical data. Both are needed.
 - **Worker thread** (`public/workers/cron.js`) uses `setTimeout` (not `setInterval`) to prevent overlapping requests.
 - **Prisma 7** with `@prisma/adapter-pg` driver adapter. Client outputs to `src/generated/prisma/`. CLI config in `prisma.config.mjs`.
-- **Auth:** NextAuth.js v5 with database sessions (not JWT). Discord + GitHub OAuth.
+- **Auth (optional):** BetterAuth with database sessions (Prisma adapter). Discord + GitHub OAuth. Server config in `src/auth.js` (exports `null` when `BETTER_AUTH_SECRET` absent), client utilities in `src/auth-client.js`. When disabled: no sign-in UI, `/profile` redirects home, auth API returns 503.
 - **React Compiler** enabled experimentally in `next.config.mjs`.
-- **Error tracking:** Sentry SDK configured for self-hosted Bugsink (`tracesSampleRate: 0`, no replays/logs).
+- **Error tracking (optional):** Sentry SDK configured for self-hosted GlitchTip (`tracesSampleRate: 1.0`, `environment` tagging, no replays/logs). Client tunnel (`/api/glitchtip`) bypasses ad blockers. CSP violations reported via `report-uri`. Route-level (`error.jsx`) and component-level (`ComponentErrorBoundary`) error boundaries for graceful degradation. When `SENTRY_AUTH_TOKEN` absent, `withSentryConfig` build plugin skipped.
 - **Node version:** mise pins node@24 (ships with npm 11 natively).
 - **Server actions:** Most utilities use `'use server'` directive.
 - **Shared utilities:** `formatNumber` (`src/utils/formatNumber.mjs`) for compact numbers (12.3M, 1.2K). `formatTimeAgo` (`src/utils/formatTimeAgo.mjs`) for relative timestamps.
 - **Map state:** `computeMapState` (`src/utils/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — completed events are already in the score.
 - **On-demand season fetching:** `/archives` page derives SeasonSelector from current season number (not DB query). Missing seasons fetched from official API on first request via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`).
-- **SSE live updates:** Worker polls API → DB write → `pg NOTIFY campaign_update` → SSE manager (`src/shared/utils/sse/sseManager.mjs`) broadcasts full campaign state via `/api/h1/stream` → `useLiveData` hook (`src/shared/hooks/useLiveData.mjs`) replaces React state. Postgres LISTEN/NOTIFY bridges worker thread and Next.js process (Prisma doesn't support LISTEN/NOTIFY — uses dedicated `pg.Client`).
-- **Notifications:** `detectChanges()` (`src/shared/utils/game/detectChanges.mjs`) detects event transitions (started/won/lost) on both client (Sonner toasts + Web Notifications) and server (push via `web-push`). Single "Enable notifications" button enables both web and push. Push subscriptions stored in `push_subscription` table.
-- **PWA:** Service worker (`public/sw.js`) caches app shell, handles push events. Last SSE payload cached in localStorage for offline fallback.
+- **Live polling:** `useLiveData` hook (`src/shared/hooks/useLiveData.mjs`) polls `GET /api/h1/live` every 10 seconds via `setInterval` + `fetch`. A `visibilitychange` listener fires an immediate poll on tab focus. Tri-state status: `'polling'` (request in flight), `'live'` (last poll succeeded), `'offline'` (last poll failed or PWA offline). Module-level singleton ensures one connection per tab. BroadcastChannel leader election for Web Notifications.
+- **Notifications:** `detectChanges()` (`src/shared/utils/game/detectChanges.mjs`) detects event transitions (started/won/lost) on both client (Sonner toasts + Web Notifications) and server (push via `web-push`). `LiveToasts` also shows catch-up toasts for active events on page load. The Sonner `<Toaster>` is co-located inside `LiveToasts` (not root layout) to share the same module singleton — rendering it from a server component creates a separate `ToastState`. Single "Enable notifications" button enables both web and push. Push subscriptions stored in `push_subscription` table.
+- **Analytics (optional):** Umami v3 (self-hosted, cookieless). Umami `<Script>` tag conditional on `UMAMI_SITE_ID`. Three tracking layers: (1) `data-umami-event` HTML attributes for click tracking — the tracker script captures these automatically; (2) `useTrack` hook (`src/shared/hooks/useTrack.mjs`) or `window.umami?.track()` for dynamic JS interactions; (3) `sendUmamiEvent()` (`src/shared/utils/umami.mjs`) for server-side API route tracking. Client-side tracker posts through same-origin proxy (`/api/umami` route, `/api/send` rewrite) to bypass ad blockers. Authenticated users identified via `umami.identify()` in `UserSection.jsx`. Production-only — no tracking in dev/test.
+- **PWA:** Serwist (`@serwist/next`) generates service worker at build time with automatic precache manifest (content-hash based). Config in `serwist.config.js`, source in `src/sw.js`, output in `public/sw.js` (gitignored build artifact). `skipWaiting: true` for immediate updates. Custom push notification handlers in `src/sw.js`. Last poll payload cached in localStorage for offline fallback.
+- **Diagrams:** Mermaid-based via shared `MermaidDiagram` component (`src/shared/components/MermaidDiagram/`). Each diagram is a Mermaid definition string + config object (views, flows, node details, legend). Supports flow-based filtering (dim/highlight via CSS classes on SVG DOM nodes) and clickable detail panels. Node IDs must use underscores (Mermaid treats hyphens as minus). Colors match docs conventions (`classDef` with same hex values). Mermaid loaded via dynamic `import()` — client-side only, no SSR. `ProgressExplainer` (Recharts) is separate.
 
 ## Architecture — Frontend Layout
 
@@ -157,13 +174,16 @@ For every phase or feature, use the `/superpowers:brainstorming` skill to explor
 
 ## Reference Docs
 
-| Topic                              | Location                                                                                                                   |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Docker, CI/CD, init flow, env vars | [Wiki: Infrastructure](https://github.com/elfensky/helldivers.bot/wiki/Infrastructure)                                     |
-| Database schema & relationships    | [Wiki: Database-Schema](https://github.com/elfensky/helldivers.bot/wiki/Database-Schema)                                   |
-| Data pipeline & worker lifecycle   | [Wiki: Data-Flow](https://github.com/elfensky/helldivers.bot/wiki/Data-Flow)                                               |
-| API endpoints & authentication     | [Wiki: API-Reference](https://github.com/elfensky/helldivers.bot/wiki/API-Reference)                                       |
-| Utilities & Zod validators         | [Wiki: Utilities-Reference](https://github.com/elfensky/helldivers.bot/wiki/Utilities-Reference)                           |
-| Testing infrastructure             | [Wiki: Testing](https://github.com/elfensky/helldivers.bot/wiki/Testing)                                                   |
-| Real-time & notifications          | `/docs/notifications` (interactive diagram) + [Wiki: Real-Time](https://github.com/elfensky/helldivers.bot/wiki/Real-Time) |
-| Frontend design system & tokens    | `/docs/brandkit` (visual) + `src/app/layout.css`                                                                           |
+| Topic                              | Location                                                  |
+| ---------------------------------- | --------------------------------------------------------- |
+| Docker, CI/CD, init flow, env vars | [`/docs/infrastructure`](/docs/infrastructure)            |
+| Database schema & relationships    | [`/docs/database`](/docs/database)                        |
+| Data pipeline & worker lifecycle   | [`/docs/data-flow`](/docs/data-flow)                      |
+| API endpoints & authentication     | [`/docs/api`](/docs/api)                                  |
+| Utilities & Zod validators         | [`/docs/utilities`](/docs/utilities)                      |
+| Testing infrastructure             | [`/docs/testing`](/docs/testing)                          |
+| Real-time & notifications          | [`/docs/notifications`](/docs/notifications)              |
+| Data flow architecture             | [`/docs/architecture`](/docs/architecture)                |
+| Authentication & roles             | [`/docs/authentication`](/docs/authentication)            |
+| Frontend design system & tokens    | [`/docs/brandkit`](/docs/brandkit) + `src/app/layout.css` |
+| Official HD1 API reference         | [`/docs/hd1-api`](/docs/hd1-api)                          |

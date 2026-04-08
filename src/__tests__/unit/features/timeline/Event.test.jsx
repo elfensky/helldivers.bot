@@ -71,10 +71,10 @@ describe('Event', () => {
         expect(container.querySelector('.bg-success')).toBeInTheDocument();
     });
 
-    test('renders failed status with danger styling', () => {
+    test('renders failed status with muted styling', () => {
         const failedEvent = { ...activeEvent, status: 'fail' };
         const { container } = render(<Event event={failedEvent} />);
         expect(screen.getByText('Failed defend Event')).toBeInTheDocument();
-        expect(container.querySelector('.bg-danger')).toBeInTheDocument();
+        expect(container.querySelector('.bg-ghost')).toBeInTheDocument();
     });
 });

@@ -30,6 +30,7 @@ const { parentPort } = require('worker_threads');
  */
 parentPort.on('message', async (msg) => {
     const { key, interval, port } = msg;
+    let isFirstPoll = true;
 
     /**
      * Recursive polling function that fetches the update endpoint.
@@ -40,7 +41,10 @@ parentPort.on('message', async (msg) => {
 
         try {
             const response = await fetch(url, {
-                headers: { Authorization: `Bearer ${key}` },
+                headers: {
+                    Authorization: `Bearer ${key}`,
+                    ...(isFirstPoll && { 'X-Worker-Startup': '1' }),
+                },
             });
             const data = await response.json();
 
@@ -53,6 +57,8 @@ parentPort.on('message', async (msg) => {
                 time: new Date().toString(),
             });
         }
+
+        isFirstPoll = false;
 
         // Schedule the next update after the current one completes.
         // Using setTimeout instead of setInterval is intentional:

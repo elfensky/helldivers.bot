@@ -1,19 +1,20 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import StatusDot from '@/shared/components/StatusDot';
 
 const tabs = [
-    { href: '/', label: 'Live', live: true },
-    { href: '/archives', label: 'Archives' },
-    { href: '/docs', label: 'Docs' },
+    { href: '/', label: 'Live', live: true, track: 'nav-live' },
+    { href: '/archives', label: 'Archives', track: 'nav-archives' },
+    { href: '/docs', label: 'Docs', track: 'nav-docs' },
 ];
 
 export default function HeaderNav() {
     const pathname = usePathname();
 
     return (
-        <div className="hidden items-center gap-4 md:flex">
-            {tabs.map(({ href, label, live }) => {
+        <div className="hidden items-center gap-3 md:flex">
+            {tabs.map(({ href, label, live, track }) => {
                 const isActive =
                     href === '/' ? pathname === '/' : pathname.startsWith(href);
                 return (
@@ -21,14 +22,14 @@ export default function HeaderNav() {
                         key={href}
                         href={href}
                         prefetch={false}
+                        data-umami-event={track}
                         className={`header-nav-link ${isActive ? 'header-nav-link--active' : ''}`}
                     >
-                        {live && <span className="bottom-nav-live">●</span>}
+                        {live && <StatusDot />}
                         {label}
                     </Link>
                 );
             })}
-            <span className="header-nav-divider" />
         </div>
     );
 }

@@ -12,7 +12,7 @@ export default async function Header() {
     return (
         <header
             id="header"
-            className="z-50 flex h-[50px] w-full text-white sm:h-[80px] md:fixed md:top-0"
+            className="fixed top-0 z-50 flex h-[50px] w-full text-white sm:h-[80px]"
         >
             <div className="p-gutters mx-auto flex w-full max-w-[1536px] items-center justify-between">
                 <Logo />
@@ -32,9 +32,9 @@ function Logo() {
         <Link
             href="/"
             prefetch={false}
-            data-umami-event={'header-home'}
+            data-umami-event="nav-home"
             aria-label="Go to homepage"
-            className="z-50 flex flex-row items-center justify-center gap-2 text-[clamp(1.1rem,0.9rem+1vw,1.5rem)] font-bold"
+            className="z-50 flex flex-row items-center justify-center gap-2 text-h2 font-bold"
         >
             <figure className="relative m-0 flex flex-row items-center gap-2">
                 <Image

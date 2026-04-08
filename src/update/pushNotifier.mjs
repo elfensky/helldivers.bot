@@ -8,7 +8,7 @@ const MAX_CONCURRENT = 50;
 let prevEvents = null;
 let configured = false;
 
-function ensureVapid() {
+export function ensureVapid() {
     if (configured) return true;
     const publicKey = process.env.VAPID_PUBLIC_KEY;
     const privateKey = process.env.VAPID_PRIVATE_KEY;
@@ -21,7 +21,7 @@ function ensureVapid() {
     return true;
 }
 
-function buildPayload(change) {
+export function buildPayload(change) {
     const faction = factions[change.event.enemy]?.name ?? 'Unknown';
     const titles = {
         event_started: `${faction} ${change.event.type} event started`,
@@ -29,15 +29,20 @@ function buildPayload(change) {
         event_lost: `${faction} ${change.event.type} event lost`,
     };
 
+    const eventId = change.event.event_id;
+    const tag = eventId != null ? `event-${eventId}` : undefined;
+
     return JSON.stringify({
         title: titles[change.kind] || 'Campaign Update',
         body: `Season ${change.event.season || ''}`,
-        icon: factions[change.event.enemy]?.icon || '/icon.svg',
+        icon: factions[change.event.enemy]?.icon || '/icons/superearth.webp',
+        badge: '/favicons/favicon-96x96.png',
+        ...(tag && { tag, renotify: true }),
     });
 }
 
-async function sendWithConcurrencyLimit(subscriptions, payload) {
-    const results = [];
+export async function sendWithConcurrencyLimit(subscriptions, payload) {
+    const staleEndpoints = [];
 
     for (let i = 0; i < subscriptions.length; i += MAX_CONCURRENT) {
         const batch = subscriptions.slice(i, i + MAX_CONCURRENT);
@@ -59,25 +64,27 @@ async function sendWithConcurrencyLimit(subscriptions, payload) {
             if (result.status === 'rejected') {
                 const statusCode = result.reason?.statusCode;
                 if (statusCode === 410 || statusCode === 404) {
-                    results.push(batch[j].endpoint);
+                    staleEndpoints.push(batch[j].endpoint);
                 }
             }
         }
     }
 
     // Delete stale subscriptions
-    if (results.length > 0) {
+    if (staleEndpoints.length > 0) {
         const { error } = await tryCatch(
             db.push_subscription.deleteMany({
-                where: { endpoint: { in: results } },
+                where: { endpoint: { in: staleEndpoints } },
             }),
         );
         if (error) {
             console.error('Failed to cleanup stale push subscriptions:', error.message);
         } else {
-            console.log(`Cleaned up ${results.length} stale push subscriptions`);
+            console.log(`Cleaned up ${staleEndpoints.length} stale push subscriptions`);
         }
     }
+
+    return { sent: subscriptions.length - staleEndpoints.length, stale: staleEndpoints.length };
 }
 
 /**

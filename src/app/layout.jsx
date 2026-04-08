@@ -3,12 +3,16 @@ import './layout.css';
 import Script from 'next/script';
 import { headers } from 'next/headers';
 import { Space_Grotesk, Inter } from 'next/font/google';
-import { Toaster } from 'sonner';
 //components
 import Header from '@/shared/components/Header/Header';
 import Footer from '@/shared/components/Footer/Footer';
 import BottomNav from '@/shared/components/BottomNav/BottomNav';
-import ServiceWorkerRegister from '@/shared/components/ServiceWorkerRegister';
+import LiveDataProvider from '@/shared/providers/LiveDataProvider';
+//data
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { getCampaign } from '@/db/queries/getCampaign';
+import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { EVENT_STATUS } from '@/shared/enums/events';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],
@@ -36,7 +40,7 @@ const inter = Inter({
 // }
 
 export const viewport = {
-    themeColor: '#282828',
+    themeColor: '#1c1b1b',
 };
 
 export const metadata = {
@@ -65,6 +69,14 @@ export const metadata = {
 export default async function RootLayout({ children }) {
     const nonce = (await headers()).get('x-nonce') ?? undefined;
     const isProduction = process.env.NODE_ENV === 'production';
+
+    // Fetch campaign data for LiveDataProvider — failure yields null,
+    // handled gracefully by useLiveData's fallback chain.
+    const { data } = await tryCatch(getCampaign());
+    const activeEvents = (data?.events ?? []).filter(
+        (e) => e.status === EVENT_STATUS.ACTIVE,
+    );
+    const initialMapState = data ? computeMapState(data.live, activeEvents) : null;
 
     return (
         <html
@@ -185,48 +197,37 @@ export default async function RootLayout({ children }) {
 
                 <a
                     href="#main"
-                    className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-on-primary"
+                    className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-surface-0"
                 >
                     Skip to content
                 </a>
                 <div
-                    className="fixed inset-0 z-[999] flex items-center justify-center bg-surface-0 p-4 text-center text-sm text-text-muted min-[200px]:hidden"
+                    className="fixed inset-0 z-[999] flex items-center justify-center bg-surface-0 p-4 text-center text-body text-text-muted min-[200px]:hidden"
                     role="alert"
                 >
                     <p className="m-0">Please use a larger screen to view this site.</p>
                 </div>
-                <Header />
-                <main
-                    id="main"
-                    className="flex min-h-screen w-full flex-col pb-[48px] md:pt-[80px] md:pb-0"
+                <LiveDataProvider
+                    initialData={data ?? null}
+                    initialMapState={initialMapState}
                 >
-                    {children}
-                </main>
-                <Footer />
-                <BottomNav />
-                <ServiceWorkerRegister />
-                <Toaster
-                    theme="dark"
-                    position="bottom-right"
-                    toastOptions={{
-                        style: {
-                            borderRadius: '0px',
-                            background: 'var(--color-surface-1)',
-                            color: 'var(--color-text)',
-                            border: '1px solid var(--color-ghost)',
-                            fontFamily: 'var(--font-body)',
-                        },
-                    }}
-                />
-
-                {isProduction ?
+                    <Header />
+                    <main
+                        id="main"
+                        className="flex min-h-screen w-full flex-col pt-[50px] pb-[48px] sm:pt-[80px] md:pb-0"
+                    >
+                        {children}
+                    </main>
+                    <Footer />
+                    <BottomNav />
+                </LiveDataProvider>
+                {isProduction && process.env.UMAMI_SITE_ID ?
                     <Script
                         nonce={nonce}
-                        // src="https://umami.lavrenov.io/script.js"
+                        // src="https://umami.drunik.be/script.js"
                         src="/stats.js"
                         data-website-id="9a916711-2868-43d2-9932-964fc9528824"
                         strategy="afterInteractive"
-                        data-host-url="https://umami.lavrenov.io"
                     />
                 :   null}
             </body>
@@ -265,65 +266,56 @@ const schema = {
         // url: 'https://helldivers.bot/campaign',
     },
 
-    // image: "https://helldivers.bot/url-to-dynamically-generated-map-status"
+    image: 'https://helldivers.bot/opengraph-image',
 
-    // mainEntity: [
-    //     {
-    //         '@type': 'VideoGame',
-    //         name: 'Helldivers',
-    //         url: 'https://helldivers.bot',
-    //         gamePlatform: 'PC, PlayStation',
-    //         applicationCategory: 'Action, Shooter',
-    //         description:
-    //             'Helldivers is a top-down cooperative shooter game where players fight to protect Super Earth from Xeno threats.',
-    //         publisher: {
-    //             '@type': 'Organization',
-    //             name: 'Arrowhead Game Studios',
-    //             url: 'https://arrowheadgamestudios.com',
-    //         },
-    //     },
-    //     {
-    //         '@type': 'SoftwareApplication',
-    //         name: 'Helldivers 1 Bot',
-    //         applicationCategory: 'Discord Bot, Chat bot',
-    //         operatingSystem: 'Discord',
-    //         url: 'https://helldivers.bot/discord',
-    //         description:
-    //             'A Discord bot that provides updates about in-game events and statistics.',
-    //         softwareVersion: '1.0.0',
-    //         creator: {
-    //             '@type': 'Person',
-    //             name: 'Andrei Lavrenov',
-    //             url: 'https://lavrenov.io',
-    //         },
-    //         offers: {
-    //             '@type': 'Offer',
-    //             price: '0.00',
-    //             priceCurrency: 'EUR',
-    //             availability: 'http://schema.org/InStock',
-    //             url: 'https://helldivers.bot/discord',
-    //         },
-    //         // aggregateRating: {
-    //         //     '@type': 'AggregateRating',
-    //         //     ratingValue: '0.8',
-    //         //     bestRating: '1',
-    //         //     ratingCount: '1',
-    //         // },
-    //     },
-    //     {
-    //         '@type': 'WebAPI',
-    //         name: 'Helldivers 1 API',
-    //         url: 'https://helldivers.bot/api',
-    //         description:
-    //             'An API providing access to Helldivers campaign status and statistics. Written in JavaScript and powered by Next.js.',
-    //         documentation: 'https://helldivers.bot/docs',
-    //         provider: {
-    //             '@type': 'Person',
-    //             name: 'Andrei Lavrenov',
-    //             url: 'https://lavrenov.io',
-    //         },
-    //     },
-    // ],
+    mainEntity: [
+        {
+            '@type': 'VideoGame',
+            name: 'Helldivers',
+            url: 'https://helldivers.bot',
+            gamePlatform: 'PC, PlayStation',
+            applicationCategory: 'Action, Shooter',
+            description:
+                'Helldivers is a top-down cooperative shooter game where players fight to protect Super Earth from Xeno threats.',
+            publisher: {
+                '@type': 'Organization',
+                name: 'Arrowhead Game Studios',
+                url: 'https://arrowheadgamestudios.com',
+            },
+        },
+        {
+            '@type': 'SoftwareApplication',
+            name: 'Helldivers 1 Bot',
+            applicationCategory: 'Discord Bot, Chat bot',
+            operatingSystem: 'Discord',
+            description:
+                'A Discord bot that provides updates about in-game events and statistics.',
+            softwareVersion: '1.0.0',
+            creator: {
+                '@type': 'Person',
+                name: 'Andrei Lavrenov',
+                url: 'https://lavrenov.io',
+            },
+            offers: {
+                '@type': 'Offer',
+                price: '0.00',
+                priceCurrency: 'EUR',
+            },
+        },
+        {
+            '@type': 'WebAPI',
+            name: 'Helldivers 1 API',
+            url: 'https://helldivers.bot/api',
+            description:
+                'An API providing access to Helldivers campaign status and statistics. Written in JavaScript and powered by Next.js.',
+            documentation: 'https://helldivers.bot/docs',
+            provider: {
+                '@type': 'Person',
+                name: 'Andrei Lavrenov',
+                url: 'https://lavrenov.io',
+            },
+        },
+    ],
 };
 
 // const toAddToJsonLd = {

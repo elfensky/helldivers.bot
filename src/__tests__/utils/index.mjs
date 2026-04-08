@@ -26,10 +26,10 @@ export function createMockRequest(url, method = 'GET', body, headers = {}) {
 }
 
 /**
- * Create a mock NextAuth v5 session object.
+ * Create a mock BetterAuth session object.
  *
  * @param {object} [overrides={}] - Fields to override on the session
- * @returns {object} Mock session matching NextAuth v5 shape
+ * @returns {object} Mock session matching BetterAuth shape
  */
 export function createMockSession(overrides = {}) {
     return {
@@ -38,9 +38,15 @@ export function createMockSession(overrides = {}) {
             name: 'Test User',
             email: 'test@example.com',
             image: null,
+            role: 'user',
             ...overrides.user,
         },
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        session: {
+            id: 'test-session-id',
+            token: 'test-session-token',
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            ...overrides.session,
+        },
         ...overrides,
     };
 }

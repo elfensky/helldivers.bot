@@ -4,27 +4,64 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
+const topLevelItems = [{ href: '/docs', label: 'Overview', track: 'docs-overview' }];
+
 const sections = [
     {
         label: 'General',
         items: [
-            { href: '/docs', label: 'Overview' },
-            { href: '/docs/about', label: 'About' },
-            { href: '/docs/faq', label: 'FAQ' },
+            { href: '/docs/about', label: 'About', track: 'docs-about' },
+            { href: '/docs/faq', label: 'FAQ', track: 'docs-faq' },
         ],
     },
     {
-        label: 'Technical',
+        label: 'Architecture',
         items: [
-            { href: '/docs/architecture', label: 'Architecture' },
-            { href: '/docs/notifications', label: 'Notifications' },
-            { href: '/docs/api', label: 'API Reference' },
-            { href: '/docs/brandkit', label: 'Brand Kit' },
+            {
+                href: '/docs/architecture',
+                label: 'Data Pipeline',
+                track: 'docs-architecture',
+            },
+            { href: '/docs/data-flow', label: 'Update Flow', track: 'docs-data-flow' },
+            { href: '/docs/database', label: 'Database Schema', track: 'docs-database' },
+            {
+                href: '/docs/notifications',
+                label: 'Notifications',
+                track: 'docs-notifications',
+            },
+            {
+                href: '/docs/authentication',
+                label: 'Authentication',
+                track: 'docs-authentication',
+            },
+        ],
+    },
+    {
+        label: 'Reference',
+        items: [
+            { href: '/docs/api', label: 'Rebroadcast', track: 'docs-api' },
+            { href: '/docs/utilities', label: 'Utilities', track: 'docs-utilities' },
+            { href: '/docs/hd1-api', label: 'Official', track: 'docs-hd1-api' },
+            { href: '/docs/brandkit', label: 'Brand Kit', track: 'docs-brandkit' },
+        ],
+    },
+    {
+        label: 'Development',
+        items: [
+            {
+                href: '/docs/infrastructure',
+                label: 'Infrastructure',
+                track: 'docs-infrastructure',
+            },
+            { href: '/docs/testing', label: 'Testing', track: 'docs-testing' },
         ],
     },
 ];
 
 function getCurrentPage(pathname) {
+    for (const item of topLevelItems) {
+        if (item.href === pathname) return item.label;
+    }
     for (const section of sections) {
         for (const item of section.items) {
             if (item.href === pathname) return item.label;
@@ -43,7 +80,8 @@ export default function DocsSidebar() {
             {/* Mobile breadcrumb bar */}
             <button
                 onClick={() => setOpen(!open)}
-                className="flex w-full items-center gap-2 border-b border-outline-variant bg-surface-1 px-4 py-3 text-sm lg:hidden"
+                data-umami-event="docs-sidebar-toggle"
+                className="flex w-full items-center gap-2 border-b border-ghost bg-surface-1 px-4 py-3 text-body lg:hidden"
             >
                 <span className="text-text-muted">Docs /</span>
                 <span className="text-primary">{currentPage}</span>
@@ -54,7 +92,7 @@ export default function DocsSidebar() {
 
             {/* Mobile dropdown */}
             {open && (
-                <nav className="border-b border-outline-variant bg-surface-1 py-4 lg:hidden">
+                <nav className="border-b border-ghost bg-surface-1 py-4 lg:hidden">
                     <SidebarContent
                         pathname={pathname}
                         onNavigate={() => setOpen(false)}
@@ -62,16 +100,10 @@ export default function DocsSidebar() {
                 </nav>
             )}
 
-            {/* Desktop sidebar — glass panel fills column, nav content is sticky */}
-            <div
-                className="hidden border-r-2 border-primary lg:block"
-                style={{
-                    backdropFilter: 'blur(8.8px)',
-                    boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-                }}
-            >
+            {/* Desktop sidebar — surface cards per section */}
+            <div className="hidden lg:block">
                 <nav
-                    className="p-gutters--left py-5"
+                    className="p-gutters--left flex flex-col gap-3 py-5"
                     style={{
                         position: 'sticky',
                         top: '80px',
@@ -89,9 +121,30 @@ export default function DocsSidebar() {
 function SidebarContent({ pathname, onNavigate }) {
     return (
         <>
+            <div className="border border-ghost bg-surface-1 p-3">
+                {topLevelItems.map((item) => {
+                    const isActive = item.href === pathname;
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            prefetch={false}
+                            data-umami-event={item.track}
+                            onClick={onNavigate}
+                            className={`block px-3 py-1.5 text-body ${
+                                isActive ?
+                                    'bg-surface-2 text-primary'
+                                :   'text-text hover:bg-surface-2'
+                            }`}
+                        >
+                            {item.label}
+                        </Link>
+                    );
+                })}
+            </div>
             {sections.map((section) => (
-                <div key={section.label} className="mb-5">
-                    <div className="px-4 pb-2 font-mono text-[10px] tracking-[1.5px] text-text-muted uppercase">
+                <div key={section.label} className="border border-ghost bg-surface-1 p-3">
+                    <div className="px-3 pb-2 font-mono text-small tracking-[1.5px] text-text-muted uppercase">
                         {section.label}
                     </div>
                     {section.items.map((item) => {
@@ -101,11 +154,12 @@ function SidebarContent({ pathname, onNavigate }) {
                                 key={item.href}
                                 href={item.href}
                                 prefetch={false}
+                                data-umami-event={item.track}
                                 onClick={onNavigate}
-                                className={`block border-l-2 px-4 py-1.5 text-sm ${
+                                className={`block px-3 py-1.5 text-body ${
                                     isActive ?
-                                        'border-primary bg-surface-2 text-primary'
-                                    :   'border-transparent text-text hover:bg-surface-2'
+                                        'bg-surface-2 text-primary'
+                                    :   'text-text hover:bg-surface-2'
                                 }`}
                             >
                                 {item.label}

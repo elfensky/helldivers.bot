@@ -2,32 +2,41 @@
 import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-vi.mock('@/auth', () => ({ signIn: vi.fn(), signOut: vi.fn() }));
+vi.mock('@/auth-client', () => ({
+    signIn: vi.fn(),
+    signOut: vi.fn(),
+}));
 
 import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
 
 describe('SignIn', () => {
-    test('renders a form with "Sign In" button', () => {
+    test('renders a link with "Sign In"', () => {
         render(<SignIn />);
-        expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Sign In' })).toBeInTheDocument();
     });
 
-    test('button has data-umami-event="header-signin"', () => {
+    test('link points to /sign-in', () => {
         render(<SignIn />);
-        const button = screen.getByRole('button', { name: 'Sign In' });
-        expect(button).toHaveAttribute('data-umami-event', 'header-signin');
+        const link = screen.getByRole('link', { name: 'Sign In' });
+        expect(link).toHaveAttribute('href', '/sign-in');
+    });
+
+    test('link has data-umami-event="auth-signin"', () => {
+        render(<SignIn />);
+        const link = screen.getByRole('link', { name: 'Sign In' });
+        expect(link).toHaveAttribute('data-umami-event', 'auth-signin');
     });
 });
 
 describe('SignOut', () => {
-    test('renders a form with "Sign Out" button', () => {
+    test('renders a button with "Sign Out"', () => {
         render(<SignOut />);
         expect(screen.getByRole('button', { name: 'Sign Out' })).toBeInTheDocument();
     });
 
-    test('button has data-umami-event="header-signout"', () => {
+    test('button has data-umami-event="auth-signout"', () => {
         render(<SignOut />);
         const button = screen.getByRole('button', { name: 'Sign Out' });
-        expect(button).toHaveAttribute('data-umami-event', 'header-signout');
+        expect(button).toHaveAttribute('data-umami-event', 'auth-signout');
     });
 });

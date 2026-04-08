@@ -40,6 +40,10 @@ jobs:
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:latest
                   build-args: |
                       NODE_ENV=production
+                      SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+                      SENTRY_URL=${{ secrets.SENTRY_URL }}
+                      SENTRY_ORG=${{ secrets.SENTRY_ORG }}
+                      SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }}
 
     # Always build migrate in Production — unlike staging, no skip logic here.
     # Each tag needs a versioned image, releases are infrequent (~$3/yr CI cost),

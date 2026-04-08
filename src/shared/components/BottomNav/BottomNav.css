@@ -28,7 +28,7 @@
     color: var(--color-text-muted);
     text-decoration: none;
     font-family: var(--font-body);
-    font-size: 0.75rem;
+    font-size: var(--text-small);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     border-top: 2px solid transparent;
@@ -41,18 +41,9 @@
 }
 
 .bottom-nav-icon {
-    font-size: 0.875rem;
+    font-size: var(--text-small);
     line-height: 1;
 }
 .bottom-nav-label {
     line-height: 1;
-}
-
-.bottom-nav-live {
-    color: var(--color-danger);
-    animation: live-blink 2s infinite;
-}
-
-.bottom-nav-tab.active .bottom-nav-live {
-    color: var(--color-danger);
 }

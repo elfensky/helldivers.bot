@@ -277,6 +277,142 @@ registry.registerPath({
     },
 });
 
+// /api/h1/live - GET (polling)
+registry.registerPath({
+    method: 'get',
+    path: '/api/h1/live',
+    summary: 'Get current campaign state for live polling',
+    description:
+        'Lightweight endpoint returning the current campaign data and computed map state. Designed for client-side polling via `useLiveData` hook at 10-second intervals.',
+    responses: {
+        200: {
+            description: 'Current campaign state with computed map ownership.',
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        data: z.any().openapi({ description: 'Full campaign object' }),
+                        mapState: z.array(z.any()).openapi({ description: 'Sector ownership array' }),
+                    }),
+                },
+            },
+        },
+        500: {
+            description: 'Database error fetching campaign data.',
+        },
+    },
+});
+
+// /api/notifications/subscribe - POST
+const PushSubscriptionSchema = z
+    .object({
+        endpoint: z
+            .string()
+            .url()
+            .openapi({ description: 'The push subscription endpoint URL.' }),
+        keys: z.object({
+            p256dh: z.string().openapi({
+                description: 'Base64-encoded P-256 ECDH public key.',
+            }),
+            auth: z.string().openapi({
+                description: 'Base64-encoded authentication secret.',
+            }),
+        }),
+    })
+    .openapi('PushSubscription');
+
+registry.registerPath({
+    method: 'post',
+    path: '/api/notifications/subscribe',
+    summary: 'Subscribe to push notifications',
+    description:
+        'Registers a Web Push subscription. The server will send push notifications for campaign events (started, won, lost) to the provided endpoint.',
+    request: {
+        body: {
+            required: true,
+            content: {
+                'application/json': {
+                    schema: PushSubscriptionSchema,
+                },
+            },
+        },
+    },
+    responses: {
+        201: {
+            description: 'Subscription created or updated.',
+            content: {
+                'application/json': {
+                    schema: SuccessResponseSchema,
+                },
+            },
+        },
+        400: {
+            description: 'Invalid JSON or missing required fields.',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        500: {
+            description: 'Internal server error.',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+    },
+});
+
+// /api/notifications/subscribe - DELETE
+registry.registerPath({
+    method: 'delete',
+    path: '/api/notifications/subscribe',
+    summary: 'Unsubscribe from push notifications',
+    description:
+        'Removes a Web Push subscription by endpoint URL. Silently succeeds if the subscription does not exist.',
+    request: {
+        body: {
+            required: true,
+            content: {
+                'application/json': {
+                    schema: z.object({
+                        endpoint: z.string().url().openapi({
+                            description: 'The push subscription endpoint URL to remove.',
+                        }),
+                    }),
+                },
+            },
+        },
+    },
+    responses: {
+        200: {
+            description: 'Subscription removed.',
+            content: {
+                'application/json': {
+                    schema: SuccessResponseSchema,
+                },
+            },
+        },
+        400: {
+            description: 'Invalid JSON or missing endpoint.',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+        500: {
+            description: 'Internal server error.',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
+        },
+    },
+});
+
 // Generate OpenAPI spec
 export function generateOpenApiSpec() {
     const generator = new OpenApiGeneratorV3(registry.definitions);

@@ -6,14 +6,15 @@ export function proxy(request) {
 
     const csp = [
         "default-src 'self'",
-        `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://umami.lavrenov.io https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ''}`,
+        `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ''}`,
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https://authjs.dev https://cdn.discordapp.com https://avatars.githubusercontent.com https://www.gravatar.com",
         "font-src 'self'",
-        "connect-src 'self' https://umami.lavrenov.io https://bugsink.lavrenov.cloud https://cloudflareinsights.com",
+        "connect-src 'self' https://cloudflareinsights.com",
         "form-action 'self'",
         "frame-ancestors 'none'",
         "base-uri 'self'",
+        "report-uri https://glitchtip.lavrenov.cloud/api/1/security/?glitchtip_key=8afca5d3e7344a42b31eb9d8dd85cc89",
     ].join('; ');
 
     const requestHeaders = new Headers(request.headers);

@@ -1,4 +1,9 @@
-import DataFlowDiagram from '@/shared/components/DataFlowDiagram/DataFlowDiagram';
+import MermaidDiagram from '@/shared/components/MermaidDiagram/MermaidDiagram';
+import {
+    DEFINITION_LR,
+    DEFINITION_TD,
+} from '@/shared/components/DataFlowDiagram/dataFlowDefinition';
+import { dataFlowConfig } from '@/shared/components/DataFlowDiagram/dataFlowConfig';
 
 export const metadata = {
     title: 'Architecture | Helldivers Bot',
@@ -14,7 +19,12 @@ export const metadata = {
 
 How data moves from the official Helldivers 1 API through validation, storage, and normalization to the frontend. Click any node for details.
 
-<DataFlowDiagram />
+<MermaidDiagram
+    id="data-flow"
+    definition={DEFINITION_LR}
+    mobileDefinition={DEFINITION_TD}
+    config={dataFlowConfig}
+/>
 
 ## Key Concepts
 
@@ -34,6 +44,34 @@ Each update cycle creates an unconfirmed season row, writes all child data, then
 
 Missing seasons are fetched from the official API on first request. The `/archives` page derives available seasons from the current season number, not a database query.
 
+### Client Polling
+
+```mermaid
+graph LR
+    subgraph Client["CLIENT"]
+        ULD["useLiveData hook<br/><small>setInterval 10s</small>"]
+        BC["BroadcastChannel<br/><small>Leader election</small>"]
+        DC["detectChanges()<br/><small>Transition detection</small>"]
+        TOAST["Sonner Toasts"]
+        WEB["Web Notifications<br/><small>If tab hidden</small>"]
+    end
+
+    subgraph Server["SERVER"]
+        LIVE["/api/h1/live<br/><small>getCampaign + computeMapState</small>"]
+        PUSH["pushNotifier<br/><small>web-push library</small>"]
+    end
+
+    ULD -->|"fetch every 10s"| LIVE
+    LIVE -->|"JSON response"| ULD
+    ULD --> DC
+    DC --> TOAST
+    DC -->|"leader only"| WEB
+    PUSH -->|"push event"| SW["Service Worker"]
+
+    style Client fill:#1a1a2e,stroke:#a855f7,color:#c084fc
+    style Server fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+```
+
 ### PWA & Service Worker
 
-The app runs as an installable Progressive Web App with a hand-written service worker (`public/sw.js`). The SW uses network-first for HTML documents and stale-while-revalidate for static assets, ensuring the app shell loads offline while HTML always matches current build chunks. Version updates are controlled — new SWs wait for explicit client approval before activating. See [Notifications](/docs/notifications#pwa--offline) for the full update lifecycle and caching details.
+The app runs as an installable Progressive Web App with a Serwist-powered service worker (`src/sw.js`). The SW uses network-first for HTML documents and stale-while-revalidate for static assets, ensuring the app shell loads offline while HTML always matches current build chunks. Version updates are controlled — new SWs wait for explicit client approval before activating. See [Notifications](/docs/notifications#pwa--offline) for the full update lifecycle and caching details.

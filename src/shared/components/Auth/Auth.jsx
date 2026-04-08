@@ -1,35 +1,33 @@
-import { signIn, signOut } from '@/auth';
+'use client';
+import Link from 'next/link';
+import { signOut } from '@/auth-client';
 
-export function SignIn({ provider, ...props }) {
+/**
+ * Sign-in button. Triggers OAuth flow via BetterAuth client.
+ * @param {{ provider?: string }} props - OAuth provider (defaults to 'discord')
+ */
+export function SignIn({ className }) {
     return (
-        <form
-            className="flex items-center justify-center"
-            action={async () => {
-                'use server';
-                await signIn(provider);
-            }}
+        <Link
+            href="/sign-in"
+            className={`header-nav-link ${className ?? ''}`}
+            data-umami-event="auth-signin"
         >
-            <button data-umami-event="header-signin">Sign In</button>
-        </form>
+            Sign In
+        </Link>
     );
 }
 
-export function SignOut(props) {
+/** Sign-out button. Revokes session and redirects to '/'. */
+export function SignOut() {
     return (
-        <form
-            action={async () => {
-                'use server';
-                await signOut();
-            }}
-            className="flex items-center justify-center"
+        <button
+            type="button"
+            className="header-nav-link cursor-pointer"
+            data-umami-event="auth-signout"
+            onClick={() => signOut()}
         >
-            <button
-                variant="ghost"
-                className="w-full p-0"
-                data-umami-event="header-signout"
-            >
-                Sign Out
-            </button>
-        </form>
+            Sign Out
+        </button>
     );
 }

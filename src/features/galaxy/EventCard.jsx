@@ -55,7 +55,7 @@ function EventCountdown({ endTime }) {
 }
 
 export default function EventCard({
-    label,
+    action,
     region,
     percent,
     points,
@@ -63,10 +63,13 @@ export default function EventCard({
     factionIndex,
     pace,
     endTime,
+    barLabel,
 }) {
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
-    const isEvent = label === 'DEFENDING' || label === 'ATTACKING';
-    const labelColor = isEvent ? 'var(--color-danger)' : color;
+    const isEvent = !!endTime;
+    const isDefending = action === 'defending';
+    const titleColor = isEvent ? 'var(--color-danger)' : undefined;
+    const barColor = isDefending ? 'var(--color-danger)' : color;
     const safePct = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
 
     return (
@@ -82,20 +85,20 @@ export default function EventCard({
                         width={16}
                         height={16}
                     />
-                    <span className="sector-card-label" style={{ color: labelColor }}>
-                        {label}
+                    <span
+                        className={
+                            'sector-card-action' +
+                            (isEvent ? ' sector-card-action-flash' : '')
+                        }
+                        style={titleColor ? { color: titleColor } : undefined}
+                    >
+                        {isDefending ? 'Defending' : 'Capturing'}
                     </span>
-                    {isEvent && <span className="sector-card-alert">{'\u26A0'}</span>}
-                    {pace && (
-                        <span
-                            className="sector-card-pace"
-                            style={{ color: PACE_COLORS[pace.status] }}
-                        >
-                            {pace.label}
-                        </span>
-                    )}
+                    <span className="sector-card-title">{region}</span>
                 </div>
-                <span className="sector-card-region">{region}</span>
+                {barLabel && (
+                    <span className="sector-card-bar-label">{barLabel}</span>
+                )}
                 <div className="sector-card-bar-wrap">
                     <div
                         className="sector-card-bar"
@@ -106,15 +109,34 @@ export default function EventCard({
                     >
                         <div
                             className="sector-card-bar-fill"
-                            style={{ width: `${safePct}%` }}
+                            style={{ width: `${safePct}%`, background: barColor }}
                         />
                     </div>
                     <span className="sector-card-pct">{safePct.toFixed(1)}%</span>
                 </div>
-                <span className="sector-card-points">
-                    {formatNumber(points)} / {formatNumber(pointsMax)}
-                </span>
-                {endTime && <EventCountdown endTime={endTime} />}
+                <div className="sector-card-meta">
+                    <span className="sector-card-points">
+                        {formatNumber(points)} / {formatNumber(pointsMax)}
+                    </span>
+                    {endTime && (
+                        <>
+                            <span className="sector-card-sep">&middot;</span>
+                            <EventCountdown endTime={endTime} />
+                        </>
+                    )}
+                    {pace && (
+                        <>
+                            <span className="sector-card-sep">&middot;</span>
+                            <span
+                                className="sector-card-pace"
+                                style={{ color: PACE_COLORS[pace.status] }}
+                                suppressHydrationWarning
+                            >
+                                {pace.label}
+                            </span>
+                        </>
+                    )}
+                </div>
             </div>
             <div className="sector-card-accent" />
         </div>

@@ -40,4 +40,5 @@ jobs:
               env:
                   # Stub required build-time env vars so Next.js build succeeds in CI
                   POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
-                  AUTH_SECRET: 'ci-secret'
+                  BETTER_AUTH_SECRET: 'ci-secret'
+                  BETTER_AUTH_URL: 'http://localhost:3000'

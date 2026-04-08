@@ -5,16 +5,33 @@ import '@testing-library/jest-dom/vitest';
 // #region Auth Mocks
 
 /**
- * Mock NextAuth v5 server-side auth
+ * Mock BetterAuth server-side auth
  *
  * Defaults to null (logged-out). Override in tests:
- *   vi.mocked(auth).mockResolvedValue(createMockSession())
+ *   vi.mocked(auth.api.getSession).mockResolvedValue({ user: { ... } })
  */
 vi.mock('@/auth', () => ({
-    auth: vi.fn(() => Promise.resolve(null)),
+    auth: {
+        api: {
+            getSession: vi.fn(() => Promise.resolve(null)),
+            revokeSession: vi.fn(() => Promise.resolve()),
+            revokeSessions: vi.fn(() => Promise.resolve()),
+        },
+    },
+}));
+
+/**
+ * Mock BetterAuth client-side auth
+ */
+vi.mock('@/auth-client', () => ({
+    authClient: {
+        signIn: { social: vi.fn() },
+        signOut: vi.fn(),
+        useSession: vi.fn(() => ({ data: null, isPending: false })),
+    },
     signIn: vi.fn(),
     signOut: vi.fn(),
-    handlers: { GET: vi.fn(), POST: vi.fn() },
+    useSession: vi.fn(() => ({ data: null, isPending: false })),
 }));
 
 // #endregion
@@ -43,12 +60,13 @@ const createModelMock = () => ({
 
 vi.mock('@/db/db', () => ({
     default: {
-        // Auth models
+        // Auth models (BetterAuth)
         user: createModelMock(),
+        User: createModelMock(),
         account: createModelMock(),
+        Account: createModelMock(),
         session: createModelMock(),
-        verificationToken: createModelMock(),
-        authenticator: createModelMock(),
+        verification: createModelMock(),
         // App models
         app: createModelMock(),
         settings: createModelMock(),
@@ -67,11 +85,35 @@ vi.mock('@/db/db', () => ({
         h1_live: createModelMock(),
         h1_live_snapshot: createModelMock(),
         h1_event_snapshot: createModelMock(),
+        // Worker health
+        worker_heartbeat: createModelMock(),
+        // Push subscriptions
+        push_subscription: createModelMock(),
         // Prisma utilities
         $transaction: vi.fn((fn) => Promise.resolve(Array.isArray(fn) ? fn : fn())),
         $connect: vi.fn(() => Promise.resolve()),
         $disconnect: vi.fn(() => Promise.resolve()),
     },
+}));
+
+// #endregion
+
+// #region Live Data Mocks
+
+/**
+ * Mock LiveDataContext — provides default live data for component tests.
+ * Override in tests:
+ *   vi.mocked(useLiveDataContext).mockReturnValue({ status: 'offline', ... })
+ */
+vi.mock('@/shared/providers/LiveDataContext.mjs', () => ({
+    LiveDataContext: React.createContext(null),
+    useLiveDataContext: vi.fn(() => ({
+        data: null,
+        mapState: null,
+        status: 'live',
+        prevData: null,
+        isLeader: false,
+    })),
 }));
 
 // #endregion

@@ -1,0 +1,260 @@
+/* MermaidDiagram — Shared styles for all Mermaid-based diagrams */
+
+.diagram-wrapper {
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Filter controls */
+.diagram-controls {
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-4) 0;
+    flex-wrap: wrap;
+}
+
+.diagram-controls button {
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--color-surface-3);
+    background: var(--color-surface-1);
+    color: var(--color-text-muted);
+    font-family: var(--font-body);
+    font-size: var(--text-small);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.diagram-controls button:hover {
+    border-color: var(--color-surface-4);
+    color: var(--color-text);
+}
+
+.diagram-controls button.active {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+/* SVG canvas */
+.diagram-canvas {
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.diagram-canvas svg {
+    width: 100%;
+    min-width: 700px;
+    height: auto;
+    display: block;
+}
+
+/* Mermaid node hover */
+.diagram-canvas .node {
+    transition: opacity 0.3s;
+}
+
+.diagram-canvas .node:hover {
+    filter: brightness(1.2);
+}
+
+/* Edge styling — thicker strokes matching standard Mermaid/GitHub look.
+   Uses svg[id] to match Mermaid's scoped selector specificity. */
+.diagram-canvas svg .flowchart-link {
+    stroke-width: 2px !important;
+    transition: opacity 0.3s;
+}
+
+/* Dim/highlight for filter views */
+.diagram-dimmed {
+    opacity: 0.12;
+    transition: opacity 0.3s;
+}
+
+.diagram-highlighted {
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+/* Legend */
+.diagram-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+}
+
+.diagram-legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.diagram-legend-dot {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+}
+
+/* Detail panel (slide-in from right) */
+.diagram-detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.diagram-detail-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.diagram-detail-panel {
+    position: fixed;
+    top: 0;
+    right: -420px;
+    width: min(400px, 90vw);
+    height: 100vh;
+    background: var(--color-surface-1);
+    border-left: 1px solid var(--color-surface-3);
+    padding: var(--space-8);
+    overflow-y: auto;
+    transition: right 0.3s ease;
+    z-index: 50;
+}
+
+.diagram-detail-panel.open {
+    right: 0;
+}
+
+.diagram-detail-panel h3 {
+    font-family: var(--font-display);
+    font-size: var(--text-h3);
+    color: var(--color-text);
+    margin-bottom: var(--space-1);
+}
+
+.diagram-detail-subtitle {
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-6);
+}
+
+.diagram-detail-close {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: var(--text-h3);
+    cursor: pointer;
+    padding: var(--space-2);
+}
+
+.diagram-detail-close:hover {
+    color: var(--color-text);
+}
+
+.diagram-detail-panel p {
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin: var(--space-2) 0;
+    white-space: pre-line;
+}
+
+.diagram-detail-panel pre {
+    background: var(--color-surface-0);
+    border: 1px solid var(--color-surface-3);
+    padding: var(--space-4);
+    font-size: var(--text-small);
+    font-family: var(--font-mono);
+    color: var(--color-text);
+    overflow-x: auto;
+    white-space: pre;
+    margin: var(--space-2) 0;
+}
+
+.diagram-detail-heading {
+    color: var(--color-text-muted);
+    margin-top: var(--space-6);
+    font-size: var(--text-small);
+    font-weight: 500;
+}
+
+/* Tags */
+.diagram-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: var(--text-small);
+    font-weight: 500;
+    margin: 2px;
+}
+
+.tag-interval {
+    background: rgba(168, 85, 247, 0.12);
+    color: #c084fc;
+}
+
+.tag-upsert {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+}
+
+.tag-once {
+    background: rgba(236, 72, 153, 0.12);
+    color: #f472b6;
+}
+
+.tag-read {
+    background: rgba(6, 182, 212, 0.12);
+    color: #22d3ee;
+}
+
+/* Schema table in detail panel */
+.diagram-schema-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--space-2) 0;
+}
+
+.diagram-schema-table th {
+    text-align: left;
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--color-surface-3);
+}
+
+.diagram-schema-table td {
+    font-size: var(--text-small);
+    padding: 4px 8px;
+    color: var(--color-text);
+    font-family: var(--font-mono);
+}
+
+.diagram-schema-table tr:nth-child(even) td {
+    background: rgba(19, 19, 19, 0.4);
+}
+
+/* Mobile: horizontal scroll hint */
+@media (max-width: 768px) {
+    .diagram-canvas::after {
+        content: 'Scroll \2192';
+        position: absolute;
+        top: var(--space-2);
+        right: var(--space-2);
+        font-size: var(--text-small);
+        color: var(--color-text-muted);
+        background: var(--color-surface-1);
+        padding: 2px 8px;
+        opacity: 0.8;
+        pointer-events: none;
+    }
+}

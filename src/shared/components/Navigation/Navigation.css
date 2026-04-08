@@ -9,7 +9,7 @@
     align-items: center;
     gap: 0.375rem;
     font-family: var(--font-body);
-    font-size: 0.8125rem;
+    font-size: var(--text-small);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--color-text-muted);
@@ -50,6 +50,41 @@
     border-radius: 50%;
     background-color: var(--color-danger);
     animation: live-blink 1.5s ease-in-out infinite;
+}
+
+.user-section-skeleton {
+    height: 1.25rem;
+    width: 3.5rem;
+    border-radius: 4px;
+    background: var(--color-surface-2);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.user-section-wrapper {
+    transition: width 0.25s ease;
+}
+
+.user-section-content {
+    animation: user-fade-in 0.2s ease-out;
+}
+
+@keyframes user-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
 }
 
 .heartbeat-line {
