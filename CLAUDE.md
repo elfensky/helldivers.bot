@@ -54,9 +54,10 @@ After any frontend/CSS change, verify via DevTools before declaring done:
 **Rules:**
 
 1. **Create feature/bugfix/chore branches from `develop`.** Features merge back via PR. Bugfix and chore branches merge via fast-forward into `develop` (branch → commit → `git merge` into develop → push → delete branch). No PR needed.
-2. **Release process:** Update `CHANGELOG.md` (move Unreleased items under new `## X.Y.Z` header) → merge `develop` → `main` via PR → **tag `vX.Y.Z` on the merge commit on `main`** → push tag. The production Docker build only triggers on version tags, so forgetting to tag means no deployment.
-3. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
-4. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
+2. **Version on merge to `develop`:** When merging a branch into `develop`, move its changelog entries from `## Unreleased` into a new `## X.Y.Z` section and bump `"version"` in `package.json` to match. Use semver: patch for bugfixes, minor for features, major for breaking changes. Skipping version numbers between releases is fine — not every version on `develop` will be tagged on `main`.
+3. **Release process:** Merge `develop` → `main` via PR → **tag `vX.Y.Z` on the merge commit on `main`** (use the latest version from `CHANGELOG.md`) → push tag. The production Docker build only triggers on version tags, so forgetting to tag means no deployment.
+4. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` with new version section → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
+5. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
 
 **Git Flow automation (git-workflow skill):**
 
