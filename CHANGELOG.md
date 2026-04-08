@@ -2,31 +2,48 @@
 
 ## Unreleased
 
+## 0.29.0 (retroactive)
+
 ### Features
 
 - **Progressive env vars** — only `POSTGRES_URL`, `UPDATE_KEY`, and `UPDATE_INTERVAL` are required at startup; auth (BetterAuth + OAuth) and analytics (Umami, Sentry/GlitchTip) degrade gracefully when absent. Partial auth config (secret present but provider vars missing) still throws. `withSentryConfig` skipped without `SENTRY_AUTH_TOKEN`. Umami script conditional on `UMAMI_SITE_ID`.
-- **Profile page** — view connected providers, manage API keys, GDPR data export and account deletion (#248)
-- **Admin dashboard** — system overview, debug tools, user management (with provider/key columns), and all-keys table. Role-gated on `/profile` — no separate admin route. Each section loads independently via Suspense (#248)
-- **Worker heartbeat monitoring** — cron worker writes heartbeat on each poll; `worker_heartbeat` table, `computeWorkerHealth` utility, health dot in admin dashboard
-- **Global live data** — `LiveDataContext` wraps all pages so every route receives real-time campaign updates via polling
-- **Replace SSE with polling** — remove entire SSE infrastructure (sseManager, pg LISTEN/NOTIFY, `/api/h1/stream`). New `GET /api/h1/live` endpoint polled every 10s via `setInterval` + `fetch`. Eliminates RSC Flight stream conflicts (`enqueueModel` crashes)
-- **Tri-state status indicator** — StatusDot shows green (live), orange (polling), red (offline). Uses `navigator.onLine` to detect PWA offline state
-- **Serwist service worker** — migrate from hand-written `public/sw.js` to Serwist (`@serwist/next`) for automatic precache manifest with content hashes. No more manual `CACHE_NAME` version bumps. `skipWaiting` for immediate updates. Configurator mode for Turbopack compatibility
-- **Sign-in polish** — provider branding (Discord/GitHub logos and colors), navigation link to sign-in page
-- **App version in footer** — shows package version, short commit SHA, and commit message in footer and dev console (auto-generated at build time by `next.config.mjs`)
-- **Catch-up toasts for active events** — show an "in progress" toast on page load when defend/attack events are already active (#LiveToasts)
-- **Push notification improvements** — add `badge` (favicon PNG), per-event `tag` grouping, and `renotify` for status changes; fix icon fallback from SVG to raster; precache badge in service worker shell assets
 - **Admin notification debug buttons** — "Test Push" sends a test push notification to all subscribers via `web-push`; "Test Toast" fires a faction-colored Sonner toast. Standalone Debug section in admin area.
+- **Mermaid diagram system** — replace hand-crafted SVG diagram components (~1650 LOC) with reusable `MermaidDiagram` component powered by Mermaid syntax. Diagrams are now config-driven (definition string + config object). Same color conventions as docs. Preserves flow filtering, clickable detail panels, and keyboard accessibility.
+- Migrate wiki documentation to in-app `/docs` pages
+- Merge admin dashboard into profile page — delete standalone admin route and ProfileNav (#259)
+
+### Fixes
+
+- Hide UserSection nav when offline — auth requires network
+- Simplify account deletion — remove email confirmation, use confirm dialog
+- Fix Mermaid diagram filtering, arrow styling, and responsive layout
+
+### Chores
+
+- Comprehensive docs update — add Mermaid diagrams, fix wiki refs, correct outdated content
+
+## 0.28.0 (retroactive)
+
+### Features
+
 - **Umami analytics expansion** — comprehensive Level 2 feature engagement tracking with ad-blocker bypass via same-origin proxy (`/api/umami`), `useTrack` hook for dynamic interactions, `umami.identify()` for authenticated users, and `category-action` event naming convention across ~40 tracked elements
-- **GlitchTip error tracking** — migrate from BugSink to GlitchTip with client tunnel (`/api/glitchtip`) to bypass ad blockers, CSP violation reporting via `report-uri`, and `environment` tagging to split dev/prod issues
-- **Error boundaries** — route-level (`error.jsx` at root + archives) and component-level (`ComponentErrorBoundary` wrapping Galaxy Map, Regions, Stats, Timeline) for graceful degradation
-- **Custom API docs** — replace SwaggerUI with lightweight server-rendered API documentation page
-- **Zod validation for season seeding** — validate API responses with Zod schemas before database writes (#191)
-- **SEO polish** — improved sitemap, JSON-LD `mainEntity`, and breadcrumbs (#123)
+- **Serwist service worker** — migrate from hand-written `public/sw.js` to Serwist (`@serwist/next`) for automatic precache manifest with content hashes. No more manual `CACHE_NAME` version bumps. `skipWaiting` for immediate updates. Configurator mode for Turbopack compatibility
 
 ### Refactors
 
-- **Mermaid diagram system** — replace hand-crafted SVG diagram components (~1650 LOC) with reusable `MermaidDiagram` component powered by Mermaid syntax. Diagrams are now config-driven (definition string + config object). Same color conventions as docs. Preserves flow filtering, clickable detail panels, and keyboard accessibility.
+- Delete ServiceWorkerRegister.jsx — Serwist handles registration automatically via `register: true`
+
+## 0.27.0 (retroactive)
+
+### Features
+
+- **Global live data** — `LiveDataContext` wraps all pages so every route receives real-time campaign updates via polling
+- **Replace SSE with polling** — remove entire SSE infrastructure (sseManager, pg LISTEN/NOTIFY, `/api/h1/stream`). New `GET /api/h1/live` endpoint polled every 10s via `setInterval` + `fetch`. Eliminates RSC Flight stream conflicts (`enqueueModel` crashes)
+- **Tri-state status indicator** — StatusDot shows green (live), orange (polling), red (offline). Uses `navigator.onLine` to detect PWA offline state
+- **Push notification improvements** — add `badge` (favicon PNG), per-event `tag` grouping, and `renotify` for status changes; fix icon fallback from SVG to raster; precache badge in service worker shell assets
+- **GlitchTip error tracking** — migrate from BugSink to GlitchTip with client tunnel (`/api/glitchtip`) to bypass ad blockers, CSP violation reporting via `report-uri`, and `environment` tagging to split dev/prod issues
+- **Error boundaries** — route-level (`error.jsx` at root + archives) and component-level (`ComponentErrorBoundary` wrapping Galaxy Map, Regions, Stats, Timeline) for graceful degradation
+- **App version in footer** — shows package version, short commit SHA, and commit message in footer and dev console (auto-generated at build time by `next.config.mjs`)
 
 ### Fixes
 
@@ -34,8 +51,28 @@
 - **Fix hydration mismatch in EventCard** — add `suppressHydrationWarning` to pace label (computed via `Date.now()`, differs between SSR and client)
 - **Fix React Compiler swallowing catch-up effect** — add `'use no memo'` to `LiveToasts` to prevent the compiler from merging the two `useEffect` hooks
 - **Fix hydration mismatch in StatusDot** — defer `navigator.onLine` check to `connect()` (client-side only) to prevent SSR/client status divergence
-- **Fix grid overflow** — replace bare `1fr` with `minmax(0, 1fr)` in grid layouts (#193)
-- **Fix healthcheck timing** — add `roundedPerformanceTime` to healthcheck route (#197)
+
+### Refactors
+
+- **Sentry SDK with native navigation** — re-add Sentry SDK while keeping native `next/link` navigation (replaces Sentry's custom Link wrapper)
+- **Design token cleanup** — add `--color-warning` (`#f97316`) and `--color-success` tokens; remove `--color-outline` and `--color-outline-variant` (replaced by `ghost` and `text-muted`); all raw Tailwind green/red/yellow colors replaced with theme tokens
+
+### Chores
+
+- Enable production source maps and upload to GlitchTip
+
+## 0.26.0 (retroactive)
+
+### Features
+
+- **Profile page** — view connected providers, manage API keys, GDPR data export and account deletion (#248)
+- **Admin dashboard** — system overview, debug tools, user management (with provider/key columns), and all-keys table. Role-gated on `/profile` — no separate admin route. Each section loads independently via Suspense (#248)
+- **Worker heartbeat monitoring** — cron worker writes heartbeat on each poll; `worker_heartbeat` table, `computeWorkerHealth` utility, health dot in admin dashboard
+- **Sign-in polish** — provider branding (Discord/GitHub logos and colors), navigation link to sign-in page
+- **Catch-up toasts for active events** — show an "in progress" toast on page load when defend/attack events are already active (#LiveToasts)
+
+### Fixes
+
 - **Fix profile page polish** — border separators, wider inputs, side-by-side layout, correct `.gutters` usage
 - **Fix RSC cache invalidation** — use `revalidatePath` without `'page'` scope to avoid RSC cache corruption
 - **Fix Zod ID validation** — replace `z.uuid()` with `z.string().min(1)` for Prisma CUID2 IDs
@@ -44,11 +81,7 @@
 
 ### Refactors
 
-- **`tryCatch()` wrapper adoption** — convert raw try/catch blocks to `tryCatch()` in fetch utilities (#194)
-- **Sentry SDK with native navigation** — re-add Sentry SDK while keeping native `next/link` navigation (replaces Sentry's custom Link wrapper)
-- **Design token cleanup** — add `--color-warning` (`#f97316`) and `--color-success` tokens; remove `--color-outline` and `--color-outline-variant` (replaced by `ghost` and `text-muted`); all raw Tailwind green/red/yellow colors replaced with theme tokens
 - **Brandkit overhaul** — grouped palette (Website/Status/Factions), nested surface demo, right accent line on rule card, equal-height swatches
-- **Delete ServiceWorkerRegister.jsx** — Serwist handles registration automatically via `register: true`
 - **Design system: fluid type scale** — add fluid type scale tokens to `@theme` with `--fs-small` floor
 - **Design system: button restyle** — remove `--color-on-primary` token, restyle buttons to outline-first
 - **Design system: font token rename** — rename `--fs-*` to `--text-*` and align all font sizes to 5-step scale
@@ -58,9 +91,30 @@
 ### Chores
 
 - Update Umami analytics URL to `umami.drunik.be`
-- Enable production source maps and upload to GlitchTip
 - Apply Prettier formatting to source and test files
 - npm update (dependency refresh)
+
+## 0.25.1 (retroactive)
+
+### Features
+
+- **Custom API docs** — replace SwaggerUI with lightweight server-rendered API documentation page
+- **Zod validation for season seeding** — validate API responses with Zod schemas before database writes (#191)
+- **SEO polish** — improved sitemap, JSON-LD `mainEntity`, and breadcrumbs (#123)
+- Native app-like mobile header with solid background
+
+### Fixes
+
+- **Fix grid overflow** — replace bare `1fr` with `minmax(0, 1fr)` in grid layouts (#193)
+- **Fix healthcheck timing** — add `roundedPerformanceTime` to healthcheck route (#197)
+- Fix PWA manifest — move `site.webmanifest` to `public/`, update `short_name` to HD1 Bot
+
+### Refactors
+
+- **`tryCatch()` wrapper adoption** — convert raw try/catch blocks to `tryCatch()` in fetch utilities (#194)
+
+### Chores
+
 - Add logo originals and normalize formatting in compose and client
 - Remove unused assets and fix footer links
 
