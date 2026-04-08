@@ -1,8 +1,7 @@
 'use client';
-import { useActionState, useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import Form from 'next/form';
 import { exportUserData, deleteUserAccount } from '@/db/queries/account';
 import { linkSocial, unlinkAccount } from '@/auth-client';
 import { tryCatch } from '@/shared/utils/tryCatch';
@@ -50,16 +49,23 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
         }
     }, [user.id]);
 
-    const [deleteState, deleteAction, deletePending] = useActionState(
-        deleteUserAccount,
-        null,
-    );
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState(null);
 
-    useEffect(() => {
-        if (deleteState?.data?.deleted) {
+    const handleDelete = useCallback(async () => {
+        if (!window.confirm('Permanently delete your account and all data? This cannot be undone.')) return;
+        setDeleting(true);
+        setDeleteError(null);
+        const fd = new FormData();
+        fd.append('userId', user.id);
+        const result = await deleteUserAccount(null, fd);
+        if (result?.errors) {
+            setDeleteError(Object.values(result.errors).flat().join(', '));
+            setDeleting(false);
+        } else {
             window.location.href = '/';
         }
-    }, [deleteState]);
+    }, [user.id]);
 
     return (
         <div className="flex flex-col gap-3">
@@ -141,50 +147,28 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
 
                 {/* Right: actions */}
                 <div className="flex flex-col gap-3">
-                    <button
-                        type="button"
-                        onClick={handleExport}
-                        className="w-fit cursor-pointer border border-primary px-4 py-2 text-body font-semibold text-primary hover:bg-primary hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        Download My Data
-                    </button>
-
-                    <div className="border-t border-ghost pt-3">
-                        <p className="text-body text-text-muted">
-                            Permanently delete your account and all associated data. This
-                            cannot be undone.
-                        </p>
-                        {deleteState?.errors?.confirmEmail && (
-                            <span role="alert" className="text-body text-danger">
-                                {deleteState.errors.confirmEmail}
-                            </span>
-                        )}
-                        {deleteState?.errors?.auth && (
-                            <span role="alert" className="text-body text-danger">
-                                {deleteState.errors.auth}
-                            </span>
-                        )}
-                        <Form
-                            action={deleteAction}
-                            className="mt-2 flex items-center gap-2"
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleExport}
+                            className="cursor-pointer border border-primary px-4 py-2 text-body font-semibold text-primary hover:bg-primary hover:text-surface-0"
                         >
-                            <input type="hidden" name="userId" value={user.id} />
-                            <input
-                                type="email"
-                                name="confirmEmail"
-                                placeholder="Type your email to confirm"
-                                className="flex-1 bg-surface-2 px-3 py-2 text-body text-text placeholder:text-text-muted"
-                                required
-                            />
-                            <button
-                                type="submit"
-                                disabled={deletePending}
-                                className="cursor-pointer border border-danger px-4 py-2 text-body font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                Delete Account
-                            </button>
-                        </Form>
+                            Download My Data
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="cursor-pointer border border-danger px-4 py-2 text-body font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {deleting ? 'Deleting…' : 'Delete Account'}
+                        </button>
                     </div>
+                    {deleteError && (
+                        <span role="alert" className="text-small text-danger">
+                            {deleteError}
+                        </span>
+                    )}
                 </div>
             </div>
         </div>

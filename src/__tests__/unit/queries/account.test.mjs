@@ -64,10 +64,7 @@ describe('exportUserData', () => {
 describe('deleteUserAccount', () => {
     test('returns auth error when no session', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(null);
-        const result = await deleteUserAccount(
-            null,
-            createFormData({ userId, confirmEmail: email }),
-        );
+        const result = await deleteUserAccount(null, createFormData({ userId }));
         expect(result.errors.auth).toBeDefined();
     });
 
@@ -75,28 +72,16 @@ describe('deleteUserAccount', () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(session);
         const result = await deleteUserAccount(
             null,
-            createFormData({ userId: otherUserId, confirmEmail: email }),
+            createFormData({ userId: otherUserId }),
         );
         expect(result.errors.auth).toBeDefined();
-    });
-
-    test('returns validation error when email confirmation does not match', async () => {
-        vi.mocked(auth.api.getSession).mockResolvedValue(session);
-        const result = await deleteUserAccount(
-            null,
-            createFormData({ userId, confirmEmail: 'wrong@email.com' }),
-        );
-        expect(result.errors.confirmEmail).toBeDefined();
     });
 
     test('deletes user on success', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(session);
         vi.mocked(db.user.delete).mockResolvedValue({ id: userId });
 
-        const result = await deleteUserAccount(
-            null,
-            createFormData({ userId, confirmEmail: email }),
-        );
+        const result = await deleteUserAccount(null, createFormData({ userId }));
         expect(result.data).toBeDefined();
         expect(db.user.delete).toHaveBeenCalledWith({ where: { id: userId } });
     });
