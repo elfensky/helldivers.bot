@@ -1,7 +1,6 @@
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getAllUsers } from '@/db/queries/admin';
 import SystemOverview from '@/features/admin/SystemOverview';
 import UserTable from '@/features/admin/UserTable';
 
@@ -20,18 +19,10 @@ export default async function AdminPage() {
         redirect('/profile');
     }
 
-    const result = await getAllUsers();
-    const users = result.data ?? [];
-    const adminCount = users.filter((u) => u.role === 'admin').length;
-
     return (
         <div className="flex flex-col gap-4">
             <SystemOverview />
-            <UserTable
-                users={users}
-                adminCount={adminCount}
-                currentUserId={session.user.id}
-            />
+            <UserTable currentUserId={session.user.id} />
         </div>
     );
 }
