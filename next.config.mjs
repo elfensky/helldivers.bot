@@ -10,7 +10,7 @@ const COMMIT_SHA = (() => {
         return 'unknown';
     }
 })();
-console.info(`next.config.mjs | v${APP_VERSION} (${COMMIT_SHA})`);
+console.info(`next.config.mjs    | v${APP_VERSION} (${COMMIT_SHA})`);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
