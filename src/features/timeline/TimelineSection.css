@@ -15,21 +15,21 @@
     padding: 2rem 0;
 }
 
-/* === Day groups === */
+/* === Day groups (mobile: no gap, accents form continuous line) === */
 
 .timeline-days {
     display: flex;
     flex-direction: column;
 }
 
-/* === Day header (mobile: grey right accent) === */
+/* === Day header (mobile: ghost right accent via box-shadow) === */
 
 .timeline-day-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0.75rem calc(6px + 0.5rem) 0.25rem 0;
     box-shadow: inset -6px 0 0 0 var(--color-ghost);
-    padding: 1rem calc(12px + 6px) 0.25rem 0;
 }
 
 .timeline-day-label {
@@ -49,17 +49,67 @@
     white-space: nowrap;
 }
 
-/* === Event grid (mobile: single column, no gap so borders connect) === */
+/* === Empty day markers === */
+
+.timeline-day--empty .timeline-day-header,
+.timeline-day--no-events .timeline-day-header {
+    min-height: 3rem;
+    box-shadow: inset -6px 0 0 0 rgba(255, 255, 255, 0.06);
+}
+
+.timeline-day-label--empty {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+/* === Event cards (mobile: keep accent column, borders connect) === */
+
+.event-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 6px;
+    border-right: none;
+}
 
 .timeline-day-grid {
     display: flex;
     flex-direction: column;
 }
 
-/* === Rail elements — hidden on mobile === */
+/* Collapse double borders between stacked cards */
+.timeline-day-grid > article + article {
+    margin-top: -1px;
+}
 
-.rail,
-.rail-separator {
+/* === Day-level accent element — not used on mobile === */
+
+.timeline-day-accent {
+    display: none;
+}
+
+/* === Keyframes === */
+
+@keyframes card-flash {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes pill-flash {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* === Rail — hidden on mobile === */
+
+.rail {
     display: none;
 }
 
@@ -87,7 +137,7 @@
         background: rgba(255, 255, 255, 0.08);
     }
 
-    /* Each day: 2-row grid — circle+header, then dots+cards */
+    /* Each day: 2-column grid with rail */
     .timeline-day {
         display: grid;
         grid-template-columns: 18px minmax(0, 1fr);
@@ -127,82 +177,114 @@
         transform: translateY(-50%);
     }
 
-    .rail-separator {
-        display: block;
-        width: 14px;
-        height: 2px;
-        background: var(--color-ghost);
-        margin-left: calc(8px - 7px);
-        position: relative;
-        z-index: 1;
+    .rail-circle--empty {
+        border-color: rgba(255, 255, 255, 0.06);
     }
 
-    .rail-separator + .rail-separator {
-        margin-top: calc(-1.25rem + 4px);
+    .rail-circle--empty::after {
+        background: rgba(255, 255, 255, 0.06);
     }
 
-    .rail-dot {
+    /* Duration blocks on rail */
+    .rail-block {
         width: 8px;
-        height: 8px;
-        border-radius: 50%;
+        min-height: 12px;
+        border-radius: 4px;
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
-        z-index: 1;
         transition:
             transform 0.15s ease,
-            box-shadow 0.15s ease;
+            box-shadow 0.15s ease,
+            height 1s linear;
     }
 
-    .rail-dot[data-highlighted] {
-        transform: translateX(-50%) scale(1.75);
+    .rail-block[data-highlighted] {
+        transform: translateX(-50%);
+    }
+
+    .rail-block--success {
+        background: var(--color-success);
         z-index: 2;
     }
 
-    .rail-dot--success[data-highlighted] {
-        box-shadow: 0 0 6px 2px var(--color-success);
+    .rail-block--fail {
+        background: var(--color-ghost);
+        z-index: 1;
     }
 
-    .rail-dot--fail[data-highlighted] {
-        box-shadow: 0 0 6px 2px var(--color-danger);
-    }
-
-    .rail-dot--active[data-highlighted] {
-        box-shadow: 0 0 6px 2px var(--color-primary);
-    }
-
-    .rail-dot--success {
-        background: var(--color-success);
-    }
-
-    .rail-dot--fail {
+    .rail-block--active {
         background: var(--color-danger);
+        z-index: 3;
+        animation: rail-pulse 3s ease-in-out infinite;
     }
 
-    .rail-dot--active {
-        background: var(--color-primary);
+    .rail-block--success[data-highlighted] {
+        box-shadow: 0 0 6px 2px var(--color-success);
+        z-index: 10;
     }
 
-    /* Row 1, col 2: day header */
+    .rail-block--fail[data-highlighted] {
+        box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.2);
+        z-index: 10;
+    }
+
+    .rail-block--active[data-highlighted] {
+        box-shadow: 0 0 6px 2px var(--color-danger);
+        z-index: 10;
+    }
+
+    @keyframes rail-pulse {
+        0%,
+        100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .rail-block--active {
+            animation: none;
+        }
+    }
+
+    /* Empty day markers — match event day height on desktop */
+    .timeline-day--empty,
+    .timeline-day--no-events {
+        min-height: 8.2rem;
+    }
+
+    .timeline-day--empty .rail {
+        min-height: 100%;
+    }
+
+    /* Desktop: day header loses box-shadow accent, rail replaces it */
     .timeline-day-header {
         grid-row: 1;
         grid-column: 2;
         box-shadow: none;
-        flex-direction: row;
         padding: 0 0 0.25rem 0;
+    }
+
+    .timeline-day--empty .timeline-day-header,
+    .timeline-day--no-events .timeline-day-header {
+        box-shadow: none;
     }
 
     /* Row 2, col 2: event card grid */
     .timeline-day-grid {
         grid-row: 2;
         grid-column: 2;
-    }
-
-    /* Desktop: switch to grid layout for cards */
-    .timeline-day-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.4rem;
+    }
+
+    /* Desktop cards have gap so no border collapse needed */
+    .timeline-day-grid > article + article {
+        margin-top: 0;
     }
 }
 
