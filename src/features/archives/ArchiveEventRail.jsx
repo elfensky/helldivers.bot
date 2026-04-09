@@ -30,7 +30,11 @@ function formatDayLabel(dateStr) {
     }).toUpperCase();
 }
 
-export default function ArchiveEventRail({ events, selectedEventId, onSelect }) {
+function eventKey(event) {
+    return `${event.type}-${event.event_id}`;
+}
+
+export default function ArchiveEventRail({ events, selectedEventKey, onSelect }) {
     const railRef = useRef(null);
 
     useEffect(() => {
@@ -38,7 +42,7 @@ export default function ArchiveEventRail({ events, selectedEventId, onSelect }) 
         if (active && typeof active.scrollIntoView === 'function') {
             active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-    }, [selectedEventId]);
+    }, [selectedEventKey]);
 
     if (!events?.length) return null;
 
@@ -67,9 +71,9 @@ export default function ArchiveEventRail({ events, selectedEventId, onSelect }) 
                             <div className="timeline-day-grid">
                                 {group.events.map((event, idx) => (
                                     <ArchiveEvent
-                                        key={`${group.date}-${event.id ?? idx}`}
+                                        key={`${group.date}-${event.event_id ?? idx}`}
                                         event={event}
-                                        isActive={event.id === selectedEventId}
+                                        isActive={eventKey(event) === selectedEventKey}
                                         onClick={() => onSelect(event)}
                                     />
                                 ))}

@@ -10,17 +10,22 @@ import ArchiveMap from '@/features/archives/ArchiveMap';
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
 
-function findEventById(events, id) {
-    if (!id) return null;
-    return events.find((e) => String(e.id) === String(id)) ?? null;
+/** Composite key for uniquely identifying an event (type + event_id). */
+function eventKey(event) {
+    return `${event.type}-${event.event_id}`;
 }
 
-function syncEventToUrl(eventId) {
+function findEventByKey(events, key) {
+    if (!key) return null;
+    return events.find((e) => eventKey(e) === key) ?? null;
+}
+
+function syncEventToUrl(event) {
     const url = new URL(window.location.href);
-    if (eventId == null) {
+    if (!event) {
         url.searchParams.delete('event');
     } else {
-        url.searchParams.set('event', String(eventId));
+        url.searchParams.set('event', eventKey(event));
     }
     window.history.pushState(null, '', url.toString());
 }
@@ -33,13 +38,13 @@ export default function ArchivesClient({ data }) {
 
     // Initialize from URL param or default to last event
     const initialEvent =
-        findEventById(events, searchParams.get('event')) ?? lastEvent;
+        findEventByKey(events, searchParams.get('event')) ?? lastEvent;
 
     const [selectedEvent, setSelectedEvent] = useState(initialEvent);
 
     const handleSelect = useCallback((event) => {
         setSelectedEvent(event);
-        syncEventToUrl(event.id);
+        syncEventToUrl(event);
 
         // On mobile, scroll to map when event is selected
         if (window.innerWidth < 1024 && mapRef.current) {
@@ -68,7 +73,7 @@ export default function ArchivesClient({ data }) {
             <div className="archives-event-rail">
                 <ArchiveEventRail
                     events={events}
-                    selectedEventId={selectedEvent?.id ?? null}
+                    selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
                     onSelect={handleSelect}
                 />
             </div>
