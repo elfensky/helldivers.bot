@@ -36,16 +36,5 @@ describe('SeasonOverview', () => {
         expect(screen.getByText('UNKNOWN')).toBeDefined();
     });
 
-    it('shows event win count', () => {
-        getWarOutcome.mockReturnValue({ outcome: 'victory', reason: '' });
-        render(<SeasonOverview data={mockData} />);
-        expect(screen.getByText(/2 of 3 events won/)).toBeDefined();
-    });
-
-    it('shows season duration', () => {
-        getWarOutcome.mockReturnValue({ outcome: 'victory', reason: '' });
-        render(<SeasonOverview data={mockData} />);
-        // 1704000000 - 1700000000 = 4000000 seconds ≈ 46 days
-        expect(screen.getByText(/46 days/)).toBeDefined();
-    });
+    // Duration and event win count moved to EventStats component
 });

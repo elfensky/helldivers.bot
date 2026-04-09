@@ -11,12 +11,13 @@ const mockEvents = [
 ];
 
 describe('EventStats', () => {
-    it('renders all four stat cards', () => {
+    it('renders all five stat cards', () => {
         render(<EventStats events={mockEvents} />);
-        expect(screen.getByText('LONGEST EVENT')).toBeDefined();
-        expect(screen.getByText('SHORTEST EVENT')).toBeDefined();
-        expect(screen.getByText('MOST CONTESTED')).toBeDefined();
-        expect(screen.getByText('SEASON DURATION')).toBeDefined();
+        expect(screen.getByText('SEASON_DURATION')).toBeDefined();
+        expect(screen.getByText('EVENTS_WON')).toBeDefined();
+        expect(screen.getByText('LONGEST_EVENT')).toBeDefined();
+        expect(screen.getByText('SHORTEST_EVENT')).toBeDefined();
+        expect(screen.getByText('MOST_CONTESTED')).toBeDefined();
     });
 
     it('identifies most contested region', () => {
@@ -27,7 +28,7 @@ describe('EventStats', () => {
 
     it('computes season duration in days', () => {
         render(<EventStats events={mockEvents} />);
-        // (116200 - 1000) / 86400 ≈ 1.3 → rounds to 1
+        // (116200 - 1000) / 86400 ≈ 1.3 → rounds to 1 day
         expect(screen.getByText('1 days')).toBeDefined();
     });
 

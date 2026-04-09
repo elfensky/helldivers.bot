@@ -22,16 +22,23 @@ export default function EventStats({ events }) {
     const seasonSeconds = sorted[sorted.length - 1].end_time - sorted[0].start_time;
     const seasonDays = Math.round(seasonSeconds / 86400);
 
+    const wonCount = events.filter((e) => e.status === 'success').length;
+
     return (
         <div>
             <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-text-muted">
                 War Events
             </div>
             <div className="grid grid-cols-2 gap-1">
-                <StatCard label="LONGEST EVENT" value={formatCompactDuration(longest)} />
-                <StatCard label="SHORTEST EVENT" value={formatCompactDuration(shortest)} />
-                <StatCard label="MOST CONTESTED" value={mostContested} />
-                <StatCard label="SEASON DURATION" value={`${seasonDays} days`} />
+                <StatCard label="SEASON_DURATION" value={`${seasonDays} days`} />
+                <StatCard
+                    label="EVENTS_WON"
+                    value={`${wonCount}/${events.length}`}
+                    accentColor={wonCount > events.length / 2 ? 'success' : 'danger'}
+                />
+                <StatCard label="LONGEST_EVENT" value={formatCompactDuration(longest)} />
+                <StatCard label="SHORTEST_EVENT" value={formatCompactDuration(shortest)} />
+                <StatCard label="MOST_CONTESTED" value={mostContested} />
             </div>
         </div>
     );
