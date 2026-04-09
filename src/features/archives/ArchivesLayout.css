@@ -10,10 +10,8 @@
 /* Desktop: two columns, sidebar left + sticky map right */
 @media (min-width: 1024px) {
     .archives-layout {
-        grid-template-columns: minmax(260px, 1fr) minmax(
-            0,
-            calc((100dvh - 80px) * 806.93 / 868.81)
-        );
+        /* Map column capped at 50dvh height, so width should match — not the full dashboard formula */
+        grid-template-columns: minmax(260px, 1fr) minmax(0, 50dvh);
         /* 5 sidebar rows: overview, stats, analytics slot, factions = auto; event rail = 1fr fills rest */
         grid-template-rows: auto auto auto auto 1fr;
         column-gap: 4rem;
