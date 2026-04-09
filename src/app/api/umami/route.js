@@ -1,4 +1,5 @@
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 
 /**
  * Same-origin proxy for Umami analytics. The client-side tracker script
@@ -25,20 +26,18 @@ export async function POST(request) {
         headers['X-Forwarded-For'] = forwarded;
     }
 
-    try {
-        const upstream = await fetch(umamiUrl, {
-            method: 'POST',
-            headers,
-            body,
-        });
+    const { data: upstream, error } = await tryCatch(
+        fetch(umamiUrl, { method: 'POST', headers, body }),
+    );
 
-        return new Response(await upstream.text(), {
-            status: upstream.status,
-            headers: { 'Content-Type': 'text/plain' },
-        });
-    } catch {
+    if (error) {
         return new Response('Bad Gateway', { status: 502 });
     }
+
+    return new Response(await upstream.text(), {
+        status: upstream.status,
+        headers: { 'Content-Type': 'text/plain' },
+    });
 }
 
 export const GET = methodNotAllowed;

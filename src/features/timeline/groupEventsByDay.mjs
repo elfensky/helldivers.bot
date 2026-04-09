@@ -1,5 +1,3 @@
-// src/utils/groupEventsByDay.mjs
-
 /**
  * Group events by calendar day (UTC) and sort newest-first.
  * Within each day, events are sorted by start_time descending (most recent first).

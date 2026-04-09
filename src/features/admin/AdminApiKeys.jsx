@@ -44,7 +44,7 @@ export default async function AdminApiKeys() {
                                     <td className="p-3 text-small">
                                         <span
                                             className={`inline-block h-1.5 w-1.5 rounded-full ${
-                                                key.enabled ? 'bg-green-400' : 'bg-danger'
+                                                key.enabled ? 'bg-success' : 'bg-danger'
                                             }`}
                                         />{' '}
                                         {key.enabled ? 'Active' : 'Disabled'}
