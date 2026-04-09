@@ -14,6 +14,8 @@
             0,
             calc((100dvh - 80px) * 806.93 / 868.81)
         );
+        /* 5 sidebar rows: overview, stats, analytics slot, factions = auto; event rail = 1fr fills rest */
+        grid-template-rows: auto auto auto auto 1fr;
         column-gap: 4rem;
         min-height: calc(100dvh - 80px);
     }
