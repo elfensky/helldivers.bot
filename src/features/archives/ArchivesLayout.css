@@ -1,0 +1,54 @@
+/* src/features/archives/ArchivesLayout.css */
+
+.archives-layout {
+    display: grid;
+    gap: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+/* Desktop: two columns, sidebar left + sticky map right */
+@media (min-width: 1024px) {
+    .archives-layout {
+        grid-template-columns: minmax(260px, 1fr) minmax(
+            0,
+            calc((100dvh - 80px) * 806.93 / 868.81)
+        );
+        column-gap: 4rem;
+        min-height: calc(100dvh - 80px);
+    }
+
+    .archives-overview,
+    .archives-stats,
+    .archives-analytics-slot,
+    .archives-factions,
+    .archives-event-rail {
+        grid-column: 1;
+    }
+
+    .archives-map-col {
+        grid-column: 2;
+        grid-row: 1 / -1;
+        position: sticky;
+        top: 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-height: calc(100dvh - 80px - 2rem);
+        min-height: 0;
+    }
+}
+
+/* Mobile: single column, story-first, map between factions and event log */
+@media (max-width: 1023px) {
+    .archives-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .archives-overview { order: 1; }
+    .archives-stats { order: 2; }
+    .archives-analytics-slot { order: 3; }
+    .archives-factions { order: 4; }
+    .archives-map-col { order: 5; }
+    .archives-event-rail { order: 6; }
+}
