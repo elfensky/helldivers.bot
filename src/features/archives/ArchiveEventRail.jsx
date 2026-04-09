@@ -34,11 +34,7 @@ function durationHours(event) {
 }
 
 export default function ArchiveEventRail({ events, selectedEventId, onSelect }) {
-    if (!events?.length) return null;
-
     const railRef = useRef(null);
-    const maxDuration = Math.max(...events.map(durationHours));
-    const groups = groupByDay(events);
 
     useEffect(() => {
         const active = railRef.current?.querySelector('.archive-rail-event--active');
@@ -46,6 +42,11 @@ export default function ArchiveEventRail({ events, selectedEventId, onSelect }) 
             active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }, [selectedEventId]);
+
+    if (!events?.length) return null;
+
+    const maxDuration = Math.max(...events.map(durationHours));
+    const groups = groupByDay(events);
 
     return (
         <div ref={railRef}>

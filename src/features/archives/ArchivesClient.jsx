@@ -22,7 +22,7 @@ function syncEventToUrl(eventId) {
     } else {
         url.searchParams.set('event', String(eventId));
     }
-    window.history.replaceState(null, '', url.toString());
+    window.history.pushState(null, '', url.toString());
 }
 
 export default function ArchivesClient({ data }) {
