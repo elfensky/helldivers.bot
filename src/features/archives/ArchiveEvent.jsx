@@ -45,7 +45,7 @@ export default function ArchiveEvent({ event, isActive, onClick }) {
         <EventCardLayout
             status={event.status}
             onClick={onClick}
-            className={isActive ? 'outline outline-2 outline-primary' : ''}
+            className={isActive ? 'ring-2 ring-primary ring-inset' : ''}
         >
             <div className="flex flex-col gap-1 px-2.5 py-1.5">
                 <div className="flex items-center justify-between">

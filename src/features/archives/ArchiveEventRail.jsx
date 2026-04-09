@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
+import '@/features/timeline/TimelineSection.css';
 import ArchiveEvent from '@/features/archives/ArchiveEvent';
+import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
 
 function groupByDay(events) {
     const sorted = [...events].sort((a, b) => a.start_time - b.start_time);
@@ -25,14 +27,14 @@ function formatDayLabel(dateStr) {
         month: 'short',
         day: 'numeric',
         timeZone: 'UTC',
-    });
+    }).toUpperCase();
 }
 
 export default function ArchiveEventRail({ events, selectedEventId, onSelect }) {
     const railRef = useRef(null);
 
     useEffect(() => {
-        const active = railRef.current?.querySelector('.outline-primary');
+        const active = railRef.current?.querySelector('.ring-primary');
         if (active && typeof active.scrollIntoView === 'function') {
             active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
@@ -44,32 +46,37 @@ export default function ArchiveEventRail({ events, selectedEventId, onSelect }) 
 
     return (
         <div ref={railRef}>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-text-muted">
+            <h2 className="timeline-heading mb-1 text-[11px] font-semibold uppercase tracking-widest text-text-muted">
                 Event Log
-            </div>
-            <div className="flex flex-col">
-                {groups.map((group) => (
-                    <div key={group.date}>
-                        <div className="mt-2 border-t border-ghost pt-1 font-mono text-[11px] font-bold text-text-muted first:mt-0 first:border-t-0">
-                            {formatDayLabel(group.date)}
-                        </div>
-                        <div className="flex flex-col">
-                            {group.events.map((event, idx) => (
-                                <div
-                                    key={`${group.date}-${event.id ?? idx}`}
-                                    className="mt-[-1px]"
-                                    data-umami-event="archive-event-select"
-                                >
+            </h2>
+            <div className="timeline-days">
+                {groups.map((group) => {
+                    const { wins, losses } = countOutcomes(group.events);
+                    return (
+                        <div key={group.date} className="timeline-day">
+                            <div className="timeline-day-header">
+                                <span className="timeline-day-label">
+                                    {formatDayLabel(group.date)}
+                                </span>
+                                {(wins > 0 || losses > 0) && (
+                                    <span className="timeline-day-summary">
+                                        {wins}W / {losses}L
+                                    </span>
+                                )}
+                            </div>
+                            <div className="timeline-day-grid">
+                                {group.events.map((event, idx) => (
                                     <ArchiveEvent
+                                        key={`${group.date}-${event.id ?? idx}`}
                                         event={event}
                                         isActive={event.id === selectedEventId}
                                         onClick={() => onSelect(event)}
                                     />
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

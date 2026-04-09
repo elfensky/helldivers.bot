@@ -36,18 +36,28 @@ export default function EventCardLayout({
     className = '',
 }) {
     const s = STATUS_STYLES[status] || STATUS_STYLES.active;
-    const Tag = onClick ? 'button' : 'article';
 
     return (
-        <Tag
-            type={onClick ? 'button' : undefined}
+        <article
             className={`event-card border ${s.border} ${s.bg} ${s.card} ${className}`}
             onClick={onClick}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
+            role={onClick ? 'button' : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={
+                onClick
+                    ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onClick(e);
+                          }
+                      }
+                    : undefined
+            }
         >
             {children}
             <div className={`event-card-accent ${s.accent}`} />
-        </Tag>
+        </article>
     );
 }
