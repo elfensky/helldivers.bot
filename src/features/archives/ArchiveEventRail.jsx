@@ -56,7 +56,7 @@ export default function ArchiveEventRail({ events, selectedEventId, onSelect }) 
             {groups.map((group) => (
                 <div key={group.date}>
                     <div className="archive-rail-day-label">{formatDayLabel(group.date)}</div>
-                    {group.events.map((event) => {
+                    {group.events.map((event, idx) => {
                         const isActive = event.id === selectedEventId;
                         const regionName = map[event.enemy]?.[event.region]?.region ?? 'Unknown';
                         const widthPercent = (durationHours(event) / maxDuration) * 100;
@@ -64,7 +64,7 @@ export default function ArchiveEventRail({ events, selectedEventId, onSelect }) 
 
                         return (
                             <button
-                                key={event.id}
+                                key={`${group.date}-${event.id ?? idx}`}
                                 type="button"
                                 className={`archive-rail-event ${isActive ? 'archive-rail-event--active' : ''}`}
                                 onClick={() => onSelect(event)}
