@@ -18,6 +18,7 @@
     .archives-map-col {
         position: sticky;
         top: 80px;
+        align-self: start;
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
