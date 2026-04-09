@@ -25,6 +25,14 @@
         max-height: min(50dvh, calc(100dvh - 80px - 2rem));
         min-height: 0;
         min-width: 0;
+        overflow: hidden;
+    }
+
+    /* Galaxy fills remaining space after the event detail card */
+    .archives-map-col > :first-child {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
     }
 }
 
