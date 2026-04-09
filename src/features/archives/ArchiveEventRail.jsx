@@ -3,10 +3,7 @@ import '@/features/timeline/TimelineSection.css';
 import ArchiveEvent from '@/features/archives/ArchiveEvent';
 import { groupEventsByDay } from '@/features/timeline/groupEventsByDay.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
-
-function eventKey(event) {
-    return `${event.type}-${event.event_id}`;
-}
+import { eventKey } from '@/features/archives/eventKey.mjs';
 
 export default function ArchiveEventRail({ events, selectedEventKey, onSelect }) {
     const railRef = useRef(null);

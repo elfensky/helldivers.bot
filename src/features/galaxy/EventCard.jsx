@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react';
 import './EventCard.css';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
-import { PACE_COLORS } from '@/shared/enums/colors.mjs';
+import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import humanizeDuration from 'humanize-duration';
-
-const FACTION_COLORS = {
-    0: 'var(--color-faction-bugs)',
-    1: 'var(--color-faction-cyborgs)',
-    2: 'var(--color-faction-illuminate)',
-};
 
 /**
  * Compute frontier progress from campaign-level live data and map state.

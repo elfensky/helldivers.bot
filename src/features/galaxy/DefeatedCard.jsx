@@ -1,12 +1,7 @@
 import './EventCard.css';
 import factions from '@/shared/enums/factions';
 import humanizeDuration from 'humanize-duration';
-
-const FACTION_COLORS = {
-    0: 'var(--color-faction-bugs)',
-    1: 'var(--color-faction-cyborgs)',
-    2: 'var(--color-faction-illuminate)',
-};
+import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
 
 export default function DefeatedCard({ factionIndex, startTime, endTime }) {
     const faction = factions[factionIndex];

@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { sendTestNotification } from '@/features/admin/actions';
+import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
 
 export default function DebugTools() {
     const [status, setStatus] = useState('idle');
@@ -41,7 +42,7 @@ export default function DebugTools() {
                 duration: 8000,
                 className: 'toast-flash toast-flash--a',
                 style: {
-                    '--faction-color': 'var(--color-faction-bugs)',
+                    '--faction-color': FACTION_COLORS[0],
                     '--alert-color': 'var(--color-danger)',
                 },
             },

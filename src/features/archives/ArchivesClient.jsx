@@ -9,11 +9,7 @@ import ArchiveEventRail from '@/features/archives/ArchiveEventRail';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
-
-/** Composite key for uniquely identifying an event (type + event_id). */
-function eventKey(event) {
-    return `${event.type}-${event.event_id}`;
-}
+import { eventKey } from '@/features/archives/eventKey.mjs';
 
 function findEventByKey(events, key) {
     if (!key) return null;

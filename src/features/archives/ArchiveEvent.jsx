@@ -1,28 +1,7 @@
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
-import humanizeDuration from 'humanize-duration';
 import EventCardLayout, { STATUS_STYLES } from '@/features/timeline/EventCardLayout';
-
-const shortEnglish = {
-    y: () => 'y',
-    mo: () => 'mo',
-    w: () => 'w',
-    d: () => 'd',
-    h: () => 'h',
-    m: () => 'm',
-    s: () => 's',
-    ms: () => 'ms',
-};
-
-function formatCompactDuration(seconds) {
-    return humanizeDuration(seconds * 1000, {
-        largest: 2,
-        round: true,
-        spacer: '',
-        language: 'shortEn',
-        languages: { shortEn: shortEnglish },
-    });
-}
+import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 
 /**
  * Archive event card — historical variant of Event.

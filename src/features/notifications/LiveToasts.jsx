@@ -9,12 +9,7 @@ import {
     getDismissedEvents,
     addDismissedEvent,
 } from '@/features/notifications/dismissedEvents.mjs';
-
-const FACTION_COLORS = {
-    0: 'var(--color-faction-bugs)',
-    1: 'var(--color-faction-cyborgs)',
-    2: 'var(--color-faction-illuminate)',
-};
+import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
 
 /** Duration for the 3-blink entrance/update animation (3 × 0.5s). */
 const FLASH_DURATION_MS = 1500;
