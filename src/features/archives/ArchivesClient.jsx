@@ -5,7 +5,8 @@ import './ArchivesLayout.css';
 import SeasonStats from '@/features/archives/SeasonStats';
 import CombatStats from '@/features/archives/CombatStats';
 import EventStats from '@/features/archives/EventStats';
-import FactionSummary from '@/features/archives/FactionSummary';
+import FactionTabs from '@/features/dashboard/FactionTabs';
+import FactionStats from '@/features/archives/FactionStats';
 import ArchiveEventRail from '@/features/archives/ArchiveEventRail';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import factions from '@/shared/enums/factions.mjs';
@@ -38,6 +39,7 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
         findEventByKey(events, searchParams.get('event')) ?? lastEvent;
 
     const [selectedEvent, setSelectedEvent] = useState(initialEvent);
+    const [faction, setFaction] = useState('bugs');
 
     const handleSelect = useCallback((event) => {
         setSelectedEvent(event);
@@ -76,7 +78,17 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
                     <EventStats events={events} data={data} />
                     <SeasonStats live={data?.live} events={events} />
                     <CombatStats live={data?.live} events={events} />
-                    <FactionSummary live={data?.live} />
+                </section>
+
+                <section className="mt-4 flex flex-col gap-2">
+                    <h2>Faction Analysis</h2>
+                    <FactionTabs active={faction} onChange={setFaction} />
+                    <FactionStats
+                        events={events}
+                        snapshots={data?.snapshots}
+                        pointsMax={data?.points_max}
+                        faction={faction}
+                    />
                 </section>
 
                 <section className="mt-4">
