@@ -34,8 +34,8 @@ describe('ArchiveEventRail', () => {
         const { container } = render(
             <ArchiveEventRail events={mockEvents} selectedEventId={3} onSelect={() => {}} />,
         );
-        // Active event gets ring-primary class via ArchiveEvent → EventCardLayout
-        const active = container.querySelector('.ring-primary');
+        // Active event gets gold left border via ArchiveEvent → EventCardLayout
+        const active = container.querySelector('.border-l-primary');
         expect(active).not.toBeNull();
     });
 

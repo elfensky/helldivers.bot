@@ -34,7 +34,7 @@ export default function ArchiveEventRail({ events, selectedEventId, onSelect }) 
     const railRef = useRef(null);
 
     useEffect(() => {
-        const active = railRef.current?.querySelector('.ring-primary');
+        const active = railRef.current?.querySelector('.border-l-primary');
         if (active && typeof active.scrollIntoView === 'function') {
             active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
