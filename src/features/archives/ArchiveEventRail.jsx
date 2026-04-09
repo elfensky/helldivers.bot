@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-import './ArchiveEventRail.css';
-import map from '@/shared/enums/map.mjs';
+import ArchiveEvent from '@/features/archives/ArchiveEvent';
 
 function groupByDay(events) {
     const sorted = [...events].sort((a, b) => a.start_time - b.start_time);
@@ -29,15 +28,11 @@ function formatDayLabel(dateStr) {
     });
 }
 
-function durationHours(event) {
-    return Math.max(1, (event.end_time - event.start_time) / 3600);
-}
-
 export default function ArchiveEventRail({ events, selectedEventId, onSelect }) {
     const railRef = useRef(null);
 
     useEffect(() => {
-        const active = railRef.current?.querySelector('.archive-rail-event--active');
+        const active = railRef.current?.querySelector('.outline-primary');
         if (active && typeof active.scrollIntoView === 'function') {
             active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
@@ -45,7 +40,6 @@ export default function ArchiveEventRail({ events, selectedEventId, onSelect }) 
 
     if (!events?.length) return null;
 
-    const maxDuration = Math.max(...events.map(durationHours));
     const groups = groupByDay(events);
 
     return (
@@ -53,44 +47,30 @@ export default function ArchiveEventRail({ events, selectedEventId, onSelect }) 
             <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-text-muted">
                 Event Log
             </div>
-            {groups.map((group) => (
-                <div key={group.date}>
-                    <div className="archive-rail-day-label">{formatDayLabel(group.date)}</div>
-                    {group.events.map((event, idx) => {
-                        const isActive = event.id === selectedEventId;
-                        const regionName = map[event.enemy]?.[event.region]?.region ?? 'Unknown';
-                        const widthPercent = (durationHours(event) / maxDuration) * 100;
-                        const isWon = event.status === 'success';
-
-                        return (
-                            <button
-                                key={`${group.date}-${event.id ?? idx}`}
-                                type="button"
-                                className={`archive-rail-event ${isActive ? 'archive-rail-event--active' : ''}`}
-                                onClick={() => onSelect(event)}
-                                data-umami-event="archive-event-select"
-                            >
+            <div className="flex flex-col">
+                {groups.map((group) => (
+                    <div key={group.date}>
+                        <div className="mt-2 border-t border-ghost pt-1 font-mono text-[11px] font-bold text-text-muted first:mt-0 first:border-t-0">
+                            {formatDayLabel(group.date)}
+                        </div>
+                        <div className="flex flex-col">
+                            {group.events.map((event, idx) => (
                                 <div
-                                    className={`archive-rail-bar archive-rail-bar--${event.type}`}
-                                    style={{
-                                        width: `max(24px, ${widthPercent.toFixed(1)}%)`,
-                                    }}
-                                />
-                                <span
-                                    className={`archive-rail-label ${isActive ? 'archive-rail-label--active' : ''}`}
+                                    key={`${group.date}-${event.id ?? idx}`}
+                                    className="mt-[-1px]"
+                                    data-umami-event="archive-event-select"
                                 >
-                                    {regionName}
-                                </span>
-                                <span
-                                    className={`archive-rail-result ${isWon ? 'archive-rail-result--won' : 'archive-rail-result--lost'}`}
-                                >
-                                    {isWon ? 'W' : 'L'}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-            ))}
+                                    <ArchiveEvent
+                                        event={event}
+                                        isActive={event.id === selectedEventId}
+                                        onClick={() => onSelect(event)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

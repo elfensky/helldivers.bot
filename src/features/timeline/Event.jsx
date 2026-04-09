@@ -2,30 +2,7 @@ import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
 import humanizeDuration from 'humanize-duration';
 import { EVENT_TYPE } from '@/shared/enums/events';
-
-const STATUS_STYLES = {
-    success: {
-        bg: 'bg-success-tint/40',
-        border: 'border-ghost',
-        accent: 'bg-success',
-        card: '',
-        pill: 'bg-success/10 text-success border border-success/20',
-    },
-    fail: {
-        bg: 'bg-surface-1',
-        border: 'border-ghost',
-        accent: 'bg-ghost',
-        card: '',
-        pill: 'bg-surface-3 text-text-muted border border-ghost',
-    },
-    active: {
-        bg: 'bg-danger-tint/50',
-        border: 'border-ghost',
-        accent: 'bg-danger',
-        card: 'animate-[card-flash_3s_ease-in-out_infinite] motion-reduce:animate-none',
-        pill: 'bg-danger/12 text-danger border border-danger/25 animate-[pill-flash_1.5s_ease-in-out_infinite] motion-reduce:animate-none',
-    },
-};
+import EventCardLayout, { STATUS_STYLES } from '@/features/timeline/EventCardLayout';
 
 const shortEnglish = {
     y: () => 'y',
@@ -49,8 +26,8 @@ function formatCompactDuration(seconds) {
 }
 
 /**
- * Event card with status-colored accent bar.
- * Three types: won (green), lost (red), active (gold).
+ * Live event card for the dashboard timeline.
+ * Shows live elapsed time, points progress, and JSON-LD structured data.
  */
 export default function Event({ event, onMouseEnter, onMouseLeave }) {
     const now = Math.floor(Date.now() / 1000);
@@ -74,8 +51,8 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
     const s = STATUS_STYLES[event.status] || STATUS_STYLES.active;
 
     return (
-        <article
-            className={`event-card border ${s.border} ${s.bg} ${s.card}`}
+        <EventCardLayout
+            status={event.status}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >
@@ -101,14 +78,15 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
                     {event.points} / {event.points_max} ({percent}%)
                 </div>
             </div>
-            <div className={`event-card-accent ${s.accent}`} />
+            {/* JSON-LD structured data — content is derived from trusted DB fields, not user input */}
             <script
                 type="application/ld+json"
+                // eslint-disable-next-line react/no-danger -- trusted server-side DB data
                 dangerouslySetInnerHTML={{
                     __html: JSON.stringify(schema(event, event.type)),
                 }}
             />
-        </article>
+        </EventCardLayout>
     );
 }
 
@@ -131,10 +109,7 @@ function schema(event, type) {
             },
             eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
             eventStatus: 'https://schema.org/EventScheduled',
-            performer: {
-                '@type': 'PerformingGroup',
-                name: 'Helldivers',
-            },
+            performer: { '@type': 'PerformingGroup', name: 'Helldivers' },
             organizer: {
                 '@type': 'Organization',
                 name: factions[3].name,
@@ -154,7 +129,6 @@ function schema(event, type) {
         const enemy = event.region === 0 ? 3 : event.enemy;
         const { capital, region } = map[enemy][event.region];
         const faction = factions[enemy].name;
-
         return {
             '@context': 'https://schema.org',
             '@type': 'Event',
@@ -170,10 +144,7 @@ function schema(event, type) {
             },
             eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
             eventStatus: 'https://schema.org/EventScheduled',
-            performer: {
-                '@type': 'PerformingGroup',
-                name: faction,
-            },
+            performer: { '@type': 'PerformingGroup', name: faction },
             organizer: {
                 '@type': 'Organization',
                 name: faction,

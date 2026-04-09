@@ -18,8 +18,9 @@ describe('ArchiveEventRail', () => {
 
     it('groups events by day', () => {
         render(<ArchiveEventRail events={mockEvents} selectedEventId={1} onSelect={() => {}} />);
-        const headers = document.querySelectorAll('.archive-rail-day-label');
-        expect(headers.length).toBeGreaterThan(0);
+        // Day labels rendered as text content (e.g. "Nov 14", "Nov 20")
+        const dayLabels = document.querySelectorAll('.font-mono.font-bold');
+        expect(dayLabels.length).toBeGreaterThan(0);
     });
 
     it('calls onSelect when event is clicked', () => {
@@ -34,7 +35,8 @@ describe('ArchiveEventRail', () => {
         const { container } = render(
             <ArchiveEventRail events={mockEvents} selectedEventId={3} onSelect={() => {}} />,
         );
-        const active = container.querySelector('.archive-rail-event--active');
+        // Active event gets outline-primary class via ArchiveEvent → EventCardLayout
+        const active = container.querySelector('.outline-primary');
         expect(active).not.toBeNull();
     });
 
