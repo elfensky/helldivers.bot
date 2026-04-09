@@ -1,34 +1,8 @@
 import { useEffect, useRef } from 'react';
 import '@/features/timeline/TimelineSection.css';
 import ArchiveEvent from '@/features/archives/ArchiveEvent';
+import { groupEventsByDay } from '@/features/timeline/groupEventsByDay.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
-
-function groupByDay(events) {
-    const sorted = [...events].sort((a, b) => b.start_time - a.start_time);
-    const groups = [];
-    let currentDate = null;
-    let currentGroup = null;
-
-    for (const event of sorted) {
-        const date = new Date(event.start_time * 1000).toISOString().slice(0, 10);
-        if (date !== currentDate) {
-            currentDate = date;
-            currentGroup = { date, events: [] };
-            groups.push(currentGroup);
-        }
-        currentGroup.events.push(event);
-    }
-    return groups;
-}
-
-function formatDayLabel(dateStr) {
-    const d = new Date(dateStr + 'T00:00:00Z');
-    return d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        timeZone: 'UTC',
-    }).toUpperCase();
-}
 
 function eventKey(event) {
     return `${event.type}-${event.event_id}`;
@@ -46,7 +20,7 @@ export default function ArchiveEventRail({ events, selectedEventKey, onSelect })
 
     if (!events?.length) return null;
 
-    const groups = groupByDay(events);
+    const groups = groupEventsByDay(events, { includeToday: false });
 
     return (
         <div ref={railRef}>
@@ -60,7 +34,7 @@ export default function ArchiveEventRail({ events, selectedEventKey, onSelect })
                         <div key={group.date} className="timeline-day">
                             <div className="timeline-day-header">
                                 <span className="timeline-day-label">
-                                    {formatDayLabel(group.date)}
+                                    {group.label}
                                 </span>
                                 {(wins > 0 || losses > 0) && (
                                     <span className="timeline-day-summary">

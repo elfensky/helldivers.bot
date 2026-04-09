@@ -7,7 +7,7 @@
  * @param {Array<{ start_time: number }>} events - Events with Unix timestamps (seconds)
  * @returns {Array<{ date: string, label: string, events: Array }>}
  */
-export function groupEventsByDay(events) {
+export function groupEventsByDay(events, { includeToday = true } = {}) {
     if (!events || events.length === 0) return [];
 
     const groups = new Map();
@@ -28,9 +28,11 @@ export function groupEventsByDay(events) {
             events: dayEvents.sort((a, b) => b.start_time - a.start_time),
         }));
 
-    const today = new Date().toISOString().slice(0, 10);
-    if (sorted.length === 0 || sorted[0].date !== today) {
-        sorted.unshift({ date: today, label: 'TODAY', events: [] });
+    if (includeToday) {
+        const today = new Date().toISOString().slice(0, 10);
+        if (sorted.length === 0 || sorted[0].date !== today) {
+            sorted.unshift({ date: today, label: 'TODAY', events: [] });
+        }
     }
 
     return sorted;
