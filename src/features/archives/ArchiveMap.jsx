@@ -38,17 +38,12 @@ function computeMapStateAtEvent(selectedEvent, data) {
         status: campaign.status,
     }));
 
+    // Only pass events active at this moment — completed events are already
+    // reflected in the snapshot's points values. Passing completed defend events
+    // would double-count their region-loss cascades.
     const activeEvents = (data.events ?? [])
-        .filter((e) => {
-            const isActive = e.start_time <= time && e.end_time >= time;
-            const isCompleted =
-                e.end_time <= time && (e.status === 'success' || e.status === 'fail');
-            return isActive || isCompleted;
-        })
-        .map((e) => ({
-            ...e,
-            status: e.start_time <= time && e.end_time > time ? 'active' : e.status,
-        }));
+        .filter((e) => e.start_time <= time && e.end_time > time)
+        .map((e) => ({ ...e, status: 'active' }));
 
     return computeMapState(factionStates, activeEvents);
 }
