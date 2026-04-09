@@ -37,9 +37,11 @@ export default function EventCardLayout({
 }) {
     const s = STATUS_STYLES[status] || STATUS_STYLES.active;
 
+    const interactive = onClick ? 'cursor-pointer hover:brightness-125 transition-[filter] duration-150' : '';
+
     return (
         <article
-            className={`event-card border ${s.border} ${s.bg} ${s.card} ${className}`}
+            className={`event-card border ${s.border} ${s.bg} ${s.card} ${interactive} ${className}`}
             onClick={onClick}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
