@@ -2,13 +2,10 @@
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
-//utils
-import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 //components
 import JsonLd from '@/shared/components/JsonLd';
-import { WarOutcome } from '@/features/archives/War';
-import WarTimeline from '@/features/archives/WarTimeline';
 import SeasonSelector from '@/features/dashboard/SeasonSelector';
+import ArchivesClient from '@/features/archives/ArchivesClient';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
 export const dynamic = 'force-dynamic';
@@ -83,18 +80,16 @@ export default async function WarHistoryPage({ searchParams }) {
     }
 
     const currentSeason = data.season;
-    const mapState = computeMapState(data.live, []);
 
     return (
-        <div className="gutters flex flex-col gap-4 pb-4">
+        <div className="gutters pb-4">
             <h1 className="sr-only">War History</h1>
             <JsonLd data={archivesStructuredData} />
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-4">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-4">
                 <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
-                <WarOutcome data={data} />
             </div>
-            <WarTimeline data={data} defaultMapState={mapState} />
+            <ArchivesClient data={data} />
         </div>
     );
 }
