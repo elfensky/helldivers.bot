@@ -2,9 +2,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import './ArchivesLayout.css';
-import SeasonStats from '@/features/archives/SeasonStats';
-import CombatStats from '@/features/archives/CombatStats';
-import EventStats from '@/features/archives/EventStats';
+import ArchiveStats from '@/features/archives/ArchiveStats';
 import FactionTabs from '@/features/dashboard/FactionTabs';
 import FactionStats from '@/features/archives/FactionStats';
 import ArchiveEventRail from '@/features/archives/ArchiveEventRail';
@@ -75,9 +73,13 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
                             currentSeason={currentSeason}
                         />
                     </div>
-                    <EventStats events={events} data={data} />
-                    <SeasonStats live={data?.live} events={events} />
-                    <CombatStats live={data?.live} events={events} />
+                    <ArchiveStats
+                        events={events}
+                        snapshots={data?.snapshots}
+                        pointsMax={data?.points_max}
+                        live={data?.live}
+                        data={data}
+                    />
                 </section>
 
                 <section className="mt-4 flex flex-col gap-2">
