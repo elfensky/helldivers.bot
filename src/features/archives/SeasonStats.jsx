@@ -10,15 +10,22 @@ function formatPercent(numerator, denominator) {
     return ((Number(numerator) / Number(denominator)) * 100).toFixed(1) + '%';
 }
 
+function formatRatio(numerator, denominator) {
+    if (denominator === 0n) return '—';
+    return (Number(numerator) / Number(denominator)).toFixed(1);
+}
+
 export default function SeasonStats({ live, events }) {
     if (!live?.length) return null;
 
     const kills = sumBigInt(live, 'kills');
+    const deaths = sumBigInt(live, 'deaths');
     const missions = sumBigInt(live, 'missions');
+    const successfulMissions = sumBigInt(live, 'successful_missions');
     const players = Math.max(...live.map((f) => Number(f.players ?? 0n)));
     const shots = sumBigInt(live, 'shots');
-    const hits = sumBigInt(live, 'hits');
-    const accidentals = sumBigInt(live, 'accidentals');
+    const totalUniquePlayers = sumBigInt(live, 'total_unique_players');
+    const completedPlanets = live.reduce((acc, f) => acc + (f.completed_planets ?? 0), 0);
     const wonEvents = events?.filter((e) => e.status === 'success').length ?? 0;
     const totalEvents = events?.length ?? 0;
 
@@ -31,9 +38,17 @@ export default function SeasonStats({ live, events }) {
                 <StatCard label="KILLS" value={formatNumber(kills)} />
                 <StatCard label="MISSIONS" value={formatNumber(missions)} />
                 <StatCard label="PEAK PLAYERS" value={formatNumber(players)} />
-                <StatCard label="ACCURACY" value={formatPercent(hits, shots)} />
-                <StatCard label="FRIENDLY FIRE" value={formatPercent(accidentals, kills)} />
                 <StatCard label="EVENTS WON" value={`${wonEvents}/${totalEvents}`} />
+                <StatCard label="K/D RATIO" value={formatRatio(kills, deaths)} />
+                <StatCard
+                    label="MISSION SUCCESS"
+                    value={formatPercent(successfulMissions, missions)}
+                />
+                <StatCard
+                    label="SHOTS/PLANET"
+                    value={completedPlanets > 0 ? formatNumber(Number(shots) / completedPlanets) : '—'}
+                />
+                <StatCard label="UNIQUE PLAYERS" value={formatNumber(totalUniquePlayers)} />
             </div>
         </div>
     );
