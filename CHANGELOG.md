@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+## 0.36.0
+
+### Features
+
+- **Phase A season analytics** — 10+ stat cards per season: outcome, duration, events won, defense/attack rates, overkill, longest/shortest events, most contested region, peak mobilization. Works for ALL seasons (derived from events + snapshots, not h1_live).
+- **Per-faction analytics with FactionTabs** — Bugs/Cyborgs/Illuminate tab switcher on archives. Per-faction stats: defense rate, attack rate, event count, average duration, peak surge, most attacked region, overkill, conquest progress.
+- **Unified ArchiveStats** — merged SeasonStats + CombatStats + EventStats into one component. Shows h1_live combat stats (kills, accuracy, FF) when available, event-derived stats always.
+- **Shared EventCardLayout** — extracted card shell for dashboard/archive event card reuse.
+
+### Improvements
+
+- Archives sidebar restructured with H1 blurb ("Declassified Campaign Archives"), H2 section headings (Statistics, Faction Analysis, Event Log), season selector inline with Statistics heading.
+- VICTORY/DEFEAT rendered as StatCard with colored text (green/red) instead of custom banner.
+- Sticky map uses full viewport height, clips naturally from top at bottom of page.
+
+### Bug Fixes
+
+- Archive map: gap-event replay for accurate historical map reconstruction (fixes stale snapshot issues).
+- Archive map: clamp sector points to defend frontier (fixes sectors beyond defend region showing as captured).
+- Sticky map no longer overlaps footer.
+- React hooks violation fixed in ArchiveEventRail.
+- Composite event key (type+event_id) for correct event selection.
+
+### Chores
+
+- Codebase cleanup: deleted 7 dead files, extracted shared utilities (FACTION_COLORS, formatCompactDuration, eventKey), fixed convention violations (Umami env var, design tokens, try/catch).
+- Moved SeasonSelector to archives feature directory.
+- Dependencies updated (Prisma 7.7, better-auth 1.6, vitest 4.1.3, etc).
+
 ## 0.35.0
 
 ### Features
