@@ -37,8 +37,9 @@ function buildChartData(snapshots, pointsMax) {
             if (!faction || faction.status === 'hidden') {
                 entry[FACTIONS[i].key] = null;
             } else {
-                const pct = maxPoints[i] > 0 ? (faction.points / maxPoints[i]) * 100 : 0;
-                entry[FACTIONS[i].key] = Math.round(pct * 10) / 10;
+                // Sectors captured (0-10) — matches what the galaxy map shows
+                const pointsPerSector = maxPoints[i] > 0 ? maxPoints[i] / 10 : 1;
+                entry[FACTIONS[i].key] = Math.min(10, Math.trunc(faction.points / pointsPerSector));
             }
         }
 
@@ -77,7 +78,7 @@ function ChartTooltip({ active, payload }) {
                             }}
                         >
                             <span>{f.label}</span>
-                            <span>{d[f.key]}%</span>
+                            <span>{d[f.key]}/10</span>
                         </div>
                     ),
             )}
@@ -108,8 +109,8 @@ export default function FactionHealthChart({ snapshots, pointsMax }) {
                 <YAxis
                     stroke="var(--color-surface-4)"
                     tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
-                    tickFormatter={(v) => `${v}%`}
-                    domain={[0, 100]}
+                    tickFormatter={(v) => v}
+                    domain={[0, 10]}
                 />
                 <Tooltip content={<ChartTooltip />} />
                 {FACTIONS.map((f) => (
