@@ -1,0 +1,63 @@
+import { useMemo } from 'react';
+import Galaxy from '@/features/galaxy/Galaxy';
+import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
+
+const HIDDEN_STATES = [
+    { enemy: 0, points: 0, points_taken: 0, points_max: 1, status: 'hidden' },
+    { enemy: 1, points: 0, points_taken: 0, points_max: 1, status: 'hidden' },
+    { enemy: 2, points: 0, points_taken: 0, points_max: 1, status: 'hidden' },
+];
+
+function computeMapStateAtEvent(selectedEvent, data) {
+    const snapshots = data?.snapshots ?? [];
+
+    if (!snapshots.length || !selectedEvent) {
+        return computeMapState(HIDDEN_STATES, []);
+    }
+
+    const time = selectedEvent.start_time;
+
+    const nearest = snapshots
+        .filter((s) => s.time <= time)
+        .sort((a, b) => b.time - a.time)[0];
+
+    if (!nearest) {
+        return computeMapState(HIDDEN_STATES, []);
+    }
+
+    const parsed =
+        typeof nearest.data === 'string' ? JSON.parse(nearest.data) : nearest.data;
+
+    const pointsMaxArr = data.points_max?.points ?? [];
+
+    const factionStates = (parsed ?? []).map((campaign, i) => ({
+        enemy: campaign.enemy ?? i,
+        points: campaign.points,
+        points_taken: campaign.points_taken ?? 0,
+        points_max: pointsMaxArr[campaign.enemy ?? i] ?? campaign.points_max ?? 1,
+        status: campaign.status,
+    }));
+
+    const activeEvents = (data.events ?? [])
+        .filter((e) => {
+            const isActive = e.start_time <= time && e.end_time >= time;
+            const isCompleted =
+                e.end_time <= time && (e.status === 'success' || e.status === 'fail');
+            return isActive || isCompleted;
+        })
+        .map((e) => ({
+            ...e,
+            status: e.start_time <= time && e.end_time > time ? 'active' : e.status,
+        }));
+
+    return computeMapState(factionStates, activeEvents);
+}
+
+export default function ArchiveMap({ data, selectedEvent }) {
+    const mapState = useMemo(
+        () => computeMapStateAtEvent(selectedEvent, data),
+        [selectedEvent, data],
+    );
+
+    return <Galaxy mapState={mapState} />;
+}
