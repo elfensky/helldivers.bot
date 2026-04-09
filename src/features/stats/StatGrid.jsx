@@ -57,7 +57,7 @@ export default function StatGrid({ live, faction, events }) {
     );
 }
 
-function StatCard({ label, value, accentColor }) {
+export function StatCard({ label, value, accentColor }) {
     const accentClass =
         accentColor === 'success' ? 'stat-card-accent-success'
         : accentColor === 'danger' ? 'stat-card-accent-danger'

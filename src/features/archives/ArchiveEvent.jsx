@@ -1,0 +1,66 @@
+import factions from '@/shared/enums/factions.mjs';
+import map from '@/shared/enums/map.mjs';
+import humanizeDuration from 'humanize-duration';
+import EventCardLayout, { STATUS_STYLES } from '@/features/timeline/EventCardLayout';
+
+const shortEnglish = {
+    y: () => 'y',
+    mo: () => 'mo',
+    w: () => 'w',
+    d: () => 'd',
+    h: () => 'h',
+    m: () => 'm',
+    s: () => 's',
+    ms: () => 'ms',
+};
+
+function formatCompactDuration(seconds) {
+    return humanizeDuration(seconds * 1000, {
+        largest: 2,
+        round: true,
+        spacer: '',
+        language: 'shortEn',
+        languages: { shortEn: shortEnglish },
+    });
+}
+
+/**
+ * Archive event card — historical variant of Event.
+ * Shows final duration and outcome. Clickable to select event on map.
+ * Reuses EventCardLayout for consistent styling with dashboard events.
+ */
+export default function ArchiveEvent({ event, isActive, onClick }) {
+    const duration = event.end_time - event.start_time;
+    const faction = factions[event.enemy];
+    const regionName = map[event.enemy]?.[event.region]?.region ?? 'Unknown Region';
+
+    const statusText =
+        event.status === 'success' ? 'Won'
+        : event.status === 'fail' ? 'Failed'
+        : 'Active';
+
+    const s = STATUS_STYLES[event.status] || STATUS_STYLES.active;
+
+    return (
+        <EventCardLayout
+            status={event.status}
+            onClick={onClick}
+            className={isActive ? 'border-l-[4px] border-l-primary !bg-primary-tint' : ''}
+        >
+            <div className="flex flex-col gap-1 px-2.5 py-1.5">
+                <div className="flex items-center justify-between">
+                    <span className="font-body text-small font-bold text-text uppercase">
+                        {statusText} {event.type}
+                    </span>
+                    <span className={`px-1.5 py-px font-mono text-[10px] ${s.pill}`}>
+                        {formatCompactDuration(duration)}
+                    </span>
+                    {faction && (
+                        <img src={faction.icon} alt={faction.name} className="size-5" />
+                    )}
+                </div>
+                <span className="text-small text-text">{regionName}</span>
+            </div>
+        </EventCardLayout>
+    );
+}

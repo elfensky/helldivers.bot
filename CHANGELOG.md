@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 0.35.0
+
+### Features
+
+- **Archives page redesign** — two-column layout (narrative sidebar + sticky galaxy map) mirroring the dashboard pattern. New components: SeasonOverview (outcome banner), SeasonStats (aggregated stats grid), FactionSummary (per-faction win/loss), ArchiveEventRail (clickable event log controlling the map), ArchiveMap (map-state-at-event computation).
+- **Shared EventCardLayout** — extracted card shell (accent bar + status styling) used by both dashboard LiveEvent and archive ArchiveEvent. Archive events show region name, final duration, and outcome.
+- **Archive map gap-event replay** — reconstruct map state by replaying events that completed between the nearest snapshot and the selected event. Handles stale snapshots (8-24h gaps), failed defend cascades, and region 0 Super Earth defends.
+- **Event selection URL sync** — selected event persisted as `?event=<type>-<event_id>` composite key for shareable deep-links. Back button navigates between selections.
+- **Archive event hover states** — clickable event cards get cursor-pointer + brightness lift on hover.
+
+### Bug Fixes
+
+- **Archive map double-counting** — fixed completed events being passed to computeMapState, causing failed defend cascades to wipe sectors already reflected in snapshot points.
+- **React hooks violation** — moved useRef/useEffect above early return in ArchiveEventRail.
+- **Event ID field** — corrected event.id → event.event_id with composite key (type+event_id) since event_id is not unique across attack/defend.
+
 ## 0.34.0
 
 ### Features
