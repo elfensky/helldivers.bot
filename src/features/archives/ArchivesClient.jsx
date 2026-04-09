@@ -72,27 +72,14 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
                 </div>
 
                 <section className="mt-4 flex flex-col gap-2">
-                    <h2>War Events</h2>
+                    <h2>Statistics</h2>
                     <EventStats events={events} data={data} />
-                </section>
-
-                <section className="mt-4 flex flex-col gap-2">
-                    <h2>Season Statistics</h2>
                     <SeasonStats live={data?.live} events={events} />
-                </section>
-
-                <section className="mt-4 flex flex-col gap-2">
-                    <h2>Combat Performance</h2>
                     <CombatStats live={data?.live} events={events} />
-                </section>
-
-                <section className="mt-4 flex flex-col gap-2">
-                    <h2>Faction Campaigns</h2>
                     <FactionSummary live={data?.live} />
                 </section>
 
                 <section className="mt-4">
-                    <h2>Event Log</h2>
                     <ArchiveEventRail
                         events={events}
                         selectedEventKey={
