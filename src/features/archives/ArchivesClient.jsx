@@ -11,6 +11,7 @@ import ArchiveEventRail from '@/features/archives/ArchiveEventRail';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
+import SeasonSelector from '@/features/archives/SeasonSelector';
 import { eventKey } from '@/features/archives/eventKey.mjs';
 
 function findEventByKey(events, key) {
@@ -28,7 +29,7 @@ function syncEventToUrl(event) {
     window.history.pushState(null, '', url.toString());
 }
 
-export default function ArchivesClient({ data }) {
+export default function ArchivesClient({ data, seasons, currentSeason }) {
     const searchParams = useSearchParams();
     const mapRef = useRef(null);
     const events = data?.events ?? [];
@@ -53,15 +54,21 @@ export default function ArchivesClient({ data }) {
             {/* Sidebar */}
             <div className="archives-sidebar">
                 <div className="pb-2">
-                    <h1 className="font-display text-body text-primary">
-                        Declassified Campaign Archives
-                    </h1>
+                    <div className="flex items-start justify-between gap-4">
+                        <h1 className="font-display text-body text-primary">
+                            Declassified Campaign Archives
+                        </h1>
+                        <SeasonSelector
+                            seasons={seasons}
+                            currentSeason={currentSeason}
+                        />
+                    </div>
                     <p className="mt-1 text-small text-text-muted">
-                        Official war records from the Ministry of Truth. Every campaign
-                        victory and strategic redeployment has been verified by Super
-                        Earth High Command. Browse the complete history of
-                        humanity&apos;s glorious fight for managed democracy across the
-                        galaxy.
+                        Official war records from the Ministry of Truth. Every
+                        campaign victory and strategic redeployment has been
+                        verified by Super Earth High Command. Browse the complete
+                        history of humanity&apos;s glorious fight for managed
+                        democracy across the galaxy.
                     </p>
                 </div>
 

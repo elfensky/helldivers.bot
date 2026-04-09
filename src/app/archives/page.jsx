@@ -4,7 +4,6 @@ import { getCampaign } from '@/db/queries/getCampaign';
 import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
 //components
 import JsonLd from '@/shared/components/JsonLd';
-import SeasonSelector from '@/features/archives/SeasonSelector';
 import ArchivesClient from '@/features/archives/ArchivesClient';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
@@ -85,11 +84,11 @@ export default async function WarHistoryPage({ searchParams }) {
         <div className="gutters pb-4">
             <h1 className="sr-only">War History</h1>
             <JsonLd data={archivesStructuredData} />
-
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-4">
-                <SeasonSelector seasons={seasons} currentSeason={currentSeason} />
-            </div>
-            <ArchivesClient data={data} />
+            <ArchivesClient
+                data={data}
+                seasons={seasons}
+                currentSeason={currentSeason}
+            />
         </div>
     );
 }

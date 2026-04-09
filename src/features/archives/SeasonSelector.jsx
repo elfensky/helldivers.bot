@@ -43,7 +43,7 @@ export default function SeasonSelector({ seasons, currentSeason }) {
                     router.push(`/archives?season=${season}`);
                     track('archive-season-select', { season: Number(season) });
                 }}
-                className="rounded bg-white/10 px-3 py-2 text-body text-white accent-primary hover:bg-white/20"
+                className="border border-ghost bg-surface-1 px-3 py-1.5 font-mono text-sm text-text accent-primary hover:bg-surface-2"
             >
                 {seasons.map((s) => (
                     <option key={s} value={s}>
