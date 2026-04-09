@@ -38,6 +38,7 @@
         gap: 0.5rem;
         max-height: min(50dvh, calc(100dvh - 80px - 2rem));
         min-height: 0;
+        min-width: 0;
     }
 }
 
