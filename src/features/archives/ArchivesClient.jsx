@@ -53,15 +53,9 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
             {/* Sidebar */}
             <div className="archives-sidebar">
                 <div className="pb-2">
-                    <div className="flex items-start justify-between gap-4">
-                        <h1 className="font-display text-body text-primary">
-                            Declassified Campaign Archives
-                        </h1>
-                        <SeasonSelector
-                            seasons={seasons}
-                            currentSeason={currentSeason}
-                        />
-                    </div>
+                    <h1 className="font-display text-body text-primary">
+                        Declassified Campaign Archives
+                    </h1>
                     <p className="mt-1 text-small text-text-muted">
                         Official war records from the Ministry of Truth. Every
                         campaign victory and strategic redeployment has been
@@ -72,7 +66,13 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
                 </div>
 
                 <section className="mt-4 flex flex-col gap-2">
-                    <h2>Statistics</h2>
+                    <div className="flex items-center justify-between">
+                        <h2>Statistics</h2>
+                        <SeasonSelector
+                            seasons={seasons}
+                            currentSeason={currentSeason}
+                        />
+                    </div>
                     <EventStats events={events} data={data} />
                     <SeasonStats live={data?.live} events={events} />
                     <CombatStats live={data?.live} events={events} />
