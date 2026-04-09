@@ -8,6 +8,21 @@ const HIDDEN_STATES = [
     { enemy: 2, points: 0, points_taken: 0, points_max: 1, status: 'hidden' },
 ];
 
+/**
+ * Reconstruct map state at a specific event's start time.
+ *
+ * Uses the nearest snapshot as a base, then replays events from the gap
+ * between snapshot time and selected event time. This handles stale snapshots:
+ *
+ *   snapshot ──── gap events (completed) ──── selected event (active)
+ *   (base)        (replay with real status)    (show as active)
+ *
+ * Gap events are NOT reflected in the snapshot's points (they happened after
+ * the snapshot was taken). Active events are happening right now.
+ * computeMapState processes both: gap events update sector ownership via
+ * their real status (fail cascades, success holds), active events show
+ * contested regions.
+ */
 function computeMapStateAtEvent(selectedEvent, data) {
     const snapshots = data?.snapshots ?? [];
 
@@ -30,43 +45,33 @@ function computeMapStateAtEvent(selectedEvent, data) {
 
     const pointsMaxArr = data.points_max?.points ?? [];
 
-    // Only pass events active at this moment — completed events are already
-    // reflected in the snapshot's points values.
-    const activeEvents = (data.events ?? [])
-        .filter((e) => e.start_time <= time && e.end_time > time)
-        .map((e) => ({ ...e, status: 'active' }));
-
-    // Correct stale snapshot points using active defend events.
-    // A defend on region N means the frontier is at N:
-    //   - At least N sectors captured (boost if snapshot is behind)
-    //   - At most N sectors captured (cap if snapshot is ahead)
-    // This handles both directions of snapshot staleness.
     const factionStates = (parsed ?? []).map((campaign, i) => {
         const enemy = campaign.enemy ?? i;
-        const pMax = pointsMaxArr[enemy] ?? campaign.points_max ?? 1;
-        const pointsPerSector = pMax / 10;
-        let points = campaign.points;
-
-        const defendRegions = activeEvents
-            .filter((e) => e.enemy === enemy && e.type === 'defend' && e.region > 0 && e.region <= 10)
-            .map((e) => e.region);
-
-        if (defendRegions.length > 0) {
-            const maxDefendRegion = Math.max(...defendRegions);
-            // Frontier is at this region — clamp points to exactly this many sectors
-            points = maxDefendRegion * pointsPerSector;
-        }
-
         return {
             enemy,
-            points,
+            points: campaign.points,
             points_taken: campaign.points_taken ?? 0,
-            points_max: pMax,
+            points_max: pointsMaxArr[enemy] ?? campaign.points_max ?? 1,
             status: campaign.status,
         };
     });
 
-    return computeMapState(factionStates, activeEvents);
+    const allEvents = data.events ?? [];
+
+    // Gap events: completed AFTER snapshot but BEFORE selected event.
+    // These are not reflected in the snapshot's points — replay them
+    // with their real status so computeMapState applies the correct
+    // sector ownership changes (failed defend cascades, etc.).
+    const gapEvents = allEvents
+        .filter((e) => e.end_time > nearest.time && e.end_time <= time)
+        .sort((a, b) => a.end_time - b.end_time);
+
+    // Active events: happening at the selected moment.
+    const activeEvents = allEvents
+        .filter((e) => e.start_time <= time && e.end_time > time)
+        .map((e) => ({ ...e, status: 'active' }));
+
+    return computeMapState(factionStates, [...gapEvents, ...activeEvents]);
 }
 
 export default function ArchiveMap({ data, selectedEvent }) {
