@@ -1,5 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { toast } from 'sonner';
 import { sendTestNotification } from '@/features/admin/actions';
 import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
@@ -69,6 +70,18 @@ export default function DebugTools() {
                 </button>
                 <button type="button" onClick={handleTestToast} className={btnClass}>
                     Test Toast
+                </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        const err = new Error('Admin test error — verifying GlitchTip integration');
+                        Sentry.captureException(err);
+                        toast.success('Error sent to GlitchTip');
+                    }}
+                    className={btnClass}
+                    data-umami-event="debug-trigger-error"
+                >
+                    Trigger Error
                 </button>
                 {message && (
                     <span className={`text-small ${message.isError ? 'text-danger' : 'text-text-muted'}`}>

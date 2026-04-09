@@ -4,6 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import './ArchivesLayout.css';
 import SeasonOverview from '@/features/archives/SeasonOverview';
 import SeasonStats from '@/features/archives/SeasonStats';
+import CombatStats from '@/features/archives/CombatStats';
+import EventStats from '@/features/archives/EventStats';
 import FactionSummary from '@/features/archives/FactionSummary';
 import ArchiveEventRail from '@/features/archives/ArchiveEventRail';
 import ArchiveMap from '@/features/archives/ArchiveMap';
@@ -54,15 +56,19 @@ export default function ArchivesClient({ data }) {
                 <SeasonOverview data={data} />
             </div>
 
-            <div className="archives-stats">
+            <div className="archives-stats mt-4">
                 <SeasonStats live={data?.live} events={events} />
             </div>
 
-            <div className="archives-analytics-slot">
-                {/* Phase 9 analytics slot */}
+            <div className="archives-stats mt-4">
+                <CombatStats live={data?.live} events={events} />
             </div>
 
-            <div className="archives-factions">
+            <div className="archives-stats mt-4">
+                <EventStats events={events} />
+            </div>
+
+            <div className="archives-factions mt-4">
                 <FactionSummary live={data?.live} />
             </div>
 

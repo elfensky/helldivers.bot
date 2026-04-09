@@ -14,6 +14,8 @@ const mockLive = [
         successful_missions: 70000000n,
         shots: 500000000n,
         hits: 115000000n,
+        total_unique_players: 100000n,
+        completed_planets: 5,
     },
     {
         enemy: 1,
@@ -25,6 +27,8 @@ const mockLive = [
         successful_missions: 45000000n,
         shots: 300000000n,
         hits: 70000000n,
+        total_unique_players: 80000n,
+        completed_planets: 3,
     },
     {
         enemy: 2,
@@ -36,6 +40,8 @@ const mockLive = [
         successful_missions: 23000000n,
         shots: 200000000n,
         hits: 46000000n,
+        total_unique_players: 60000n,
+        completed_planets: 2,
     },
 ];
 
@@ -47,16 +53,22 @@ describe('SeasonStats', () => {
         expect(screen.getByText('PEAK PLAYERS')).toBeDefined();
     });
 
-    it('formats accuracy as percentage', () => {
+    it('computes K/D ratio', () => {
         render(<SeasonStats live={mockLive} events={[]} />);
-        // (115M + 70M + 46M) / (500M + 300M + 200M) = 231M/1000M = 23.1%
-        expect(screen.getByText('23.1%')).toBeDefined();
+        // (1.2B + 800M + 400M) / (50M + 30M + 20M) = 2.4B / 100M = 24.0
+        expect(screen.getByText('24.0')).toBeDefined();
     });
 
-    it('formats friendly fire as percentage', () => {
+    it('computes mission success percentage', () => {
         render(<SeasonStats live={mockLive} events={[]} />);
-        // (50M + 30M + 20M) / (1.2B + 800M + 400M) = 100M/2.4B ≈ 4.2%
-        expect(screen.getByText('4.2%')).toBeDefined();
+        // (70M + 45M + 23M) / (80M + 50M + 26M) = 138M / 156M ≈ 88.5%
+        expect(screen.getByText('88.5%')).toBeDefined();
+    });
+
+    it('computes unique players', () => {
+        render(<SeasonStats live={mockLive} events={[]} />);
+        // 100K + 80K + 60K = 240,000
+        expect(screen.getByText('240,000')).toBeDefined();
     });
 
     it('returns null when live is empty', () => {

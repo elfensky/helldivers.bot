@@ -12,15 +12,14 @@
     .archives-layout {
         /* Map column capped at 50dvh height, so width should match — not the full dashboard formula */
         grid-template-columns: minmax(260px, 1fr) minmax(0, 50dvh);
-        /* 5 sidebar rows: overview, stats, analytics slot, factions = auto; event rail = 1fr fills rest */
-        grid-template-rows: auto auto auto auto 1fr;
+        /* 6 sidebar rows: overview, stats, combat-stats, event-stats, factions = auto; event rail = 1fr fills rest */
+        grid-template-rows: auto auto auto auto auto 1fr;
         column-gap: 4rem;
         min-height: calc(100dvh - 80px);
     }
 
     .archives-overview,
     .archives-stats,
-    .archives-analytics-slot,
     .archives-factions,
     .archives-event-rail {
         grid-column: 1;
@@ -80,8 +79,7 @@
 
     .archives-overview { order: 1; }
     .archives-stats { order: 2; }
-    .archives-analytics-slot { order: 3; }
-    .archives-factions { order: 4; }
-    .archives-map-col { order: 5; }
-    .archives-event-rail { order: 6; }
+    .archives-factions { order: 3; }
+    .archives-map-col { order: 4; }
+    .archives-event-rail { order: 5; }
 }
