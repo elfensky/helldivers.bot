@@ -4,7 +4,7 @@ import ArchiveEvent from '@/features/archives/ArchiveEvent';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
 
 function groupByDay(events) {
-    const sorted = [...events].sort((a, b) => a.start_time - b.start_time);
+    const sorted = [...events].sort((a, b) => b.start_time - a.start_time);
     const groups = [];
     let currentDate = null;
     let currentGroup = null;
