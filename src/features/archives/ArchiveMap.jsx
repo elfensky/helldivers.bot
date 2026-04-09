@@ -30,20 +30,38 @@ function computeMapStateAtEvent(selectedEvent, data) {
 
     const pointsMaxArr = data.points_max?.points ?? [];
 
-    const factionStates = (parsed ?? []).map((campaign, i) => ({
-        enemy: campaign.enemy ?? i,
-        points: campaign.points,
-        points_taken: campaign.points_taken ?? 0,
-        points_max: pointsMaxArr[campaign.enemy ?? i] ?? campaign.points_max ?? 1,
-        status: campaign.status,
-    }));
-
     // Only pass events active at this moment — completed events are already
-    // reflected in the snapshot's points values. Passing completed defend events
-    // would double-count their region-loss cascades.
+    // reflected in the snapshot's points values.
     const activeEvents = (data.events ?? [])
         .filter((e) => e.start_time <= time && e.end_time > time)
         .map((e) => ({ ...e, status: 'active' }));
+
+    // Infer minimum points from active defend events. Snapshots can be hours
+    // stale — if a defend is active on region N, the faction must have earned
+    // at least N sectors since you can't defend uncaptured territory.
+    const factionStates = (parsed ?? []).map((campaign, i) => {
+        const enemy = campaign.enemy ?? i;
+        const pMax = pointsMaxArr[enemy] ?? campaign.points_max ?? 1;
+        const pointsPerSector = pMax / 10;
+        let points = campaign.points;
+
+        const maxDefendRegion = activeEvents
+            .filter((e) => e.enemy === enemy && e.type === 'defend' && e.region > 0 && e.region <= 10)
+            .reduce((max, e) => Math.max(max, e.region), 0);
+
+        if (maxDefendRegion > 0) {
+            const minPoints = maxDefendRegion * pointsPerSector;
+            points = Math.max(points, minPoints);
+        }
+
+        return {
+            enemy,
+            points,
+            points_taken: campaign.points_taken ?? 0,
+            points_max: pMax,
+            status: campaign.status,
+        };
+    });
 
     return computeMapState(factionStates, activeEvents);
 }
