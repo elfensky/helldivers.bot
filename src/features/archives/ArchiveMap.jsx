@@ -36,22 +36,25 @@ function computeMapStateAtEvent(selectedEvent, data) {
         .filter((e) => e.start_time <= time && e.end_time > time)
         .map((e) => ({ ...e, status: 'active' }));
 
-    // Infer minimum points from active defend events. Snapshots can be hours
-    // stale — if a defend is active on region N, the faction must have earned
-    // at least N sectors since you can't defend uncaptured territory.
+    // Correct stale snapshot points using active defend events.
+    // A defend on region N means the frontier is at N:
+    //   - At least N sectors captured (boost if snapshot is behind)
+    //   - At most N sectors captured (cap if snapshot is ahead)
+    // This handles both directions of snapshot staleness.
     const factionStates = (parsed ?? []).map((campaign, i) => {
         const enemy = campaign.enemy ?? i;
         const pMax = pointsMaxArr[enemy] ?? campaign.points_max ?? 1;
         const pointsPerSector = pMax / 10;
         let points = campaign.points;
 
-        const maxDefendRegion = activeEvents
+        const defendRegions = activeEvents
             .filter((e) => e.enemy === enemy && e.type === 'defend' && e.region > 0 && e.region <= 10)
-            .reduce((max, e) => Math.max(max, e.region), 0);
+            .map((e) => e.region);
 
-        if (maxDefendRegion > 0) {
-            const minPoints = maxDefendRegion * pointsPerSector;
-            points = Math.max(points, minPoints);
+        if (defendRegions.length > 0) {
+            const maxDefendRegion = Math.max(...defendRegions);
+            // Frontier is at this region — clamp points to exactly this many sectors
+            points = maxDefendRegion * pointsPerSector;
         }
 
         return {
