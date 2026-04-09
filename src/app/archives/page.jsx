@@ -4,7 +4,7 @@ import { getCampaign } from '@/db/queries/getCampaign';
 import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
 //components
 import JsonLd from '@/shared/components/JsonLd';
-import SeasonSelector from '@/features/dashboard/SeasonSelector';
+import SeasonSelector from '@/features/archives/SeasonSelector';
 import ArchivesClient from '@/features/archives/ArchivesClient';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
