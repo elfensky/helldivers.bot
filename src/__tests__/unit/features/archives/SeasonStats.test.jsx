@@ -50,7 +50,7 @@ describe('SeasonStats', () => {
         render(<SeasonStats live={mockLive} events={[]} />);
         expect(screen.getByText('KILLS')).toBeDefined();
         expect(screen.getByText('MISSIONS')).toBeDefined();
-        expect(screen.getByText('PEAK PLAYERS')).toBeDefined();
+        expect(screen.getByText('PEAK_PLAYERS')).toBeDefined();
     });
 
     it('computes K/D ratio', () => {

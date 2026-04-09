@@ -25,11 +25,7 @@ export default function EventStats({ events }) {
     const wonCount = events.filter((e) => e.status === 'success').length;
 
     return (
-        <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-text-muted">
-                War Events
-            </div>
-            <div className="grid grid-cols-2 gap-1">
+        <div className="grid grid-cols-2 gap-1">
                 <StatCard label="SEASON_DURATION" value={`${seasonDays} days`} />
                 <StatCard
                     label="EVENTS_WON"
@@ -40,6 +36,5 @@ export default function EventStats({ events }) {
                 <StatCard label="SHORTEST_EVENT" value={formatCompactDuration(shortest)} />
                 <StatCard label="MOST_CONTESTED" value={mostContested} />
             </div>
-        </div>
     );
 }

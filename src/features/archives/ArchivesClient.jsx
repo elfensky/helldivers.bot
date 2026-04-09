@@ -34,7 +34,6 @@ export default function ArchivesClient({ data }) {
     const events = data?.events ?? [];
     const lastEvent = events.length ? events[events.length - 1] : null;
 
-    // Initialize from URL param or default to last event
     const initialEvent =
         findEventByKey(events, searchParams.get('event')) ?? lastEvent;
 
@@ -44,7 +43,6 @@ export default function ArchivesClient({ data }) {
         setSelectedEvent(event);
         syncEventToUrl(event);
 
-        // On mobile, scroll to map when event is selected
         if (window.innerWidth < 1024 && mapRef.current) {
             mapRef.current.scrollIntoView({ behavior: 'smooth' });
         }
@@ -52,35 +50,55 @@ export default function ArchivesClient({ data }) {
 
     return (
         <div className="archives-layout">
-            <div className="archives-overview">
-                <SeasonOverview data={data} />
+            {/* Sidebar */}
+            <div className="archives-sidebar">
+                <div className="pb-2">
+                    <h1 className="font-display text-body text-primary">
+                        Declassified Campaign Archives
+                    </h1>
+                    <p className="mt-1 text-small text-text-muted">
+                        Official war records from the Ministry of Truth. Every campaign
+                        victory and strategic redeployment has been verified by Super
+                        Earth High Command. Browse the complete history of
+                        humanity&apos;s glorious fight for managed democracy across the
+                        galaxy.
+                    </p>
+                </div>
+
+                <section className="mt-4 flex flex-col gap-2">
+                    <h2>War Events</h2>
+                    <SeasonOverview data={data} />
+                    <EventStats events={events} />
+                </section>
+
+                <section className="mt-4 flex flex-col gap-2">
+                    <h2>Season Statistics</h2>
+                    <SeasonStats live={data?.live} events={events} />
+                </section>
+
+                <section className="mt-4 flex flex-col gap-2">
+                    <h2>Combat Performance</h2>
+                    <CombatStats live={data?.live} events={events} />
+                </section>
+
+                <section className="mt-4 flex flex-col gap-2">
+                    <h2>Faction Campaigns</h2>
+                    <FactionSummary live={data?.live} />
+                </section>
+
+                <section className="mt-4">
+                    <h2>Event Log</h2>
+                    <ArchiveEventRail
+                        events={events}
+                        selectedEventKey={
+                            selectedEvent ? eventKey(selectedEvent) : null
+                        }
+                        onSelect={handleSelect}
+                    />
+                </section>
             </div>
 
-            <div className="archives-stats mt-4">
-                <SeasonStats live={data?.live} events={events} />
-            </div>
-
-            <div className="archives-stats mt-4">
-                <CombatStats live={data?.live} events={events} />
-            </div>
-
-            <div className="archives-stats mt-4">
-                <EventStats events={events} />
-            </div>
-
-            <div className="archives-factions mt-4">
-                <FactionSummary live={data?.live} />
-            </div>
-
-            <div className="archives-event-rail">
-                <ArchiveEventRail
-                    events={events}
-                    selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
-                    onSelect={handleSelect}
-                />
-            </div>
-
-            {/* Map column — sticky on desktop, ordered between factions and event rail on mobile */}
+            {/* Map column */}
             <div className="archives-map-col" ref={mapRef}>
                 <ArchiveMap data={data} selectedEvent={selectedEvent} />
 
@@ -95,14 +113,18 @@ export default function ArchivesClient({ data }) {
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="text-sm font-semibold">
-                                    {map[selectedEvent.enemy]?.[selectedEvent.region]?.region ??
-                                        'Unknown Region'}
+                                    {map[selectedEvent.enemy]?.[
+                                        selectedEvent.region
+                                    ]?.region ?? 'Unknown Region'}
                                 </div>
                                 <div className="text-xs text-text-muted">
-                                    {factions[selectedEvent.enemy]?.name ?? 'Unknown'} &middot;{' '}
-                                    {selectedEvent.type} &middot;{' '}
+                                    {factions[selectedEvent.enemy]?.name ??
+                                        'Unknown'}{' '}
+                                    &middot; {selectedEvent.type} &middot;{' '}
                                     {Math.round(
-                                        (selectedEvent.end_time - selectedEvent.start_time) / 3600,
+                                        (selectedEvent.end_time -
+                                            selectedEvent.start_time) /
+                                            3600,
                                     )}
                                     h
                                 </div>
@@ -114,7 +136,9 @@ export default function ArchivesClient({ data }) {
                                         : 'text-danger'
                                 }`}
                             >
-                                {selectedEvent.status === 'success' ? 'WON' : 'LOST'}
+                                {selectedEvent.status === 'success'
+                                    ? 'WON'
+                                    : 'LOST'}
                             </div>
                         </div>
                     </div>

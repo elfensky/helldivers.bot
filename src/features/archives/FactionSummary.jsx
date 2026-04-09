@@ -20,11 +20,7 @@ export default function FactionSummary({ live }) {
     if (!live?.length) return null;
 
     return (
-        <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-text-muted">
-                Faction Campaigns
-            </div>
-            <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
                 {live.map((faction) => {
                     const wins =
                         Number(faction.successful_defend_events ?? 0n) +
@@ -51,7 +47,6 @@ export default function FactionSummary({ live }) {
                         </div>
                     );
                 })}
-            </div>
         </div>
     );
 }

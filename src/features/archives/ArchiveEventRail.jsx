@@ -21,9 +21,6 @@ export default function ArchiveEventRail({ events, selectedEventKey, onSelect })
 
     return (
         <div ref={railRef}>
-            <h2 className="timeline-heading mb-1 text-[11px] font-semibold uppercase tracking-widest text-text-muted">
-                Event Log
-            </h2>
             <div className="timeline-days">
                 {groups.map((group) => {
                     const { wins, losses } = countOutcomes(group.events);

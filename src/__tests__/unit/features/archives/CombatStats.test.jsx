@@ -43,7 +43,7 @@ const mockEvents = [
 describe('CombatStats', () => {
     it('renders all four stat cards', () => {
         render(<CombatStats live={mockLive} events={mockEvents} />);
-        expect(screen.getByText('FRIENDLY FIRE')).toBeDefined();
+        expect(screen.getByText('FRIENDLY_FIRE')).toBeDefined();
         expect(screen.getByText('ACCURACY')).toBeDefined();
         expect(screen.getByText('KILLS/MISSION')).toBeDefined();
         expect(screen.getByText('DEATHS/EVENT')).toBeDefined();

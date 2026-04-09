@@ -30,26 +30,20 @@ export default function SeasonStats({ live, events }) {
     const totalEvents = events?.length ?? 0;
 
     return (
-        <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-text-muted">
-                By the Numbers
-            </div>
-            <div className="grid grid-cols-2 gap-1">
-                <StatCard label="KILLS" value={formatNumber(kills)} />
-                <StatCard label="MISSIONS" value={formatNumber(missions)} />
-                <StatCard label="PEAK PLAYERS" value={formatNumber(players)} />
-                <StatCard label="EVENTS WON" value={`${wonEvents}/${totalEvents}`} />
-                <StatCard label="K/D RATIO" value={formatRatio(kills, deaths)} />
-                <StatCard
-                    label="MISSION SUCCESS"
-                    value={formatPercent(successfulMissions, missions)}
-                />
-                <StatCard
-                    label="SHOTS/PLANET"
-                    value={completedPlanets > 0 ? formatNumber(Number(shots) / completedPlanets) : '—'}
-                />
-                <StatCard label="UNIQUE PLAYERS" value={formatNumber(totalUniquePlayers)} />
-            </div>
+        <div className="grid grid-cols-2 gap-1">
+            <StatCard label="KILLS" value={formatNumber(kills)} />
+            <StatCard label="MISSIONS" value={formatNumber(missions)} />
+            <StatCard label="PEAK_PLAYERS" value={formatNumber(players)} />
+            <StatCard label="K/D_RATIO" value={formatRatio(kills, deaths)} />
+            <StatCard
+                label="MISSION_SUCCESS"
+                value={formatPercent(successfulMissions, missions)}
+            />
+            <StatCard
+                label="SHOTS/PLANET"
+                value={completedPlanets > 0 ? formatNumber(Number(shots) / completedPlanets) : '—'}
+            />
+            <StatCard label="UNIQUE_PLAYERS" value={formatNumber(totalUniquePlayers)} />
         </div>
     );
 }

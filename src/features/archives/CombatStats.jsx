@@ -22,26 +22,21 @@ export default function CombatStats({ live, events }) {
     const eventCount = events?.length ?? 0;
 
     return (
-        <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-text-muted">
-                Combat Performance
-            </div>
-            <div className="grid grid-cols-2 gap-1">
-                <StatCard
-                    label="FRIENDLY FIRE"
-                    value={formatPercent(accidentals, kills)}
-                    accentColor="danger"
-                />
-                <StatCard label="ACCURACY" value={formatPercent(hits, shots)} />
-                <StatCard
-                    label="KILLS/MISSION"
-                    value={missions > 0n ? formatNumber(Number(kills) / Number(missions)) : '—'}
-                />
-                <StatCard
-                    label="DEATHS/EVENT"
-                    value={eventCount > 0 ? formatNumber(Number(deaths) / eventCount) : '—'}
-                />
-            </div>
+        <div className="grid grid-cols-2 gap-1">
+            <StatCard
+                label="FRIENDLY_FIRE"
+                value={formatPercent(accidentals, kills)}
+                accentColor="danger"
+            />
+            <StatCard label="ACCURACY" value={formatPercent(hits, shots)} />
+            <StatCard
+                label="KILLS/MISSION"
+                value={missions > 0n ? formatNumber(Number(kills) / Number(missions)) : '—'}
+            />
+            <StatCard
+                label="DEATHS/EVENT"
+                value={eventCount > 0 ? formatNumber(Number(deaths) / eventCount) : '—'}
+            />
         </div>
     );
 }
