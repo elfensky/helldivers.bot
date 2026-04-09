@@ -36,10 +36,15 @@ function buildChartData(snapshots, pointsMax) {
             const faction = parsed[i];
             if (!faction || faction.status === 'hidden') {
                 entry[FACTIONS[i].key] = null;
+            } else if (faction.status === 'defeated') {
+                // Homeworld captured — full conquest
+                entry[FACTIONS[i].key] = 100;
             } else {
-                // Sectors captured (0-10) — matches what the galaxy map shows
-                const pointsPerSector = maxPoints[i] > 0 ? maxPoints[i] / 10 : 1;
-                entry[FACTIONS[i].key] = Math.min(10, Math.trunc(faction.points / pointsPerSector));
+                // Sector progress scaled to 10/11 of chart (sectors 1-10).
+                // The last 1/11 (90.9% → 100%) represents the homeworld attack.
+                // A faction at max sector points shows ~91% — "at the gates".
+                const sectorPct = maxPoints[i] > 0 ? (faction.points / maxPoints[i]) : 0;
+                entry[FACTIONS[i].key] = Math.round(sectorPct * (10 / 11) * 1000) / 10;
             }
         }
 
@@ -78,7 +83,7 @@ function ChartTooltip({ active, payload }) {
                             }}
                         >
                             <span>{f.label}</span>
-                            <span>{d[f.key]}/10</span>
+                            <span>{d[f.key]}%</span>
                         </div>
                     ),
             )}
@@ -109,8 +114,8 @@ export default function FactionHealthChart({ snapshots, pointsMax }) {
                 <YAxis
                     stroke="var(--color-surface-4)"
                     tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
-                    tickFormatter={(v) => v}
-                    domain={[0, 10]}
+                    tickFormatter={(v) => `${v}%`}
+                    domain={[0, 100]}
                 />
                 <Tooltip content={<ChartTooltip />} />
                 {FACTIONS.map((f) => (
