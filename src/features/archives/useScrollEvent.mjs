@@ -2,12 +2,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { eventKey } from '@/features/archives/eventKey.mjs';
 
 /**
- * Scroll-driven event selection via IntersectionObserver.
+ * Scroll-driven event selection.
  *
- * Observes event cards (identified by `data-event-key`) inside the rail
- * container. When a card enters the top 40% of the viewport, it becomes
- * the selected event. Returns `null` when no event is in the trigger zone
- * (e.g., page load before user scrolls to events).
+ * Uses a scroll listener (throttled via rAF) instead of IntersectionObserver
+ * to avoid edge cases with the fixed header, partial callbacks, and scroll
+ * direction. Selects the first event card whose top edge is visible below
+ * the fixed header.
  */
 export function useScrollEvent(events) {
     const [selectedEvent, setSelectedEvent] = useState(null);
@@ -27,42 +27,45 @@ export function useScrollEvent(events) {
         if (!rail || !events?.length) return;
 
         const lookup = eventMap();
+        let rafId = 0;
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                // Pick the topmost intersecting entry that is actually visible
-                // (non-negative top). Entries with negative top are partially
-                // scrolled above the viewport and should not win the selection.
-                let best = null;
-                for (const entry of entries) {
-                    if (!entry.isIntersecting) continue;
-                    if (entry.boundingClientRect.top < 0) continue;
-                    if (
-                        !best ||
-                        entry.boundingClientRect.top <
-                            best.boundingClientRect.top
-                    ) {
-                        best = entry;
-                    }
+        const updateSelection = () => {
+            const headerHeight =
+                document.getElementById('header')?.offsetHeight ?? 80;
+
+            const cards = rail.querySelectorAll('[data-event-key]');
+            let best = null;
+            for (const card of cards) {
+                const top = card.getBoundingClientRect().top;
+                // First card whose top is at or below the header bottom
+                if (top >= headerHeight) {
+                    best = card;
+                    break;
                 }
+            }
 
-                if (best) {
-                    const key = best.target.dataset.eventKey;
-                    const event = lookup.get(key);
-                    if (event) setSelectedEvent(event);
-                }
-            },
-            {
-                // Shrink bottom by 60% — only the top 40% of viewport is the trigger zone
-                rootMargin: '0px 0px -60% 0px',
-                threshold: 0,
-            },
-        );
+            if (best) {
+                const key = best.dataset.eventKey;
+                const event = lookup.get(key);
+                if (event) setSelectedEvent(event);
+            } else {
+                setSelectedEvent(null);
+            }
+        };
 
-        const cards = rail.querySelectorAll('[data-event-key]');
-        cards.forEach((card) => observer.observe(card));
+        const onScroll = () => {
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(updateSelection);
+        };
 
-        return () => observer.disconnect();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        // Run once on mount to set initial selection
+        updateSelection();
+
+        return () => {
+            window.removeEventListener('scroll', onScroll);
+            cancelAnimationFrame(rafId);
+        };
     }, [events, eventMap]);
 
     return { selectedEvent, railRef };
