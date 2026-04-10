@@ -133,13 +133,34 @@ export default function Footer() {
                     <div className="footer-section-label">Legal</div>
                     <ul className="footer-links">
                         <li>
-                            <span className="footer-link--disabled">Terms of Use</span>
+                            <Link
+                                href="/legal#terms"
+                                prefetch={false}
+                                data-umami-event="footer-terms"
+                                className="footer-link"
+                            >
+                                Terms of Use
+                            </Link>
                         </li>
                         <li>
-                            <span className="footer-link--disabled">Privacy Policy</span>
+                            <Link
+                                href="/legal#privacy"
+                                prefetch={false}
+                                data-umami-event="footer-privacy"
+                                className="footer-link"
+                            >
+                                Privacy Policy
+                            </Link>
                         </li>
                         <li>
-                            <span className="footer-link--disabled">Cookies</span>
+                            <Link
+                                href="/legal#cookies"
+                                prefetch={false}
+                                data-umami-event="footer-cookies"
+                                className="footer-link"
+                            >
+                                Cookies
+                            </Link>
                         </li>
                     </ul>
                 </nav>

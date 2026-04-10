@@ -91,13 +91,6 @@
     color: var(--color-primary);
 }
 
-/* Disabled/placeholder links */
-.footer-link--disabled {
-    color: var(--color-text-muted);
-    cursor: default;
-    font-size: var(--text-small);
-}
-
 /* Bottom separator bar */
 .footer-separator {
     border-top: 1px solid var(--color-ghost);
