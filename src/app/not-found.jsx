@@ -11,8 +11,16 @@ export default function NotFound() {
                 This area has been classified by Super Earth High Command. It either never
                 existed, or has been redacted for your safety.
             </p>
-            <Link href="/" prefetch={false} data-umami-event="nav-404-home" className="text-primary hover:underline">
-                Return to Managed Democracy →
+            <p className="text-small text-text-muted italic">
+                This incident has been logged.
+            </p>
+            <Link
+                href="/"
+                prefetch={false}
+                data-umami-event="nav-404-home"
+                className="inline-block cursor-pointer border border-primary px-3 py-1.5 font-body text-small font-bold uppercase tracking-[0.02em] text-primary hover:bg-primary hover:text-surface-0"
+            >
+                Resume approved Super Earth broadcast
             </Link>
         </div>
     );

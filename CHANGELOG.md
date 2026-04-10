@@ -2,6 +2,112 @@
 
 ## Unreleased
 
+## 0.37.0
+
+### Features
+
+- **Archives stats audit** — removed 8 redundant/confusing stats (DEFENSE_WON, ATTACK_WON, TOTAL_OVERKILL, LONGEST/SHORTEST_EVENT, PEAK_SURGE, raw MISSIONS, MOST_CONTESTED), renamed 6 to player-friendly labels (WIN_RATE, DURATION, K/D, TOTAL_DIVERS, BATTLES, HOTSPOT), added section headings (War Summary, Notable Moments, Combat Record).
+- **Closest calls & cascade detection** — new `seasonAnalytics.mjs` utility with `findClosestCalls()` (narrowest win/loss events) and `findWorstCascade()` (longest cascade of consecutive failed defenses). Displayed as Notable Moments stat cards.
+- **Cyberstan interference easter egg** — on defeat seasons, the archives header shows resistance text ("Leaked Campaign Records") with a 5-phase glitch cycle: idle → takeover (word-by-word scramble to propaganda) → hold → fight (chaotic noise) → restore. Two independent per-character effect layers: copy swap (propaganda leak-through) and Cyberstan font scramble.
+- **7 randomized resistance messages** — server-side random selection per request across 3 tonal directions (sardonic, hacker-broadcast, fourth-wall). No hydration mismatch.
+- **GlitchText component** — persistent looping text scramble with synced phase clock (`useGlitchCycle`), word-by-word settling in batches of 1-3, `prefers-reduced-motion` support, client-only rendering via `next/dynamic`.
+- **Effects toggle** — localStorage-persisted disable switch for interference effects.
+- **StatCard subtitle** — optional subtitle prop with clickable card support for linking Notable Moments to the event timeline.
+- **Scroll-driven event selection** — `useScrollEvent` hook with IntersectionObserver for archives timeline-to-map sync.
+- **Legal page** — in-lore terms of service, privacy policy, and cookies sections.
+
+### Improvements
+
+- Error pages use brandkit button styling and Big Brother copy ("This incident has been logged" + "Resume approved Super Earth broadcast").
+- Background watermark ("THE RECORD IS FALSE") on defeat seasons with fade-in transition.
+- Cyberstan font (Collective Consciousness) registered as `--font-cyberstan` theme token with `0.6em` sizing and `1ch` width containment to prevent reflow.
+- Archives header body text capped at `max-w-screen-md` for readability.
+
+### Bug Fixes
+
+- Fixed GlitchText SSR hydration mismatch by deferring random state to `useEffect` and using `next/dynamic` with `ssr: false`.
+- Fixed mismatched text/altText lengths causing truncated propaganda text during glitch takeover.
+- Fixed `useCyberstanEffects` hydration mismatch by moving `Math.random()` dice rolls from `useState` initializer to `useEffect`.
+
+### Chores
+
+- Deleted `OutcomeReveal.jsx` (236 lines) — replaced by unified GlitchText component.
+- Removed dead `statFlickers` code from hook and CSS.
+- Extracted resistance messages to `resistanceMessages.mjs` shared constants.
+
+## 0.36.0
+
+### Features
+
+- **Phase A season analytics** — 10+ stat cards per season: outcome, duration, events won, defense/attack rates, overkill, longest/shortest events, most contested region, peak mobilization. Works for ALL seasons (derived from events + snapshots, not h1_live).
+- **Per-faction analytics with FactionTabs** — Bugs/Cyborgs/Illuminate tab switcher on archives. Per-faction stats: defense rate, attack rate, event count, average duration, peak surge, most attacked region, overkill, conquest progress.
+- **Unified ArchiveStats** — merged SeasonStats + CombatStats + EventStats into one component. Shows h1_live combat stats (kills, accuracy, FF) when available, event-derived stats always.
+- **Shared EventCardLayout** — extracted card shell for dashboard/archive event card reuse.
+
+### Improvements
+
+- Archives sidebar restructured with H1 blurb ("Declassified Campaign Archives"), H2 section headings (Statistics, Faction Analysis, Event Log), season selector inline with Statistics heading.
+- VICTORY/DEFEAT rendered as StatCard with colored text (green/red) instead of custom banner.
+- Sticky map uses full viewport height, clips naturally from top at bottom of page.
+
+### Bug Fixes
+
+- Archive map: gap-event replay for accurate historical map reconstruction (fixes stale snapshot issues).
+- Archive map: clamp sector points to defend frontier (fixes sectors beyond defend region showing as captured).
+- Sticky map no longer overlaps footer.
+- React hooks violation fixed in ArchiveEventRail.
+- Composite event key (type+event_id) for correct event selection.
+
+### Chores
+
+- Codebase cleanup: deleted 7 dead files, extracted shared utilities (FACTION_COLORS, formatCompactDuration, eventKey), fixed convention violations (Umami env var, design tokens, try/catch).
+- Moved SeasonSelector to archives feature directory.
+- Dependencies updated (Prisma 7.7, better-auth 1.6, vitest 4.1.3, etc).
+
+## 0.35.0
+
+### Features
+
+- **Archives page redesign** — two-column layout (narrative sidebar + sticky galaxy map) mirroring the dashboard pattern. New components: SeasonOverview (outcome banner), SeasonStats (aggregated stats grid), FactionSummary (per-faction win/loss), ArchiveEventRail (clickable event log controlling the map), ArchiveMap (map-state-at-event computation).
+- **Shared EventCardLayout** — extracted card shell (accent bar + status styling) used by both dashboard LiveEvent and archive ArchiveEvent. Archive events show region name, final duration, and outcome.
+- **Archive map gap-event replay** — reconstruct map state by replaying events that completed between the nearest snapshot and the selected event. Handles stale snapshots (8-24h gaps), failed defend cascades, and region 0 Super Earth defends.
+- **Event selection URL sync** — selected event persisted as `?event=<type>-<event_id>` composite key for shareable deep-links. Back button navigates between selections.
+- **Archive event hover states** — clickable event cards get cursor-pointer + brightness lift on hover.
+
+### Bug Fixes
+
+- **Archive map double-counting** — fixed completed events being passed to computeMapState, causing failed defend cascades to wipe sectors already reflected in snapshot points.
+- **React hooks violation** — moved useRef/useEffect above early return in ArchiveEventRail.
+- **Event ID field** — corrected event.id → event.event_id with composite key (type+event_id) since event_id is not unique across attack/defend.
+
+## 0.34.0
+
+### Features
+
+- **SEO & JSON-LD structured data** — add shared `JsonLd` component with CSP nonce support. Add `WebApplication` + `BreadcrumbList` schemas to homepage, `WebPage` + `BreadcrumbList` to docs layout. Refactor archives page to use shared component. Fix Event schema validation: add `location` (VirtualLocation), `eventAttendanceMode`, `eventStatus`, and `performer` fields. Flesh out attack event schemas with full structured data. Add `operatingSystem` to archives WebApplication.
+
+### Chores
+
+- Update author URL from `lavrenov.io` to `lav.ren` across all schemas, footer, and README.
+
+## 0.33.0
+
+### Features
+
+- **Region-centric toasts** — replace plain-text toast labels with JSX content showing faction icons, region names as titles, and event type as subtitle. Switch animation from `toast-glow` box-shadow pulse to `action-flash` opacity flash for transition toasts; catch-up toasts are now static. Push notification payloads updated to match.
+
+## 0.32.0
+
+### Features
+
+- **Defeated faction cards** — show defeated factions in the Regions section with a muted gold "DEFEATED" label, faction name, full progress bar, and campaign duration instead of hiding them.
+
+## 0.31.1
+
+### Features
+
+- **Pace status shorthand** — move pace indicator (ahead/behind/on track) to the event type label row (e.g. `CAPITAL_DEFENSE · 1.2K ahead`), right-aligned via `space-between`. Shorten format from verbose "Ahead by 1234 points" to compact "1.2K ahead". Add live countdown timer to EventCountdown.
+
 ## 0.31.0
 
 ### Features

@@ -32,7 +32,7 @@ export default async function SystemOverview() {
 
             {/* Row 1 — Infrastructure */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <StatCard
+                <AdminStatCard
                     label="Worker Status"
                     value={workerHealth.label}
                     accentColor={
@@ -42,11 +42,11 @@ export default async function SystemOverview() {
                         :   'bg-danger'
                     }
                 />
-                <StatCard
+                <AdminStatCard
                     label="Last Poll"
                     value={heartbeat ? formatTimeAgo(heartbeat.last_beat) : '—'}
                 />
-                <StatCard
+                <AdminStatCard
                     label="Poll Duration"
                     value={
                         heartbeat?.poll_duration_ms != null ?
@@ -54,7 +54,7 @@ export default async function SystemOverview() {
                         :   '—'
                     }
                 />
-                <StatCard
+                <AdminStatCard
                     label="Uptime"
                     value={heartbeat ? formatUptime(heartbeat.started_at) : '—'}
                 />
@@ -71,28 +71,28 @@ export default async function SystemOverview() {
 
             {/* Row 2 — Game Data */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <StatCard
+                <AdminStatCard
                     label="Current Season"
                     value={currentSeason != null ? `#${currentSeason}` : '—'}
                 />
-                <StatCard label="Active Factions" value={activeFactions} />
-                <StatCard label="Total Events" value={formatNumber(totalEvents)} />
-                <StatCard label="Seasons Stored" value={seasonsStored} />
+                <AdminStatCard label="Active Factions" value={activeFactions} />
+                <AdminStatCard label="Total Events" value={formatNumber(totalEvents)} />
+                <AdminStatCard label="Seasons Stored" value={seasonsStored} />
             </div>
 
             {/* Row 3 — Users */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <StatCard label="Users" value={totalUsers} />
-                <StatCard label="API Keys" value={totalApiKeys} />
-                <StatCard label="Push Subscribers" value={pushSubscribers} />
+                <AdminStatCard label="Users" value={totalUsers} />
+                <AdminStatCard label="API Keys" value={totalApiKeys} />
+                <AdminStatCard label="Push Subscribers" value={pushSubscribers} />
             </div>
         </div>
     );
 }
 
-function StatCard({ label, value, accentColor = 'bg-primary' }) {
+function AdminStatCard({ label, value, accentColor = 'bg-primary' }) {
     return (
-        <div className="grid grid-cols-[minmax(0,1fr)_4px] border border-ghost bg-surface-1">
+        <div className="grid grid-cols-[minmax(0,1fr)_var(--card-accent-width)] border border-ghost bg-surface-1">
             <div className="p-3">
                 <p className="font-mono text-small text-text-muted uppercase">{label}</p>
                 <p className="font-display text-h1 leading-none font-black text-primary uppercase">

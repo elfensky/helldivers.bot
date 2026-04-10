@@ -1,0 +1,128 @@
+/* src/features/archives/ArchivesLayout.css */
+
+.archives-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+/* Stats section: full width, standard flow */
+.archives-stats-section {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Scrollytelling section: event log + sticky map */
+.archives-scrollytelling {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/*
+ * Mobile: map column pinned to top, events scroll beneath it.
+ * order: -1 puts the map visually above the event column.
+ */
+.archives-map-col {
+    order: -1;
+    position: sticky;
+    top: 50px; /* below fixed header (h-[50px] on mobile) */
+    z-index: 10;
+    background: var(--color-surface-0);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* sm+ header is 80px tall */
+@media (min-width: 640px) {
+    .archives-map-col {
+        top: 80px;
+    }
+}
+
+/* Floating action button: fixed bottom-right on mobile, hidden at lg: */
+.archives-map-toggle {
+    position: fixed;
+    bottom: calc(var(--space-4, 1rem) + 56px); /* above BottomNav */
+    right: var(--space-4, 1rem);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--color-text);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-ghost);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+    cursor: pointer;
+}
+
+/* Desktop: two columns, toggle hidden */
+@media (min-width: 768px) {
+    .archives-scrollytelling {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) minmax(0, 50dvh);
+        column-gap: 4rem;
+    }
+
+    .archives-map-col {
+        order: 0;
+        top: 80px;
+        align-self: start;
+        z-index: auto;
+        background: transparent;
+        /* Fill viewport below nav — map clips from top when scrolled past grid */
+        max-height: calc(100dvh - 80px - 2rem);
+        min-height: 0;
+        min-width: 0;
+    }
+
+    /* Galaxy fills remaining space after the event detail card */
+    .archives-map-col > :first-child {
+        flex: 1;
+        min-height: 0;
+    }
+
+    .archives-map-toggle {
+        display: none;
+    }
+}
+
+/*
+ * Force mobile/vertical timeline layout inside the archive event column.
+ * TimelineSection.css applies desktop styles (rail, multi-column grid) at 768px+,
+ * but the archive event log is in a narrow column and should always stack vertically.
+ */
+.archives-event-col .timeline-days {
+    gap: 0;
+    position: static;
+}
+
+.archives-event-col .timeline-days::before {
+    display: none;
+}
+
+.archives-event-col .timeline-day {
+    display: block;
+}
+
+.archives-event-col .rail {
+    display: none;
+}
+
+.archives-event-col .timeline-day-grid {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+}
+
+.archives-event-col .timeline-day-header {
+    box-shadow: inset -6px 0 0 0 var(--color-ghost);
+}

@@ -35,15 +35,6 @@ async function sendUmamiEvent(payload) {
 }
 
 /**
- * Track a server-side page view. Production-only; no-ops in dev/test.
- * @param {string} title - Page title
- * @param {string} url   - Page URL path
- */
-export async function umamiTrackPage(title, url) {
-    await sendUmamiEvent({ title, url });
-}
-
-/**
  * Track a named server-side event with optional custom data.
  * Production-only; no-ops in dev/test. Called from API routes via
  * Next.js `after()` so analytics never blocks the response.

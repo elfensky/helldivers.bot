@@ -19,7 +19,7 @@ export default function Footer() {
                     <div className="footer-brand-contact">
                         © {year}{' '}
                         <a
-                            href="https://lavrenov.io"
+                            href="https://lav.ren"
                             target="_blank"
                             rel="noopener noreferrer"
                             data-umami-event="footer-portfolio"
@@ -47,17 +47,32 @@ export default function Footer() {
                     <div className="footer-section-label">Features</div>
                     <ul className="footer-links">
                         <li>
-                            <Link href="/" prefetch={false} data-umami-event="footer-campaign" className="footer-link">
+                            <Link
+                                href="/"
+                                prefetch={false}
+                                data-umami-event="footer-campaign"
+                                className="footer-link"
+                            >
                                 Campaign
                             </Link>
                         </li>
                         <li>
-                            <Link href="/archives" prefetch={false} data-umami-event="footer-archives" className="footer-link">
+                            <Link
+                                href="/archives"
+                                prefetch={false}
+                                data-umami-event="footer-archives"
+                                className="footer-link"
+                            >
                                 Archives
                             </Link>
                         </li>
                         <li>
-                            <Link href="/docs" prefetch={false} data-umami-event="footer-docs" className="footer-link">
+                            <Link
+                                href="/docs"
+                                prefetch={false}
+                                data-umami-event="footer-docs"
+                                className="footer-link"
+                            >
                                 Docs
                             </Link>
                         </li>
@@ -118,13 +133,34 @@ export default function Footer() {
                     <div className="footer-section-label">Legal</div>
                     <ul className="footer-links">
                         <li>
-                            <span className="footer-link--disabled">Terms of Use</span>
+                            <Link
+                                href="/legal#terms"
+                                prefetch={false}
+                                data-umami-event="footer-terms"
+                                className="footer-link"
+                            >
+                                Terms of Use
+                            </Link>
                         </li>
                         <li>
-                            <span className="footer-link--disabled">Privacy Policy</span>
+                            <Link
+                                href="/legal#privacy"
+                                prefetch={false}
+                                data-umami-event="footer-privacy"
+                                className="footer-link"
+                            >
+                                Privacy Policy
+                            </Link>
                         </li>
                         <li>
-                            <span className="footer-link--disabled">Cookies</span>
+                            <Link
+                                href="/legal#cookies"
+                                prefetch={false}
+                                data-umami-event="footer-cookies"
+                                className="footer-link"
+                            >
+                                Cookies
+                            </Link>
                         </li>
                     </ul>
                 </nav>
@@ -132,10 +168,11 @@ export default function Footer() {
 
             <div className="footer-separator p-gutters">
                 <div className="flex flex-col gap-1">
-                    <span>Ministry of Truth</span>
-                    <span className="text-[0.625rem] normal-case tracking-normal opacity-50">
+                    <span>Humblebee UAV Drone Mk. IV</span>
+                    <span className="text-[0.625rem] tracking-normal normal-case opacity-50">
                         v{process.env.NEXT_PUBLIC_APP_VERSION} &ndash;{' '}
-                        {process.env.NEXT_PUBLIC_COMMIT_SHA}
+                        {process.env.NEXT_PUBLIC_COMMIT_SHA} &ndash;{' '}
+                        {process.env.NODE_ENV}
                     </span>
                 </div>
                 <span>

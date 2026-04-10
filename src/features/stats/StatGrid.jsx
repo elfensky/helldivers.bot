@@ -57,17 +57,23 @@ export default function StatGrid({ live, faction, events }) {
     );
 }
 
-function StatCard({ label, value, accentColor }) {
+export function StatCard({ label, value, subtitle, accentColor, valueColor, onClick }) {
     const accentClass =
         accentColor === 'success' ? 'stat-card-accent-success'
         : accentColor === 'danger' ? 'stat-card-accent-danger'
         : 'stat-card-accent';
 
+    const valueColorClass =
+        valueColor === 'success' ? 'text-success'
+        : valueColor === 'danger' ? 'text-danger'
+        : '';
+
     return (
-        <div className="stat-card">
+        <div className={`stat-card${onClick ? ' stat-card-clickable' : ''}`} onClick={onClick}>
             <div className="stat-card-content">
                 <span className="stat-card-label">{label}</span>
-                <span className="stat-card-value">{value}</span>
+                <span className={`stat-card-value ${valueColorClass}`}>{value}</span>
+                {subtitle && <span className="stat-card-subtitle">{subtitle}</span>}
             </div>
             <div className={accentClass} />
         </div>

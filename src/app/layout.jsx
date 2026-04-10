@@ -26,19 +26,6 @@ const inter = Inter({
     display: 'swap',
 });
 
-// function getMetaURL() {
-//     switch (process.env.NODE_ENV) {
-//         case 'development':
-//             return new URL('http://localhost:3000');
-//         case 'staging':
-//             return new URL('https://staging.helldivers.bot');
-//         case 'production':
-//             return new URL('https://helldivers.bot');
-//         default:
-//             throw new Error('Unknown NODE_ENV');
-//     }
-// }
-
 export const viewport = {
     themeColor: '#1c1b1b',
 };
@@ -226,7 +213,7 @@ export default async function RootLayout({ children }) {
                         nonce={nonce}
                         // src="https://umami.drunik.be/script.js"
                         src="/stats.js"
-                        data-website-id="9a916711-2868-43d2-9932-964fc9528824"
+                        data-website-id={process.env.UMAMI_SITE_ID}
                         strategy="afterInteractive"
                     />
                 :   null}
@@ -246,7 +233,7 @@ const schema = {
     author: {
         '@type': 'Person',
         name: 'Andrei Lavrenov',
-        url: 'https://lavrenov.io',
+        url: 'https://lav.ren',
     },
     description:
         'A website that provides dedicated real-time in-game status updates for the original Helldivers videogame.',
@@ -294,7 +281,7 @@ const schema = {
             creator: {
                 '@type': 'Person',
                 name: 'Andrei Lavrenov',
-                url: 'https://lavrenov.io',
+                url: 'https://lav.ren',
             },
             offers: {
                 '@type': 'Offer',
@@ -312,42 +299,8 @@ const schema = {
             provider: {
                 '@type': 'Person',
                 name: 'Andrei Lavrenov',
-                url: 'https://lavrenov.io',
+                url: 'https://lav.ren',
             },
         },
     ],
 };
-
-// const toAddToJsonLd = {
-//     potentialAction: [
-//         {
-//             '@type': 'ViewAction',
-//             target: 'https://helldivers.bot/view/{content_id}',
-//             'query-input': 'required name=content_id',
-//         },
-//         {
-//             '@type': 'SearchAction',
-//             target: 'https://helldivers.bot/search?q={search_term_string}',
-//             'query-input': 'required name=search_term_string',
-//         },
-//         {
-//             '@type': 'RegisterAction',
-//             target: 'https://helldivers.bot/register',
-//         },
-//         {
-//             '@type': 'LikeAction',
-//             target: 'https://helldivers.bot/like/{content_id}',
-//             'query-input': 'required name=content_id',
-//         },
-//         {
-//             '@type': 'DislikeAction',
-//             target: 'https://helldivers.bot/dislike/{content_id}',
-//             'query-input': 'required name=content_id',
-//         },
-//         {
-//             '@type': 'ShareAction',
-//             target: 'https://helldivers.bot/share/{content_id}',
-//             'query-input': 'required name=content_id',
-//         },
-//     ],
-// };

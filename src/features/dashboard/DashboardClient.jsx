@@ -4,12 +4,15 @@ import { useState } from 'react';
 import Galaxy from '@/features/galaxy/Galaxy';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
+import DefeatedCard from '@/features/galaxy/DefeatedCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
 import StatGrid from '@/features/stats/StatGrid';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import { sortEventsByRecent } from '@/shared/utils/game/eventFilters.mjs';
 import { HOMEWORLD_REGION } from '@/shared/enums/worlds.mjs';
+import { CAMPAIGN_STATUS, EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
+import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 
 const factionIndices = [0, 1, 2];
@@ -37,9 +40,31 @@ export default function DashboardClient() {
     }
 
     const events = sortEventsByRecent(data?.events);
+    const pulseDelays = computePulseDelays(data?.events);
 
     function renderFrontierCard(index) {
         const campaignData = data.live?.find((l) => l.enemy === index);
+
+        if (campaignData?.status === CAMPAIGN_STATUS.DEFEATED) {
+            const factionEvents = events?.filter((e) => e.enemy === index) ?? [];
+            const defeatEvent = factionEvents.find(
+                (e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.SUCCESS,
+            );
+            const earliestStart = factionEvents.reduce(
+                (min, e) => (e.start_time < min ? e.start_time : min),
+                Infinity,
+            );
+            return (
+                <li key={`frontier-${index}`}>
+                    <DefeatedCard
+                        factionIndex={index}
+                        startTime={earliestStart !== Infinity ? earliestStart : null}
+                        endTime={defeatEvent?.end_time ?? null}
+                    />
+                </li>
+            );
+        }
+
         const frontier = computeFrontier(campaignData, mapState[index]);
         if (!frontier) return null;
 
@@ -76,6 +101,7 @@ export default function DashboardClient() {
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
                     endTime={activeEvent?.end_time}
+                    pulseDelay={activeEvent ? pulseDelays.get(`${activeEvent.enemy}-${activeEvent.region}`) : undefined}
                 />
             </li>
         );
@@ -108,6 +134,7 @@ export default function DashboardClient() {
                     factionIndex={index}
                     pace={attackEvent ? evaluateProgress(attackEvent) : null}
                     endTime={attackEvent?.end_time}
+                    pulseDelay={attackEvent ? pulseDelays.get(`${attackEvent.enemy}-${attackEvent.region}`) : undefined}
                 />
             </li>
         );
@@ -117,7 +144,7 @@ export default function DashboardClient() {
         <div className="dashboard gutters">
             <div className="dashboard-map">
                 <ComponentErrorBoundary name="Galaxy Map">
-                    <Galaxy mapState={mapState} />
+                    <Galaxy mapState={mapState} pulseDelays={pulseDelays} />
                 </ComponentErrorBoundary>
             </div>
             <div className="dashboard-sidebar">

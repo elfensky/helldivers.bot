@@ -1,3 +1,5 @@
+import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
+
 /**
  * Evaluate event pace vs linear schedule.
  *
@@ -37,8 +39,6 @@ export function evaluateProgress(event) {
             Math.round(((event.points - expectedPoints) / expectedPoints) * 100)
         :   0;
 
-    const STATUS_LABELS = { ahead: 'Ahead', behind: 'Behind', on_track: 'On track' };
-
     return {
         status,
         delta,
@@ -47,7 +47,7 @@ export function evaluateProgress(event) {
         requiredRate,
         label:
             status === 'on_track' ? 'On track' : (
-                `${STATUS_LABELS[status]} by ${delta} points`
+                `${formatNumber(delta)} ${status}`
             ),
     };
 }

@@ -53,7 +53,12 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
     const [deleteError, setDeleteError] = useState(null);
 
     const handleDelete = useCallback(async () => {
-        if (!window.confirm('Permanently delete your account and all data? This cannot be undone.')) return;
+        if (
+            !window.confirm(
+                'Permanently delete your account and all data? This cannot be undone.',
+            )
+        )
+            return;
         setDeleting(true);
         setDeleteError(null);
         const fd = new FormData();
@@ -69,7 +74,7 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
 
     return (
         <div className="flex flex-col gap-3">
-            <h2>Your Data</h2>
+            <h3>Your Data</h3>
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Left: account info */}
@@ -98,10 +103,10 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
                                         key={provider}
                                         className="flex items-center gap-2"
                                     >
-                                        <span className="text-body capitalize text-text">
+                                        <span className="text-body text-text capitalize">
                                             {provider}
                                         </span>
-                                        {linked ? (
+                                        {linked ?
                                             !isOnlyAccount && (
                                                 <button
                                                     type="button"
@@ -114,32 +119,23 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
                                                     disabled={isLoading}
                                                     className="cursor-pointer border border-danger px-2 py-0.5 text-small font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
-                                                    {isLoading
-                                                        ? 'Unlinking…'
-                                                        : 'Unlink'}
+                                                    {isLoading ? 'Unlinking…' : 'Unlink'}
                                                 </button>
                                             )
-                                        ) : (
-                                            <button
+                                        :   <button
                                                 type="button"
-                                                onClick={() =>
-                                                    handleLink(provider)
-                                                }
+                                                onClick={() => handleLink(provider)}
                                                 disabled={isLoading}
                                                 className="cursor-pointer border border-primary px-2 py-0.5 text-small font-semibold text-primary hover:bg-primary hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
                                             >
-                                                {isLoading
-                                                    ? 'Linking…'
-                                                    : 'Link'}
+                                                {isLoading ? 'Linking…' : 'Link'}
                                             </button>
-                                        )}
+                                        }
                                     </div>
                                 );
                             })}
                             {linkError && (
-                                <p className="text-small text-danger">
-                                    {linkError}
-                                </p>
+                                <p className="text-small text-danger">{linkError}</p>
                             )}
                         </div>
                     </div>

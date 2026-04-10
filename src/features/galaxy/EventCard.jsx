@@ -1,14 +1,9 @@
+import { useState, useEffect } from 'react';
 import './EventCard.css';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
-import { PACE_COLORS } from '@/shared/enums/colors.mjs';
+import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import humanizeDuration from 'humanize-duration';
-
-const FACTION_COLORS = {
-    0: 'var(--color-faction-bugs)',
-    1: 'var(--color-faction-cyborgs)',
-    2: 'var(--color-faction-illuminate)',
-};
 
 /**
  * Compute frontier progress from campaign-level live data and map state.
@@ -44,7 +39,16 @@ export function computeFrontier(campaignData, factionMap) {
 }
 
 function EventCountdown({ endTime }) {
-    const remaining = endTime - Math.floor(Date.now() / 1000);
+    const [remaining, setRemaining] = useState(() => endTime - Math.floor(Date.now() / 1000));
+
+    useEffect(() => {
+        setRemaining(endTime - Math.floor(Date.now() / 1000));
+        const id = setInterval(() => {
+            setRemaining(endTime - Math.floor(Date.now() / 1000));
+        }, 1000);
+        return () => clearInterval(id);
+    }, [endTime]);
+
     if (remaining <= 0) return <span className="sector-card-countdown">Expired</span>;
     const text = humanizeDuration(remaining * 1000, { largest: 2, round: true });
     return (
@@ -64,6 +68,7 @@ export default function EventCard({
     pace,
     endTime,
     barLabel,
+    pulseDelay,
 }) {
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = !!endTime;
@@ -72,10 +77,13 @@ export default function EventCard({
     const barColor = isDefending ? 'var(--color-danger)' : color;
     const safePct = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
 
+    const cardStyle = { '--accent-color': color };
+    if (pulseDelay != null) cardStyle['--pulse-delay'] = `${pulseDelay}s`;
+
     return (
         <div
-            className={'sector-card' + (isEvent ? ' sector-card-event' : '')}
-            style={{ '--accent-color': color }}
+            className="sector-card"
+            style={cardStyle}
         >
             <div className="sector-card-content">
                 <div className="sector-card-header">
@@ -97,7 +105,21 @@ export default function EventCard({
                     <span className="sector-card-title">{region}</span>
                 </div>
                 {barLabel && (
-                    <span className="sector-card-bar-label">{barLabel}</span>
+                    <div className="sector-card-bar-label-row">
+                        <span className="sector-card-bar-label">{barLabel}</span>
+                        {pace && (
+                            <>
+                                <span className="sector-card-sep">&middot;</span>
+                                <span
+                                    className="sector-card-pace"
+                                    style={{ color: PACE_COLORS[pace.status] }}
+                                    suppressHydrationWarning
+                                >
+                                    {pace.label}
+                                </span>
+                            </>
+                        )}
+                    </div>
                 )}
                 <div className="sector-card-bar-wrap">
                     <div
@@ -124,7 +146,7 @@ export default function EventCard({
                             <EventCountdown endTime={endTime} />
                         </>
                     )}
-                    {pace && (
+                    {!barLabel && pace && (
                         <>
                             <span className="sector-card-sep">&middot;</span>
                             <span
@@ -138,7 +160,7 @@ export default function EventCard({
                     )}
                 </div>
             </div>
-            <div className="sector-card-accent" />
+            <div className={'sector-card-accent' + (isEvent ? ' sector-card-accent-flash' : '')} />
         </div>
     );
 }

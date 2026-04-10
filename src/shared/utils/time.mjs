@@ -66,16 +66,6 @@ export function elapsedMilliseconds(past) {
     return elapsed;
 }
 
-export function formatTimestamp(unixSeconds) {
-    return new Date(unixSeconds * 1000).toLocaleString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
-
 export function elapsedSeasonTime(season_duration) {
     const days = Math.floor(season_duration / 86400);
     const hours = Math.floor((season_duration % 86400) / 3600);

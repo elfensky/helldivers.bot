@@ -2,7 +2,9 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 
 // --- Dependency mocks ---
 
-vi.mock('web-push', () => ({ default: { setVapidDetails: vi.fn(), sendNotification: vi.fn() } }));
+vi.mock('web-push', () => ({
+    default: { setVapidDetails: vi.fn(), sendNotification: vi.fn() },
+}));
 vi.mock('@/db/db', () => ({ default: { push_subscription: { deleteMany: vi.fn() } } }));
 vi.mock('@/shared/utils/tryCatch.mjs', () => ({
     tryCatch: vi.fn(async (p) => {
@@ -21,17 +23,17 @@ import { buildPayload, sendWithConcurrencyLimit } from '@/update/pushNotifier';
 describe('buildPayload', () => {
     const bugAttackStarted = {
         kind: 'event_started',
-        event: { enemy: 0, type: 'attack', season: 142, event_id: 58291 },
+        event: { enemy: 0, type: 'attack', region: 1, season: 142, event_id: 58291 },
     };
 
     const cyborgDefendWon = {
         kind: 'event_won',
-        event: { enemy: 1, type: 'defend', season: 142, event_id: 58292 },
+        event: { enemy: 1, type: 'defend', region: 3, season: 142, event_id: 58292 },
     };
 
     const illuminateLost = {
         kind: 'event_lost',
-        event: { enemy: 2, type: 'attack', season: 142, event_id: 58293 },
+        event: { enemy: 2, type: 'attack', region: 5, season: 142, event_id: 58293 },
     };
 
     test('returns a JSON string', () => {
@@ -39,24 +41,24 @@ describe('buildPayload', () => {
         expect(() => JSON.parse(result)).not.toThrow();
     });
 
-    test('includes faction name and event type in title', () => {
+    test('uses region-centric title for attack started', () => {
         const payload = JSON.parse(buildPayload(bugAttackStarted));
-        expect(payload.title).toBe('Bugs attack event started');
+        expect(payload.title).toBe('Attacking Wise Region');
     });
 
-    test('uses "won!" suffix for event_won', () => {
+    test('uses region-centric title for defend won', () => {
         const payload = JSON.parse(buildPayload(cyborgDefendWon));
-        expect(payload.title).toBe('Cyborgs defend event won!');
+        expect(payload.title).toBe('Pictor Sector defended');
     });
 
-    test('uses plain suffix for event_lost', () => {
+    test('uses region-centric title for attack lost', () => {
         const payload = JSON.parse(buildPayload(illuminateLost));
-        expect(payload.title).toBe('The Illuminate attack event lost');
+        expect(payload.title).toBe('Orionis Region held');
     });
 
-    test('includes season in body', () => {
+    test('includes event type in body', () => {
         const payload = JSON.parse(buildPayload(bugAttackStarted));
-        expect(payload.body).toBe('Season 142');
+        expect(payload.body).toBe('Attack event started');
     });
 
     test('uses faction icon', () => {
@@ -67,7 +69,7 @@ describe('buildPayload', () => {
     test('falls back to superearth icon for unknown faction', () => {
         const unknownFaction = {
             kind: 'event_started',
-            event: { enemy: 99, type: 'attack', season: 1, event_id: 1 },
+            event: { enemy: 99, type: 'attack', region: 1, season: 1, event_id: 1 },
         };
         const payload = JSON.parse(buildPayload(unknownFaction));
         expect(payload.icon).toBe('/icons/superearth.webp');
@@ -91,7 +93,7 @@ describe('buildPayload', () => {
     test('omits tag when event_id is missing', () => {
         const noEventId = {
             kind: 'event_started',
-            event: { enemy: 0, type: 'attack', season: 1 },
+            event: { enemy: 0, type: 'attack', region: 1, season: 1 },
         };
         const payload = JSON.parse(buildPayload(noEventId));
         expect(payload.tag).toBeUndefined();
@@ -101,7 +103,7 @@ describe('buildPayload', () => {
     test('includes tag for event_id 0', () => {
         const zeroId = {
             kind: 'event_started',
-            event: { enemy: 0, type: 'attack', season: 1, event_id: 0 },
+            event: { enemy: 0, type: 'attack', region: 1, season: 1, event_id: 0 },
         };
         const payload = JSON.parse(buildPayload(zeroId));
         expect(payload.tag).toBe('event-0');
@@ -111,7 +113,7 @@ describe('buildPayload', () => {
     test('falls back to "Campaign Update" for unknown kind', () => {
         const unknownKind = {
             kind: 'event_unknown',
-            event: { enemy: 0, type: 'attack', season: 1, event_id: 1 },
+            event: { enemy: 0, type: 'attack', region: 1, season: 1, event_id: 1 },
         };
         const payload = JSON.parse(buildPayload(unknownKind));
         expect(payload.title).toBe('Campaign Update');
@@ -119,8 +121,16 @@ describe('buildPayload', () => {
 });
 
 describe('sendWithConcurrencyLimit', () => {
-    const sub1 = { endpoint: 'https://example.com/push/1', keys_p256dh: 'key1', keys_auth: 'auth1' };
-    const sub2 = { endpoint: 'https://example.com/push/2', keys_p256dh: 'key2', keys_auth: 'auth2' };
+    const sub1 = {
+        endpoint: 'https://example.com/push/1',
+        keys_p256dh: 'key1',
+        keys_auth: 'auth1',
+    };
+    const sub2 = {
+        endpoint: 'https://example.com/push/2',
+        keys_p256dh: 'key2',
+        keys_auth: 'auth2',
+    };
 
     let webpush;
     let db;

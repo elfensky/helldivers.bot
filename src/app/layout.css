@@ -40,10 +40,14 @@
     --color-warning-tint: rgba(40, 25, 0, 0.8);
     --color-primary-tint: rgba(40, 35, 0, 0.8);
 
+    /* === STATE (defeated/completed) === */
+    --color-gold-muted: #8a7a3a;
+
     /* === TYPOGRAPHY === */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
     --font-mono: 'Space Mono', monospace;
+    --font-cyberstan: 'Collective Consciousness', monospace;
 
     /* === SPACING === */
     --space-1: 0.25rem;
@@ -57,6 +61,10 @@
 
     /* === CARD ACCENT === */
     --card-accent-width: 6px;
+
+    /* === ANIMATION DURATION === */
+    --duration-pulse-fast: 1.5s;
+    --duration-pulse-slow: 3s;
 
     /* === RADIUS === */
     --radius: 0px;
@@ -85,11 +93,13 @@
     --color-success-tint: rgba(0, 20, 0, 0.8);
     --color-warning-tint: rgba(40, 25, 0, 0.8);
     --color-primary-tint: rgba(40, 35, 0, 0.8);
+    --color-gold-muted: #8a7a3a;
 
     /* Typography — font families */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
     --font-mono: 'Space Mono', monospace;
+    --font-cyberstan: 'Collective Consciousness', monospace;
 
     /* Typography — fluid type scale (5 steps) */
     --text-h1: clamp(1.5rem, 1rem + 2vw, 2.5rem);
@@ -110,6 +120,10 @@
     --radius-2xl: 0px;
     --radius-3xl: 0px;
     --radius-4xl: 0px;
+
+    /* Animation durations */
+    --duration-pulse-fast: 1.5s;
+    --duration-pulse-slow: 3s;
 }
 
 @font-face {
@@ -120,15 +134,86 @@
     font-display: swap;
 }
 
-/* Toast glow animation — matches EventCard contested region pulse */
-@keyframes toast-glow {
+@font-face {
+    font-family: 'Collective Consciousness';
+    src: url('/fonts/collectiveconsciousness.regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Shared pulse animation — used by EventCard and toast accent borders */
+@keyframes action-flash {
     0%,
     100% {
-        box-shadow: 0 0 4px color-mix(in srgb, var(--color-danger) 15%, transparent);
+        opacity: 1;
     }
     50% {
-        box-shadow: 0 0 12px color-mix(in srgb, var(--color-danger) 40%, transparent);
+        opacity: 0.2;
     }
+}
+
+/*
+ * Toast right-border accent — rendered as a real <span> inside the toast
+ * content (not pseudo-elements on the toast <li>), because Sonner reserves
+ * ::before (swipe hit area) and ::after (expanded gap bridge) on the <li>.
+ *
+ * The span contains two stacked pseudo-element layers:
+ *   ::before = solid faction-colored base (always visible)
+ *   ::after  = alert-color overlay that blinks via opacity
+ *
+ * Two identical keyframes force the browser to restart the animation when
+ * Sonner re-renders a toast in-place (same React key).
+ */
+@keyframes border-flash-a {
+    0%,
+    100% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+@keyframes border-flash-b {
+    0%,
+    100% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.toast-accent {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    pointer-events: none;
+}
+/* Base layer — solid faction color, always visible */
+.toast-accent::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--faction-color);
+}
+/* Alert overlay — fades in/out over the base */
+.toast-accent::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--alert-color, var(--faction-color));
+    opacity: 0;
+}
+.toast-accent--a::after {
+    animation: border-flash-a var(--duration-pulse-fast) ease-in-out infinite;
+    animation-delay: var(--pulse-delay, 0s);
+}
+.toast-accent--b::after {
+    animation: border-flash-b var(--duration-pulse-fast) ease-in-out infinite;
+    animation-delay: var(--pulse-delay, 0s);
 }
 
 .gutters {

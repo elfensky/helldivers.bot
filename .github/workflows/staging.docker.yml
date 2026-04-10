@@ -66,7 +66,7 @@ jobs:
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
                   build-args: |
-                      NODE_ENV=staging
+                      NODE_ENV=production
     build-app:
         runs-on: ubuntu-latest
         steps:
@@ -93,7 +93,7 @@ jobs:
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
                   build-args: |
-                      NODE_ENV=staging
+                      NODE_ENV=production
                       SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
                       SENTRY_URL=${{ secrets.SENTRY_URL }}
                       SENTRY_ORG=${{ secrets.SENTRY_ORG }}

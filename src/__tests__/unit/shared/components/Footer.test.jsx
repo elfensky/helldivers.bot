@@ -12,8 +12,8 @@ import Footer from '@/shared/components/Footer/Footer';
 describe('Footer', () => {
     test('renders "Ministry of Truth" text', () => {
         render(<Footer />);
-        const elements = screen.getAllByText('Ministry of Truth');
-        expect(elements.length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByText('Ministry of Truth')).toBeInTheDocument();
+        expect(screen.getByText('Humblebee UAV Drone Mk. IV')).toBeInTheDocument();
     });
 
     test('renders current year in copyright', () => {
@@ -26,7 +26,7 @@ describe('Footer', () => {
         render(<Footer />);
         const link = screen.getByText('Andrei Lavrenov');
         expect(link).toBeInTheDocument();
-        expect(link.closest('a')).toHaveAttribute('href', 'https://lavrenov.io');
+        expect(link.closest('a')).toHaveAttribute('href', 'https://lav.ren');
     });
 
     test('renders feature links', () => {
@@ -43,11 +43,17 @@ describe('Footer', () => {
         expect(screen.getByText('Twitter')).toBeInTheDocument();
     });
 
-    test('renders legal section labels', () => {
+    test('renders legal links pointing to /legal', () => {
         render(<Footer />);
         expect(screen.getByText('Legal')).toBeInTheDocument();
-        expect(screen.getByText('Terms of Use')).toBeInTheDocument();
-        expect(screen.getByText('Privacy Policy')).toBeInTheDocument();
-        expect(screen.getByText('Cookies')).toBeInTheDocument();
+
+        const terms = screen.getByText('Terms of Use');
+        expect(terms.closest('a')).toHaveAttribute('href', '/legal#terms');
+
+        const privacy = screen.getByText('Privacy Policy');
+        expect(privacy.closest('a')).toHaveAttribute('href', '/legal#privacy');
+
+        const cookies = screen.getByText('Cookies');
+        expect(cookies.closest('a')).toHaveAttribute('href', '/legal#cookies');
     });
 });

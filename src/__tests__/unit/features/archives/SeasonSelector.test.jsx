@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 
-import SeasonSelector from '@/features/dashboard/SeasonSelector';
+import SeasonSelector from '@/features/archives/SeasonSelector';
 
 describe('SeasonSelector', () => {
     const mockPush = vi.fn();

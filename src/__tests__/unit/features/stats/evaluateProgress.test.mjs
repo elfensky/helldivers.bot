@@ -27,7 +27,7 @@ describe('evaluateProgress', () => {
         expect(result).not.toBeNull();
         expect(result.status).toBe('ahead');
         expect(result.delta).toBeGreaterThan(0);
-        expect(result.label).toMatch(/Ahead by \d+ points/);
+        expect(result.label).toMatch(/\d+ ahead/);
         expect(typeof result.currentRate).toBe('number');
         expect(typeof result.requiredRate).toBe('number');
         expect(typeof result.deltaPercent).toBe('number');
@@ -44,7 +44,7 @@ describe('evaluateProgress', () => {
         const result = evaluateProgress(event);
         expect(result).not.toBeNull();
         expect(result.status).toBe('behind');
-        expect(result.label).toMatch(/Behind by \d+ points/);
+        expect(result.label).toMatch(/\d+ behind/);
     });
 
     test('returns "on_track" status when points are within buffer', () => {
