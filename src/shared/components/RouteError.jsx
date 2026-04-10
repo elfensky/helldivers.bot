@@ -8,11 +8,14 @@ export default function RouteError({ reset }) {
                 A tactical error has disrupted this sector. Super Earth Command
                 has been notified.
             </p>
+            <p className="text-small text-text-muted italic">
+                This incident has been logged.
+            </p>
             <button
                 onClick={() => reset()}
-                className="mt-4 cursor-pointer border border-primary px-4 py-2 text-primary hover:bg-primary hover:text-surface-0"
+                className="cursor-pointer border border-primary px-3 py-1.5 font-body text-small font-bold uppercase tracking-[0.02em] text-primary hover:bg-primary hover:text-surface-0"
             >
-                RETRY OPERATION
+                Retry operation
             </button>
         </main>
     );

@@ -147,10 +147,11 @@ export default function Footer() {
 
             <div className="footer-separator p-gutters">
                 <div className="flex flex-col gap-1">
-                    <span>Ministry of Truth</span>
+                    <span>Humblebee UAV Drone Mk. IV</span>
                     <span className="text-[0.625rem] tracking-normal normal-case opacity-50">
                         v{process.env.NEXT_PUBLIC_APP_VERSION} &ndash;{' '}
-                        {process.env.NEXT_PUBLIC_COMMIT_SHA}
+                        {process.env.NEXT_PUBLIC_COMMIT_SHA} &ndash;{' '}
+                        {process.env.NODE_ENV}
                     </span>
                 </div>
                 <span>
