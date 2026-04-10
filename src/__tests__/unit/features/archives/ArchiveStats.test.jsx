@@ -9,6 +9,10 @@ vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
     getWarOutcome: vi.fn(() => ({ outcome: 'victory', reason: 'All enemy factions have been defeated.' })),
 }));
 
+vi.mock('@/features/archives/ClientGlitchText', () => ({
+    default: ({ text, className }) => <span className={className}>{text}</span>,
+}));
+
 const noEffects = { headerScramble: false, watermark: false };
 
 const mockEvents = [
@@ -171,7 +175,6 @@ describe('ArchiveStats', () => {
             />,
         );
         expect(screen.getByText('DEFEAT')).toBeDefined();
-        expect(screen.getByText('Cyberstani interference detected')).toBeDefined();
     });
 
     it('does not render combat record when live is empty', () => {

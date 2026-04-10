@@ -6,8 +6,8 @@ import { eventKey } from '@/features/archives/eventKey.mjs';
  *
  * Uses a scroll listener (throttled via rAF) instead of IntersectionObserver
  * to avoid edge cases with the fixed header, partial callbacks, and scroll
- * direction. Selects the first event card whose top edge is visible below
- * the fixed header.
+ * direction. Selects the event card whose center is nearest a focal anchor
+ * at 38% of the visible area below the header (upper-third bias).
  */
 export function useScrollEvent(events) {
     const [selectedEvent, setSelectedEvent] = useState(null);
@@ -32,15 +32,21 @@ export function useScrollEvent(events) {
         const updateSelection = () => {
             const headerHeight =
                 document.getElementById('header')?.offsetHeight ?? 80;
+            const visibleHeight = window.innerHeight - headerHeight;
+            const anchor = headerHeight + visibleHeight * 0.38;
 
             const cards = rail.querySelectorAll('[data-event-key]');
             let best = null;
+            let bestDist = Infinity;
             for (const card of cards) {
-                const top = card.getBoundingClientRect().top;
-                // First card whose top is at or below the header bottom
-                if (top >= headerHeight) {
+                const rect = card.getBoundingClientRect();
+                const cardMid = rect.top + rect.height / 2;
+                const dist = Math.abs(cardMid - anchor);
+                if (dist < bestDist) {
+                    bestDist = dist;
                     best = card;
-                    break;
+                } else {
+                    break; // DOM-ordered: distance only increases from here
                 }
             }
 

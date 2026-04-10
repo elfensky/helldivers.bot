@@ -6,10 +6,13 @@ import GlitchText from '@/features/archives/GlitchText';
 describe('GlitchText', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        // GlitchText checks prefers-reduced-motion; jsdom doesn't have matchMedia
+        window.matchMedia = vi.fn(() => ({ matches: false }));
     });
 
     afterEach(() => {
         vi.useRealTimers();
+        delete window.matchMedia;
     });
 
     it('renders base text when active is false', () => {

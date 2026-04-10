@@ -1,17 +1,15 @@
 'use client';
 
 import './CyberstanInterference.css';
-import GlitchText from '@/features/archives/GlitchText';
+import GlitchText from '@/features/archives/ClientGlitchText';
 import { toggleCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
+import {
+    RESISTANCE_MESSAGES,
+    PROPAGANDA_BODY,
+} from '@/features/archives/resistanceMessages.mjs';
 
 const PROPAGANDA_TITLE = 'Declassified Campaign Archives';
 const RESISTANCE_TITLE = 'Leaked Campaign Records';
-
-const PROPAGANDA_BODY =
-    'Records verified by the Bureau of War Information. All outcomes reflect the supreme tactical genius of High Command. Unauthorized interpretation of campaign data is a Class-3 offense.';
-
-const RESISTANCE_BODY =
-    'This channel has been intercepted by Cyberstan intelligence. The records below are the real outcomes \u2014 not the sanitized version High Command approved for broadcast. The truth cannot be redacted.';
 
 function PropagandaHeader() {
     return (
@@ -19,12 +17,12 @@ function PropagandaHeader() {
             <h1 className="font-display text-body text-primary">
                 {PROPAGANDA_TITLE}
             </h1>
-            <p className="mt-1 text-small text-text-muted">{PROPAGANDA_BODY}</p>
+            <p className="mt-1 max-w-md text-small text-text-muted">{PROPAGANDA_BODY}</p>
         </>
     );
 }
 
-function ResistanceHeader({ animate }) {
+function ResistanceHeader({ animate, message }) {
     return (
         <>
             <h1 className="font-display text-body">
@@ -35,9 +33,9 @@ function ResistanceHeader({ animate }) {
                     active={animate}
                 />
             </h1>
-            <p className="mt-1 text-small">
+            <p className="mt-1 max-w-md text-small">
                 <GlitchText
-                    text={RESISTANCE_BODY}
+                    text={message}
                     altText={PROPAGANDA_BODY}
                     className="text-text-muted"
                     active={animate}
@@ -64,15 +62,21 @@ function EffectsToggle({ active }) {
     );
 }
 
-export default function ArchivesHeader({ isDefeat, effects }) {
+export default function ArchivesHeader({ isDefeat, effects, defeatMessageIndex }) {
+    if (!isDefeat) {
+        return (
+            <div className="pb-2">
+                <PropagandaHeader />
+            </div>
+        );
+    }
+
+    const message = RESISTANCE_MESSAGES[defeatMessageIndex] ?? RESISTANCE_MESSAGES[0];
+
     return (
         <div className="pb-2">
-            {isDefeat ?
-                <>
-                    <ResistanceHeader animate={effects.headerScramble} />
-                    <EffectsToggle active={effects.headerScramble} />
-                </>
-            :   <PropagandaHeader />}
+            <ResistanceHeader animate={effects.headerScramble} message={message} />
+            <EffectsToggle active={effects.headerScramble} />
         </div>
     );
 }

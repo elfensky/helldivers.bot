@@ -1,7 +1,7 @@
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
-import GlitchText from '@/features/archives/GlitchText';
+import GlitchText from '@/features/archives/ClientGlitchText';
 import {
     findClosestCalls,
     findWorstCascade,
@@ -98,11 +98,6 @@ export default function ArchiveStats({ events, live, data, effects }) {
                             active={effects?.headerScramble}
                         />
                     :   outcome.toUpperCase()
-                }
-                subtitle={
-                    outcome === 'defeat' ?
-                        <span className="font-cyberstan">Cyberstani interference detected</span>
-                    :   undefined
                 }
                 accentColor={outcomeColor}
                 valueColor={outcome !== 'defeat' ? outcomeColor : undefined}

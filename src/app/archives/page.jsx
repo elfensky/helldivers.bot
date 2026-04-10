@@ -5,6 +5,7 @@ import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
 //components
 import JsonLd from '@/shared/components/JsonLd';
 import ArchivesClient from '@/features/archives/ArchivesClient';
+import { RESISTANCE_MESSAGES } from '@/features/archives/resistanceMessages.mjs';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
 export const dynamic = 'force-dynamic';
@@ -88,6 +89,7 @@ export default async function WarHistoryPage({ searchParams }) {
                 data={data}
                 seasons={seasons}
                 currentSeason={currentSeason}
+                defeatMessageIndex={Math.floor(Math.random() * RESISTANCE_MESSAGES.length)}
             />
         </div>
     );

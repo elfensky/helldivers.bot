@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+
+// Mock the dynamic import — render text directly in tests
+vi.mock('@/features/archives/ClientGlitchText', () => ({
+    default: ({ text, className }) => <span className={className}>{text}</span>,
+}));
+
 import ArchivesHeader from '@/features/archives/ArchivesHeader';
+import { RESISTANCE_MESSAGES } from '@/features/archives/resistanceMessages.mjs';
 
 const noEffects = { headerScramble: false, watermark: false };
 const defeatEffects = { headerScramble: true, watermark: false };
@@ -13,10 +20,15 @@ describe('ArchivesHeader', () => {
         expect(screen.getByText(/Bureau of War Information/)).toBeDefined();
     });
 
-    it('renders resistance copy on defeat', () => {
-        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} />);
+    it('renders resistance copy on defeat with message index', () => {
+        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} defeatMessageIndex={0} />);
         expect(screen.getByText(/Leaked Campaign Records/)).toBeDefined();
-        expect(screen.getByText(/intercepted by Cyberstan intelligence/)).toBeDefined();
+        expect(screen.getByText(RESISTANCE_MESSAGES[0])).toBeDefined();
+    });
+
+    it('renders different message for different index', () => {
+        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} defeatMessageIndex={3} />);
+        expect(screen.getByText(RESISTANCE_MESSAGES[3])).toBeDefined();
     });
 
     it('does not show resistance text on victory', () => {
@@ -25,7 +37,7 @@ describe('ArchivesHeader', () => {
     });
 
     it('shows disable toggle on defeat', () => {
-        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} />);
+        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} defeatMessageIndex={0} />);
         expect(screen.getByText('[Disable interference]')).toBeDefined();
     });
 
@@ -34,8 +46,8 @@ describe('ArchivesHeader', () => {
         expect(screen.queryByText(/interference/)).toBeNull();
     });
 
-    it('shows enable toggle when effects are off', () => {
-        render(<ArchivesHeader isDefeat={true} effects={noEffects} />);
-        expect(screen.getByText('[Enable interference]')).toBeDefined();
+    it('falls back to first message for invalid index', () => {
+        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} defeatMessageIndex={999} />);
+        expect(screen.getByText(RESISTANCE_MESSAGES[0])).toBeDefined();
     });
 });

@@ -16,7 +16,7 @@ import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import { useCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
 import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
 
-export default function ArchivesClient({ data, seasons, currentSeason }) {
+export default function ArchivesClient({ data, seasons, currentSeason, defeatMessageIndex }) {
     const events = data?.events ?? [];
     const [faction, setFaction] = useState('bugs');
     const [mapVisible, setMapVisible] = useState(true);
@@ -28,7 +28,7 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
         <div className="archives-page">
             {/* Full-width stats section */}
             <div className={`archives-stats-section${isDefeat ? ' cyberstan-defeat' : ''}${effects.watermark ? ' cyberstan-watermark-active' : ''}`}>
-                <ArchivesHeader isDefeat={isDefeat} effects={effects} />
+                <ArchivesHeader isDefeat={isDefeat} effects={effects} defeatMessageIndex={defeatMessageIndex} />
 
                 <section className="mt-4 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
