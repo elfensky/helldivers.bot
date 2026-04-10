@@ -28,7 +28,7 @@
 .archives-map-col {
     order: -1;
     position: sticky;
-    top: 0;
+    top: 50px; /* below fixed header (h-[50px] on mobile) */
     z-index: 10;
     background: var(--color-surface-0);
     display: flex;
@@ -36,28 +36,36 @@
     gap: 0.5rem;
 }
 
-/* Toggle button: mobile only */
-.archives-map-toggle {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-text-muted);
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-ghost);
-    padding: 0.375rem 0.75rem;
-    cursor: pointer;
-    width: 100%;
-    text-align: center;
+/* sm+ header is 80px tall */
+@media (min-width: 640px) {
+    .archives-map-col {
+        top: 80px;
+    }
 }
 
-.archives-map-toggle:hover {
+/* Floating action button: fixed bottom-right on mobile, hidden at lg: */
+.archives-map-toggle {
+    position: fixed;
+    bottom: calc(var(--space-4, 1rem) + 56px); /* above BottomNav */
+    right: var(--space-4, 1rem);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    font-size: 1.25rem;
+    line-height: 1;
     color: var(--color-text);
-    border-color: var(--color-primary);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-ghost);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+    cursor: pointer;
 }
 
 /* Desktop: two columns, toggle hidden */
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
     .archives-scrollytelling {
         display: grid;
         grid-template-columns: minmax(260px, 1fr) minmax(0, 50dvh);
@@ -77,7 +85,7 @@
     }
 
     /* Galaxy fills remaining space after the event detail card */
-    .archives-map-col > :nth-child(2) {
+    .archives-map-col > :first-child {
         flex: 1;
         min-height: 0;
     }

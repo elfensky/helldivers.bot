@@ -66,6 +66,16 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
                 </section>
             </div>
 
+            {/* Mobile FAB to toggle map — hidden at lg: */}
+            <button
+                className="archives-map-toggle"
+                onClick={() => setMapVisible((v) => !v)}
+                aria-label={mapVisible ? 'Hide map' : 'Show map'}
+                data-umami-event="archive-map-toggle"
+            >
+                {mapVisible ? '✕' : '🗺'}
+            </button>
+
             {/* Two-column scrollytelling: event log + sticky map */}
             <div className="archives-scrollytelling">
                 <div className="archives-event-col">
@@ -79,15 +89,6 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
                 </div>
 
                 <div className="archives-map-col">
-                    {/* Mobile toggle — hidden at lg: where map is always visible */}
-                    <button
-                        className="archives-map-toggle"
-                        onClick={() => setMapVisible((v) => !v)}
-                        data-umami-event="archive-map-toggle"
-                    >
-                        {mapVisible ? 'Hide map' : 'Show map'}
-                    </button>
-
                     {mapVisible && (
                         <>
                             <ArchiveMap data={data} selectedEvent={selectedEvent} />
