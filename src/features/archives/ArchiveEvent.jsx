@@ -5,10 +5,10 @@ import { formatCompactDuration } from '@/shared/utils/format/formatCompactDurati
 
 /**
  * Archive event card — historical variant of Event.
- * Shows final duration and outcome. Clickable to select event on map.
+ * Shows final duration and outcome. Highlighted when scroll-selected.
  * Reuses EventCardLayout for consistent styling with dashboard events.
  */
-export default function ArchiveEvent({ event, isActive, onClick }) {
+export default function ArchiveEvent({ event, isActive }) {
     const duration = event.end_time - event.start_time;
     const faction = factions[event.enemy];
     const regionName = map[event.enemy]?.[event.region]?.region ?? 'Unknown Region';
@@ -23,7 +23,6 @@ export default function ArchiveEvent({ event, isActive, onClick }) {
     return (
         <EventCardLayout
             status={event.status}
-            onClick={onClick}
             className={isActive ? 'border-l-[4px] border-l-primary !bg-primary-tint' : ''}
         >
             <div className="flex flex-col gap-1 px-2.5 py-1.5">

@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import ArchiveEventRail from '@/features/archives/ArchiveEventRail';
+import React from 'react';
 
 const mockEvents = [
     { event_id: 1, enemy: 0, type: 'defend', region: 5, start_time: 1700000000, end_time: 1700200000, status: 'success' },
@@ -10,37 +11,51 @@ const mockEvents = [
 ];
 
 describe('ArchiveEventRail', () => {
-    it('renders events sorted chronologically (ascending)', () => {
-        render(<ArchiveEventRail events={mockEvents} selectedEventKey="defend-1" onSelect={() => {}} />);
-        const items = screen.getAllByRole('button');
-        expect(items.length).toBe(3);
+    it('renders all events', () => {
+        const { container } = render(
+            <ArchiveEventRail events={mockEvents} selectedEventKey="defend-1" />,
+        );
+        const cards = container.querySelectorAll('[data-event-key]');
+        expect(cards.length).toBe(3);
     });
 
     it('groups events by day with dashboard timeline classes', () => {
-        render(<ArchiveEventRail events={mockEvents} selectedEventKey="defend-1" onSelect={() => {}} />);
+        render(<ArchiveEventRail events={mockEvents} selectedEventKey="defend-1" />);
         const dayLabels = document.querySelectorAll('.timeline-day-label');
         expect(dayLabels.length).toBeGreaterThan(0);
     });
 
-    it('calls onSelect when event is clicked', () => {
-        const onSelect = vi.fn();
-        render(<ArchiveEventRail events={mockEvents} selectedEventKey="defend-1" onSelect={onSelect} />);
-        const buttons = screen.getAllByRole('button');
-        fireEvent.click(buttons[1]);
-        expect(onSelect).toHaveBeenCalledWith(mockEvents[1]);
+    it('adds data-event-key attributes for scroll observation', () => {
+        const { container } = render(
+            <ArchiveEventRail events={mockEvents} selectedEventKey={null} />,
+        );
+        const keys = [...container.querySelectorAll('[data-event-key]')].map(
+            (el) => el.dataset.eventKey,
+        );
+        expect(keys).toContain('defend-1');
+        expect(keys).toContain('attack-2');
+        expect(keys).toContain('defend-3');
     });
 
     it('highlights selected event', () => {
         const { container } = render(
-            <ArchiveEventRail events={mockEvents} selectedEventKey="defend-3" onSelect={() => {}} />,
+            <ArchiveEventRail events={mockEvents} selectedEventKey="defend-3" />,
         );
         const active = container.querySelector('.border-l-primary');
         expect(active).not.toBeNull();
     });
 
+    it('attaches railRef to container', () => {
+        const ref = React.createRef();
+        const { container } = render(
+            <ArchiveEventRail events={mockEvents} selectedEventKey={null} railRef={ref} />,
+        );
+        expect(ref.current).toBe(container.firstChild);
+    });
+
     it('renders nothing for empty events', () => {
         const { container } = render(
-            <ArchiveEventRail events={[]} selectedEventKey={null} onSelect={() => {}} />,
+            <ArchiveEventRail events={[]} selectedEventKey={null} />,
         );
         expect(container.innerHTML).toBe('');
     });

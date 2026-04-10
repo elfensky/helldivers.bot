@@ -2,6 +2,7 @@
     stroke-width: 2px;
     stroke-linecap: round;
     stroke-linejoin: round;
+    transition: fill 0.4s ease, stroke 0.3s ease;
 }
 
 .lost {
@@ -43,6 +44,7 @@
     stroke: var(--color-primary);
     animation: map-pulse-red var(--duration-pulse-fast) ease-in-out infinite;
     animation-delay: var(--pulse-delay, 0s);
+    transition: none; /* let keyframe animation take over */
 }
 
 @keyframes map-pulse-red {

@@ -1,20 +1,10 @@
-import { useEffect, useRef } from 'react';
 import '@/features/timeline/TimelineSection.css';
 import ArchiveEvent from '@/features/archives/ArchiveEvent';
 import { groupEventsByDay } from '@/features/timeline/groupEventsByDay.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
 import { eventKey } from '@/features/archives/eventKey.mjs';
 
-export default function ArchiveEventRail({ events, selectedEventKey, onSelect }) {
-    const railRef = useRef(null);
-
-    useEffect(() => {
-        const active = railRef.current?.querySelector('.border-l-primary');
-        if (active && typeof active.scrollIntoView === 'function') {
-            active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }, [selectedEventKey]);
-
+export default function ArchiveEventRail({ events, selectedEventKey, railRef }) {
     if (!events?.length) return null;
 
     const groups = groupEventsByDay(events, { includeToday: false });
@@ -38,12 +28,15 @@ export default function ArchiveEventRail({ events, selectedEventKey, onSelect })
                             </div>
                             <div className="timeline-day-grid">
                                 {group.events.map((event, idx) => (
-                                    <ArchiveEvent
+                                    <div
                                         key={`${group.date}-${event.event_id ?? idx}`}
-                                        event={event}
-                                        isActive={eventKey(event) === selectedEventKey}
-                                        onClick={() => onSelect(event)}
-                                    />
+                                        data-event-key={eventKey(event)}
+                                    >
+                                        <ArchiveEvent
+                                            event={event}
+                                            isActive={eventKey(event) === selectedEventKey}
+                                        />
+                                    </div>
                                 ))}
                             </div>
                         </div>

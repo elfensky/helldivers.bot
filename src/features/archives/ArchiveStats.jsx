@@ -1,6 +1,7 @@
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
+import OutcomeReveal from '@/features/archives/OutcomeReveal';
 import {
     findClosestCalls,
     findWorstCascade,
@@ -23,7 +24,7 @@ function formatRatio(numerator, denominator) {
 const sectionHeading =
     'col-span-2 font-mono text-small text-text-muted uppercase tracking-wide';
 
-export default function ArchiveStats({ events, live, data, onEventSelect }) {
+export default function ArchiveStats({ events, live, data, effects }) {
     if (!events?.length) return null;
 
     // Event-derived stats
@@ -87,9 +88,18 @@ export default function ArchiveStats({ events, live, data, onEventSelect }) {
             <h3 className={sectionHeading}>War Summary</h3>
             <StatCard
                 label="OUTCOME"
-                value={outcome.toUpperCase()}
+                value={
+                    outcome === 'defeat' && effects?.outcomeReveal != null ?
+                        <OutcomeReveal variant={effects.outcomeReveal} />
+                    :   outcome.toUpperCase()
+                }
+                subtitle={
+                    outcome === 'defeat' ?
+                        <span className="font-cyberstan">Cyberstani interference detected</span>
+                    :   undefined
+                }
                 accentColor={outcomeColor}
-                valueColor={outcomeColor}
+                valueColor={effects?.outcomeReveal != null ? undefined : outcomeColor}
             />
             <StatCard label="DURATION" value={`${seasonDays} days`} />
             <StatCard
@@ -114,7 +124,6 @@ export default function ArchiveStats({ events, live, data, onEventSelect }) {
                             value={narrowestWin.region}
                             subtitle={`${Math.round(narrowestWin.ratio * 100)}% — ${narrowestWin.faction}`}
                             accentColor="danger"
-                            onClick={onEventSelect ? () => onEventSelect(narrowestWin.event) : undefined}
                         />
                     )}
                     {narrowestLoss && (
@@ -123,7 +132,6 @@ export default function ArchiveStats({ events, live, data, onEventSelect }) {
                             value={narrowestLoss.region}
                             subtitle={`${Math.round(narrowestLoss.ratio * 100)}% — ${narrowestLoss.faction}`}
                             accentColor="success"
-                            onClick={onEventSelect ? () => onEventSelect(narrowestLoss.event) : undefined}
                         />
                     )}
                     {worstCascade && (
@@ -131,7 +139,6 @@ export default function ArchiveStats({ events, live, data, onEventSelect }) {
                             label="WORST_CASCADE"
                             value={`${worstCascade.length} regions`}
                             subtitle={worstCascade.faction}
-                            onClick={onEventSelect && worstCascade.firstEvent ? () => onEventSelect(worstCascade.firstEvent) : undefined}
                         />
                     )}
                 </>
