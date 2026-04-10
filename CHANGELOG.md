@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+## 0.37.0
+
+### Features
+
+- **Archives stats audit** — removed 8 redundant/confusing stats (DEFENSE_WON, ATTACK_WON, TOTAL_OVERKILL, LONGEST/SHORTEST_EVENT, PEAK_SURGE, raw MISSIONS, MOST_CONTESTED), renamed 6 to player-friendly labels (WIN_RATE, DURATION, K/D, TOTAL_DIVERS, BATTLES, HOTSPOT), added section headings (War Summary, Notable Moments, Combat Record).
+- **Closest calls & cascade detection** — new `seasonAnalytics.mjs` utility with `findClosestCalls()` (narrowest win/loss events) and `findWorstCascade()` (longest cascade of consecutive failed defenses). Displayed as Notable Moments stat cards.
+- **Cyberstan interference easter egg** — on defeat seasons, the archives header shows resistance text ("Leaked Campaign Records") with a 5-phase glitch cycle: idle → takeover (word-by-word scramble to propaganda) → hold → fight (chaotic noise) → restore. Two independent per-character effect layers: copy swap (propaganda leak-through) and Cyberstan font scramble.
+- **7 randomized resistance messages** — server-side random selection per request across 3 tonal directions (sardonic, hacker-broadcast, fourth-wall). No hydration mismatch.
+- **GlitchText component** — persistent looping text scramble with synced phase clock (`useGlitchCycle`), word-by-word settling in batches of 1-3, `prefers-reduced-motion` support, client-only rendering via `next/dynamic`.
+- **Effects toggle** — localStorage-persisted disable switch for interference effects.
+- **StatCard subtitle** — optional subtitle prop with clickable card support for linking Notable Moments to the event timeline.
+- **Scroll-driven event selection** — `useScrollEvent` hook with IntersectionObserver for archives timeline-to-map sync.
+- **Legal page** — in-lore terms of service, privacy policy, and cookies sections.
+
+### Improvements
+
+- Error pages use brandkit button styling and Big Brother copy ("This incident has been logged" + "Resume approved Super Earth broadcast").
+- Background watermark ("THE RECORD IS FALSE") on defeat seasons with fade-in transition.
+- Cyberstan font (Collective Consciousness) registered as `--font-cyberstan` theme token with `0.6em` sizing and `1ch` width containment to prevent reflow.
+- Archives header body text capped at `max-w-screen-md` for readability.
+
+### Bug Fixes
+
+- Fixed GlitchText SSR hydration mismatch by deferring random state to `useEffect` and using `next/dynamic` with `ssr: false`.
+- Fixed mismatched text/altText lengths causing truncated propaganda text during glitch takeover.
+- Fixed `useCyberstanEffects` hydration mismatch by moving `Math.random()` dice rolls from `useState` initializer to `useEffect`.
+
+### Chores
+
+- Deleted `OutcomeReveal.jsx` (236 lines) — replaced by unified GlitchText component.
+- Removed dead `statFlickers` code from hook and CSS.
+- Extracted resistance messages to `resistanceMessages.mjs` shared constants.
+
 ## 0.36.0
 
 ### Features
