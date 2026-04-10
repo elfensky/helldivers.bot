@@ -47,8 +47,8 @@ describe('EventCard', () => {
         );
         expect(screen.getByText('Defending')).toBeDefined();
         expect(screen.getByText('CAPITAL_DEFENSE')).toBeDefined();
-        const card = container.querySelector('.sector-card');
-        expect(card.className).toContain('sector-card-event');
+        const accent = container.querySelector('.sector-card-accent');
+        expect(accent.className).toContain('sector-card-accent-flash');
     });
 
     test('renders homeworld assault state', () => {
@@ -62,8 +62,8 @@ describe('EventCard', () => {
         );
         expect(screen.getByText('Capturing')).toBeDefined();
         expect(screen.getByText('HOMEWORLD_ASSAULT')).toBeDefined();
-        const card = container.querySelector('.sector-card');
-        expect(card.className).toContain('sector-card-event');
+        const accent = container.querySelector('.sector-card-accent');
+        expect(accent.className).toContain('sector-card-accent-flash');
     });
 
     test('no alert icon in any state', () => {

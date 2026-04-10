@@ -68,6 +68,7 @@ export default function EventCard({
     pace,
     endTime,
     barLabel,
+    pulseDelay,
 }) {
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = !!endTime;
@@ -76,10 +77,13 @@ export default function EventCard({
     const barColor = isDefending ? 'var(--color-danger)' : color;
     const safePct = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
 
+    const cardStyle = { '--accent-color': color };
+    if (pulseDelay != null) cardStyle['--pulse-delay'] = `${pulseDelay}s`;
+
     return (
         <div
-            className={'sector-card' + (isEvent ? ' sector-card-event' : '')}
-            style={{ '--accent-color': color }}
+            className="sector-card"
+            style={cardStyle}
         >
             <div className="sector-card-content">
                 <div className="sector-card-header">
@@ -156,7 +160,7 @@ export default function EventCard({
                     )}
                 </div>
             </div>
-            <div className="sector-card-accent" />
+            <div className={'sector-card-accent' + (isEvent ? ' sector-card-accent-flash' : '')} />
         </div>
     );
 }

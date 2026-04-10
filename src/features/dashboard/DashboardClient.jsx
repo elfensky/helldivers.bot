@@ -12,6 +12,7 @@ import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import { sortEventsByRecent } from '@/shared/utils/game/eventFilters.mjs';
 import { HOMEWORLD_REGION } from '@/shared/enums/worlds.mjs';
 import { CAMPAIGN_STATUS, EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
+import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 
 const factionIndices = [0, 1, 2];
@@ -39,6 +40,7 @@ export default function DashboardClient() {
     }
 
     const events = sortEventsByRecent(data?.events);
+    const pulseDelays = computePulseDelays(data?.events);
 
     function renderFrontierCard(index) {
         const campaignData = data.live?.find((l) => l.enemy === index);
@@ -99,6 +101,7 @@ export default function DashboardClient() {
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
                     endTime={activeEvent?.end_time}
+                    pulseDelay={activeEvent ? pulseDelays.get(`${activeEvent.enemy}-${activeEvent.region}`) : undefined}
                 />
             </li>
         );
@@ -131,6 +134,7 @@ export default function DashboardClient() {
                     factionIndex={index}
                     pace={attackEvent ? evaluateProgress(attackEvent) : null}
                     endTime={attackEvent?.end_time}
+                    pulseDelay={attackEvent ? pulseDelays.get(`${attackEvent.enemy}-${attackEvent.region}`) : undefined}
                 />
             </li>
         );
@@ -140,7 +144,7 @@ export default function DashboardClient() {
         <div className="dashboard gutters">
             <div className="dashboard-map">
                 <ComponentErrorBoundary name="Galaxy Map">
-                    <Galaxy mapState={mapState} />
+                    <Galaxy mapState={mapState} pulseDelays={pulseDelays} />
                 </ComponentErrorBoundary>
             </div>
             <div className="dashboard-sidebar">

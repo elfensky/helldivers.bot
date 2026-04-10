@@ -6,19 +6,16 @@
     border: 1px solid var(--color-ghost);
 }
 
-.sector-card-event {
-    border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
-    animation: card-glow var(--duration-pulse-slow) ease-in-out infinite;
+.sector-card-accent-flash {
+    position: relative;
 }
-
-@keyframes card-glow {
-    0%,
-    100% {
-        box-shadow: 0 0 4px color-mix(in srgb, var(--color-danger) 15%, transparent);
-    }
-    50% {
-        box-shadow: 0 0 12px color-mix(in srgb, var(--color-danger) 40%, transparent);
-    }
+.sector-card-accent-flash::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--color-danger);
+    animation: action-flash var(--duration-pulse-fast) ease-in-out infinite;
+    animation-delay: var(--pulse-delay, 0s);
 }
 
 .sector-card-content {
@@ -52,6 +49,7 @@
 
 .sector-card-action-flash {
     animation: action-flash var(--duration-pulse-fast) ease-in-out infinite;
+    animation-delay: var(--pulse-delay, 0s);
 }
 
 .sector-card-title {

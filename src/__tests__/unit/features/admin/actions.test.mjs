@@ -20,6 +20,14 @@ vi.mock('@/shared/utils/tryCatch', () => ({
 vi.mock('@/update/pushNotifier', () => ({
     ensureVapid: vi.fn(),
     sendWithConcurrencyLimit: vi.fn(),
+    buildPayload: vi.fn(() => JSON.stringify({
+        title: 'Test Region under attack',
+        body: 'Defend event started',
+        icon: '/icons/faction0.webp',
+        badge: '/favicons/favicon-96x96.png',
+        tag: 'event-test',
+        renotify: true,
+    })),
 }));
 vi.mock('@/db/db', () => ({
     default: { push_subscription: { findMany: vi.fn() } },

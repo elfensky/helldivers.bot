@@ -14,7 +14,12 @@ const factions = [
     { id: 'illuminate', index: 2, paths: illuminatePaths },
 ];
 
-export default function Map({ map }) {
+function pulseStyle(delays, key) {
+    const delay = delays?.get(key);
+    return delay != null ? { '--pulse-delay': `${delay}s` } : undefined;
+}
+
+export default function Map({ map, pulseDelays }) {
     const superearth = 3;
 
     return (
@@ -84,6 +89,7 @@ export default function Map({ map }) {
                                         ' ' +
                                         map[index][path.sector].event
                                 }
+                                style={pulseStyle(pulseDelays, `${index}-${path.sector}`)}
                                 d={path.d}
                             />
                         ))}
@@ -107,6 +113,7 @@ export default function Map({ map }) {
                             ' ' +
                             map[superearth][0].event
                         }
+                        style={pulseStyle(pulseDelays, `${superearth}-0`)}
                         cx={superEarthCircle.cx}
                         cy={superEarthCircle.cy}
                         r={superEarthCircle.r}

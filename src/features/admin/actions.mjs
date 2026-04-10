@@ -2,10 +2,15 @@
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch';
-import { ensureVapid, sendWithConcurrencyLimit } from '@/update/pushNotifier';
+import { ensureVapid, sendWithConcurrencyLimit, buildPayload } from '@/update/pushNotifier';
 import db from '@/db/db';
 
-export async function sendTestNotification() {
+/**
+ * Send a test push notification using the same payload format as real events.
+ *
+ * @param {{ enemy: number, region: number, type: string, kind: string }} opts
+ */
+export async function sendTestNotification({ enemy = 0, region = 3, type = 'defend', kind = 'event_started' } = {}) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user || session.user.role !== 'admin') {
         return { error: 'Unauthorized' };
@@ -15,14 +20,14 @@ export async function sendTestNotification() {
         return { error: 'VAPID keys not configured' };
     }
 
-    const payload = JSON.stringify({
-        title: 'Bugs attack event started',
-        body: 'Season 0 — Test notification',
-        icon: '/icons/faction0.webp',
-        badge: '/favicons/favicon-96x96.png',
-        tag: 'test-0',
-        renotify: true,
-    });
+    const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const change = {
+        kind,
+        event: { enemy, region, type, event_id: `test-${Date.now()}`, season: 0 },
+    };
+    const base = JSON.parse(buildPayload(change));
+    base.body = `${base.body} — ${time}`;
+    const payload = JSON.stringify(base);
 
     const { data: subscriptions, error: fetchError } = await tryCatch(db.push_subscription.findMany());
     if (fetchError) return { error: fetchError.message };

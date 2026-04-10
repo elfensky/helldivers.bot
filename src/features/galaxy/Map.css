@@ -42,6 +42,7 @@
 #superearth .active {
     stroke: var(--color-primary);
     animation: map-pulse-red var(--duration-pulse-fast) ease-in-out infinite;
+    animation-delay: var(--pulse-delay, 0s);
 }
 
 @keyframes map-pulse-red {
