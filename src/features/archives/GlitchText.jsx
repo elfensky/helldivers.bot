@@ -98,12 +98,15 @@ export default function GlitchText({
         clearTimers();
 
         const alt = altText || text;
-        const words = getWordBounds(text);
-        const batches = batchWords(words);
+        const maxLen = Math.max(text.length, alt.length);
+        const altWords = getWordBounds(alt);
+        const altBatches = batchWords(altWords);
+        const textWords = getWordBounds(text);
+        const textBatches = batchWords(textWords);
 
         switch (phase) {
             case 'idle':
-                setChars(settled(text));
+                setChars(settled(text, maxLen));
                 break;
 
             case 'takeover': {
@@ -111,45 +114,52 @@ export default function GlitchText({
                 intervalRef.current = setInterval(() => {
                     setChars((prev) =>
                         prev.map((c) =>
-                            c.style === 'normal' && c.display !== ' '
+                            c.style === 'normal' && c.display !== ' ' && c.display !== ''
                                 ? { display: randomChar(), style: 'cyberstan' }
                                 : c,
                         ),
                     );
                 }, TICK_MS);
 
-                // Settle word batches (1-3 words) left to right onto altText
-                const perBatch = batches.length > 0 ? takeoverMs / batches.length : takeoverMs;
-                batches.forEach((batch, bi) => {
+                // Settle word batches onto altText (use alt's word bounds)
+                const perBatch = altBatches.length > 0 ? takeoverMs / altBatches.length : takeoverMs;
+                altBatches.forEach((batch, bi) => {
                     addTimeout(() => {
-                        setChars((prev) =>
-                            prev.map((c, idx) => {
+                        setChars((prev) => {
+                            // Expand to maxLen if needed
+                            const padded = prev.length < maxLen
+                                ? [...prev, ...Array.from({ length: maxLen - prev.length }, () => ({ display: '', style: 'normal' }))]
+                                : prev;
+                            return padded.map((c, idx) => {
                                 for (const w of batch) {
                                     if (idx >= w.start && idx < w.end) {
-                                        return { display: idx < alt.length ? alt[idx] : ' ', style: 'alt' };
+                                        return { display: idx < alt.length ? alt[idx] : '', style: 'alt' };
                                     }
                                 }
                                 return c;
-                            }),
-                        );
+                            });
+                        });
                     }, bi * perBatch);
                 });
                 break;
             }
 
             case 'hold':
-                setChars(settledAlt(text, altText));
+                setChars(settledAlt(text, altText, maxLen));
                 break;
 
             case 'fight':
                 // Chaotic ticker — every char randomly picks a state
                 intervalRef.current = setInterval(() => {
-                    setChars((prev) =>
-                        prev.map((_, i) => {
-                            if (text[i] === ' ') return { display: ' ', style: 'normal' };
+                    setChars(
+                        Array.from({ length: maxLen }, (_, i) => {
+                            const tc = i < text.length ? text[i] : '';
+                            const ac = i < alt.length ? alt[i] : '';
+                            if (tc === ' ' && ac === ' ') return { display: ' ', style: 'normal' };
+                            if (!tc && !ac) return { display: '', style: 'normal' };
                             const roll = Math.random();
-                            if (roll < 0.25) return { display: text[i], style: 'normal' };
-                            if (roll < 0.50) return { display: i < alt.length ? alt[i] : text[i], style: 'alt' };
+                            if (roll < 0.25) return { display: tc || ac, style: 'normal' };
+                            if (roll < 0.50) return { display: ac || tc, style: 'alt' };
                             if (roll < 0.80) return { display: randomChar(), style: 'cyberstan' };
                             return { display: randomChar(), style: 'normal' };
                         }),
@@ -162,27 +172,28 @@ export default function GlitchText({
                 intervalRef.current = setInterval(() => {
                     setChars((prev) =>
                         prev.map((c) =>
-                            c.style !== 'normal'
+                            c.style !== 'normal' && c.display !== ''
                                 ? { display: randomChar(), style: 'cyberstan' }
                                 : c,
                         ),
                     );
                 }, TICK_MS);
 
-                // Settle word batches back to base text
-                const perBatchR = batches.length > 0 ? restoreMs / batches.length : restoreMs;
-                batches.forEach((batch, bi) => {
+                // Settle word batches back to base text (use text's word bounds)
+                const perBatchR = textBatches.length > 0 ? restoreMs / textBatches.length : restoreMs;
+                textBatches.forEach((batch, bi) => {
                     addTimeout(() => {
-                        setChars((prev) =>
-                            prev.map((c, idx) => {
+                        setChars((prev) => {
+                            const result = Array.from({ length: maxLen }, (_, idx) => {
                                 for (const w of batch) {
                                     if (idx >= w.start && idx < w.end) {
-                                        return { display: text[idx], style: 'normal' };
+                                        return { display: idx < text.length ? text[idx] : '', style: 'normal' };
                                     }
                                 }
-                                return c;
-                            }),
-                        );
+                                return idx < prev.length ? prev[idx] : { display: '', style: 'normal' };
+                            });
+                            return result;
+                        });
                     }, bi * perBatchR);
                 });
                 break;
