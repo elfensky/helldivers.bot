@@ -17,7 +17,7 @@ function PropagandaHeader() {
             <h1 className="font-display text-body text-primary">
                 {PROPAGANDA_TITLE}
             </h1>
-            <p className="mt-1 max-w-md text-small text-text-muted">{PROPAGANDA_BODY}</p>
+            <p className="mt-1 max-w-screen-md text-small text-text-muted">{PROPAGANDA_BODY}</p>
         </>
     );
 }
@@ -33,7 +33,7 @@ function ResistanceHeader({ animate, message }) {
                     active={animate}
                 />
             </h1>
-            <p className="mt-1 max-w-md text-small">
+            <p className="mt-1 max-w-screen-md text-small">
                 <GlitchText
                     text={message}
                     altText={PROPAGANDA_BODY}
