@@ -3,9 +3,13 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 
+import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
+
 vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
     getWarOutcome: vi.fn(() => ({ outcome: 'victory', reason: 'All enemy factions have been defeated.' })),
 }));
+
+const noEffects = { outcomeReveal: null, headerScramble: false, watermark: false, statFlickers: false };
 
 const mockEvents = [
     { event_id: 1, type: 'defend', enemy: 0, region: 1, start_time: 1000, end_time: 4600, status: 'success', players_at_start: 200, points: 400, points_max: 500 },
@@ -20,6 +24,7 @@ describe('ArchiveStats', () => {
                 events={mockEvents}
                 live={[]}
                 data={{ events: mockEvents }}
+                effects={noEffects}
             />,
         );
         expect(screen.getByText('OUTCOME')).toBeDefined();
@@ -36,6 +41,7 @@ describe('ArchiveStats', () => {
                 events={mockEvents}
                 live={[]}
                 data={{ events: mockEvents }}
+                effects={noEffects}
             />,
         );
         expect(screen.getByText('War Summary')).toBeDefined();
@@ -48,6 +54,7 @@ describe('ArchiveStats', () => {
                 events={mockEvents}
                 live={[]}
                 data={{ events: mockEvents }}
+                effects={noEffects}
             />,
         );
         expect(screen.getByText('NARROWEST_WIN')).toBeDefined();
@@ -64,6 +71,7 @@ describe('ArchiveStats', () => {
                 events={easyEvents}
                 live={[]}
                 data={{ events: easyEvents }}
+                effects={noEffects}
             />,
         );
         expect(screen.queryByText('Notable Moments')).toBeNull();
@@ -75,6 +83,7 @@ describe('ArchiveStats', () => {
                 events={[]}
                 live={[]}
                 data={{}}
+                effects={noEffects}
             />,
         );
         expect(container.innerHTML).toBe('');
@@ -86,6 +95,7 @@ describe('ArchiveStats', () => {
                 events={null}
                 live={[]}
                 data={{}}
+                effects={noEffects}
             />,
         );
         expect(container.innerHTML).toBe('');
@@ -136,6 +146,7 @@ describe('ArchiveStats', () => {
                 events={mockEvents}
                 live={mockLive}
                 data={{ events: mockEvents }}
+                effects={noEffects}
             />,
         );
 
@@ -149,12 +160,27 @@ describe('ArchiveStats', () => {
         expect(screen.getByText('TOTAL_DIVERS')).toBeDefined();
     });
 
+    it('renders Cyberstani interference subtitle on defeat', () => {
+        getWarOutcome.mockReturnValueOnce({ outcome: 'defeat', reason: 'The war was lost.' });
+        render(
+            <ArchiveStats
+                events={mockEvents}
+                live={[]}
+                data={{ events: mockEvents }}
+                effects={noEffects}
+            />,
+        );
+        expect(screen.getByText('DEFEAT')).toBeDefined();
+        expect(screen.getByText('Cyberstani interference detected')).toBeDefined();
+    });
+
     it('does not render combat record when live is empty', () => {
         render(
             <ArchiveStats
                 events={mockEvents}
                 live={[]}
                 data={{ events: mockEvents }}
+                effects={noEffects}
             />,
         );
         expect(screen.queryByText('KILLS')).toBeNull();

@@ -1,0 +1,58 @@
+/* ================================================================
+   Cyberstan Interference v2 — Dynamic glitch effects on defeat seasons.
+   Applied via .cyberstan-defeat on the sidebar wrapper.
+   Individual effects are JS-driven (GlitchText, OutcomeReveal).
+   ================================================================ */
+
+/* --- Base: defeat-mode sidebar wrapper --- */
+.cyberstan-defeat {
+    position: relative;
+    overflow: hidden;
+}
+
+/* --- Background watermark (fades in when active) --- */
+.cyberstan-defeat::before {
+    content: 'THE RECORD IS FALSE \00a0\00a0 THE RECORD IS FALSE \00a0\00a0 THE RECORD IS FALSE \00a0\00a0 THE RECORD IS FALSE \00a0\00a0 THE RECORD IS FALSE \00a0\00a0 THE RECORD IS FALSE \00a0\00a0 THE RECORD IS FALSE \00a0\00a0 THE RECORD IS FALSE';
+    position: absolute;
+    inset: 0;
+    font-family: var(--font-cyberstan);
+    font-size: 2.5rem;
+    line-height: 1.8;
+    color: var(--color-danger);
+    opacity: 0;
+    transform: rotate(-5deg) scale(1.2);
+    pointer-events: none;
+    z-index: 0;
+    white-space: normal;
+    word-break: break-all;
+    transition: opacity 2s ease-in;
+}
+
+.cyberstan-watermark-active::before {
+    opacity: 0.04;
+}
+
+/* Ensure content sits above watermark */
+.cyberstan-defeat > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* --- GlitchText scrambling characters --- */
+.glitch-char {
+    font-family: var(--font-cyberstan);
+    color: var(--color-danger);
+}
+
+/* --- Stat label flicker --- */
+.stat-label-flicker {
+    font-family: var(--font-cyberstan) !important;
+    color: var(--color-danger) !important;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .cyberstan-defeat::before {
+        transition: none;
+    }
+}
