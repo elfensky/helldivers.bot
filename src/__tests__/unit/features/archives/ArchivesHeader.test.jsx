@@ -36,14 +36,9 @@ describe('ArchivesHeader', () => {
         expect(screen.queryByText(/Leaked Campaign Records/)).toBeNull();
     });
 
-    it('shows disable toggle on defeat', () => {
+    it('does not render toggle (moved to ArchivesClient)', () => {
         render(<ArchivesHeader isDefeat={true} effects={defeatEffects} defeatMessageIndex={0} />);
-        expect(screen.getByText('[Disable interference]')).toBeDefined();
-    });
-
-    it('does not show toggle on victory', () => {
-        render(<ArchivesHeader isDefeat={false} effects={noEffects} />);
-        expect(screen.queryByText(/interference/)).toBeNull();
+        expect(screen.queryByRole('button')).toBeNull();
     });
 
     it('falls back to first message for invalid index', () => {

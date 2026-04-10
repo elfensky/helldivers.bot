@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import './ArchivesLayout.css';
 import ArchiveStats from '@/features/archives/ArchiveStats';
-import ArchivesHeader from '@/features/archives/ArchivesHeader';
+import ArchivesHeader, { EffectsToggle } from '@/features/archives/ArchivesHeader';
 import FactionHealthChart from '@/features/archives/FactionHealthChart';
 import FactionTabs from '@/features/dashboard/FactionTabs';
 import FactionStats from '@/features/archives/FactionStats';
@@ -24,25 +24,35 @@ export default function ArchivesClient({ data, seasons, currentSeason, defeatMes
     const effects = useCyberstanEffects(isDefeat);
     const { selectedEvent, railRef } = useScrollEvent(events);
 
+    // Synced glitch phase from ArchivesHeader → ArchiveStats
+    const [glitchPhase, setGlitchPhase] = useState({ phase: 'idle', takeoverMs: 800, restoreMs: 800 });
+    const handlePhaseChange = useCallback((phase, takeoverMs, restoreMs) => {
+        setGlitchPhase({ phase, takeoverMs, restoreMs });
+    }, []);
+
     return (
         <div className="archives-page">
             {/* Full-width stats section */}
             <div className={`archives-stats-section${isDefeat ? ' cyberstan-defeat' : ''}${effects.watermark ? ' cyberstan-watermark-active' : ''}`}>
-                <ArchivesHeader isDefeat={isDefeat} effects={effects} defeatMessageIndex={defeatMessageIndex} />
+                <ArchivesHeader isDefeat={isDefeat} effects={effects} defeatMessageIndex={defeatMessageIndex} onPhaseChange={handlePhaseChange} />
 
                 <section className="mt-4 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                         <h2>Statistics</h2>
-                        <SeasonSelector
-                            seasons={seasons}
-                            currentSeason={currentSeason}
-                        />
+                        <div className="flex items-center gap-2">
+                            {isDefeat && <EffectsToggle active={effects.headerScramble} />}
+                            <SeasonSelector
+                                seasons={seasons}
+                                currentSeason={currentSeason}
+                            />
+                        </div>
                     </div>
                     <ArchiveStats
                         events={events}
                         live={data?.live}
                         data={data}
                         effects={effects}
+                        glitchPhase={glitchPhase}
                     />
                 </section>
 

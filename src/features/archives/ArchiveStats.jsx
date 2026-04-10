@@ -24,7 +24,7 @@ function formatRatio(numerator, denominator) {
 const sectionHeading =
     'col-span-2 font-mono text-small text-text-muted uppercase tracking-wide';
 
-export default function ArchiveStats({ events, live, data, effects }) {
+export default function ArchiveStats({ events, live, data, effects, glitchPhase }) {
     if (!events?.length) return null;
 
     // Event-derived stats
@@ -95,7 +95,9 @@ export default function ArchiveStats({ events, live, data, effects }) {
                             altText="VICTORY"
                             className="text-danger"
                             altClassName="text-success"
-                            active={effects?.headerScramble}
+                            phase={glitchPhase?.phase ?? 'idle'}
+                            takeoverMs={glitchPhase?.takeoverMs ?? 800}
+                            restoreMs={glitchPhase?.restoreMs ?? 800}
                         />
                     :   outcome.toUpperCase()
                 }

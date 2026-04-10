@@ -41,7 +41,12 @@
 /* --- GlitchText scrambling characters --- */
 .glitch-char {
     font-family: var(--font-cyberstan);
-    color: var(--color-danger);
+    font-size: 0.6em;
+    display: inline-block;
+    width: 1ch;
+    overflow: hidden;
+    vertical-align: baseline;
+    text-align: center;
 }
 
 /* Reduce motion for accessibility */

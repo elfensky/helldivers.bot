@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
 import './CyberstanInterference.css';
 import GlitchText from '@/features/archives/ClientGlitchText';
 import { toggleCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
+import { useGlitchCycle } from '@/features/archives/useGlitchCycle.mjs';
 import {
     RESISTANCE_MESSAGES,
     PROPAGANDA_BODY,
@@ -17,12 +19,14 @@ function PropagandaHeader() {
             <h1 className="font-display text-body text-primary">
                 {PROPAGANDA_TITLE}
             </h1>
-            <p className="mt-1 max-w-screen-md text-small text-text-muted">{PROPAGANDA_BODY}</p>
+            <p className="mt-1 max-w-screen-md text-small text-text-muted">
+                {PROPAGANDA_BODY}
+            </p>
         </>
     );
 }
 
-function ResistanceHeader({ animate, message }) {
+function ResistanceHeader({ message, phase, takeoverMs, restoreMs }) {
     return (
         <>
             <h1 className="font-display text-body">
@@ -30,7 +34,9 @@ function ResistanceHeader({ animate, message }) {
                     text={RESISTANCE_TITLE}
                     altText={PROPAGANDA_TITLE}
                     className="text-primary"
-                    active={animate}
+                    phase={phase}
+                    takeoverMs={takeoverMs}
+                    restoreMs={restoreMs}
                 />
             </h1>
             <p className="mt-1 max-w-screen-md text-small">
@@ -38,14 +44,16 @@ function ResistanceHeader({ animate, message }) {
                     text={message}
                     altText={PROPAGANDA_BODY}
                     className="text-text-muted"
-                    active={animate}
+                    phase={phase}
+                    takeoverMs={takeoverMs}
+                    restoreMs={restoreMs}
                 />
             </p>
         </>
     );
 }
 
-function EffectsToggle({ active }) {
+export function EffectsToggle({ active }) {
     function handleToggle() {
         toggleCyberstanEffects();
         window.location.reload();
@@ -54,15 +62,30 @@ function EffectsToggle({ active }) {
     return (
         <button
             onClick={handleToggle}
-            className="mt-1 cursor-pointer font-mono text-[10px] text-text-muted opacity-50 hover:opacity-100"
+            className={`inline-flex items-center justify-center size-[30px] border border-primary text-primary font-mono cursor-pointer hover:bg-primary hover:text-surface-0${active ? '' : ' opacity-40'}`}
+            title={`${active ? 'Disable' : 'Enable'} interference`}
             data-umami-event="archive-effects-toggle"
         >
-            [{active ? 'Disable' : 'Enable'} interference]
+            ⚡
         </button>
     );
 }
 
-export default function ArchivesHeader({ isDefeat, effects, defeatMessageIndex }) {
+export default function ArchivesHeader({
+    isDefeat,
+    effects,
+    defeatMessageIndex,
+    onPhaseChange,
+}) {
+    const { phase, TAKEOVER_MS, RESTORE_MS } = useGlitchCycle(
+        isDefeat && effects.headerScramble,
+    );
+
+    // Expose phase to parent so ArchiveStats can sync its GlitchText
+    useEffect(() => {
+        onPhaseChange?.(phase, TAKEOVER_MS, RESTORE_MS);
+    }, [phase, TAKEOVER_MS, RESTORE_MS, onPhaseChange]);
+
     if (!isDefeat) {
         return (
             <div className="pb-2">
@@ -71,12 +94,17 @@ export default function ArchivesHeader({ isDefeat, effects, defeatMessageIndex }
         );
     }
 
-    const message = RESISTANCE_MESSAGES[defeatMessageIndex] ?? RESISTANCE_MESSAGES[0];
+    const message =
+        RESISTANCE_MESSAGES[defeatMessageIndex] ?? RESISTANCE_MESSAGES[0];
 
     return (
         <div className="pb-2">
-            <ResistanceHeader animate={effects.headerScramble} message={message} />
-            <EffectsToggle active={effects.headerScramble} />
+            <ResistanceHeader
+                message={message}
+                phase={phase}
+                takeoverMs={TAKEOVER_MS}
+                restoreMs={RESTORE_MS}
+            />
         </div>
     );
 }
