@@ -76,10 +76,9 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
                     </div>
                     <ArchiveStats
                         events={events}
-                        snapshots={data?.snapshots}
-                        pointsMax={data?.points_max}
                         live={data?.live}
                         data={data}
+                        onEventSelect={handleSelect}
                     />
                 </section>
 

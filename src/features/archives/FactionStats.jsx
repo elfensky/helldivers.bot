@@ -1,6 +1,5 @@
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
-import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import map from '@/shared/enums/map.mjs';
 
 const factionMap = { bugs: 0, cyborgs: 1, illuminate: 2 };
@@ -34,23 +33,17 @@ export default function FactionStats({ events, snapshots, pointsMax, faction }) 
             ? durations.reduce((a, b) => a + b, 0) / durations.length
             : null;
 
-    const peakSurge = factionEvents.reduce(
-        (max, e) => Math.max(max, Number(e.players_at_start ?? 0)),
-        0,
-    );
-
-    // Most attacked region
+    // Most attacked region (hotspot)
     const regionCounts = {};
     for (const e of factionEvents) {
         regionCounts[e.region] = (regionCounts[e.region] ?? 0) + 1;
     }
     const topRegion = Object.entries(regionCounts).sort((a, b) => b[1] - a[1])[0];
-    const mostAttackedName = topRegion
+    const hotspotName = topRegion
         ? (map[factionIndex]?.[Number(topRegion[0])]?.region ?? '—')
         : '—';
 
-    // Snapshot-derived stats
-    let overkill = '—';
+    // Snapshot-derived conquest
     let conquest = '—';
 
     if (snapshots?.length && pointsMax?.points) {
@@ -64,18 +57,9 @@ export default function FactionStats({ events, snapshots, pointsMax, faction }) 
             const factionData = parsed[factionIndex];
             const maxPoints = pointsMax.points[factionIndex];
 
-            if (maxPoints > 0) {
-                if (factionData.points_taken != null) {
-                    overkill =
-                        ((Number(factionData.points_taken) / maxPoints) * 100).toFixed(
-                            0,
-                        ) + '%';
-                }
-                if (factionData.points != null) {
-                    conquest =
-                        ((Number(factionData.points) / maxPoints) * 100).toFixed(1) +
-                        '%';
-                }
+            if (maxPoints > 0 && factionData.points != null) {
+                conquest =
+                    ((Number(factionData.points) / maxPoints) * 100).toFixed(1) + '%';
             }
         }
     }
@@ -104,17 +88,12 @@ export default function FactionStats({ events, snapshots, pointsMax, faction }) 
                         : undefined
                 }
             />
-            <StatCard label="TOTAL_EVENTS" value={factionEvents.length} />
+            <StatCard label="BATTLES" value={factionEvents.length} />
             <StatCard
-                label="AVG_DURATION"
+                label="AVG_BATTLE"
                 value={avgDuration != null ? formatCompactDuration(avgDuration) : '—'}
             />
-            <StatCard
-                label="PEAK_SURGE"
-                value={peakSurge > 0 ? formatNumber(peakSurge) : '—'}
-            />
-            <StatCard label="MOST_ATTACKED" value={mostAttackedName} />
-            <StatCard label="OVERKILL" value={overkill} />
+            <StatCard label="HOTSPOT" value={hotspotName} />
             <StatCard label="CONQUEST" value={conquest} />
         </div>
     );

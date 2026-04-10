@@ -68,12 +68,24 @@ describe('FactionStats', () => {
 
         expect(screen.getByText('DEFENSE_RATE')).toBeDefined();
         expect(screen.getByText('ATTACK_RATE')).toBeDefined();
-        expect(screen.getByText('TOTAL_EVENTS')).toBeDefined();
-        expect(screen.getByText('AVG_DURATION')).toBeDefined();
-        expect(screen.getByText('PEAK_SURGE')).toBeDefined();
-        expect(screen.getByText('MOST_ATTACKED')).toBeDefined();
-        expect(screen.getByText('OVERKILL')).toBeDefined();
+        expect(screen.getByText('BATTLES')).toBeDefined();
+        expect(screen.getByText('AVG_BATTLE')).toBeDefined();
+        expect(screen.getByText('HOTSPOT')).toBeDefined();
         expect(screen.getByText('CONQUEST')).toBeDefined();
+    });
+
+    it('does not render removed stats', () => {
+        render(
+            <FactionStats
+                events={mockEvents}
+                snapshots={mockSnapshots}
+                pointsMax={mockPointsMax}
+                faction="bugs"
+            />,
+        );
+
+        expect(screen.queryByText('PEAK_SURGE')).toBeNull();
+        expect(screen.queryByText('OVERKILL')).toBeNull();
     });
 
     it('returns null for faction with no events', () => {
@@ -101,7 +113,7 @@ describe('FactionStats', () => {
         expect(screen.getByText('50%')).toBeDefined();
     });
 
-    it('shows correct overkill from snapshots', () => {
+    it('shows correct conquest from snapshots', () => {
         render(
             <FactionStats
                 events={mockEvents}
@@ -110,8 +122,8 @@ describe('FactionStats', () => {
                 faction="bugs"
             />,
         );
-        // Bugs: points_taken=1500, pointsMax=1000 → 150%
-        expect(screen.getByText('150%')).toBeDefined();
+        // Bugs: points=300, pointsMax=1000 → 30.0%
+        expect(screen.getByText('30.0%')).toBeDefined();
     });
 
     it('shows dash when snapshots are missing', () => {
@@ -123,8 +135,7 @@ describe('FactionStats', () => {
                 faction="bugs"
             />,
         );
-        // Should still render event-derived stats but show '—' for snapshot stats
-        expect(screen.getByText('TOTAL_EVENTS')).toBeDefined();
+        expect(screen.getByText('BATTLES')).toBeDefined();
     });
 
     it('shows correct total events count', () => {

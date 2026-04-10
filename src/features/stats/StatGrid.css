@@ -52,6 +52,22 @@
     line-height: 1;
 }
 
+.stat-card-clickable {
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.stat-card-clickable:hover {
+    border-color: var(--color-primary);
+}
+
+.stat-card-subtitle {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+    line-height: 1.2;
+}
+
 .stat-card-accent {
     background: var(--color-primary);
 }
