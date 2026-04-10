@@ -9,7 +9,7 @@ vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
     getWarOutcome: vi.fn(() => ({ outcome: 'victory', reason: 'All enemy factions have been defeated.' })),
 }));
 
-const noEffects = { outcomeReveal: null, headerScramble: false, watermark: false, statFlickers: false };
+const noEffects = { headerScramble: false, watermark: false };
 
 const mockEvents = [
     { event_id: 1, type: 'defend', enemy: 0, region: 1, start_time: 1000, end_time: 4600, status: 'success', players_at_start: 200, points: 400, points_max: 500 },

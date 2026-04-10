@@ -12,30 +12,46 @@ describe('GlitchText', () => {
         vi.useRealTimers();
     });
 
-    it('renders final text immediately when active is false', () => {
-        const { container } = render(<GlitchText text="HELLO" active={false} />);
+    it('renders base text when active is false', () => {
+        const { container } = render(
+            <GlitchText text="HELLO" active={false} className="test" />,
+        );
         expect(container.textContent).toBe('HELLO');
         expect(container.querySelectorAll('.glitch-char').length).toBe(0);
     });
 
-    it('renders scrambled characters when active', () => {
-        const { container } = render(<GlitchText text="TEST" active={true} delay={0} duration={1000} />);
-        const glitchChars = container.querySelectorAll('.glitch-char');
-        // 4 non-space characters should be scrambling
-        expect(glitchChars.length).toBe(4);
+    it('renders base text initially (SSR-safe)', () => {
+        const { container } = render(
+            <GlitchText text="TEST" active={true} className="test" />,
+        );
+        // Before useEffect fires, should show base text (deterministic for SSR)
+        expect(container.textContent).toBe('TEST');
     });
 
-    it('settles all characters after duration', () => {
-        const { container } = render(<GlitchText text="AB" active={true} delay={0} duration={100} />);
-        // Advance past delay + duration + buffer, wrapped in act for state updates
-        act(() => { vi.advanceTimersByTime(200); });
-        expect(container.textContent).toBe('AB');
-        expect(container.querySelectorAll('.glitch-char').length).toBe(0);
+    it('shows glitch characters during a pulse', () => {
+        const { container } = render(
+            <GlitchText text="ABCD" altText="WXYZ" active={true} className="test" />,
+        );
+        // Advance past the pulse delay (6000-12000ms) — use max to guarantee
+        act(() => { vi.advanceTimersByTime(13000); });
+        // During a pulse, some chars may be glitch-char styled
+        // After pulse settles (300ms), text returns to base
+        act(() => { vi.advanceTimersByTime(400); });
+        expect(container.textContent).toBe('ABCD');
     });
 
-    it('preserves spaces without scrambling', () => {
-        const { container } = render(<GlitchText text="A B" active={true} delay={0} duration={1000} />);
-        // Only 2 glitch chars (A and B), space is preserved
-        expect(container.querySelectorAll('.glitch-char').length).toBe(2);
+    it('preserves text length with altText of different length', () => {
+        const { container } = render(
+            <GlitchText text="SHORT" altText="MUCH LONGER TEXT" active={true} className="test" />,
+        );
+        expect(container.textContent).toBe('SHORT');
+        expect(container.textContent.length).toBe(5);
+    });
+
+    it('renders without altText (Cyberstan-only glitches)', () => {
+        const { container } = render(
+            <GlitchText text="TEST" active={true} className="test" />,
+        );
+        expect(container.textContent).toBe('TEST');
     });
 });

@@ -30,22 +30,24 @@ export function useScrollEvent(events) {
 
         const observer = new IntersectionObserver(
             (entries) => {
-                // Find the topmost intersecting entry (smallest boundingClientRect.top)
-                let topmost = null;
+                // Pick the topmost intersecting entry that is actually visible
+                // (non-negative top). Entries with negative top are partially
+                // scrolled above the viewport and should not win the selection.
+                let best = null;
                 for (const entry of entries) {
-                    if (entry.isIntersecting) {
-                        if (
-                            !topmost ||
-                            entry.boundingClientRect.top <
-                                topmost.boundingClientRect.top
-                        ) {
-                            topmost = entry;
-                        }
+                    if (!entry.isIntersecting) continue;
+                    if (entry.boundingClientRect.top < 0) continue;
+                    if (
+                        !best ||
+                        entry.boundingClientRect.top <
+                            best.boundingClientRect.top
+                    ) {
+                        best = entry;
                     }
                 }
 
-                if (topmost) {
-                    const key = topmost.target.dataset.eventKey;
+                if (best) {
+                    const key = best.target.dataset.eventKey;
                     const event = lookup.get(key);
                     if (event) setSelectedEvent(event);
                 }

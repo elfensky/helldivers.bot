@@ -4,47 +4,49 @@ import { useState, useEffect, useRef } from 'react';
 
 const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const TICK_MS = 50;
+const PULSE_MIN_MS = 6000;
+const PULSE_MAX_MS = 12000;
+const PULSE_DURATION_MS = 300;
 
 function randomChar() {
     return CHARSET[Math.floor(Math.random() * CHARSET.length)];
 }
 
-function buildChars(text) {
-    return text.split('').map((char) => ({
-        real: char,
-        display: char === ' ' ? ' ' : randomChar(),
-        settled: char === ' ',
-    }));
+function randomPulseDelay() {
+    return PULSE_MIN_MS + Math.random() * (PULSE_MAX_MS - PULSE_MIN_MS);
 }
 
 /**
- * GlitchText — letter-scramble animation (slot machine / hacker decode)
+ * GlitchText — persistent text-scramble effect with two independent glitch layers.
  *
- * Usage:
- *   <GlitchText text="OPERATION MELTDOWN" duration={1200} delay={200} />
- *   <GlitchText text="STATUS: DEFEATED" active={false} className="text-danger" />
+ * - Effect A (copy swap): chars briefly show altText characters (with altClassName color)
+ * - Effect B (Cyberstan scramble): chars show random glyphs in font-cyberstan (red)
+ * - Effects can combine per-character per-pulse
+ *
+ * Props:
+ *   text         — base text displayed in idle state
+ *   altText      — alternate text for Effect A (optional)
+ *   className    — styling for base text
+ *   altClassName — styling for Effect A chars (optional, defaults to className)
+ *   active       — enables animation (false = static base text)
  */
 export default function GlitchText({
     text,
-    delay = 0,
-    duration = 1000,
-    active = true,
+    altText,
     className,
+    altClassName,
+    active = true,
 }) {
-    const [chars, setChars] = useState(() => buildChars(text));
-    const intervalRef = useRef(null);
-    const timeoutsRef = useRef([]);
+    // SSR-safe: initialize with base text (deterministic)
+    const [display, setDisplay] = useState(text);
+    const [charStyles, setCharStyles] = useState(null); // null = all default
+    const timerRef = useRef(null);
+    const tickRef = useRef(null);
 
     useEffect(() => {
-        // Rebuild chars if text changes while inactive
         if (!active) {
-            setChars(
-                text.split('').map((char) => ({
-                    real: char,
-                    display: char,
-                    settled: true,
-                })),
-            );
+            setDisplay(text);
+            setCharStyles(null);
             return;
         }
 
@@ -54,73 +56,93 @@ export default function GlitchText({
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (reducedMotion) {
-            setChars(
-                text.split('').map((char) => ({
-                    real: char,
-                    display: char,
-                    settled: true,
-                })),
-            );
+            setDisplay(text);
+            setCharStyles(null);
             return;
         }
 
-        // Reset to scrambling state
-        setChars(buildChars(text));
+        function schedulePulse() {
+            timerRef.current = setTimeout(pulse, randomPulseDelay());
+        }
 
-        // Schedule per-character settle timeouts
-        text.split('').forEach((char, i) => {
-            if (char === ' ') return;
-            const settleAt = delay + (i / text.length) * duration;
-            const t = setTimeout(() => {
-                setChars((prev) =>
-                    prev.map((c, idx) =>
-                        idx === i ? { ...c, settled: true, display: c.real } : c,
-                    ),
-                );
-            }, settleAt);
-            timeoutsRef.current.push(t);
-        });
+        function pulse() {
+            // For each character, independently decide: no effect, A, B, or A+B
+            const maxLen = Math.max(text.length, altText?.length ?? 0);
+            const styles = [];
+            const chars = [];
 
-        // Start scramble ticker after delay
-        const startT = setTimeout(() => {
-            intervalRef.current = setInterval(() => {
-                setChars((prev) => {
-                    const allSettled = prev.every((c) => c.settled);
-                    if (allSettled) {
-                        clearInterval(intervalRef.current);
-                        intervalRef.current = null;
-                        return prev;
-                    }
-                    return prev.map((c) =>
-                        c.settled || c.real === ' '
-                            ? c
-                            : { ...c, display: randomChar() },
-                    );
-                });
-            }, TICK_MS);
-        }, delay);
+            for (let i = 0; i < text.length; i++) {
+                const roll = Math.random();
+                const hasAlt = altText && i < altText.length;
 
-        timeoutsRef.current.push(startT);
+                if (roll < 0.15 && hasAlt) {
+                    // Effect A only: show altText char with altClassName
+                    chars.push(altText[i]);
+                    styles.push('alt');
+                } else if (roll < 0.30) {
+                    // Effect B only: random char in Cyberstan font
+                    chars.push(randomChar());
+                    styles.push('cyberstan');
+                } else if (roll < 0.38 && hasAlt) {
+                    // Both A+B: altText char in Cyberstan font
+                    chars.push(altText[i]);
+                    styles.push('both');
+                } else {
+                    // No effect: keep base char
+                    chars.push(text[i]);
+                    styles.push(null);
+                }
+            }
+
+            setDisplay(chars.join(''));
+            setCharStyles(styles);
+
+            // Hold the glitch briefly, then settle back
+            tickRef.current = setTimeout(() => {
+                setDisplay(text);
+                setCharStyles(null);
+                schedulePulse();
+            }, PULSE_DURATION_MS);
+        }
+
+        schedulePulse();
 
         return () => {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-            timeoutsRef.current.forEach(clearTimeout);
-            timeoutsRef.current = [];
+            clearTimeout(timerRef.current);
+            clearTimeout(tickRef.current);
         };
-    }, [text, delay, duration, active]);
+    }, [text, altText, active]);
 
+    // No per-char styling needed — render as plain text
+    if (!charStyles) {
+        return <span className={className}>{display}</span>;
+    }
+
+    // Render with per-character styling
     return (
         <span className={className}>
-            {chars.map((char, i) =>
-                char.settled ? (
-                    char.real
-                ) : (
+            {display.split('').map((char, i) => {
+                const style = charStyles[i];
+                if (!style) return char;
+                if (style === 'alt')
+                    return (
+                        <span key={i} className={altClassName || className}>
+                            {char}
+                        </span>
+                    );
+                if (style === 'cyberstan')
+                    return (
+                        <span key={i} className="glitch-char">
+                            {char}
+                        </span>
+                    );
+                // 'both' — altText char in Cyberstan font
+                return (
                     <span key={i} className="glitch-char">
-                        {char.display}
+                        {char}
                     </span>
-                ),
-            )}
+                );
+            })}
         </span>
     );
 }

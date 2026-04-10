@@ -1,7 +1,7 @@
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
-import OutcomeReveal from '@/features/archives/OutcomeReveal';
+import GlitchText from '@/features/archives/GlitchText';
 import {
     findClosestCalls,
     findWorstCascade,
@@ -89,8 +89,14 @@ export default function ArchiveStats({ events, live, data, effects }) {
             <StatCard
                 label="OUTCOME"
                 value={
-                    outcome === 'defeat' && effects?.outcomeReveal != null ?
-                        <OutcomeReveal variant={effects.outcomeReveal} />
+                    outcome === 'defeat' ?
+                        <GlitchText
+                            text="DEFEAT"
+                            altText="VICTORY"
+                            className="text-danger"
+                            altClassName="text-success"
+                            active={effects?.headerScramble}
+                        />
                     :   outcome.toUpperCase()
                 }
                 subtitle={
@@ -99,7 +105,7 @@ export default function ArchiveStats({ events, live, data, effects }) {
                     :   undefined
                 }
                 accentColor={outcomeColor}
-                valueColor={effects?.outcomeReveal != null ? undefined : outcomeColor}
+                valueColor={outcome !== 'defeat' ? outcomeColor : undefined}
             />
             <StatCard label="DURATION" value={`${seasonDays} days`} />
             <StatCard

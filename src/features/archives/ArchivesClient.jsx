@@ -28,7 +28,7 @@ export default function ArchivesClient({ data, seasons, currentSeason }) {
         <div className="archives-page">
             {/* Full-width stats section */}
             <div className={`archives-stats-section${isDefeat ? ' cyberstan-defeat' : ''}${effects.watermark ? ' cyberstan-watermark-active' : ''}`}>
-                <ArchivesHeader effects={effects} />
+                <ArchivesHeader isDefeat={isDefeat} effects={effects} />
 
                 <section className="mt-4 flex flex-col gap-2">
                     <div className="flex items-center justify-between">

@@ -44,12 +44,6 @@
     color: var(--color-danger);
 }
 
-/* --- Stat label flicker --- */
-.stat-label-flicker {
-    font-family: var(--font-cyberstan) !important;
-    color: var(--color-danger) !important;
-}
-
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
     .cyberstan-defeat::before {
