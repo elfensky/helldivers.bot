@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.37.6
+
+### Bug Fixes
+
+- **Admin push notification tester now supports stateful transitions** — same pattern as the toast tester in 0.37.5. Push `Started` creates a fresh notification with a new high-range random `event_id` (900M+ range, no collision with real ids). `Won`/`Lost` re-use the same `event_id`, which matches the existing pushNotifier tag convention (`tag: event-${event_id}` + `renotify: true`) so the browser replaces the previous notification in place. `sendTestNotification` server action accepts an optional `event_id` parameter; legacy calls without it still get a fresh random id.
+
 ## 0.37.5
 
 ### Bug Fixes

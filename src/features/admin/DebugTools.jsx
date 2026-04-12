@@ -48,10 +48,16 @@ export default function DebugTools() {
     const [pushStatus, setPushStatus] = useState({});
     const [pushMessage, setPushMessage] = useState(null);
 
-    // Currently-simulated test event. `Started` creates a fresh one;
+    // Currently-simulated test toast event. `Started` creates a fresh one;
     // `Won`/`Lost`/`Active` update its status in place (same event_id)
     // so the tester can exercise the dismissal/status-change flow.
     const testEventRef = useRef(null);
+
+    // Parallel ref for the push notification tester. Kept separate from
+    // testEventRef so toast and push tests don't cross-contaminate.
+    // `Started` creates a fresh event; `Won`/`Lost` re-use the same id
+    // so the browser replaces the existing notification via tag dedupe.
+    const testPushEventRef = useRef(null);
 
     const buildOrUpdateTestEvent = useCallback((kind) => {
         const status = statusForKind(kind);
@@ -63,16 +69,24 @@ export default function DebugTools() {
         return testEventRef.current;
     }, []);
 
+    const buildOrUpdatePushEvent = useCallback((kind) => {
+        if (kind === 'event_started' || !testPushEventRef.current) {
+            testPushEventRef.current = freshTestEvent(kind);
+        }
+        return testPushEventRef.current;
+    }, []);
+
     const handleTestPush = useCallback(async (kind) => {
         setPushStatus((prev) => ({ ...prev, [kind]: 'sending' }));
         setPushMessage(null);
 
-        const event = freshTestEvent(kind);
+        const event = buildOrUpdatePushEvent(kind);
         const result = await sendTestNotification({
             enemy: event.enemy,
             region: event.region,
             type: event.type,
             kind,
+            event_id: event.event_id,
         });
 
         if (result.error) {
@@ -110,10 +124,7 @@ export default function DebugTools() {
                                     duration: 8000,
                                     alertColor,
                                     onDismiss: () =>
-                                        addDismissedEvent(
-                                            event.event_id,
-                                            event.status,
-                                        ),
+                                        addDismissedEvent(event.event_id, event.status),
                                 });
                             }}
                             className={BTN}
