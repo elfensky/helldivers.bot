@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.37.2
+
+### Bug Fixes
+
+- **`DefeatedCard` label now uses underscores** — `ALL SECTORS CAPTURED` → `ALL_SECTORS_CAPTURED` to match the convention used by all other bar labels (`SECTOR_PROGRESS`, `CAPITAL_DEFENSE`, `HOMEWORLD_ASSAULT`, `SUPER_EARTH_DEFENSE`).
+
 ## 0.37.1
 
 ### Bug Fixes

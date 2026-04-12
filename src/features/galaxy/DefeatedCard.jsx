@@ -28,12 +28,7 @@ export default function DefeatedCard({ factionIndex, startTime, endTime }) {
         >
             <div className="sector-card-content">
                 <div className="sector-card-header">
-                    <img
-                        src={faction.icon}
-                        alt=""
-                        width={16}
-                        height={16}
-                    />
+                    <img src={faction.icon} alt="" width={16} height={16} />
                     <span
                         className="sector-card-action"
                         style={{ color: 'var(--color-gold-muted)' }}
@@ -43,7 +38,7 @@ export default function DefeatedCard({ factionIndex, startTime, endTime }) {
                     <span className="sector-card-title">{faction.name}</span>
                 </div>
                 <div className="sector-card-bar-label-row">
-                    <span className="sector-card-bar-label">ALL SECTORS CAPTURED</span>
+                    <span className="sector-card-bar-label">ALL_SECTORS_CAPTURED</span>
                 </div>
                 <div className="sector-card-bar-wrap">
                     <div
