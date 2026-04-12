@@ -23,14 +23,14 @@ export default function Map({ map, pulseDelays }) {
     const superearth = 3;
 
     return (
-        <div id="map" className="max-h-full w-full">
+        <div id="map" className="flex min-h-0 w-full flex-1 flex-col">
             <svg
                 id="Layer_2"
                 data-name="Layer 2"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox={viewBox}
                 preserveAspectRatio="xMaxYMid meet"
-                className="h-full w-full"
+                className="min-h-0 w-full min-w-0 flex-1"
             >
                 <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">

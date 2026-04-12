@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.39.4
+
+### Bug Fixes
+
+- **Galaxy SVG no longer overflows its `#map` wrapper.** v0.39.3 fixed `.home-map` → `#galaxy` sizing via the flex chain, but the leak continued one level deeper: inside `src/features/galaxy/Map.jsx`, the `<div id="map" className="max-h-full w-full">` wrapper had no concrete height, and Tailwind's `max-h-full` resolves to `max-height: 100%` which needs an explicit parent height to apply. The SVG inside had `h-full w-full` with the same problem, so it fell back to its intrinsic size derived from its viewBox and the parent's width — ending up ~32px taller than its container at desktop widths, clipping the bottom of the map below the viewport fold. Fixed by extending the flex-layout chain through Map.jsx: `#map` is now `flex flex-col flex-1 min-h-0 w-full` (a flex child of `#galaxy`), and the `<svg>` is `flex-1 min-h-0 min-w-0 w-full` (a flex child of `#map`). Every layer down to the SVG now correctly resolves height from its flex parent. Fix applies to both `/` and `/archives` since `Map.jsx` is the shared rendering component.
+
+### Testing
+
+- DevTools verification on `/` at 1710×934: all four layers (`.home-map`, `#galaxy`, `#map`, `<svg>`) are now 822px tall with `bottom: 918px` (16px of breathing room before the viewport edge at 934). Before the fix the SVG was 854px and extended to 949.99 — 16px below the viewport.
+- DevTools verification on `/archives` at the same viewport: all layers in sync at 822px when unscrolled, and sticky map pins correctly when scrolled (clamped to whatever the max-height resolves to at the current scroll position).
+
 ## 0.39.3
 
 ### Bug Fixes
