@@ -8,8 +8,6 @@ import FactionTabs from '@/features/dashboard/FactionTabs';
 import FactionStats from '@/features/archives/FactionStats';
 import EventLog from '@/features/timeline/EventLog';
 import ArchiveMap from '@/features/archives/ArchiveMap';
-import factions from '@/shared/enums/factions.mjs';
-import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 import SeasonSelector from '@/features/archives/SeasonSelector';
 import { eventKey } from '@/features/archives/eventKey.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
@@ -121,49 +119,7 @@ export default function ArchivesClient({
 
                 <div className="archives-map-col">
                     {mapVisible && (
-                        <>
-                            <ArchiveMap data={data} selectedEvent={selectedEvent} />
-
-                            {selectedEvent && (
-                                <div
-                                    className={`border border-ghost bg-surface-1 p-3 ${
-                                        selectedEvent.type === 'defend' ?
-                                            'border-r-[4px] border-r-danger'
-                                        :   'border-r-[4px] border-r-success'
-                                    }`}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm font-semibold">
-                                                {getEventRegionLabel(selectedEvent)}
-                                            </div>
-                                            <div className="text-xs text-text-muted">
-                                                {factions[selectedEvent.enemy]?.name ??
-                                                    'Unknown'}{' '}
-                                                &middot; {selectedEvent.type} &middot;{' '}
-                                                {Math.round(
-                                                    (selectedEvent.end_time -
-                                                        selectedEvent.start_time) /
-                                                        3600,
-                                                )}
-                                                h
-                                            </div>
-                                        </div>
-                                        <div
-                                            className={`text-xs font-bold ${
-                                                selectedEvent.status === 'success' ?
-                                                    'text-success'
-                                                :   'text-danger'
-                                            }`}
-                                        >
-                                            {selectedEvent.status === 'success' ?
-                                                'WON'
-                                            :   'LOST'}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </>
+                        <ArchiveMap data={data} selectedEvent={selectedEvent} />
                     )}
                 </div>
             </div>

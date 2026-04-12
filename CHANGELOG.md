@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.39.2
+
+### Bug Fixes
+
+- **Removed the redundant "selected event" info card overlay on `/archives`.** The small card that displayed region + faction + duration + WON/LOST status below the map when an event was scroll-selected is now unnecessary — the event log itself (now in the left column of the scrollytelling grid with `border-l-primary` highlighting the selected card) already shows all that information more clearly. Dropped the unused `factions` and `getEventRegionLabel` imports that only fed that overlay.
+
 ## 0.39.1
 
 ### Bug Fixes
