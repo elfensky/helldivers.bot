@@ -92,7 +92,7 @@ export function showEventToast(
     if (pulseDelay != null) style['--pulse-delay'] = `${pulseDelay}s`;
 
     toast(<ToastContent event={event} kind={kind} accentClass={accentClass} />, {
-        id: `event-${event.id}`,
+        id: `event-${event.event_id}`,
         duration,
         style,
         onDismiss,

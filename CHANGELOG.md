@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.37.5
+
+### Bug Fixes
+
+- **Dismissed toasts now stay fully suppressed across reloads until the event's status actually changes.** The old implementation used a soft-reappear pattern (8-second auto-dismiss for previously-dismissed toasts on page load), which meant users who closed a toast still saw it flash briefly every time they returned. The new implementation tracks dismissals as `{eventId: statusAtDismissal}` — on catch-up, an event whose dismissed-status still matches its current status is skipped entirely. When the event transitions (e.g., `active` → `success`/`fail`), the catch-up effect detects the status mismatch and fires the corresponding `event_won` / `event_lost` toast automatically, so users don't silently miss terminal outcomes.
+- **Fixed `event.id` → `event.event_id` in `eventToast` and `LiveToasts`** — the toast dedupe key was producing `event-undefined` for every toast (since the real field is `event_id`, not `id`), which meant Sonner collapsed all toasts to a single reusable slot. The `dismissedEvents` Set was similarly writing the literal string `"undefined"` and never actually suppressing anything on reload. Dismissal tracking now works.
+- **Toasts now have a close button (desktop).** Enabled Sonner's built-in `closeButton` prop on `<Toaster>` — small X control for explicit dismissal. Works across mobile too (touch-swipe gestures still work).
+- **Admin debug toast tester updated** — `randomEvent` now generates high-range random numeric `event_id` values (900M+ range) to avoid collisions with real HD1 event ids (1-100k range), and includes `status` derived from the toast kind. Previously the test events had no `event_id` and no `status`, which meant Sonner deduped them all to one visible toast and new dismissal logic couldn't classify them.
+
+### Migration
+
+- `dismissedEvents` localStorage record changed from `Array<string>` to `Record<string, status>`. Legacy array entries are migrated in-place on first read — each id is assumed to have been dismissed while `active`, which is the only status a user could plausibly have dismissed prior to this change.
+
 ## 0.37.4
 
 ### Bug Fixes
