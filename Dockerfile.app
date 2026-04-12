@@ -2,7 +2,8 @@
 # LOCAL BUILD: docker build -f ./Dockerfile.app -t ghcr.io/elfensky/helldiversbot:staging .
 #
 # `# syntax=docker/dockerfile:1` enables BuildKit features used below — most
-# importantly `RUN --mount=type=cache,...` for npm + Next.js build caches.
+# importantly `RUN --mount=type=cache,...` for npm + Next.js build caches and
+# `RUN --mount=type=secret,...` for Sentry credentials.
 # BuildKit is the default builder in Docker Desktop and modern docker engine.
 FROM node:24-alpine AS base
 # Install tini to avoid zombie processes
@@ -44,19 +45,31 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Generate the Prisma client
 RUN POSTGRES_URL=postgresql://dummy npx prisma generate
-# Sentry/GlitchTip sourcemap upload (build-time only, not baked into final image)
-ARG SENTRY_AUTH_TOKEN
-ARG SENTRY_URL
-ARG SENTRY_ORG
-ARG SENTRY_PROJECT
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
 # ENV NEXT_TELEMETRY_DISABLED=1
+#
+# Sentry/GlitchTip credentials are passed via `--mount=type=secret`, NOT via
+# build args. ARGs leak into the image's BuildKit provenance attestation,
+# which is published to GHCR alongside the image — for a public package,
+# that means anyone can read `--build-arg SENTRY_AUTH_TOKEN=...` via
+# `docker buildx imagetools inspect`. Secrets mounted this way live only in
+# the RUN's tmpfs, never touch any layer or cache, never appear in
+# provenance. The `env=NAME` form exposes the secret as an env var for the
+# duration of the RUN, which is exactly what `withSentryConfig` reads at
+# build time. Each secret is optional — if not passed, the env var is
+# simply unset and the Sentry plugin skips sourcemap upload gracefully.
+#
 # `--mount=type=cache` for `/app/.next/cache` lets webpack/turbopack reuse
-# compilation artifacts across builds — typically 60–80% faster rebuilds in CI
-# once the cache is warm. Cache lives in BuildKit storage, never in the image.
+# compilation artifacts across builds — typically 60–80% faster rebuilds in
+# CI once the cache is warm. Cache lives in BuildKit storage, never in the
+# image.
 RUN --mount=type=cache,target=/app/.next/cache,sharing=locked \
+    --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
+    --mount=type=secret,id=sentry_url,env=SENTRY_URL \
+    --mount=type=secret,id=sentry_org,env=SENTRY_ORG \
+    --mount=type=secret,id=sentry_project,env=SENTRY_PROJECT \
     if [ -f package-lock.json ]; then npm run build; \
     else echo "Lockfile not found." && exit 1; \
     fi

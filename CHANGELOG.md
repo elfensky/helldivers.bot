@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.37.11
+
+### Security
+
+- **Stopped leaking `SENTRY_AUTH_TOKEN` (and the other Sentry credentials) via the image's BuildKit provenance attestation.** `Dockerfile.app` previously declared `ARG SENTRY_AUTH_TOKEN` etc., and `staging.docker.yml` / `release.docker.yml` populated them via `build-args:` from `secrets.SENTRY_AUTH_TOKEN`. The substituted values landed in the SLSA provenance metadata that BuildKit pushes alongside each image — for the public `ghcr.io/elfensky/helldiversbot:staging` and `:latest` packages, that meant anyone with anonymous `docker pull` access could extract the token via `docker buildx imagetools inspect`. Replaced with BuildKit `--mount=type=secret,id=...,env=...` directives in the build RUN, plus matching `secrets:` inputs in both workflow files. Secrets mounted this way live only in the RUN's tmpfs, never touch any image layer, build cache, or attestation. The `SENTRY_AUTH_TOKEN` has been rotated. Closes #284.
+
+### Chores
+
+- Same change also resolves the recurring `SecretsUsedInArgOrEnv` BuildKit lint warning that has been present in every CI build since #283 added `# syntax=docker/dockerfile:1`.
+
 ## 0.37.10
 
 ### Bug Fixes
