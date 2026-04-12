@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.37.10
+
+### Bug Fixes
+
+- **`Dockerfile.app` HEALTHCHECK was silently failing on every probe** because the directive shelled out to `curl`, which is not installed in `node:24-alpine` (only busybox `wget` exists). Containers were being reported as `unhealthy` forever — broken monitoring and a real issue if anything downstream consumes the health status. Replaced with `wget --quiet --spider --tries=1 http://127.0.0.1:3000/api/healthcheck`. Also bumped `--start-period` from 5s to 30s so a Next.js cold-start (5–15 seconds) doesn't trip the probe before the server is ready.
+
+### Chores
+
+- **`Dockerfile.app` slim-down**: stripped Sharp's glibc-arm64 and glibc-x64 binaries (`@img/sharp-libvips-linux-{arm64,x64}` and `@img/sharp-linux-{arm64,x64}`) immediately after `npm ci`. Alpine is musl, so the linuxmusl variants are the only ones loaded at runtime; the glibc variants are pulled in defensively as npm optional deps but never `dlopen()`'d on a musl host. Saves ~16.6 MB on the final image because Next.js's `@vercel/nft` standalone trace would otherwise include them. Image: 407 MB → ~390 MB.
+- **Added BuildKit cache mounts** to both deps (`/root/.npm`) and builder (`/app/.next/cache`) RUN steps. The npm download cache and Next.js webpack/turbopack compilation cache now persist outside the image across builds — typically 60–80% faster rebuilds in CI once the cache is warm. Zero impact on the final image (cache lives in BuildKit storage, not in any image layer). Requires the `# syntax=docker/dockerfile:1` directive at the top of the file, which is now present.
+- **Improved `.dockerignore`** with exclusions for IDE configs (`.vscode`, `.idea`), test files (`src/**/*.test.*`, `src/**/__tests__`), vitest configs, prettier configs, and explicit `coverage`/`docs`/`CHANGELOG.md` entries. Doesn't affect image size — improves build context transfer speed (~5–10%) and prevents the `COPY . .` builder cache layer from being invalidated when test files or docs change.
+
+Closes #283.
+
 ## 0.37.9
 
 ### Chores
