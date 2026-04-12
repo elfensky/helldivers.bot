@@ -96,33 +96,12 @@
 }
 
 /*
- * Force mobile/vertical timeline layout inside the archive event column.
- * TimelineSection.css applies desktop styles (rail, multi-column grid) at 768px+,
- * but the archive event log is in a narrow column and should always stack vertically.
+ * NOTE: The old `.archives-event-col .timeline-*` overrides were removed
+ * in v0.38.1. They were left over from the TimelineSection → EventLog
+ * rename in v0.38.0 and targeted classes that no longer exist in the DOM.
+ *
+ * The archive event log now uses `<EventLog layout="stack">`, which forces
+ * a single-column layout via `.event-log-days--stack` in EventLog.css.
+ * That class is the source of truth for the stack layout; no archive-side
+ * overrides needed.
  */
-.archives-event-col .timeline-days {
-    gap: 0;
-    position: static;
-}
-
-.archives-event-col .timeline-days::before {
-    display: none;
-}
-
-.archives-event-col .timeline-day {
-    display: block;
-}
-
-.archives-event-col .rail {
-    display: none;
-}
-
-.archives-event-col .timeline-day-grid {
-    display: flex;
-    flex-direction: column;
-    grid-template-columns: none;
-}
-
-.archives-event-col .timeline-day-header {
-    box-shadow: inset -6px 0 0 0 var(--color-ghost);
-}

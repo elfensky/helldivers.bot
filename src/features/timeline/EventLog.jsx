@@ -29,6 +29,11 @@ import { eventKey } from '@/features/archives/eventKey.mjs';
  * - `includeToday` (optional, default `true`): whether to show an empty
  *   TODAY marker when no events exist for today. Pass `false` in
  *   archives to suppress.
+ * - `layout` (optional, default `'grid'`): `'grid'` renders the
+ *   desktop multi-column layout at ≥md. `'stack'` forces a single
+ *   vertical column regardless of viewport width — required by the
+ *   archives scrollytelling flow because `useScrollEvent`'s DOM-order
+ *   optimization only works on a single column.
  */
 export default function EventLog({
     events,
@@ -39,6 +44,7 @@ export default function EventLog({
     onHoverEvent,
     railRef,
     includeToday = true,
+    layout = 'grid',
 }) {
     const [sortOrder, toggleSortOrder] = useEventLogSort();
     const groups = groupEventsByDay(events ?? [], { includeToday, sortOrder });
@@ -56,7 +62,14 @@ export default function EventLog({
 
                 {groups.length === 0 ?
                     <p className="event-log-empty">No events recorded yet.</p>
-                :   <div className="event-log-days" ref={railRef}>
+                :   <div
+                        className={
+                            layout === 'stack' ?
+                                'event-log-days event-log-days--stack'
+                            :   'event-log-days'
+                        }
+                        ref={railRef}
+                    >
                         {groups.map((group) => {
                             const { wins, losses } = countOutcomes(group.events);
                             return (

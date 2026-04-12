@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.38.1
+
+### Bug Fixes
+
+- **`/archives` — restored scroll-sync ("animate map + select event") and the vertical stack layout** that was lost in v0.38.0. The unified-event-log rename (`timeline-day-grid` → `event-log-day-grid`) left a stale CSS override in `ArchivesLayout.css` that used to force the archive event rail to a single vertical column; without that override, the new `EventLog.css` desktop grid (`repeat(2/3/4, 1fr)` at md/lg/xl) took over and wrapped cards into columns. The multi-column grid in turn broke `useScrollEvent`'s DOM-order early-break optimization (which only holds when cards are vertically stacked), so scrolling the event rail no longer synced the selected event to the map.
+- **Fix:** `EventLog` gains an explicit `layout: 'grid' | 'stack'` prop. `ArchivesClient.jsx` passes `layout="stack"` to force a single-column flex layout at all widths via the new `.event-log-days--stack` class in `EventLog.css`. `useScrollEvent` is unchanged — once cards are stacked vertically again, the DOM-order assumption holds and scroll-sync works.
+- Removed stale `.archives-event-col .timeline-*` overrides from `ArchivesLayout.css` (they targeted classes that no longer exist).
+
 ## 0.38.0
 
 ### Features
