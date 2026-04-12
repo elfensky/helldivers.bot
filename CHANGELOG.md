@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.37.9
+
+### Chores
+
+- **Synced `package-lock.json`** — committed the pending Next.js patch bump (`16.2.2 → 16.2.3`, plus matching `@next/env`, `@next/mdx`, and `@next/swc-*` platform variants) that had been sitting unstaged after an out-of-band `npm install`. Also corrected the lockfile's project `version` field, which had drifted from `0.33.0` because successive `package.json` version bumps weren't paired with `npm install` runs. Closes #282.
+
 ## 0.37.8
 
 ### Chores
