@@ -1,0 +1,42 @@
+/*
+ * HomeScrollytelling — mobile stacked, desktop 2-col scrollytelling.
+ *
+ * The right column (.home-map-col) is an empty placeholder on desktop;
+ * the real map is rendered by <HomeGalaxyOverlay> as a sibling with
+ * position: fixed that covers this placeholder when pinned.
+ *
+ * Below lg: the 2-col layout collapses — event log stacks, placeholder
+ * is hidden (the mobile hero already showed an inline Galaxy).
+ */
+
+.home-scrollytelling {
+    display: flex;
+    flex-direction: column;
+}
+
+.home-event-col {
+    min-width: 0;
+}
+
+.home-map-col {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .home-scrollytelling {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) minmax(
+                0,
+                calc((100dvh - 80px) * 806.93 / 868.81)
+            );
+        column-gap: 6rem;
+        align-items: start;
+    }
+
+    .home-map-col {
+        display: block;
+        /* Reserve the same visual footprint as the pinned map so the grid
+           doesn't collapse and the event column width stays stable. */
+        min-height: calc(100dvh - 80px);
+    }
+}

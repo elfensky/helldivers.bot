@@ -66,15 +66,21 @@
         position: relative;
     }
 
+    /*
+     * At lg+, the inline galaxy is replaced by <HomeGalaxyOverlay> (a
+     * fixed-position element covering this slot). The slot stays in the
+     * grid as a layout reservation — its contents are hidden.
+     */
     .dashboard-map {
         position: sticky;
         top: 80px;
-        display: flex;
-        align-items: flex-start;
-        justify-content: end;
         max-height: calc(100dvh - 80px - 2rem);
         min-height: 0;
         margin: 0;
+    }
+
+    .dashboard-map > * {
+        display: none;
     }
 
     .sector-grid {

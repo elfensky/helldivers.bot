@@ -1,0 +1,79 @@
+/*
+ * HomeGalaxyOverlay — desktop-only fixed positioning.
+ *
+ * Mobile: hidden via display: none; the mobile flow renders an inline
+ * <Galaxy> inside DashboardClient's .dashboard-map slot.
+ *
+ * Desktop: fixed-position, two states (hero / pinned). CSS transitions on
+ * `top / right / width / height` drive the smooth shrink+reposition when
+ * `useHomeMapPinned` flips the modifier class.
+ */
+
+.home-galaxy-overlay {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .home-galaxy-overlay {
+        display: block;
+        position: fixed;
+        z-index: 5;
+        pointer-events: none;
+        transition:
+            top 400ms ease,
+            right 400ms ease,
+            width 400ms ease,
+            height 400ms ease;
+    }
+
+    /* Re-enable pointer events on the actual galaxy so tooltips/clicks work */
+    .home-galaxy-overlay > * {
+        pointer-events: auto;
+        width: 100%;
+        height: 100%;
+    }
+
+    /*
+     * Hero state: overlay covers the dashboard's hero map column.
+     *
+     * The dashboard grid uses:
+     *   grid-template-columns: minmax(260px, 1fr) minmax(0, calc((100dvh - 80px) * 806.93 / 868.81));
+     *   column-gap: 6rem;
+     *
+     * So the map column's width at lg: is ~the height-adjusted aspect ratio.
+     * We match that here, positioned at the page's right gutter.
+     * gutters at lg: = 6rem (from layout.css .gutters padding: lg:px-24 = 6rem).
+     */
+    .home-galaxy-overlay--hero {
+        top: 80px;
+        right: 6rem;
+        width: calc((100dvh - 80px) * 806.93 / 868.81);
+        height: calc(100dvh - 80px - 2rem);
+    }
+
+    /*
+     * Pinned state: top-right corner, sized like the archives sticky map.
+     * Archives uses `minmax(0, 50dvh)` for its map col — we match that.
+     */
+    .home-galaxy-overlay--pinned {
+        top: 80px;
+        right: 2rem;
+        width: min(50dvh, 480px);
+        height: min(50dvh, 480px);
+    }
+}
+
+/*
+ * Wider viewports: nudge the hero overlay to match the page's max-content
+ * width centering. The `.gutters` class caps the dashboard at 1536px and
+ * centers via mx-auto; the overlay is fixed so it doesn't inherit that
+ * centering — we compensate with a calc-based right offset.
+ */
+@media (min-width: 1536px) {
+    .home-galaxy-overlay--hero {
+        right: calc((100vw - 1536px) / 2 + 6rem);
+    }
+    .home-galaxy-overlay--pinned {
+        right: calc((100vw - 1536px) / 2 + 2rem);
+    }
+}

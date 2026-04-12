@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+## 0.39.0
+
+### Features
+
+- **Homepage scrollytelling galaxy map.** Ported the archives "animate map + select event on scroll" pattern to `/`. Below the hero, the homepage now has a 2-column scrollytelling section: single-column event log on the left, pinned galaxy map on the right. As you scroll through the event log, the map time-travels to show what the galaxy looked like at the currently-focused event's moment (same `computeMapStateAtEvent` logic archives uses). The map itself transitions from its big hero size to a small pinned sidebar position via a state-driven CSS transition — the boolean flips when ≤25% of the hero is still visible, and a single 400ms `top/right/width/height` animation handles the shrink + reposition. Narrative: "live now" (hero) → "recent past" (scrollytelling).
+- Homepage event log now uses `layout="stack"` — same vertical single-column layout archives uses, required for `useScrollEvent`'s DOM-order optimization.
+
+### Chores
+
+- Extracted `computeMapStateAtEvent` from `src/features/archives/ArchiveMap.jsx` into `src/shared/utils/game/computeMapStateAtEvent.mjs` so it can be reused by both `ArchiveMap` and the new homepage `HomeGalaxyOverlay`.
+- Deleted `src/features/timeline/HomeEventLog.jsx` — its only job (feeding `LiveDataContext` into `EventLog`) is now inlined inside `HomeScrollytelling`.
+- New `HomeClient.jsx` wrapper owns the hero `useRef` and lets `src/app/page.jsx` remain a server component with its metadata/JSON-LD exports intact.
+
+### Mobile
+
+- Mobile (<1024px) is unaffected: the inline galaxy map stays inside the hero, the event log stacks below it in normal flow, no sticky map or scroll-driven transitions. The `HomeGalaxyOverlay` is hidden via `display: none` below `lg:`.
+
 ## 0.38.2
 
 ### Improvements
