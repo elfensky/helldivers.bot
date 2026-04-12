@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.37.8
+
+### Chores
+
+- **`Dockerfile.migrate` is now self-documenting.** Added detailed inline comments explaining each section: why this image exists separately from `Dockerfile.app`, why the install pattern looks unusual (project package.json on disk = npm pulls 1.2 GB of Next.js deps; the `/tmp` reference + minimal `package.json` workaround keeps the install to ~300 MB), why each of the 4 packages is needed, why everything is one big chained `RUN` (single image layer), and why `chown -R` was deliberately omitted (~1.4 GB of layer-doubling waste). No behavior change — purely documentation. Closes #281.
+
 ## 0.37.7
 
 ### Chores

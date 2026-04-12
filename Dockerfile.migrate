@@ -1,36 +1,152 @@
-# LOCAL BUILD: docker build -f ./Dockerfile.migrate -t ghcr.io/elfensky/helldiversbot-migrate:staging .
+# =============================================================================
+# Dockerfile.migrate — Postgres migration runner for helldivers.bot
+# =============================================================================
+#
+# LOCAL BUILD:
+#     docker build -f ./Dockerfile.migrate -t ghcr.io/elfensky/helldiversbot-migrate:staging .
+#
+# WHAT THIS IMAGE DOES
+#
+# Single-purpose, short-lived container that runs `prisma migrate deploy`
+# followed by an idempotent seed script, then exits. It is NOT a long-running
+# service. The `helldiversbot` service in docker-compose.yml depends on this
+# container exiting cleanly (`condition: service_completed_successfully`)
+# before it starts, so a failed migration blocks the app deploy.
+#
+# WHY A SEPARATE IMAGE INSTEAD OF RUNNING MIGRATIONS FROM THE APP IMAGE
+#
+# - Decouples deploy lifecycle: migration failures don't crash-loop the app
+# - Smaller surface area: only ships what `prisma migrate deploy` + seed need,
+#   not the full Next.js runtime
+# - Can be replaced with a Kubernetes Job or one-off CI step without touching
+#   the app deployment
+# - Keeps the app image free of dev/migration tooling
+#
+# WHY THIS DOCKERFILE LOOKS UNUSUAL
+#
+# The "obvious" approach would be `COPY package.json . && npm install prisma`.
+# Don't do that. With the project's full package.json on disk, `npm install`
+# treats it as the source of truth and installs every Next.js / Sentry /
+# Mermaid / OpenTelemetry dependency alongside Prisma — ~1.2 GB of node_modules
+# instead of ~300 MB. The image ends up at >2 GB even though we only need 4
+# packages. See issue #278 for the full investigation and slim-down history.
+#
+# The fix: copy package.json to /tmp as a read-only version reference, write
+# a minimal package.json in /app, then install only the 4 packages we need.
+# =============================================================================
+
 FROM node:24-alpine
-# Install tini to avoid zombie processes
+
+# tini is a tiny PID 1 init (~150 KB) that reaps zombie processes and forwards
+# signals (SIGTERM, SIGINT) to its child. Without it, `docker stop` on a
+# mid-flight migrate may be silently dropped — the kernel does not apply
+# default signal handlers to PID 1, and the shell exec'd by CMD doesn't always
+# forward signals correctly. After the 10s grace period, Docker SIGKILLs and
+# you may leave a pg_advisory_lock orphaned in the database.
+# See https://github.com/krallin/tini for the canonical PID 1 problem write-up.
 RUN apk add --no-cache tini
 
-# set working directory
 WORKDIR /app
-# Read versions from project package.json, but install against an empty one so
-# npm doesn't pull in the entire Next.js app's dependency tree (~1.2 GB).
+
+# -----------------------------------------------------------------------------
+# Project file copies
+# -----------------------------------------------------------------------------
+
+# project-package.json lives at /tmp, NOT /app, so npm never sees it. We only
+# read it to extract the project's pinned Prisma versions; this keeps the
+# migrate container in lockstep with whatever the main app pins, with no
+# duplicate version strings to forget about updating.
 COPY package.json /tmp/project-package.json
+
+# Schema, migrations, and seed JSON files. Used by `prisma generate` (compiles
+# the client into src/generated/prisma at build time) and `prisma migrate
+# deploy` + seed.mjs (at runtime).
 COPY prisma ./prisma/
+
+# Loaded by every prisma CLI invocation. Imports dotenv at top-of-file and
+# calls env('POSTGRES_URL') to validate the connection string is present.
+# Both dotenv and the prisma CLI must be installed for this file to load.
 COPY prisma.config.mjs ./
-RUN PRISMA_VERSION=$(node -p "require('/tmp/project-package.json').devDependencies?.prisma || require('/tmp/project-package.json').dependencies?.prisma") && \
+
+# -----------------------------------------------------------------------------
+# Install Prisma + minimal runtime deps in a single image layer
+# -----------------------------------------------------------------------------
+#
+# Everything below is one big chained RUN so it lands in a single layer (each
+# separate RUN creates a new immutable layer in the final image, and cleanup
+# done in a later layer doesn't shrink earlier ones).
+#
+RUN \
+    # 1. Read the exact versions the project pins, from the /tmp reference
+    #    copy. `prisma` is a devDependency in the project (used for local
+    #    `npx prisma migrate dev`); the others are prod dependencies. The
+    #    `||` fallback handles either location for `prisma` itself.
+    PRISMA_VERSION=$(node -p "require('/tmp/project-package.json').devDependencies?.prisma || require('/tmp/project-package.json').dependencies?.prisma") && \
     CLIENT_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/client']") && \
     ADAPTER_PG_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/adapter-pg']") && \
     DOTENV_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.dotenv") && \
+    \
+    # 2. Write a minimal package.json in /app. Without this, npm install would
+    #    either fail (no manifest in cwd) or — much worse — if we'd copied the
+    #    project package.json here, install the entire Next.js dependency tree
+    #    (~1.2 GB). The minimal manifest tells npm "this is a fresh project,
+    #    install only what I explicitly ask for."
     echo '{"name":"migrate","version":"1.0.0","private":true,"type":"module"}' > package.json && \
+    \
+    # 3. Install ONLY these 4 packages (and their transitive deps):
+    #    - prisma:             the CLI that runs `migrate deploy`
+    #    - @prisma/client:     runtime needed by seed.mjs (which imports
+    #                          PrismaClient from src/generated/prisma)
+    #    - @prisma/adapter-pg: driver adapter the seed uses; Prisma 7 has no
+    #                          built-in pg driver, you must pass an adapter
+    #    - dotenv:             loaded synchronously by prisma.config.mjs at
+    #                          startup of every prisma CLI invocation
+    #    --no-audit --no-fund: skip telemetry/postinstall noise that adds
+    #                          ~5-10 seconds to the build
     npm install --no-audit --no-fund \
       prisma@$PRISMA_VERSION \
       @prisma/client@$CLIENT_VERSION \
       @prisma/adapter-pg@$ADAPTER_PG_VERSION \
       dotenv@$DOTENV_VERSION && \
+    \
+    # 4. Generate the Prisma client into src/generated/prisma (per the
+    #    `output` field in prisma/schema.prisma's `generator client {}` block).
+    #    POSTGRES_URL=dummy is needed because prisma.config.mjs validates the
+    #    env var at config-load time; `prisma generate` doesn't actually
+    #    connect to the database, it just parses the schema.
     POSTGRES_URL=postgresql://dummy npx prisma generate && \
+    \
+    # 5. Cleanup. The /tmp version reference, the npm download cache, and any
+    #    other tmp install artifacts. All in this same RUN layer so they don't
+    #    stick around in the final image.
     rm /tmp/project-package.json && \
     npm cache clean --force && \
     rm -rf /root/.npm /tmp/*
 
-# Run as non-root user. node can read root-owned files in /app (no writes
-# needed for migrate or seed), so we skip the costly `chown -R` layer that
-# duplicates all of /app into a second image layer.
+# -----------------------------------------------------------------------------
+# Runtime configuration
+# -----------------------------------------------------------------------------
+
+# Drop privileges to the non-root `node` user (built into node:*-alpine
+# images). Files in /app are owned by root because the install above ran as
+# root, but the node user reads them fine — we never write to /app at runtime.
+#
+# Why no `chown -R node:node /app`: it would create a full duplicate of /app
+# in a separate image layer, since chown changes every inode and Docker layers
+# are content-addressed per file. The migrate slim-down (#278) measured this
+# at ~1.4 GB of pure layer-doubling waste.
 USER node
 
-# Set tini as the init system
+# tini becomes PID 1 and forwards signals to whatever CMD specifies as PID 2.
 ENTRYPOINT ["/sbin/tini", "--"]
-# Run migrations and exit
+
+# Default command:
+#   1. `prisma migrate deploy` — applies any pending SQL migrations from
+#      prisma/migrations/ in order. Idempotent: skips already-applied ones.
+#   2. `node --experimental-strip-types prisma/seed/seed.mjs` — upserts
+#      historical season JSON files into h1_* tables. Also idempotent: the
+#      seed script counts existing seasons and skips if already complete.
+#
+# `&&` ensures the seed only runs if migrate succeeds. The container exits
+# with the appropriate code so docker-compose can gate the app on it.
 CMD sh -c "npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs"
