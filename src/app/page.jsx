@@ -1,7 +1,7 @@
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 import JsonLd from '@/shared/components/JsonLd';
 import DashboardClient from '@/features/dashboard/DashboardClient';
-import TimelineSection from '@/features/timeline/TimelineSection';
+import HomeEventLog from '@/features/timeline/HomeEventLog';
 
 export const metadata = {
     title: 'Helldivers Bot — Live Galactic Campaign Dashboard',
@@ -59,8 +59,8 @@ export default function HomePage() {
             <ComponentErrorBoundary name="Dashboard">
                 <DashboardClient />
             </ComponentErrorBoundary>
-            <ComponentErrorBoundary name="Timeline">
-                <TimelineSection />
+            <ComponentErrorBoundary name="Event Log">
+                <HomeEventLog />
             </ComponentErrorBoundary>
         </>
     );

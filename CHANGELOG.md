@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.38.0
+
+### Features
+
+- **Unified event log across homepage and archives.** Removed the vertical timeline rail from the desktop homepage event log — the day-grouped card list is now the single source of truth for both `/` and `/archives`, fed different data by each page via a new shared `EventLog` component. Added a square sort-order toggle (newest ↔ oldest) next to the event log title, with preference persisted to `localStorage` and shared between both pages. Archives cards now show an absolute date/time (e.g. `Apr 4, 2026 · 14:23`) instead of a relative "ended X ago" string; homepage cards continue to tick live with "Started X ago" / "Ended X ago" plus points progress.
+
+### Chores
+
+- Consolidated `Event.jsx` + `ArchiveEvent.jsx` → single `EventLogCard` with a `timeFormat` prop that flips between ticking relative time (`'live'`) and static absolute timestamps (`'absolute'`).
+- Consolidated `TimelineSection.jsx` + `ArchiveEventRail.jsx` → single `EventLog` component consumed by `HomeEventLog.jsx` (homepage wrapper) and directly by `ArchivesClient.jsx`.
+- Extended `groupEventsByDay` with an optional `sortOrder: 'asc' | 'desc'` parameter; default remains `'desc'` for backwards compatibility.
+- Deleted `TimelineSection.css`, `Event.jsx`, `ArchiveEvent.jsx`, `ArchiveEventRail.jsx`, and their stale test files (`TimelineSection.test.jsx`, `ArchiveEventRail.test.jsx`, `Event.test.jsx`).
+
 ## 0.37.11
 
 ### Security

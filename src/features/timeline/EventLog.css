@@ -1,0 +1,150 @@
+.event-log-section {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+.event-log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.event-log-heading {
+    margin: 0;
+}
+
+.event-log-empty {
+    font-family: var(--font-mono);
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: 2rem 0;
+}
+
+/* === Day groups === */
+
+.event-log-days {
+    display: flex;
+    flex-direction: column;
+}
+
+/* === Day header (mobile: ghost right accent via box-shadow) === */
+
+.event-log-day-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem calc(6px + 0.5rem) 0.25rem 0;
+    box-shadow: inset -6px 0 0 0 var(--color-ghost);
+}
+
+.event-log-day-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-small);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.65);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.event-log-day-summary {
+    font-family: var(--font-mono);
+    font-size: var(--text-small);
+    color: rgba(255, 255, 255, 0.25);
+    white-space: nowrap;
+}
+
+/* === Empty day markers === */
+
+.event-log-day--no-events .event-log-day-header {
+    min-height: 3rem;
+    box-shadow: inset -6px 0 0 0 rgba(255, 255, 255, 0.06);
+}
+
+/* === Event cards === */
+
+.event-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--card-accent-width);
+    border-right: none;
+}
+
+.event-log-day-grid {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Collapse double borders between stacked cards on mobile */
+.event-log-day-grid > div + div > article {
+    margin-top: -1px;
+}
+
+/* === Keyframes === */
+
+@keyframes card-flash {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes pill-flash {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* === Desktop: md: (768px+) === */
+
+@media (min-width: 768px) {
+    .event-log-section {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    .event-log-days {
+        gap: 1.25rem;
+    }
+
+    .event-log-day-header {
+        box-shadow: none;
+        padding: 0 0 0.25rem 0;
+    }
+
+    .event-log-day--no-events .event-log-day-header {
+        box-shadow: none;
+    }
+
+    .event-log-day-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+
+    /* Desktop cards have gap — no border collapse needed */
+    .event-log-day-grid > div + div > article {
+        margin-top: 0;
+    }
+}
+
+@media (min-width: 1024px) {
+    .event-log-day-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .event-log-day-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}

@@ -6,7 +6,7 @@ import ArchivesHeader, { EffectsToggle } from '@/features/archives/ArchivesHeade
 import FactionHealthChart from '@/features/archives/FactionHealthChart';
 import FactionTabs from '@/features/dashboard/FactionTabs';
 import FactionStats from '@/features/archives/FactionStats';
-import ArchiveEventRail from '@/features/archives/ArchiveEventRail';
+import EventLog from '@/features/timeline/EventLog';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import factions from '@/shared/enums/factions.mjs';
 import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
@@ -107,10 +107,14 @@ export default function ArchivesClient({
             {/* Two-column scrollytelling: event log + sticky map */}
             <div className="archives-scrollytelling">
                 <div className="archives-event-col">
-                    <ArchiveEventRail
+                    <EventLog
                         events={events}
+                        timeFormat="absolute"
+                        title="Event Log"
+                        id="archives-event-log"
                         selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
                         railRef={railRef}
+                        includeToday={false}
                     />
                 </div>
 
