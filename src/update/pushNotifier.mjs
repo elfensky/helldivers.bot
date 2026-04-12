@@ -1,8 +1,8 @@
 import webpush from 'web-push';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { detectChanges } from '@/shared/utils/game/detectChanges.mjs';
+import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 import factions from '@/shared/enums/factions.mjs';
-import map from '@/shared/enums/map.mjs';
 import db from '@/db/db';
 
 const MAX_CONCURRENT = 50;
@@ -23,8 +23,7 @@ export function ensureVapid() {
 }
 
 export function buildPayload(change) {
-    const region =
-        map[change.event.enemy]?.[change.event.region]?.region ?? 'Unknown Region';
+    const region = getEventRegionLabel(change.event);
     const isDefend = change.event.type === 'defend';
 
     const titles = {

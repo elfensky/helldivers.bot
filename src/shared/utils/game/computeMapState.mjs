@@ -131,5 +131,23 @@ export function computeMapState(factionStates, events = []) {
         }
     }
 
+    // Super Earth defense freezes the attacker's campaign — in-game, no
+    // progression on their sectors is possible while the defend is active.
+    // Reset them to the default 'lost' state so the map reflects that.
+    // Super Earth itself (map[3][0]) is already set to 'active' above.
+    const activeSuperEarthDefend = events.find(
+        (e) =>
+            e.type === EVENT_TYPE.DEFEND &&
+            e.region === 0 &&
+            e.status === EVENT_STATUS.ACTIVE,
+    );
+    if (activeSuperEarthDefend && map[activeSuperEarthDefend.enemy]) {
+        for (const regionKey of Object.keys(map[activeSuperEarthDefend.enemy])) {
+            map[activeSuperEarthDefend.enemy][regionKey].status = 'lost';
+            map[activeSuperEarthDefend.enemy][regionKey].event = '';
+            map[activeSuperEarthDefend.enemy][regionKey].percent = 0;
+        }
+    }
+
     return map;
 }

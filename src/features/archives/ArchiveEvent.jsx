@@ -1,5 +1,5 @@
 import factions from '@/shared/enums/factions.mjs';
-import map from '@/shared/enums/map.mjs';
+import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 import EventCardLayout, { STATUS_STYLES } from '@/features/timeline/EventCardLayout';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 
@@ -11,7 +11,7 @@ import { formatCompactDuration } from '@/shared/utils/format/formatCompactDurati
 export default function ArchiveEvent({ event, isActive }) {
     const duration = event.end_time - event.start_time;
     const faction = factions[event.enemy];
-    const regionName = map[event.enemy]?.[event.region]?.region ?? 'Unknown Region';
+    const regionName = getEventRegionLabel(event);
 
     const statusText =
         event.status === 'success' ? 'Won'

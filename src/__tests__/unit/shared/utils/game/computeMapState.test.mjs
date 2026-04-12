@@ -104,4 +104,67 @@ describe('computeMapState', () => {
         expect(map[3][0].status).toBe('active');
         expect(map[3][0].event).toBe('active');
     });
+
+    test('active Super Earth defend forces attacker faction to lost', () => {
+        const events = [
+            {
+                type: 'defend',
+                enemy: 1, // Cyborgs attacking
+                region: 0,
+                status: 'active',
+                end_time: 100,
+            },
+        ];
+        const map = computeMapState(baseFactions, events);
+
+        // All Cyborg sectors (including homeworld) forced to lost
+        for (let r = 1; r <= 11; r++) {
+            expect(map[1][r].status).toBe('lost');
+            expect(map[1][r].event).toBe('');
+            expect(map[1][r].percent).toBe(0);
+        }
+
+        // Super Earth itself stays active
+        expect(map[3][0].status).toBe('active');
+        expect(map[3][0].event).toBe('active');
+
+        // Other factions keep their normal campaign progression
+        expect(map[0][1].status).toBe('captured'); // bugs 5 earned
+        expect(map[0][5].status).toBe('captured');
+        expect(map[2][7].status).toBe('captured'); // illuminate 7 earned
+    });
+
+    test('Super Earth defend with status=success does NOT freeze attacker', () => {
+        const events = [
+            {
+                type: 'defend',
+                enemy: 1,
+                region: 0,
+                status: 'success', // completed, not active
+                end_time: 100,
+            },
+        ];
+        const map = computeMapState(baseFactions, events);
+
+        // Cyborg sectors follow normal campaign progression, not forced to lost
+        expect(map[1][1].status).toBe('captured'); // 3 sectors earned
+        expect(map[1][3].status).toBe('captured');
+    });
+
+    test('Super Earth defend with status=fail does NOT freeze attacker', () => {
+        const events = [
+            {
+                type: 'defend',
+                enemy: 2,
+                region: 0,
+                status: 'fail',
+                end_time: 100,
+            },
+        ];
+        const map = computeMapState(baseFactions, events);
+
+        // Illuminate sectors follow normal campaign progression
+        expect(map[2][1].status).toBe('captured'); // 7 sectors earned
+        expect(map[2][7].status).toBe('captured');
+    });
 });

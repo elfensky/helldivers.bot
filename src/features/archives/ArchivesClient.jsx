@@ -9,14 +9,19 @@ import FactionStats from '@/features/archives/FactionStats';
 import ArchiveEventRail from '@/features/archives/ArchiveEventRail';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import factions from '@/shared/enums/factions.mjs';
-import mapEnum from '@/shared/enums/map.mjs';
+import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 import SeasonSelector from '@/features/archives/SeasonSelector';
 import { eventKey } from '@/features/archives/eventKey.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import { useCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
 import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
 
-export default function ArchivesClient({ data, seasons, currentSeason, defeatMessageIndex }) {
+export default function ArchivesClient({
+    data,
+    seasons,
+    currentSeason,
+    defeatMessageIndex,
+}) {
     const events = data?.events ?? [];
     const [faction, setFaction] = useState('bugs');
     const [mapVisible, setMapVisible] = useState(true);
@@ -25,7 +30,11 @@ export default function ArchivesClient({ data, seasons, currentSeason, defeatMes
     const { selectedEvent, railRef } = useScrollEvent(events);
 
     // Synced glitch phase from ArchivesHeader → ArchiveStats
-    const [glitchPhase, setGlitchPhase] = useState({ phase: 'idle', takeoverMs: 800, restoreMs: 800 });
+    const [glitchPhase, setGlitchPhase] = useState({
+        phase: 'idle',
+        takeoverMs: 800,
+        restoreMs: 800,
+    });
     const handlePhaseChange = useCallback((phase, takeoverMs, restoreMs) => {
         setGlitchPhase({ phase, takeoverMs, restoreMs });
     }, []);
@@ -33,14 +42,23 @@ export default function ArchivesClient({ data, seasons, currentSeason, defeatMes
     return (
         <div className="archives-page">
             {/* Full-width stats section */}
-            <div className={`archives-stats-section${isDefeat ? ' cyberstan-defeat' : ''}${effects.watermark ? ' cyberstan-watermark-active' : ''}`}>
-                <ArchivesHeader isDefeat={isDefeat} effects={effects} defeatMessageIndex={defeatMessageIndex} onPhaseChange={handlePhaseChange} />
+            <div
+                className={`archives-stats-section${isDefeat ? ' cyberstan-defeat' : ''}${effects.watermark ? ' cyberstan-watermark-active' : ''}`}
+            >
+                <ArchivesHeader
+                    isDefeat={isDefeat}
+                    effects={effects}
+                    defeatMessageIndex={defeatMessageIndex}
+                    onPhaseChange={handlePhaseChange}
+                />
 
                 <section className="mt-4 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                         <h2>Statistics</h2>
                         <div className="flex items-center gap-2">
-                            {isDefeat && <EffectsToggle active={effects.headerScramble} />}
+                            {isDefeat && (
+                                <EffectsToggle active={effects.headerScramble} />
+                            )}
                             <SeasonSelector
                                 seasons={seasons}
                                 currentSeason={currentSeason}
@@ -91,9 +109,7 @@ export default function ArchivesClient({ data, seasons, currentSeason, defeatMes
                 <div className="archives-event-col">
                     <ArchiveEventRail
                         events={events}
-                        selectedEventKey={
-                            selectedEvent ? eventKey(selectedEvent) : null
-                        }
+                        selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
                         railRef={railRef}
                     />
                 </div>
@@ -106,17 +122,15 @@ export default function ArchivesClient({ data, seasons, currentSeason, defeatMes
                             {selectedEvent && (
                                 <div
                                     className={`border border-ghost bg-surface-1 p-3 ${
-                                        selectedEvent.type === 'defend'
-                                            ? 'border-r-[4px] border-r-danger'
-                                            : 'border-r-[4px] border-r-success'
+                                        selectedEvent.type === 'defend' ?
+                                            'border-r-[4px] border-r-danger'
+                                        :   'border-r-[4px] border-r-success'
                                     }`}
                                 >
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <div className="text-sm font-semibold">
-                                                {mapEnum[selectedEvent.enemy]?.[
-                                                    selectedEvent.region
-                                                ]?.region ?? 'Unknown Region'}
+                                                {getEventRegionLabel(selectedEvent)}
                                             </div>
                                             <div className="text-xs text-text-muted">
                                                 {factions[selectedEvent.enemy]?.name ??
@@ -132,14 +146,14 @@ export default function ArchivesClient({ data, seasons, currentSeason, defeatMes
                                         </div>
                                         <div
                                             className={`text-xs font-bold ${
-                                                selectedEvent.status === 'success'
-                                                    ? 'text-success'
-                                                    : 'text-danger'
+                                                selectedEvent.status === 'success' ?
+                                                    'text-success'
+                                                :   'text-danger'
                                             }`}
                                         >
-                                            {selectedEvent.status === 'success'
-                                                ? 'WON'
-                                                : 'LOST'}
+                                            {selectedEvent.status === 'success' ?
+                                                'WON'
+                                            :   'LOST'}
                                         </div>
                                     </div>
                                 </div>

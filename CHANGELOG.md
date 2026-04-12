@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.37.1
+
+### Bug Fixes
+
+- **Super Earth defend events now display correctly across map, cards, and notifications.** During an active SE defense (`defend_event.region === 0`), toasts/push/archives no longer show "Unknown Region under attack" — they now resolve to "Super Earth" via a new shared `getEventRegionLabel` helper (fixes 4 copy-pasted broken lookups against `map[event.enemy][event.region]` for SE events where Super Earth actually lives at `map[3][0]`).
+- **Dashboard now shows a "Defending Super Earth" card in place of the attacker's frontier card** while an SE defense is active (closes #279). Mirrors the existing sector-defend takeover pattern.
+- **Galaxy map hides the attacking faction's campaign progression during an SE defense.** `computeMapState` force-resets all sectors (1-11) of the attacker to `lost` state since in-game, no progression can occur for that faction while Super Earth is being defended. Super Earth itself continues to pulse red.
+
 ## 0.37.0
 
 ### Features
