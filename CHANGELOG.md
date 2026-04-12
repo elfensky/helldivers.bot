@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.37.7
+
+### Chores
+
+- **Removed commit SHA from the footer and build-time console.info.** Footer now shows only `v{version} – {environment}` instead of `v{version} – {sha} – {environment}`. Dropped the `COMMIT_SHA` computation and `NEXT_PUBLIC_COMMIT_SHA` env var from `next.config.mjs` entirely, along with the `console.info` line it used. Sentry's own release tracking is unaffected — it reads from distinct CI-provided env vars (`CI_COMMIT_SHA`, `VERCEL_GIT_COMMIT_SHA`, etc.).
+
 ## 0.37.6
 
 ### Bug Fixes
