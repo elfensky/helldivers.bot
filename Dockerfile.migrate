@@ -5,19 +5,29 @@ RUN apk add --no-cache tini
 
 # set working directory
 WORKDIR /app
-# Copy only what's needed for migrations
-COPY package.json package-lock.json ./
+# Read versions from project package.json, but install against an empty one so
+# npm doesn't pull in the entire Next.js app's dependency tree (~1.2 GB).
+COPY package.json /tmp/project-package.json
 COPY prisma ./prisma/
 COPY prisma.config.mjs ./
-# Install only prisma (not all dependencies) (used to be: npm ci --ignore-scripts)
-RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma || require('./package.json').dependencies?.prisma") && \
-    ADAPTER_PG_VERSION=$(node -p "require('./package.json').dependencies?.['@prisma/adapter-pg'] || ''") && \
-    DOTENV_VERSION=$(node -p "require('./package.json').dependencies?.dotenv || ''") && \
-    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg@$ADAPTER_PG_VERSION dotenv@$DOTENV_VERSION && \
-    POSTGRES_URL=postgresql://dummy npx prisma generate
+RUN PRISMA_VERSION=$(node -p "require('/tmp/project-package.json').devDependencies?.prisma || require('/tmp/project-package.json').dependencies?.prisma") && \
+    CLIENT_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/client']") && \
+    ADAPTER_PG_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/adapter-pg']") && \
+    DOTENV_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.dotenv") && \
+    echo '{"name":"migrate","version":"1.0.0","private":true,"type":"module"}' > package.json && \
+    npm install --no-audit --no-fund \
+      prisma@$PRISMA_VERSION \
+      @prisma/client@$CLIENT_VERSION \
+      @prisma/adapter-pg@$ADAPTER_PG_VERSION \
+      dotenv@$DOTENV_VERSION && \
+    POSTGRES_URL=postgresql://dummy npx prisma generate && \
+    rm /tmp/project-package.json && \
+    npm cache clean --force && \
+    rm -rf /root/.npm /tmp/*
 
-# Run as non-root user (node user is built into node:*-alpine images)
-RUN chown -R node:node /app
+# Run as non-root user. node can read root-owned files in /app (no writes
+# needed for migrate or seed), so we skip the costly `chown -R` layer that
+# duplicates all of /app into a second image layer.
 USER node
 
 # Set tini as the init system

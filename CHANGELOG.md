@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.37.3
+
+### Chores
+
+- **`Dockerfile.migrate` slimmed from ~4.7 GB to ~670 MB (86% reduction).** Two changes: (1) read project versions from a temp-path copy of `package.json` and run `npm install` against a minimal one in `/app` so npm only installs the 4 declared packages instead of inheriting the full Next.js dependency tree (1.2 GB → 306 MB `node_modules`); (2) drop the standalone `RUN chown -R node:node /app` step that was creating a full duplicate of `/app` in a second image layer — the `node` user reads root-owned files fine since migrate + seed are read-only against `/app`. Also clean npm cache + `/tmp` in the same `RUN` layer.
+
 ## 0.37.2
 
 ### Bug Fixes
