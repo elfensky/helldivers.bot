@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.38.2
+
+### Improvements
+
+- **Toasts now render at `top-center` on mobile, `bottom-right` on desktop.** Matches native iOS/Android push notification placement (where users instinctively look for "something just happened" feedback) and clears the bottom of the screen which is occupied by `BottomNav` on mobile. Desktop layout is unchanged. Implemented in `LiveToasts.jsx` by detecting viewport once on mount via `window.matchMedia('(max-width: 767px)')` and keying the `<Toaster>` so Sonner remounts with the correct `position` (it reads the prop only at first mount and ignores subsequent changes). Page-load detection only — resize-during-session is intentionally not supported. Closes #285.
+
 ## 0.38.1
 
 ### Bug Fixes
