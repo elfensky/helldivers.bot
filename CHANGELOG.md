@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.39.3
+
+### Bug Fixes
+
+- **Homepage galaxy map no longer overflows its container at the bottom.** v0.39.1's new `.home-map` grid cell had `max-height: calc(100dvh - 80px - 2rem)` but no `display: flex` — so Galaxy's inner `<section class="h-full w-full">` had no concrete parent height to resolve `h-full` against, and the SVG fell back to its intrinsic size and spilled past the cell boundary into the viewport below. Fixed by making `.home-map` a flex column and setting `flex: 1; min-height: 0; min-width: 0` on its first child, matching the pattern `.archives-map-col` already uses.
+
 ## 0.39.2
 
 ### Bug Fixes

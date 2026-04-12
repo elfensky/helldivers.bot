@@ -60,16 +60,27 @@
         min-width: 0;
     }
 
+    /*
+     * Flex column so the <Galaxy> child (which uses `h-full w-full`) has a
+     * concrete parent sizing context. max-height alone isn't enough — the
+     * child's `h-full` can't resolve against a parent with no explicit
+     * height, so the SVG falls back to its intrinsic size and overflows
+     * the grid cell. Same pattern archives uses on .archives-map-col.
+     */
     .home-map {
         grid-area: map;
         position: sticky;
         top: 80px;
         align-self: start;
+        display: flex;
+        flex-direction: column;
         max-height: calc(100dvh - 80px - 2rem);
         min-height: 0;
     }
 
-    .home-map > * {
-        height: 100%;
+    .home-map > :first-child {
+        flex: 1;
+        min-height: 0;
+        min-width: 0;
     }
 }
