@@ -4,6 +4,8 @@ import humanizeDuration from 'humanize-duration';
 import { EVENT_TYPE } from '@/shared/enums/events';
 import EventCardLayout, { STATUS_STYLES } from '@/features/timeline/EventCardLayout';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
+import { getEventActionLabel } from '@/shared/utils/game/getEventActionLabel.mjs';
+import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 
 /**
  * Live event card for the dashboard timeline.
@@ -23,10 +25,8 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
             `Ended ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`
         :   `Started ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`;
 
-    const statusText =
-        event.status === 'success' ? 'Won'
-        : event.status === 'fail' ? 'Failed'
-        : 'Active';
+    const actionLabel = getEventActionLabel(event);
+    const regionLabel = getEventRegionLabel(event);
 
     const s = STATUS_STYLES[event.status] || STATUS_STYLES.active;
 
@@ -39,7 +39,7 @@ export default function Event({ event, onMouseEnter, onMouseLeave }) {
             <div className="flex flex-col gap-1 px-2.5 py-1.5">
                 <div className="flex items-center justify-between">
                     <span className="font-body text-small font-bold text-text uppercase">
-                        {statusText} {event.type} Event
+                        {actionLabel} {regionLabel}
                     </span>
                     <span
                         className={`px-1.5 py-px font-mono text-[10px] ${s.pill}`}

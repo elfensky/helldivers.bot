@@ -28,9 +28,9 @@ describe('Event', () => {
         region: 3,
     };
 
-    test('renders "Active defend Event" text', () => {
+    test('renders "Defending [region]" text for active defend', () => {
         render(<Event event={activeEvent} />);
-        expect(screen.getByText('Active defend Event')).toBeInTheDocument();
+        expect(screen.getByText('Defending Ross System')).toBeInTheDocument();
     });
 
     test('shows points display', () => {
@@ -64,17 +64,17 @@ describe('Event', () => {
         expect(icon.getAttribute('src')).toBe('/icons/faction0.webp');
     });
 
-    test('renders won status with success styling', () => {
+    test('renders "Defended [region]" for successful defend', () => {
         const wonEvent = { ...activeEvent, status: 'success' };
         const { container } = render(<Event event={wonEvent} />);
-        expect(screen.getByText('Won defend Event')).toBeInTheDocument();
+        expect(screen.getByText('Defended Ross System')).toBeInTheDocument();
         expect(container.querySelector('.bg-success')).toBeInTheDocument();
     });
 
-    test('renders failed status with muted styling', () => {
+    test('renders "Lost [region]" for failed defend', () => {
         const failedEvent = { ...activeEvent, status: 'fail' };
         const { container } = render(<Event event={failedEvent} />);
-        expect(screen.getByText('Failed defend Event')).toBeInTheDocument();
+        expect(screen.getByText('Lost Ross System')).toBeInTheDocument();
         expect(container.querySelector('.bg-ghost')).toBeInTheDocument();
     });
 });

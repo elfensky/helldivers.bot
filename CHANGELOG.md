@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.37.4
+
+### Bug Fixes
+
+- **Event log cards now show descriptive action verbs tied to the region** instead of generic `"Won defend Event"` / `"Failed attack Event"` status descriptors. New shared helper `getEventActionLabel` maps `(type, status)` → verb: `Attacking`/`Captured`/`Lost` for attack events, `Defending`/`Defended`/`Lost` for defend events. Applied to both live dashboard event log (`Event.jsx`) and archives event rail (`ArchiveEvent.jsx`). Dashboard card now reads e.g. `"DEFENDING SUPER EARTH"`; archive card reads e.g. `"CAPTURED"` with region on a separate line.
+
 ## 0.37.3
 
 ### Chores

@@ -1,4 +1,5 @@
 import factions from '@/shared/enums/factions.mjs';
+import { getEventActionLabel } from '@/shared/utils/game/getEventActionLabel.mjs';
 import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 import EventCardLayout, { STATUS_STYLES } from '@/features/timeline/EventCardLayout';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
@@ -12,11 +13,7 @@ export default function ArchiveEvent({ event, isActive }) {
     const duration = event.end_time - event.start_time;
     const faction = factions[event.enemy];
     const regionName = getEventRegionLabel(event);
-
-    const statusText =
-        event.status === 'success' ? 'Won'
-        : event.status === 'fail' ? 'Failed'
-        : 'Active';
+    const actionLabel = getEventActionLabel(event);
 
     const s = STATUS_STYLES[event.status] || STATUS_STYLES.active;
 
@@ -28,7 +25,7 @@ export default function ArchiveEvent({ event, isActive }) {
             <div className="flex flex-col gap-1 px-2.5 py-1.5">
                 <div className="flex items-center justify-between">
                     <span className="font-body text-small font-bold text-text uppercase">
-                        {statusText} {event.type}
+                        {actionLabel}
                     </span>
                     <span className={`px-1.5 py-px font-mono text-[10px] ${s.pill}`}>
                         {formatCompactDuration(duration)}
