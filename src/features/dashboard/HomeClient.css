@@ -1,0 +1,75 @@
+/*
+ * HomeClient grid — single continuous grid that spans the hero and the
+ * scrollytelling event log, with one sticky galaxy map in the right
+ * column that covers both rows.
+ *
+ * Mobile (<lg): flex column. Map → sidebar → event log, in that order.
+ *
+ * Desktop (lg+): two-row grid with a spanning map column.
+ *   Row 1: hero-sidebar content (regions cards, stats) — minimum
+ *           100dvh - 80px tall (matches the old hero feel).
+ *   Row 2: event log, natural-height.
+ *   Right column: single sticky galaxy map cell spanning both rows.
+ */
+
+.home-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.home-map {
+    order: 1;
+}
+
+.home-hero-sidebar {
+    order: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.home-scrolly-log {
+    order: 3;
+    min-width: 0;
+}
+
+@media (min-width: 1024px) {
+    .home-grid {
+        display: grid;
+        grid-template-areas:
+            'hero-sidebar map'
+            'scrolly-log  map';
+        grid-template-columns: minmax(260px, 1fr) minmax(
+                0,
+                calc((100dvh - 80px) * 806.93 / 868.81)
+            );
+        grid-template-rows: minmax(calc(100dvh - 80px), auto) auto;
+        column-gap: 6rem;
+        row-gap: 0;
+    }
+
+    .home-hero-sidebar {
+        grid-area: hero-sidebar;
+    }
+
+    .home-scrolly-log {
+        grid-area: scrolly-log;
+        min-width: 0;
+    }
+
+    .home-map {
+        grid-area: map;
+        position: sticky;
+        top: 80px;
+        align-self: start;
+        max-height: calc(100dvh - 80px - 2rem);
+        min-height: 0;
+    }
+
+    .home-map > * {
+        height: 100%;
+    }
+}

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.39.1
+
+### Bug Fixes
+
+- **Simplified the homepage scrollytelling map.** v0.39.0's fixed-position overlay + size-transition animation was overengineered — the event log column has the same width as the hero sidebar, so the map doesn't need to resize at all, it just needs to stay pinned at the same size across both sections. Replaced the overlay with a single grid-spanning sticky map: `HomeClient` owns one continuous two-row grid where the right column (the galaxy map) spans both the hero row and the scrollytelling row, with `position: sticky; top: 80px`. One `<Galaxy>` instance, one `mapState` prop that switches between live and `computeMapStateAtEvent(selectedEvent, data)` depending on whether `useScrollEvent` has latched onto a card.
+- **`/archives` grid now matches the homepage dimensions.** Changed `ArchivesLayout.css` `.archives-scrollytelling` from `grid-template-columns: minmax(260px, 1fr) minmax(0, 50dvh)` to the same `minmax(260px, 1fr) minmax(0, calc((100dvh - 80px) * 806.93 / 868.81))` the homepage uses. Both pages now present the same visual map anchor; only the data (live now vs. historical season) differs. The archives grid also moved from the `md:` (768px) breakpoint to `lg:` (1024px) to match the homepage.
+
+### Chores
+
+- **Deleted** `HomeGalaxyOverlay.jsx`, `HomeGalaxyOverlay.css`, `HomeScrollytelling.jsx`, `HomeScrollytelling.css`, `useHomeMapPinned.mjs`, and `useHomeMapPinned.test.mjs` — the entire overlay + scroll-threshold animation infrastructure from v0.39.0.
+- **Stripped `DashboardClient`** of its grid layout and inline galaxy map — it's now a pure sidebar-content component. The grid layout and the galaxy map both live in `HomeClient` now. `.dashboard-scroll-hint` also removed (the grid is continuous; no scroll hint needed).
+- New `src/features/dashboard/HomeClient.css` owns the home grid: flex column at mobile, two-row grid with a spanning map column at `lg+`.
+- Removed the obsolete `galaxy` and `scroll-hint-button` assertions from `DashboardClient.test.jsx`.
+
 ## 0.39.0
 
 ### Features

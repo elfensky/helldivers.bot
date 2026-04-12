@@ -1,7 +1,6 @@
 'use client';
 import './DashboardClient.css';
 import { useState } from 'react';
-import Galaxy from '@/features/galaxy/Galaxy';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import DefeatedCard from '@/features/galaxy/DefeatedCard';
@@ -176,55 +175,40 @@ export default function DashboardClient() {
         );
     }
 
+    // DashboardClient is just the hero sidebar content now — HomeClient
+    // owns the grid layout and the galaxy map (rendered once, spans both
+    // hero and scrollytelling rows).
     return (
-        <div className="dashboard gutters">
-            <div className="dashboard-map">
-                <ComponentErrorBoundary name="Galaxy Map">
-                    <Galaxy mapState={mapState} pulseDelays={pulseDelays} />
-                </ComponentErrorBoundary>
-            </div>
-            <div className="dashboard-sidebar">
-                <div className="pb-2">
-                    <h1 className="font-display text-body text-primary">
-                        Track Managed Democracy Across the Galaxy
-                    </h1>
-                    <p className="mt-1 text-small text-text-muted">
-                        Don&apos;t miss a moment of the action! Follow the
-                        Helldivers&apos; campaign progress as they battle the Bugs,
-                        Cyborgs, and Illuminate for peace, liberty, and managed democracy.
-                    </p>
-                    <div className="mt-2 flex items-center gap-3">
-                        <NotificationToggle />
-                    </div>
+        <div className="dashboard-sidebar">
+            <div className="pb-2">
+                <h1 className="font-display text-body text-primary">
+                    Track Managed Democracy Across the Galaxy
+                </h1>
+                <p className="mt-1 text-small text-text-muted">
+                    Don&apos;t miss a moment of the action! Follow the Helldivers&apos;
+                    campaign progress as they battle the Bugs, Cyborgs, and Illuminate for
+                    peace, liberty, and managed democracy.
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                    <NotificationToggle />
                 </div>
-                <section className="flex flex-col gap-2">
-                    <h2>Regions</h2>
-                    <ComponentErrorBoundary name="Regions">
-                        <ul className="sector-grid list-none p-0">
-                            {factionIndices.map(renderFrontierCard)}
-                            {factionIndices.map(renderHomeworldCard)}
-                        </ul>
-                    </ComponentErrorBoundary>
-                </section>
-                <section className="flex flex-col gap-2">
-                    <ComponentErrorBoundary name="Stats">
-                        <h2>Stats — {FACTION_LABELS[faction]}</h2>
-                        <FactionTabs active={faction} onChange={setFaction} />
-                        <StatGrid live={data.live} faction={faction} events={events} />
-                    </ComponentErrorBoundary>
-                </section>
             </div>
-            <button
-                className="dashboard-scroll-hint"
-                data-umami-event="dashboard-scroll-to-log"
-                onClick={() =>
-                    document
-                        .getElementById('event-log')
-                        ?.scrollIntoView({ behavior: 'smooth' })
-                }
-            >
-                <span className="hint-arrow">↓</span> event log
-            </button>
+            <section className="flex flex-col gap-2">
+                <h2>Regions</h2>
+                <ComponentErrorBoundary name="Regions">
+                    <ul className="sector-grid list-none p-0">
+                        {factionIndices.map(renderFrontierCard)}
+                        {factionIndices.map(renderHomeworldCard)}
+                    </ul>
+                </ComponentErrorBoundary>
+            </section>
+            <section className="flex flex-col gap-2">
+                <ComponentErrorBoundary name="Stats">
+                    <h2>Stats — {FACTION_LABELS[faction]}</h2>
+                    <FactionTabs active={faction} onChange={setFaction} />
+                    <StatGrid live={data.live} faction={faction} events={events} />
+                </ComponentErrorBoundary>
+            </section>
         </div>
     );
 }

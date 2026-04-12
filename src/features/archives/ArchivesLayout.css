@@ -64,12 +64,19 @@
     cursor: pointer;
 }
 
-/* Desktop: two columns, toggle hidden */
-@media (min-width: 768px) {
+/* Desktop: two columns, toggle hidden.
+ * Grid template matches the homepage `HomeClient.css` `.home-grid` so the
+ * archives scrollytelling map column is identical in width/shape to the
+ * homepage's hero+scrollytelling map. Both pages present the same
+ * visual map anchor; only the data (live now vs. historical) differs. */
+@media (min-width: 1024px) {
     .archives-scrollytelling {
         display: grid;
-        grid-template-columns: minmax(260px, 1fr) minmax(0, 50dvh);
-        column-gap: 4rem;
+        grid-template-columns: minmax(260px, 1fr) minmax(
+                0,
+                calc((100dvh - 80px) * 806.93 / 868.81)
+            );
+        column-gap: 6rem;
     }
 
     .archives-map-col {

@@ -51,7 +51,7 @@ export default function EventLog({
 
     return (
         <section id={id} className="event-log-section">
-            <div className="event-log-content gutters">
+            <div className="event-log-content">
                 <div className="event-log-header">
                     <h2 className="event-log-heading">{title}</h2>
                     <EventLogSortToggle
