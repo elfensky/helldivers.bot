@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 0.39.11
+
+### Bug Fixes
+
+- **Sticky mobile map is now visually seamless with the header.** Four small changes combined: (1) map `top` dropped from `50px` → `49px` (and `80px` → `79px` at sm+) so the map's top row lands on the exact pixel where the header's 1px bottom border is drawn; (2) header demoted from `z-50` → `z-40` and pinned map bumped from `z-10` → `z-50` so the map wins at that 1px overlap and its `surface-1` background overpaints the ghost hairline — no more visible seam between the two dark panels; (3) full-bleed `margin-inline: calc(50% - 50vw)` + `padding-inline: calc(50vw - 50%)` pull the pinned map's background out past the `.gutters` horizontal padding so the surface-1 panel spans edge-to-edge like the header does; (4) `padding-bottom: 1rem` added so the galaxy SVG no longer touches the map's own ghost-colored bottom border (matches the mobile gutter `px-4`).
+- All four apply to `.home-map--sticky` (homepage) and `.archives-map-col--sticky` (archives) identically. The desktop `lg+` reset block explicitly unwinds all of them so a stale modifier class left over from a mobile→desktop viewport resize can't leak into the desktop grid column. Only the header's Tailwind class (`src/shared/components/Header/Header.jsx:15`) changes on the JSX side.
+- Grepped for `z-40` / `z-50` collisions before demoting the header: none found. BottomNav at `z-50` is bottom-of-viewport and doesn't visually overlap with the top-pinned map; the `focus:z-50` skip-to-content link (`src/app/layout.jsx:187`) still sits above both the demoted header and the pinned map when focused; Navigation's own inner `z-50` lives inside the header's own stacking context (now rooted at 40 globally) and is visually unaffected.
+
+## 0.39.10
+
+### Bug Fixes
+
+- **Sticky mobile map now shares the header's background for a continuous "plane" look.** v0.39.8 drew a `filter: drop-shadow()` halo around the pinned galaxy; v0.39.10 replaces that with a solid `background: var(--color-surface-1)` + `border-bottom: 1px solid var(--color-ghost)` applied only on mobile (reset to transparent at `lg+`). This matches the header's own mobile styling so the pinned map and fixed header read as one dark panel at the top of the viewport.
+- **Pin-in animation switched to a `clip-path: inset(0 0 100% 0) → inset(0 0 0 0)` reveal** instead of a `translateY` slide. The translate variant would have revealed the map's bottom edge first — with `position: sticky; top: 50px`, a negative translate shifts the whole box up so its bottom sits at y=50, meaning the _bottom half_ arrives first, not the top. The clip-path variant reveals top-down from the header's bottom edge, which is the intended "slide out from behind the header" feel. Duration bumped from 280ms → 400ms for the larger reveal. `@media (prefers-reduced-motion: reduce)` still disables the animation entirely.
+- Applies identically to `.home-map--sticky` and `.archives-map-col--sticky`.
+
 ## 0.39.9
 
 ### Bug Fixes

@@ -44,17 +44,30 @@
  */
 .archives-map-col--sticky {
     position: sticky;
-    top: 50px; /* below fixed header (h-[50px] on mobile) */
-    z-index: 10;
+    /* 49px = 50px header - 1px overlap. See HomeClient.css for the
+       full reasoning — short version: the map's top row lands on the
+       header's 1px bottom border row so the map's surface-1 background
+       can overpaint it, hiding the ghost hairline between the two. */
+    top: 49px;
+    /* Above the header (now z-40) so the 1px overlap is won here. */
+    z-index: 50;
     background: var(--color-surface-1);
     border-bottom: 1px solid var(--color-ghost);
+    /* Full-bleed: same technique as .home-map--sticky — background
+       extends to viewport edges so the map reads as a continuous
+       plane with the header. */
+    margin-inline: calc(50% - 50vw);
+    padding-inline: calc(50vw - 50%);
+    /* Breathing room matching the mobile gutter so the galaxy SVG
+       doesn't touch the ghost-colored bottom border. */
+    padding-bottom: 1rem;
     animation: archives-map-pin-in 400ms ease-out;
 }
 
-/* sm+ header is 80px tall */
+/* sm+ header is 80px tall; 79 = 80 - 1px overlap. */
 @media (min-width: 640px) {
     .archives-map-col--sticky {
-        top: 80px;
+        top: 79px;
     }
 }
 
@@ -129,15 +142,20 @@
     }
 
     /*
-     * Reset the mobile sticky background/border. `isMapSticky` only flips
-     * via the FAB (hidden at lg+), but a viewport resize from mobile to
-     * desktop could leave the modifier class stale. The desktop map
-     * lives in the right grid column and should not show a header-
-     * colored panel even if the class is present.
+     * Reset the mobile sticky background/border + full-bleed margins +
+     * the 1px-overlap `top` + raised z-index + bottom padding. Covers
+     * the case where a viewport resize from mobile to desktop leaves
+     * the modifier class stale — at lg+ the map lives in its real grid
+     * cell and should not carry any of the mobile seam-hiding tricks.
      */
     .archives-map-col--sticky {
+        top: 80px;
+        z-index: auto;
         background: transparent;
         border-bottom: none;
+        margin-inline: 0;
+        padding-inline: 0;
+        padding-bottom: 0;
     }
 
     /* Galaxy fills remaining space after the event detail card */

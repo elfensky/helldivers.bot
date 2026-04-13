@@ -45,17 +45,37 @@
  */
 .home-map--sticky {
     position: sticky;
-    top: 50px; /* below 50px mobile header */
-    z-index: 10;
+    /* 49px = 50px header - 1px overlap. The header's 1px bottom border
+       is drawn at row y=49; pinning the map one pixel higher puts its
+       top edge on that same row. Combined with z-index below, the
+       map's surface-1 background overpaints the ghost border so the
+       two dark panels read as one seamless plane. */
+    top: 49px;
+    /* Above the header (now z-40) so the 1px overlap row is won by
+       the map's background, hiding the header's bottom border. */
+    z-index: 50;
     background: var(--color-surface-1);
     border-bottom: 1px solid var(--color-ghost);
+    /* Full-bleed: extend the background to the viewport edges so the
+       pinned map panel reads as one continuous plane with the fixed
+       header (which spans edge-to-edge). `margin-inline: calc(50% -
+       50vw)` pulls the box out past the `.gutters` horizontal
+       padding on the parent; `padding-inline: calc(50vw - 50%)`
+       puts the map content back in its gutter-respecting position
+       so only the background stretches wide. Reset at lg+ below. */
+    margin-inline: calc(50% - 50vw);
+    padding-inline: calc(50vw - 50%);
+    /* Breathing room: prevents the galaxy SVG from touching the
+       ghost-colored bottom border. 1rem matches the mobile gutter
+       (`.gutters` uses `px-4` at the base tier). Reset at lg+. */
+    padding-bottom: 1rem;
     animation: home-map-pin-in 400ms ease-out;
 }
 
-/* sm+ header is 80px tall */
+/* sm+ header is 80px tall; 79 = 80 - 1px overlap. */
 @media (min-width: 640px) {
     .home-map--sticky {
-        top: 80px;
+        top: 79px;
     }
 }
 
@@ -166,15 +186,20 @@
     }
 
     /*
-     * Reset the mobile sticky background/border. `isMapSticky` state is
-     * only mutable via the FAB (which is hidden at lg+), but a viewport
-     * resize from mobile to desktop could leave a stale true state. The
-     * desktop map lives in the right grid column and should not show a
-     * header-colored panel even if the modifier class is present.
+     * Reset the mobile sticky background/border + full-bleed margins +
+     * the 1px-overlap `top` + raised z-index + bottom padding. Covers
+     * the case where a viewport resize from mobile to desktop leaves
+     * the modifier class stale — at lg+ the map lives in its real grid
+     * cell and should not carry any of the mobile seam-hiding tricks.
      */
     .home-map--sticky {
+        top: 80px;
+        z-index: auto;
         background: transparent;
         border-bottom: none;
+        margin-inline: 0;
+        padding-inline: 0;
+        padding-bottom: 0;
     }
 
     /* Toggle button hidden at lg: — on desktop the map is always visible
