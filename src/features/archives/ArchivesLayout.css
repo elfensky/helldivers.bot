@@ -36,16 +36,22 @@
 }
 
 /*
- * Mobile galaxy cap + centering. Mirrors `.home-map #map > svg` in
- * HomeClient.css — see that rule for the full reasoning. Short
- * version: cap the galaxy SVG's height at 55dvh so it doesn't
- * dominate a portrait-tablet viewport, and cap width at the
- * aspect-ratio intrinsic width so the `preserveAspectRatio="xMaxYMid"`
- * of Map.jsx has no horizontal slack to right-align into — then
- * `margin-inline: auto` centers the shrunk box inside the full-bleed
- * sticky panel. Desktop `lg+` reset below unwinds all three.
+ * Mobile galaxy cap + centering, gated on `--sticky`. Mirrors
+ * `.home-map--sticky #map > svg` in HomeClient.css — see that rule for
+ * the full reasoning. Short version: cap the galaxy SVG's height at
+ * 55dvh so it doesn't dominate a portrait-tablet viewport, and cap
+ * width at the aspect-ratio intrinsic width so the
+ * `preserveAspectRatio="xMaxYMid"` of Map.jsx has no horizontal slack
+ * to right-align into — then `margin-inline: auto` centers the shrunk
+ * box inside the full-bleed sticky panel. Desktop `lg+` reset below
+ * unwinds all three.
+ *
+ * Note: on archives, `--sticky` is on from mount (useState(true)), so
+ * this cap applies from first paint — even while the map is still in
+ * its natural flow position below the fold. User accepted this
+ * trade-off in v0.39.14 design.
  */
-.archives-map-col #map > svg {
+.archives-map-col--sticky #map > svg {
     max-height: 55dvh;
     max-width: calc(55dvh * 806.93 / 868.81);
     margin-inline: auto;
@@ -82,6 +88,21 @@
        md+ scrolls and this transform visually tracks that offset
        without disturbing the sticky layout box. */
     transform: translateY(var(--header-offset, 0px));
+}
+
+/*
+ * Transient animation class: added for 400ms by ArchivesClient.jsx
+ * when the user flips the FAB from unpinned → pinned. The archives
+ * default is `isMapSticky: true`, but `isAnimating` starts false, so
+ * this class is NOT applied on first mount — the map just appears in
+ * its natural flow position without motion.
+ *
+ * See `.home-map--pinning` in HomeClient.css for the full reasoning
+ * on why z-index drops to 10 during the slide (so the header z-40
+ * occludes the map; it emerges from behind the header).
+ */
+.archives-map-col--pinning {
+    z-index: 10;
     animation: archives-map-pin-in 400ms ease-out;
 }
 
@@ -93,24 +114,45 @@
 }
 
 /*
- * Slide-out-from-behind-header reveal via clip-path: the bottom clip
- * starts at 100% (fully hidden) and shrinks to 0 (fully visible),
- * revealing the map top-down from the header's bottom edge.
- * clip-path only masks rendering — sticky positioning unaffected.
- * Matches @keyframes home-map-pin-in.
+ * Slide-in-from-behind-header reveal. Start fully above the viewport
+ * (`-100%` covers the map's own height; `-80px` adds a one-header-height
+ * buffer). End at the sticky resting translate, which equals the live
+ * `--header-offset` so the slide composes with the scroll-hiding
+ * header. Paired with `z-index: 10` on `.archives-map-col--pinning`
+ * so the header occludes the map throughout — matches
+ * `@keyframes home-map-pin-in`.
  */
 @keyframes archives-map-pin-in {
     from {
-        clip-path: inset(0 0 100% 0);
+        transform: translateY(calc(var(--header-offset, 0px) - 100% - 80px));
     }
     to {
-        clip-path: inset(0 0 0 0);
+        transform: translateY(var(--header-offset, 0px));
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .archives-map-col--sticky {
+    .archives-map-col--pinning {
         animation: none;
+    }
+}
+
+/*
+ * Tablet+ (md+, ≥768px): mirror the header's live background via the
+ * `--header-bg` CSS var published by headerGPU.js. At the top of the
+ * page the header is transparent → map is transparent; when the
+ * header glasses over mid-scroll, the map glasses over too. Mobile
+ * (<md) keeps the solid `surface-1` + ghost border set above.
+ *
+ * The matching `backdrop-filter: blur(8.8px)` is applied via inline
+ * `style={{}}` in ArchivesClient.jsx — Lightning CSS strips
+ * `backdrop-filter` from built CSS (see HomeClient.css for the full
+ * note and the `useHeaderGlassFilter` hook).
+ */
+@media (min-width: 768px) {
+    .archives-map-col--sticky {
+        background: var(--header-bg, transparent);
+        border-bottom: none;
     }
 }
 
@@ -164,10 +206,11 @@
 
     /*
      * Reset the mobile sticky background/border + full-bleed margins +
-     * the 1px-overlap `top` + raised z-index + bottom padding. Covers
-     * the case where a viewport resize from mobile to desktop leaves
-     * the modifier class stale — at lg+ the map lives in its real grid
-     * cell and should not carry any of the mobile seam-hiding tricks.
+     * the 1px-overlap `top` + raised z-index + bottom padding + the
+     * backdrop-filter glass. Covers the case where a viewport resize
+     * from mobile to desktop leaves the modifier class stale — at lg+
+     * the map lives in its real grid cell and should not carry any of
+     * the mobile seam-hiding tricks.
      */
     .archives-map-col--sticky {
         top: 80px;
@@ -178,6 +221,13 @@
         padding-inline: 0;
         padding-bottom: 0;
         transform: none;
+    }
+
+    /* Reset the transient pin-in animation + raised z-index for stale-
+       class safety after a mobile → desktop viewport resize. */
+    .archives-map-col--pinning {
+        z-index: auto;
+        animation: none;
     }
 
     /* Galaxy fills remaining space after the event detail card */

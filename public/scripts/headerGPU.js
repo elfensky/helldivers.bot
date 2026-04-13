@@ -12,6 +12,26 @@
     var active = false;
     var mql = window.matchMedia('(min-width: 768px)');
 
+    // Apply the header's backgroundColor + glass state, and mirror both
+    // onto <html> as CSS vars so the pinned map (which mirrors the
+    // header on tablet+) can track them via var() lookups. See the
+    // @media (min-width: 768px) rules on `.home-map--sticky` and
+    // `.archives-map-col--sticky`.
+    function setHeaderBg(color, glass) {
+        header.style.backgroundColor = color;
+        document.documentElement.style.setProperty('--header-bg', color);
+        if (glass) {
+            header.classList.add('header-glass');
+            document.documentElement.style.setProperty(
+                '--header-glass-filter',
+                'blur(8.8px)',
+            );
+        } else {
+            header.classList.remove('header-glass');
+            document.documentElement.style.setProperty('--header-glass-filter', 'none');
+        }
+    }
+
     function updateHeader(scrollTop) {
         var delta = scrollTop - lastScrollTop;
 
@@ -31,22 +51,18 @@
 
         if (scrollTop <= fadeEnd) {
             // In the top zone — fully transparent, no glass
-            header.style.backgroundColor = 'rgba(19, 19, 19, 0)';
-            header.classList.remove('header-glass');
+            setHeaderBg('rgba(19, 19, 19, 0)', false);
         } else if (scrollTop < fadeStart && delta < 0) {
             // Fade zone — scrolling up, blend glass opacity proportionally
             var t = (scrollTop - fadeEnd) / (fadeStart - fadeEnd); // 0 at fadeEnd, 1 at fadeStart
             var opacity = t * 0.85;
-            header.style.backgroundColor = 'rgba(19, 19, 19, ' + opacity.toFixed(3) + ')';
-            header.classList.add('header-glass');
+            setHeaderBg('rgba(19, 19, 19, ' + opacity.toFixed(3) + ')', true);
         } else if (delta < 0) {
             // Scrolling up mid-page — full glass
-            header.style.backgroundColor = 'rgba(19, 19, 19, 0.85)';
-            header.classList.add('header-glass');
+            setHeaderBg('rgba(19, 19, 19, 0.85)', true);
         } else if (offset <= -headerHeight) {
             // Fully hidden — clear for clean next reveal
-            header.style.backgroundColor = 'rgba(19, 19, 19, 0)';
-            header.classList.remove('header-glass');
+            setHeaderBg('rgba(19, 19, 19, 0)', false);
         }
 
         lastScrollTop = Math.max(0, scrollTop);
@@ -68,9 +84,12 @@
         header.style.top = '';
         header.style.backgroundColor = '';
         header.classList.remove('header-glass');
-        // Drop the --header-offset CSS var so map sticky rules fall back
-        // to their default translate(0) when we leave the md+ breakpoint.
+        // Drop the CSS vars so map sticky rules fall back to their
+        // default values (translate 0, transparent bg, no blur) when
+        // we leave the md+ breakpoint.
         document.documentElement.style.removeProperty('--header-offset');
+        document.documentElement.style.removeProperty('--header-bg');
+        document.documentElement.style.removeProperty('--header-glass-filter');
         offset = 0;
         lastScrollTop = 0;
         ticking = false;
@@ -84,9 +103,15 @@
                 window.pageYOffset || document.documentElement.scrollTop,
             );
             offset = 0;
-            // Initialize the CSS var so the map's transform is 0 on mount
-            // before the first scroll event fires.
+            // Initialize the CSS vars so the map's transform is 0 and
+            // background tracks the header's initial transparent state
+            // on mount before the first scroll event fires.
             document.documentElement.style.setProperty('--header-offset', '0px');
+            document.documentElement.style.setProperty(
+                '--header-bg',
+                'rgba(19, 19, 19, 0)',
+            );
+            document.documentElement.style.setProperty('--header-glass-filter', 'none');
         } else {
             active = false;
             resetHeader();

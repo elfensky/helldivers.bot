@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './HomeClient.css';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 import Galaxy from '@/features/galaxy/Galaxy';
@@ -11,6 +11,7 @@ import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
 import { eventKey } from '@/features/archives/eventKey.mjs';
 import { computeMapStateAtEvent } from '@/shared/utils/game/computeMapStateAtEvent.mjs';
 import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
+import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
 
 /**
  * Homepage client — owns the two-row grid that spans the hero and the
@@ -51,6 +52,35 @@ export default function HomeClient() {
     // On desktop (lg+) the CSS applies its own grid-based sticky rules
     // regardless of this state.
     const [isMapSticky, setIsMapSticky] = useState(false);
+    // Transient flag for the pin-in slide animation. True for 400ms after
+    // togglePin flips the map from unpinned → pinned; gates the
+    // `.home-map--pinning` modifier class that runs the keyframe. Kept
+    // separate from `isMapSticky` so the animation only plays on explicit
+    // pin transitions — not on first mount, not on unpin.
+    const [isAnimating, setIsAnimating] = useState(false);
+    const animTimerRef = useRef(null);
+
+    const togglePin = useCallback(() => {
+        setIsMapSticky((v) => {
+            const next = !v;
+            clearTimeout(animTimerRef.current);
+            if (next) {
+                setIsAnimating(true);
+                animTimerRef.current = setTimeout(() => setIsAnimating(false), 400);
+            } else {
+                setIsAnimating(false);
+            }
+            return next;
+        });
+    }, []);
+
+    useEffect(() => () => clearTimeout(animTimerRef.current), []);
+
+    // Backdrop-filter on the pinned map at md+ is applied inline because
+    // Lightning CSS strips `backdrop-filter: var(--header-glass-filter)`
+    // from the built stylesheet. See `useHeaderGlassFilter` for the
+    // workaround details.
+    const glassFilter = useHeaderGlassFilter();
 
     const mapState =
         selectedEvent ? computeMapStateAtEvent(selectedEvent, data) : liveMapState;
@@ -63,7 +93,19 @@ export default function HomeClient() {
                 </ComponentErrorBoundary>
             </div>
 
-            <div className={isMapSticky ? 'home-map home-map--sticky' : 'home-map'}>
+            <div
+                className={[
+                    'home-map',
+                    isMapSticky && 'home-map--sticky',
+                    isAnimating && 'home-map--pinning',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
+                style={{
+                    backdropFilter: glassFilter,
+                    WebkitBackdropFilter: glassFilter,
+                }}
+            >
                 <ComponentErrorBoundary name="Galaxy Map">
                     {mapState && <Galaxy mapState={mapState} pulseDelays={pulseDelays} />}
                 </ComponentErrorBoundary>
@@ -86,7 +128,7 @@ export default function HomeClient() {
             {/* Mobile FAB to toggle sticky pinning — hidden at lg: */}
             <button
                 className="home-map-toggle"
-                onClick={() => setIsMapSticky((v) => !v)}
+                onClick={togglePin}
                 aria-label={isMapSticky ? 'Unpin map' : 'Pin map to top'}
                 title={isMapSticky ? 'Unpin map' : 'Pin map to top'}
                 data-umami-event="home-map-toggle"

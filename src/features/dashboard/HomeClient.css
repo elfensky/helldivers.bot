@@ -26,12 +26,14 @@
 
 /*
  * Mobile galaxy cap: don't let the map dominate a tall narrow viewport
- * like an iPad in portrait. Apply to both pinned and unpinned states
- * (hence on `.home-map`, not just `.home-map--sticky`) — the galaxy's
- * natural aspect (806.93 / 868.81 ≈ 0.928) would make a 768px-wide
- * tablet render an ~827px tall galaxy, filling >80% of a 1024px
- * viewport. Cap at 55dvh so the galaxy takes about half the visible
- * height and the rest of the dashboard is still in view.
+ * like an iPad in portrait. Scoped to `.home-map--sticky` so the cap
+ * only applies in the pinned state — when the map is in its natural
+ * flow position (no `--sticky` modifier), it renders at its full
+ * aspect-ratio size. The galaxy's natural aspect (806.93 / 868.81 ≈
+ * 0.928) would make a 768px-wide tablet render an ~827px tall galaxy,
+ * filling >80% of a 1024px viewport when pinned. Cap at 55dvh so the
+ * galaxy takes about half the visible height and the rest of the
+ * dashboard is still in view.
  *
  * The SVG uses `preserveAspectRatio="xMaxYMid meet"` (`src/features/
  * galaxy/Map.jsx:32`), which right-aligns content inside any leftover
@@ -47,7 +49,7 @@
  * the real grid cell (which uses flex sizing) is unaffected even if
  * a stale `.home-map--sticky` survives a mobile→desktop resize.
  */
-.home-map #map > svg {
+.home-map--sticky #map > svg {
     max-height: 55dvh;
     max-width: calc(55dvh * 806.93 / 868.81);
     margin-inline: auto;
@@ -105,6 +107,23 @@
        still works — only the visual pixels move. `translateY(0)` at
        mobile (<md) where headerGPU is inactive and the var is unset. */
     transform: translateY(var(--header-offset, 0px));
+}
+
+/*
+ * Transient animation class: added for 400ms by HomeClient.jsx when the
+ * user flips the map from unpinned → pinned via the FAB. The slide
+ * starts with the map fully above the viewport (translated up by its
+ * own height plus an 80px header-height buffer) and ends at its sticky
+ * resting position. During the slide the map sits at `z-index: 10` so
+ * the header's `z-40` occludes it — the map literally emerges from
+ * behind the header. When JS removes the class, z-index falls back to
+ * the 50 on `--sticky` and the 1px border-overlap trick resumes.
+ *
+ * Not applied on mount (even when archives defaults to pinned) because
+ * `isAnimating` starts `false` and is only flipped inside `togglePin`.
+ */
+.home-map--pinning {
+    z-index: 10;
     animation: home-map-pin-in 400ms ease-out;
 }
 
@@ -116,25 +135,49 @@
 }
 
 /*
- * Slide-out-from-behind-header reveal. `clip-path: inset(0 0 100% 0)`
- * clips 100% from the bottom edge — the element is fully hidden.
- * Animating to `inset(0 0 0 0)` shrinks the bottom clip to zero,
- * revealing the map top-down from the header's bottom edge. Works
- * with `position: sticky` because clip-path only masks rendering,
- * not layout or scroll behavior.
+ * Slide-in-from-behind-header reveal. Start fully above the viewport
+ * (`-100%` covers the map's own height; `-80px` adds a one-header-height
+ * buffer so the map is definitively off-screen at t=0 on tall viewports
+ * too). End at the sticky resting translate, which equals the live
+ * `--header-offset` so the slide composes with the scroll-hiding
+ * header. Paired with `z-index: 10` on `.home-map--pinning` so the
+ * header occludes the map throughout — the map visually "emerges from
+ * behind" rather than sliding on top of the header.
  */
 @keyframes home-map-pin-in {
     from {
-        clip-path: inset(0 0 100% 0);
+        transform: translateY(calc(var(--header-offset, 0px) - 100% - 80px));
     }
     to {
-        clip-path: inset(0 0 0 0);
+        transform: translateY(var(--header-offset, 0px));
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .home-map--sticky {
+    .home-map--pinning {
         animation: none;
+    }
+}
+
+/*
+ * Tablet+ (md+, ≥768px): the header at this breakpoint is transparent
+ * by default and gains a glass effect (rgba(19,19,19,0.85) +
+ * backdrop-filter: blur(8.8px)) when scroll-revealed mid-page. The
+ * pinned map mirrors the header's live state 1:1 via the `--header-bg`
+ * CSS var published by headerGPU.js — transparent at top, semi-opaque
+ * mid-page.
+ *
+ * Note: the matching `backdrop-filter: blur(8.8px)` is applied via
+ * inline `style={{}}` in HomeClient.jsx (and ArchivesClient.jsx), not
+ * here. Lightning CSS strips `backdrop-filter` declarations that
+ * reference custom properties from the built stylesheet — see the
+ * `v0.39.7` CHANGELOG and the `useHeaderGlassFilter` hook. The inline
+ * style bypasses the optimizer.
+ */
+@media (min-width: 768px) {
+    .home-map--sticky {
+        background: var(--header-bg, transparent);
+        border-bottom: none;
     }
 }
 
@@ -233,10 +276,11 @@
 
     /*
      * Reset the mobile sticky background/border + full-bleed margins +
-     * the 1px-overlap `top` + raised z-index + bottom padding. Covers
-     * the case where a viewport resize from mobile to desktop leaves
-     * the modifier class stale — at lg+ the map lives in its real grid
-     * cell and should not carry any of the mobile seam-hiding tricks.
+     * the 1px-overlap `top` + raised z-index + bottom padding + the
+     * backdrop-filter glass. Covers the case where a viewport resize
+     * from mobile to desktop leaves the modifier class stale — at lg+
+     * the map lives in its real grid cell and should not carry any of
+     * the mobile seam-hiding tricks.
      */
     .home-map--sticky {
         top: 80px;
@@ -247,6 +291,13 @@
         padding-inline: 0;
         padding-bottom: 0;
         transform: none;
+    }
+
+    /* Reset the transient pin-in animation + raised z-index for stale-
+       class safety after a mobile → desktop viewport resize. */
+    .home-map--pinning {
+        z-index: auto;
+        animation: none;
     }
 
     /* Toggle button hidden at lg: — on desktop the map is always visible

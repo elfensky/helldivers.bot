@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './ArchivesLayout.css';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 import ArchivesHeader, { EffectsToggle } from '@/features/archives/ArchivesHeader';
@@ -13,6 +13,7 @@ import { eventKey } from '@/features/archives/eventKey.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import { useCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
 import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
+import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
 
 export default function ArchivesClient({
     data,
@@ -23,11 +24,40 @@ export default function ArchivesClient({
     const events = data?.events ?? [];
     const [faction, setFaction] = useState('bugs');
     // Mobile-only: toggle whether the archives map column is sticky
-    // (pinned at the top as the user scrolls). Default off — the map is
-    // at the top of the flex column in normal flow and scrolls away
-    // with the rest of the page; user opts-in via the FAB. On desktop
-    // (lg+) the grid-based sticky rules apply regardless of this state.
-    const [isMapSticky, setIsMapSticky] = useState(false);
+    // (pinned at the top as the user scrolls). Default ON here (unlike
+    // the homepage) so the archives map is pinned from first paint —
+    // the map is still in its natural flow position below the stats
+    // until the user scrolls down to it, at which point native sticky
+    // engages. The FAB can unpin. On desktop (lg+) the grid-based
+    // sticky rules apply regardless of this state.
+    const [isMapSticky, setIsMapSticky] = useState(true);
+    // Transient flag for the slide animation. Only true for 400ms after
+    // togglePin flips the map from unpinned → pinned. Starts false on
+    // mount so the default-pinned archives page does NOT play the
+    // animation on first load.
+    const [isAnimating, setIsAnimating] = useState(false);
+    const animTimerRef = useRef(null);
+
+    const togglePin = useCallback(() => {
+        setIsMapSticky((v) => {
+            const next = !v;
+            clearTimeout(animTimerRef.current);
+            if (next) {
+                setIsAnimating(true);
+                animTimerRef.current = setTimeout(() => setIsAnimating(false), 400);
+            } else {
+                setIsAnimating(false);
+            }
+            return next;
+        });
+    }, []);
+
+    useEffect(() => () => clearTimeout(animTimerRef.current), []);
+
+    // Inline backdrop-filter workaround — see HomeClient.jsx / the
+    // `useHeaderGlassFilter` hook for the reasoning (Lightning CSS
+    // strips `backdrop-filter` from the built CSS).
+    const glassFilter = useHeaderGlassFilter();
     const isDefeat = getWarOutcome(data)?.outcome === 'defeat';
     const effects = useCyberstanEffects(isDefeat);
     const { selectedEvent, railRef } = useScrollEvent(events);
@@ -100,7 +130,7 @@ export default function ArchivesClient({
             {/* Mobile FAB to toggle sticky pinning — hidden at lg: */}
             <button
                 className="archives-map-toggle"
-                onClick={() => setIsMapSticky((v) => !v)}
+                onClick={togglePin}
                 aria-label={isMapSticky ? 'Unpin map' : 'Pin map to top'}
                 title={isMapSticky ? 'Unpin map' : 'Pin map to top'}
                 data-umami-event="archive-map-toggle"
@@ -124,11 +154,17 @@ export default function ArchivesClient({
                 </div>
 
                 <div
-                    className={
-                        isMapSticky ?
-                            'archives-map-col archives-map-col--sticky'
-                        :   'archives-map-col'
-                    }
+                    className={[
+                        'archives-map-col',
+                        isMapSticky && 'archives-map-col--sticky',
+                        isAnimating && 'archives-map-col--pinning',
+                    ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    style={{
+                        backdropFilter: glassFilter,
+                        WebkitBackdropFilter: glassFilter,
+                    }}
                 >
                     <ArchiveMap data={data} selectedEvent={selectedEvent} />
                 </div>
