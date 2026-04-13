@@ -98,6 +98,13 @@
        ghost-colored bottom border. 1rem matches the mobile gutter
        (`.gutters` uses `px-4` at the base tier). Reset at lg+. */
     padding-bottom: 1rem;
+    /* Follow the md+ header as it scroll-hides/reveals. headerGPU.js
+       writes `--header-offset` (0 → -80px) on <html> during scroll at
+       md+ (see public/scripts/headerGPU.js). Using `transform` leaves
+       sticky's layout box at `top: 49/79px` intact so pin/unpin math
+       still works — only the visual pixels move. `translateY(0)` at
+       mobile (<md) where headerGPU is inactive and the var is unset. */
+    transform: translateY(var(--header-offset, 0px));
     animation: home-map-pin-in 400ms ease-out;
 }
 
@@ -239,6 +246,7 @@
         margin-inline: 0;
         padding-inline: 0;
         padding-bottom: 0;
+        transform: none;
     }
 
     /* Toggle button hidden at lg: — on desktop the map is always visible

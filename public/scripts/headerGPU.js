@@ -19,6 +19,11 @@
         offset = Math.min(0, Math.max(-headerHeight, offset - delta));
 
         header.style.top = offset + 'px';
+        // Expose to CSS so sticky-positioned elements (pinned map on tablet,
+        // desktop grid map) can translate in sync with the header. Read via
+        // `transform: translateY(var(--header-offset, 0px))` in the map's
+        // sticky rules — see HomeClient.css / ArchivesLayout.css.
+        document.documentElement.style.setProperty('--header-offset', offset + 'px');
 
         // Glass effect: fade out smoothly as we approach the top
         var fadeEnd = headerHeight; // glass fully gone at 80px
@@ -63,6 +68,9 @@
         header.style.top = '';
         header.style.backgroundColor = '';
         header.classList.remove('header-glass');
+        // Drop the --header-offset CSS var so map sticky rules fall back
+        // to their default translate(0) when we leave the md+ breakpoint.
+        document.documentElement.style.removeProperty('--header-offset');
         offset = 0;
         lastScrollTop = 0;
         ticking = false;
@@ -76,6 +84,9 @@
                 window.pageYOffset || document.documentElement.scrollTop,
             );
             offset = 0;
+            // Initialize the CSS var so the map's transform is 0 on mount
+            // before the first scroll event fires.
+            document.documentElement.style.setProperty('--header-offset', '0px');
         } else {
             active = false;
             resetHeader();

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.39.13
+
+### Bug Fixes
+
+- **Pinned galaxy map now follows the scroll-hiding header on tablet.** At `md+` (≥768px) the header uses `public/scripts/headerGPU.js` to shift its own `top` by scroll delta (0 at rest, `-80px` when fully hidden), creating a "parks just above the viewport" effect. The sticky pinned map stayed fixed at `top: 79px` regardless, so when the header scrolled away there was an 80px empty band above the map — the map looked disconnected from the header bar it visually belongs to. Now `headerGPU.js` also writes the current offset as a `--header-offset` CSS custom property on `<html>`, and `.home-map--sticky` / `.archives-map-col--sticky` apply `transform: translateY(var(--header-offset, 0px))` so the map's visual position tracks the header 1:1. Layout-wise the sticky box still pins at `top: 49/79px`, so pin/unpin geometry and the `clip-path` reveal animation are untouched — only the rendered pixels shift.
+- Uses `transform` rather than mutating `top` so the browser's sticky-engagement math (which looks at the element's natural layout position, not its transform) continues to work, and shifts happen on the GPU without triggering layout recalcs during scroll.
+- `headerGPU.js` drops the custom property in `resetHeader()` when the breakpoint drops below `md`, so the fallback `0px` kicks in and the map visually sits at its normal sticky position — no stale offset bleeding between breakpoints. Desktop `lg+` reset block also explicitly sets `transform: none` for stale-class safety when a viewport resize from tablet to desktop leaves the `--sticky` modifier on.
+
 ## 0.39.12
 
 ### Bug Fixes

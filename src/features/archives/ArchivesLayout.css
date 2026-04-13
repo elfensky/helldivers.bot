@@ -77,6 +77,11 @@
     /* Breathing room matching the mobile gutter so the galaxy SVG
        doesn't touch the ghost-colored bottom border. */
     padding-bottom: 1rem;
+    /* Follow the md+ scroll-hiding header. See HomeClient.css for the
+       full reasoning — headerGPU.js writes `--header-offset` during
+       md+ scrolls and this transform visually tracks that offset
+       without disturbing the sticky layout box. */
+    transform: translateY(var(--header-offset, 0px));
     animation: archives-map-pin-in 400ms ease-out;
 }
 
@@ -172,6 +177,7 @@
         margin-inline: 0;
         padding-inline: 0;
         padding-bottom: 0;
+        transform: none;
     }
 
     /* Galaxy fills remaining space after the event detail card */
