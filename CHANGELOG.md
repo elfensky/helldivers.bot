@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.39.6
+
+### Changes
+
+- **`/archives` mobile map toggle now matches the homepage's pin/unpin semantics** instead of show/hide. Default is **unpinned** — the archives galaxy map is at the top of the mobile flex column in normal flow and scrolls away as you read the event log, like a regular section. Tap the `.archives-map-toggle` FAB (📌 icon) to add the `.archives-map-col--sticky` modifier class, which applies `position: sticky; top: 50px` (80px at `sm+`), `z-index: 10`, `background: var(--color-surface-0)`, and a 280ms fade-in animation. The map pins at the top of the viewport and stays visible as you continue scrolling. Tap again (✕ icon) to unpin — map returns to normal flow.
+- This is a behavior change from the previous version where `.archives-map-col` was always sticky on mobile and the FAB toggled visibility via conditional rendering. The map is now always rendered (scroll-sync selection still fires) but only becomes sticky on opt-in. Matches `v0.39.5`'s homepage implementation exactly.
+
 ## 0.39.5
 
 ### Features

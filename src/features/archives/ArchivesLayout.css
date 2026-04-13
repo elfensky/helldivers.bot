@@ -22,24 +22,48 @@
 }
 
 /*
- * Mobile: map column pinned to top, events scroll beneath it.
- * order: -1 puts the map visually above the event column.
+ * Mobile: map column sits at the top of the flex flow (order: -1)
+ * and scrolls away with the rest of the page by default. The user
+ * opts-in to sticky pinning via the `.archives-map-toggle` FAB, which
+ * adds the `.archives-map-col--sticky` modifier class. Matches the
+ * homepage pin/unpin pattern in `HomeClient.css`.
  */
 .archives-map-col {
     order: -1;
-    position: sticky;
-    top: 50px; /* below fixed header (h-[50px] on mobile) */
-    z-index: 10;
-    background: var(--color-surface-0);
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
+.archives-map-col--sticky {
+    position: sticky;
+    top: 50px; /* below fixed header (h-[50px] on mobile) */
+    z-index: 10;
+    background: var(--color-surface-0);
+    animation: archives-map-pin-in 280ms ease-out;
+}
+
 /* sm+ header is 80px tall */
 @media (min-width: 640px) {
-    .archives-map-col {
+    .archives-map-col--sticky {
         top: 80px;
+    }
+}
+
+@keyframes archives-map-pin-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .archives-map-col--sticky {
+        animation: none;
     }
 }
 

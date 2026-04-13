@@ -22,7 +22,12 @@ export default function ArchivesClient({
 }) {
     const events = data?.events ?? [];
     const [faction, setFaction] = useState('bugs');
-    const [mapVisible, setMapVisible] = useState(true);
+    // Mobile-only: toggle whether the archives map column is sticky
+    // (pinned at the top as the user scrolls). Default off — the map is
+    // at the top of the flex column in normal flow and scrolls away
+    // with the rest of the page; user opts-in via the FAB. On desktop
+    // (lg+) the grid-based sticky rules apply regardless of this state.
+    const [isMapSticky, setIsMapSticky] = useState(false);
     const isDefeat = getWarOutcome(data)?.outcome === 'defeat';
     const effects = useCyberstanEffects(isDefeat);
     const { selectedEvent, railRef } = useScrollEvent(events);
@@ -92,14 +97,15 @@ export default function ArchivesClient({
                 </section>
             </div>
 
-            {/* Mobile FAB to toggle map — hidden at lg: */}
+            {/* Mobile FAB to toggle sticky pinning — hidden at lg: */}
             <button
                 className="archives-map-toggle"
-                onClick={() => setMapVisible((v) => !v)}
-                aria-label={mapVisible ? 'Hide map' : 'Show map'}
+                onClick={() => setIsMapSticky((v) => !v)}
+                aria-label={isMapSticky ? 'Unpin map' : 'Pin map to top'}
+                title={isMapSticky ? 'Unpin map' : 'Pin map to top'}
                 data-umami-event="archive-map-toggle"
             >
-                {mapVisible ? '✕' : '🗺'}
+                {isMapSticky ? '✕' : '📌'}
             </button>
 
             {/* Two-column scrollytelling: event log + sticky map */}
@@ -117,10 +123,14 @@ export default function ArchivesClient({
                     />
                 </div>
 
-                <div className="archives-map-col">
-                    {mapVisible && (
-                        <ArchiveMap data={data} selectedEvent={selectedEvent} />
-                    )}
+                <div
+                    className={
+                        isMapSticky ?
+                            'archives-map-col archives-map-col--sticky'
+                        :   'archives-map-col'
+                    }
+                >
+                    <ArchiveMap data={data} selectedEvent={selectedEvent} />
                 </div>
             </div>
         </div>
