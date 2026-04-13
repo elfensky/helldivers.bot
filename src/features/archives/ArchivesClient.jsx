@@ -72,7 +72,10 @@ export default function ArchivesClient({
     isAdmin = false,
 }) {
     const events = data?.events ?? [];
-    const [faction, setFaction] = useState('bugs');
+    // 'global' shows the whole-war overview (ArchiveStats); bugs/cyborgs/illuminate
+    // show a per-faction breakdown (FactionStats). Default to 'global' so visitors
+    // land on the big-picture view before drilling into factions.
+    const [faction, setFaction] = useState('global');
     // Mobile-only: toggle whether the archives map column is sticky
     // (pinned at the top as the user scrolls). Default ON here (unlike
     // the homepage) so the archives map is pinned from first paint —
@@ -154,13 +157,22 @@ export default function ArchivesClient({
                             )}
                         </div>
                     </div>
-                    <ArchiveStats
-                        events={events}
-                        live={data?.live}
-                        data={data}
-                        effects={effects}
-                        glitchPhase={glitchPhase}
-                    />
+                    <FactionTabs active={faction} onChange={setFaction} />
+                    {faction === 'global' ?
+                        <ArchiveStats
+                            events={events}
+                            live={data?.live}
+                            data={data}
+                            effects={effects}
+                            glitchPhase={glitchPhase}
+                        />
+                    :   <FactionStats
+                            events={events}
+                            snapshots={data?.snapshots}
+                            pointsMax={data?.points_max}
+                            faction={faction}
+                        />
+                    }
                 </section>
 
                 <section className="mt-4 flex flex-col gap-2">
@@ -168,17 +180,6 @@ export default function ArchivesClient({
                     <FactionHealthChart
                         snapshots={data?.snapshots}
                         pointsMax={data?.points_max}
-                    />
-                </section>
-
-                <section className="mt-4 flex flex-col gap-2">
-                    <h2>Faction Analysis</h2>
-                    <FactionTabs active={faction} onChange={setFaction} />
-                    <FactionStats
-                        events={events}
-                        snapshots={data?.snapshots}
-                        pointsMax={data?.points_max}
-                        faction={faction}
                     />
                 </section>
             </div>
