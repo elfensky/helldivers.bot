@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.39.9
+
+### Bug Fixes
+
+- **Scroll-sync "selected event" anchor now sits at 75% of viewport height on mobile (<1024px), up from 38%.** On mobile, when the user pins the galaxy map to the top via the FAB, the pinned map occupies roughly the upper half of the viewport — with the previous 38% anchor, the scroll-sync hook selected whichever event card was closest to 38% down the visible area, which landed _behind_ the pinned map's drop-shadow halo. The selected card was effectively invisible. Bumping the mobile anchor to 75% keeps the highlighted card in the lower quarter of the viewport, always visible below the pinned map area. Desktop anchor stays at 38% because the map is in the right column there, not overlapping the event log. Drift range on mobile (`0.15`) is also tighter than desktop (`0.24`) so the anchor stays below 90% even at page bottom.
+- Single change to `src/features/archives/useScrollEvent.mjs` — self-detects mobile viewport via `window.innerWidth < 1024` inside the scroll handler, no caller changes.
+
 ## 0.39.8
 
 ### Changes
