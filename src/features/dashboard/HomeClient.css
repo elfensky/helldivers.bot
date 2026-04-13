@@ -25,6 +25,35 @@
 }
 
 /*
+ * Mobile galaxy cap: don't let the map dominate a tall narrow viewport
+ * like an iPad in portrait. Apply to both pinned and unpinned states
+ * (hence on `.home-map`, not just `.home-map--sticky`) — the galaxy's
+ * natural aspect (806.93 / 868.81 ≈ 0.928) would make a 768px-wide
+ * tablet render an ~827px tall galaxy, filling >80% of a 1024px
+ * viewport. Cap at 55dvh so the galaxy takes about half the visible
+ * height and the rest of the dashboard is still in view.
+ *
+ * The SVG uses `preserveAspectRatio="xMaxYMid meet"` (`src/features/
+ * galaxy/Map.jsx:32`), which right-aligns content inside any leftover
+ * horizontal space. To get the requested horizontal centering, we
+ * also cap `max-width` to the aspect-ratio intrinsic width at that
+ * height — so the SVG box itself matches the content's aspect ratio
+ * exactly, leaves no horizontal slack for `xMax` to shove right,
+ * and `margin-inline: auto` then centers the whole shrunk box inside
+ * the full-bleed panel. Scoped to `#map > svg` so any incidental
+ * icon SVGs elsewhere in the column are untouched.
+ *
+ * Desktop `lg+` rule below resets all three back to `none` / `0` so
+ * the real grid cell (which uses flex sizing) is unaffected even if
+ * a stale `.home-map--sticky` survives a mobile→desktop resize.
+ */
+.home-map #map > svg {
+    max-height: 55dvh;
+    max-width: calc(55dvh * 806.93 / 868.81);
+    margin-inline: auto;
+}
+
+/*
  * Mobile pin/unpin: when the user taps the .home-map-toggle FAB, we add
  * the --sticky modifier class. The map then pins at the top (below the
  * fixed header) and stays visible as the user scrolls through the rest
@@ -183,6 +212,16 @@
         flex: 1;
         min-height: 0;
         min-width: 0;
+    }
+
+    /* Reset the mobile SVG cap/center so the desktop grid cell can
+       size the galaxy via its flex chain (`flex: 1`, `w-full h-full`).
+       Without this, the mobile `max-height: 55dvh` and `max-width`
+       calc would also clamp the desktop galaxy inside its column. */
+    .home-map #map > svg {
+        max-height: none;
+        max-width: none;
+        margin-inline: 0;
     }
 
     /*

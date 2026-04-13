@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.39.12
+
+### Bug Fixes
+
+- **Mobile galaxy map is now capped at `55dvh` and horizontally centered.** The galaxy's natural aspect ratio (`806.93 / 868.81` ≈ 0.928) means at a portrait-tablet viewport width like 768px the SVG would render ~827px tall, filling >80% of a 1024px iPad viewport and visually "covering" the page. Cap the SVG's `max-height` at `55dvh` so it takes about half the visible viewport and the rest of the dashboard (event log, etc.) stays in view.
+- **Horizontal centering was tricky** because `Map.jsx`'s SVG uses `preserveAspectRatio="xMaxYMid meet"` — when the SVG box has leftover horizontal space, that alignment pushes content hard against the right edge, which on a capped-height tablet layout would leave a big empty dark band on the left instead of centered content. Rather than change the preserveAspectRatio (which affects the desktop right-column map too), cap `max-width: calc(55dvh * 806.93 / 868.81)` so the SVG box itself matches the content's aspect ratio exactly — no leftover horizontal space inside the SVG for `xMax` to push into — and then `margin-inline: auto` centers the whole shrunk box inside the full-bleed sticky panel.
+- Applies to `.home-map #map > svg` and `.archives-map-col #map > svg` (scoped to the galaxy's Map.jsx wrapper so incidental icon SVGs elsewhere aren't caught). Explicit `max-height: none` / `max-width: none` / `margin-inline: 0` reset inside the `@media (min-width: 1024px)` block unwinds all three at desktop so the real grid cell is sized by its flex chain.
+
 ## 0.39.11
 
 ### Bug Fixes

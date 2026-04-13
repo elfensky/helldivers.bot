@@ -36,6 +36,22 @@
 }
 
 /*
+ * Mobile galaxy cap + centering. Mirrors `.home-map #map > svg` in
+ * HomeClient.css — see that rule for the full reasoning. Short
+ * version: cap the galaxy SVG's height at 55dvh so it doesn't
+ * dominate a portrait-tablet viewport, and cap width at the
+ * aspect-ratio intrinsic width so the `preserveAspectRatio="xMaxYMid"`
+ * of Map.jsx has no horizontal slack to right-align into — then
+ * `margin-inline: auto` centers the shrunk box inside the full-bleed
+ * sticky panel. Desktop `lg+` reset below unwinds all three.
+ */
+.archives-map-col #map > svg {
+    max-height: 55dvh;
+    max-width: calc(55dvh * 806.93 / 868.81);
+    margin-inline: auto;
+}
+
+/*
  * Mobile sticky: match the header's background + border-bottom so the
  * pinned map and the fixed header form one continuous dark panel at
  * the top of the viewport. Header uses `background: var(--color-surface-1)`
@@ -162,6 +178,15 @@
     .archives-map-col > :first-child {
         flex: 1;
         min-height: 0;
+    }
+
+    /* Reset the mobile SVG cap/center so the desktop grid cell can
+       size the galaxy via its flex chain. Mirrors the lg+ reset in
+       HomeClient.css. */
+    .archives-map-col #map > svg {
+        max-height: none;
+        max-width: none;
+        margin-inline: 0;
     }
 
     .archives-map-toggle {
