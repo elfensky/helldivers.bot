@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 0.40.1
+
+### Changed
+
+- **Archives `Statistics` and `Faction Analysis` sections merged into
+  one.** The `Global` tab in `FactionTabs` previously rendered nothing
+  (since `FactionStats` only maps Bugs/Cyborgs/Illuminate to enemy
+  indices); it now renders the whole-war `<ArchiveStats>` overview
+  instead. Bugs/Cyborgs/Illuminate tabs continue to render
+  `<FactionStats>` per-faction. `/archives` now defaults to the
+  `Global` tab on first load so visitors land on the overview before
+  drilling into factions. The standalone `Faction Analysis` H2 is
+  gone; all stat cards live under the single `Statistics` heading now.
+  Composition change only — `ArchiveStats`, `FactionStats`, and
+  `FactionTabs` internals are unchanged.
+
 ## 0.40.0
 
 ### Fixed
