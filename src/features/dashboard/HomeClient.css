@@ -34,11 +34,28 @@
  * Below lg: sticky is opt-in via the FAB (default off). At lg+ the CSS
  * further down applies its own grid-based sticky rules unconditionally.
  */
+/*
+ * The blur is intentionally NOT declared here — Lightning CSS (Next
+ * Turbopack's CSS optimizer) strips the un-prefixed `backdrop-filter`
+ * and leaves only `-webkit-backdrop-filter`, which Chrome doesn't
+ * treat as the standard property. Applied via inline style in
+ * HomeClient.jsx instead where the build tool can't touch it.
+ */
 .home-map--sticky {
     position: sticky;
     top: 50px; /* below 50px mobile header */
     z-index: 10;
-    background: var(--color-surface-0);
+    /* Radial gradient: opaque near the center where the map needs
+       legibility, fading to transparent at the edges so content
+       scrolling behind the map bleeds through softly. Combined with
+       backdrop-filter: blur (see HomeClient.jsx) for a frosted-
+       glass effect. */
+    background: radial-gradient(
+        ellipse at center,
+        rgba(19, 19, 19, 0.85) 20%,
+        rgba(19, 19, 19, 0.45) 65%,
+        rgba(19, 19, 19, 0) 100%
+    );
     animation: home-map-pin-in 280ms ease-out;
 }
 

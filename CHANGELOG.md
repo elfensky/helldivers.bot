@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.39.7
+
+### Changes
+
+- **Sticky mobile map now uses a frosted-glass effect instead of a solid black background.** Both `.home-map--sticky` (homepage) and `.archives-map-col--sticky` (archives) previously had `background: var(--color-surface-0)` which painted a hard rectangular occlusion over scrolling content. Replaced with `background: radial-gradient(ellipse at center, rgba(19,19,19,0.85) 20%, rgba(19,19,19,0.45) 65%, rgba(19,19,19,0) 100%)` — the center stays opaque enough for map legibility while the edges fade to fully transparent. A `backdrop-filter: blur(10px)` adds a soft blur to whatever content scrolls behind the map, completing the frosted-glass feel. Event log cards are now visible through the gradient edges rather than disappearing behind a dark rectangle.
+
+### Workaround
+
+- **`backdrop-filter` applied via inline style, not CSS.** Lightning CSS (the Turbopack-integrated optimizer) strips the un-prefixed `backdrop-filter` declaration from stylesheets and leaves only the `-webkit-backdrop-filter` prefix. Chrome does not apply the `-webkit-` prefix as a fallback for the standard property, so the blur ended up as a no-op when declared in `HomeClient.css`/`ArchivesLayout.css`. Declaring it via `style={{ backdropFilter, WebkitBackdropFilter }}` on the JSX elements bypasses Lightning CSS entirely.
+
 ## 0.39.6
 
 ### Changes
