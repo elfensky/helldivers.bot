@@ -35,26 +35,17 @@
     gap: 0.5rem;
 }
 
-/*
- * Blur is applied via inline style in ArchivesClient.jsx — Lightning
- * CSS (Turbopack's optimizer) strips un-prefixed `backdrop-filter`
- * from stylesheets and leaves only `-webkit-` which Chrome ignores.
- */
 .archives-map-col--sticky {
     position: sticky;
     top: 50px; /* below fixed header (h-[50px] on mobile) */
     z-index: 10;
-    /* Radial gradient: opaque center for map legibility, transparent
-       edges so content scrolling behind bleeds through softly.
-       Combined with backdrop-filter: blur via inline style (see
-       ArchivesClient.jsx) for a frosted-glass effect. Matches
+    /* drop-shadow casts a soft dark halo around the SVG galaxy's
+       visible paths — the shadow follows the actual map shape and
+       fades at its edges, so content scrolling behind the map stays
+       clearly visible everywhere the shadow doesn't reach. Matches
        .home-map--sticky. */
-    background: radial-gradient(
-        ellipse at center,
-        rgba(19, 19, 19, 0.85) 20%,
-        rgba(19, 19, 19, 0.45) 65%,
-        rgba(19, 19, 19, 0) 100%
-    );
+    filter: drop-shadow(0 0 24px rgba(0, 0, 0, 0.95))
+        drop-shadow(0 0 8px rgba(0, 0, 0, 0.85));
     animation: archives-map-pin-in 280ms ease-out;
 }
 

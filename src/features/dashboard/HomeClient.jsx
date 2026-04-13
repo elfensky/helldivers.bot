@@ -63,21 +63,7 @@ export default function HomeClient() {
                 </ComponentErrorBoundary>
             </div>
 
-            <div
-                className={isMapSticky ? 'home-map home-map--sticky' : 'home-map'}
-                style={
-                    isMapSticky ?
-                        {
-                            // Applied inline because Lightning CSS (Next
-                            // Turbopack's optimizer) strips the unprefixed
-                            // `backdrop-filter` and leaves only the
-                            // `-webkit-` prefix, which Chrome ignores.
-                            backdropFilter: 'blur(10px)',
-                            WebkitBackdropFilter: 'blur(10px)',
-                        }
-                    :   undefined
-                }
-            >
+            <div className={isMapSticky ? 'home-map home-map--sticky' : 'home-map'}>
                 <ComponentErrorBoundary name="Galaxy Map">
                     {mapState && <Galaxy mapState={mapState} pulseDelays={pulseDelays} />}
                 </ComponentErrorBoundary>

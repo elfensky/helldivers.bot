@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.39.8
+
+### Changes
+
+- **Sticky mobile map now uses a CSS drop-shadow halo instead of a radial gradient fill.** v0.39.7 used `background: radial-gradient(...)` + `backdrop-filter: blur()` to create a frosted-glass effect, but the gradient filled the full rectangular map container and occluded content in corners. Replaced with a two-layer `filter: drop-shadow()` stack that casts a soft dark halo around the SVG galaxy's actual visible shape — the shadow follows the paths of the map and fades radially away from them. Content scrolling behind the map stays fully visible wherever the galaxy shape doesn't reach, so event log cards are clearly readable at the corners and sides; only the area immediately around the map's visible content is darkened. The double-layered shadow (24px blur + 8px blur, both near-black) gives the halo enough density to read against bright scrolling content without using any backdrop-filter or background fill. Applies to both `.home-map--sticky` and `.archives-map-col--sticky`, both now pure CSS (no inline-style workaround — `filter: drop-shadow` isn't stripped by Lightning CSS the way `backdrop-filter` was).
+
 ## 0.39.7
 
 ### Changes

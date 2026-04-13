@@ -129,17 +129,6 @@ export default function ArchivesClient({
                             'archives-map-col archives-map-col--sticky'
                         :   'archives-map-col'
                     }
-                    style={
-                        isMapSticky ?
-                            {
-                                // Applied inline because Lightning CSS strips
-                                // unprefixed backdrop-filter (see HomeClient.jsx
-                                // for the same workaround).
-                                backdropFilter: 'blur(10px)',
-                                WebkitBackdropFilter: 'blur(10px)',
-                            }
-                        :   undefined
-                    }
                 >
                     <ArchiveMap data={data} selectedEvent={selectedEvent} />
                 </div>
