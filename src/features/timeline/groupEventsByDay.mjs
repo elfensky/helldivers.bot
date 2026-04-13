@@ -1,11 +1,16 @@
 /**
- * Group events by calendar day (UTC) and sort newest-first.
- * Within each day, events are sorted by start_time descending (most recent first).
+ * Group events by calendar day (UTC).
  *
  * @param {Array<{ start_time: number }>} events - Events with Unix timestamps (seconds)
+ * @param {Object} [opts]
+ * @param {boolean} [opts.includeToday=true] - If true, prepend an empty TODAY group when no events exist for today (only applies to the default newest-first sort).
+ * @param {'desc' | 'asc'} [opts.sortOrder='desc'] - `'desc'` = newest first (days and events-within-day). `'asc'` = oldest first.
  * @returns {Array<{ date: string, label: string, events: Array }>}
  */
-export function groupEventsByDay(events, { includeToday = true } = {}) {
+export function groupEventsByDay(
+    events,
+    { includeToday = true, sortOrder = 'desc' } = {},
+) {
     if (!events || events.length === 0) return [];
 
     const groups = new Map();
@@ -18,15 +23,26 @@ export function groupEventsByDay(events, { includeToday = true } = {}) {
         groups.get(date).push(event);
     }
 
+    const cmpDate =
+        sortOrder === 'asc' ?
+            ([a], [b]) => a.localeCompare(b)
+        :   ([a], [b]) => b.localeCompare(a);
+    const cmpEvent =
+        sortOrder === 'asc' ?
+            (a, b) => a.start_time - b.start_time
+        :   (a, b) => b.start_time - a.start_time;
+
     const sorted = Array.from(groups.entries())
-        .sort(([a], [b]) => b.localeCompare(a))
+        .sort(cmpDate)
         .map(([date, dayEvents]) => ({
             date,
             label: formatDayLabel(date),
-            events: dayEvents.sort((a, b) => b.start_time - a.start_time),
+            events: dayEvents.sort(cmpEvent),
         }));
 
-    if (includeToday) {
+    // Only show the empty TODAY placeholder on the default descending view —
+    // on ascending (oldest first) TODAY would be at the bottom and looks odd empty.
+    if (includeToday && sortOrder === 'desc') {
         const today = new Date().toISOString().slice(0, 10);
         if (sorted.length === 0 || sorted[0].date !== today) {
             sorted.unshift({ date: today, label: 'TODAY', events: [] });

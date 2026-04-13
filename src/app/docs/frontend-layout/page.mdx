@@ -1,0 +1,388 @@
+export const metadata = {
+    title: 'Frontend Layout | Helldivers Bot',
+    description:
+        'How the galaxy map and scrollytelling event log work together across mobile, tablet, and desktop — pin state machine, slide animation, scroll-hiding header integration, and tablet background mirroring.',
+    alternates: { canonical: '/docs/frontend-layout' },
+    openGraph: { url: '/docs/frontend-layout' },
+};
+
+# Frontend Layout
+
+How the homepage and `/archives` galaxy map integrates with the
+scrollytelling event log across three breakpoint ranges, including the
+pinned-map state machine, the slide-in animation, the scroll-hiding
+header coupling, and the tablet background-mirroring pipeline.
+
+## At a glance
+
+| Breakpoint          | Map behavior                                          | FAB     |
+| ------------------- | ----------------------------------------------------- | ------- |
+| Mobile (`<768px`)   | Normal flow by default; `position: sticky` on FAB pin | Visible |
+| Tablet (768–1023)   | Same as mobile, plus the scroll-hiding header         | Visible |
+| Desktop (`≥1024px`) | `position: sticky` in a real grid cell; no toggle     | Hidden  |
+
+On `/` the FAB defaults to **unpinned** — the user has to tap to pin.
+On `/archives` the FAB defaults to **pinned** (`useState(true)`) — the
+map lives in sticky mode from first paint so it's already at rest when
+the user scrolls through the event log.
+
+## The pin state machine
+
+Two pieces of React state drive three CSS modifier classes. Kept in
+[`HomeClient.jsx`](https://github.com/elfensky/helldivers.bot/blob/main/src/features/dashboard/HomeClient.jsx)
+and mirrored in
+[`ArchivesClient.jsx`](https://github.com/elfensky/helldivers.bot/blob/main/src/features/archives/ArchivesClient.jsx).
+
+```js
+const [isMapSticky, setIsMapSticky] = useState(false); // true on archives
+const [isAnimating, setIsAnimating] = useState(false);
+const animTimerRef = useRef(null);
+
+const togglePin = () => {
+    setIsMapSticky((v) => {
+        const next = !v;
+        clearTimeout(animTimerRef.current);
+        if (next) {
+            setIsAnimating(true);
+            animTimerRef.current = setTimeout(() => setIsAnimating(false), 400);
+        } else {
+            setIsAnimating(false);
+        }
+        return next;
+    });
+};
+```
+
+The class name on the map element is composed from these two flags:
+
+```jsx
+className={[
+    'home-map',
+    isMapSticky && 'home-map--sticky',
+    isAnimating && 'home-map--pinning',
+].filter(Boolean).join(' ')}
+```
+
+Three classes, three responsibilities:
+
+### `.home-map` (base)
+
+Nothing but layout order inside the flex column. Order `1` on mobile
+(sits between the hero sidebar and the event log), `grid-area: map` on
+desktop.
+
+### `.home-map--sticky` (persistent pinned state)
+
+Applied whenever `isMapSticky === true`. Owns everything that makes a
+pinned map look like a pinned map:
+
+- `position: sticky` with `top: 49px` (mobile, `50px` header − `1px`
+  border overlap) or `top: 79px` (sm+ with the 80px header)
+- `z-index: 50` so the map paints **above** the header's `z-40` at
+  their 1px overlap row, hiding the header's bottom border so the two
+  panels read as one continuous dark plane
+- Mobile background: `var(--color-surface-1)` + a ghost-colored
+  `border-bottom`
+- Tablet background: `var(--header-bg, transparent)` via a
+  `@media (min-width: 768px)` override — see
+  [Tablet background mirror](#tablet-background-mirror) below
+- Full-bleed `margin-inline: calc(50% - 50vw)` +
+  `padding-inline: calc(50vw - 50%)` so the background spans to the
+  viewport edges past the page gutters, matching the header's edge-to-
+  edge feel
+- `padding-bottom: 1rem` so the galaxy SVG doesn't touch the ghost
+  bottom border
+- `transform: translateY(var(--header-offset, 0px))` — the scroll-
+  hiding header sync described in
+  [Scroll-hiding header integration](#scroll-hiding-header-integration)
+- A descendant rule on `#map > svg` applies the
+  `max-height: 55dvh` cap and aspect-ratio `max-width` + `margin-inline: auto`
+  centering so the galaxy doesn't dominate tall narrow viewports like
+  iPad portrait
+
+### `.home-map--pinning` (transient 400ms animation)
+
+Added for exactly 400ms by `togglePin`'s `setTimeout` whenever
+`isMapSticky` flips from `false` → `true`. Two declarations:
+
+```css
+.home-map--pinning {
+    z-index: 10;
+    animation: home-map-pin-in 400ms ease-out;
+}
+```
+
+Dropping `z-index` to `10` puts the map **below** the header's `z-40`
+for the duration of the slide, so the header actually occludes the map
+while it animates — which is why it looks like the map emerges from
+behind the header instead of sliding on top of it.
+
+After 400ms the `setTimeout` callback sets `isAnimating` back to
+`false`, the class is removed, `z-index` falls back to the `50` on
+`--sticky`, and the 1px border-overlap trick resumes.
+
+**Why the split matters:** CSS animations re-trigger whenever an
+element gains the `animation` property. If the animation lived on
+`--sticky`, it would play every time the class is applied — including
+on first mount when `/archives` initializes with `isMapSticky: true`.
+Putting the animation on a separate, React-gated class is what lets
+`/archives` default to pinned without an unwanted entrance animation.
+
+## The slide animation
+
+The keyframe translates the map from fully above the viewport to its
+resting position, composing with the live `--header-offset`:
+
+```css
+@keyframes home-map-pin-in {
+    from {
+        transform: translateY(calc(var(--header-offset, 0px) - 100% - 80px));
+    }
+    to {
+        transform: translateY(var(--header-offset, 0px));
+    }
+}
+```
+
+Walking through `from`:
+
+- `-100%` shifts by the map's own height (so the map's bottom edge is
+  at its pinned top, i.e. completely hidden above the viewport)
+- `- 80px` adds one header-height buffer so even tall viewports where
+  the element might be shorter than `100% + 80px` are safely off-
+  screen at `t=0`
+- `+ var(--header-offset, 0px)` composes with the scroll-hiding
+  header's current offset so the slide's resting position matches
+  wherever the header happens to be parked
+
+The easing is `ease-out 400ms`. Paired with the z-index drop on
+`--pinning`, the net effect is:
+
+1. At `t=0`: map is fully above the viewport, z-index 10, hidden behind
+   the header.
+2. As `t` progresses: map slides downward, top edge crosses the
+   header's bottom, header occludes everything above.
+3. At `t=400ms`: map is at its final position, `--pinning` removed,
+   z-index snaps to 50, map's 1px overlap with the header's bottom
+   border row becomes visible.
+
+`@media (prefers-reduced-motion: reduce)` disables the animation on
+the `--pinning` class.
+
+## Scroll-hiding header integration
+
+At md+ (`≥768px`) the header uses
+[`public/scripts/headerGPU.js`](https://github.com/elfensky/helldivers.bot/blob/main/public/scripts/headerGPU.js)
+to scroll-hide itself. The script tracks scroll delta and shifts the
+header's `top` property between `0` (visible) and `-80px` (hidden). It
+publishes **three CSS custom properties** on `<html>` so downstream
+layout code can react declaratively:
+
+| Variable                | Range                    | Direction    | Consumer                                          |
+| ----------------------- | ------------------------ | ------------ | ------------------------------------------------- |
+| `--header-offset`       | `0px` → `-80px`          | scroll-aware | Map `transform: translateY(var(...))`             |
+| `--header-bg`           | `rgba(19,19,19,0..0.85)` | **agnostic** | Map `background` at md+                           |
+| `--header-glass-filter` | `none` \| `blur(8.8px)`  | **agnostic** | Map `backdrop-filter` (via React hook, see below) |
+
+`--header-bg` and `--header-glass-filter` are **direction-agnostic** —
+they depend only on `scrollTop`, not on scroll direction or whether
+the header element is currently on-screen. The header element's own
+`backgroundColor` IS direction-aware (it paints transparent when the
+header slides away), but the map backdrop vars are not, so the pinned
+map never flickers transparent mid-page.
+
+All three are removed in `resetHeader()` when the breakpoint drops
+below md, so consumers using `var(--name, fallback)` get clean
+defaults.
+
+### Why `transform` and not `top`
+
+`position: sticky` pins an element when its natural layout top would
+cross the configured top offset. If we changed `top` to follow the
+header (e.g. `top: calc(79px + var(--header-offset, 0px))`), we'd be
+changing the sticky threshold itself — the element would un-pin and
+re-pin as the offset varied, causing jittery layout recalculations
+every frame.
+
+Using `transform: translateY(var(--header-offset, 0px))` instead
+leaves the sticky layout box at `top: 49/79px` intact. The browser's
+sticky engagement math uses the layout position; the transform only
+affects what gets painted. Layout is stable, the visual moves on the
+compositor, and scroll performance stays smooth.
+
+## Tablet background mirror
+
+On mobile (`<768px`) the header has a solid `var(--color-surface-1)`
+background with a `1px` ghost-colored `border-bottom`. The pinned
+map matches, giving the header+map combination the look of a single
+continuous panel.
+
+At md+ the header becomes transparent by default and gains a glass
+effect when scroll-revealed mid-page — `background-color` interpolates
+to `rgba(19, 19, 19, 0.85)` and `backdrop-filter: blur(8.8px)` is
+applied via the `.header-glass` class. To keep the pinned map visually
+unified with the header at this breakpoint, the map **mirrors the
+header's current state live**:
+
+```css
+@media (min-width: 768px) {
+    .home-map--sticky {
+        background: var(--header-bg, transparent);
+        border-bottom: none;
+    }
+}
+```
+
+The `background` line resolves live because `headerGPU.js` writes
+`--header-bg` on every `updateHeader` tick via `publishMapBackdrop`.
+Opacity is a pure function of `scrollTop` — 0 in the top zone
+(≤80px), linearly interpolated through 80–240 px, full `0.85` past
+240 px. Critically, it does **not** depend on scroll direction or on
+whether the header element is visible. Scroll down to the fade zone
+and the map already has its backdrop. Scroll back up, the backdrop
+stays. Scroll far enough that the header slides off-screen entirely,
+and the map keeps its glass tint because the pinned map is still on
+screen and still needs a backdrop.
+
+The `<header>` element itself takes a different code path
+(`setHeaderElementBg`) that IS direction-aware: it paints transparent
+when scrolling down past the fade zone and glass when scrolling up,
+so the hide/reveal animation feels responsive. The two paths were
+originally funneled through one `setHeaderBg` function, which caused
+the map to inherit the header element's direction-aware logic and go
+transparent on scroll-down; splitting them decoupled the concerns.
+
+### The Lightning CSS backdrop-filter snag
+
+The `backdrop-filter: blur(8.8px)` part was supposed to follow the
+same var pattern:
+
+```css
+.home-map--sticky {
+    backdrop-filter: var(--header-glass-filter, none); /* STRIPPED */
+}
+```
+
+…but **Lightning CSS** (Turbopack's CSS optimizer, used by Next.js 16) silently strips `backdrop-filter` declarations that reference
+custom properties from the built stylesheet. This is the same issue
+that bit v0.39.7 when the sticky map first used a radial-gradient
+glass effect.
+
+The workaround is a small hook,
+[`useHeaderGlassFilter`](https://github.com/elfensky/helldivers.bot/blob/main/src/shared/hooks/useHeaderGlassFilter.mjs),
+that reads `--header-glass-filter` via `MutationObserver` on `<html>`'s
+style attribute and returns its current value as React state:
+
+```jsx
+const glassFilter = useHeaderGlassFilter();
+// …
+<div
+    className="home-map home-map--sticky"
+    style={{
+        backdropFilter: glassFilter,
+        WebkitBackdropFilter: glassFilter,
+    }}
+>
+```
+
+Inline styles bypass Lightning CSS entirely. The hook compares old and
+new values before calling `setState`, so even though `headerGPU.js`
+writes `--header-bg` at ~60 fps during scroll transitions, React only
+re-renders when the glass state actually flips between `none` and
+`blur(8.8px)` — a handful of times per session at most.
+
+## Desktop (lg+) layout
+
+At `≥1024px` the FAB is hidden via
+`.home-map-toggle { display: none }` and the entire pin state
+machine becomes irrelevant. The map lives in a real CSS grid cell
+defined in [`HomeClient.css`](https://github.com/elfensky/helldivers.bot/blob/main/src/features/dashboard/HomeClient.css):
+
+```css
+.home-grid {
+    display: grid;
+    grid-template-areas:
+        'hero-sidebar map'
+        'scrolly-log  map';
+    grid-template-columns: minmax(260px, 1fr) minmax(
+            0,
+            calc((100dvh - 80px) * 806.93 / 868.81)
+        );
+    grid-template-rows: minmax(calc(100dvh - 80px), auto) auto;
+    column-gap: 6rem;
+    row-gap: 0;
+}
+
+.home-map {
+    grid-area: map;
+    position: sticky;
+    top: 80px;
+    /* flex chain so the inner Galaxy SVG has a concrete sizing context */
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 80px - 2rem);
+    min-height: 0;
+}
+```
+
+The right column's width is computed from the viewport height and the
+galaxy's intrinsic aspect ratio (`806.93 / 868.81 ≈ 0.928`), so the
+SVG fills the cell exactly without any overflow. A `minmax(0, …)`
+wrapper prevents grid blowout.
+
+Stale mobile modifier classes (from a viewport resize between
+breakpoints) are explicitly reset inside the lg+ media block:
+
+```css
+@media (min-width: 1024px) {
+    .home-map--sticky {
+        top: 80px;
+        z-index: auto;
+        background: transparent;
+        border-bottom: none;
+        margin-inline: 0;
+        padding-inline: 0;
+        padding-bottom: 0;
+        transform: none;
+    }
+    .home-map--pinning {
+        z-index: auto;
+        animation: none;
+    }
+}
+```
+
+So even if the user pins on mobile and then resizes to desktop, the
+grid cell behaves exactly as if the modifier classes weren't there.
+
+## Reference: source files
+
+| File                                        | Role                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------ |
+| `src/features/dashboard/HomeClient.jsx`     | Homepage grid + FAB toggle + pin state machine                           |
+| `src/features/dashboard/HomeClient.css`     | `.home-map` / `.home-map--sticky` / `.home-map--pinning` / keyframes     |
+| `src/features/archives/ArchivesClient.jsx`  | Archives version (default-pinned, otherwise identical)                   |
+| `src/features/archives/ArchivesLayout.css`  | Archives CSS mirror                                                      |
+| `src/features/galaxy/Map.jsx`               | `<svg>` element with `preserveAspectRatio="xMaxYMid meet"`               |
+| `public/scripts/headerGPU.js`               | Scroll-hiding header + publishes the three CSS vars                      |
+| `src/shared/components/Header/Header.jsx`   | Header JSX (`z-40` at md+)                                               |
+| `src/shared/hooks/useHeaderGlassFilter.mjs` | React hook that mirrors `--header-glass-filter` into inline `style={{}}` |
+| `src/app/layout.css`                        | `header { }` base rules, `.gutters` + `.p-gutters` tokens                |
+
+## Related changelog entries
+
+`CHANGELOG.md` tracks the iterative evolution of this system:
+
+- **0.39.5** — Initial homepage FAB pin/unpin pattern
+- **0.39.6** — Ported to `/archives`
+- **0.39.7** — Frosted-glass attempt, first hit Lightning CSS's
+  backdrop-filter stripping
+- **0.39.8** — Switched to `filter: drop-shadow()` halo
+- **0.39.9** — Mobile scroll-sync anchor moved from 38% to 75% so
+  selected events aren't hidden behind the pinned map
+- **0.39.10** — Header-matching background + `clip-path` reveal
+- **0.39.11** — 1px border overlap + breathing room below the galaxy
+- **0.39.12** — `max-height: 55dvh` cap + horizontal centering
+- **0.39.13** — Map follows scroll-hiding header via `--header-offset`
+- **0.39.14** — Slide-in animation, tablet bg mirror, archives
+  defaults to pinned, class-layering split, backdrop-filter workaround

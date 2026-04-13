@@ -1,6 +1,6 @@
 'use no memo';
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 import factions from '@/shared/enums/factions.mjs';
 import { detectChanges } from '@/shared/utils/game/detectChanges.mjs';
@@ -39,6 +39,16 @@ function showWebNotification(message, event) {
  */
 export default function LiveToasts({ prevData, data, isLeader }) {
     const hasRendered = useRef(false);
+
+    // Sonner reads `position` only at mount and ignores prop changes, so we
+    // detect viewport once after hydration and let the `key` flip force the
+    // Toaster to remount with the correct position. Mobile gets `top-center`
+    // to match native iOS/Android push notification placement; desktop keeps
+    // `bottom-right`. No resize listener — page-load detection is enough.
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        setIsMobile(window.matchMedia('(max-width: 767px)').matches);
+    }, []);
 
     // Catch-up toasts: show active events on page load, plus events that
     // transitioned to a terminal state since the user last dismissed them.
@@ -129,8 +139,9 @@ export default function LiveToasts({ prevData, data, isLeader }) {
 
     return (
         <Toaster
+            key={isMobile ? 'mobile' : 'desktop'}
             theme="dark"
-            position="bottom-right"
+            position={isMobile ? 'top-center' : 'bottom-right'}
             closeButton
             toastOptions={{
                 style: {

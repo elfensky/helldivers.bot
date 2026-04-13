@@ -1,37 +1,14 @@
-/* === Dashboard Grid Layout === */
-
-.dashboard {
-    display: grid;
-    grid-template-areas:
-        'map'
-        'sidebar';
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1rem;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-}
-
-.dashboard-map {
-    grid-area: map;
-}
+/* === Dashboard sidebar content ===
+ *
+ * DashboardClient no longer owns a grid — HomeClient does. This file
+ * only styles the sidebar content (regions cards, stats, etc.) that
+ * DashboardClient renders into the HomeClient's hero-sidebar grid cell.
+ */
 
 .dashboard-sidebar {
-    grid-area: sidebar;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-}
-
-.dashboard-scroll-hint {
-    grid-area: hint;
-    display: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-.dashboard-scroll-hint:hover {
-    opacity: 0.8;
 }
 
 /* === Sector Grid (campaign cards) === */
@@ -49,65 +26,10 @@
     }
 }
 
-/* === Desktop: two-column grid (lg: 1024px) === */
+/* === Desktop: single-column sidebar content === */
 
 @media (min-width: 1024px) {
-    .dashboard {
-        grid-template-areas:
-            'sidebar map'
-            'hint    hint';
-        grid-template-columns: minmax(260px, 1fr) minmax(
-                0,
-                calc((100dvh - 80px) * 806.93 / 868.81)
-            );
-        grid-template-rows: minmax(0, 1fr) auto;
-        column-gap: 6rem;
-        min-height: calc(100dvh - 80px);
-        position: relative;
-    }
-
-    .dashboard-map {
-        position: sticky;
-        top: 80px;
-        display: flex;
-        align-items: flex-start;
-        justify-content: end;
-        max-height: calc(100dvh - 80px - 2rem);
-        min-height: 0;
-        margin: 0;
-    }
-
     .sector-grid {
         grid-template-columns: minmax(0, 1fr);
-    }
-
-    .dashboard-scroll-hint {
-        position: sticky;
-        bottom: 1.5rem;
-        display: flex;
-        justify-content: center;
-        padding: 0.5rem;
-        color: var(--color-text-muted);
-        font-family: var(--font-mono);
-        font-size: var(--text-small);
-        opacity: 0.5;
-    }
-
-    .hint-arrow {
-        display: inline-block;
-        font-size: var(--text-body);
-        margin-right: 0.25rem;
-        margin-top: -3px;
-        animation: hint-bob 5s ease-in-out infinite;
-    }
-
-    @keyframes hint-bob {
-        0%,
-        100% {
-            transform: translateY(-3px);
-        }
-        50% {
-            transform: translateY(3px);
-        }
     }
 }
