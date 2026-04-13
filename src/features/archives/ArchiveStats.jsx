@@ -1,11 +1,10 @@
+import humanizeDuration from 'humanize-duration';
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import GlitchText from '@/features/archives/ClientGlitchText';
-import {
-    findClosestCalls,
-    findWorstCascade,
-} from '@/shared/utils/game/seasonAnalytics.mjs';
+import factions from '@/shared/enums/factions.mjs';
+import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
 
 function sumBigInt(live, field) {
     return live.reduce((acc, f) => acc + (f[field] ?? 0n), 0n);
@@ -21,19 +20,37 @@ function formatRatio(numerator, denominator) {
     return (Number(numerator) / Number(denominator)).toFixed(1);
 }
 
-const sectionHeading =
-    'col-span-2 font-mono text-small text-text-muted uppercase tracking-wide';
-
 export default function ArchiveStats({ events, live, data, effects, glitchPhase }) {
     if (!events?.length) return null;
 
     // Event-derived stats
     const sorted = [...events].sort((a, b) => a.start_time - b.start_time);
-    const seasonSeconds = sorted[sorted.length - 1].end_time - sorted[0].start_time;
+    // DURATION: snapshot poll span is the archive-era source of truth; event span is the fallback.
+    const snapshots = data?.snapshots;
+    const seasonSeconds =
+        snapshots && snapshots.length >= 2 ?
+            snapshots[snapshots.length - 1].time - snapshots[0].time
+        :   sorted[sorted.length - 1].end_time - sorted[0].start_time;
     const seasonDays = Math.round(seasonSeconds / 86400);
-    const wonCount = events.filter((e) => e.status === 'success').length;
-    const winRate =
-        events.length > 0 ? Math.round((wonCount / events.length) * 100) : 0;
+    const seasonHumanDuration = humanizeDuration(seasonSeconds * 1000, {
+        largest: 2,
+        round: true,
+    });
+
+    // Defense / attack rates — split out from the old global WIN_RATE so the
+    // two activities can be read independently.
+    const defends = events.filter((e) => e.type === 'defend');
+    const attacks = events.filter((e) => e.type === 'attack');
+    const successfulDefends = defends.filter((e) => e.status === 'success').length;
+    const successfulAttacks = attacks.filter((e) => e.status === 'success').length;
+    const defenseRate =
+        defends.length > 0 ?
+            Math.round((successfulDefends / defends.length) * 100)
+        :   null;
+    const attackRate =
+        attacks.length > 0 ?
+            Math.round((successfulAttacks / attacks.length) * 100)
+        :   null;
 
     // Outcome
     const result = getWarOutcome(data);
@@ -42,11 +59,11 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
         outcome === 'victory' ? 'success'
         : outcome === 'defeat' ? 'danger'
         : undefined;
+    const outcomeFaction =
+        result?.faction != null ? factions[result.faction]?.name : null;
 
     // Notable moments
-    const { narrowestWin, narrowestLoss } = findClosestCalls(events);
     const worstCascade = findWorstCascade(events);
-    const hasNotableMoments = narrowestWin || narrowestLoss || worstCascade;
 
     // h1_live combat stats (only for seasons with live data)
     const hasLive = live?.length > 0;
@@ -62,7 +79,6 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
         const accidentals = sumBigInt(live, 'accidentals');
         liveCards = (
             <>
-                <h3 className={`${sectionHeading} mt-3`}>Combat Record</h3>
                 <StatCard label="KILLS" value={formatNumber(kills)} />
                 <StatCard label="K/D" value={formatRatio(kills, deaths)} />
                 <StatCard label="ACCURACY" value={formatPercent(hits, shots)} />
@@ -75,17 +91,13 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
                     label="MISSION_SUCCESS"
                     value={formatPercent(successfulMissions, missions)}
                 />
-                <StatCard
-                    label="PEAK_ONLINE"
-                    value={formatNumber(players)}
-                />
+                <StatCard label="PEAK_ONLINE" value={formatNumber(players)} />
             </>
         );
     }
 
     return (
-        <div className="grid grid-cols-2 gap-1">
-            <h3 className={sectionHeading}>War Summary</h3>
+        <div className="grid grid-cols-2 gap-1 lg:grid-cols-3">
             <StatCard
                 label="OUTCOME"
                 value={
@@ -101,15 +113,46 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
                         />
                     :   outcome.toUpperCase()
                 }
+                subtitle={outcomeFaction ?? undefined}
                 accentColor={outcomeColor}
                 valueColor={outcome !== 'defeat' ? outcomeColor : undefined}
             />
-            <StatCard label="DURATION" value={`${seasonDays} days`} />
             <StatCard
-                label="WIN_RATE"
-                value={`${winRate}%`}
-                subtitle={`${wonCount} / ${events.length}`}
-                accentColor={winRate > 50 ? 'success' : 'danger'}
+                label="DURATION"
+                value={`${seasonDays} ${seasonDays === 1 ? 'day' : 'days'}`}
+                subtitle={seasonHumanDuration}
+            />
+            <StatCard
+                label="DEFENSE_RATE"
+                value={defenseRate != null ? `${defenseRate}%` : '—'}
+                subtitle={
+                    defends.length > 0 ?
+                        `${successfulDefends} / ${defends.length}`
+                    :   undefined
+                }
+                accentColor={
+                    defenseRate != null ?
+                        defenseRate > 50 ?
+                            'success'
+                        :   'danger'
+                    :   undefined
+                }
+            />
+            <StatCard
+                label="ATTACK_RATE"
+                value={attackRate != null ? `${attackRate}%` : '—'}
+                subtitle={
+                    attacks.length > 0 ?
+                        `${successfulAttacks} / ${attacks.length}`
+                    :   undefined
+                }
+                accentColor={
+                    attackRate != null ?
+                        attackRate > 50 ?
+                            'success'
+                        :   'danger'
+                    :   undefined
+                }
             />
             {hasLive && (
                 <StatCard
@@ -118,33 +161,12 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
                 />
             )}
 
-            {hasNotableMoments && (
-                <>
-                    <h3 className={`${sectionHeading} mt-3`}>Notable Moments</h3>
-                    {narrowestWin && (
-                        <StatCard
-                            label="NARROWEST_WIN"
-                            value={narrowestWin.region}
-                            subtitle={`${Math.round(narrowestWin.ratio * 100)}% — ${narrowestWin.faction}`}
-                            accentColor="danger"
-                        />
-                    )}
-                    {narrowestLoss && (
-                        <StatCard
-                            label="NARROWEST_LOSS"
-                            value={narrowestLoss.region}
-                            subtitle={`${Math.round(narrowestLoss.ratio * 100)}% — ${narrowestLoss.faction}`}
-                            accentColor="success"
-                        />
-                    )}
-                    {worstCascade && (
-                        <StatCard
-                            label="WORST_CASCADE"
-                            value={`${worstCascade.length} regions`}
-                            subtitle={worstCascade.faction}
-                        />
-                    )}
-                </>
+            {worstCascade && (
+                <StatCard
+                    label="WORST_CASCADE"
+                    value={`${worstCascade.length} regions`}
+                    subtitle={worstCascade.faction}
+                />
             )}
 
             {liveCards}

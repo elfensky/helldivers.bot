@@ -124,9 +124,11 @@
        so only the background stretches wide. Reset at lg+ below. */
     margin-inline: calc(50% - 50vw);
     padding-inline: calc(50vw - 50%);
-    /* Breathing room: prevents the galaxy SVG from touching the
-       ghost-colored bottom border. 1rem matches the mobile gutter
-       (`.gutters` uses `px-4` at the base tier). Reset at lg+. */
+    /* Breathing room: symmetric 1rem top/bottom padding so the galaxy
+       SVG doesn't touch the ghost-colored bottom border or sit flush
+       against the header's bottom edge. 1rem matches the mobile gutter
+       (`.gutters` uses `px-4` at the base tier). Both reset at lg+. */
+    padding-top: 1rem;
     padding-bottom: 1rem;
     /* Follow the md+ header as it scroll-hides/reveals. headerGPU.js
        writes `--header-offset` (0 → -80px) on <html> during scroll at
@@ -317,6 +319,7 @@
         border-bottom: none;
         margin-inline: 0;
         padding-inline: 0;
+        padding-top: 0;
         padding-bottom: 0;
         transform: none;
     }

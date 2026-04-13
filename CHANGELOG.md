@@ -2,6 +2,104 @@
 
 ## Unreleased
 
+## 0.40.0
+
+### Fixed
+
+- **Pinned map gets symmetric 1rem top padding** to match the existing
+  bottom padding, so the galaxy SVG no longer sits flush against the
+  header's bottom edge. Applied to both `.home-map--sticky` and
+  `.archives-map-col--sticky`, with matching `padding-top: 0` resets
+  in the lg+ grid-cell overrides.
+- **Pinned map backdrop no longer flickers transparent on scroll-down
+  or when the header hides.** `public/scripts/headerGPU.js` was
+  publishing `--header-bg` and `--header-glass-filter` via the same
+  `setHeaderBg` function that mutated the `<header>` element's own
+  `backgroundColor`. The header's direction-aware logic (paint
+  transparent on scroll-down, glass on scroll-up) was correct for the
+  header element itself but wrong for the pinned map, which is
+  on-screen continuously and should not flicker. Split into
+  `setHeaderElementBg` (direction-aware, header DOM only) and a new
+  `publishMapBackdrop(scrollTop)` (direction-agnostic, CSS vars only).
+  Map backdrop now follows a pure function of `scrollTop`: 0 alpha in
+  the top zone (≤80px), linearly interpolated 0→0.85 through 80–240 px,
+  full `rgba(19,19,19,0.85)` + `blur(8.8px)` past 240 px, regardless
+  of scroll direction or whether the header element is currently
+  visible. Mobile (<md) is unaffected — it already uses a solid
+  `--color-surface-1` background and does not consume `--header-bg`.
+  Also updates `src/app/docs/frontend-layout/page.mdx` to document
+  the new direction-agnostic contract.
+
+### Added
+
+- **Admin-only "Refresh" button next to the season selector on
+  `/archives`** — force re-fetches the currently-viewed season from the
+  official HD1 API via `fetchAndSeedSeason()` and revalidates the page.
+  Motivation: found an ingestion gap on season 153 where a failed
+  region-0 defend (event_id 4774, Bugs attacker) was present in the
+  raw rebroadcast snapshot but missing from the normalized `h1_event`
+  table — likely because it was still `active` at the last poll
+  before the worker rolled over to season 154, tripping the
+  `isValidSeason.mjs` "no active defends" refinement and dropping the
+  whole batch. New server action `src/features/archives/reseedSeason.mjs`
+  wraps `fetchAndSeedSeason` with a BetterAuth admin check, stamps
+  `h1_season.last_updated = now`, and calls `revalidatePath('/archives')`.
+  Client button `src/features/archives/RefreshSeasonButton.jsx` uses
+  `useTransition` for a pending state and calls `router.refresh()` on
+  success. Disabled for 24 hours after the most recent refresh
+  (driven by `data.last_updated` read from `getCampaign()`) to prevent
+  API hammering — during cooldown the button label changes to
+  `Next refresh in Nh` (via `formatCompactDuration`) so the reason is
+  visible without hovering. The cooldown check runs in a `useEffect`
+  so SSR always emits the static `Refresh` label and hydration stays
+  clean. Hidden entirely for non-admin users. No UI change for regular
+  visitors.
+
+### Changed
+
+- **Archives Statistics section: `WIN_RATE` split into `DEFENSE_RATE` +
+  `ATTACK_RATE`; `NARROWEST_WIN` / `NARROWEST_LOSS` cards removed.**
+  The old global `WIN_RATE` lumped defends and attacks together, which
+  was dominated by defend counts (~77 defends vs ~3 attacks per season)
+  and didn't correlate with the actual war outcome. It's now two
+  independent cards: `DEFENSE_RATE` (`successfulDefends / defends`) and
+  `ATTACK_RATE` (`successfulAttacks / attacks`), each with
+  `N / total` subtitles and the same `>50% → success, ≤50% → danger`
+  accent flip. `NARROWEST_WIN` / `NARROWEST_LOSS` were per-event cards
+  with inverted mental models ("WIN" = defensive hold, "LOSS" = failed
+  offensive) and vanished on blowout seasons due to a `> 0.5` gate —
+  removed entirely. `WORST_CASCADE` retained since it tells a clear
+  narrative ("N regions lost in a row to faction X"). The now-dead
+  `findClosestCalls` function in `src/shared/utils/game/seasonAnalytics.mjs`
+  and its unit tests have been deleted.
+- **Archives stats flattened under single `Statistics` heading** — removed
+  the internal `War Summary`, `Notable Moments`, and `Combat Record`
+  sub-headings from `ArchiveStats.jsx`. All stat cards (outcome, duration,
+  win rate, close calls, cascade, combat record) now flow as a single grid
+  under the existing `<h2>Statistics</h2>` in `ArchivesClient.jsx`. Dropped
+  the now-unused `sectionHeading` constant and `hasNotableMoments` gate.
+- **Archives `DURATION` now derived from `h1_snapshot` poll span** —
+  `ArchiveStats.jsx` reads `data.snapshots` (already selected by
+  `getCampaign()`, ordered by `time: 'asc'`) and uses `last.time −
+first.time`. Event span remains as a fallback for archives with fewer
+  than two snapshots. Rendered in whole days as the main value
+  (e.g. `52 days`, `1 day`) with a humanized breakdown as the
+  subtitle (`humanize-duration` with `{ largest: 2, round: true }` —
+  e.g. `8 weeks, 3 days`). The day-only headline makes season-to-season
+  comparison easy; the humanized subtitle surfaces the shape of the
+  war without forcing a mental conversion from raw minutes. Reason:
+  archive analytics must derive from snapshot data, not `h1_live`
+  (homepage-only).
+- **Archives `OUTCOME` card now shows the attributed faction as a
+  subtitle** — `getWarOutcome.mjs` returns a new `faction` field
+  (number 0–2 or null). Victory: enemy id of the latest successful
+  attack event ("who did the Helldivers defeat last"). Defeat: enemy id
+  of the latest failed region-0 defend event ("who were the Helldivers
+  defeated by"). `null` when no such event exists — no fallback
+  guessing from other signals. `ArchiveStats.jsx` renders the faction
+  name from `src/shared/enums/factions.mjs` as the card subtitle, or
+  hides it when faction cannot be attributed.
+
 ## 0.39.15
 
 ### Documentation

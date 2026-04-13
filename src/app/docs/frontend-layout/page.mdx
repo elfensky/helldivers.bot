@@ -178,11 +178,18 @@ header's `top` property between `0` (visible) and `-80px` (hidden). It
 publishes **three CSS custom properties** on `<html>` so downstream
 layout code can react declaratively:
 
-| Variable                | Range                    | Consumer                                          |
-| ----------------------- | ------------------------ | ------------------------------------------------- |
-| `--header-offset`       | `0px` → `-80px`          | Map `transform: translateY(var(...))`             |
-| `--header-bg`           | `rgba(19,19,19,0..0.85)` | Map `background` at md+                           |
-| `--header-glass-filter` | `none` \| `blur(8.8px)`  | Map `backdrop-filter` (via React hook, see below) |
+| Variable                | Range                    | Direction    | Consumer                                          |
+| ----------------------- | ------------------------ | ------------ | ------------------------------------------------- |
+| `--header-offset`       | `0px` → `-80px`          | scroll-aware | Map `transform: translateY(var(...))`             |
+| `--header-bg`           | `rgba(19,19,19,0..0.85)` | **agnostic** | Map `background` at md+                           |
+| `--header-glass-filter` | `none` \| `blur(8.8px)`  | **agnostic** | Map `backdrop-filter` (via React hook, see below) |
+
+`--header-bg` and `--header-glass-filter` are **direction-agnostic** —
+they depend only on `scrollTop`, not on scroll direction or whether
+the header element is currently on-screen. The header element's own
+`backgroundColor` IS direction-aware (it paints transparent when the
+header slides away), but the map backdrop vars are not, so the pinned
+map never flickers transparent mid-page.
 
 All three are removed in `resetHeader()` when the breakpoint drops
 below md, so consumers using `var(--name, fallback)` get clean
@@ -227,9 +234,23 @@ header's current state live**:
 ```
 
 The `background` line resolves live because `headerGPU.js` writes
-`--header-bg` on every `updateHeader` tick. Scroll to the top, both
-header and map go transparent. Scroll up from mid-page, both fade to
-the glass tint in sync.
+`--header-bg` on every `updateHeader` tick via `publishMapBackdrop`.
+Opacity is a pure function of `scrollTop` — 0 in the top zone
+(≤80px), linearly interpolated through 80–240 px, full `0.85` past
+240 px. Critically, it does **not** depend on scroll direction or on
+whether the header element is visible. Scroll down to the fade zone
+and the map already has its backdrop. Scroll back up, the backdrop
+stays. Scroll far enough that the header slides off-screen entirely,
+and the map keeps its glass tint because the pinned map is still on
+screen and still needs a backdrop.
+
+The `<header>` element itself takes a different code path
+(`setHeaderElementBg`) that IS direction-aware: it paints transparent
+when scrolling down past the fade zone and glass when scrolling up,
+so the hide/reveal animation feels responsive. The two paths were
+originally funneled through one `setHeaderBg` function, which caused
+the map to inherit the header element's direction-aware logic and go
+transparent on scroll-down; splitting them decoupled the concerns.
 
 ### The Lightning CSS backdrop-filter snag
 

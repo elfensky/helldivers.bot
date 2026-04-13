@@ -106,8 +106,10 @@
        plane with the header. */
     margin-inline: calc(50% - 50vw);
     padding-inline: calc(50vw - 50%);
-    /* Breathing room matching the mobile gutter so the galaxy SVG
-       doesn't touch the ghost-colored bottom border. */
+    /* Breathing room: symmetric 1rem top/bottom padding so the galaxy
+       SVG doesn't touch the ghost-colored bottom border or sit flush
+       against the header's bottom edge. Matches the mobile gutter. */
+    padding-top: 1rem;
     padding-bottom: 1rem;
     /* Follow the md+ scroll-hiding header. See HomeClient.css for the
        full reasoning — headerGPU.js writes `--header-offset` during
@@ -245,6 +247,7 @@
         border-bottom: none;
         margin-inline: 0;
         padding-inline: 0;
+        padding-top: 0;
         padding-bottom: 0;
         transform: none;
     }

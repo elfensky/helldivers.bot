@@ -2,6 +2,9 @@
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
+//auth
+import { auth } from '@/auth';
+import { headers as nextHeaders } from 'next/headers';
 //components
 import JsonLd from '@/shared/components/JsonLd';
 import ArchivesClient from '@/features/archives/ArchivesClient';
@@ -81,6 +84,13 @@ export default async function WarHistoryPage({ searchParams }) {
 
     const currentSeason = data.season;
 
+    // Admin-gated controls (e.g. RefreshSeasonButton) require a session check.
+    // When auth is disabled (no BETTER_AUTH_SECRET), `auth` is null and isAdmin
+    // stays false — the button is simply hidden.
+    const session =
+        auth ? await auth.api.getSession({ headers: await nextHeaders() }) : null;
+    const isAdmin = session?.user?.role === 'admin';
+
     return (
         <div className="gutters pb-4">
             <h1 className="sr-only">War History</h1>
@@ -89,7 +99,10 @@ export default async function WarHistoryPage({ searchParams }) {
                 data={data}
                 seasons={seasons}
                 currentSeason={currentSeason}
-                defeatMessageIndex={Math.floor(Math.random() * RESISTANCE_MESSAGES.length)}
+                defeatMessageIndex={Math.floor(
+                    Math.random() * RESISTANCE_MESSAGES.length,
+                )}
+                isAdmin={isAdmin}
             />
         </div>
     );

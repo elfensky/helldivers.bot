@@ -17,21 +17,21 @@ export default function FactionStats({ events, snapshots, pointsMax, faction }) 
     const successfulAttacks = attacks.filter((e) => e.status === 'success').length;
 
     const defenseRate =
-        defends.length > 0
-            ? Math.round((successfulDefends / defends.length) * 100)
-            : null;
+        defends.length > 0 ?
+            Math.round((successfulDefends / defends.length) * 100)
+        :   null;
     const attackRate =
-        attacks.length > 0
-            ? Math.round((successfulAttacks / attacks.length) * 100)
-            : null;
+        attacks.length > 0 ?
+            Math.round((successfulAttacks / attacks.length) * 100)
+        :   null;
 
     const durations = factionEvents
         .filter((e) => e.end_time && e.start_time)
         .map((e) => e.end_time - e.start_time);
     const avgDuration =
-        durations.length > 0
-            ? durations.reduce((a, b) => a + b, 0) / durations.length
-            : null;
+        durations.length > 0 ?
+            durations.reduce((a, b) => a + b, 0) / durations.length
+        :   null;
 
     // Most attacked region (hotspot)
     const regionCounts = {};
@@ -39,9 +39,8 @@ export default function FactionStats({ events, snapshots, pointsMax, faction }) 
         regionCounts[e.region] = (regionCounts[e.region] ?? 0) + 1;
     }
     const topRegion = Object.entries(regionCounts).sort((a, b) => b[1] - a[1])[0];
-    const hotspotName = topRegion
-        ? (map[factionIndex]?.[Number(topRegion[0])]?.region ?? '—')
-        : '—';
+    const hotspotName =
+        topRegion ? (map[factionIndex]?.[Number(topRegion[0])]?.region ?? '—') : '—';
 
     // Snapshot-derived conquest
     let conquest = '—';
@@ -49,9 +48,7 @@ export default function FactionStats({ events, snapshots, pointsMax, faction }) 
     if (snapshots?.length && pointsMax?.points) {
         const lastSnap = snapshots[snapshots.length - 1];
         const parsed =
-            typeof lastSnap.data === 'string'
-                ? JSON.parse(lastSnap.data)
-                : lastSnap.data;
+            typeof lastSnap.data === 'string' ? JSON.parse(lastSnap.data) : lastSnap.data;
 
         if (parsed?.[factionIndex]) {
             const factionData = parsed[factionIndex];
@@ -65,27 +62,27 @@ export default function FactionStats({ events, snapshots, pointsMax, faction }) 
     }
 
     return (
-        <div className="grid grid-cols-2 gap-1">
+        <div className="grid grid-cols-2 gap-1 lg:grid-cols-3">
             <StatCard
                 label="DEFENSE_RATE"
                 value={defenseRate != null ? `${defenseRate}%` : '—'}
                 accentColor={
-                    defenseRate != null
-                        ? defenseRate > 50
-                            ? 'success'
-                            : 'danger'
-                        : undefined
+                    defenseRate != null ?
+                        defenseRate > 50 ?
+                            'success'
+                        :   'danger'
+                    :   undefined
                 }
             />
             <StatCard
                 label="ATTACK_RATE"
                 value={attackRate != null ? `${attackRate}%` : '—'}
                 accentColor={
-                    attackRate != null
-                        ? attackRate > 50
-                            ? 'success'
-                            : 'danger'
-                        : undefined
+                    attackRate != null ?
+                        attackRate > 50 ?
+                            'success'
+                        :   'danger'
+                    :   undefined
                 }
             />
             <StatCard label="BATTLES" value={factionEvents.length} />

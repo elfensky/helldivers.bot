@@ -9,6 +9,7 @@ import FactionStats from '@/features/archives/FactionStats';
 import EventLog from '@/features/timeline/EventLog';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import SeasonSelector from '@/features/archives/SeasonSelector';
+import RefreshSeasonButton from '@/features/archives/RefreshSeasonButton';
 import { eventKey } from '@/features/archives/eventKey.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import { useCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
@@ -68,6 +69,7 @@ export default function ArchivesClient({
     seasons,
     currentSeason,
     defeatMessageIndex,
+    isAdmin = false,
 }) {
     const events = data?.events ?? [];
     const [faction, setFaction] = useState('bugs');
@@ -144,6 +146,12 @@ export default function ArchivesClient({
                                 seasons={seasons}
                                 currentSeason={currentSeason}
                             />
+                            {isAdmin && (
+                                <RefreshSeasonButton
+                                    season={currentSeason}
+                                    lastUpdated={data?.last_updated ?? null}
+                                />
+                            )}
                         </div>
                     </div>
                     <ArchiveStats
