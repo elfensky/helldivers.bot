@@ -1,4 +1,30 @@
-/* src/features/archives/ArchivesLayout.css */
+/* src/features/archives/ArchivesLayout.css
+ *
+ * Layout rules for the /archives page: full-width stats section at
+ * the top followed by the scrollytelling section (event log + map).
+ *
+ * ## Class layering (mobile/tablet)
+ *
+ * Mirrors `HomeClient.css` — see that file for the full explanation.
+ * The differences for archives:
+ *
+ *   - `.archives-map-col` is at `order: -1` inside the scrollytelling
+ *     flex column, so it sits above the event log in the mobile flow.
+ *   - React default flips from `isMapSticky: false` → `true`, so the
+ *     `.archives-map-col--sticky` class is applied from first paint.
+ *     `isAnimating` still starts `false`, so the `--pinning` animation
+ *     does NOT play on mount — only when the user explicitly re-pins
+ *     via the FAB after an unpin cycle.
+ *
+ * Class responsibilities are identical to HomeClient:
+ *   - `.archives-map-col`: base layout hookup
+ *   - `.archives-map-col--sticky`: persistent pinned state (position,
+ *     top offset, background, full-bleed margins, padding, z-index,
+ *     transform with --header-offset, descendant SVG max-height cap)
+ *   - `.archives-map-col--pinning`: transient 400ms animation class
+ *     (z-index:10, slide keyframe) — only added during explicit
+ *     unpinned → pinned FAB transitions
+ */
 
 .archives-page {
     display: flex;

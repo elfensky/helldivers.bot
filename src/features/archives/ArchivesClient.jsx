@@ -15,6 +15,54 @@ import { useCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs
 import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
 import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
 
+/**
+ * Archives client — full-season retrospective view with a sticky
+ * galaxy map pinned by default and a scrollytelling event log that
+ * drives map time-travel via `useScrollEvent`.
+ *
+ * Layout mirrors `HomeClient` but with one key difference: the map
+ * column is **pinned by default** (`useState(true)` instead of the
+ * homepage's `useState(false)`). The rationale:
+ *
+ *   - /archives is a "look at historical campaign data" page — the
+ *     map is the primary visual anchor, not a live dashboard beside
+ *     a hero. Users scroll through the event log and the pinned map
+ *     should already be in its stable top-of-viewport position by
+ *     the time the scrollytelling begins.
+ *   - Native `position: sticky` engages only when the user scrolls
+ *     past the map's threshold, so defaulting to `isMapSticky: true`
+ *     doesn't cause any visual jump on mount — the map is in its
+ *     natural flow position below the stats section until the user
+ *     scrolls down to it, at which point sticky pins it silently.
+ *   - The FAB still works for unpinning (if the user wants to scroll
+ *     the map away with the rest of the page).
+ *
+ * ## Pin state machine
+ *
+ * Mirrors `HomeClient`'s two-state pattern with the same semantics:
+ *
+ *   `isMapSticky` default **true** → the `.archives-map-col--sticky`
+ *     class is applied from first paint, but the slide animation
+ *     is NOT triggered on mount because...
+ *
+ *   `isAnimating` default **false** → the `.archives-map-col--pinning`
+ *     class is only added inside `togglePin`'s `false → true` branch,
+ *     so a user-initiated re-pin plays the animation, but the initial
+ *     render does not.
+ *
+ * See `HomeClient.jsx`'s JSDoc for the full pin-state-machine
+ * reasoning, class-layering explanation, and tablet backdrop-filter
+ * workaround — they're shared between both pages.
+ *
+ * ## Scroll-sync event selection
+ *
+ * `useScrollEvent(events)` returns a `selectedEvent` derived from
+ * the user's current scroll position in the event log rail, plus a
+ * `railRef` the caller attaches to the log's container. The selected
+ * event is passed into `ArchiveMap` which rebuilds the galaxy state
+ * via `computeMapStateAtEvent` — clicking or scrolling to an event
+ * rewinds the map to that historical moment.
+ */
 export default function ArchivesClient({
     data,
     seasons,

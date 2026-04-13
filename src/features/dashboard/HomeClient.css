@@ -1,15 +1,43 @@
 /*
  * HomeClient grid — single continuous grid that spans the hero and the
- * scrollytelling event log, with one sticky galaxy map in the right
- * column that covers both rows.
+ * scrollytelling event log, with one galaxy map column that can be
+ * pinned (mobile/tablet) or lives in a real sticky grid cell (desktop).
  *
  * Mobile (<lg): flex column. Map → sidebar → event log, in that order.
+ *   User can pin the map via the FAB, which adds `.home-map--sticky`.
  *
  * Desktop (lg+): two-row grid with a spanning map column.
  *   Row 1: hero-sidebar content (regions cards, stats) — minimum
  *           100dvh - 80px tall (matches the old hero feel).
  *   Row 2: event log, natural-height.
  *   Right column: single sticky galaxy map cell spanning both rows.
+ *
+ * ## Class layering (mobile/tablet)
+ *
+ * `.home-map`: base class. Just the grid order / layout hookup.
+ *
+ * `.home-map--sticky`: persistent pinned state, driven by React
+ *   `isMapSticky`. Owns `position: sticky; top: 49/79px`, the
+ *   mobile `surface-1` background and ghost bottom border, the
+ *   full-bleed `margin-inline` trick, `padding-bottom: 1rem`,
+ *   `z-index: 50`, descendant `#map > svg` max-height cap, and the
+ *   `transform: translateY(var(--header-offset, 0px))` header-track.
+ *   At md+ a media query overrides the mobile background with
+ *   `var(--header-bg, transparent)` so the map mirrors the header's
+ *   live state (the matching `backdrop-filter` is applied inline
+ *   via React — see `useHeaderGlassFilter`).
+ *
+ * `.home-map--pinning`: transient 400ms class, added by
+ *   `togglePin`'s setTimeout whenever `isMapSticky` flips from
+ *   `false` → `true`. Drops `z-index` to `10` so the header's
+ *   `z-40` occludes the map, and applies the `home-map-pin-in`
+ *   animation. NOT applied on mount — only on explicit pin
+ *   transitions — because React's `isAnimating` state starts
+ *   `false`.
+ *
+ * Desktop `lg+` block explicitly resets all of the above on stale
+ * classes so a mobile→desktop viewport resize doesn't leak mobile
+ * pinned-map styles into the real grid cell.
  */
 
 .home-grid {

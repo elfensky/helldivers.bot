@@ -15,31 +15,81 @@ import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
 
 /**
  * Homepage client — owns the two-row grid that spans the hero and the
- * scrollytelling event log, with a single sticky galaxy map that lives
- * in the right column across both rows.
+ * scrollytelling event log, with a single galaxy map column that can
+ * be pinned (mobile/tablet) or lives in a real grid cell (desktop).
  *
- * Desktop (lg+):
- *   ┌──────────────┬─────────┐
- *   │ hero sidebar │         │
- *   ├──────────────┤   map   │  ← sticky, same size in both rows
- *   │ event log    │         │
- *   └──────────────┴─────────┘
+ * Layout:
  *
- * Mobile (<lg): everything stacks — map inline in the hero, event log
- * below. No sticky behavior, no scroll-sync visual (though
- * `useScrollEvent` still highlights the focal card harmlessly).
+ *   Desktop (lg+):               Mobile/Tablet (<lg, unpinned):
+ *   ┌──────────────┬─────────┐   ┌──────────────────┐
+ *   │ hero sidebar │         │   │   hero sidebar   │
+ *   ├──────────────┤   map   │   ├──────────────────┤
+ *   │ event log    │         │   │    ┌────────┐    │  map in normal
+ *   └──────────────┴─────────┘   │    │  map   │    │  flow, scrolls
+ *     grid-area: map spans         │    └────────┘    │  away
+ *     both rows, sticky            ├──────────────────┤
+ *     top:80px in right            │   event log      │
+ *     column                       └──────────────────┘
+ *
+ *   Mobile/Tablet (<lg, pinned via FAB):
+ *   ┌──────────────────┐
+ *   │  map (sticky,    │  ← `.home-map--sticky`, full-bleed bg,
+ *   │  at top:49/79px) │    1px overlap with header bottom border,
+ *   ├──────────────────┤    z-index:50 above header
+ *   │   hero sidebar   │
+ *   │   event log      │
+ *   └──────────────────┘
+ *
+ * ## Map state
  *
  * The map's `mapState` source switches based on whether `useScrollEvent`
  * has latched onto an event:
  *   - `selectedEvent` present → time-travel via `computeMapStateAtEvent`
- *     (same mechanic `ArchiveMap` uses)
+ *     (same mechanic `ArchiveMap` uses on /archives)
  *   - null → live `mapState` from `useLiveDataContext`
  *
- * There's no size transition and no pinned/hero state distinction —
- * the map stays the same size throughout. Visually the map just
- * "scrolls with the user" because `position: sticky` on the grid cell
- * keeps it pinned at top:80px while the user scrolls through both the
- * hero and the event log.
+ * ## Pin state machine (mobile/tablet only)
+ *
+ * Two pieces of React state drive three CSS modifier classes:
+ *
+ *   `isMapSticky` (boolean, default false on /):
+ *     - Controls the persistent `.home-map--sticky` class
+ *     - When true: `position: sticky; top: 49/79px`, background,
+ *       border, full-bleed margins, `--header-offset` transform
+ *       tracking, and descendant `#map > svg` max-height cap
+ *     - Flipped by the FAB click (`togglePin`)
+ *
+ *   `isAnimating` (boolean, default false, timer-gated):
+ *     - Controls the transient `.home-map--pinning` class for
+ *       exactly 400ms after `togglePin` flips `isMapSticky` from
+ *       `false` → `true` (not on unpin, not on first mount)
+ *     - When true: drops `z-index` to 10 so the header's `z-40`
+ *       occludes the map during the slide animation, and applies
+ *       the `home-map-pin-in` keyframe
+ *
+ * The split keeps the slide animation from re-triggering on mount
+ * (important for /archives where `isMapSticky` defaults to true) —
+ * only an explicit user toggle fires the animation.
+ *
+ * ## Background mirror on tablet (md+)
+ *
+ * `useHeaderGlassFilter` reads the `--header-glass-filter` CSS var
+ * published by `public/scripts/headerGPU.js` and applies
+ * `backdrop-filter: blur(8.8px)` as an inline `style={{}}` on the
+ * map element. Inline is required because Lightning CSS strips
+ * `backdrop-filter` declarations from the built CSS — see the hook
+ * file and `CHANGELOG.md#0.39.14` for the full story. The matching
+ * `background` uses `var(--header-bg)` directly from CSS (surviving
+ * Lightning CSS's optimizer since it's a simpler `background: var(...)`
+ * usage, not stripped).
+ *
+ * ## Desktop (lg+) layout
+ *
+ * At lg+ the FAB is hidden via CSS and `isMapSticky` becomes
+ * irrelevant — the map lives in a real grid cell with its own
+ * `position: sticky; top: 80px` rule defined in `HomeClient.css`.
+ * Stale mobile state classes (from a viewport resize) are explicitly
+ * reset in the lg+ media block to avoid cross-breakpoint leakage.
  */
 export default function HomeClient() {
     const { data, mapState: liveMapState } = useLiveDataContext();

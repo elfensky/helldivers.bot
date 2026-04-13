@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+## 0.39.15
+
+### Documentation
+
+- **New `/docs/frontend-layout` page** covering the pinned-map state
+  machine end-to-end: class layering (`--sticky` vs `--pinning`), the
+  slide-in-from-behind-header animation, the scroll-hiding header
+  integration via `--header-offset`, the tablet background mirror
+  (`--header-bg`), the Lightning CSS backdrop-filter workaround and
+  the `useHeaderGlassFilter` hook, desktop `lg+` grid cell layout,
+  and a full reference of source files and changelog entries that
+  led to the current implementation. Added to the `DocsSidebar` under
+  the `Architecture` section.
+- **Expanded top-of-file JSDoc** in the critical files that
+  participate in the pinned-map pipeline: `HomeClient.jsx`,
+  `ArchivesClient.jsx`, `HomeClient.css`, `ArchivesLayout.css`,
+  `public/scripts/headerGPU.js`, `Header.jsx`, `Map.jsx`. Each file
+  now carries a brief narrative of what it does, how it relates to
+  the three CSS custom properties published by `headerGPU.js`, and
+  why specific values (`z-40` / `z-50`, `top: 49/79px`,
+  `preserveAspectRatio="xMaxYMid meet"`) were chosen.
+- **`README.md` refresh** to reflect the current app state:
+  corrected the outdated "Server-Sent Events (SSE)" reference to
+  match the actual polling-based live data loop (`useLiveData` hook
+    - `BroadcastChannel` leader election); added a "Stack at a glance"
+      table covering framework, database, auth, PWA, observability,
+      analytics, and testing; added a "Frontend at a glance" section
+      summarizing the interactive galaxy map, scrollytelling event log,
+      pinned-map state machine, and live polling loop; updated the API
+      section with `/api/h1/live` and the internal routes
+      (`/api/healthcheck`, `/api/notifications/subscribe`,
+      `/api/auth/[...all]`, `/api/umami`, `/api/glitchtip`); and noted
+      that all user features are gated behind `BETTER_AUTH_SECRET` so
+      auth is optional.
+
 ## 0.39.14
 
 ### Bug Fixes

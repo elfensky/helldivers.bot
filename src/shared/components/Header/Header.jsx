@@ -6,6 +6,27 @@ import { headers } from 'next/headers';
 //components
 import Navigation from '@/shared/components/Navigation/Navigation';
 
+/**
+ * Fixed top header. Two breakpoint personalities:
+ *
+ *   - Mobile (<md / <768px): `background: var(--color-surface-1)` +
+ *     `border-bottom: 1px solid var(--color-ghost)` (set in
+ *     `src/app/layout.css`). Gives the header a solid panel look.
+ *
+ *   - Tablet+ (md+): transparent by default and gains a glass effect
+ *     (`rgba(19,19,19,0.85)` + `backdrop-filter: blur(8.8px)`) when
+ *     scroll-revealed mid-page. Scroll-hides itself by translating
+ *     `style.top` between `0` and `-80px`. All of this is driven by
+ *     `public/scripts/headerGPU.js`, loaded below as a nonce-gated
+ *     `<Script>`.
+ *
+ * The `z-40` utility is deliberate: the pinned galaxy map on
+ * `/` and `/archives` uses `z-50` with a `top: 49/79px` offset to
+ * paint **above** the header's `z-40` at their 1px overlap row,
+ * which hides the header's ghost bottom border and makes the two
+ * dark panels read as one continuous plane. See
+ * `/docs/frontend-layout` for the full story.
+ */
 export default async function Header() {
     const nonce = (await headers()).get('x-nonce') ?? undefined;
 

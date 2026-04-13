@@ -1,6 +1,44 @@
-// Scroll-hide header — only active at md: (768px+) where BottomNav is hidden.
-// Header tracks scroll delta 1:1 so it feels like it's parked just above the viewport.
-// Uses requestAnimationFrame for smooth, non-blocking updates.
+// Scroll-hide header + CSS-var publisher for downstream consumers.
+//
+// Active at md: (768px+) where BottomNav is hidden. The header tracks
+// scroll delta 1:1 so it feels like it's parked just above the viewport,
+// showing when you scroll up and hiding when you scroll down. All
+// updates are scheduled via requestAnimationFrame for smooth,
+// non-blocking rendering.
+//
+// ## CSS custom properties (published to <html>)
+//
+// The script publishes three CSS custom properties so layout code can
+// react without coupling to imperative JS. All three are removed in
+// `resetHeader()` when the breakpoint drops below md, so consumers
+// using `var(--name, fallback)` get clean defaults outside the active
+// range.
+//
+//   `--header-offset`: current vertical offset (`0px` → `-80px`).
+//     Zero when the header is fully visible, `-80px` when fully
+//     scroll-hidden. Consumed by `.home-map--sticky` /
+//     `.archives-map-col--sticky` as `transform: translateY(var(...))`
+//     so pinned-map elements track the header pixel-for-pixel.
+//
+//   `--header-bg`: current `background-color` (an `rgba(19, 19, 19, N)`
+//     string). Zero alpha at the top of the page, interpolated when
+//     scroll-revealed, `0.85` mid-page. Consumed by the pinned map
+//     at md+ (`@media (min-width: 768px) { .home-map--sticky }`) as
+//     `background: var(--header-bg, transparent)` so the map's tint
+//     mirrors the header's at every scroll state.
+//
+//   `--header-glass-filter`: `blur(8.8px)` or `none`, matching
+//     whether the `.header-glass` class is active on the `<header>`.
+//     Consumed by the `useHeaderGlassFilter` React hook
+//     (`src/shared/hooks/useHeaderGlassFilter.mjs`), which applies
+//     it as an inline `style={{ backdropFilter }}` on the pinned map
+//     element. Inline style is required because Lightning CSS
+//     (Turbopack's CSS optimizer) strips `backdrop-filter`
+//     declarations that reference custom properties from built CSS
+//     — see `CHANGELOG.md#0.39.7` and `#0.39.14`.
+//
+// Mobile (<md) consumers automatically fall back to their var
+// defaults because `resetHeader()` runs on the breakpoint change.
 (function () {
     var header = document.getElementById('header');
     if (!header) return;
