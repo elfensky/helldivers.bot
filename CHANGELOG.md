@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.39.5
+
+### Features
+
+- **Homepage mobile map pin/unpin toggle.** Added a floating-action button that toggles whether the galaxy map is sticky (pinned at the top of the viewport) or scrolls away with the page. Default is **unpinned** — the map renders in normal flow at the top of the mobile layout and scrolls away like it did before. Tap the FAB (📌 icon) to pin the map: `.home-map` gains the `.home-map--sticky` modifier class, which adds `position: sticky; top: 50px` (80px at `sm+`), `z-index: 10`, and `background: var(--color-surface-0)` — the map snaps to the top of the viewport below the header and stays visible as the user continues scrolling. Tap again (✕ icon) to unpin. A subtle 280ms fade-in + slide-down animation (`@keyframes home-map-pin-in`) softens the pinning transition when pinning an already-scrolled-past map, disabled under `prefers-reduced-motion: reduce`.
+- The FAB is fixed at the bottom-right of the viewport above the BottomNav, mirroring the `.archives-map-toggle` pattern. Hidden at `lg+` (desktop) since the desktop grid layout applies its own permanent sticky behavior to the map column regardless of this state.
+
 ## 0.39.4
 
 ### Bug Fixes

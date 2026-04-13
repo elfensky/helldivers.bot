@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import './HomeClient.css';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 import Galaxy from '@/features/galaxy/Galaxy';
@@ -44,6 +45,12 @@ export default function HomeClient() {
     const events = data?.events ?? [];
     const pulseDelays = computePulseDelays(events);
     const { selectedEvent, railRef } = useScrollEvent(events);
+    // Mobile-only: toggle whether the galaxy map is `position: sticky` so
+    // it pins at the top as the user scrolls. Default off — map scrolls
+    // away with the hero like normal flow; user pins it via the FAB.
+    // On desktop (lg+) the CSS applies its own grid-based sticky rules
+    // regardless of this state.
+    const [isMapSticky, setIsMapSticky] = useState(false);
 
     const mapState =
         selectedEvent ? computeMapStateAtEvent(selectedEvent, data) : liveMapState;
@@ -56,7 +63,7 @@ export default function HomeClient() {
                 </ComponentErrorBoundary>
             </div>
 
-            <div className="home-map" ref={railRef ? null : undefined}>
+            <div className={isMapSticky ? 'home-map home-map--sticky' : 'home-map'}>
                 <ComponentErrorBoundary name="Galaxy Map">
                     {mapState && <Galaxy mapState={mapState} pulseDelays={pulseDelays} />}
                 </ComponentErrorBoundary>
@@ -75,6 +82,17 @@ export default function HomeClient() {
                     />
                 </ComponentErrorBoundary>
             </div>
+
+            {/* Mobile FAB to toggle sticky pinning — hidden at lg: */}
+            <button
+                className="home-map-toggle"
+                onClick={() => setIsMapSticky((v) => !v)}
+                aria-label={isMapSticky ? 'Unpin map' : 'Pin map to top'}
+                title={isMapSticky ? 'Unpin map' : 'Pin map to top'}
+                data-umami-event="home-map-toggle"
+            >
+                {isMapSticky ? '✕' : '📌'}
+            </button>
         </div>
     );
 }

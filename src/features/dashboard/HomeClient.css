@@ -24,6 +24,48 @@
     order: 1;
 }
 
+/*
+ * Mobile pin/unpin: when the user taps the .home-map-toggle FAB, we add
+ * the --sticky modifier class. The map then pins at the top (below the
+ * fixed header) and stays visible as the user scrolls through the rest
+ * of the page. A short fade-in + translateY animation softens the jump
+ * when pinning an already-scrolled-past map.
+ *
+ * Below lg: sticky is opt-in via the FAB (default off). At lg+ the CSS
+ * further down applies its own grid-based sticky rules unconditionally.
+ */
+.home-map--sticky {
+    position: sticky;
+    top: 50px; /* below 50px mobile header */
+    z-index: 10;
+    background: var(--color-surface-0);
+    animation: home-map-pin-in 280ms ease-out;
+}
+
+/* sm+ header is 80px tall */
+@media (min-width: 640px) {
+    .home-map--sticky {
+        top: 80px;
+    }
+}
+
+@keyframes home-map-pin-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-map--sticky {
+        animation: none;
+    }
+}
+
 .home-hero-sidebar {
     order: 2;
     display: flex;
@@ -34,6 +76,29 @@
 .home-scrolly-log {
     order: 3;
     min-width: 0;
+}
+
+/* Floating action button: toggle map visibility on mobile.
+ * Mirrors .archives-map-toggle — fixed bottom-right, hidden at lg:.
+ * Positioned above the BottomNav (h-14 = 56px). */
+.home-map-toggle {
+    position: fixed;
+    bottom: calc(var(--space-4, 1rem) + 56px);
+    right: var(--space-4, 1rem);
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--color-text);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-ghost);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+    cursor: pointer;
 }
 
 @media (min-width: 1024px) {
@@ -82,5 +147,11 @@
         flex: 1;
         min-height: 0;
         min-width: 0;
+    }
+
+    /* Toggle button hidden at lg: — on desktop the map is always visible
+       and the sticky pinning makes a show/hide button redundant. */
+    .home-map-toggle {
+        display: none;
     }
 }
