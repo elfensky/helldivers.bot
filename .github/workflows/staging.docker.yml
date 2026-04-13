@@ -94,10 +94,16 @@ jobs:
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
                   build-args: |
                       NODE_ENV=production
-                      SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
-                      SENTRY_URL=${{ secrets.SENTRY_URL }}
-                      SENTRY_ORG=${{ secrets.SENTRY_ORG }}
-                      SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }}
+                  # Sentry credentials are passed as BuildKit secrets, NOT
+                  # build-args. Build-args end up in the image's provenance
+                  # attestation that gets pushed to GHCR — anyone with pull
+                  # access can extract them. Secrets are tmpfs-only inside
+                  # the build RUN and never persisted. See #284.
+                  secrets: |
+                      sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
+                      sentry_url=${{ secrets.SENTRY_URL }}
+                      sentry_org=${{ secrets.SENTRY_ORG }}
+                      sentry_project=${{ secrets.SENTRY_PROJECT }}
 
     cleanup:
         needs: [build-migrate, build-app]

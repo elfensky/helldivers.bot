@@ -24,16 +24,75 @@
 
 ## Info
 
-This is an application that consumes the official Helldivers 1 API, caches and rebroadcasts it as to avoid high load on official servers.
-It also stores historic data that the official API discards, and offers account management and api keys for 3rd parties to access the API to build their own apps.
-The frontend also shows various data visualizations and notifies visitors of in-game events. All pages receive real-time campaign updates via Server-Sent Events (SSE), and the app supports PWA offline mode with service worker caching and push notifications.
+This is an application that consumes the official Helldivers 1 API,
+caches and rebroadcasts it to avoid high load on official servers, and
+stores historic data that the official API discards. It also offers
+account management and API keys for third parties to access the data
+to build their own apps.
 
-### How it works.
+The frontend is a live campaign dashboard with an interactive galaxy
+map, a scrollytelling event log, and a real-time notification system.
+All pages receive live campaign updates via client-side polling
+(`useLiveData` hook, `setInterval` + `fetch`, 10s interval, with an
+immediate refetch on `visibilitychange` when the tab comes back into
+focus). The app runs as an installable Progressive Web App with a
+Serwist-backed service worker, supports offline mode via a cached
+last-poll payload in `localStorage`, and delivers browser and push
+notifications when campaign events transition state.
+
+### Stack at a glance
+
+| Layer         | Technology                                              |
+| ------------- | ------------------------------------------------------- |
+| Framework     | Next.js 16 (App Router) on Node.js 24, React 19         |
+| Styling       | Tailwind CSS v4 (`@theme` in `src/app/layout.css`)      |
+| Database      | PostgreSQL via Prisma 7 (`@prisma/adapter-pg`)          |
+| Auth          | BetterAuth (Discord + GitHub OAuth, optional)           |
+| Real-time     | Client polling + `BroadcastChannel` leader election     |
+| Notifications | Sonner toasts + Web Notifications API + `web-push`      |
+| PWA           | Serwist (`@serwist/next`) service worker                |
+| Observability | Sentry SDK wired to a self-hosted GlitchTip (optional)  |
+| Analytics     | Umami v3, self-hosted, cookieless (optional)            |
+| Testing       | Vitest (unit + jsdom) + a Playwright smoke config       |
+| Deployment    | Docker images published to `ghcr.io`, deployed on a VPS |
+
+### How it works
 
 The application is made from 2 large sections:
 
 - the api that serves and updates the data
 - the frontend that consumes the api and visualises it, alongside some user-facing features.
+
+### Frontend at a glance
+
+Detailed docs: `/docs/frontend-layout` (in-app) — covers the full
+state machine, CSS var pipeline, and breakpoint matrix.
+
+- **Interactive galaxy map** — responsive SVG galaxy covering every
+  campaign sector, colored by faction and campaign state. Click a
+  past event in the log to rewind the map to that historical state
+  via `computeMapStateAtEvent`.
+- **Scrollytelling event log** — `useScrollEvent` syncs the selected
+  event card to the viewport's current scroll position; the map
+  reacts in sync.
+- **Pinned-map state machine** — mobile/tablet users can pin the map
+  to the top of the viewport via a floating action button (FAB). On
+  `/archives` the FAB defaults to pinned so the map is at rest when
+  the user reaches the event log. A class-layering system (`--sticky`
+  for the persistent pinned state, `--pinning` for the 400ms slide
+  animation) keeps the entrance animation from re-triggering on
+  mount.
+- **Scroll-hiding header** — at md+ the fixed header scroll-hides
+  itself via `public/scripts/headerGPU.js`. The pinned map tracks
+  the header's offset and mirrors its live background via three CSS
+  custom properties published on `<html>` (`--header-offset`,
+  `--header-bg`, `--header-glass-filter`).
+- **Live polling loop** — one `useLiveData` singleton per tab polls
+  `/api/h1/live` every 10 seconds, with `BroadcastChannel` leader
+  election so only one tab dispatches Web Notifications per session.
+- **PWA offline shell** — `src/sw.js` + Serwist precaches the app
+  shell, and the last poll payload is cached in `localStorage` for
+  offline fallback.
 
 ### Initialization
 
@@ -53,60 +112,66 @@ On startup, it runs instrumentation.js (once) which will:
 
 ### API
 
-Using next js api routes, this contains various endpoints that provide helldiver data in various formats.
+Next.js route handlers under `src/app/api/` expose Helldivers data in
+several formats. The `GET /api/h1/*` endpoints are the core public
+surface; the rest are internal (auth, healthcheck, analytics/error
+tunnels).
 
-- GET /api/h1/update
-    - Trigger current campaign status and snapshot updates
-    - Requires a valid `key` query parameter matching the server's `UPDATE_KEY` environment variable.
-- GET /api/h1/rebroadcast
-    - Mirrors the official API behavior.
-    - Perform a campaign status or snapshot action
+- `GET /api/h1/update`
+    - Triggers a fresh campaign status + snapshot refresh from the
+      official Helldivers 1 API and persists the result to both the
+      raw `rebroadcast_*` tables and the normalized `h1_*` tables.
+    - Requires a valid `key` query parameter matching the server's
+      `UPDATE_KEY` environment variable — this is the same token
+      the background worker uses.
+- `GET /api/h1/rebroadcast`
+    - Mirrors the official Helldivers 1 API behavior byte-for-byte
+      from the cached `rebroadcast_*` tables.
     - Request body:
-        - action: string
-            - get_campaign_status
-            - get_snapshot
-        - season: integer
-            - Required if action is get_snapshot.
-- GET /api/h1/campaign
-    - Custom endpoint with optional `season` query parameter.
-    - Returns combined status and snapshot information of a specific season in one query.
+        - `action`: string — one of `get_campaign_status`,
+          `get_snapshot`
+        - `season`: integer — required when `action` is `get_snapshot`
+- `GET /api/h1/campaign`
+    - Custom endpoint with an optional `season` query parameter.
+    - Returns combined status + snapshot information for a specific
+      season in one query, shaped for the frontend.
+- `GET /api/h1/live`
+    - Current campaign state in a lightweight shape, polled every
+      10 seconds by the `useLiveData` client hook. Powers the live
+      dashboard, event-transition toasts, and push notifications.
+- `GET /api/h1/stats` _(not implemented)_
+    - Future endpoint for aggregate game stats (wins/losses/kills/
+      etc.) calculated by the worker.
 
-- GET /api/h1/stats (not implemented)
-    - Custom endpoint that returns global stats for the entire game.
-    - Calculated once per day by the worker.
-    - Returns:
-        - total wins
-        - total losses
-        - total attacks
-        - total defends
-        - total kills
-        - total deaths
-        - total assists
-        - total points
-        - average players per event
-        - average players per campaign
-        - ... idk other fun data
+Internal routes not listed above:
 
-### User Features
+- `GET/POST /api/auth/[...all]` — BetterAuth handlers (only when
+  `BETTER_AUTH_SECRET` is set; otherwise auth is disabled).
+- `GET /api/healthcheck` — used by Docker / upstream monitoring.
+- `POST /api/notifications/subscribe` — push notification
+  subscription endpoint (only when Web Push keys are configured).
+- `POST /api/umami`, `POST /api/glitchtip` — same-origin proxy tunnels
+  so self-hosted analytics and error reporting aren't blocked by ad
+  blockers (only when the corresponding env vars are set).
 
-- Authentication via Discord or GitHub OAuth (powered by [BetterAuth](https://www.better-auth.com/))
-- Account Management
-    - Login / Logout via OAuth
-    - Delete account
-- API Keys
-    - Create an API key
-    - Delete an API key
-- Profile
-    - View connected OAuth providers and Gravatar
-    - GDPR data export (JSON download)
-    - GDPR account deletion
-- Admin Dashboard (admin role required)
-    - System overview: worker health, game data stats, user metrics
-    - User management: role changes, bans, API key oversight
-- Reviews
-    - Create a review
-    - Delete a review
-    - Edit a review
+### User features (optional — requires `BETTER_AUTH_SECRET`)
+
+All user-facing features below are gated behind BetterAuth. When
+`BETTER_AUTH_SECRET` is not set, the sign-in UI is hidden, `/profile`
+redirects home, and the auth API returns `503` — the public
+dashboard, `/archives`, and the `/api/h1/*` rebroadcast endpoints
+all still work without authentication.
+
+- **Authentication** via Discord or GitHub OAuth (powered by
+  [BetterAuth](https://www.better-auth.com/))
+- **Account management** — login / logout via OAuth, account deletion
+- **API keys** — create and revoke API keys for programmatic access
+- **Profile** — view connected OAuth providers and Gravatar, GDPR
+  data export (JSON download), GDPR account deletion
+- **Admin dashboard** (admin role required) — system overview (worker
+  health, game data stats, user metrics) and user management (role
+  changes, bans, API key oversight)
+- **Reviews** — create, delete, edit user-submitted reviews
 
 ## Development
 

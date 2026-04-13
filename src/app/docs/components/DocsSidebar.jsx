@@ -25,6 +25,11 @@ const sections = [
             { href: '/docs/data-flow', label: 'Update Flow', track: 'docs-data-flow' },
             { href: '/docs/database', label: 'Database Schema', track: 'docs-database' },
             {
+                href: '/docs/frontend-layout',
+                label: 'Frontend Layout',
+                track: 'docs-frontend-layout',
+            },
+            {
                 href: '/docs/notifications',
                 label: 'Notifications',
                 track: 'docs-notifications',

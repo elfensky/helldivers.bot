@@ -216,6 +216,33 @@
     animation-delay: var(--pulse-delay, 0s);
 }
 
+/* Close button override — sit INSIDE the toast, vertically centered, subtle
+   ghost color. Sonner's default is a floating circle at the top-left corner
+   that clashes with our flat aesthetic. `!important` is required because
+   Sonner's stylesheet loads after ours and sets positioning via inline
+   `--toast-close-button-*` custom properties on the host. */
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-close-button] {
+    top: 50% !important;
+    left: unset !important;
+    right: 16px !important;
+    width: 18px !important;
+    height: 18px !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: var(--color-ghost) !important;
+    transform: translateY(-50%) !important;
+    transition: color 150ms ease;
+}
+
+[data-sonner-toaster]
+    [data-sonner-toast][data-styled='true']
+    [data-close-button]:hover {
+    color: var(--color-text) !important;
+    background: transparent !important;
+    border: none !important;
+}
+
 .gutters {
     @apply mx-auto w-full max-w-[1536px] px-4 sm:px-12 md:px-16 lg:px-24;
 }

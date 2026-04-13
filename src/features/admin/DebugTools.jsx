@@ -1,9 +1,10 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { toast } from 'sonner';
 import { sendTestNotification } from '@/features/admin/actions';
 import { showEventToast } from '@/features/notifications/eventToast';
+import { addDismissedEvent } from '@/features/notifications/dismissedEvents.mjs';
 
 const PUSH_KINDS = ['event_started', 'event_won', 'event_lost'];
 const TOAST_KINDS = ['event_started', 'event_won', 'event_lost', 'catch_up'];
@@ -14,17 +15,29 @@ const KIND_LABELS = {
     catch_up: 'Active',
 };
 
-/** Build a fake event with random faction and region. */
-function randomEvent(type) {
-    const enemy = Math.floor(Math.random() * 3);
-    const region = type === 'attack' ? 11 : Math.floor(Math.random() * 10) + 1;
-    return { id: `test-${Date.now()}`, enemy, region, type };
-}
-
 /** Pick a random event type, biased by kind. */
 function randomType(kind) {
     if (kind === 'event_started' || kind === 'catch_up') return 'defend';
     return Math.random() > 0.5 ? 'defend' : 'attack';
+}
+
+/** Derive event.status from the Sonner toast kind. */
+function statusForKind(kind) {
+    if (kind === 'event_won') return 'success';
+    if (kind === 'event_lost') return 'fail';
+    return 'active';
+}
+
+/**
+ * Build a fresh fake event with random faction, region, and high-range
+ * event_id (900M+ range to avoid collision with real HD1 ids 1-100k).
+ */
+function freshTestEvent(kind) {
+    const type = randomType(kind);
+    const enemy = Math.floor(Math.random() * 3);
+    const region = type === 'attack' ? 11 : Math.floor(Math.random() * 10) + 1;
+    const event_id = 900_000_000 + Math.floor(Math.random() * 100_000_000);
+    return { event_id, enemy, region, type, status: statusForKind(kind) };
 }
 
 const BTN =
@@ -35,13 +48,46 @@ export default function DebugTools() {
     const [pushStatus, setPushStatus] = useState({});
     const [pushMessage, setPushMessage] = useState(null);
 
+    // Currently-simulated test toast event. `Started` creates a fresh one;
+    // `Won`/`Lost`/`Active` update its status in place (same event_id)
+    // so the tester can exercise the dismissal/status-change flow.
+    const testEventRef = useRef(null);
+
+    // Parallel ref for the push notification tester. Kept separate from
+    // testEventRef so toast and push tests don't cross-contaminate.
+    // `Started` creates a fresh event; `Won`/`Lost` re-use the same id
+    // so the browser replaces the existing notification via tag dedupe.
+    const testPushEventRef = useRef(null);
+
+    const buildOrUpdateTestEvent = useCallback((kind) => {
+        const status = statusForKind(kind);
+        if (kind === 'event_started' || !testEventRef.current) {
+            testEventRef.current = freshTestEvent(kind);
+        } else {
+            testEventRef.current = { ...testEventRef.current, status };
+        }
+        return testEventRef.current;
+    }, []);
+
+    const buildOrUpdatePushEvent = useCallback((kind) => {
+        if (kind === 'event_started' || !testPushEventRef.current) {
+            testPushEventRef.current = freshTestEvent(kind);
+        }
+        return testPushEventRef.current;
+    }, []);
+
     const handleTestPush = useCallback(async (kind) => {
         setPushStatus((prev) => ({ ...prev, [kind]: 'sending' }));
         setPushMessage(null);
 
-        const type = randomType(kind);
-        const event = randomEvent(type);
-        const result = await sendTestNotification({ enemy: event.enemy, region: event.region, type, kind });
+        const event = buildOrUpdatePushEvent(kind);
+        const result = await sendTestNotification({
+            enemy: event.enemy,
+            region: event.region,
+            type: event.type,
+            kind,
+            event_id: event.event_id,
+        });
 
         if (result.error) {
             setPushMessage({ text: result.error, isError: true });
@@ -51,7 +97,10 @@ export default function DebugTools() {
             if (result.stale > 0) parts.push(`${result.stale} stale`);
             setPushMessage({ text: parts.join(', '), isError: false });
             setPushStatus((prev) => ({ ...prev, [kind]: 'cooldown' }));
-            setTimeout(() => setPushStatus((prev) => ({ ...prev, [kind]: 'idle' })), 5_000);
+            setTimeout(
+                () => setPushStatus((prev) => ({ ...prev, [kind]: 'idle' })),
+                5_000,
+            );
         }
     }, []);
 
@@ -66,9 +115,17 @@ export default function DebugTools() {
                             key={kind}
                             type="button"
                             onClick={() => {
-                                const type = randomType(kind);
-                                const alertColor = kind === 'event_won' ? 'var(--color-success)' : 'var(--color-danger)';
-                                showEventToast(randomEvent(type), kind, { duration: 8000, alertColor });
+                                const event = buildOrUpdateTestEvent(kind);
+                                const alertColor =
+                                    kind === 'event_won' ? 'var(--color-success)' : (
+                                        'var(--color-danger)'
+                                    );
+                                showEventToast(event, kind, {
+                                    duration: 8000,
+                                    alertColor,
+                                    onDismiss: () =>
+                                        addDismissedEvent(event.event_id, event.status),
+                                });
                             }}
                             className={BTN}
                         >
@@ -88,12 +145,18 @@ export default function DebugTools() {
                                 disabled={s !== 'idle'}
                                 className={BTN}
                             >
-                                {s === 'sending' ? '...' : s === 'cooldown' ? 'Sent' : KIND_LABELS[kind]}
+                                {s === 'sending' ?
+                                    '...'
+                                : s === 'cooldown' ?
+                                    'Sent'
+                                :   KIND_LABELS[kind]}
                             </button>
                         );
                     })}
                     {pushMessage && (
-                        <span className={`text-small ${pushMessage.isError ? 'text-danger' : 'text-text-muted'}`}>
+                        <span
+                            className={`text-small ${pushMessage.isError ? 'text-danger' : 'text-text-muted'}`}
+                        >
                             {pushMessage.text}
                         </span>
                     )}
@@ -103,7 +166,9 @@ export default function DebugTools() {
                     <button
                         type="button"
                         onClick={() => {
-                            const err = new Error('Admin test error — verifying GlitchTip integration');
+                            const err = new Error(
+                                'Admin test error — verifying GlitchTip integration',
+                            );
                             Sentry.captureException(err);
                             toast.success('Error sent to GlitchTip');
                         }}

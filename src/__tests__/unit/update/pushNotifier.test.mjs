@@ -118,6 +118,51 @@ describe('buildPayload', () => {
         const payload = JSON.parse(buildPayload(unknownKind));
         expect(payload.title).toBe('Campaign Update');
     });
+
+    test('Super Earth defend event (region=0) shows "Super Earth under attack"', () => {
+        const seDefendStarted = {
+            kind: 'event_started',
+            event: {
+                enemy: 1, // Cyborgs attacking
+                type: 'defend',
+                region: 0,
+                season: 156,
+                event_id: 4921,
+            },
+        };
+        const payload = JSON.parse(buildPayload(seDefendStarted));
+        expect(payload.title).toBe('Super Earth under attack');
+    });
+
+    test('Super Earth defend won shows "Super Earth defended"', () => {
+        const seDefendWon = {
+            kind: 'event_won',
+            event: {
+                enemy: 0, // Bugs
+                type: 'defend',
+                region: 0,
+                season: 156,
+                event_id: 4922,
+            },
+        };
+        const payload = JSON.parse(buildPayload(seDefendWon));
+        expect(payload.title).toBe('Super Earth defended');
+    });
+
+    test('Super Earth defend lost shows "Super Earth lost"', () => {
+        const seDefendLost = {
+            kind: 'event_lost',
+            event: {
+                enemy: 2, // Illuminate
+                type: 'defend',
+                region: 0,
+                season: 156,
+                event_id: 4923,
+            },
+        };
+        const payload = JSON.parse(buildPayload(seDefendLost));
+        expect(payload.title).toBe('Super Earth lost');
+    });
 });
 
 describe('sendWithConcurrencyLimit', () => {

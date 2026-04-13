@@ -1,6 +1,6 @@
 'use no memo';
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 import factions from '@/shared/enums/factions.mjs';
 import { detectChanges } from '@/shared/utils/game/detectChanges.mjs';
@@ -10,9 +10,6 @@ import {
 } from '@/features/notifications/dismissedEvents.mjs';
 import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
 import { showEventToast, toastLabel } from '@/features/notifications/eventToast';
-
-/** Auto-dismiss duration for previously-dismissed toasts that reappear. */
-const SOFT_REAPPEAR_MS = 8000;
 
 function showWebNotification(message, event) {
     if (typeof Notification === 'undefined') return;
@@ -43,12 +40,28 @@ function showWebNotification(message, event) {
 export default function LiveToasts({ prevData, data, isLeader }) {
     const hasRendered = useRef(false);
 
-    // Catch-up toasts: show active events already in progress on page load.
+    // Sonner reads `position` only at mount and ignores prop changes, so we
+    // detect viewport once after hydration and let the `key` flip force the
+    // Toaster to remount with the correct position. Mobile gets `top-center`
+    // to match native iOS/Android push notification placement; desktop keeps
+    // `bottom-right`. No resize listener — page-load detection is enough.
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        setIsMobile(window.matchMedia('(max-width: 767px)').matches);
+    }, []);
+
+    // Catch-up toasts: show active events on page load, plus events that
+    // transitioned to a terminal state since the user last dismissed them.
+    //
+    // Dismissal is tracked per (eventId, status) pair. If the user dismissed
+    // an event at status='active' and the event is still active, we skip it
+    // entirely. If the event has since transitioned to success/fail, we show
+    // the completion toast because the status has meaningfully changed.
     useEffect(() => {
         if (hasRendered.current) return;
 
-        const activeEvents = data?.events?.filter((e) => e.status === 'active');
-        if (!activeEvents?.length) {
+        const allEvents = data?.events ?? [];
+        if (!allEvents.length) {
             hasRendered.current = true;
             return;
         }
@@ -56,18 +69,41 @@ export default function LiveToasts({ prevData, data, isLeader }) {
         const timer = setTimeout(() => {
             hasRendered.current = true;
             const dismissed = getDismissedEvents();
-            const delays = computePulseDelays(data?.events);
+            const delays = computePulseDelays(allEvents);
+            let shownCount = 0;
 
-            for (const event of activeEvents) {
-                const wasDismissed = dismissed.has(String(event.id));
-                showEventToast(event, 'catch_up', {
-                    duration: wasDismissed ? SOFT_REAPPEAR_MS : Infinity,
-                    pulseDelay: delays.get(`${event.enemy}-${event.region}`),
-                    onDismiss: () => addDismissedEvent(event.id),
-                });
+            for (const event of allEvents) {
+                const dismissedAt = dismissed[String(event.event_id)];
+                const dismissedAtCurrent = dismissedAt === event.status;
+
+                if (dismissedAtCurrent) continue; // fully suppressed
+
+                if (event.status === 'active') {
+                    showEventToast(event, 'catch_up', {
+                        pulseDelay: delays.get(`${event.enemy}-${event.region}`),
+                        onDismiss: () => addDismissedEvent(event.event_id, event.status),
+                    });
+                    shownCount++;
+                } else if (dismissedAt === 'active') {
+                    // User dismissed the active toast; event has since
+                    // transitioned. Show the terminal outcome so the user
+                    // doesn't silently miss a status change.
+                    const kind = event.status === 'success' ? 'event_won' : 'event_lost';
+                    const alertColor =
+                        kind === 'event_won' ? 'var(--color-success)' : (
+                            'var(--color-danger)'
+                        );
+                    showEventToast(event, kind, {
+                        alertColor,
+                        pulseDelay: delays.get(`${event.enemy}-${event.region}`),
+                        onDismiss: () => addDismissedEvent(event.event_id, event.status),
+                    });
+                    shownCount++;
+                }
+                // else: completed event never dismissed — skip on catch-up
             }
-            if (window.umami) {
-                window.umami.track('toast-catch-up', { count: activeEvents.length });
+            if (shownCount && window.umami) {
+                window.umami.track('toast-catch-up', { count: shownCount });
             }
         }, 50);
 
@@ -86,14 +122,12 @@ export default function LiveToasts({ prevData, data, isLeader }) {
             const { event, kind } = change;
 
             const alertColor =
-                kind === 'event_won'
-                    ? 'var(--color-success)'
-                    : 'var(--color-danger)';
+                kind === 'event_won' ? 'var(--color-success)' : 'var(--color-danger)';
 
             showEventToast(event, kind, {
                 alertColor,
                 pulseDelay: delays.get(`${event.enemy}-${event.region}`),
-                onDismiss: () => addDismissedEvent(event.id),
+                onDismiss: () => addDismissedEvent(event.event_id, event.status),
             });
 
             if (isLeader) {
@@ -105,8 +139,10 @@ export default function LiveToasts({ prevData, data, isLeader }) {
 
     return (
         <Toaster
+            key={isMobile ? 'mobile' : 'desktop'}
             theme="dark"
-            position="bottom-right"
+            position={isMobile ? 'top-center' : 'bottom-right'}
+            closeButton
             toastOptions={{
                 style: {
                     borderRadius: '0px',

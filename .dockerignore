@@ -1,8 +1,32 @@
+# build artifacts and dev tooling
 Dockerfile
 .dockerignore
 node_modules
 npm-debug.log
-*.md
 .next
 .git
 .env
+.env.*
+coverage
+
+# editor / IDE
+.vscode
+.idea
+
+# tests (Next.js doesn't bundle them, but they invalidate the
+# `COPY . .` builder cache layer when edited)
+src/**/__tests__
+src/**/*.test.*
+src/**/*.spec.*
+vitest.config.mjs
+vitest.smoke.config.mjs
+
+# dev configs not needed at build time
+.prettierrc*
+.prettierignore
+prettier.config.*
+
+# docs and changelog (also covered by *.md but explicit is better)
+*.md
+docs
+CHANGELOG.md

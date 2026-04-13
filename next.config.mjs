@@ -1,22 +1,12 @@
-import { execSync } from 'node:child_process';
 import { withSentryConfig } from '@sentry/nextjs';
 import createMDX from '@next/mdx';
 
 const APP_VERSION = process.env.npm_package_version || '0.0.0';
-const COMMIT_SHA = (() => {
-    try {
-        return execSync('git rev-parse --short HEAD').toString().trim();
-    } catch {
-        return 'unknown';
-    }
-})();
-console.info(`next.config.mjs    | v${APP_VERSION} (${COMMIT_SHA})`);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     env: {
         NEXT_PUBLIC_APP_VERSION: APP_VERSION,
-        NEXT_PUBLIC_COMMIT_SHA: COMMIT_SHA,
     },
     pageExtensions: ['js', 'jsx', 'mdx'],
     reactCompiler: true,
@@ -155,12 +145,12 @@ const withMDX = createMDX({
 });
 
 const finalConfig = withMDX(nextConfig);
-export default process.env.SENTRY_AUTH_TOKEN
-    ? withSentryConfig(finalConfig, {
-          silent: true,
-          authToken: process.env.SENTRY_AUTH_TOKEN,
-          org: process.env.SENTRY_ORG,
-          project: process.env.SENTRY_PROJECT,
-          sentryUrl: process.env.SENTRY_URL,
-      })
-    : finalConfig;
+export default process.env.SENTRY_AUTH_TOKEN ?
+    withSentryConfig(finalConfig, {
+        silent: true,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        sentryUrl: process.env.SENTRY_URL,
+    })
+:   finalConfig;

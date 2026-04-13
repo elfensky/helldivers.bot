@@ -1,64 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findClosestCalls, findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
-
-describe('findClosestCalls', () => {
-    it('returns nulls for empty events', () => {
-        const result = findClosestCalls([]);
-        expect(result).toEqual({ narrowestWin: null, narrowestLoss: null });
-    });
-
-    it('returns nulls for null events', () => {
-        const result = findClosestCalls(null);
-        expect(result).toEqual({ narrowestWin: null, narrowestLoss: null });
-    });
-
-    it('finds narrowest win from successful defenses', () => {
-        const events = [
-            { type: 'defend', status: 'success', enemy: 0, region: 1, points: 450, points_max: 500 },
-            { type: 'defend', status: 'success', enemy: 0, region: 2, points: 100, points_max: 500 },
-        ];
-        const { narrowestWin } = findClosestCalls(events);
-        expect(narrowestWin).not.toBeNull();
-        expect(narrowestWin.ratio).toBe(0.9); // 450/500
-        expect(narrowestWin.region).toBe('Wise Region'); // enemy 0, region 1
-    });
-
-    it('ignores defenses below 50% threshold', () => {
-        const events = [
-            { type: 'defend', status: 'success', enemy: 0, region: 1, points: 200, points_max: 500 },
-        ];
-        const { narrowestWin } = findClosestCalls(events);
-        expect(narrowestWin).toBeNull();
-    });
-
-    it('finds narrowest loss from failed attacks', () => {
-        const events = [
-            { type: 'attack', status: 'fail', enemy: 1, region: 5, points: 460, points_max: 500 },
-            { type: 'attack', status: 'fail', enemy: 1, region: 6, points: 100, points_max: 500 },
-        ];
-        const { narrowestLoss } = findClosestCalls(events);
-        expect(narrowestLoss).not.toBeNull();
-        expect(narrowestLoss.ratio).toBe(0.92); // 460/500
-    });
-
-    it('ignores events with zero points_max', () => {
-        const events = [
-            { type: 'defend', status: 'success', enemy: 0, region: 1, points: 100, points_max: 0 },
-        ];
-        const { narrowestWin } = findClosestCalls(events);
-        expect(narrowestWin).toBeNull();
-    });
-
-    it('returns both narrowest win and loss when present', () => {
-        const events = [
-            { type: 'defend', status: 'success', enemy: 0, region: 1, points: 400, points_max: 500 },
-            { type: 'attack', status: 'fail', enemy: 1, region: 5, points: 350, points_max: 500 },
-        ];
-        const { narrowestWin, narrowestLoss } = findClosestCalls(events);
-        expect(narrowestWin).not.toBeNull();
-        expect(narrowestLoss).not.toBeNull();
-    });
-});
+import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
 
 describe('findWorstCascade', () => {
     it('returns null for empty events', () => {
@@ -78,10 +19,38 @@ describe('findWorstCascade', () => {
 
     it('detects a cascade of decreasing regions for same faction', () => {
         const events = [
-            { type: 'defend', status: 'fail', enemy: 2, region: 8, end_time: 100, event_id: 10 },
-            { type: 'defend', status: 'fail', enemy: 2, region: 7, end_time: 200, event_id: 11 },
-            { type: 'defend', status: 'fail', enemy: 2, region: 6, end_time: 300, event_id: 12 },
-            { type: 'defend', status: 'fail', enemy: 2, region: 5, end_time: 400, event_id: 13 },
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 2,
+                region: 8,
+                end_time: 100,
+                event_id: 10,
+            },
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 2,
+                region: 7,
+                end_time: 200,
+                event_id: 11,
+            },
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 2,
+                region: 6,
+                end_time: 300,
+                event_id: 12,
+            },
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 2,
+                region: 5,
+                end_time: 400,
+                event_id: 13,
+            },
         ];
         const result = findWorstCascade(events);
         expect(result).not.toBeNull();

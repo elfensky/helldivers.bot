@@ -1,4 +1,30 @@
-/* src/features/archives/ArchivesLayout.css */
+/* src/features/archives/ArchivesLayout.css
+ *
+ * Layout rules for the /archives page: full-width stats section at
+ * the top followed by the scrollytelling section (event log + map).
+ *
+ * ## Class layering (mobile/tablet)
+ *
+ * Mirrors `HomeClient.css` — see that file for the full explanation.
+ * The differences for archives:
+ *
+ *   - `.archives-map-col` is at `order: -1` inside the scrollytelling
+ *     flex column, so it sits above the event log in the mobile flow.
+ *   - React default flips from `isMapSticky: false` → `true`, so the
+ *     `.archives-map-col--sticky` class is applied from first paint.
+ *     `isAnimating` still starts `false`, so the `--pinning` animation
+ *     does NOT play on mount — only when the user explicitly re-pins
+ *     via the FAB after an unpin cycle.
+ *
+ * Class responsibilities are identical to HomeClient:
+ *   - `.archives-map-col`: base layout hookup
+ *   - `.archives-map-col--sticky`: persistent pinned state (position,
+ *     top offset, background, full-bleed margins, padding, z-index,
+ *     transform with --header-offset, descendant SVG max-height cap)
+ *   - `.archives-map-col--pinning`: transient 400ms animation class
+ *     (z-index:10, slide keyframe) — only added during explicit
+ *     unpinned → pinned FAB transitions
+ */
 
 .archives-page {
     display: flex;
@@ -22,24 +48,139 @@
 }
 
 /*
- * Mobile: map column pinned to top, events scroll beneath it.
- * order: -1 puts the map visually above the event column.
+ * Mobile: map column sits at the top of the flex flow (order: -1)
+ * and scrolls away with the rest of the page by default. The user
+ * opts-in to sticky pinning via the `.archives-map-toggle` FAB, which
+ * adds the `.archives-map-col--sticky` modifier class. Matches the
+ * homepage pin/unpin pattern in `HomeClient.css`.
  */
 .archives-map-col {
     order: -1;
-    position: sticky;
-    top: 50px; /* below fixed header (h-[50px] on mobile) */
-    z-index: 10;
-    background: var(--color-surface-0);
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-/* sm+ header is 80px tall */
+/*
+ * Mobile galaxy cap + centering, gated on `--sticky`. Mirrors
+ * `.home-map--sticky #map > svg` in HomeClient.css — see that rule for
+ * the full reasoning. Short version: cap the galaxy SVG's height at
+ * 55dvh so it doesn't dominate a portrait-tablet viewport, and cap
+ * width at the aspect-ratio intrinsic width so the
+ * `preserveAspectRatio="xMaxYMid"` of Map.jsx has no horizontal slack
+ * to right-align into — then `margin-inline: auto` centers the shrunk
+ * box inside the full-bleed sticky panel. Desktop `lg+` reset below
+ * unwinds all three.
+ *
+ * Note: on archives, `--sticky` is on from mount (useState(true)), so
+ * this cap applies from first paint — even while the map is still in
+ * its natural flow position below the fold. User accepted this
+ * trade-off in v0.39.14 design.
+ */
+.archives-map-col--sticky #map > svg {
+    max-height: 55dvh;
+    max-width: calc(55dvh * 806.93 / 868.81);
+    margin-inline: auto;
+}
+
+/*
+ * Mobile sticky: match the header's background + border-bottom so the
+ * pinned map and the fixed header form one continuous dark panel at
+ * the top of the viewport. Header uses `background: var(--color-surface-1)`
+ * and `border-bottom: 1px solid var(--color-ghost)` at <md: — see
+ * src/app/layout.css:375-389. Matches .home-map--sticky.
+ */
+.archives-map-col--sticky {
+    position: sticky;
+    /* 49px = 50px header - 1px overlap. See HomeClient.css for the
+       full reasoning — short version: the map's top row lands on the
+       header's 1px bottom border row so the map's surface-1 background
+       can overpaint it, hiding the ghost hairline between the two. */
+    top: 49px;
+    /* Above the header (now z-40) so the 1px overlap is won here. */
+    z-index: 50;
+    background: var(--color-surface-1);
+    border-bottom: 1px solid var(--color-ghost);
+    /* Full-bleed: same technique as .home-map--sticky — background
+       extends to viewport edges so the map reads as a continuous
+       plane with the header. */
+    margin-inline: calc(50% - 50vw);
+    padding-inline: calc(50vw - 50%);
+    /* Breathing room: symmetric 1rem top/bottom padding so the galaxy
+       SVG doesn't touch the ghost-colored bottom border or sit flush
+       against the header's bottom edge. Matches the mobile gutter. */
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    /* Follow the md+ scroll-hiding header. See HomeClient.css for the
+       full reasoning — headerGPU.js writes `--header-offset` during
+       md+ scrolls and this transform visually tracks that offset
+       without disturbing the sticky layout box. */
+    transform: translateY(var(--header-offset, 0px));
+}
+
+/*
+ * Transient animation class: added for 400ms by ArchivesClient.jsx
+ * when the user flips the FAB from unpinned → pinned. The archives
+ * default is `isMapSticky: true`, but `isAnimating` starts false, so
+ * this class is NOT applied on first mount — the map just appears in
+ * its natural flow position without motion.
+ *
+ * See `.home-map--pinning` in HomeClient.css for the full reasoning
+ * on why z-index drops to 10 during the slide (so the header z-40
+ * occludes the map; it emerges from behind the header).
+ */
+.archives-map-col--pinning {
+    z-index: 10;
+    animation: archives-map-pin-in 400ms ease-out;
+}
+
+/* sm+ header is 80px tall; 79 = 80 - 1px overlap. */
 @media (min-width: 640px) {
-    .archives-map-col {
-        top: 80px;
+    .archives-map-col--sticky {
+        top: 79px;
+    }
+}
+
+/*
+ * Slide-in-from-behind-header reveal. Start fully above the viewport
+ * (`-100%` covers the map's own height; `-80px` adds a one-header-height
+ * buffer). End at the sticky resting translate, which equals the live
+ * `--header-offset` so the slide composes with the scroll-hiding
+ * header. Paired with `z-index: 10` on `.archives-map-col--pinning`
+ * so the header occludes the map throughout — matches
+ * `@keyframes home-map-pin-in`.
+ */
+@keyframes archives-map-pin-in {
+    from {
+        transform: translateY(calc(var(--header-offset, 0px) - 100% - 80px));
+    }
+    to {
+        transform: translateY(var(--header-offset, 0px));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .archives-map-col--pinning {
+        animation: none;
+    }
+}
+
+/*
+ * Tablet+ (md+, ≥768px): mirror the header's live background via the
+ * `--header-bg` CSS var published by headerGPU.js. At the top of the
+ * page the header is transparent → map is transparent; when the
+ * header glasses over mid-scroll, the map glasses over too. Mobile
+ * (<md) keeps the solid `surface-1` + ghost border set above.
+ *
+ * The matching `backdrop-filter: blur(8.8px)` is applied via inline
+ * `style={{}}` in ArchivesClient.jsx — Lightning CSS strips
+ * `backdrop-filter` from built CSS (see HomeClient.css for the full
+ * note and the `useHeaderGlassFilter` hook).
+ */
+@media (min-width: 768px) {
+    .archives-map-col--sticky {
+        background: var(--header-bg, transparent);
+        border-bottom: none;
     }
 }
 
@@ -64,12 +205,19 @@
     cursor: pointer;
 }
 
-/* Desktop: two columns, toggle hidden */
-@media (min-width: 768px) {
+/* Desktop: two columns, toggle hidden.
+ * Grid template matches the homepage `HomeClient.css` `.home-grid` so the
+ * archives scrollytelling map column is identical in width/shape to the
+ * homepage's hero+scrollytelling map. Both pages present the same
+ * visual map anchor; only the data (live now vs. historical) differs. */
+@media (min-width: 1024px) {
     .archives-scrollytelling {
         display: grid;
-        grid-template-columns: minmax(260px, 1fr) minmax(0, 50dvh);
-        column-gap: 4rem;
+        grid-template-columns: minmax(260px, 1fr) minmax(
+                0,
+                calc((100dvh - 80px) * 806.93 / 868.81)
+            );
+        column-gap: 6rem;
     }
 
     .archives-map-col {
@@ -84,10 +232,46 @@
         min-width: 0;
     }
 
+    /*
+     * Reset the mobile sticky background/border + full-bleed margins +
+     * the 1px-overlap `top` + raised z-index + bottom padding + the
+     * backdrop-filter glass. Covers the case where a viewport resize
+     * from mobile to desktop leaves the modifier class stale — at lg+
+     * the map lives in its real grid cell and should not carry any of
+     * the mobile seam-hiding tricks.
+     */
+    .archives-map-col--sticky {
+        top: 80px;
+        z-index: auto;
+        background: transparent;
+        border-bottom: none;
+        margin-inline: 0;
+        padding-inline: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        transform: none;
+    }
+
+    /* Reset the transient pin-in animation + raised z-index for stale-
+       class safety after a mobile → desktop viewport resize. */
+    .archives-map-col--pinning {
+        z-index: auto;
+        animation: none;
+    }
+
     /* Galaxy fills remaining space after the event detail card */
     .archives-map-col > :first-child {
         flex: 1;
         min-height: 0;
+    }
+
+    /* Reset the mobile SVG cap/center so the desktop grid cell can
+       size the galaxy via its flex chain. Mirrors the lg+ reset in
+       HomeClient.css. */
+    .archives-map-col #map > svg {
+        max-height: none;
+        max-width: none;
+        margin-inline: 0;
     }
 
     .archives-map-toggle {
@@ -96,33 +280,12 @@
 }
 
 /*
- * Force mobile/vertical timeline layout inside the archive event column.
- * TimelineSection.css applies desktop styles (rail, multi-column grid) at 768px+,
- * but the archive event log is in a narrow column and should always stack vertically.
+ * NOTE: The old `.archives-event-col .timeline-*` overrides were removed
+ * in v0.38.1. They were left over from the TimelineSection → EventLog
+ * rename in v0.38.0 and targeted classes that no longer exist in the DOM.
+ *
+ * The archive event log now uses `<EventLog layout="stack">`, which forces
+ * a single-column layout via `.event-log-days--stack` in EventLog.css.
+ * That class is the source of truth for the stack layout; no archive-side
+ * overrides needed.
  */
-.archives-event-col .timeline-days {
-    gap: 0;
-    position: static;
-}
-
-.archives-event-col .timeline-days::before {
-    display: none;
-}
-
-.archives-event-col .timeline-day {
-    display: block;
-}
-
-.archives-event-col .rail {
-    display: none;
-}
-
-.archives-event-col .timeline-day-grid {
-    display: flex;
-    flex-direction: column;
-    grid-template-columns: none;
-}
-
-.archives-event-col .timeline-day-header {
-    box-shadow: inset -6px 0 0 0 var(--color-ghost);
-}

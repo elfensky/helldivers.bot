@@ -7,9 +7,6 @@ vi.mock('@/components/h1/Dashboard/DashboardClient.css', () => ({}));
 vi.mock('@/features/notifications/NotificationToggle', () => ({
     default: () => null,
 }));
-vi.mock('@/features/galaxy/Galaxy', () => ({
-    default: () => <div data-testid="galaxy" />,
-}));
 vi.mock('@/features/galaxy/EventCard', () => ({
     default: () => <div data-testid="event-card" />,
     computeFrontier: vi.fn(() => null),
@@ -61,7 +58,6 @@ describe('DashboardClient', () => {
 
     test('renders child components', () => {
         render(<DashboardClient />);
-        expect(screen.getByTestId('galaxy')).toBeInTheDocument();
         expect(screen.getByTestId('faction-tabs')).toBeInTheDocument();
         expect(screen.getByTestId('stat-grid')).toBeInTheDocument();
     });
@@ -75,12 +71,6 @@ describe('DashboardClient', () => {
         render(<DashboardClient />);
         fireEvent.click(screen.getByText('Bugs'));
         expect(screen.getByTestId('stat-grid').textContent).toBe('bugs');
-    });
-
-    test('renders scroll hint button', () => {
-        render(<DashboardClient />);
-        const button = screen.getByRole('button', { name: /event log/i });
-        expect(button).toBeInTheDocument();
     });
 
     test('shows SIGNAL LOST when data is null', () => {

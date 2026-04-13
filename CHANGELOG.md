@@ -2,6 +2,402 @@
 
 ## Unreleased
 
+## 0.40.1
+
+### Changed
+
+- **Archives `Statistics` and `Faction Analysis` sections merged into
+  one.** The `Global` tab in `FactionTabs` previously rendered nothing
+  (since `FactionStats` only maps Bugs/Cyborgs/Illuminate to enemy
+  indices); it now renders the whole-war `<ArchiveStats>` overview
+  instead. Bugs/Cyborgs/Illuminate tabs continue to render
+  `<FactionStats>` per-faction. `/archives` now defaults to the
+  `Global` tab on first load so visitors land on the overview before
+  drilling into factions. The standalone `Faction Analysis` H2 is
+  gone; all stat cards live under the single `Statistics` heading now.
+  Composition change only — `ArchiveStats`, `FactionStats`, and
+  `FactionTabs` internals are unchanged.
+
+## 0.40.0
+
+### Fixed
+
+- **Pinned map gets symmetric 1rem top padding** to match the existing
+  bottom padding, so the galaxy SVG no longer sits flush against the
+  header's bottom edge. Applied to both `.home-map--sticky` and
+  `.archives-map-col--sticky`, with matching `padding-top: 0` resets
+  in the lg+ grid-cell overrides.
+- **Pinned map backdrop no longer flickers transparent on scroll-down
+  or when the header hides.** `public/scripts/headerGPU.js` was
+  publishing `--header-bg` and `--header-glass-filter` via the same
+  `setHeaderBg` function that mutated the `<header>` element's own
+  `backgroundColor`. The header's direction-aware logic (paint
+  transparent on scroll-down, glass on scroll-up) was correct for the
+  header element itself but wrong for the pinned map, which is
+  on-screen continuously and should not flicker. Split into
+  `setHeaderElementBg` (direction-aware, header DOM only) and a new
+  `publishMapBackdrop(scrollTop)` (direction-agnostic, CSS vars only).
+  Map backdrop now follows a pure function of `scrollTop`: 0 alpha in
+  the top zone (≤80px), linearly interpolated 0→0.85 through 80–240 px,
+  full `rgba(19,19,19,0.85)` + `blur(8.8px)` past 240 px, regardless
+  of scroll direction or whether the header element is currently
+  visible. Mobile (<md) is unaffected — it already uses a solid
+  `--color-surface-1` background and does not consume `--header-bg`.
+  Also updates `src/app/docs/frontend-layout/page.mdx` to document
+  the new direction-agnostic contract.
+
+### Added
+
+- **Admin-only "Refresh" button next to the season selector on
+  `/archives`** — force re-fetches the currently-viewed season from the
+  official HD1 API via `fetchAndSeedSeason()` and revalidates the page.
+  Motivation: found an ingestion gap on season 153 where a failed
+  region-0 defend (event_id 4774, Bugs attacker) was present in the
+  raw rebroadcast snapshot but missing from the normalized `h1_event`
+  table — likely because it was still `active` at the last poll
+  before the worker rolled over to season 154, tripping the
+  `isValidSeason.mjs` "no active defends" refinement and dropping the
+  whole batch. New server action `src/features/archives/reseedSeason.mjs`
+  wraps `fetchAndSeedSeason` with a BetterAuth admin check, stamps
+  `h1_season.last_updated = now`, and calls `revalidatePath('/archives')`.
+  Client button `src/features/archives/RefreshSeasonButton.jsx` uses
+  `useTransition` for a pending state and calls `router.refresh()` on
+  success. Disabled for 24 hours after the most recent refresh
+  (driven by `data.last_updated` read from `getCampaign()`) to prevent
+  API hammering — during cooldown the button label changes to
+  `Next refresh in Nh` (via `formatCompactDuration`) so the reason is
+  visible without hovering. The cooldown check runs in a `useEffect`
+  so SSR always emits the static `Refresh` label and hydration stays
+  clean. Hidden entirely for non-admin users. No UI change for regular
+  visitors.
+
+### Changed
+
+- **Archives Statistics section: `WIN_RATE` split into `DEFENSE_RATE` +
+  `ATTACK_RATE`; `NARROWEST_WIN` / `NARROWEST_LOSS` cards removed.**
+  The old global `WIN_RATE` lumped defends and attacks together, which
+  was dominated by defend counts (~77 defends vs ~3 attacks per season)
+  and didn't correlate with the actual war outcome. It's now two
+  independent cards: `DEFENSE_RATE` (`successfulDefends / defends`) and
+  `ATTACK_RATE` (`successfulAttacks / attacks`), each with
+  `N / total` subtitles and the same `>50% → success, ≤50% → danger`
+  accent flip. `NARROWEST_WIN` / `NARROWEST_LOSS` were per-event cards
+  with inverted mental models ("WIN" = defensive hold, "LOSS" = failed
+  offensive) and vanished on blowout seasons due to a `> 0.5` gate —
+  removed entirely. `WORST_CASCADE` retained since it tells a clear
+  narrative ("N regions lost in a row to faction X"). The now-dead
+  `findClosestCalls` function in `src/shared/utils/game/seasonAnalytics.mjs`
+  and its unit tests have been deleted.
+- **Archives stats flattened under single `Statistics` heading** — removed
+  the internal `War Summary`, `Notable Moments`, and `Combat Record`
+  sub-headings from `ArchiveStats.jsx`. All stat cards (outcome, duration,
+  win rate, close calls, cascade, combat record) now flow as a single grid
+  under the existing `<h2>Statistics</h2>` in `ArchivesClient.jsx`. Dropped
+  the now-unused `sectionHeading` constant and `hasNotableMoments` gate.
+- **Archives `DURATION` now derived from `h1_snapshot` poll span** —
+  `ArchiveStats.jsx` reads `data.snapshots` (already selected by
+  `getCampaign()`, ordered by `time: 'asc'`) and uses `last.time −
+first.time`. Event span remains as a fallback for archives with fewer
+  than two snapshots. Rendered in whole days as the main value
+  (e.g. `52 days`, `1 day`) with a humanized breakdown as the
+  subtitle (`humanize-duration` with `{ largest: 2, round: true }` —
+  e.g. `8 weeks, 3 days`). The day-only headline makes season-to-season
+  comparison easy; the humanized subtitle surfaces the shape of the
+  war without forcing a mental conversion from raw minutes. Reason:
+  archive analytics must derive from snapshot data, not `h1_live`
+  (homepage-only).
+- **Archives `OUTCOME` card now shows the attributed faction as a
+  subtitle** — `getWarOutcome.mjs` returns a new `faction` field
+  (number 0–2 or null). Victory: enemy id of the latest successful
+  attack event ("who did the Helldivers defeat last"). Defeat: enemy id
+  of the latest failed region-0 defend event ("who were the Helldivers
+  defeated by"). `null` when no such event exists — no fallback
+  guessing from other signals. `ArchiveStats.jsx` renders the faction
+  name from `src/shared/enums/factions.mjs` as the card subtitle, or
+  hides it when faction cannot be attributed.
+
+## 0.39.15
+
+### Documentation
+
+- **New `/docs/frontend-layout` page** covering the pinned-map state
+  machine end-to-end: class layering (`--sticky` vs `--pinning`), the
+  slide-in-from-behind-header animation, the scroll-hiding header
+  integration via `--header-offset`, the tablet background mirror
+  (`--header-bg`), the Lightning CSS backdrop-filter workaround and
+  the `useHeaderGlassFilter` hook, desktop `lg+` grid cell layout,
+  and a full reference of source files and changelog entries that
+  led to the current implementation. Added to the `DocsSidebar` under
+  the `Architecture` section.
+- **Expanded top-of-file JSDoc** in the critical files that
+  participate in the pinned-map pipeline: `HomeClient.jsx`,
+  `ArchivesClient.jsx`, `HomeClient.css`, `ArchivesLayout.css`,
+  `public/scripts/headerGPU.js`, `Header.jsx`, `Map.jsx`. Each file
+  now carries a brief narrative of what it does, how it relates to
+  the three CSS custom properties published by `headerGPU.js`, and
+  why specific values (`z-40` / `z-50`, `top: 49/79px`,
+  `preserveAspectRatio="xMaxYMid meet"`) were chosen.
+- **`README.md` refresh** to reflect the current app state:
+  corrected the outdated "Server-Sent Events (SSE)" reference to
+  match the actual polling-based live data loop (`useLiveData` hook
+    - `BroadcastChannel` leader election); added a "Stack at a glance"
+      table covering framework, database, auth, PWA, observability,
+      analytics, and testing; added a "Frontend at a glance" section
+      summarizing the interactive galaxy map, scrollytelling event log,
+      pinned-map state machine, and live polling loop; updated the API
+      section with `/api/h1/live` and the internal routes
+      (`/api/healthcheck`, `/api/notifications/subscribe`,
+      `/api/auth/[...all]`, `/api/umami`, `/api/glitchtip`); and noted
+      that all user features are gated behind `BETTER_AUTH_SECRET` so
+      auth is optional.
+
+## 0.39.14
+
+### Bug Fixes
+
+- **Max-height cap now only applies when the map is pinned**, not in its natural flow position. v0.39.12 applied `max-height: 55dvh` + aspect-width cap + `margin-inline: auto` centering to `.home-map #map > svg` / `.archives-map-col #map > svg` regardless of pin state. Moved the rule to `.home-map--sticky #map > svg` / `.archives-map-col--sticky #map > svg`. On homepage, an unpinned galaxy renders at its full natural size; after FAB click, the cap kicks in. (Archives defaults to `--sticky` on from mount — see below — so the cap is still active from first paint on that page; the user accepted the trade-off.)
+- **Replaced the clip-path pin-in animation with a slide-in-from-behind-header keyframe.** v0.39.10's `clip-path: inset(0 0 100% 0) → inset(0 0 0 0)` unfurled the map top-down at its sticky position — subjectively felt more like "drawn in place" than "slid in." New keyframe uses `transform: translateY(calc(var(--header-offset, 0px) - 100% - 80px))` → `translateY(var(--header-offset, 0px))` so the map starts fully above the viewport (shifted by its own height + an 80px header-height buffer) and slides down to its resting position. During the slide, a transient `.home-map--pinning` / `.archives-map-col--pinning` class drops the map's `z-index` from `50` to `10`, which puts it below the header's `z-40` — the header literally occludes the map while it slides, so it emerges from behind the header rather than sliding on top. After 400ms JS removes the transient class, `z-index` snaps back to `50`, and the 1px border-overlap trick works again. Composes cleanly with the live `--header-offset` tracking via the same transform property.
+- **Pinned-map styles are now split between two classes** so the slide animation only plays on explicit pin transitions. Previously `.home-map--sticky` carried both the pinned visuals (`position: sticky`, `top`, `z-index`, `background`, etc.) AND the `animation` property, which meant the animation re-triggered on every mount — fine for the homepage (default unpinned → FAB click adds class) but wrong for archives default-pinned (class applied from first paint would auto-play the animation). New split: `--sticky` owns the persistent pinned styles only; `--pinning` is a transient class added for exactly 400ms by `togglePin`'s `setTimeout` when the React state flips from unpinned → pinned, and it owns `z-index: 10 + animation`. On mount (including archives default true), `isAnimating` starts `false`, no `--pinning` class, no animation.
+- **Pinned map background on tablet+ now mirrors the header's live state via CSS vars + a React hook.** Mobile (<md) keeps its solid `var(--color-surface-1)` + ghost border. At md+ (≥768px) where the header is transparent by default and gains `rgba(19, 19, 19, 0.85)` + `backdrop-filter: blur(8.8px)` when scroll-revealed mid-page, the map now reads `background: var(--header-bg, transparent)` directly from CSS via a custom property published on `<html>` by `headerGPU.js`'s new `setHeaderBg()` helper. The map's background tracks the header 1:1 at every scroll state with no separate JS coupling on the React side. The matching `backdrop-filter: blur(8.8px)` had to be applied via inline `style={{ backdropFilter, WebkitBackdropFilter }}` in `HomeClient.jsx` / `ArchivesClient.jsx` because Lightning CSS (Turbopack's CSS optimizer) strips `backdrop-filter` declarations that reference custom properties from the built stylesheet — same issue that bit v0.39.7. A new `useHeaderGlassFilter` hook (`src/shared/hooks/useHeaderGlassFilter.mjs`) reads the `--header-glass-filter` var and updates via `MutationObserver` on `<html>`'s style attribute, bailing on no-op re-renders so the 60-fps scroll updates to `--header-bg` don't cause React churn.
+- **Archives is pinned by default.** `ArchivesClient.jsx:isMapSticky` initial state flipped from `false` to `true`. The map starts in its natural flow position below the stats section; native `position: sticky` engages silently as the user scrolls down to it (same semantics as clicking the homepage FAB when already past the threshold). The slide animation deliberately does NOT play on first load because `isAnimating` remains `false` through mount. The FAB stays present on both pages — it still toggles pinned state, and re-pinning via the FAB plays the slide animation on both. Only the initial state differs.
+
+## 0.39.13
+
+### Bug Fixes
+
+- **Pinned galaxy map now follows the scroll-hiding header on tablet.** At `md+` (≥768px) the header uses `public/scripts/headerGPU.js` to shift its own `top` by scroll delta (0 at rest, `-80px` when fully hidden), creating a "parks just above the viewport" effect. The sticky pinned map stayed fixed at `top: 79px` regardless, so when the header scrolled away there was an 80px empty band above the map — the map looked disconnected from the header bar it visually belongs to. Now `headerGPU.js` also writes the current offset as a `--header-offset` CSS custom property on `<html>`, and `.home-map--sticky` / `.archives-map-col--sticky` apply `transform: translateY(var(--header-offset, 0px))` so the map's visual position tracks the header 1:1. Layout-wise the sticky box still pins at `top: 49/79px`, so pin/unpin geometry and the `clip-path` reveal animation are untouched — only the rendered pixels shift.
+- Uses `transform` rather than mutating `top` so the browser's sticky-engagement math (which looks at the element's natural layout position, not its transform) continues to work, and shifts happen on the GPU without triggering layout recalcs during scroll.
+- `headerGPU.js` drops the custom property in `resetHeader()` when the breakpoint drops below `md`, so the fallback `0px` kicks in and the map visually sits at its normal sticky position — no stale offset bleeding between breakpoints. Desktop `lg+` reset block also explicitly sets `transform: none` for stale-class safety when a viewport resize from tablet to desktop leaves the `--sticky` modifier on.
+
+## 0.39.12
+
+### Bug Fixes
+
+- **Mobile galaxy map is now capped at `55dvh` and horizontally centered.** The galaxy's natural aspect ratio (`806.93 / 868.81` ≈ 0.928) means at a portrait-tablet viewport width like 768px the SVG would render ~827px tall, filling >80% of a 1024px iPad viewport and visually "covering" the page. Cap the SVG's `max-height` at `55dvh` so it takes about half the visible viewport and the rest of the dashboard (event log, etc.) stays in view.
+- **Horizontal centering was tricky** because `Map.jsx`'s SVG uses `preserveAspectRatio="xMaxYMid meet"` — when the SVG box has leftover horizontal space, that alignment pushes content hard against the right edge, which on a capped-height tablet layout would leave a big empty dark band on the left instead of centered content. Rather than change the preserveAspectRatio (which affects the desktop right-column map too), cap `max-width: calc(55dvh * 806.93 / 868.81)` so the SVG box itself matches the content's aspect ratio exactly — no leftover horizontal space inside the SVG for `xMax` to push into — and then `margin-inline: auto` centers the whole shrunk box inside the full-bleed sticky panel.
+- Applies to `.home-map #map > svg` and `.archives-map-col #map > svg` (scoped to the galaxy's Map.jsx wrapper so incidental icon SVGs elsewhere aren't caught). Explicit `max-height: none` / `max-width: none` / `margin-inline: 0` reset inside the `@media (min-width: 1024px)` block unwinds all three at desktop so the real grid cell is sized by its flex chain.
+
+## 0.39.11
+
+### Bug Fixes
+
+- **Sticky mobile map is now visually seamless with the header.** Four small changes combined: (1) map `top` dropped from `50px` → `49px` (and `80px` → `79px` at sm+) so the map's top row lands on the exact pixel where the header's 1px bottom border is drawn; (2) header demoted from `z-50` → `z-40` and pinned map bumped from `z-10` → `z-50` so the map wins at that 1px overlap and its `surface-1` background overpaints the ghost hairline — no more visible seam between the two dark panels; (3) full-bleed `margin-inline: calc(50% - 50vw)` + `padding-inline: calc(50vw - 50%)` pull the pinned map's background out past the `.gutters` horizontal padding so the surface-1 panel spans edge-to-edge like the header does; (4) `padding-bottom: 1rem` added so the galaxy SVG no longer touches the map's own ghost-colored bottom border (matches the mobile gutter `px-4`).
+- All four apply to `.home-map--sticky` (homepage) and `.archives-map-col--sticky` (archives) identically. The desktop `lg+` reset block explicitly unwinds all of them so a stale modifier class left over from a mobile→desktop viewport resize can't leak into the desktop grid column. Only the header's Tailwind class (`src/shared/components/Header/Header.jsx:15`) changes on the JSX side.
+- Grepped for `z-40` / `z-50` collisions before demoting the header: none found. BottomNav at `z-50` is bottom-of-viewport and doesn't visually overlap with the top-pinned map; the `focus:z-50` skip-to-content link (`src/app/layout.jsx:187`) still sits above both the demoted header and the pinned map when focused; Navigation's own inner `z-50` lives inside the header's own stacking context (now rooted at 40 globally) and is visually unaffected.
+
+## 0.39.10
+
+### Bug Fixes
+
+- **Sticky mobile map now shares the header's background for a continuous "plane" look.** v0.39.8 drew a `filter: drop-shadow()` halo around the pinned galaxy; v0.39.10 replaces that with a solid `background: var(--color-surface-1)` + `border-bottom: 1px solid var(--color-ghost)` applied only on mobile (reset to transparent at `lg+`). This matches the header's own mobile styling so the pinned map and fixed header read as one dark panel at the top of the viewport.
+- **Pin-in animation switched to a `clip-path: inset(0 0 100% 0) → inset(0 0 0 0)` reveal** instead of a `translateY` slide. The translate variant would have revealed the map's bottom edge first — with `position: sticky; top: 50px`, a negative translate shifts the whole box up so its bottom sits at y=50, meaning the _bottom half_ arrives first, not the top. The clip-path variant reveals top-down from the header's bottom edge, which is the intended "slide out from behind the header" feel. Duration bumped from 280ms → 400ms for the larger reveal. `@media (prefers-reduced-motion: reduce)` still disables the animation entirely.
+- Applies identically to `.home-map--sticky` and `.archives-map-col--sticky`.
+
+## 0.39.9
+
+### Bug Fixes
+
+- **Scroll-sync "selected event" anchor now sits at 75% of viewport height on mobile (<1024px), up from 38%.** On mobile, when the user pins the galaxy map to the top via the FAB, the pinned map occupies roughly the upper half of the viewport — with the previous 38% anchor, the scroll-sync hook selected whichever event card was closest to 38% down the visible area, which landed _behind_ the pinned map's drop-shadow halo. The selected card was effectively invisible. Bumping the mobile anchor to 75% keeps the highlighted card in the lower quarter of the viewport, always visible below the pinned map area. Desktop anchor stays at 38% because the map is in the right column there, not overlapping the event log. Drift range on mobile (`0.15`) is also tighter than desktop (`0.24`) so the anchor stays below 90% even at page bottom.
+- Single change to `src/features/archives/useScrollEvent.mjs` — self-detects mobile viewport via `window.innerWidth < 1024` inside the scroll handler, no caller changes.
+
+## 0.39.8
+
+### Changes
+
+- **Sticky mobile map now uses a CSS drop-shadow halo instead of a radial gradient fill.** v0.39.7 used `background: radial-gradient(...)` + `backdrop-filter: blur()` to create a frosted-glass effect, but the gradient filled the full rectangular map container and occluded content in corners. Replaced with a two-layer `filter: drop-shadow()` stack that casts a soft dark halo around the SVG galaxy's actual visible shape — the shadow follows the paths of the map and fades radially away from them. Content scrolling behind the map stays fully visible wherever the galaxy shape doesn't reach, so event log cards are clearly readable at the corners and sides; only the area immediately around the map's visible content is darkened. The double-layered shadow (24px blur + 8px blur, both near-black) gives the halo enough density to read against bright scrolling content without using any backdrop-filter or background fill. Applies to both `.home-map--sticky` and `.archives-map-col--sticky`, both now pure CSS (no inline-style workaround — `filter: drop-shadow` isn't stripped by Lightning CSS the way `backdrop-filter` was).
+
+## 0.39.7
+
+### Changes
+
+- **Sticky mobile map now uses a frosted-glass effect instead of a solid black background.** Both `.home-map--sticky` (homepage) and `.archives-map-col--sticky` (archives) previously had `background: var(--color-surface-0)` which painted a hard rectangular occlusion over scrolling content. Replaced with `background: radial-gradient(ellipse at center, rgba(19,19,19,0.85) 20%, rgba(19,19,19,0.45) 65%, rgba(19,19,19,0) 100%)` — the center stays opaque enough for map legibility while the edges fade to fully transparent. A `backdrop-filter: blur(10px)` adds a soft blur to whatever content scrolls behind the map, completing the frosted-glass feel. Event log cards are now visible through the gradient edges rather than disappearing behind a dark rectangle.
+
+### Workaround
+
+- **`backdrop-filter` applied via inline style, not CSS.** Lightning CSS (the Turbopack-integrated optimizer) strips the un-prefixed `backdrop-filter` declaration from stylesheets and leaves only the `-webkit-backdrop-filter` prefix. Chrome does not apply the `-webkit-` prefix as a fallback for the standard property, so the blur ended up as a no-op when declared in `HomeClient.css`/`ArchivesLayout.css`. Declaring it via `style={{ backdropFilter, WebkitBackdropFilter }}` on the JSX elements bypasses Lightning CSS entirely.
+
+## 0.39.6
+
+### Changes
+
+- **`/archives` mobile map toggle now matches the homepage's pin/unpin semantics** instead of show/hide. Default is **unpinned** — the archives galaxy map is at the top of the mobile flex column in normal flow and scrolls away as you read the event log, like a regular section. Tap the `.archives-map-toggle` FAB (📌 icon) to add the `.archives-map-col--sticky` modifier class, which applies `position: sticky; top: 50px` (80px at `sm+`), `z-index: 10`, `background: var(--color-surface-0)`, and a 280ms fade-in animation. The map pins at the top of the viewport and stays visible as you continue scrolling. Tap again (✕ icon) to unpin — map returns to normal flow.
+- This is a behavior change from the previous version where `.archives-map-col` was always sticky on mobile and the FAB toggled visibility via conditional rendering. The map is now always rendered (scroll-sync selection still fires) but only becomes sticky on opt-in. Matches `v0.39.5`'s homepage implementation exactly.
+
+## 0.39.5
+
+### Features
+
+- **Homepage mobile map pin/unpin toggle.** Added a floating-action button that toggles whether the galaxy map is sticky (pinned at the top of the viewport) or scrolls away with the page. Default is **unpinned** — the map renders in normal flow at the top of the mobile layout and scrolls away like it did before. Tap the FAB (📌 icon) to pin the map: `.home-map` gains the `.home-map--sticky` modifier class, which adds `position: sticky; top: 50px` (80px at `sm+`), `z-index: 10`, and `background: var(--color-surface-0)` — the map snaps to the top of the viewport below the header and stays visible as the user continues scrolling. Tap again (✕ icon) to unpin. A subtle 280ms fade-in + slide-down animation (`@keyframes home-map-pin-in`) softens the pinning transition when pinning an already-scrolled-past map, disabled under `prefers-reduced-motion: reduce`.
+- The FAB is fixed at the bottom-right of the viewport above the BottomNav, mirroring the `.archives-map-toggle` pattern. Hidden at `lg+` (desktop) since the desktop grid layout applies its own permanent sticky behavior to the map column regardless of this state.
+
+## 0.39.4
+
+### Bug Fixes
+
+- **Galaxy SVG no longer overflows its `#map` wrapper.** v0.39.3 fixed `.home-map` → `#galaxy` sizing via the flex chain, but the leak continued one level deeper: inside `src/features/galaxy/Map.jsx`, the `<div id="map" className="max-h-full w-full">` wrapper had no concrete height, and Tailwind's `max-h-full` resolves to `max-height: 100%` which needs an explicit parent height to apply. The SVG inside had `h-full w-full` with the same problem, so it fell back to its intrinsic size derived from its viewBox and the parent's width — ending up ~32px taller than its container at desktop widths, clipping the bottom of the map below the viewport fold. Fixed by extending the flex-layout chain through Map.jsx: `#map` is now `flex flex-col flex-1 min-h-0 w-full` (a flex child of `#galaxy`), and the `<svg>` is `flex-1 min-h-0 min-w-0 w-full` (a flex child of `#map`). Every layer down to the SVG now correctly resolves height from its flex parent. Fix applies to both `/` and `/archives` since `Map.jsx` is the shared rendering component.
+
+### Testing
+
+- DevTools verification on `/` at 1710×934: all four layers (`.home-map`, `#galaxy`, `#map`, `<svg>`) are now 822px tall with `bottom: 918px` (16px of breathing room before the viewport edge at 934). Before the fix the SVG was 854px and extended to 949.99 — 16px below the viewport.
+- DevTools verification on `/archives` at the same viewport: all layers in sync at 822px when unscrolled, and sticky map pins correctly when scrolled (clamped to whatever the max-height resolves to at the current scroll position).
+
+## 0.39.3
+
+### Bug Fixes
+
+- **Homepage galaxy map no longer overflows its container at the bottom.** v0.39.1's new `.home-map` grid cell had `max-height: calc(100dvh - 80px - 2rem)` but no `display: flex` — so Galaxy's inner `<section class="h-full w-full">` had no concrete parent height to resolve `h-full` against, and the SVG fell back to its intrinsic size and spilled past the cell boundary into the viewport below. Fixed by making `.home-map` a flex column and setting `flex: 1; min-height: 0; min-width: 0` on its first child, matching the pattern `.archives-map-col` already uses.
+
+## 0.39.2
+
+### Bug Fixes
+
+- **Removed the redundant "selected event" info card overlay on `/archives`.** The small card that displayed region + faction + duration + WON/LOST status below the map when an event was scroll-selected is now unnecessary — the event log itself (now in the left column of the scrollytelling grid with `border-l-primary` highlighting the selected card) already shows all that information more clearly. Dropped the unused `factions` and `getEventRegionLabel` imports that only fed that overlay.
+
+## 0.39.1
+
+### Bug Fixes
+
+- **Simplified the homepage scrollytelling map.** v0.39.0's fixed-position overlay + size-transition animation was overengineered — the event log column has the same width as the hero sidebar, so the map doesn't need to resize at all, it just needs to stay pinned at the same size across both sections. Replaced the overlay with a single grid-spanning sticky map: `HomeClient` owns one continuous two-row grid where the right column (the galaxy map) spans both the hero row and the scrollytelling row, with `position: sticky; top: 80px`. One `<Galaxy>` instance, one `mapState` prop that switches between live and `computeMapStateAtEvent(selectedEvent, data)` depending on whether `useScrollEvent` has latched onto a card.
+- **`/archives` grid now matches the homepage dimensions.** Changed `ArchivesLayout.css` `.archives-scrollytelling` from `grid-template-columns: minmax(260px, 1fr) minmax(0, 50dvh)` to the same `minmax(260px, 1fr) minmax(0, calc((100dvh - 80px) * 806.93 / 868.81))` the homepage uses. Both pages now present the same visual map anchor; only the data (live now vs. historical season) differs. The archives grid also moved from the `md:` (768px) breakpoint to `lg:` (1024px) to match the homepage.
+
+### Chores
+
+- **Deleted** `HomeGalaxyOverlay.jsx`, `HomeGalaxyOverlay.css`, `HomeScrollytelling.jsx`, `HomeScrollytelling.css`, `useHomeMapPinned.mjs`, and `useHomeMapPinned.test.mjs` — the entire overlay + scroll-threshold animation infrastructure from v0.39.0.
+- **Stripped `DashboardClient`** of its grid layout and inline galaxy map — it's now a pure sidebar-content component. The grid layout and the galaxy map both live in `HomeClient` now. `.dashboard-scroll-hint` also removed (the grid is continuous; no scroll hint needed).
+- New `src/features/dashboard/HomeClient.css` owns the home grid: flex column at mobile, two-row grid with a spanning map column at `lg+`.
+- Removed the obsolete `galaxy` and `scroll-hint-button` assertions from `DashboardClient.test.jsx`.
+
+## 0.39.0
+
+### Features
+
+- **Homepage scrollytelling galaxy map.** Ported the archives "animate map + select event on scroll" pattern to `/`. Below the hero, the homepage now has a 2-column scrollytelling section: single-column event log on the left, pinned galaxy map on the right. As you scroll through the event log, the map time-travels to show what the galaxy looked like at the currently-focused event's moment (same `computeMapStateAtEvent` logic archives uses). The map itself transitions from its big hero size to a small pinned sidebar position via a state-driven CSS transition — the boolean flips when ≤25% of the hero is still visible, and a single 400ms `top/right/width/height` animation handles the shrink + reposition. Narrative: "live now" (hero) → "recent past" (scrollytelling).
+- Homepage event log now uses `layout="stack"` — same vertical single-column layout archives uses, required for `useScrollEvent`'s DOM-order optimization.
+
+### Chores
+
+- Extracted `computeMapStateAtEvent` from `src/features/archives/ArchiveMap.jsx` into `src/shared/utils/game/computeMapStateAtEvent.mjs` so it can be reused by both `ArchiveMap` and the new homepage `HomeGalaxyOverlay`.
+- Deleted `src/features/timeline/HomeEventLog.jsx` — its only job (feeding `LiveDataContext` into `EventLog`) is now inlined inside `HomeScrollytelling`.
+- New `HomeClient.jsx` wrapper owns the hero `useRef` and lets `src/app/page.jsx` remain a server component with its metadata/JSON-LD exports intact.
+
+### Mobile
+
+- Mobile (<1024px) is unaffected: the inline galaxy map stays inside the hero, the event log stacks below it in normal flow, no sticky map or scroll-driven transitions. The `HomeGalaxyOverlay` is hidden via `display: none` below `lg:`.
+
+## 0.38.2
+
+### Improvements
+
+- **Toasts now render at `top-center` on mobile, `bottom-right` on desktop.** Matches native iOS/Android push notification placement (where users instinctively look for "something just happened" feedback) and clears the bottom of the screen which is occupied by `BottomNav` on mobile. Desktop layout is unchanged. Implemented in `LiveToasts.jsx` by detecting viewport once on mount via `window.matchMedia('(max-width: 767px)')` and keying the `<Toaster>` so Sonner remounts with the correct `position` (it reads the prop only at first mount and ignores subsequent changes). Page-load detection only — resize-during-session is intentionally not supported. Closes #285.
+
+## 0.38.1
+
+### Bug Fixes
+
+- **`/archives` — restored scroll-sync ("animate map + select event") and the vertical stack layout** that was lost in v0.38.0. The unified-event-log rename (`timeline-day-grid` → `event-log-day-grid`) left a stale CSS override in `ArchivesLayout.css` that used to force the archive event rail to a single vertical column; without that override, the new `EventLog.css` desktop grid (`repeat(2/3/4, 1fr)` at md/lg/xl) took over and wrapped cards into columns. The multi-column grid in turn broke `useScrollEvent`'s DOM-order early-break optimization (which only holds when cards are vertically stacked), so scrolling the event rail no longer synced the selected event to the map.
+- **Fix:** `EventLog` gains an explicit `layout: 'grid' | 'stack'` prop. `ArchivesClient.jsx` passes `layout="stack"` to force a single-column flex layout at all widths via the new `.event-log-days--stack` class in `EventLog.css`. `useScrollEvent` is unchanged — once cards are stacked vertically again, the DOM-order assumption holds and scroll-sync works.
+- Removed stale `.archives-event-col .timeline-*` overrides from `ArchivesLayout.css` (they targeted classes that no longer exist).
+
+## 0.38.0
+
+### Features
+
+- **Unified event log across homepage and archives.** Removed the vertical timeline rail from the desktop homepage event log — the day-grouped card list is now the single source of truth for both `/` and `/archives`, fed different data by each page via a new shared `EventLog` component. Added a square sort-order toggle (newest ↔ oldest) next to the event log title, with preference persisted to `localStorage` and shared between both pages. Archives cards now show an absolute date/time (e.g. `Apr 4, 2026 · 14:23`) instead of a relative "ended X ago" string; homepage cards continue to tick live with "Started X ago" / "Ended X ago" plus points progress.
+
+### Chores
+
+- Consolidated `Event.jsx` + `ArchiveEvent.jsx` → single `EventLogCard` with a `timeFormat` prop that flips between ticking relative time (`'live'`) and static absolute timestamps (`'absolute'`).
+- Consolidated `TimelineSection.jsx` + `ArchiveEventRail.jsx` → single `EventLog` component consumed by `HomeEventLog.jsx` (homepage wrapper) and directly by `ArchivesClient.jsx`.
+- Extended `groupEventsByDay` with an optional `sortOrder: 'asc' | 'desc'` parameter; default remains `'desc'` for backwards compatibility.
+- Deleted `TimelineSection.css`, `Event.jsx`, `ArchiveEvent.jsx`, `ArchiveEventRail.jsx`, and their stale test files (`TimelineSection.test.jsx`, `ArchiveEventRail.test.jsx`, `Event.test.jsx`).
+
+## 0.37.11
+
+### Security
+
+- **Stopped leaking `SENTRY_AUTH_TOKEN` (and the other Sentry credentials) via the image's BuildKit provenance attestation.** `Dockerfile.app` previously declared `ARG SENTRY_AUTH_TOKEN` etc., and `staging.docker.yml` / `release.docker.yml` populated them via `build-args:` from `secrets.SENTRY_AUTH_TOKEN`. The substituted values landed in the SLSA provenance metadata that BuildKit pushes alongside each image — for the public `ghcr.io/elfensky/helldiversbot:staging` and `:latest` packages, that meant anyone with anonymous `docker pull` access could extract the token via `docker buildx imagetools inspect`. Replaced with BuildKit `--mount=type=secret,id=...,env=...` directives in the build RUN, plus matching `secrets:` inputs in both workflow files. Secrets mounted this way live only in the RUN's tmpfs, never touch any image layer, build cache, or attestation. The `SENTRY_AUTH_TOKEN` has been rotated. Closes #284.
+
+### Chores
+
+- Same change also resolves the recurring `SecretsUsedInArgOrEnv` BuildKit lint warning that has been present in every CI build since #283 added `# syntax=docker/dockerfile:1`.
+
+## 0.37.10
+
+### Bug Fixes
+
+- **`Dockerfile.app` HEALTHCHECK was silently failing on every probe** because the directive shelled out to `curl`, which is not installed in `node:24-alpine` (only busybox `wget` exists). Containers were being reported as `unhealthy` forever — broken monitoring and a real issue if anything downstream consumes the health status. Replaced with `wget --quiet --spider --tries=1 http://127.0.0.1:3000/api/healthcheck`. Also bumped `--start-period` from 5s to 30s so a Next.js cold-start (5–15 seconds) doesn't trip the probe before the server is ready.
+
+### Chores
+
+- **`Dockerfile.app` slim-down**: stripped Sharp's glibc-arm64 and glibc-x64 binaries (`@img/sharp-libvips-linux-{arm64,x64}` and `@img/sharp-linux-{arm64,x64}`) immediately after `npm ci`. Alpine is musl, so the linuxmusl variants are the only ones loaded at runtime; the glibc variants are pulled in defensively as npm optional deps but never `dlopen()`'d on a musl host. Saves ~16.6 MB on the final image because Next.js's `@vercel/nft` standalone trace would otherwise include them. Image: 407 MB → ~390 MB.
+- **Added BuildKit cache mounts** to both deps (`/root/.npm`) and builder (`/app/.next/cache`) RUN steps. The npm download cache and Next.js webpack/turbopack compilation cache now persist outside the image across builds — typically 60–80% faster rebuilds in CI once the cache is warm. Zero impact on the final image (cache lives in BuildKit storage, not in any image layer). Requires the `# syntax=docker/dockerfile:1` directive at the top of the file, which is now present.
+- **Improved `.dockerignore`** with exclusions for IDE configs (`.vscode`, `.idea`), test files (`src/**/*.test.*`, `src/**/__tests__`), vitest configs, prettier configs, and explicit `coverage`/`docs`/`CHANGELOG.md` entries. Doesn't affect image size — improves build context transfer speed (~5–10%) and prevents the `COPY . .` builder cache layer from being invalidated when test files or docs change.
+
+Closes #283.
+
+## 0.37.9
+
+### Chores
+
+- **Synced `package-lock.json`** — committed the pending Next.js patch bump (`16.2.2 → 16.2.3`, plus matching `@next/env`, `@next/mdx`, and `@next/swc-*` platform variants) that had been sitting unstaged after an out-of-band `npm install`. Also corrected the lockfile's project `version` field, which had drifted from `0.33.0` because successive `package.json` version bumps weren't paired with `npm install` runs. Closes #282.
+
+## 0.37.8
+
+### Chores
+
+- **`Dockerfile.migrate` is now self-documenting.** Added detailed inline comments explaining each section: why this image exists separately from `Dockerfile.app`, why the install pattern looks unusual (project package.json on disk = npm pulls 1.2 GB of Next.js deps; the `/tmp` reference + minimal `package.json` workaround keeps the install to ~300 MB), why each of the 4 packages is needed, why everything is one big chained `RUN` (single image layer), and why `chown -R` was deliberately omitted (~1.4 GB of layer-doubling waste). No behavior change — purely documentation. Closes #281.
+
+## 0.37.7
+
+### Chores
+
+- **Removed commit SHA from the footer and build-time console.info.** Footer now shows only `v{version} – {environment}` instead of `v{version} – {sha} – {environment}`. Dropped the `COMMIT_SHA` computation and `NEXT_PUBLIC_COMMIT_SHA` env var from `next.config.mjs` entirely, along with the `console.info` line it used. Sentry's own release tracking is unaffected — it reads from distinct CI-provided env vars (`CI_COMMIT_SHA`, `VERCEL_GIT_COMMIT_SHA`, etc.).
+
+## 0.37.6
+
+### Bug Fixes
+
+- **Admin push notification tester now supports stateful transitions** — same pattern as the toast tester in 0.37.5. Push `Started` creates a fresh notification with a new high-range random `event_id` (900M+ range, no collision with real ids). `Won`/`Lost` re-use the same `event_id`, which matches the existing pushNotifier tag convention (`tag: event-${event_id}` + `renotify: true`) so the browser replaces the previous notification in place. `sendTestNotification` server action accepts an optional `event_id` parameter; legacy calls without it still get a fresh random id.
+
+## 0.37.5
+
+### Bug Fixes
+
+- **Dismissed toasts now stay fully suppressed across reloads until the event's status actually changes.** The old implementation used a soft-reappear pattern (8-second auto-dismiss for previously-dismissed toasts on page load), which meant users who closed a toast still saw it flash briefly every time they returned. The new implementation tracks dismissals as `{eventId: statusAtDismissal}` — on catch-up, an event whose dismissed-status still matches its current status is skipped entirely. When the event transitions (e.g., `active` → `success`/`fail`), the catch-up effect detects the status mismatch and fires the corresponding `event_won` / `event_lost` toast automatically, so users don't silently miss terminal outcomes.
+- **Fixed `event.id` → `event.event_id` in `eventToast` and `LiveToasts`** — the toast dedupe key was producing `event-undefined` for every toast (since the real field is `event_id`, not `id`), which meant Sonner collapsed all toasts to a single reusable slot. The `dismissedEvents` Set was similarly writing the literal string `"undefined"` and never actually suppressing anything on reload. Dismissal tracking now works.
+- **Toasts now have a close button (desktop).** Enabled Sonner's built-in `closeButton` prop on `<Toaster>` — small X control for explicit dismissal. Works across mobile too (touch-swipe gestures still work).
+- **Admin debug toast tester updated** — `randomEvent` now generates high-range random numeric `event_id` values (900M+ range) to avoid collisions with real HD1 event ids (1-100k range), and includes `status` derived from the toast kind. Previously the test events had no `event_id` and no `status`, which meant Sonner deduped them all to one visible toast and new dismissal logic couldn't classify them.
+
+### Migration
+
+- `dismissedEvents` localStorage record changed from `Array<string>` to `Record<string, status>`. Legacy array entries are migrated in-place on first read — each id is assumed to have been dismissed while `active`, which is the only status a user could plausibly have dismissed prior to this change.
+
+## 0.37.4
+
+### Bug Fixes
+
+- **Event log cards now show descriptive action verbs tied to the region** instead of generic `"Won defend Event"` / `"Failed attack Event"` status descriptors. New shared helper `getEventActionLabel` maps `(type, status)` → verb: `Attacking`/`Captured`/`Lost` for attack events, `Defending`/`Defended`/`Lost` for defend events. Applied to both live dashboard event log (`Event.jsx`) and archives event rail (`ArchiveEvent.jsx`). Dashboard card now reads e.g. `"DEFENDING SUPER EARTH"`; archive card reads e.g. `"CAPTURED"` with region on a separate line.
+
+## 0.37.3
+
+### Chores
+
+- **`Dockerfile.migrate` slimmed from ~4.7 GB to ~670 MB (86% reduction).** Two changes: (1) read project versions from a temp-path copy of `package.json` and run `npm install` against a minimal one in `/app` so npm only installs the 4 declared packages instead of inheriting the full Next.js dependency tree (1.2 GB → 306 MB `node_modules`); (2) drop the standalone `RUN chown -R node:node /app` step that was creating a full duplicate of `/app` in a second image layer — the `node` user reads root-owned files fine since migrate + seed are read-only against `/app`. Also clean npm cache + `/tmp` in the same `RUN` layer.
+
+## 0.37.2
+
+### Bug Fixes
+
+- **`DefeatedCard` label now uses underscores** — `ALL SECTORS CAPTURED` → `ALL_SECTORS_CAPTURED` to match the convention used by all other bar labels (`SECTOR_PROGRESS`, `CAPITAL_DEFENSE`, `HOMEWORLD_ASSAULT`, `SUPER_EARTH_DEFENSE`).
+
+## 0.37.1
+
+### Bug Fixes
+
+- **Super Earth defend events now display correctly across map, cards, and notifications.** During an active SE defense (`defend_event.region === 0`), toasts/push/archives no longer show "Unknown Region under attack" — they now resolve to "Super Earth" via a new shared `getEventRegionLabel` helper (fixes 4 copy-pasted broken lookups against `map[event.enemy][event.region]` for SE events where Super Earth actually lives at `map[3][0]`).
+- **Dashboard now shows a "Defending Super Earth" card in place of the attacker's frontier card** while an SE defense is active (closes #279). Mirrors the existing sector-defend takeover pattern.
+- **Galaxy map hides the attacking faction's campaign progression during an SE defense.** `computeMapState` force-resets all sectors (1-11) of the attacker to `lost` state since in-game, no progression can occur for that faction while Super Earth is being defended. Super Earth itself continues to pulse red.
+
 ## 0.37.0
 
 ### Features

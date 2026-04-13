@@ -8,6 +8,33 @@ import {
     factionIcons,
 } from '@/features/galaxy/mapPaths.mjs';
 
+/**
+ * Renders the galaxy map SVG. The root `<svg>` uses
+ * `preserveAspectRatio="xMaxYMid meet"` — content scales to fit the
+ * box while aligning to the right edge and vertically centered.
+ * This choice matters in two places:
+ *
+ *   - **Desktop (lg+)**: the grid column's width is sized from
+ *     viewport height via `minmax(0, calc((100dvh - 80px) * 806.93 /
+ *     868.81))`, so the SVG box matches the content's aspect ratio
+ *     exactly and `xMax` is a no-op — content fills the cell.
+ *
+ *   - **Mobile/tablet when pinned**: `.home-map--sticky` /
+ *     `.archives-map-col--sticky` caps the SVG's `max-height: 55dvh`
+ *     and `max-width: calc(55dvh * 806.93 / 868.81)` so the box
+ *     matches the intrinsic aspect ratio. Again `xMax` alignment is
+ *     a no-op because there's no leftover horizontal space inside
+ *     the SVG. `margin-inline: auto` on the SVG then centers the
+ *     whole shrunk box inside the full-bleed sticky panel.
+ *
+ * The `#map` wrapper div provides a flex-column sizing context so
+ * the SVG's `flex-1` + `min-h-0` resolves correctly when the parent
+ * has an explicit max-height. Any other SVG rendered elsewhere in
+ * the map column (e.g. icon SVGs in the archive's detail card)
+ * isn't affected because the CSS selectors are scoped to
+ * `#map > svg`.
+ */
+
 const factions = [
     { id: 'bugs', index: 0, paths: bugPaths },
     { id: 'cyborgs', index: 1, paths: cyborgPaths },
@@ -23,14 +50,14 @@ export default function Map({ map, pulseDelays }) {
     const superearth = 3;
 
     return (
-        <div id="map" className="max-h-full w-full">
+        <div id="map" className="flex min-h-0 w-full flex-1 flex-col">
             <svg
                 id="Layer_2"
                 data-name="Layer 2"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox={viewBox}
                 preserveAspectRatio="xMaxYMid meet"
-                className="h-full w-full"
+                className="min-h-0 w-full min-w-0 flex-1"
             >
                 <defs>
                     <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">

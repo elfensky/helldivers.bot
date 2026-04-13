@@ -1,12 +1,7 @@
 import { toast } from 'sonner';
 import factions from '@/shared/enums/factions.mjs';
-import map from '@/shared/enums/map.mjs';
 import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
-
-/** Resolve a human-readable region name from event data. */
-function regionName(event) {
-    return map[event.enemy]?.[event.region]?.region ?? 'Unknown Region';
-}
+import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 
 /**
  * Build title + subtitle for a toast based on event kind and type.
@@ -16,7 +11,7 @@ function regionName(event) {
  * @returns {{ title: string, subtitle: string }}
  */
 export function toastLabel(kind, event) {
-    const region = regionName(event);
+    const region = getEventRegionLabel(event);
     const isDefend = event.type === 'defend';
 
     const titles = {
@@ -75,7 +70,16 @@ let flashToggle = false;
  * @param {number}  [opts.pulseDelay]  - Animation delay in seconds for per-event offset
  * @param {Function} [opts.onDismiss]  - Called when toast is dismissed
  */
-export function showEventToast(event, kind, { duration = Infinity, alertColor = 'var(--color-danger)', pulseDelay, onDismiss } = {}) {
+export function showEventToast(
+    event,
+    kind,
+    {
+        duration = Infinity,
+        alertColor = 'var(--color-danger)',
+        pulseDelay,
+        onDismiss,
+    } = {},
+) {
     const factionColor = FACTION_COLORS[event.enemy];
     flashToggle = !flashToggle;
     const suffix = flashToggle ? 'a' : 'b';
@@ -88,7 +92,7 @@ export function showEventToast(event, kind, { duration = Infinity, alertColor = 
     if (pulseDelay != null) style['--pulse-delay'] = `${pulseDelay}s`;
 
     toast(<ToastContent event={event} kind={kind} accentClass={accentClass} />, {
-        id: `event-${event.id}`,
+        id: `event-${event.event_id}`,
         duration,
         style,
         onDismiss,

@@ -17,11 +17,21 @@
  *   - No victory signal → Defeat (war ended without winning)
  *   - No data → null (no banner)
  *
+ * Faction attribution:
+ *   - Victory: `faction` is the enemy id of the last successful attack event
+ *     (the homeworld captured last by end_time — "who did the Helldivers
+ *     defeat last")
+ *   - Defeat: `faction` is the enemy id of the latest failed region-0
+ *     defend event (the attacker who broke Super Earth — "who were the
+ *     Helldivers defeated by"). `null` when no such event exists — do NOT
+ *     guess from other signals, since "defeat" here is strictly the Super
+ *     Earth fall signal per product intent.
+ *
  * Key insight: check ANY snapshot, not just the last. The API's periodic snapshots
  * may miss the final moment, but earlier snapshots can capture the all-defeated state.
  *
  * @param {object} data - Campaign data with snapshots[], events[], live[]
- * @returns {{ outcome: 'victory'|'defeat', reason: string } | null}
+ * @returns {{ outcome: 'victory'|'defeat', reason: string, faction: number|null } | null}
  */
 import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events';
 
@@ -35,9 +45,19 @@ export function getWarOutcome(data) {
         return null;
     }
 
+    // Last conquered homeworld (by end_time desc) — used for victory attribution
+    const successfulAttacks = events
+        .filter((e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.SUCCESS)
+        .sort((a, b) => (b.end_time ?? 0) - (a.end_time ?? 0));
+    const lastConqueredFaction = successfulAttacks[0]?.enemy ?? null;
+
     // Victory signal 1: live data shows all 3 factions defeated (current season)
     if (live.length === 3 && live.every((f) => f.status === CAMPAIGN_STATUS.DEFEATED)) {
-        return { outcome: 'victory', reason: 'All enemy factions have been defeated.' };
+        return {
+            outcome: 'victory',
+            reason: 'All enemy factions have been defeated.',
+            faction: lastConqueredFaction,
+        };
     }
 
     // Victory signal 2: ANY snapshot shows all 3 factions defeated
@@ -52,13 +72,7 @@ export function getWarOutcome(data) {
     });
 
     // Victory signal 3: all 3 enemy homeworlds captured (successful attacks)
-    const factionsDefeated = new Set(
-        events
-            .filter(
-                (e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.SUCCESS,
-            )
-            .map((e) => e.enemy),
-    );
+    const factionsDefeated = new Set(successfulAttacks.map((e) => e.enemy));
     const allHomeworldsCaptured = factionsDefeated.size === 3;
 
     const victorySignal = anySnapshotDefeated || allHomeworldsCaptured;
@@ -67,14 +81,22 @@ export function getWarOutcome(data) {
     const r0Defends = events
         .filter((e) => e.type === EVENT_TYPE.DEFEND && e.region === 0)
         .sort((a, b) => a.end_time - b.end_time);
+    const lastR0Defend = r0Defends[r0Defends.length - 1] ?? null;
     const defeatSignal =
-        r0Defends.length > 0 &&
-        r0Defends[r0Defends.length - 1].status === EVENT_STATUS.FAIL;
+        lastR0Defend !== null && lastR0Defend.status === EVENT_STATUS.FAIL;
 
     // Decision
     if (victorySignal && !defeatSignal) {
-        return { outcome: 'victory', reason: 'All enemy factions have been defeated.' };
+        return {
+            outcome: 'victory',
+            reason: 'All enemy factions have been defeated.',
+            faction: lastConqueredFaction,
+        };
     }
     // defeatSignal OR no victorySignal → defeat
-    return { outcome: 'defeat', reason: 'The war was lost.' };
+    return {
+        outcome: 'defeat',
+        reason: 'The war was lost.',
+        faction: defeatSignal ? (lastR0Defend.enemy ?? null) : null,
+    };
 }
