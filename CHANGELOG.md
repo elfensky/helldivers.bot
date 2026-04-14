@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+## 0.40.2
+
+### Documentation
+
+- **Release process in `CLAUDE.md` now documents the merge-back step.**
+  After tagging `vX.Y.Z` on `main`, `main` must be merged back into
+  `develop` (`git checkout develop && git merge origin/main && git push`)
+  so that the PR merge commit GitHub creates on `main` lands on
+  `develop` too. Without this, every release PR eventually fails the
+  "head branch not up to date with base" protection check, because
+  `main` accumulates merge commits `develop` has never seen — even
+  though no actual code diverges. Discovered while releasing v0.40.1:
+  three prior release merge commits (#276, #263, #237) had to be
+  back-merged in one lump before the release PR could be merged.
+  Going forward, doing the merge-back after every release keeps the
+  topology clean.
+
 ## 0.40.1
 
 ### Changed
