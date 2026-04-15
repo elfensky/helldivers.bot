@@ -18,6 +18,36 @@ const mockLiveRows = [
     { enemy: 2, points: 300, points_taken: 30, status: 'active', bucket: 42 },
 ];
 
+// Latest-bucket-per-faction h1_statistic rows. Merged into data.live[i] by
+// getCampaign so consumers (StatGrid, formatNumber, etc.) can read the 4
+// stats signals without a second query.
+const mockStatRows = [
+    {
+        enemy: 0,
+        bucket: 42,
+        players: 1000,
+        total_unique_players: 5000,
+        kills: 10000n,
+        deaths: 1000n,
+    },
+    {
+        enemy: 1,
+        bucket: 42,
+        players: 2000,
+        total_unique_players: 6000,
+        kills: 20000n,
+        deaths: 2000n,
+    },
+    {
+        enemy: 2,
+        bucket: 42,
+        players: 3000,
+        total_unique_players: 7000,
+        kills: 30000n,
+        deaths: 3000n,
+    },
+];
+
 const t0 = new Date('2025-01-01T00:00:00Z');
 const t1 = new Date('2025-01-01T01:00:00Z');
 
@@ -35,11 +65,18 @@ const mockEvents = [{ type: 'defend', event_id: 1 }];
 function seedDbMocks({
     seasonRow = mockSeasonRow,
     liveRows = mockLiveRows,
+    statRows = mockStatRows,
     statusHistory = mockStatusHistory,
     events = mockEvents,
 } = {}) {
     vi.mocked(db.h1_season.findFirst).mockResolvedValue(seasonRow);
-    vi.mocked(db.$queryRaw).mockResolvedValue(liveRows);
+    // getCampaign makes two $queryRaw calls: first for h1_status (liveRows),
+    // then for h1_statistic (statRows). Use mockResolvedValueOnce to feed
+    // them in order — without this, both calls would resolve to the same
+    // payload and the merge would be nonsense.
+    vi.mocked(db.$queryRaw)
+        .mockResolvedValueOnce(liveRows)
+        .mockResolvedValueOnce(statRows);
     vi.mocked(db.h1_status.findMany).mockResolvedValue(statusHistory);
     vi.mocked(db.h1_event.findMany).mockResolvedValue(events);
 }
@@ -108,10 +145,47 @@ describe('getCampaign', () => {
         expect(result).toMatchObject({
             season: 5,
             last_updated: mockSeasonRow.last_updated,
-            live: mockLiveRows,
             introduction_order: { order: [0, 1, 2] },
             points_max: { points: [500, 600, 700] },
             events: mockEvents,
+        });
+        // data.live must carry all fields consumers historically read from
+        // the legacy h1_live row: campaign progression (from h1_status) +
+        // points_max / introduction_order (from h1_season arrays) + the 4
+        // stats signals (from h1_statistic). Shallow mock equality used to
+        // hide this regression — assert explicit fields instead.
+        expect(result.live).toHaveLength(3);
+        expect(result.live[0]).toMatchObject({
+            enemy: 0,
+            points: 100,
+            points_taken: 10,
+            status: 'active',
+            // Merged from h1_season.points_max_array[0]
+            points_max: 500,
+            introduction_order: 0,
+            // Merged from h1_statistic[enemy=0]
+            players: 1000,
+            total_unique_players: 5000,
+            kills: 10000n,
+            deaths: 1000n,
+        });
+        expect(result.live[1]).toMatchObject({
+            enemy: 1,
+            points_max: 600,
+            introduction_order: 1,
+            players: 2000,
+            total_unique_players: 6000,
+            kills: 20000n,
+            deaths: 2000n,
+        });
+        expect(result.live[2]).toMatchObject({
+            enemy: 2,
+            points_max: 700,
+            introduction_order: 2,
+            players: 3000,
+            total_unique_players: 7000,
+            kills: 30000n,
+            deaths: 3000n,
         });
         // snapshots is derived from the full h1_status history and has the
         // legacy { time, data: [f0, f1, f2] } shape.
@@ -135,7 +209,44 @@ describe('getCampaign', () => {
         });
     });
 
-    test('falls back to empty arrays when inlined columns are null', async () => {
+    test('zeroes stats fields when h1_statistic row missing for a faction', async () => {
+        // Only faction 0 has a stat row. Faction 1 and 2 should still appear
+        // in data.live with stats fields zeroed — not undefined, not dropped.
+        seedDbMocks({
+            statRows: [
+                {
+                    enemy: 0,
+                    bucket: 42,
+                    players: 1000,
+                    total_unique_players: 5000,
+                    kills: 10000n,
+                    deaths: 1000n,
+                },
+            ],
+        });
+
+        const result = await getCampaign();
+
+        expect(result.live).toHaveLength(3);
+        expect(result.live[1]).toMatchObject({
+            enemy: 1,
+            points_max: 600,
+            players: 0,
+            total_unique_players: 0,
+            kills: 0n,
+            deaths: 0n,
+        });
+        expect(result.live[2]).toMatchObject({
+            enemy: 2,
+            points_max: 700,
+            players: 0,
+            total_unique_players: 0,
+            kills: 0n,
+            deaths: 0n,
+        });
+    });
+
+    test('falls back to zero / empty when inlined season columns are null', async () => {
         seedDbMocks({
             seasonRow: {
                 season: 5,
@@ -147,12 +258,25 @@ describe('getCampaign', () => {
 
         const result = await getCampaign();
 
+        // Legacy-shape relations return empty arrays.
         expect(result.introduction_order).toEqual({ order: [] });
         expect(result.points_max).toEqual({ points: [] });
+        // Per-row merged fields fall back to zero rather than undefined, so
+        // `pointsMax > 0` checks in computeMapState don't silently degrade.
+        expect(result.live[0]).toMatchObject({
+            points_max: 0,
+            introduction_order: 0,
+        });
+        expect(result.live[1]).toMatchObject({
+            points_max: 0,
+            introduction_order: 0,
+        });
     });
 
-    test('groups status rows with sparse factions without crashing', async () => {
-        // Only faction 0 reports in bucket 1 — buckets 1/2 stay null.
+    test('drops sparse buckets missing one or more factions from snapshots', async () => {
+        // Bucket 1 has all 3 factions → kept.
+        // Bucket 2 only has faction 0 → dropped (would crash getWarOutcome).
+        // Bucket 3 is missing faction 1 → dropped.
         seedDbMocks({
             statusHistory: [
                 {
@@ -163,17 +287,61 @@ describe('getCampaign', () => {
                     status: 'active',
                     time: t0,
                 },
+                {
+                    bucket: 1,
+                    enemy: 1,
+                    points: 20,
+                    points_taken: 2,
+                    status: 'active',
+                    time: t0,
+                },
+                {
+                    bucket: 1,
+                    enemy: 2,
+                    points: 30,
+                    points_taken: 3,
+                    status: 'active',
+                    time: t0,
+                },
+                {
+                    bucket: 2,
+                    enemy: 0,
+                    points: 40,
+                    points_taken: 4,
+                    status: 'active',
+                    time: t1,
+                },
+                {
+                    bucket: 3,
+                    enemy: 0,
+                    points: 70,
+                    points_taken: 7,
+                    status: 'active',
+                    time: t1,
+                },
+                {
+                    bucket: 3,
+                    enemy: 2,
+                    points: 90,
+                    points_taken: 9,
+                    status: 'active',
+                    time: t1,
+                },
             ],
         });
 
         const result = await getCampaign();
 
+        // Only the dense bucket 1 survives.
         expect(result.snapshots).toHaveLength(1);
         expect(result.snapshots[0].data).toEqual([
             { points: 10, points_taken: 1, status: 'active' },
-            null,
-            null,
+            { points: 20, points_taken: 2, status: 'active' },
+            { points: 30, points_taken: 3, status: 'active' },
         ]);
+        // Downstream consumers can now safely do data.every(f => f.status ...)
+        // without a null check.
+        expect(result.snapshots[0].data.every((f) => f !== null)).toBe(true);
     });
 
     test('returns null when no season found', async () => {

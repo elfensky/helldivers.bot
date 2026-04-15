@@ -34,12 +34,42 @@ export const getCampaign = cache(async function getCampaign(season = null) {
 
     // Step 2: Latest h1_status row per faction (via $queryRaw DISTINCT ON).
     // Prisma's generated client doesn't express DISTINCT ON, so we use raw SQL.
-    const liveRows = await db.$queryRaw`
+    const rawLiveRows = await db.$queryRaw`
         SELECT DISTINCT ON (enemy) *
         FROM h1_status
         WHERE season = ${targetSeason}
         ORDER BY enemy ASC, bucket DESC
     `;
+
+    // Latest h1_statistic row per faction — stats signals live on a separate
+    // table since Task 7. The legacy h1_live row had these inline, so all
+    // consumers reading data.live[i].players/kills/deaths/total_unique_players
+    // expect them to travel with the campaign row.
+    const rawStatRows = await db.$queryRaw`
+        SELECT DISTINCT ON (enemy) *
+        FROM h1_statistic
+        WHERE season = ${targetSeason}
+        ORDER BY enemy ASC, bucket DESC
+    `;
+
+    // Merge h1_status + h1_statistic + season constants into legacy liveRow
+    // shape. Consumers (computeMapState, StatGrid, EventCard, opengraph-image)
+    // read this as the per-faction "current state" and must find all the
+    // fields they historically read from h1_live: campaign progression +
+    // points_max + introduction_order + the 4 signal statistics.
+    const statByEnemy = new Map(rawStatRows.map((r) => [r.enemy, r]));
+    const liveRows = rawLiveRows.map((r) => {
+        const stat = statByEnemy.get(r.enemy);
+        return {
+            ...r,
+            points_max: seasonRow.points_max_array?.[r.enemy] ?? 0,
+            introduction_order: seasonRow.intro_order_array?.[r.enemy] ?? 0,
+            players: stat?.players ?? 0,
+            total_unique_players: stat?.total_unique_players ?? 0,
+            kills: stat?.kills ?? 0n,
+            deaths: stat?.deaths ?? 0n,
+        };
+    });
 
     // Step 3: Full history for the archives chart.
     const allStatusRows = await db.h1_status.findMany({
@@ -122,7 +152,15 @@ function _groupByBucket(statusRows) {
         if (row.time > entry.time) entry.time = row.time;
     }
 
-    return Array.from(byBucket.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([, { time, buckets }]) => ({ time, data: buckets }));
+    return (
+        Array.from(byBucket.entries())
+            .sort(([a], [b]) => a - b)
+            // Drop sparse buckets (missing one or more factions). The worker
+            // writes all 3 factions per poll, so a missing slot indicates an
+            // incomplete bucket that shouldn't render. Leaving null slots here
+            // would crash downstream consumers like getWarOutcome.mjs that do
+            // factionData.every((f) => f.status === ...) on each snapshot.
+            .filter(([, { buckets }]) => buckets.every((f) => f !== null))
+            .map(([, { time, buckets }]) => ({ time, data: buckets }))
+    );
 }
