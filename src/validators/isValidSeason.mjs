@@ -7,27 +7,26 @@ const snapshotDataItemSchema = z.object({
     status: z.enum(['hidden', 'active', 'defeated']),
 });
 
-// Snapshot data: JSON string (from API) or already-parsed array/object
-const snapshotDataField = z.union([
-    z.string().refine(
-        (val) => {
-            try {
-                const arr = JSON.parse(val);
-                return (
-                    Array.isArray(arr) &&
-                    arr.every((item) => snapshotDataItemSchema.safeParse(item).success)
-                );
-            } catch {
-                return false;
-            }
-        },
-        {
-            message: 'data must be a stringified array of valid snapshot data items',
-        },
-    ),
-    z.array(snapshotDataItemSchema),
-    z.object({}).passthrough(),
-]);
+// Snapshot data: JSON string (from HD1 API wire format). Parsed at write time
+// by updateSeason; validated here only at the Zod level to ensure the inner
+// content is shape-compatible.
+const snapshotDataField = z.string().refine(
+    (val) => {
+        try {
+            const arr = JSON.parse(val);
+            return (
+                Array.isArray(arr) &&
+                arr.length === 3 &&
+                arr.every((item) => snapshotDataItemSchema.safeParse(item).success)
+            );
+        } catch {
+            return false;
+        }
+    },
+    {
+        message: 'data must be a stringified array of 3 valid snapshot data items',
+    },
+);
 
 // Schema for the "snapshots" array
 const snapshotSchema = z.object({
