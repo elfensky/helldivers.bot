@@ -919,23 +919,28 @@ Defend events are sorted by `end_time` (most recent wins per region):
 
 ---
 
-## 13. On-Demand Season Fetching — `fetchAndSeedSeason`
+## 13. On-Demand Season Fetching — `updateSeason`
 
-`src/db/queries/fetchAndSeedSeason.mjs`
+`src/update/season.mjs`
 
 ```ts
-fetchAndSeedSeason(season: number): Promise<void>
+updateSeason(season: number): Promise<{ ms: number; season: number; confirmSeason: object }>
 ```
 
-Fetches a single season from the official Helldivers API and seeds it into the normalized `h1_*` tables. Called on-demand by the `/archives` history page when a user requests a season not yet stored in the database.
+Fetches a single season from the official Helldivers API (`get_snapshots`) and upserts it into the normalized `h1_*` tables plus the raw `rebroadcast_season` table. This is the **shared backfill pipeline** used by three callers:
+
+1. **Worker poll** — `src/app/api/h1/update/route.js` calls `updateSeason(currentSeason)` on every poll to keep the active season's snapshots fresh, and calls `updateSeason(previousSeason)` once when a season transition is detected to capture the closing snapshot.
+2. **`/archives` page** — `src/app/archives/page.jsx` calls `updateSeason(resolvedSeason)` when the user requests a season not yet in the database.
+3. **Admin refresh button** — `src/features/archives/reseedSeason.mjs` calls `updateSeason(season)` when an admin clicks the refresh control to force a backfill.
 
 ### Behavior
 
 1. Calls `fetchSeason(season)` from `src/update/fetch.mjs` (official API `get_snapshots` endpoint)
-2. Returns early (no-op) if the API returns no meaningful data (no snapshots, no events)
-3. Upserts into: `h1_season`, `h1_introduction_order`, `h1_points_max`, `h1_event` (defend + attack), `h1_snapshot`
-4. All operations use Prisma upserts — idempotent, safe to call multiple times for the same season
-5. Throws if the API fetch itself fails
+2. Validates the response with `isValidSeason` (Zod). Throws if invalid.
+3. Cross-checks the returned season matches the requested season. Throws if not.
+4. Upserts into: `rebroadcast_season` (raw JSON), `h1_season`, `h1_introduction_order`, `h1_points_max`, `h1_snapshot`, `h1_event` (defend + attack)
+5. Stamps `h1_season.last_updated = now` at the end via `queryUpsertSeason(season, true)`
+6. All operations use Prisma upserts — idempotent, safe to call multiple times for the same season
 
 ### Usage
 
@@ -943,7 +948,7 @@ Fetches a single season from the official Helldivers API and seeds it into the n
 // In /archives page — fetch missing season on first request
 const { data, error } = await tryCatch(getCampaign(season));
 if (!error && !data) {
-    await tryCatch(fetchAndSeedSeason(season));
+    await tryCatch(updateSeason(season));
     // Re-query after seeding
     ({ data, error } = await tryCatch(getCampaign(season)));
 }
@@ -957,7 +962,7 @@ The `/archives` page no longer queries the database for available seasons. Inste
 const seasons = Array.from({ length: activeSeason - 1 }, (_, i) => activeSeason - 1 - i);
 ```
 
-This ensures all past seasons are always selectable, even if they haven't been fetched yet. First access triggers `fetchAndSeedSeason()`, after which the data is cached in the DB permanently.
+This ensures all past seasons are always selectable, even if they haven't been fetched yet. First access triggers `updateSeason()`, after which the data is cached in the DB permanently.
 
 ---
 

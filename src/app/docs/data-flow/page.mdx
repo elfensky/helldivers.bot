@@ -519,13 +519,19 @@ After `updateSeason()` returns, the handler re-queries the database and returns 
 
 ### Frontend on-demand fetching
 
-The `/archives` history page also fetches seasons on-demand via `fetchAndSeedSeason()` (`src/db/queries/fetchAndSeedSeason.mjs`). When a user selects a season not yet in the database:
+The `/archives` history page also fetches seasons on-demand via `updateSeason()` — the same shared pipeline the worker uses. When a user selects a season not yet in the database:
 
 1. `getCampaign(season)` returns `null`
-2. `fetchAndSeedSeason(season)` calls `fetchSeason(season)` (official API) and upserts into `h1_season`, `h1_event`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`
+2. `updateSeason(season)` calls `fetchSeason(season)` (official API) and upserts into `rebroadcast_season`, `h1_season`, `h1_event`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`
 3. `getCampaign(season)` is re-queried and now returns the seeded data
 
 The season selector on `/archives` is derived from the current season number (`Array.from({length: activeSeason - 1}, ...)`), not from a database query. This ensures all past seasons are always selectable regardless of what exists in the DB.
+
+### Season transition closing pass
+
+When the HD1 API transitions from one season to the next, it writes one final "closing" snapshot to the old season's history a few minutes after the transition point. The worker's `/api/h1/update` route tracks the season observed on the previous poll in module-level state (`lastSeasonObserved`). On each poll, if the current season is higher than `lastSeasonObserved`, the route runs `updateSeason(lastSeasonObserved)` once before processing the current season — this captures the closing snapshot that would otherwise be missed as the worker's focus moves to the new season.
+
+The closing pass is non-fatal on error (the current season's update is more critical) and is scoped to the single transition event; it does not re-run on subsequent polls. The module-level state resets on worker restart, so a restart exactly during the tiny transition window will miss one closing snapshot — recoverable via the admin refresh button on `/archives?season=N`.
 
 ---
 

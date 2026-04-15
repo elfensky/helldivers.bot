@@ -1,7 +1,7 @@
 //db
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
-import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
+import { updateSeason } from '@/update/season';
 //auth
 import { auth } from '@/auth';
 import { headers as nextHeaders } from 'next/headers';
@@ -50,11 +50,12 @@ export default async function WarHistoryPage({ searchParams }) {
     // Fetch requested season from DB
     let { data, error } = await tryCatch(getCampaign(resolvedSeason));
 
-    // If season not in DB, fetch from official API and seed it
+    // If season not in DB, fetch from official API and seed it via the
+    // shared updateSeason pipeline (same helper the worker uses).
     if (!error && !data && resolvedSeason !== null) {
-        const { error: seedError } = await tryCatch(fetchAndSeedSeason(resolvedSeason));
+        const { error: seedError } = await tryCatch(updateSeason(resolvedSeason));
         if (seedError) {
-            console.error('fetchAndSeedSeason failed:', seedError);
+            console.error('updateSeason failed:', seedError);
             return (
                 <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
                     Unable to fetch season {resolvedSeason} from the official API.

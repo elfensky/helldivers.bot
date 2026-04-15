@@ -5,6 +5,9 @@ import { updateSeason } from '@/update/season';
 
 vi.mock('@/update/status', () => ({ updateStatus: vi.fn() }));
 vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
+vi.mock('@/update/pushNotifier', () => ({
+    checkAndNotify: vi.fn().mockResolvedValue(undefined),
+}));
 
 describe('GET /api/h1/update', () => {
     beforeEach(() => {
@@ -79,6 +82,99 @@ describe('GET /api/h1/update', () => {
         const res = await GET(req);
 
         expect(res.status).toBe(500);
+    });
+});
+
+describe('GET /api/h1/update — season transition detection', () => {
+    // The route keeps `lastSeasonObserved` as module-level state to detect
+    // season transitions across polls. These tests reset the route module
+    // between cases via vi.resetModules() so each test starts with a clean
+    // null state.
+
+    let transitionUpdateStatus;
+    let transitionUpdateSeason;
+    let transitionGET;
+
+    beforeEach(async () => {
+        vi.resetModules();
+        vi.stubEnv('UPDATE_KEY', 'test-secret-key');
+        // Re-import after reset so we get fresh mock instances bound to the
+        // re-imported route module.
+        const statusModule = await import('@/update/status');
+        const seasonModule = await import('@/update/season');
+        const routeModule = await import('@/app/api/h1/update/route');
+        transitionUpdateStatus = statusModule.updateStatus;
+        transitionUpdateSeason = seasonModule.updateSeason;
+        transitionGET = routeModule.GET;
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
+    const makeReq = () =>
+        new Request('http://localhost/api/h1/update', {
+            headers: { Authorization: 'Bearer test-secret-key' },
+        });
+
+    test('runs closing pass on outgoing season when current season is higher', async () => {
+        vi.mocked(transitionUpdateStatus)
+            .mockResolvedValueOnce({ season: 156, time: 1000 })
+            .mockResolvedValueOnce({ season: 157, time: 1010 });
+        vi.mocked(transitionUpdateSeason).mockResolvedValue({ season: 0 });
+
+        // Poll 1: no prior observation, no closing pass, only current-season call
+        await transitionGET(makeReq());
+        expect(transitionUpdateSeason).toHaveBeenCalledTimes(1);
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(1, 156);
+
+        // Poll 2: prior was 156, current is 157 — closing pass THEN current season
+        await transitionGET(makeReq());
+        expect(transitionUpdateSeason).toHaveBeenCalledTimes(3);
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(2, 156);
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(3, 157);
+    });
+
+    test('does not run closing pass when season stays the same across polls', async () => {
+        vi.mocked(transitionUpdateStatus)
+            .mockResolvedValueOnce({ season: 157, time: 1000 })
+            .mockResolvedValueOnce({ season: 157, time: 1010 });
+        vi.mocked(transitionUpdateSeason).mockResolvedValue({ season: 0 });
+
+        await transitionGET(makeReq());
+        await transitionGET(makeReq());
+
+        expect(transitionUpdateSeason).toHaveBeenCalledTimes(2);
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(1, 157);
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(2, 157);
+    });
+
+    test('closing pass failure is non-fatal and current season still processes', async () => {
+        vi.mocked(transitionUpdateStatus)
+            .mockResolvedValueOnce({ season: 156, time: 1000 })
+            .mockResolvedValueOnce({ season: 157, time: 1010 });
+        vi.mocked(transitionUpdateSeason)
+            .mockResolvedValueOnce({ season: 0 }) // poll 1 current
+            .mockRejectedValueOnce(new Error('closing pass API error')) // poll 2 closing
+            .mockResolvedValueOnce({ season: 0 }); // poll 2 current
+
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        await transitionGET(makeReq());
+        const res2 = await transitionGET(makeReq());
+
+        // Current season update still succeeded
+        expect(res2.status).toBe(200);
+        expect(transitionUpdateSeason).toHaveBeenCalledTimes(3);
+        // Closing pass for 156 logged the failure
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            expect.stringContaining('Closing pass for season 156 failed'),
+            expect.any(String),
+        );
+
+        consoleErrorSpy.mockRestore();
+        consoleLogSpy.mockRestore();
     });
 });
 

@@ -2,6 +2,64 @@
 
 ## Unreleased
 
+## 0.40.5
+
+### Fixed
+
+- **Worker now captures the closing snapshot of an outgoing season during
+  transitions.** When the HD1 API transitions from one season to the next,
+  it writes one final "closing" snapshot to the old season's history a few
+  minutes after the transition point. Previously,
+  `src/app/api/h1/update/route.js` called `updateSeason(currentSeason)`
+  only — once `getSeasonFromStatus` flipped to the new season, the worker
+  abandoned the old one and never fetched that closing frame. Verified on
+  season 156: DB had 36 snapshots, live API had 37 (the missing one at unix
+  time `1776189902`, 4 minutes after our DB's `last_updated`). Fix:
+  module-level `lastSeasonObserved` state in the route handler; if the
+  current poll's season is higher, run `updateSeason(previousSeason)` once
+  before processing the current season. Non-fatal on error — the current
+  season's update still proceeds. Three new unit tests in
+  `update.test.mjs` cover transition detection, no-op when season stays
+  the same, and closing-pass failure isolation.
+- **Season 156 missing closing snapshot.** One-time recovery: click the
+  admin "Refresh" button on `/archives?season=156` after deploy to
+  backfill the missing frame. The transition fix above prevents this
+  recurring on future transitions.
+
+### Changed
+
+- **Consolidated `updateSeason` and `fetchAndSeedSeason` into one helper.**
+  `src/db/queries/fetchAndSeedSeason.mjs` was a near-duplicate of
+  `src/update/season.mjs` (`updateSeason`) — both did "fetch
+  `get_snapshots`, validate, upsert into normalized tables."
+  `updateSeason` does strictly more (also writes to `rebroadcast_season`
+  and stamps `h1_season.last_updated` via `queryUpsertSeason(season, true)`).
+    - Deleted `src/db/queries/fetchAndSeedSeason.mjs` and
+      `src/__tests__/unit/queries/fetchAndSeedSeason.test.mjs`.
+    - Migrated `src/app/archives/page.jsx` to call `updateSeason(season)`.
+    - Migrated `src/features/archives/reseedSeason.mjs` to call
+      `updateSeason(season)` and removed the now-redundant manual
+      `db.h1_season.update({ last_updated: new Date() })` block
+      (`updateSeason` stamps it internally). Updated
+      `reseedSeason.test.mjs` accordingly.
+    - Net effect: one backfill helper instead of two, no behavioral
+      regression. The `/archives` on-demand path now also writes to
+      `rebroadcast_season` — a pure addition; nothing previously depended
+      on the absence of that write.
+
+### Documentation
+
+- **`CLAUDE.md`** updated the data-source separation rule to refer to
+  `updateSeason` (post-consolidation) and added a new bullet documenting
+  the season transition closing pass pattern.
+- **`src/app/docs/utilities/page.mdx`** — section 13 rewritten from
+  "On-Demand Season Fetching — `fetchAndSeedSeason`" to
+  "On-Demand Season Fetching — `updateSeason`" with the three caller
+  paths enumerated (worker poll, `/archives` on-demand, admin refresh).
+- **`src/app/docs/data-flow/page.mdx`** — frontend on-demand fetching
+  section updated to reference `updateSeason`; new "Season transition
+  closing pass" subsection added.
+
 ## 0.40.4
 
 ### Fixed
