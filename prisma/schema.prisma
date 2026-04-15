@@ -346,7 +346,6 @@ model h1_status {
 
     @@unique([season, enemy, bucket])
     @@index([season, bucket])
-    @@index([season])
 }
 
 model h1_statistic {
@@ -365,7 +364,6 @@ model h1_statistic {
 
     @@unique([season, enemy, bucket])
     @@index([season, bucket])
-    @@index([season])
 }
 
 model h1_event_progress {
@@ -380,7 +378,6 @@ model h1_event_progress {
     linked_event h1_event @relation("OneEventToManyProgress", fields: [type, event_id], references: [type, event_id])
 
     @@unique([type, event_id, bucket])
-    @@index([type, event_id, bucket])
 }
 
 // #endregion
