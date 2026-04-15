@@ -97,6 +97,10 @@ vi.mock('@/db/db', () => ({
         $transaction: vi.fn((fn) => Promise.resolve(Array.isArray(fn) ? fn : fn())),
         $connect: vi.fn(() => Promise.resolve()),
         $disconnect: vi.fn(() => Promise.resolve()),
+        $queryRaw: vi.fn(() => Promise.resolve([])),
+        $queryRawUnsafe: vi.fn(() => Promise.resolve([])),
+        $executeRaw: vi.fn(() => Promise.resolve(0)),
+        $executeRawUnsafe: vi.fn(() => Promise.resolve(0)),
     },
 }));
 
