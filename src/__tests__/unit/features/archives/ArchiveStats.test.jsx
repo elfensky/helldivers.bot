@@ -208,42 +208,49 @@ describe('ArchiveStats', () => {
     });
 
     it('renders combat record stats when live data is provided', () => {
+        // mockLive must mirror real Prisma return types: Int columns come back as
+        // JS Number, only the 5 explicit BigInt columns (kills, deaths, shots, hits,
+        // accidentals) come back as BigInt. total_unique_players is a GLOBAL per-season
+        // count repeated across all 3 faction rows — the component must read it from
+        // a single row, not sum it.
         const mockLive = [
             {
                 enemy: 0,
-                players: 5000n,
+                // Int columns — plain JS Number
+                players: 5000,
+                missions: 80000000,
+                successful_missions: 70000000,
+                total_unique_players: 100000,
+                // BigInt columns
                 kills: 1200000000n,
                 deaths: 50000000n,
                 accidentals: 50000000n,
-                missions: 80000000n,
-                successful_missions: 70000000n,
                 shots: 500000000n,
                 hits: 115000000n,
-                total_unique_players: 100000n,
             },
             {
                 enemy: 1,
-                players: 4000n,
+                players: 4000,
+                missions: 50000000,
+                successful_missions: 40000000,
+                total_unique_players: 100000, // same value — proves no sum
                 kills: 800000000n,
                 deaths: 30000000n,
                 accidentals: 30000000n,
-                missions: 50000000n,
-                successful_missions: 40000000n,
                 shots: 300000000n,
                 hits: 70000000n,
-                total_unique_players: 80000n,
             },
             {
                 enemy: 2,
-                players: 3000n,
+                players: 3000,
+                missions: 26000000,
+                successful_missions: 20000000,
+                total_unique_players: 100000, // same value — proves no sum
                 kills: 400000000n,
                 deaths: 20000000n,
                 accidentals: 20000000n,
-                missions: 26000000n,
-                successful_missions: 20000000n,
                 shots: 200000000n,
                 hits: 46000000n,
-                total_unique_players: 60000n,
             },
         ];
 
@@ -263,6 +270,12 @@ describe('ArchiveStats', () => {
         expect(screen.getByText('MISSION_SUCCESS')).toBeDefined();
         expect(screen.getByText('PEAK_ONLINE')).toBeDefined();
         expect(screen.getByText('TOTAL_DIVERS')).toBeDefined();
+
+        // Correctness: total_unique_players must be read from a single row, not summed.
+        // 100000 → "100,000" via formatNumber's toLocaleString branch (< 1M).
+        // If sumBigInt were still applied, the rendered value would be "300,000".
+        expect(screen.getByText('100,000')).toBeDefined();
+        expect(screen.queryByText('300,000')).toBeNull();
     });
 
     it('renders Cyberstani interference subtitle on defeat', () => {

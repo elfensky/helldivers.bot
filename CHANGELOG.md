@@ -2,6 +2,50 @@
 
 ## Unreleased
 
+## 0.40.3
+
+### Fixed
+
+- **`/archives?season=N` no longer crashes with `TypeError: Cannot mix
+BigInt and other types` for seasons that have both events and
+  `h1_live` rows** (i.e. any season the worker was polling during).
+  `ArchiveStats.sumBigInt` seeded its accumulator with `0n` and added
+  `(f[field] ?? 0n)`, but only 5 of the 16 numeric fields in `h1_live`
+  are actually `BigInt` in the Prisma schema (`kills`, `deaths`,
+  `shots`, `hits`, `accidentals`); the others (`missions`,
+  `successful_missions`, `total_unique_players`, `players`, ...) are
+  `Int` and come back from Prisma as plain JS `Number`. Mixing them
+  with a BigInt accumulator threw. Fix: coerce to BigInt explicitly
+  with `BigInt(f[field] ?? 0)`, which is idempotent on BigInt input
+  and safely converts integer Numbers. Added a JSDoc warning on
+  `sumBigInt` listing the BigInt-vs-Int column split and the
+  per-season fields that must never be summed.
+- **`TOTAL_DIVERS` on `/archives` no longer triple-counts.**
+  `ArchiveStats.jsx:160` was calling `sumBigInt(live, 'total_unique_players')`,
+  but that field is documented in `/docs/database` and `/docs/hd1-api`
+  as "Unique players across the season" — a global per-season value
+  that the API repeats verbatim across all three faction rows. Summing
+  turned a real `983` into `2,949`. Fixed by reading from a single row
+  (`live[0]?.total_unique_players`). This was a latent bug masked by
+  the BigInt crash; fixing the crash alone would have shipped wrong
+  numbers publicly, so both fixes land together. Caught during a
+  4-way adversarial design review (Gemini flagged it first).
+- **Test fixtures now mirror real Prisma return types.** The existing
+  `mockLive` in `ArchiveStats.test.jsx` used BigInt literals for every
+  field including `missions`, `successful_missions`,
+  `total_unique_players`, and `players` — fields that Prisma actually
+  returns as JS `Number`. The test never reproduced the production
+  bug. Rewrote the fixture so Int columns use `Number` and only the
+  five actual BigInt columns use BigInt literals. Added a correctness
+  assertion verifying `total_unique_players` is read from a single
+  row (`100,000`), not summed across all three (`300,000`), so the
+  triple-count regression cannot sneak back in.
+- **Defensive zero-check in `formatPercent`/`formatRatio`.** Changed
+  `denominator === 0n` → `!denominator`, which works for both BigInt
+  `0n` and plain `0`. Safe today because denominators come from
+  `sumBigInt` and are always BigInt, but the strict-equality check was
+  brittle against any future caller passing a plain Number.
+
 ## 0.40.2
 
 ### Documentation

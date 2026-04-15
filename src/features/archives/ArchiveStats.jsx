@@ -6,17 +6,23 @@ import GlitchText from '@/features/archives/ClientGlitchText';
 import factions from '@/shared/enums/factions.mjs';
 import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
 
+// Only 5 fields in h1_live are BigInt in the Prisma schema: kills, deaths,
+// shots, hits, accidentals. The other stat columns (missions, successful_missions,
+// players, total_unique_players, ...) are Int and come back as plain JS Number.
+// BigInt() coerces either losslessly. DO NOT use sumBigInt for global-per-season
+// fields (total_unique_players, season_duration) — those are repeated verbatim
+// across the 3 faction rows and summing them overcounts 3x; read live[0]?.field.
 function sumBigInt(live, field) {
-    return live.reduce((acc, f) => acc + (f[field] ?? 0n), 0n);
+    return live.reduce((acc, f) => acc + BigInt(f[field] ?? 0), 0n);
 }
 
 function formatPercent(numerator, denominator) {
-    if (denominator === 0n) return '—';
+    if (!denominator) return '—';
     return ((Number(numerator) / Number(denominator)) * 100).toFixed(1) + '%';
 }
 
 function formatRatio(numerator, denominator) {
-    if (denominator === 0n) return '—';
+    if (!denominator) return '—';
     return (Number(numerator) / Number(denominator)).toFixed(1);
 }
 
@@ -157,7 +163,7 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
             {hasLive && (
                 <StatCard
                     label="TOTAL_DIVERS"
-                    value={formatNumber(sumBigInt(live, 'total_unique_players'))}
+                    value={formatNumber(Number(live[0]?.total_unique_players ?? 0))}
                 />
             )}
 
