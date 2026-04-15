@@ -2,6 +2,47 @@
 
 ## Unreleased
 
+## 0.40.6
+
+### Changed
+
+- **`prisma/seed/fetch-seasons.mjs` no longer fetches the currently-active
+  season.** The script's `--to` default used to resolve to the
+  auto-detected current season from `get_campaign_status`, which meant
+  every run captured the active season's partial mid-war state to disk.
+  That partial file would then reseed incomplete data on every fresh
+  deploy until the next manual refresh — exactly the failure pattern
+  that caused season 156 to have only 17 snapshots on disk when its
+  final state was 37. Now:
+    - `--to` defaults to `currentSeason - 1` (the last completed season).
+    - An explicit `--to=<current-or-higher>` is clamped to
+      `currentSeason - 1` with a warning, so users cannot accidentally
+      capture the active war.
+    - A new guard exits early with an informative message if
+      `--from > --to` after clamping (e.g. `--from=157 --to=157` when
+      season 157 is active).
+
+### Data
+
+- **Refreshed all 156 completed-season seed files in
+  `prisma/seed/seasons/`.** Running the updated script against the live
+  API brought disk data to parity for 9 seasons with real drift:
+    - Seasons 148-152: each was missing exactly one snapshot + one event
+      (the closing frame pattern the 0.40.5 worker fix now prevents going
+      forward).
+    - Season 153: missing 21 snapshots + 39 defend events + 3 attack
+      events (unusual drift — suggests an earlier run captured 153
+      mid-war; 0.40.5 + the script guard would have prevented this).
+    - Season 156: missing 20 snapshots + 33 defend events + 1 attack
+      event (the known Apr 4 mid-season fetch, now complete).
+    - Seasons 1-147, 154, 155 had no data changes; only the top-level
+      `time` field (fetch timestamp) was refreshed. The `time` field is
+      kept intentionally — it serves as a provenance marker for when each
+      seed file was last validated against the live API.
+
+    Fresh deploys using `prisma db seed` now get complete historical data
+    for all 156 completed seasons instead of the partial Apr 4 snapshot.
+
 ## 0.40.5
 
 ### Fixed
