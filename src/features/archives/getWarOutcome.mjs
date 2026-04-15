@@ -62,8 +62,7 @@ export function getWarOutcome(data) {
 
     // Victory signal 2: ANY snapshot shows all 3 factions defeated
     const anySnapshotDefeated = snapshots.some((snap) => {
-        const factionData =
-            typeof snap.data === 'string' ? JSON.parse(snap.data) : snap.data;
+        const factionData = snap.data;
         return (
             Array.isArray(factionData) &&
             factionData.length === 3 &&

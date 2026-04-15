@@ -47,8 +47,7 @@ export default function FactionStats({ events, snapshots, pointsMax, faction }) 
 
     if (snapshots?.length && pointsMax?.points) {
         const lastSnap = snapshots[snapshots.length - 1];
-        const parsed =
-            typeof lastSnap.data === 'string' ? JSON.parse(lastSnap.data) : lastSnap.data;
+        const parsed = lastSnap.data;
 
         if (parsed?.[factionIndex]) {
             const factionData = parsed[factionIndex];

@@ -41,11 +41,11 @@ describe('getWarOutcome', () => {
             status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [
                 {
-                    data: JSON.stringify([
+                    data: [
                         { status: 'defeated' },
                         { status: 'defeated' },
                         { status: 'defeated' },
-                    ]),
+                    ],
                 },
             ],
             events: [],
