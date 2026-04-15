@@ -2,6 +2,60 @@
 
 ## Unreleased
 
+## 0.40.4
+
+### Fixed
+
+- **Worker no longer spams `Multiple seasons present in status data`
+  on every poll.** `getSeasonFromStatus` was aggregating the season
+  field from `defend_event` into the current-season resolver, but the
+  HD1 API's `defend_event` slot is a "most recent event" slot that
+  persists across season transitions until replaced by a new defend
+  event — exactly the same reason `attack_events` was already
+  excluded with a `//can be from old season` comment. After the
+  156→157 transition, `defend_event.season: 156` stuck around while
+  `campaign_status` and `statistics` were all on 157, and the
+  resolver's dedup log warned on every 10s poll. The algorithm's
+  output was still accidentally correct (because `campaign_status`
+  came first in the aggregation and `Set` iteration preserved
+  insertion order, so `uniqueSeasons[0]` = 157), but the signal was
+  fragile and the noise floor was unacceptable. Fix: exclude
+  `defend_event` from `getSeasonFromStatus` entirely. The existing
+  cross-season safety guard in `queryUpsertEvent`
+  (`if (event.season !== season) skip`) already prevents lagged
+  events from leaking into the wrong season bucket, so no new guards
+  are needed downstream.
+
+### Changed
+
+- **`isValidStatus` now requires at least one entry in both
+  `campaign_status` and `statistics`.** Previously the Zod schema
+  accepted empty arrays, which would have crashed
+  `getSeasonFromStatus` with `No seasons found in status data`. The
+  real HD1 API always returns 3 entries each, so this `.min(1)`
+  tightening codifies an assumption the resolver already made;
+  malformed responses now fail at the input validator boundary
+  instead of deeper in the worker pipeline. Replaced the old
+  "accepts empty arrays" test with three separate cases covering
+  the new contract.
+
+### Documentation
+
+- **`CLAUDE.md` now documents the data-source separation rule and
+  the lagged event slots.** Added two bullets under
+  **Architecture — Stack**:
+    - `get_campaign_status` → `h1_live` (homepage live section) +
+      `h1_event` (new events); `get_snapshots` → `h1_snapshot` +
+      `h1_event` (historical); the two pipelines must not interact in
+      backfill paths, and `fetchAndSeedSeason` must never touch
+      `h1_live`. `h1_live_snapshot` is currently write-only — no
+      consumers except `snapshotTimers.mjs`' throttle bootstrap.
+    - `defend_event` and `attack_events` in `get_campaign_status` are
+      "most recent event" slots that persist across transitions;
+      `getSeasonFromStatus` must not use their `.season` as a
+      current-season signal, and `queryUpsertEvent` has the skip guard
+      as a safety net.
+
 ## 0.40.3
 
 ### Fixed

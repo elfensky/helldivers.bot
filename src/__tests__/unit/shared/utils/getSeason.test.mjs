@@ -29,13 +29,34 @@ describe('getSeasonFromStatus', () => {
         expect(getSeasonFromStatus(data)).toBe(7);
     });
 
-    test('extracts season from defend_event alone', () => {
+    test('ignores lagged defend_event during season transition', () => {
+        // The HD1 API's defend_event slot persists across transitions until replaced
+        // by a new defend event — after a season change, campaign_status/statistics
+        // are on the NEW season while defend_event may still reference the OLD one.
+        // getSeasonFromStatus must not poison the current-season resolver with it.
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const data = {
+            campaign_status: [{ season: 157 }, { season: 157 }, { season: 157 }],
+            defend_event: { season: 156 }, // lagged from previous season
+            statistics: [{ season: 157 }, { season: 157 }, { season: 157 }],
+        };
+        expect(getSeasonFromStatus(data)).toBe(157);
+        expect(warnSpy).not.toHaveBeenCalled();
+        warnSpy.mockRestore();
+    });
+
+    test('throws when both campaign_status and statistics are empty', () => {
+        // defend_event is no longer a fallback signal — if both primary arrays
+        // are empty, the response is unusable and we surface an error rather
+        // than silently picking a lagged season from defend_event.
         const data = {
             campaign_status: [],
             defend_event: { season: 2 },
             statistics: [],
         };
-        expect(getSeasonFromStatus(data)).toBe(2);
+        expect(() => getSeasonFromStatus(data)).toThrow(
+            'No seasons found in status data',
+        );
     });
 
     test('handles string season numbers by coercing to number', () => {
