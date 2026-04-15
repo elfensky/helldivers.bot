@@ -33,7 +33,7 @@ The result of this cleanup is a schema where every table has a clear purpose, ev
 4. Adopt a **tumbling-window bucket-upsert pattern** for all timeseries tables that preserves sub-15s homepage freshness with bounded storage (~120 MB total at default bucket size).
 5. Replace stateful throttle tracking (`snapshotTimers.mjs`) with deterministic bucket math.
 6. Make `BUCKET_SIZE` operator-tunable via environment variable for future storage/resolution tradeoffs.
-7. Preserve all existing production data via full backfill migration (no wipe).
+7. Preserve all existing production data via a pre-migration `pg_dump` backup that feeds a deferred offline reseed script (no in-migration backfill).
 8. Fix the `players_at_start` null-overwrite bug on `h1_event` update path.
 
 ## Non-goals
@@ -380,115 +380,82 @@ Modify `season.mjs`:
 
 ## Migration strategy
 
-Full backfill. Existing production data is preserved — we move data from old tables to new tables, then drop the old.
+**Export, drop, reseed-later.** A pre-migration `pg_dump` captures the entire database as a safety net. A single destructive Prisma migration then creates the new tables and drops the old ones in one deploy — no in-migration backfill, no multi-phase schema soak. Historical timeseries data is restored later by an offline reseed script that reads from the dump.
 
-### Phase 1: Schema additions
+The detailed execution runbook (operator commands, verification checks, rollback triggers) lives in `~/.claude/plans/zazzy-inventing-lighthouse.md`. This section captures the strategy at the spec level.
 
-Prisma migration adds new tables alongside existing ones. No drops yet.
+### Step 1: Export production database
 
-- Create `h1_status` (new shape)
-- Create `h1_statistic` (new shape)
-- Create `h1_event_progress` (new shape)
-- Add `introduction_order Int[]` and `points_max Int[]` columns to `h1_season`
+Before touching production, run `pg_dump --format=custom --no-owner --no-acl` against prod to produce a compressed, restorable artifact. Verify the dump by restoring it into a throwaway local database and recording row counts for each of the 10 old tables — those numbers are the reference point for validating the later reseed. **Do not run Step 2 until the dump has restored cleanly on a verification DB.** The dump is the only rollback mechanism for the destructive migration.
 
-At this point the new tables are empty and the schema can be rolled back cleanly.
+### Step 2: Destructive schema migration (single deploy)
 
-### Phase 2: Backfill (one-shot SQL, transactional)
-
-Within a single migration or a one-shot script, populate the new tables from the existing ones:
+One Prisma migration that is pure DDL — no `INSERT INTO ... SELECT`, no data transforms, no procedural blocks:
 
 ```sql
--- h1_season: inline the per-season constants
-UPDATE h1_season s
-SET introduction_order = (SELECT io.order FROM h1_introduction_order io WHERE io.season = s.season),
-    points_max         = (SELECT pm.points FROM h1_points_max pm WHERE pm.season = s.season);
+-- New tables
+CREATE TABLE "h1_status"         (...);
+CREATE TABLE "h1_statistic"      (...);
+CREATE TABLE "h1_event_progress" (...);
 
--- h1_status: from h1_live (latest bucket rows) and h1_snapshot (historic buckets)
--- h1_live rows represent "whatever state was last seen" — we treat each as a single
--- bucket row at bucket = floor(last_updated / 900) * 900
-INSERT INTO h1_status (id, season, enemy, bucket, time, points, points_taken, status)
-SELECT gen_random_uuid(), season, enemy,
-       FLOOR(EXTRACT(EPOCH FROM NOW()) / 900) * 900 AS bucket,
-       EXTRACT(EPOCH FROM NOW())::int AS time,
-       points, points_taken, status
-FROM h1_live;
+-- h1_season augmentation
+ALTER TABLE "h1_season"
+  ADD COLUMN "introduction_order" INTEGER[],
+  ADD COLUMN "points_max"         INTEGER[];
 
--- h1_snapshot: parse stringified JSON into 3 faction rows per (season, time)
--- This needs a procedural block or a script, not pure SQL — see migration.mjs below
--- Each snapshot row's `data` is a JSON string; parsing produces 3 rows at
--- bucket = floor(time / 900) * 900
-
--- h1_statistic: from h1_live_snapshot (keep only 4 signal fields)
-INSERT INTO h1_statistic (id, season, enemy, bucket, time, players, total_unique_players, kills, deaths)
-SELECT gen_random_uuid(), season, enemy,
-       FLOOR(time / 900) * 900 AS bucket,
-       time, players, total_unique_players, kills, deaths
-FROM h1_live_snapshot;
-
--- h1_event_progress: from h1_event_snapshot (rename + add bucket + drop points_max)
-INSERT INTO h1_event_progress (id, type, event_id, bucket, time, points)
-SELECT gen_random_uuid(), type, event_id,
-       FLOOR(time / 900) * 900 AS bucket,
-       time, points
-FROM h1_event_snapshot;
+-- Old table drops (FKs cascade)
+DROP TABLE "h1_live";
+DROP TABLE "h1_live_snapshot";
+DROP TABLE "h1_snapshot";
+DROP TABLE "h1_event_snapshot";
+DROP TABLE "h1_introduction_order";
+DROP TABLE "h1_points_max";
+DROP TABLE "rebroadcast_status";
+DROP TABLE "rebroadcast_snapshot";
 ```
 
-The h1_snapshot parsing pass is best done as a JavaScript migration script (not pure SQL) because it needs to parse the stringified JSON per row:
+Generate via `npx prisma migrate dev --name h1_tables_cleanup --create-only`, review the emitted SQL against the checklist (all 8 drops present, unique indexes on the bucket keys, `h1_event_progress → h1_event` FK on `(type, event_id)`), then dry-run on the verification DB before promoting to production.
 
-```js
-// prisma/migrations/XXXX_h1_tables_cleanup/migration.mjs
-const snapshots = await db.h1_snapshot.findMany();
-for (const snap of snapshots) {
-  const parsed = typeof snap.data === 'string' ? JSON.parse(snap.data) : snap.data;
-  // parsed is [{ points, points_taken, status }, ...] indexed by enemy
-  for (let enemy = 0; enemy < 3; enemy++) {
-    const faction = parsed[enemy];
-    if (!faction) continue;
-    await db.h1_status.upsert({
-      where: { season_enemy_bucket: { season: snap.season, enemy, bucket: Math.floor(snap.time / 900) * 900 } },
-      update: {}, // no-op on conflict (snapshot data is lower-priority than live data)
-      create: {
-        season: snap.season,
-        enemy,
-        bucket: Math.floor(snap.time / 900) * 900,
-        time: snap.time,
-        points: faction.points,
-        points_taken: faction.points_taken,
-        status: faction.status,
-      },
-    });
-  }
-}
-```
+### Step 3: Code cutover (same release as Step 2)
 
-Conflict handling: when h1_live and h1_snapshot both have data for the same (season, enemy, bucket), h1_live wins (it's the more recent, authoritative current-state observation). Implemented as `ON CONFLICT DO NOTHING` on the h1_snapshot backfill pass (which runs after h1_live).
+The schema migration and the code changes **must ship in the same deploy** to avoid a client/DB mismatch window. Contents of the release are scoped in the "Code changes" section below — worker cutover, query-layer rename, frontend cascade rename `data.live` → `data.status`, rebroadcast reconstruction, new `bucketing.mjs` helper, `players_at_start` null-protection fix.
 
-### Phase 3: Code cutover
+On the first post-deploy poll the worker begins populating `h1_status`, `h1_statistic`, and `h1_event_progress` for the current season. Historical seasons render empty in `/archives` until either (a) `updateSeason()` lazily rehydrates them from the HD1 API when a user visits, or (b) the reseed script bulk-populates them from the dump.
 
-Deploy in a single release that includes:
+### Step 4: Deferred offline reseed script
 
-- Updated Prisma client (regenerated from new schema)
-- New bucket-upsert queries
-- Updated `getCampaign.mjs`
-- Updated frontend readers (cascade rename `data.live` → `data.status`, drop defensive parses)
-- Updated rebroadcast route (reconstruction)
-- Updated validators, seed script, tests, docs
+A separate, out-of-band Node script (`scripts/backfill-h1-tables.mjs`) reads from the Step 1 dump (restored into a local legacy DB) and writes to the post-migration production database using the standard Prisma client. **Not part of the migration's critical path.** Ships after the cutover is stable.
 
-The worker starts writing to the new tables immediately. Old tables stay around for one deploy-cycle as insurance.
+Key design points:
 
-### Phase 4: Cleanup
+- **Read side**: raw `pg` client against the restored legacy DB. The legacy schema is gone from `schema.prisma` post-migration, so a second Prisma client would require a second schema file and build target — raw `pg` is simpler for read-only SELECTs.
+- **Write side**: production Prisma client, `createMany({ skipDuplicates: true })` for bulk inserts, `@@unique([season, enemy, bucket])` for idempotent re-runs.
+- **Bucket dedup in SQL**: `DISTINCT ON (…, bucket) ORDER BY …, time DESC` pushes the work to Postgres and mirrors the going-forward bucket-upsert semantics (keep the latest time within each bucket).
+- **JSON parse in Node**: `h1_snapshot.data` is stringified JSON; `JSON.parse` each row, fan into 3 faction rows. Skip-and-log on parse failure; don't throw.
+- **Per-season transaction + resumable**: each season wrapped in its own target-DB transaction; on restart, re-derive the checkpoint from `SELECT MAX(season) FROM h1_status` rather than trusting a checkpoint file.
+- **Active-season skip**: pass `--to=<currentSeason - 1>`. The worker has been writing fresh current-season rows since the Step 2/3 deploy; backfilling the active season from the (now-stale) dump would overwrite live data.
+- **`BUCKET_SIZE` must match production**: if the reseed runs with a different `BUCKET_SIZE` than the worker, the two sets of rows can never collide on their unique keys and archive charts will show a discontinuity. Assert on startup.
+- **`h1_event` untouched**: the script must not `upsert` into `h1_event` — that table is unchanged by the migration. Grep the finished script for `h1_event.` and expect zero writes.
+- **`--force` destructive refresh**: default mode is fast no-op re-runs (`skipDuplicates`); `--force` deletes target rows for each season before inserting, for recovering from a parse-bug fix.
 
-After 1–2 days of successful operation, a follow-up migration drops the old tables:
+Operator runbook:
 
-```sql
-DROP TABLE h1_live;
-DROP TABLE h1_live_snapshot;
-DROP TABLE h1_snapshot;
-DROP TABLE h1_event_snapshot;
-DROP TABLE h1_introduction_order;
-DROP TABLE h1_points_max;
-DROP TABLE rebroadcast_status;
-DROP TABLE rebroadcast_snapshot;
+```bash
+# After Step 2/3 deploy is stable, restore the backup into a local legacy DB
+createdb helldivers_legacy
+pg_restore --no-owner --no-acl --dbname=helldivers_legacy /backups/helldivers-h1-pre-cleanup-*.dump
+
+# Run the backfill from a local machine with prod write access
+export LEGACY_POSTGRES_URL="postgres://localhost/helldivers_legacy"
+export POSTGRES_URL="$PRODUCTION_POSTGRES_URL"
+export BUCKET_SIZE=900   # MUST match production worker value
+node --experimental-strip-types scripts/backfill-h1-tables.mjs --to=$((CURRENT_SEASON - 1))
+
+# Verify per-season row counts land in production
+psql "$POSTGRES_URL" -c "SELECT season, COUNT(*) FROM h1_status GROUP BY season ORDER BY season;"
+
+# Drop the legacy DB when satisfied
+dropdb helldivers_legacy
 ```
 
 ## Testing strategy
@@ -517,8 +484,8 @@ DROP TABLE rebroadcast_snapshot;
 
 ## Risks and mitigations
 
-### Risk 1: Backfill migration data loss
-**Mitigation:** Run the migration inside a transaction. Dry-run first on a staging DB. Keep old tables around for 1–2 days post-cutover before dropping.
+### Risk 1: Data loss during the destructive migration
+**Mitigation:** The pre-migration `pg_dump` is the single source of truth for historical data, and it must be verified (restored into a throwaway DB with recorded row counts) before Step 2 runs. Dry-run the Prisma migration against the restored-dump DB before applying to production. If the production migration fails or the post-deploy smoke checks fail, restore from the dump. The destructive migration has no per-row rollback path — the dump is the only recovery mechanism, so its integrity is non-negotiable.
 
 ### Risk 2: Cascade rename breaks a missed consumer
 **Mitigation:** Grep for all `data.live` references before deploy. Build + unit test + e2e test must pass. If something slips through, it'll surface as a runtime error on a specific route, easily rolled back.
@@ -561,7 +528,7 @@ DROP TABLE rebroadcast_snapshot;
 9. Cascade rename `data.live` → `data.status` through consumers
 10. Bundle `h1_event.players_at_start` null-protection fix
 11. Event player count derived from `h1_statistic` at query time (no denormalization into `h1_event_progress`)
-12. Full backfill migration (preserves existing production data)
+12. Pre-migration `pg_dump` backup + destructive single-deploy schema migration + deferred offline reseed script (preserves existing production data via the dump, not via in-migration backfill)
 13. Shared `src/update/bucketing.mjs` helper (`BUCKET_SIZE` + `computeBucket`) used by all 3 bucket-upsert queries
 14. Delete `snapshotTimers.mjs` and its tests — bucket math replaces stateful throttle tracking
 15. Event progression table name: `h1_event_progress` (parent-child clarity with `h1_event`)
