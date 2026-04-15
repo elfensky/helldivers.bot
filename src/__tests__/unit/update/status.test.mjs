@@ -9,29 +9,10 @@ vi.mock('@/shared/utils/getSeason', () => ({ getSeasonFromStatus: vi.fn() }));
 vi.mock('@/db/queries/rebroadcast', () => ({ queryUpsertRebroadcastStatus: vi.fn() }));
 vi.mock('@/db/queries/upsertSeason', () => ({ queryUpsertSeason: vi.fn() }));
 vi.mock('@/db/queries/upsertEvent', () => ({ queryUpsertEvent: vi.fn() }));
-vi.mock('@/db/queries/upsertLive', () => ({ queryUpsertLive: vi.fn() }));
-vi.mock('@/db/queries/upsertIntroductionOrder', () => ({
-    queryUpsertIntroductionOrder: vi.fn(),
-}));
-vi.mock('@/db/queries/upsertPointsMax', () => ({ queryUpsertPointsMax: vi.fn() }));
-vi.mock('@/db/queries/createLiveSnapshots', () => ({
-    queryCreateLiveSnapshots: vi.fn(),
-}));
-vi.mock('@/db/queries/createEventSnapshots', () => ({
-    queryCreateEventSnapshot: vi.fn(),
-}));
-vi.mock('@/update/snapshotTimers', () => ({
-    shouldTakeLiveSnapshot: vi.fn(),
-    recordLiveSnapshotTime: vi.fn(),
-    shouldTakeEventSnapshot: vi.fn(),
-    recordEventSnapshotTime: vi.fn(),
-}));
-vi.mock('@/shared/enums/map', () => ({
-    default: {
-        0: { 1: { status: null }, 11: { status: null } },
-        1: { 1: { status: null }, 11: { status: null } },
-        2: { 1: { status: null }, 11: { status: null } },
-    },
+vi.mock('@/db/queries/upsertStatus', () => ({ queryUpsertStatus: vi.fn() }));
+vi.mock('@/db/queries/upsertStatistic', () => ({ queryUpsertStatistic: vi.fn() }));
+vi.mock('@/db/queries/upsertEventProgress', () => ({
+    queryUpsertEventProgress: vi.fn(),
 }));
 
 // --- Import mocked modules ---
@@ -42,17 +23,9 @@ import { getSeasonFromStatus } from '@/shared/utils/getSeason';
 import { queryUpsertRebroadcastStatus } from '@/db/queries/rebroadcast';
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertLive } from '@/db/queries/upsertLive';
-import { queryUpsertIntroductionOrder } from '@/db/queries/upsertIntroductionOrder';
-import { queryUpsertPointsMax } from '@/db/queries/upsertPointsMax';
-import { queryCreateLiveSnapshots } from '@/db/queries/createLiveSnapshots';
-import { queryCreateEventSnapshot } from '@/db/queries/createEventSnapshots';
-import {
-    shouldTakeLiveSnapshot,
-    recordLiveSnapshotTime,
-    shouldTakeEventSnapshot,
-    recordEventSnapshotTime,
-} from '@/update/snapshotTimers';
+import { queryUpsertStatus } from '@/db/queries/upsertStatus';
+import { queryUpsertStatistic } from '@/db/queries/upsertStatistic';
+import { queryUpsertEventProgress } from '@/db/queries/upsertEventProgress';
 
 // --- Test data ---
 
@@ -81,9 +54,22 @@ const mockFetchedData = {
             status: 'active',
         },
     ],
-    statistics: [{ kills: 100 }, { kills: 200 }, { kills: 300 }],
-    defend_event: { event_id: 1, region: 3, enemy: 0, season: 5, status: 'active' },
-    attack_events: [{ event_id: 2, enemy: 1, season: 5, status: 'active' }],
+    statistics: [
+        { kills: 100, season_duration: 86400 },
+        { kills: 200, season_duration: 86400 },
+        { kills: 300, season_duration: 86400 },
+    ],
+    defend_event: {
+        event_id: 1,
+        region: 3,
+        enemy: 0,
+        season: 5,
+        status: 'active',
+        points: 10,
+    },
+    attack_events: [
+        { event_id: 2, enemy: 1, season: 5, status: 'active', points: 20 },
+    ],
 };
 
 /** Wire up all mocks for a successful run. */
@@ -94,13 +80,9 @@ function setupHappyPath() {
     queryUpsertRebroadcastStatus.mockResolvedValue({});
     queryUpsertSeason.mockResolvedValue({});
     queryUpsertEvent.mockResolvedValue({});
-    queryUpsertLive.mockResolvedValue({});
-    queryUpsertIntroductionOrder.mockResolvedValue({});
-    queryUpsertPointsMax.mockResolvedValue({});
-    queryCreateLiveSnapshots.mockResolvedValue({});
-    queryCreateEventSnapshot.mockResolvedValue({});
-    shouldTakeLiveSnapshot.mockResolvedValue(false);
-    shouldTakeEventSnapshot.mockResolvedValue(false);
+    queryUpsertStatus.mockResolvedValue({});
+    queryUpsertStatistic.mockResolvedValue({});
+    queryUpsertEventProgress.mockResolvedValue({});
 }
 
 // --- Tests ---
@@ -158,9 +140,13 @@ describe('updateStatus', () => {
         expect(isValidStatus).toHaveBeenCalledOnce();
         expect(getSeasonFromStatus).toHaveBeenCalledOnce();
         expect(queryUpsertRebroadcastStatus).toHaveBeenCalledWith(5, expect.any(Object));
-        // Season upserted twice: once with false, once with true
+        // Season upserted twice: once with arrays (false), once to confirm (true)
         expect(queryUpsertSeason).toHaveBeenCalledTimes(2);
-        expect(queryUpsertSeason).toHaveBeenCalledWith(5, false);
+        expect(queryUpsertSeason).toHaveBeenCalledWith(5, false, {
+            introOrder: [0, 1, 2],
+            pointsMax: [100, 200, 300],
+            seasonDuration: 86400,
+        });
         expect(queryUpsertSeason).toHaveBeenCalledWith(5, true);
     });
 
@@ -206,48 +192,75 @@ describe('updateStatus', () => {
         expect(attackCalls[0][2]).toMatchObject({ event_id: 2, region: 11 });
     });
 
-    // 9. Live upserted for all 3 factions
-    it('upserts h1_live for enemy 0, 1, and 2', async () => {
+    // 9. h1_status bucket-upserted for all 3 factions
+    it('upserts h1_status for enemy 0, 1, and 2', async () => {
         setupHappyPath();
 
         await updateStatus();
 
-        expect(queryUpsertLive).toHaveBeenCalledTimes(3);
-        // Verify each enemy index
+        expect(queryUpsertStatus).toHaveBeenCalledTimes(3);
         for (let enemy = 0; enemy < 3; enemy++) {
-            expect(queryUpsertLive).toHaveBeenCalledWith(
+            expect(queryUpsertStatus).toHaveBeenCalledWith(
                 5,
                 enemy,
+                mockFetchedData.time,
                 mockFetchedData.campaign_status[enemy],
-                mockFetchedData.statistics[enemy],
-                expect.any(Object), // factionMap
             );
         }
     });
 
-    // 10. Live snapshot captured when timer says yes
-    it('captures live snapshot when shouldTakeLiveSnapshot returns true', async () => {
+    // 10. h1_statistic bucket-upserted for all 3 factions
+    it('upserts h1_statistic for enemy 0, 1, and 2', async () => {
         setupHappyPath();
-        shouldTakeLiveSnapshot.mockResolvedValue(true);
 
         await updateStatus();
 
-        expect(queryCreateLiveSnapshots).toHaveBeenCalledWith(
-            5,
-            1000,
-            mockFetchedData.statistics,
-        );
-        expect(recordLiveSnapshotTime).toHaveBeenCalledWith(1000);
+        expect(queryUpsertStatistic).toHaveBeenCalledTimes(3);
+        for (let enemy = 0; enemy < 3; enemy++) {
+            expect(queryUpsertStatistic).toHaveBeenCalledWith(
+                5,
+                enemy,
+                mockFetchedData.time,
+                mockFetchedData.statistics[enemy],
+            );
+        }
     });
 
-    // 11. Live snapshot skipped when timer says no
-    it('skips live snapshot when shouldTakeLiveSnapshot returns false', async () => {
+    // 11. h1_event_progress upserted for active defend event + attack events
+    it('upserts h1_event_progress for defend and attack events in current season', async () => {
         setupHappyPath();
-        shouldTakeLiveSnapshot.mockResolvedValue(false);
 
         await updateStatus();
 
-        expect(queryCreateLiveSnapshots).not.toHaveBeenCalled();
-        expect(recordLiveSnapshotTime).not.toHaveBeenCalled();
+        // 1 defend + 1 attack in current season
+        expect(queryUpsertEventProgress).toHaveBeenCalledTimes(2);
+        expect(queryUpsertEventProgress).toHaveBeenCalledWith(
+            'defend',
+            expect.objectContaining({ event_id: 1 }),
+            mockFetchedData.time,
+        );
+        expect(queryUpsertEventProgress).toHaveBeenCalledWith(
+            'attack',
+            expect.objectContaining({ event_id: 2 }),
+            mockFetchedData.time,
+        );
+    });
+
+    // 12. h1_event_progress skipped for lagged cross-season events
+    it('skips h1_event_progress for attack events from a different season', async () => {
+        setupHappyPath();
+        const laggedData = structuredClone(mockFetchedData);
+        laggedData.attack_events = [
+            { event_id: 9, enemy: 1, season: 4, status: 'active', points: 30 },
+        ];
+        fetchStatus.mockResolvedValue(laggedData);
+
+        await updateStatus();
+
+        // Only the defend event progress call — attack skipped because season mismatch
+        const attackProgCalls = queryUpsertEventProgress.mock.calls.filter(
+            (call) => call[0] === 'attack',
+        );
+        expect(attackProgCalls).toHaveLength(0);
     });
 });
