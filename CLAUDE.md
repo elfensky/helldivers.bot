@@ -25,7 +25,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Vitest:** `npm run test:unit` (single run), `npm run test:coverage` (with coverage).
 - **Playwright smoke tests:** `npm run test:e2e` to verify app builds and runs.
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
-- **Progressive env vars:** Only `POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL` are required. Auth and analytics are optional — see `.example.env` section headers.
+- **Progressive env vars:** Only `POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL` are required. Auth, analytics, and `BUCKET_SIZE` (timeseries bucket width) are optional — see `.example.env` section headers.
 
 ### DevTools Verification
 
