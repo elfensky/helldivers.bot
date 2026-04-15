@@ -62,14 +62,41 @@ describe('queryUpsertEvent', () => {
         expect(result).toHaveProperty('ms');
     });
 
-    test('defaults players_at_start to null when not provided', async () => {
-        const eventWithoutPlayers = { ...mockEvent, players_at_start: undefined };
+    test('includes players_at_start in update path when value is present', async () => {
         vi.mocked(db.h1_event.upsert).mockResolvedValue({});
+        await queryUpsertEvent(5, 'defend', mockEvent);
 
-        await queryUpsertEvent(5, 'defend', eventWithoutPlayers);
+        const callArg = vi.mocked(db.h1_event.upsert).mock.calls[0][0];
+        expect(callArg.update.players_at_start).toBe(1500);
+    });
 
-        const callArg = db.h1_event.upsert.mock.calls[0][0];
-        expect(callArg.update.players_at_start).toBeNull();
+    test('OMITS players_at_start from update path when value is null', async () => {
+        vi.mocked(db.h1_event.upsert).mockResolvedValue({});
+        const noPlayers = { ...mockEvent, players_at_start: null };
+        await queryUpsertEvent(5, 'defend', noPlayers);
+
+        const callArg = vi.mocked(db.h1_event.upsert).mock.calls[0][0];
+        expect(callArg.update).not.toHaveProperty('players_at_start');
+    });
+
+    test('OMITS players_at_start from update path when value is undefined', async () => {
+        vi.mocked(db.h1_event.upsert).mockResolvedValue({});
+        const noPlayers = { ...mockEvent };
+        delete noPlayers.players_at_start;
+        await queryUpsertEvent(5, 'defend', noPlayers);
+
+        const callArg = vi.mocked(db.h1_event.upsert).mock.calls[0][0];
+        expect(callArg.update).not.toHaveProperty('players_at_start');
+    });
+
+    test('still includes players_at_start in create path when value is null', async () => {
+        // Create path is fine with null — the field is nullable.
+        // Only update should avoid overwriting with null.
+        vi.mocked(db.h1_event.upsert).mockResolvedValue({});
+        const noPlayers = { ...mockEvent, players_at_start: null };
+        await queryUpsertEvent(5, 'defend', noPlayers);
+
+        const callArg = vi.mocked(db.h1_event.upsert).mock.calls[0][0];
         expect(callArg.create.players_at_start).toBeNull();
     });
 
