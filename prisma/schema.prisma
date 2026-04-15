@@ -160,6 +160,9 @@ model h1_season {
     //   is_active          Boolean    @default(false)
     last_updated       DateTime?
     season             Int                    @unique
+    // NEW: inlined per-season constants (old relation tables stay until Task 21)
+    intro_order_array  Int[]                  @default([])
+    points_max_array   Int[]                  @default([])
     //relationships
     introduction_order h1_introduction_order? @relation("OneSeasonToOneIntroductionOrder") //a season must have 1 introduction_order, and an introduction_order must always be linked to a season
     points_max         h1_points_max?         @relation("OneSeasonToOnePointsMax") //a season must have 1 points_max, and a points_max must always be linked to a season
@@ -168,6 +171,9 @@ model h1_season {
     live               h1_live[]              @relation("OneSeasonToManyLive")
     live_snapshots     h1_live_snapshot[]     @relation("OneSeasonToManyLiveSnapshots")
     event_snapshots    h1_event_snapshot[]    @relation("OneSeasonToManyEventSnapshots")
+    // NEW relations
+    status             h1_status[]            @relation("OneSeasonToManyStatus")
+    statistic          h1_statistic[]         @relation("OneSeasonToManyStatistic")
     //   @@index([is_active, last_updated])
 
     //indexes
@@ -229,6 +235,7 @@ model h1_event {
     //relationship
     linked_season h1_season @relation("OneSeasonToManyEvents", fields: [season], references: [season])
     snapshots h1_event_snapshot[] @relation("OneEventToManySnapshots")
+    progress  h1_event_progress[] @relation("OneEventToManyProgress")
 
     //indexes
     @@unique([type, event_id])
@@ -322,6 +329,58 @@ model h1_event_snapshot {
     @@unique([type, event_id, time])
     @@index([season, time])
     @@index([event_id, time])
+}
+
+model h1_status {
+    id           String @id @default(uuid(7))
+    season       Int
+    enemy        Int    // 0=Bugs, 1=Cyborgs, 2=Illuminate
+    bucket       Int    // floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE — unique window start
+    time         Int    // latest poll time within this bucket (drifts with each upsert)
+
+    points       Int
+    points_taken Int
+    status       String // 'hidden' | 'active' | 'defeated'
+
+    linked_season h1_season @relation("OneSeasonToManyStatus", fields: [season], references: [season])
+
+    @@unique([season, enemy, bucket])
+    @@index([season, bucket])
+    @@index([season])
+}
+
+model h1_statistic {
+    id                   String @id @default(uuid(7))
+    season               Int
+    enemy                Int
+    bucket               Int
+    time                 Int
+
+    players              Int
+    total_unique_players Int
+    kills                BigInt
+    deaths               BigInt
+
+    linked_season h1_season @relation("OneSeasonToManyStatistic", fields: [season], references: [season])
+
+    @@unique([season, enemy, bucket])
+    @@index([season, bucket])
+    @@index([season])
+}
+
+model h1_event_progress {
+    id         String @id @default(uuid(7))
+    type       String // 'attack' | 'defend'
+    event_id   Int
+    bucket     Int
+    time       Int
+
+    points     Int    // the progression signal — points_max is constant, lives on h1_event
+
+    linked_event h1_event @relation("OneEventToManyProgress", fields: [type, event_id], references: [type, event_id])
+
+    @@unique([type, event_id, bucket])
+    @@index([type, event_id, bucket])
 }
 
 // #endregion
