@@ -1,3 +1,4 @@
+import db from '@/db/db';
 import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/shared/utils/time';
@@ -10,10 +11,6 @@ import { formDataToObject } from '@/shared/utils/formdata';
 import { isValidContentType } from '@/validators/isValidContentType';
 import { isValidFormData } from '@/validators/isValidFormData';
 //db
-import {
-    queryGetRebroadcastStatus,
-    queryGetRebroadcastSeason,
-} from '@/db/queries/rebroadcast';
 import { updateSeason } from '@/update/season';
 //auth
 import { validateApiKey } from '@/db/queries/validateApiKey';
@@ -82,37 +79,37 @@ export async function POST(request) {
         );
     });
 
-    //4. attempt to get data from db
+    //4. reconstruct the HD1 wire format from the normalized tables
     let data = undefined;
     switch (formValues.action) {
         case 'get_campaign_status': {
-            const { data: statusResult, error: statusError } = await tryCatch(
-                queryGetRebroadcastStatus(),
+            const { data: statusBody, error: statusError } = await tryCatch(
+                reconstructCampaignStatus(),
             );
             if (statusError) return errorResponse(404, start, 'Not found');
-            data = statusResult?.query?.json;
+            data = statusBody;
             break;
         }
         case 'get_snapshots': {
-            const { data: seasonResult, error: seasonError } = await tryCatch(
-                queryGetRebroadcastSeason(formValues.season),
+            const { data: snapshotBody, error: snapshotError } = await tryCatch(
+                reconstructSnapshots(formValues.season),
             );
-            if (seasonError) return errorResponse(404, start, 'Not found');
-            data = seasonResult?.query?.json;
+            if (snapshotError) return errorResponse(404, start, 'Not found');
+            data = snapshotBody;
 
-            // fetch from remote if not available locally
-            if (data === undefined || data === null) {
+            // fetch from remote if the season isn't populated locally yet
+            if (data === null) {
                 const { error: seasonFetchError } = await tryCatch(
                     updateSeason(formValues.season),
                 );
                 if (seasonFetchError) {
                     return errorResponse(404, start, 'Not found');
                 }
-                const { data: retryResult, error: retryError } = await tryCatch(
-                    queryGetRebroadcastSeason(formValues.season),
+                const { data: retryBody, error: retryError } = await tryCatch(
+                    reconstructSnapshots(formValues.season),
                 );
                 if (retryError) return errorResponse(404, start, 'Not found');
-                data = retryResult?.query?.json;
+                data = retryBody;
             }
             break;
         }
@@ -126,6 +123,165 @@ export async function POST(request) {
     }
     //6. return response
     return successResponse(200, start, data);
+}
+
+/**
+ * Reconstruct the `get_campaign_status` wire format from the normalized
+ * tables (h1_season + h1_status + h1_statistic + h1_event). Uses the latest
+ * season with data. Returns null when no season has been populated yet.
+ *
+ * Partial loss of fidelity vs the legacy wire format: the 4 event-count
+ * fields on each statistics[] entry (defend_events, successful_defend_events,
+ * attack_events, successful_attack_events) are omitted — they are derivable
+ * from h1_event with COUNT(*) WHERE type=... AND status=... AND season=X.
+ */
+async function reconstructCampaignStatus() {
+    // Latest season that has been populated.
+    const seasonRow = await db.h1_season.findFirst({
+        where: { last_updated: { not: null } },
+        orderBy: { season: 'desc' },
+        select: {
+            season: true,
+            intro_order_array: true,
+            points_max_array: true,
+            season_duration: true,
+        },
+    });
+    if (!seasonRow) return null;
+
+    const targetSeason = seasonRow.season;
+
+    // Latest h1_status row per faction (via $queryRaw DISTINCT ON, like
+    // getCampaign.mjs). Prisma can't express DISTINCT ON natively.
+    const latestStatus = await db.$queryRaw`
+        SELECT DISTINCT ON (enemy) *
+        FROM h1_status
+        WHERE season = ${targetSeason}
+        ORDER BY enemy ASC, bucket DESC
+    `;
+    const latestStats = await db.$queryRaw`
+        SELECT DISTINCT ON (enemy) *
+        FROM h1_statistic
+        WHERE season = ${targetSeason}
+        ORDER BY enemy ASC, bucket DESC
+    `;
+    const activeEvents = await db.h1_event.findMany({
+        where: { season: targetSeason, status: 'active' },
+    });
+
+    const statByEnemy = new Map(latestStats.map((r) => [r.enemy, r]));
+
+    const latestTime = Math.max(
+        0,
+        ...latestStatus.map((r) => r.time),
+        ...latestStats.map((r) => r.time),
+    );
+
+    return {
+        time: latestTime,
+        error_code: 0,
+        campaign_status: latestStatus.map((r) => ({
+            enemy: r.enemy,
+            points: r.points,
+            points_taken: r.points_taken,
+            points_max: seasonRow.points_max_array?.[r.enemy] ?? 0,
+            status: r.status,
+            introduction_order: seasonRow.intro_order_array?.[r.enemy] ?? 0,
+        })),
+        statistics: [0, 1, 2].map((enemy) => {
+            const s = statByEnemy.get(enemy);
+            return {
+                enemy,
+                season_duration: seasonRow.season_duration ?? 0,
+                players: s?.players ?? 0,
+                total_unique_players: s?.total_unique_players ?? 0,
+                missions: s?.missions ?? 0,
+                successful_missions: s?.successful_missions ?? 0,
+                total_mission_difficulty: s?.total_mission_difficulty ?? 0,
+                completed_planets: s?.completed_planets ?? 0,
+                // 4 fields intentionally omitted (derivable from h1_event):
+                //   defend_events, successful_defend_events,
+                //   attack_events, successful_attack_events
+                kills: s?.kills != null ? Number(s.kills) : 0,
+                deaths: s?.deaths != null ? Number(s.deaths) : 0,
+                accidentals: s?.accidentals != null ? Number(s.accidentals) : 0,
+                shots: s?.shots != null ? Number(s.shots) : 0,
+                hits: s?.hits != null ? Number(s.hits) : 0,
+            };
+        }),
+        defend_event: activeEvents.find((e) => e.type === 'defend') ?? null,
+        attack_events: activeEvents.filter((e) => e.type === 'attack'),
+        introduction_order: seasonRow.intro_order_array ?? [],
+        points_max: seasonRow.points_max_array ?? [],
+    };
+}
+
+/**
+ * Reconstruct the `get_snapshots` wire format for a given season from the
+ * normalized tables (h1_season + h1_status + h1_event). Returns null when
+ * the season has no h1_season row yet (caller may then trigger an on-demand
+ * updateSeason() fetch from the official API).
+ *
+ * Sparse buckets (missing one or more factions) are filtered out of the
+ * snapshot array for consumer safety — matches getCampaign.mjs's behavior.
+ */
+async function reconstructSnapshots(season) {
+    if (!season) return null;
+
+    const seasonRow = await db.h1_season.findUnique({
+        where: { season },
+        select: {
+            season: true,
+            intro_order_array: true,
+            points_max_array: true,
+        },
+    });
+    if (!seasonRow) return null;
+
+    const allStatus = await db.h1_status.findMany({
+        where: { season },
+        orderBy: [{ bucket: 'asc' }, { enemy: 'asc' }],
+    });
+    const allEvents = await db.h1_event.findMany({
+        where: { season },
+    });
+
+    // Group h1_status rows by bucket into snapshot frames whose `data` field
+    // is a stringified JSON array indexed by enemy — matching the legacy
+    // h1_snapshot wire shape that external consumers parse on receipt.
+    const byBucket = new Map();
+    for (const r of allStatus) {
+        if (!byBucket.has(r.bucket)) {
+            byBucket.set(r.bucket, { time: r.bucket, factions: [null, null, null] });
+        }
+        const entry = byBucket.get(r.bucket);
+        entry.factions[r.enemy] = {
+            points: r.points,
+            points_taken: r.points_taken,
+            status: r.status,
+        };
+        // Use the latest poll time within the bucket as the frame's time.
+        if (r.time > entry.time) entry.time = r.time;
+    }
+    const snapshots = Array.from(byBucket.values())
+        .sort((a, b) => a.time - b.time)
+        // Drop sparse buckets missing any faction (see getCampaign.mjs).
+        .filter(({ factions }) => factions.every((f) => f !== null))
+        .map(({ time, factions }) => ({
+            season,
+            time,
+            data: JSON.stringify(factions),
+        }));
+
+    return {
+        time: Math.floor(Date.now() / 1000),
+        error_code: 0,
+        introduction_order: seasonRow.intro_order_array ?? [],
+        points_max: seasonRow.points_max_array ?? [],
+        snapshots,
+        defend_events: allEvents.filter((e) => e.type === 'defend'),
+        attack_events: allEvents.filter((e) => e.type === 'attack'),
+    };
 }
 
 export const GET = methodNotAllowed;
