@@ -56,7 +56,7 @@ export const getCampaign = cache(async function getCampaign(season = null) {
     // shape. Consumers (computeMapState, StatGrid, EventCard, opengraph-image)
     // read this as the per-faction "current state" and must find all the
     // fields they historically read from h1_live: campaign progression +
-    // points_max + introduction_order + the 4 signal statistics.
+    // points_max + introduction_order + all 16 statistics fields.
     const statByEnemy = new Map(rawStatRows.map((r) => [r.enemy, r]));
     const liveRows = rawLiveRows.map((r) => {
         const stat = statByEnemy.get(r.enemy);
@@ -64,10 +64,23 @@ export const getCampaign = cache(async function getCampaign(season = null) {
             ...r,
             points_max: seasonRow.points_max_array?.[r.enemy] ?? 0,
             introduction_order: seasonRow.intro_order_array?.[r.enemy] ?? 0,
+            // Merge all 16 stats fields from h1_statistic
+            season_duration: stat?.season_duration ?? 0,
             players: stat?.players ?? 0,
             total_unique_players: stat?.total_unique_players ?? 0,
-            kills: stat?.kills ?? 0n,
+            missions: stat?.missions ?? 0,
+            successful_missions: stat?.successful_missions ?? 0,
+            total_mission_difficulty: stat?.total_mission_difficulty ?? 0,
+            completed_planets: stat?.completed_planets ?? 0,
+            defend_events: stat?.defend_events ?? 0,
+            successful_defend_events: stat?.successful_defend_events ?? 0,
+            attack_events: stat?.attack_events ?? 0,
+            successful_attack_events: stat?.successful_attack_events ?? 0,
             deaths: stat?.deaths ?? 0n,
+            kills: stat?.kills ?? 0n,
+            accidentals: stat?.accidentals ?? 0n,
+            shots: stat?.shots ?? 0n,
+            hits: stat?.hits ?? 0n,
         };
     });
 

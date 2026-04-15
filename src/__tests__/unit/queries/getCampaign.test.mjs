@@ -19,32 +19,68 @@ const mockLiveRows = [
 ];
 
 // Latest-bucket-per-faction h1_statistic rows. Merged into data.live[i] by
-// getCampaign so consumers (StatGrid, formatNumber, etc.) can read the 4
-// stats signals without a second query.
+// getCampaign so consumers (StatGrid, formatNumber, etc.) can read all 16
+// stats fields without a second query.
 const mockStatRows = [
     {
         enemy: 0,
         bucket: 42,
+        season_duration: 100,
         players: 1000,
         total_unique_players: 5000,
-        kills: 10000n,
+        missions: 100,
+        successful_missions: 90,
+        total_mission_difficulty: 500,
+        completed_planets: 1,
+        defend_events: 2,
+        successful_defend_events: 1,
+        attack_events: 3,
+        successful_attack_events: 2,
         deaths: 1000n,
+        kills: 10000n,
+        accidentals: 100n,
+        shots: 500000n,
+        hits: 400000n,
     },
     {
         enemy: 1,
         bucket: 42,
+        season_duration: 200,
         players: 2000,
         total_unique_players: 6000,
-        kills: 20000n,
+        missions: 200,
+        successful_missions: 180,
+        total_mission_difficulty: 1000,
+        completed_planets: 2,
+        defend_events: 4,
+        successful_defend_events: 3,
+        attack_events: 5,
+        successful_attack_events: 4,
         deaths: 2000n,
+        kills: 20000n,
+        accidentals: 200n,
+        shots: 1000000n,
+        hits: 800000n,
     },
     {
         enemy: 2,
         bucket: 42,
+        season_duration: 300,
         players: 3000,
         total_unique_players: 7000,
-        kills: 30000n,
+        missions: 300,
+        successful_missions: 270,
+        total_mission_difficulty: 1500,
+        completed_planets: 3,
+        defend_events: 6,
+        successful_defend_events: 5,
+        attack_events: 7,
+        successful_attack_events: 6,
         deaths: 3000n,
+        kills: 30000n,
+        accidentals: 300n,
+        shots: 1500000n,
+        hits: 1200000n,
     },
 ];
 
@@ -151,8 +187,8 @@ describe('getCampaign', () => {
         });
         // data.live must carry all fields consumers historically read from
         // the legacy h1_live row: campaign progression (from h1_status) +
-        // points_max / introduction_order (from h1_season arrays) + the 4
-        // stats signals (from h1_statistic). Shallow mock equality used to
+        // points_max / introduction_order (from h1_season arrays) + all 16
+        // stats fields (from h1_statistic). Shallow mock equality used to
         // hide this regression — assert explicit fields instead.
         expect(result.live).toHaveLength(3);
         expect(result.live[0]).toMatchObject({
@@ -164,28 +200,52 @@ describe('getCampaign', () => {
             points_max: 500,
             introduction_order: 0,
             // Merged from h1_statistic[enemy=0]
+            season_duration: 100,
             players: 1000,
             total_unique_players: 5000,
-            kills: 10000n,
+            missions: 100,
+            successful_missions: 90,
+            total_mission_difficulty: 500,
+            completed_planets: 1,
+            defend_events: 2,
+            successful_defend_events: 1,
+            attack_events: 3,
+            successful_attack_events: 2,
             deaths: 1000n,
+            kills: 10000n,
+            accidentals: 100n,
+            shots: 500000n,
+            hits: 400000n,
         });
         expect(result.live[1]).toMatchObject({
             enemy: 1,
             points_max: 600,
             introduction_order: 1,
+            season_duration: 200,
             players: 2000,
             total_unique_players: 6000,
+            missions: 200,
+            successful_missions: 180,
             kills: 20000n,
             deaths: 2000n,
+            accidentals: 200n,
+            shots: 1000000n,
+            hits: 800000n,
         });
         expect(result.live[2]).toMatchObject({
             enemy: 2,
             points_max: 700,
             introduction_order: 2,
+            season_duration: 300,
             players: 3000,
             total_unique_players: 7000,
+            missions: 300,
+            successful_missions: 270,
             kills: 30000n,
             deaths: 3000n,
+            accidentals: 300n,
+            shots: 1500000n,
+            hits: 1200000n,
         });
         // snapshots is derived from the full h1_status history and has the
         // legacy { time, data: [f0, f1, f2] } shape.
@@ -212,15 +272,29 @@ describe('getCampaign', () => {
     test('zeroes stats fields when h1_statistic row missing for a faction', async () => {
         // Only faction 0 has a stat row. Faction 1 and 2 should still appear
         // in data.live with stats fields zeroed — not undefined, not dropped.
+        // BigInt fields must default to 0n, not 0, so downstream BigInt math
+        // doesn't crash on mixed-type operations.
         seedDbMocks({
             statRows: [
                 {
                     enemy: 0,
                     bucket: 42,
+                    season_duration: 100,
                     players: 1000,
                     total_unique_players: 5000,
-                    kills: 10000n,
+                    missions: 100,
+                    successful_missions: 90,
+                    total_mission_difficulty: 500,
+                    completed_planets: 1,
+                    defend_events: 2,
+                    successful_defend_events: 1,
+                    attack_events: 3,
+                    successful_attack_events: 2,
                     deaths: 1000n,
+                    kills: 10000n,
+                    accidentals: 100n,
+                    shots: 500000n,
+                    hits: 400000n,
                 },
             ],
         });
@@ -231,18 +305,34 @@ describe('getCampaign', () => {
         expect(result.live[1]).toMatchObject({
             enemy: 1,
             points_max: 600,
+            season_duration: 0,
             players: 0,
             total_unique_players: 0,
-            kills: 0n,
+            missions: 0,
+            successful_missions: 0,
+            total_mission_difficulty: 0,
+            completed_planets: 0,
+            defend_events: 0,
+            successful_defend_events: 0,
+            attack_events: 0,
+            successful_attack_events: 0,
             deaths: 0n,
+            kills: 0n,
+            accidentals: 0n,
+            shots: 0n,
+            hits: 0n,
         });
         expect(result.live[2]).toMatchObject({
             enemy: 2,
             points_max: 700,
+            season_duration: 0,
             players: 0,
             total_unique_players: 0,
             kills: 0n,
             deaths: 0n,
+            accidentals: 0n,
+            shots: 0n,
+            hits: 0n,
         });
     });
 

@@ -7,7 +7,6 @@ const baseStats = {
     total_unique_players: 8400,
     kills: 500000n,
     deaths: 120000n,
-    // Other fields from the API may be present but must NOT be written:
     season_duration: 100,
     missions: 500,
     successful_missions: 450,
@@ -43,9 +42,7 @@ describe('queryUpsertStatistic', () => {
 
     test('accepts enemy=0', async () => {
         vi.mocked(db.h1_statistic.upsert).mockResolvedValue({ id: 'a' });
-        await expect(
-            queryUpsertStatistic(5, 0, 1000, baseStats),
-        ).resolves.toBeDefined();
+        await expect(queryUpsertStatistic(5, 0, 1000, baseStats)).resolves.toBeDefined();
     });
 
     test('computes bucket from pollTime', async () => {
@@ -57,26 +54,33 @@ describe('queryUpsertStatistic', () => {
         expect(callArg.where.season_enemy_bucket.bucket).toBe(1800);
     });
 
-    test('update path writes only the 4 signal fields + time', async () => {
+    test('update path writes all 16 stats fields + time', async () => {
         vi.mocked(db.h1_statistic.upsert).mockResolvedValue({ id: 'a' });
         await queryUpsertStatistic(5, 0, 1000, baseStats);
 
         const callArg = vi.mocked(db.h1_statistic.upsert).mock.calls[0][0];
         expect(callArg.update).toEqual({
             time: 1000,
+            season_duration: 100,
             players: 1250,
             total_unique_players: 8400,
-            kills: 500000n,
+            missions: 500,
+            successful_missions: 450,
+            total_mission_difficulty: 2500,
+            completed_planets: 3,
+            defend_events: 10,
+            successful_defend_events: 8,
+            attack_events: 4,
+            successful_attack_events: 2,
             deaths: 120000n,
+            kills: 500000n,
+            accidentals: 500n,
+            shots: 2000000n,
+            hits: 1500000n,
         });
-        // Dropped noise fields must not leak through
-        expect(callArg.update).not.toHaveProperty('season_duration');
-        expect(callArg.update).not.toHaveProperty('missions');
-        expect(callArg.update).not.toHaveProperty('accidentals');
-        expect(callArg.update).not.toHaveProperty('shots');
     });
 
-    test('create path includes season, enemy, bucket + 4 signal fields', async () => {
+    test('create path includes season, enemy, bucket + all 16 stats fields', async () => {
         vi.mocked(db.h1_statistic.upsert).mockResolvedValue({ id: 'a' });
         await queryUpsertStatistic(5, 2, 1000, baseStats);
 
@@ -86,15 +90,29 @@ describe('queryUpsertStatistic', () => {
             enemy: 2,
             bucket: 900,
             time: 1000,
+            season_duration: 100,
             players: 1250,
             total_unique_players: 8400,
-            kills: 500000n,
+            missions: 500,
+            successful_missions: 450,
+            total_mission_difficulty: 2500,
+            completed_planets: 3,
+            defend_events: 10,
+            successful_defend_events: 8,
+            attack_events: 4,
+            successful_attack_events: 2,
             deaths: 120000n,
+            kills: 500000n,
+            accidentals: 500n,
+            shots: 2000000n,
+            hits: 1500000n,
         });
     });
 
     test('propagates DB errors', async () => {
         vi.mocked(db.h1_statistic.upsert).mockRejectedValue(new Error('db boom'));
-        await expect(queryUpsertStatistic(5, 0, 1000, baseStats)).rejects.toThrow('db boom');
+        await expect(queryUpsertStatistic(5, 0, 1000, baseStats)).rejects.toThrow(
+            'db boom',
+        );
     });
 });

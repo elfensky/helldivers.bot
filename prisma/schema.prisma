@@ -349,16 +349,29 @@ model h1_status {
 }
 
 model h1_statistic {
-    id                   String @id @default(uuid(7))
-    season               Int
-    enemy                Int
-    bucket               Int
-    time                 Int
+    id                       String @id @default(uuid(7))
+    season                   Int
+    enemy                    Int
+    bucket                   Int
+    time                     Int
 
-    players              Int
-    total_unique_players Int
-    kills                BigInt
-    deaths               BigInt
+    // all 16 statistics fields (from API statistics[enemy])
+    season_duration          Int    @default(0)
+    players                  Int    @default(0)
+    total_unique_players     Int    @default(0)
+    missions                 Int    @default(0)
+    successful_missions      Int    @default(0)
+    total_mission_difficulty Int    @default(0)
+    completed_planets        Int    @default(0)
+    defend_events            Int    @default(0)
+    successful_defend_events Int    @default(0)
+    attack_events            Int    @default(0)
+    successful_attack_events Int    @default(0)
+    deaths                   BigInt @default(0)
+    kills                    BigInt @default(0)
+    accidentals              BigInt @default(0)
+    shots                    BigInt @default(0)
+    hits                     BigInt @default(0)
 
     linked_season h1_season @relation("OneSeasonToManyStatistic", fields: [season], references: [season])
 

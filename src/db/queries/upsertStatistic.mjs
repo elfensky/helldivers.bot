@@ -6,11 +6,10 @@ import { computeBucket } from '@/update/bucketing';
 
 /**
  * Upsert a single h1_statistic row for one (season, enemy) at the bucket
- * computed from pollTime. Captures the 4 signal fields (players,
- * total_unique_players, kills, deaths) — the other 12 stats fields from
- * the API are intentionally dropped (end-state lives in... nowhere now,
- * since h1_live is gone; aggregated stats are derivable from h1_event
- * counts or simply not surfaced anywhere).
+ * computed from pollTime. Captures all 16 stats fields from
+ * statistics[enemy] in get_campaign_status — every field is a monotonic
+ * counter (except `players`, which fluctuates) so all of them belong in
+ * the timeseries.
  *
  * @param {number} season   Current season number
  * @param {number} enemy    0=Bugs, 1=Cyborgs, 2=Illuminate
@@ -28,6 +27,25 @@ export async function queryUpsertStatistic(season, enemy, pollTime, stats) {
 
     const bucket = computeBucket(pollTime);
 
+    const statsFields = {
+        season_duration: stats.season_duration,
+        players: stats.players,
+        total_unique_players: stats.total_unique_players,
+        missions: stats.missions,
+        successful_missions: stats.successful_missions,
+        total_mission_difficulty: stats.total_mission_difficulty,
+        completed_planets: stats.completed_planets,
+        defend_events: stats.defend_events,
+        successful_defend_events: stats.successful_defend_events,
+        attack_events: stats.attack_events,
+        successful_attack_events: stats.successful_attack_events,
+        deaths: stats.deaths,
+        kills: stats.kills,
+        accidentals: stats.accidentals,
+        shots: stats.shots,
+        hits: stats.hits,
+    };
+
     const { data: upsertRecord, error } = await tryCatch(
         db.h1_statistic.upsert({
             where: {
@@ -35,20 +53,14 @@ export async function queryUpsertStatistic(season, enemy, pollTime, stats) {
             },
             update: {
                 time: pollTime,
-                players: stats.players,
-                total_unique_players: stats.total_unique_players,
-                kills: stats.kills,
-                deaths: stats.deaths,
+                ...statsFields,
             },
             create: {
                 season,
                 enemy,
                 bucket,
                 time: pollTime,
-                players: stats.players,
-                total_unique_players: stats.total_unique_players,
-                kills: stats.kills,
-                deaths: stats.deaths,
+                ...statsFields,
             },
         }),
     );
