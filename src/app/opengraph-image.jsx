@@ -101,7 +101,7 @@ function buildMapSvg(mapState) {
 export default async function Image() {
     const { data, error } = await tryCatch(getCampaign());
 
-    if (error || !data || !data.live || data.live.length === 0) {
+    if (error || !data || !data.status || data.status.length === 0) {
         return fallbackImage();
     }
 
@@ -110,10 +110,10 @@ export default async function Image() {
     // - activeEvents: filtered — only active events affect sector ownership on the map
     const events = data.events || [];
     const activeEvents = events.filter((e) => e.status === EVENT_STATUS.ACTIVE);
-    const mapState = computeMapState(data.live, activeEvents);
+    const mapState = computeMapState(data.status, activeEvents);
     const mapDataUri = buildMapSvg(mapState);
 
-    const factionStats = data.live.map((f) => {
+    const factionStats = data.status.map((f) => {
         const idx = f.enemy;
         return {
             name: FACTION_NAMES[idx] || `FACTION ${idx}`,
@@ -129,7 +129,7 @@ export default async function Image() {
     let statusColor = COLORS.yellow;
 
     const allDefeated =
-        data.live.length === 3 && data.live.every((f) => f.status === 'defeated');
+        data.status.length === 3 && data.status.every((f) => f.status === 'defeated');
     if (allDefeated) {
         statusText = 'VICTORY';
     } else if (events.length > 0) {

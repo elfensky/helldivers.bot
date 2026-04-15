@@ -30,7 +30,7 @@
  * Key insight: check ANY snapshot, not just the last. The API's periodic snapshots
  * may miss the final moment, but earlier snapshots can capture the all-defeated state.
  *
- * @param {object} data - Campaign data with snapshots[], events[], live[]
+ * @param {object} data - Campaign data with snapshots[], events[], status[]
  * @returns {{ outcome: 'victory'|'defeat', reason: string, faction: number|null } | null}
  */
 import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events';
@@ -38,7 +38,7 @@ import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events
 export function getWarOutcome(data) {
     const snapshots = data?.snapshots || [];
     const events = data?.events || [];
-    const live = data?.live || [];
+    const live = data?.status || [];
 
     // No data at all — no banner
     if (snapshots.length === 0 && events.length === 0 && live.length === 0) {

@@ -161,7 +161,7 @@ export default function ArchivesClient({
                     {faction === 'global' ?
                         <ArchiveStats
                             events={events}
-                            live={data?.live}
+                            live={data?.status}
                             data={data}
                             effects={effects}
                             glitchPhase={glitchPhase}

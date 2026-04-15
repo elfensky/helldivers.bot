@@ -21,7 +21,7 @@ const mockLiveRows = [
     { enemy: 2, points: 300, points_taken: 30, status: 'active', bucket: 42 },
 ];
 
-// Latest-bucket-per-faction h1_statistic rows. Merged into data.live[i] by
+// Latest-bucket-per-faction h1_statistic rows. Merged into data.status[i] by
 // getCampaign so consumers (StatGrid, formatNumber, etc.) can read the 11
 // per-faction stats fields without a second query.
 const mockStatRows = [
@@ -162,7 +162,7 @@ describe('getCampaign', () => {
         });
     });
 
-    test('returns legacy-compatible shape with live/snapshots/events/introduction_order/points_max', async () => {
+    test('returns legacy-compatible shape with status/snapshots/events/introduction_order/points_max', async () => {
         seedDbMocks();
 
         const result = await getCampaign();
@@ -176,13 +176,13 @@ describe('getCampaign', () => {
             points_max: { points: [500, 600, 700] },
             events: mockEvents,
         });
-        // data.live must carry all fields consumers historically read from
+        // data.status must carry all fields consumers historically read from
         // the legacy h1_live row: campaign progression (from h1_status) +
         // points_max / introduction_order (from h1_season arrays) + 11
         // per-faction stats fields (from h1_statistic). season_duration and
         // the 4 event-count fields are explicitly NOT present anymore.
-        expect(result.live).toHaveLength(3);
-        expect(result.live[0]).toMatchObject({
+        expect(result.status).toHaveLength(3);
+        expect(result.status[0]).toMatchObject({
             enemy: 0,
             points: 100,
             points_taken: 10,
@@ -206,12 +206,12 @@ describe('getCampaign', () => {
         // Lock in the drop decision — these 5 fields are no longer
         // per-faction. season_duration lives at result.season_duration;
         // event counts are derivable from h1_event.
-        expect(result.live[0]).not.toHaveProperty('season_duration');
-        expect(result.live[0]).not.toHaveProperty('defend_events');
-        expect(result.live[0]).not.toHaveProperty('successful_defend_events');
-        expect(result.live[0]).not.toHaveProperty('attack_events');
-        expect(result.live[0]).not.toHaveProperty('successful_attack_events');
-        expect(result.live[1]).toMatchObject({
+        expect(result.status[0]).not.toHaveProperty('season_duration');
+        expect(result.status[0]).not.toHaveProperty('defend_events');
+        expect(result.status[0]).not.toHaveProperty('successful_defend_events');
+        expect(result.status[0]).not.toHaveProperty('attack_events');
+        expect(result.status[0]).not.toHaveProperty('successful_attack_events');
+        expect(result.status[1]).toMatchObject({
             enemy: 1,
             points_max: 600,
             introduction_order: 1,
@@ -225,8 +225,8 @@ describe('getCampaign', () => {
             shots: 1000000n,
             hits: 800000n,
         });
-        expect(result.live[1]).not.toHaveProperty('season_duration');
-        expect(result.live[2]).toMatchObject({
+        expect(result.status[1]).not.toHaveProperty('season_duration');
+        expect(result.status[2]).toMatchObject({
             enemy: 2,
             points_max: 700,
             introduction_order: 2,
@@ -240,7 +240,7 @@ describe('getCampaign', () => {
             shots: 1500000n,
             hits: 1200000n,
         });
-        expect(result.live[2]).not.toHaveProperty('season_duration');
+        expect(result.status[2]).not.toHaveProperty('season_duration');
         // snapshots is derived from the full h1_status history and has the
         // legacy { time, data: [f0, f1, f2] } shape.
         expect(Array.isArray(result.snapshots)).toBe(true);
@@ -265,7 +265,7 @@ describe('getCampaign', () => {
 
     test('zeroes stats fields when h1_statistic row missing for a faction', async () => {
         // Only faction 0 has a stat row. Faction 1 and 2 should still appear
-        // in data.live with stats fields zeroed — not undefined, not dropped.
+        // in data.status with stats fields zeroed — not undefined, not dropped.
         // BigInt fields must default to 0n, not 0, so downstream BigInt math
         // doesn't crash on mixed-type operations.
         seedDbMocks({
@@ -290,8 +290,8 @@ describe('getCampaign', () => {
 
         const result = await getCampaign();
 
-        expect(result.live).toHaveLength(3);
-        expect(result.live[1]).toMatchObject({
+        expect(result.status).toHaveLength(3);
+        expect(result.status[1]).toMatchObject({
             enemy: 1,
             points_max: 600,
             players: 0,
@@ -306,7 +306,7 @@ describe('getCampaign', () => {
             shots: 0n,
             hits: 0n,
         });
-        expect(result.live[2]).toMatchObject({
+        expect(result.status[2]).toMatchObject({
             enemy: 2,
             points_max: 700,
             players: 0,
@@ -339,11 +339,11 @@ describe('getCampaign', () => {
         expect(result.season_duration).toBe(0);
         // Per-row merged fields fall back to zero rather than undefined, so
         // `pointsMax > 0` checks in computeMapState don't silently degrade.
-        expect(result.live[0]).toMatchObject({
+        expect(result.status[0]).toMatchObject({
             points_max: 0,
             introduction_order: 0,
         });
-        expect(result.live[1]).toMatchObject({
+        expect(result.status[1]).toMatchObject({
             points_max: 0,
             introduction_order: 0,
         });

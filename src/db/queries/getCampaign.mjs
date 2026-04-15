@@ -7,12 +7,10 @@ import { performance } from 'perf_hooks';
  * Fetch the campaign data for a season (or the latest season if null).
  *
  * Returns a shape compatible with the legacy getCampaign output:
- *   { season, last_updated, live, introduction_order, points_max, snapshots, events }
+ *   { season, last_updated, status, introduction_order, points_max, snapshots, events }
  *
- * - `live`       — 3 rows from h1_status, one per faction, latest bucket each.
- *                  Consumers cast this as an array of faction states. Task 14
- *                  will rename the field to `status` in both this query and
- *                  its consumers.
+ * - `status`     — 3 rows from h1_status, one per faction, latest bucket each.
+ *                  Consumers cast this as an array of faction states.
  * - `snapshots`  — full h1_status history for the season, returned as a
  *                  shape compatible with the legacy h1_snapshot output:
  *                  [{ time, data: [faction0, faction1, faction2] }, ...]
@@ -43,7 +41,7 @@ export const getCampaign = cache(async function getCampaign(season = null) {
 
     // Latest h1_statistic row per faction — stats signals live on a separate
     // table since Task 7. The legacy h1_live row had these inline, so all
-    // consumers reading data.live[i].players/kills/deaths/total_unique_players
+    // consumers reading data.status[i].players/kills/deaths/total_unique_players
     // expect them to travel with the campaign row.
     const rawStatRows = await db.$queryRaw`
         SELECT DISTINCT ON (enemy) *
@@ -114,9 +112,9 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         last_updated: seasonRow.last_updated,
         // Per-season scalar (not per-faction). Lives on h1_season instead
         // of h1_statistic; exposed at the top level so consumers don't go
-        // looking in data.live[i].
+        // looking in data.status[i].
         season_duration: seasonRow.season_duration ?? 0,
-        live: liveRows, // Task 14 will rename to `status`.
+        status: liveRows,
         introduction_order: { order: seasonRow.intro_order_array ?? [] },
         points_max: { points: seasonRow.points_max_array ?? [] },
         snapshots,

@@ -17,7 +17,7 @@ export async function GET() {
     const activeEvents = (data.events ?? []).filter(
         (e) => e.status === EVENT_STATUS.ACTIVE,
     );
-    const mapState = computeMapState(data.live, activeEvents);
+    const mapState = computeMapState(data.status, activeEvents);
 
     const json = JSON.stringify({ data, mapState }, (_, v) =>
         typeof v === 'bigint' ? Number(v) : v,
