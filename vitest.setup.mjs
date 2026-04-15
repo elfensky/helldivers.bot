@@ -85,6 +85,10 @@ vi.mock('@/db/db', () => ({
         h1_live: createModelMock(),
         h1_live_snapshot: createModelMock(),
         h1_event_snapshot: createModelMock(),
+        // NEW models (added alongside old during cutover)
+        h1_status: createModelMock(),
+        h1_statistic: createModelMock(),
+        h1_event_progress: createModelMock(),
         // Worker health
         worker_heartbeat: createModelMock(),
         // Push subscriptions
