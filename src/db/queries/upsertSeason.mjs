@@ -17,7 +17,7 @@ export async function queryUpsertSeason(season, confirm = false, arrays = null) 
     'use server';
     const start = performance.now();
 
-    if (!season) throw new Error('season is missing');
+    if (season == null) throw new Error('season is missing');
 
     const checkSeason = isValidNumber.safeParse(season);
     if (!checkSeason.success) {
@@ -33,11 +33,11 @@ export async function queryUpsertSeason(season, confirm = false, arrays = null) 
         create.last_updated = now;
     }
 
-    if (arrays?.introOrder) {
+    if (arrays?.introOrder !== undefined) {
         update.intro_order_array = arrays.introOrder;
         create.intro_order_array = arrays.introOrder;
     }
-    if (arrays?.pointsMax) {
+    if (arrays?.pointsMax !== undefined) {
         update.points_max_array = arrays.pointsMax;
         create.points_max_array = arrays.pointsMax;
     }

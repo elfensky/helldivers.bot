@@ -121,4 +121,17 @@ describe('queryUpsertSeason', () => {
 
         expect(result.query).toEqual(mockRow);
     });
+
+    test('confirm=true with arrays simultaneously sets both last_updated and arrays', async () => {
+        vi.mocked(db.h1_season.upsert).mockResolvedValue({ season: 5 });
+        await queryUpsertSeason(5, true, { introOrder: [2, 1, 0], pointsMax: [30000, 30000, 30000] });
+
+        const callArg = vi.mocked(db.h1_season.upsert).mock.calls[0][0];
+        expect(callArg.update.last_updated).toBeInstanceOf(Date);
+        expect(callArg.update.intro_order_array).toEqual([2, 1, 0]);
+        expect(callArg.update.points_max_array).toEqual([30000, 30000, 30000]);
+        expect(callArg.create.last_updated).toBeInstanceOf(Date);
+        expect(callArg.create.intro_order_array).toEqual([2, 1, 0]);
+        expect(callArg.create.points_max_array).toEqual([30000, 30000, 30000]);
+    });
 });
