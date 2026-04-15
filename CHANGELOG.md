@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## 0.40.7
+
+### Documentation
+
+- **`CLAUDE.md`** — replaced stale `fetchAndSeedSeason` reference on
+  the "On-demand season fetching" bullet. That function was deleted in
+  0.40.5 during the backfill consolidation; the bullet now correctly
+  names `updateSeason` (`src/update/season.mjs`) and enumerates which
+  tables it writes plus the `last_updated` stamping behavior.
+- **`prisma/seed/readme.md`** — expanded from a 4-line placeholder to
+  a full workflow guide. Covers the layout of the seed directory, when
+  and how to refresh the JSON files via `fetch-seasons.mjs` (including
+  the post-0.40.6 "never active season" guarantee), how `seed.mjs`
+  loads them via `prisma db seed`, the `FORCE_SEED=true` override for
+  re-seeding when the DB already has parity, and how the three
+  backfill paths (seed, fetch-seasons, runtime `updateSeason`) relate
+  without conflict.
+- **`src/app/docs/infrastructure/page.mdx`** — added a paragraph to
+  the `Dockerfile.migrate` section explaining where the
+  `seasons/*.json` files come from (`fetch-seasons.mjs`), why the
+  active season is never captured, and pointing readers to
+  `prisma/seed/readme.md` for the full workflow. Also noted the
+  `seed.mjs` short-circuit behavior (`dbCount === jsonFiles.length`)
+  and the `FORCE_SEED=true` override.
+
 ## 0.40.6
 
 ### Changed
