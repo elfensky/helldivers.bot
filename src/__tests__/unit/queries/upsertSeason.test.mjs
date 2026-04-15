@@ -124,14 +124,33 @@ describe('queryUpsertSeason', () => {
 
     test('confirm=true with arrays simultaneously sets both last_updated and arrays', async () => {
         vi.mocked(db.h1_season.upsert).mockResolvedValue({ season: 5 });
-        await queryUpsertSeason(5, true, { introOrder: [2, 1, 0], pointsMax: [30000, 30000, 30000] });
+        await queryUpsertSeason(5, true, {
+            introOrder: [2, 1, 0],
+            pointsMax: [30000, 30000, 30000],
+            seasonDuration: 54321,
+        });
 
         const callArg = vi.mocked(db.h1_season.upsert).mock.calls[0][0];
         expect(callArg.update.last_updated).toBeInstanceOf(Date);
         expect(callArg.update.intro_order_array).toEqual([2, 1, 0]);
         expect(callArg.update.points_max_array).toEqual([30000, 30000, 30000]);
+        expect(callArg.update.season_duration).toBe(54321);
         expect(callArg.create.last_updated).toBeInstanceOf(Date);
         expect(callArg.create.intro_order_array).toEqual([2, 1, 0]);
         expect(callArg.create.points_max_array).toEqual([30000, 30000, 30000]);
+        expect(callArg.create.season_duration).toBe(54321);
+    });
+
+    test('upserts season with seasonDuration metadata', async () => {
+        vi.mocked(db.h1_season.upsert).mockResolvedValue({ season: 5 });
+        await queryUpsertSeason(5, false, { seasonDuration: 12345 });
+
+        const callArg = vi.mocked(db.h1_season.upsert).mock.calls[0][0];
+        // seasonDuration flows through both update and create paths.
+        expect(callArg.update.season_duration).toBe(12345);
+        expect(callArg.create.season_duration).toBe(12345);
+        // Other metadata fields stay absent when not provided.
+        expect(callArg.update).not.toHaveProperty('intro_order_array');
+        expect(callArg.update).not.toHaveProperty('points_max_array');
     });
 });

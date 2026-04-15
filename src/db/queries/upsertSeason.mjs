@@ -5,13 +5,21 @@ import { performanceTime } from '@/shared/utils/time';
 import { isValidNumber } from '@/validators/isValidNumber';
 
 /**
- * Upsert an h1_season row. Optionally takes intro_order and points_max
- * arrays (3 values each, indexed by enemy) which get inlined on the row.
+ * Upsert an h1_season row. Optionally takes inlined per-season metadata:
+ *   - introOrder   — number[3] indexed by enemy (war-entry position)
+ *   - pointsMax    — number[3] indexed by enemy (per-faction point ceiling)
+ *   - seasonDuration — scalar int (per-season state, not per-faction)
+ *
+ * The `arrays` parameter name is stale (it's not only arrays anymore) but
+ * several callers already pass by the `arrays` keyword — keep the name.
  *
  * @param {number}   season
  * @param {boolean}  confirm   When true, sets last_updated to now (signals
  *                             "season's normalized data is saved").
- * @param {object?}  arrays    Optional { introOrder: number[3], pointsMax: number[3] }
+ * @param {object?}  arrays    Optional per-season metadata:
+ *                             { introOrder?: number[3],
+ *                               pointsMax?: number[3],
+ *                               seasonDuration?: number }
  */
 export async function queryUpsertSeason(season, confirm = false, arrays = null) {
     'use server';
@@ -40,6 +48,10 @@ export async function queryUpsertSeason(season, confirm = false, arrays = null) 
     if (arrays?.pointsMax !== undefined) {
         update.points_max_array = arrays.pointsMax;
         create.points_max_array = arrays.pointsMax;
+    }
+    if (arrays?.seasonDuration !== undefined) {
+        update.season_duration = arrays.seasonDuration;
+        create.season_duration = arrays.seasonDuration;
     }
 
     const { data: upsertRecord, error } = await tryCatch(

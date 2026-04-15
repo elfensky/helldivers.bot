@@ -10,6 +10,9 @@ const mockSeasonRow = {
     last_updated: new Date('2025-01-01'),
     intro_order_array: [0, 1, 2],
     points_max_array: [500, 600, 700],
+    // Per-season scalar (not per-faction). Lives on h1_season and surfaces
+    // at the top level of the getCampaign return value.
+    season_duration: 7200,
 };
 
 const mockLiveRows = [
@@ -19,23 +22,18 @@ const mockLiveRows = [
 ];
 
 // Latest-bucket-per-faction h1_statistic rows. Merged into data.live[i] by
-// getCampaign so consumers (StatGrid, formatNumber, etc.) can read all 16
-// stats fields without a second query.
+// getCampaign so consumers (StatGrid, formatNumber, etc.) can read the 11
+// per-faction stats fields without a second query.
 const mockStatRows = [
     {
         enemy: 0,
         bucket: 42,
-        season_duration: 100,
         players: 1000,
         total_unique_players: 5000,
         missions: 100,
         successful_missions: 90,
         total_mission_difficulty: 500,
         completed_planets: 1,
-        defend_events: 2,
-        successful_defend_events: 1,
-        attack_events: 3,
-        successful_attack_events: 2,
         deaths: 1000n,
         kills: 10000n,
         accidentals: 100n,
@@ -45,17 +43,12 @@ const mockStatRows = [
     {
         enemy: 1,
         bucket: 42,
-        season_duration: 200,
         players: 2000,
         total_unique_players: 6000,
         missions: 200,
         successful_missions: 180,
         total_mission_difficulty: 1000,
         completed_planets: 2,
-        defend_events: 4,
-        successful_defend_events: 3,
-        attack_events: 5,
-        successful_attack_events: 4,
         deaths: 2000n,
         kills: 20000n,
         accidentals: 200n,
@@ -65,17 +58,12 @@ const mockStatRows = [
     {
         enemy: 2,
         bucket: 42,
-        season_duration: 300,
         players: 3000,
         total_unique_players: 7000,
         missions: 300,
         successful_missions: 270,
         total_mission_difficulty: 1500,
         completed_planets: 3,
-        defend_events: 6,
-        successful_defend_events: 5,
-        attack_events: 7,
-        successful_attack_events: 6,
         deaths: 3000n,
         kills: 30000n,
         accidentals: 300n,
@@ -159,7 +147,7 @@ describe('getCampaign', () => {
         expect(callArg.orderBy).toBeUndefined();
     });
 
-    test('selects inlined intro_order_array / points_max_array from h1_season', async () => {
+    test('selects inlined intro_order_array / points_max_array / season_duration from h1_season', async () => {
         seedDbMocks();
 
         await getCampaign();
@@ -170,6 +158,7 @@ describe('getCampaign', () => {
             last_updated: true,
             intro_order_array: true,
             points_max_array: true,
+            season_duration: true,
         });
     });
 
@@ -181,15 +170,17 @@ describe('getCampaign', () => {
         expect(result).toMatchObject({
             season: 5,
             last_updated: mockSeasonRow.last_updated,
+            // Per-season scalar surfaced at the top level (not per-faction).
+            season_duration: 7200,
             introduction_order: { order: [0, 1, 2] },
             points_max: { points: [500, 600, 700] },
             events: mockEvents,
         });
         // data.live must carry all fields consumers historically read from
         // the legacy h1_live row: campaign progression (from h1_status) +
-        // points_max / introduction_order (from h1_season arrays) + all 16
-        // stats fields (from h1_statistic). Shallow mock equality used to
-        // hide this regression — assert explicit fields instead.
+        // points_max / introduction_order (from h1_season arrays) + 11
+        // per-faction stats fields (from h1_statistic). season_duration and
+        // the 4 event-count fields are explicitly NOT present anymore.
         expect(result.live).toHaveLength(3);
         expect(result.live[0]).toMatchObject({
             enemy: 0,
@@ -199,29 +190,31 @@ describe('getCampaign', () => {
             // Merged from h1_season.points_max_array[0]
             points_max: 500,
             introduction_order: 0,
-            // Merged from h1_statistic[enemy=0]
-            season_duration: 100,
+            // Merged from h1_statistic[enemy=0] — 11 per-faction fields.
             players: 1000,
             total_unique_players: 5000,
             missions: 100,
             successful_missions: 90,
             total_mission_difficulty: 500,
             completed_planets: 1,
-            defend_events: 2,
-            successful_defend_events: 1,
-            attack_events: 3,
-            successful_attack_events: 2,
             deaths: 1000n,
             kills: 10000n,
             accidentals: 100n,
             shots: 500000n,
             hits: 400000n,
         });
+        // Lock in the drop decision — these 5 fields are no longer
+        // per-faction. season_duration lives at result.season_duration;
+        // event counts are derivable from h1_event.
+        expect(result.live[0]).not.toHaveProperty('season_duration');
+        expect(result.live[0]).not.toHaveProperty('defend_events');
+        expect(result.live[0]).not.toHaveProperty('successful_defend_events');
+        expect(result.live[0]).not.toHaveProperty('attack_events');
+        expect(result.live[0]).not.toHaveProperty('successful_attack_events');
         expect(result.live[1]).toMatchObject({
             enemy: 1,
             points_max: 600,
             introduction_order: 1,
-            season_duration: 200,
             players: 2000,
             total_unique_players: 6000,
             missions: 200,
@@ -232,11 +225,11 @@ describe('getCampaign', () => {
             shots: 1000000n,
             hits: 800000n,
         });
+        expect(result.live[1]).not.toHaveProperty('season_duration');
         expect(result.live[2]).toMatchObject({
             enemy: 2,
             points_max: 700,
             introduction_order: 2,
-            season_duration: 300,
             players: 3000,
             total_unique_players: 7000,
             missions: 300,
@@ -247,6 +240,7 @@ describe('getCampaign', () => {
             shots: 1500000n,
             hits: 1200000n,
         });
+        expect(result.live[2]).not.toHaveProperty('season_duration');
         // snapshots is derived from the full h1_status history and has the
         // legacy { time, data: [f0, f1, f2] } shape.
         expect(Array.isArray(result.snapshots)).toBe(true);
@@ -279,17 +273,12 @@ describe('getCampaign', () => {
                 {
                     enemy: 0,
                     bucket: 42,
-                    season_duration: 100,
                     players: 1000,
                     total_unique_players: 5000,
                     missions: 100,
                     successful_missions: 90,
                     total_mission_difficulty: 500,
                     completed_planets: 1,
-                    defend_events: 2,
-                    successful_defend_events: 1,
-                    attack_events: 3,
-                    successful_attack_events: 2,
                     deaths: 1000n,
                     kills: 10000n,
                     accidentals: 100n,
@@ -305,17 +294,12 @@ describe('getCampaign', () => {
         expect(result.live[1]).toMatchObject({
             enemy: 1,
             points_max: 600,
-            season_duration: 0,
             players: 0,
             total_unique_players: 0,
             missions: 0,
             successful_missions: 0,
             total_mission_difficulty: 0,
             completed_planets: 0,
-            defend_events: 0,
-            successful_defend_events: 0,
-            attack_events: 0,
-            successful_attack_events: 0,
             deaths: 0n,
             kills: 0n,
             accidentals: 0n,
@@ -325,7 +309,6 @@ describe('getCampaign', () => {
         expect(result.live[2]).toMatchObject({
             enemy: 2,
             points_max: 700,
-            season_duration: 0,
             players: 0,
             total_unique_players: 0,
             kills: 0n,
@@ -343,6 +326,7 @@ describe('getCampaign', () => {
                 last_updated: new Date('2025-01-01'),
                 intro_order_array: null,
                 points_max_array: null,
+                season_duration: null,
             },
         });
 
@@ -351,6 +335,8 @@ describe('getCampaign', () => {
         // Legacy-shape relations return empty arrays.
         expect(result.introduction_order).toEqual({ order: [] });
         expect(result.points_max).toEqual({ points: [] });
+        // Top-level season_duration falls back to 0 when null on the row.
+        expect(result.season_duration).toBe(0);
         // Per-row merged fields fall back to zero rather than undefined, so
         // `pointsMax > 0` checks in computeMapState don't silently degrade.
         expect(result.live[0]).toMatchObject({

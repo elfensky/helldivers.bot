@@ -54,9 +54,11 @@ export const getCampaign = cache(async function getCampaign(season = null) {
 
     // Merge h1_status + h1_statistic + season constants into legacy liveRow
     // shape. Consumers (computeMapState, StatGrid, EventCard, opengraph-image)
-    // read this as the per-faction "current state" and must find all the
-    // fields they historically read from h1_live: campaign progression +
-    // points_max + introduction_order + all 16 statistics fields.
+    // read this as the per-faction "current state" and must find the fields
+    // they historically read from h1_live: campaign progression + points_max +
+    // introduction_order + 11 per-faction stats fields. season_duration is
+    // no longer per-faction — it now lives on h1_season and is exposed at
+    // the top level of the return object instead.
     const statByEnemy = new Map(rawStatRows.map((r) => [r.enemy, r]));
     const liveRows = rawLiveRows.map((r) => {
         const stat = statByEnemy.get(r.enemy);
@@ -64,20 +66,15 @@ export const getCampaign = cache(async function getCampaign(season = null) {
             ...r,
             points_max: seasonRow.points_max_array?.[r.enemy] ?? 0,
             introduction_order: seasonRow.intro_order_array?.[r.enemy] ?? 0,
-            // Merge all 16 stats fields from h1_statistic
-            season_duration: stat?.season_duration ?? 0,
+            // Merge 11 per-faction stats fields from h1_statistic
             players: stat?.players ?? 0,
             total_unique_players: stat?.total_unique_players ?? 0,
             missions: stat?.missions ?? 0,
             successful_missions: stat?.successful_missions ?? 0,
             total_mission_difficulty: stat?.total_mission_difficulty ?? 0,
             completed_planets: stat?.completed_planets ?? 0,
-            defend_events: stat?.defend_events ?? 0,
-            successful_defend_events: stat?.successful_defend_events ?? 0,
-            attack_events: stat?.attack_events ?? 0,
-            successful_attack_events: stat?.successful_attack_events ?? 0,
-            deaths: stat?.deaths ?? 0n,
             kills: stat?.kills ?? 0n,
+            deaths: stat?.deaths ?? 0n,
             accidentals: stat?.accidentals ?? 0n,
             shots: stat?.shots ?? 0n,
             hits: stat?.hits ?? 0n,
@@ -115,6 +112,10 @@ export const getCampaign = cache(async function getCampaign(season = null) {
     return {
         season: seasonRow.season,
         last_updated: seasonRow.last_updated,
+        // Per-season scalar (not per-faction). Lives on h1_season instead
+        // of h1_statistic; exposed at the top level so consumers don't go
+        // looking in data.live[i].
+        season_duration: seasonRow.season_duration ?? 0,
         live: liveRows, // Task 14 will rename to `status`.
         introduction_order: { order: seasonRow.intro_order_array ?? [] },
         points_max: { points: seasonRow.points_max_array ?? [] },
@@ -136,6 +137,7 @@ async function _findSeason(season) {
                 last_updated: true,
                 intro_order_array: true,
                 points_max_array: true,
+                season_duration: true,
             },
         }),
     );

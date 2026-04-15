@@ -163,6 +163,10 @@ model h1_season {
     // NEW: inlined per-season constants (old relation tables stay until Task 21)
     intro_order_array  Int[]                  @default([])
     points_max_array   Int[]                  @default([])
+    // NEW: per-season scalar state (not per-faction timeseries — lives here
+    // instead of h1_statistic). Updates while the season is live, finalizes
+    // when the season ends.
+    season_duration    Int                    @default(0)
     //relationships
     introduction_order h1_introduction_order? @relation("OneSeasonToOneIntroductionOrder") //a season must have 1 introduction_order, and an introduction_order must always be linked to a season
     points_max         h1_points_max?         @relation("OneSeasonToOnePointsMax") //a season must have 1 points_max, and a points_max must always be linked to a season
@@ -355,20 +359,19 @@ model h1_statistic {
     bucket                   Int
     time                     Int
 
-    // all 16 statistics fields (from API statistics[enemy])
-    season_duration          Int    @default(0)
+    // 11 per-faction timeseries fields (from API statistics[enemy]).
+    // season_duration moved to h1_season as a scalar — per-season state,
+    // not per-faction. Event counts (defend_events, successful_defend_events,
+    // attack_events, successful_attack_events) are derivable from h1_event
+    // with COUNT(*) WHERE type=... AND status=... AND season=X.
     players                  Int    @default(0)
     total_unique_players     Int    @default(0)
     missions                 Int    @default(0)
     successful_missions      Int    @default(0)
     total_mission_difficulty Int    @default(0)
     completed_planets        Int    @default(0)
-    defend_events            Int    @default(0)
-    successful_defend_events Int    @default(0)
-    attack_events            Int    @default(0)
-    successful_attack_events Int    @default(0)
-    deaths                   BigInt @default(0)
     kills                    BigInt @default(0)
+    deaths                   BigInt @default(0)
     accidentals              BigInt @default(0)
     shots                    BigInt @default(0)
     hits                     BigInt @default(0)
