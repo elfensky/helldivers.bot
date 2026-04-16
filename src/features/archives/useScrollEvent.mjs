@@ -72,10 +72,16 @@ export function useScrollEvent(events) {
                 }
             }
 
-            if (best && bestDist < visibleHeight) {
-                const key = best.dataset.eventKey;
-                const event = lookup.get(key);
-                if (event) setSelectedEvent(event);
+            if (best) {
+                const rect = best.getBoundingClientRect();
+                const isVisible = rect.bottom > headerHeight && rect.top < window.innerHeight;
+                if (isVisible) {
+                    const key = best.dataset.eventKey;
+                    const event = lookup.get(key);
+                    if (event) setSelectedEvent(event);
+                } else {
+                    setSelectedEvent(null);
+                }
             } else {
                 setSelectedEvent(null);
             }

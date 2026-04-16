@@ -126,6 +126,19 @@ const nextConfig = {
                 ],
             },
             {
+                // Service worker must never be HTTP-cached — browsers need to
+                // fetch the latest sw.js on every navigation to detect updates.
+                // skipWaiting + clientsClaim in src/sw.js handle activation;
+                // this header ensures the *detection* step isn't stale.
+                source: '/sw.js',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'no-cache, no-store, must-revalidate',
+                    },
+                ],
+            },
+            {
                 source: '/workers/:slug',
                 headers: [
                     {
