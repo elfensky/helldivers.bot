@@ -2,6 +2,274 @@
 
 ## Unreleased
 
+## 0.41.0
+
+### Database
+
+- **Schema consolidation** — 10 h1_*/rebroadcast tables → 5 normalized tables (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Dropped `h1_live`, `h1_live_snapshot`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`, `h1_event_snapshot`, `rebroadcast_status`, `rebroadcast_snapshot`, `App`, `Review`.
+- **Bucket-upsert pattern** — all timeseries tables use tumbling-window UPSERTs keyed on `(entity, bucket)` where `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE`. Sub-15s homepage freshness with ~120 MB bounded storage. `BUCKET_SIZE` is env-configurable (default 900 = 15 min).
+- **`h1_season` inlining** — `introduction_order Int[]`, `points_max Int[]`, and `season_duration Int` are now direct columns on `h1_season` (previously in separate 1:1 tables).
+- **`h1_snapshot.data` normalized** — stringified JSON-in-JSON column replaced by typed columns on `h1_status`. Consumers no longer need defensive `typeof === 'string' ? JSON.parse : data` parsing.
+- **`h1_live.map` dropped** — precomputed galaxy map column was never read; `computeMapState` already rebuilds at request time.
+
+### Worker
+
+- **`snapshotTimers.mjs` deleted** — 91 lines of stateful in-memory throttle tracking replaced by 5-line deterministic `src/update/bucketing.mjs` helper. The DB uniqueness constraint IS the throttle.
+- **`computeFactionMap` deleted** — precomputation removed; `computeMapState` rebuilds at request time.
+- **`data.live` → `data.status`** — cascade rename across all consumers to match the `h1_live` → `h1_status` table rename. `/api/h1/live` URL and `useLiveData` hook stay.
+
+### API
+
+- **Rebroadcast endpoint** — reconstructs HD1 wire format from normalized tables on demand (no raw cache dependency). 4 event-count stats fields (`defend_events`, `successful_defend_events`, `attack_events`, `successful_attack_events`) omitted from statistics[] (derivable from `h1_event`).
+- **`h1_event.players_at_start` null-protection** — update path only sets the field when a non-null value is present, preventing `get_snapshots` reseeds from clobbering live-captured values.
+
+### Tooling
+
+- **`scripts/backfill-h1-tables.mjs`** — offline reseed tool for production migration. Reads from pg_dump restore, writes to new schema via Prisma. Per-season transactional, resumable, `--force` flag.
+
+### Documentation
+
+- Updated DataFlowDiagram component, CLAUDE.md architecture section, and `/docs` pages (database, data-flow, utilities) for the new 5-table schema.
+
+## 0.40.7
+
+### Documentation
+
+- **`CLAUDE.md`** — replaced stale `fetchAndSeedSeason` reference on
+  the "On-demand season fetching" bullet. That function was deleted in
+  0.40.5 during the backfill consolidation; the bullet now correctly
+  names `updateSeason` (`src/update/season.mjs`) and enumerates which
+  tables it writes plus the `last_updated` stamping behavior.
+- **`prisma/seed/readme.md`** — expanded from a 4-line placeholder to
+  a full workflow guide. Covers the layout of the seed directory, when
+  and how to refresh the JSON files via `fetch-seasons.mjs` (including
+  the post-0.40.6 "never active season" guarantee), how `seed.mjs`
+  loads them via `prisma db seed`, the `FORCE_SEED=true` override for
+  re-seeding when the DB already has parity, and how the three
+  backfill paths (seed, fetch-seasons, runtime `updateSeason`) relate
+  without conflict.
+- **`src/app/docs/infrastructure/page.mdx`** — added a paragraph to
+  the `Dockerfile.migrate` section explaining where the
+  `seasons/*.json` files come from (`fetch-seasons.mjs`), why the
+  active season is never captured, and pointing readers to
+  `prisma/seed/readme.md` for the full workflow. Also noted the
+  `seed.mjs` short-circuit behavior (`dbCount === jsonFiles.length`)
+  and the `FORCE_SEED=true` override.
+
+## 0.40.6
+
+### Changed
+
+- **`prisma/seed/fetch-seasons.mjs` no longer fetches the currently-active
+  season.** The script's `--to` default used to resolve to the
+  auto-detected current season from `get_campaign_status`, which meant
+  every run captured the active season's partial mid-war state to disk.
+  That partial file would then reseed incomplete data on every fresh
+  deploy until the next manual refresh — exactly the failure pattern
+  that caused season 156 to have only 17 snapshots on disk when its
+  final state was 37. Now:
+    - `--to` defaults to `currentSeason - 1` (the last completed season).
+    - An explicit `--to=<current-or-higher>` is clamped to
+      `currentSeason - 1` with a warning, so users cannot accidentally
+      capture the active war.
+    - A new guard exits early with an informative message if
+      `--from > --to` after clamping (e.g. `--from=157 --to=157` when
+      season 157 is active).
+
+### Data
+
+- **Refreshed all 156 completed-season seed files in
+  `prisma/seed/seasons/`.** Running the updated script against the live
+  API brought disk data to parity for 9 seasons with real drift:
+    - Seasons 148-152: each was missing exactly one snapshot + one event
+      (the closing frame pattern the 0.40.5 worker fix now prevents going
+      forward).
+    - Season 153: missing 21 snapshots + 39 defend events + 3 attack
+      events (unusual drift — suggests an earlier run captured 153
+      mid-war; 0.40.5 + the script guard would have prevented this).
+    - Season 156: missing 20 snapshots + 33 defend events + 1 attack
+      event (the known Apr 4 mid-season fetch, now complete).
+    - Seasons 1-147, 154, 155 had no data changes; only the top-level
+      `time` field (fetch timestamp) was refreshed. The `time` field is
+      kept intentionally — it serves as a provenance marker for when each
+      seed file was last validated against the live API.
+
+    Fresh deploys using `prisma db seed` now get complete historical data
+    for all 156 completed seasons instead of the partial Apr 4 snapshot.
+
+## 0.40.5
+
+### Fixed
+
+- **Worker now captures the closing snapshot of an outgoing season during
+  transitions.** When the HD1 API transitions from one season to the next,
+  it writes one final "closing" snapshot to the old season's history a few
+  minutes after the transition point. Previously,
+  `src/app/api/h1/update/route.js` called `updateSeason(currentSeason)`
+  only — once `getSeasonFromStatus` flipped to the new season, the worker
+  abandoned the old one and never fetched that closing frame. Verified on
+  season 156: DB had 36 snapshots, live API had 37 (the missing one at unix
+  time `1776189902`, 4 minutes after our DB's `last_updated`). Fix:
+  module-level `lastSeasonObserved` state in the route handler; if the
+  current poll's season is higher, run `updateSeason(previousSeason)` once
+  before processing the current season. Non-fatal on error — the current
+  season's update still proceeds. Three new unit tests in
+  `update.test.mjs` cover transition detection, no-op when season stays
+  the same, and closing-pass failure isolation.
+- **Season 156 missing closing snapshot.** One-time recovery: click the
+  admin "Refresh" button on `/archives?season=156` after deploy to
+  backfill the missing frame. The transition fix above prevents this
+  recurring on future transitions.
+
+### Changed
+
+- **Consolidated `updateSeason` and `fetchAndSeedSeason` into one helper.**
+  `src/db/queries/fetchAndSeedSeason.mjs` was a near-duplicate of
+  `src/update/season.mjs` (`updateSeason`) — both did "fetch
+  `get_snapshots`, validate, upsert into normalized tables."
+  `updateSeason` does strictly more (also writes to `rebroadcast_season`
+  and stamps `h1_season.last_updated` via `queryUpsertSeason(season, true)`).
+    - Deleted `src/db/queries/fetchAndSeedSeason.mjs` and
+      `src/__tests__/unit/queries/fetchAndSeedSeason.test.mjs`.
+    - Migrated `src/app/archives/page.jsx` to call `updateSeason(season)`.
+    - Migrated `src/features/archives/reseedSeason.mjs` to call
+      `updateSeason(season)` and removed the now-redundant manual
+      `db.h1_season.update({ last_updated: new Date() })` block
+      (`updateSeason` stamps it internally). Updated
+      `reseedSeason.test.mjs` accordingly.
+    - Net effect: one backfill helper instead of two, no behavioral
+      regression. The `/archives` on-demand path now also writes to
+      `rebroadcast_season` — a pure addition; nothing previously depended
+      on the absence of that write.
+
+### Documentation
+
+- **`CLAUDE.md`** updated the data-source separation rule to refer to
+  `updateSeason` (post-consolidation) and added a new bullet documenting
+  the season transition closing pass pattern.
+- **`src/app/docs/utilities/page.mdx`** — section 13 rewritten from
+  "On-Demand Season Fetching — `fetchAndSeedSeason`" to
+  "On-Demand Season Fetching — `updateSeason`" with the three caller
+  paths enumerated (worker poll, `/archives` on-demand, admin refresh).
+- **`src/app/docs/data-flow/page.mdx`** — frontend on-demand fetching
+  section updated to reference `updateSeason`; new "Season transition
+  closing pass" subsection added.
+
+## 0.40.4
+
+### Fixed
+
+- **Worker no longer spams `Multiple seasons present in status data`
+  on every poll.** `getSeasonFromStatus` was aggregating the season
+  field from `defend_event` into the current-season resolver, but the
+  HD1 API's `defend_event` slot is a "most recent event" slot that
+  persists across season transitions until replaced by a new defend
+  event — exactly the same reason `attack_events` was already
+  excluded with a `//can be from old season` comment. After the
+  156→157 transition, `defend_event.season: 156` stuck around while
+  `campaign_status` and `statistics` were all on 157, and the
+  resolver's dedup log warned on every 10s poll. The algorithm's
+  output was still accidentally correct (because `campaign_status`
+  came first in the aggregation and `Set` iteration preserved
+  insertion order, so `uniqueSeasons[0]` = 157), but the signal was
+  fragile and the noise floor was unacceptable. Fix: exclude
+  `defend_event` from `getSeasonFromStatus` entirely. The existing
+  cross-season safety guard in `queryUpsertEvent`
+  (`if (event.season !== season) skip`) already prevents lagged
+  events from leaking into the wrong season bucket, so no new guards
+  are needed downstream.
+
+### Changed
+
+- **`isValidStatus` now requires at least one entry in both
+  `campaign_status` and `statistics`.** Previously the Zod schema
+  accepted empty arrays, which would have crashed
+  `getSeasonFromStatus` with `No seasons found in status data`. The
+  real HD1 API always returns 3 entries each, so this `.min(1)`
+  tightening codifies an assumption the resolver already made;
+  malformed responses now fail at the input validator boundary
+  instead of deeper in the worker pipeline. Replaced the old
+  "accepts empty arrays" test with three separate cases covering
+  the new contract.
+
+### Documentation
+
+- **`CLAUDE.md` now documents the data-source separation rule and
+  the lagged event slots.** Added two bullets under
+  **Architecture — Stack**:
+    - `get_campaign_status` → `h1_live` (homepage live section) +
+      `h1_event` (new events); `get_snapshots` → `h1_snapshot` +
+      `h1_event` (historical); the two pipelines must not interact in
+      backfill paths, and `fetchAndSeedSeason` must never touch
+      `h1_live`. `h1_live_snapshot` is currently write-only — no
+      consumers except `snapshotTimers.mjs`' throttle bootstrap.
+    - `defend_event` and `attack_events` in `get_campaign_status` are
+      "most recent event" slots that persist across transitions;
+      `getSeasonFromStatus` must not use their `.season` as a
+      current-season signal, and `queryUpsertEvent` has the skip guard
+      as a safety net.
+
+## 0.40.3
+
+### Fixed
+
+- **`/archives?season=N` no longer crashes with `TypeError: Cannot mix
+BigInt and other types` for seasons that have both events and
+  `h1_live` rows** (i.e. any season the worker was polling during).
+  `ArchiveStats.sumBigInt` seeded its accumulator with `0n` and added
+  `(f[field] ?? 0n)`, but only 5 of the 16 numeric fields in `h1_live`
+  are actually `BigInt` in the Prisma schema (`kills`, `deaths`,
+  `shots`, `hits`, `accidentals`); the others (`missions`,
+  `successful_missions`, `total_unique_players`, `players`, ...) are
+  `Int` and come back from Prisma as plain JS `Number`. Mixing them
+  with a BigInt accumulator threw. Fix: coerce to BigInt explicitly
+  with `BigInt(f[field] ?? 0)`, which is idempotent on BigInt input
+  and safely converts integer Numbers. Added a JSDoc warning on
+  `sumBigInt` listing the BigInt-vs-Int column split and the
+  per-season fields that must never be summed.
+- **`TOTAL_DIVERS` on `/archives` no longer triple-counts.**
+  `ArchiveStats.jsx:160` was calling `sumBigInt(live, 'total_unique_players')`,
+  but that field is documented in `/docs/database` and `/docs/hd1-api`
+  as "Unique players across the season" — a global per-season value
+  that the API repeats verbatim across all three faction rows. Summing
+  turned a real `983` into `2,949`. Fixed by reading from a single row
+  (`live[0]?.total_unique_players`). This was a latent bug masked by
+  the BigInt crash; fixing the crash alone would have shipped wrong
+  numbers publicly, so both fixes land together. Caught during a
+  4-way adversarial design review (Gemini flagged it first).
+- **Test fixtures now mirror real Prisma return types.** The existing
+  `mockLive` in `ArchiveStats.test.jsx` used BigInt literals for every
+  field including `missions`, `successful_missions`,
+  `total_unique_players`, and `players` — fields that Prisma actually
+  returns as JS `Number`. The test never reproduced the production
+  bug. Rewrote the fixture so Int columns use `Number` and only the
+  five actual BigInt columns use BigInt literals. Added a correctness
+  assertion verifying `total_unique_players` is read from a single
+  row (`100,000`), not summed across all three (`300,000`), so the
+  triple-count regression cannot sneak back in.
+- **Defensive zero-check in `formatPercent`/`formatRatio`.** Changed
+  `denominator === 0n` → `!denominator`, which works for both BigInt
+  `0n` and plain `0`. Safe today because denominators come from
+  `sumBigInt` and are always BigInt, but the strict-equality check was
+  brittle against any future caller passing a plain Number.
+
+## 0.40.2
+
+### Documentation
+
+- **Release process in `CLAUDE.md` now documents the merge-back step.**
+  After tagging `vX.Y.Z` on `main`, `main` must be merged back into
+  `develop` (`git checkout develop && git merge origin/main && git push`)
+  so that the PR merge commit GitHub creates on `main` lands on
+  `develop` too. Without this, every release PR eventually fails the
+  "head branch not up to date with base" protection check, because
+  `main` accumulates merge commits `develop` has never seen — even
+  though no actual code diverges. Discovered while releasing v0.40.1:
+  three prior release merge commits (#276, #263, #237) had to be
+  back-merged in one lump before the release PR could be merged.
+  Going forward, doing the merge-back after every release keeps the
+  topology clean.
+
 ## 0.40.1
 
 ### Changed

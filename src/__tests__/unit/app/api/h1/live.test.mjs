@@ -10,9 +10,8 @@ vi.mock('@/shared/utils/game/computeMapState', () => ({
 
 const { getCampaign } = await import('@/db/queries/getCampaign');
 const { computeMapState } = await import('@/shared/utils/game/computeMapState');
-const { GET, POST, PUT, DELETE, PATCH, OPTIONS } = await import(
-    '@/app/api/h1/live/route'
-);
+const { GET, POST, PUT, DELETE, PATCH, OPTIONS } =
+    await import('@/app/api/h1/live/route');
 
 describe('/api/h1/live', () => {
     beforeEach(() => {
@@ -26,7 +25,7 @@ describe('/api/h1/live', () => {
                 { event_id: 1, type: 'defend', status: 'active' },
                 { event_id: 2, type: 'attack', status: 'success' },
             ],
-            live: [{ enemy: 'bugs', points: 50, points_max: 100 }],
+            status: [{ enemy: 'bugs', points: 50, points_max: 100 }],
         };
         const mockMapState = [0.5];
 
@@ -44,7 +43,7 @@ describe('/api/h1/live', () => {
 
         // computeMapState should only receive active events
         expect(computeMapState).toHaveBeenCalledWith(
-            mockCampaign.live,
+            mockCampaign.status,
             [mockCampaign.events[0]], // only the active one
         );
     });
@@ -69,7 +68,7 @@ describe('/api/h1/live', () => {
         const mockCampaign = {
             season: 1,
             events: [],
-            live: [],
+            status: [],
             big_id: 9007199254740993n,
         };
         getCampaign.mockResolvedValue(mockCampaign);

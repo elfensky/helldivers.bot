@@ -80,15 +80,24 @@ describe('isValidStatus', () => {
         expect(result.success).toBe(true);
     });
 
-    test('accepts empty arrays', () => {
-        const result = isValidStatus(
-            makeValidStatus({
-                campaign_status: [],
-                attack_events: [],
-                statistics: [],
-            }),
-        );
+    test('accepts empty attack_events array', () => {
+        // attack_events is allowed to be empty (the API returns lagged entries
+        // from old seasons but also sometimes returns nothing). campaign_status
+        // and statistics, however, must always be non-empty — see the rejection
+        // tests below. This is enforced so getSeasonFromStatus always has a
+        // reliable current-season signal.
+        const result = isValidStatus(makeValidStatus({ attack_events: [] }));
         expect(result.success).toBe(true);
+    });
+
+    test('rejects empty campaign_status', () => {
+        const result = isValidStatus(makeValidStatus({ campaign_status: [] }));
+        expect(result.success).toBe(false);
+    });
+
+    test('rejects empty statistics', () => {
+        const result = isValidStatus(makeValidStatus({ statistics: [] }));
+        expect(result.success).toBe(false);
     });
 
     describe('time validation', () => {

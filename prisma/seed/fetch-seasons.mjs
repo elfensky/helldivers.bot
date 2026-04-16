@@ -2,12 +2,21 @@
  * Fetches historical season data from the official Helldivers 1 API
  * and writes each season as a JSON file in prisma/seed/seasons/.
  *
+ * **Never fetches the currently-active season.** The active season's
+ * `get_snapshots` response is partial by definition (the war is still
+ * running), so capturing it to disk would create a stale seed file that
+ * reseeds incomplete data on fresh deploys. When --to is auto-detected,
+ * it resolves to `currentSeason - 1` — the most recent completed season.
+ * If you pass --to=<current> explicitly, the script will still exclude
+ * anything ≥ currentSeason with a warning.
+ *
  * Usage:
  *   node prisma/seed/fetch-seasons.mjs
  *
  * Options:
  *   --from=N   Start from season N (default: 1)
- *   --to=N     End at season N (default: auto-detect from get_campaign_status)
+ *   --to=N     End at season N INCLUSIVE (default: last completed season
+ *              auto-detected from get_campaign_status — i.e. currentSeason - 1)
  *   --delay=N  Delay in ms between requests (default: 500)
  *   --force    Overwrite existing files (default: skip)
  */
@@ -63,17 +72,35 @@ async function main() {
 
     await mkdir(SEASONS_DIR, { recursive: true });
 
-    // Auto-detect current season if --to not provided
+    // Resolve the last completed season from the live API. Used both as
+    // the default --to value and as a safety cap on any explicit --to.
+    console.log('Detecting current season...');
+    const status = await fetchApi('get_campaign_status');
+    const currentSeason = status?.campaign_status?.[0]?.season;
+    if (!currentSeason) {
+        console.error('Could not detect current season. Aborting.');
+        process.exit(1);
+    }
+    const lastCompletedSeason = currentSeason - 1;
+    console.log(
+        `Current season: ${currentSeason}. Last completed: ${lastCompletedSeason}.`,
+    );
+
+    // Default --to to the last completed season. Never fetch the active
+    // season — the snapshot endpoint returns a mid-war partial response that
+    // would become stale the moment the war progresses.
     if (!args.to) {
-        console.log('Detecting current season...');
-        const status = await fetchApi('get_campaign_status');
-        const season = status?.campaign_status?.[0]?.season;
-        if (!season) {
-            console.error('Could not detect current season. Use --to=N to specify.');
-            process.exit(1);
-        }
-        args.to = season;
-        console.log(`Current season: ${season}`);
+        args.to = lastCompletedSeason;
+    } else if (args.to >= currentSeason) {
+        console.warn(
+            `Warning: --to=${args.to} is >= current season ${currentSeason}. Clamping to ${lastCompletedSeason} (never fetch active season).`,
+        );
+        args.to = lastCompletedSeason;
+    }
+
+    if (args.from > args.to) {
+        console.log(`Nothing to fetch: --from=${args.from} > --to=${args.to}. Exiting.`);
+        return;
     }
 
     console.log(

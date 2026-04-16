@@ -39,7 +39,6 @@ describe('exportUserData', () => {
             updatedAt: new Date(),
             accounts: [{ providerId: 'discord', accountId: '123' }],
             settings: null,
-            reviews: [],
             apiKeys: [
                 {
                     id: 'k1',

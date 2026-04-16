@@ -18,13 +18,16 @@ function resolveSeason(allSeasons, errorContext) {
 export function getSeasonFromStatus(data) {
     if (!data) throw new Error('status is missing', { cause: 'utils/getSeason.mjs' });
 
+    // defend_event and attack_events are "most recent event" slots that persist
+    // across season transitions until replaced by a new event of the same type —
+    // they lag the current season and must NOT be used for current-season
+    // resolution. Only campaign_status and statistics reflect the live war state.
+    // isValidStatus enforces that both arrays are non-empty, so this aggregation
+    // is guaranteed to produce at least one season.
     const campaignSeasons = (data.campaign_status || []).map((cs) => cs.season);
-    const defendEvent = data.defend_event ? [data.defend_event.season] : [];
-    // const attackEvents = (data.attack_events || []).map((ae) => ae.season); //can be from old season
     const statisticsSeasons = (data.statistics || []).map((st) => st.season);
 
-    const allSeasons = [...campaignSeasons, ...defendEvent, ...statisticsSeasons]; //...attackEvents,
-    return resolveSeason(allSeasons, 'status');
+    return resolveSeason([...campaignSeasons, ...statisticsSeasons], 'status');
 }
 
 export function getSeasonFromSnapshot(data) {

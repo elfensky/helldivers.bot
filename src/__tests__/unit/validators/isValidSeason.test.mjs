@@ -3,7 +3,11 @@ import { isValidSeason } from '@/validators/isValidSeason.mjs';
 const makeSnapshot = (overrides = {}) => ({
     season: 1,
     time: 1700000000,
-    data: JSON.stringify([{ points: 100, points_taken: 50, status: 'active' }]),
+    data: JSON.stringify([
+        { points: 100, points_taken: 50, status: 'active' },
+        { points: 200, points_taken: 75, status: 'active' },
+        { points: 300, points_taken: 100, status: 'hidden' },
+    ]),
     ...overrides,
 });
 
@@ -90,6 +94,23 @@ describe('isValidSeason', () => {
                         makeSnapshot({
                             data: JSON.stringify([
                                 { points: 100, points_taken: 50, status: 'invalid' },
+                                { points: 200, points_taken: 75, status: 'active' },
+                                { points: 300, points_taken: 100, status: 'hidden' },
+                            ]),
+                        }),
+                    ],
+                }),
+            );
+            expect(result.success).toBe(false);
+        });
+
+        test('rejects snapshot data with wrong length', () => {
+            const result = isValidSeason(
+                makeValidSeason({
+                    snapshots: [
+                        makeSnapshot({
+                            data: JSON.stringify([
+                                { points: 100, points_taken: 50, status: 'active' },
                             ]),
                         }),
                     ],
@@ -106,6 +127,8 @@ describe('isValidSeason', () => {
                             makeSnapshot({
                                 data: JSON.stringify([
                                     { points: 100, points_taken: 50, status },
+                                    { points: 200, points_taken: 75, status },
+                                    { points: 300, points_taken: 100, status },
                                 ]),
                             }),
                         ],

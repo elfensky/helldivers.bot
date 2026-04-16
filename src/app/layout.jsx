@@ -63,7 +63,7 @@ export default async function RootLayout({ children }) {
     const activeEvents = (data?.events ?? []).filter(
         (e) => e.status === EVENT_STATUS.ACTIVE,
     );
-    const initialMapState = data ? computeMapState(data.live, activeEvents) : null;
+    const initialMapState = data ? computeMapState(data.status, activeEvents) : null;
 
     return (
         <html

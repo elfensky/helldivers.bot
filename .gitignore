@@ -58,7 +58,7 @@ next-env.d.ts
 .claude
 .worktrees
 .superpowers
-docs/superpowers
+docs/superpowers/archive
 
 # Tool state
 .claude-octopus/

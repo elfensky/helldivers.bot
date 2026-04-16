@@ -776,90 +776,35 @@ Identical preprocessing behavior to `schemaNumber` in `isValidFormData.js` — c
 
 ---
 
-## 11. Snapshot Throttle Timers
+## 11. Bucket Math — `computeBucket`
 
-`src/update/snapshotTimers.mjs`
+`src/update/bucketing.mjs`
 
-In-memory throttle layer that prevents the status pipeline from writing snapshots too frequently. Each function checks whether enough time has elapsed since the last snapshot before allowing a new write. On cold start (first call after process boot), the timers seed themselves from the database so restarts do not lose track of the last write time.
+Shared helper that computes tumbling-window bucket boundaries for all timeseries tables (`h1_status`, `h1_statistic`, `h1_event_progress`). Each query function calls `computeBucket(time)` and uses the result as part of the unique constraint key in a Prisma upsert — within a bucket window the existing row is updated, at a boundary a new row is inserted.
 
-Called from `src/update/status.mjs` during the status update pipeline.
+This replaces the previous in-memory snapshot throttle system (`snapshotTimers.mjs`) with deterministic, stateless bucket math. No in-memory state, no cold-start database queries.
 
 ### Constants
 
-| Constant                  | Value | Meaning                                          |
-| ------------------------- | ----- | ------------------------------------------------ |
-| `LIVE_SNAPSHOT_INTERVAL`  | `900` | Minimum seconds between live snapshots (15 min)  |
-| `EVENT_SNAPSHOT_INTERVAL` | `600` | Minimum seconds between event snapshots (10 min) |
+| Constant      | Default | Env var       | Meaning                                                  |
+| ------------- | ------- | ------------- | -------------------------------------------------------- |
+| `BUCKET_SIZE` | `900`   | `BUCKET_SIZE` | Seconds per bucket window (15 min). Parsed at module load. |
 
-### In-memory state
-
-| Variable                 | Type                  | Description                                         |
-| ------------------------ | --------------------- | --------------------------------------------------- |
-| `currentSeason`          | `number \| null`      | Tracks the current season; triggers reset on change |
-| `lastLiveSnapshotTime`   | `number \| null`      | Epoch-seconds of the most recent live snapshot      |
-| `lastEventSnapshotTimes` | `Map<string, number>` | Key: `${type}:${event_id}`, value: epoch-seconds    |
-
----
-
-### `shouldTakeLiveSnapshot(season, apiTime)`
+### `computeBucket(pollTime)`
 
 ```ts
-shouldTakeLiveSnapshot(season: number, apiTime: number): Promise<boolean>
+computeBucket(pollTime: number): number
 ```
 
-**Behavior:**
+Returns `Math.floor(pollTime / BUCKET_SIZE) * BUCKET_SIZE` — the start of the tumbling window containing `pollTime`.
 
-1. Calls `resetIfSeasonChanged(season)` — if the season has changed since the last call, clears all in-memory state.
-2. If `lastLiveSnapshotTime` is `null` (cold start), queries `h1_live_snapshot` for the most recent snapshot time for the given season. Seeds the in-memory timer with the result (or `0` if no rows exist).
-3. Returns `true` if `apiTime - lastLiveSnapshotTime >= 900`.
+### Used by
 
-**Throws:** Re-throws any Prisma error from the cold-start query.
-
----
-
-### `recordLiveSnapshotTime(time)`
-
-```ts
-recordLiveSnapshotTime(time: number): Promise<void>
-```
-
-Updates `lastLiveSnapshotTime` in memory. Called after a successful live snapshot database write to advance the throttle window.
-
----
-
-### `shouldTakeEventSnapshot(type, eventId, apiTime)`
-
-```ts
-shouldTakeEventSnapshot(type: string, eventId: number, apiTime: number): Promise<boolean>
-```
-
-**Behavior:**
-
-1. Builds a lookup key as `${type}:${eventId}`.
-2. If the key is not in `lastEventSnapshotTimes` (cold start for this event), queries `h1_event_snapshot` for the most recent snapshot time matching `type` and `event_id`. Seeds the map entry with the result (or `0` if no rows exist).
-3. Returns `true` if `apiTime - lastEventSnapshotTimes.get(key) >= 600`.
-
-**Throws:** Re-throws any Prisma error from the cold-start query.
-
----
-
-### `recordEventSnapshotTime(type, eventId, time)`
-
-```ts
-recordEventSnapshotTime(type: string, eventId: number, time: number): Promise<void>
-```
-
-Updates the `lastEventSnapshotTimes` map entry for the given `${type}:${eventId}` key. Called after a successful event snapshot database write.
-
----
-
-### `resetSnapshotTimers()`
-
-```ts
-resetSnapshotTimers(): Promise<void>
-```
-
-Clears all in-memory state: sets `lastLiveSnapshotTime` to `null` and clears the `lastEventSnapshotTimes` map. Not called internally — `resetIfSeasonChanged` performs its own inline reset. Exported for external callers that need a full manual reset.
+| Query function            | Table               | Unique key                     |
+| ------------------------- | ------------------- | ------------------------------ |
+| `queryUpsertStatus`       | `h1_status`         | `[season, enemy, bucket]`      |
+| `queryUpsertStatistic`    | `h1_statistic`      | `[season, enemy, bucket]`      |
+| `queryUpsertEventProgress`| `h1_event_progress` | `[type, event_id, bucket]`     |
 
 ---
 
@@ -894,7 +839,7 @@ Region 11 is **only** affected by attack events. Campaign score has no effect. A
 ```js
 // Correct (live view)
 const activeEvents = (data.events ?? []).filter((e) => e.status === 'active');
-const mapState = computeMapState(data.live, activeEvents);
+const mapState = computeMapState(data.status, activeEvents);
 ```
 
 **For the timeline** (`WarTimeline`): pass time-filtered events including completed ones, as the timeline reconstructs historical state from snapshots where the score at that moment matches the events.
@@ -919,23 +864,28 @@ Defend events are sorted by `end_time` (most recent wins per region):
 
 ---
 
-## 13. On-Demand Season Fetching — `fetchAndSeedSeason`
+## 13. On-Demand Season Fetching — `updateSeason`
 
-`src/db/queries/fetchAndSeedSeason.mjs`
+`src/update/season.mjs`
 
 ```ts
-fetchAndSeedSeason(season: number): Promise<void>
+updateSeason(season: number): Promise<{ ms: number; season: number; confirmSeason: object }>
 ```
 
-Fetches a single season from the official Helldivers API and seeds it into the normalized `h1_*` tables. Called on-demand by the `/archives` history page when a user requests a season not yet stored in the database.
+Fetches a single season from the official Helldivers API (`get_snapshots`) and upserts it into the normalized `h1_*` tables. This is the **shared backfill pipeline** used by three callers:
+
+1. **Worker poll** — `src/app/api/h1/update/route.js` calls `updateSeason(currentSeason)` on every poll to keep the active season's snapshots fresh, and calls `updateSeason(previousSeason)` once when a season transition is detected to capture the closing snapshot.
+2. **`/archives` page** — `src/app/archives/page.jsx` calls `updateSeason(resolvedSeason)` when the user requests a season not yet in the database.
+3. **Admin refresh button** — `src/features/archives/reseedSeason.mjs` calls `updateSeason(season)` when an admin clicks the refresh control to force a backfill.
 
 ### Behavior
 
 1. Calls `fetchSeason(season)` from `src/update/fetch.mjs` (official API `get_snapshots` endpoint)
-2. Returns early (no-op) if the API returns no meaningful data (no snapshots, no events)
-3. Upserts into: `h1_season`, `h1_introduction_order`, `h1_points_max`, `h1_event` (defend + attack), `h1_snapshot`
-4. All operations use Prisma upserts — idempotent, safe to call multiple times for the same season
-5. Throws if the API fetch itself fails
+2. Validates the response with `isValidSeason` (Zod). Throws if invalid.
+3. Cross-checks the returned season matches the requested season. Throws if not.
+4. Upserts into: `h1_season` (with inlined `introduction_order`, `points_max`, `season_duration`), `h1_status` (from snapshot campaign data), `h1_event` (defend + attack)
+5. Stamps `h1_season.last_updated = now` at the end via `queryUpsertSeason(season, true)`
+6. All operations use Prisma upserts — idempotent, safe to call multiple times for the same season
 
 ### Usage
 
@@ -943,7 +893,7 @@ Fetches a single season from the official Helldivers API and seeds it into the n
 // In /archives page — fetch missing season on first request
 const { data, error } = await tryCatch(getCampaign(season));
 if (!error && !data) {
-    await tryCatch(fetchAndSeedSeason(season));
+    await tryCatch(updateSeason(season));
     // Re-query after seeding
     ({ data, error } = await tryCatch(getCampaign(season)));
 }
@@ -957,7 +907,7 @@ The `/archives` page no longer queries the database for available seasons. Inste
 const seasons = Array.from({ length: activeSeason - 1 }, (_, i) => activeSeason - 1 - i);
 ```
 
-This ensures all past seasons are always selectable, even if they haven't been fetched yet. First access triggers `fetchAndSeedSeason()`, after which the data is cached in the DB permanently.
+This ensures all past seasons are always selectable, even if they haven't been fetched yet. First access triggers `updateSeason()`, after which the data is cached in the DB permanently.
 
 ---
 

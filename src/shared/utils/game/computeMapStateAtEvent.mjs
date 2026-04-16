@@ -41,8 +41,7 @@ export function computeMapStateAtEvent(selectedEvent, data) {
         return computeMapState(HIDDEN_STATES, []);
     }
 
-    const parsed =
-        typeof nearest.data === 'string' ? JSON.parse(nearest.data) : nearest.data;
+    const parsed = nearest.data;
 
     const pointsMaxArr = data.points_max?.points ?? [];
 

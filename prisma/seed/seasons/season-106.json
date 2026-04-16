@@ -1,8 +1,16 @@
 {
-    "time": 1774536637,
+    "time": 1776270880,
     "error_code": 0,
-    "introduction_order": [1, 0, 2],
-    "points_max": [814860, 941510, 325740],
+    "introduction_order": [
+        1,
+        0,
+        2
+    ],
+    "points_max": [
+        814860,
+        941510,
+        325740
+    ],
     "snapshots": [
         {
             "season": 106,

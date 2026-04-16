@@ -68,23 +68,15 @@ vi.mock('@/db/db', () => ({
         session: createModelMock(),
         verification: createModelMock(),
         // App models
-        app: createModelMock(),
         settings: createModelMock(),
-        review: createModelMock(),
         apiKey: createModelMock(),
         ApiKey: createModelMock(),
-        // Rebroadcast models
-        rebroadcast_status: createModelMock(),
-        rebroadcast_snapshot: createModelMock(),
-        // Historical models
+        // Helldivers models
         h1_season: createModelMock(),
-        h1_introduction_order: createModelMock(),
-        h1_points_max: createModelMock(),
-        h1_snapshot: createModelMock(),
         h1_event: createModelMock(),
-        h1_live: createModelMock(),
-        h1_live_snapshot: createModelMock(),
-        h1_event_snapshot: createModelMock(),
+        h1_status: createModelMock(),
+        h1_statistic: createModelMock(),
+        h1_event_progress: createModelMock(),
         // Worker health
         worker_heartbeat: createModelMock(),
         // Push subscriptions
@@ -93,6 +85,10 @@ vi.mock('@/db/db', () => ({
         $transaction: vi.fn((fn) => Promise.resolve(Array.isArray(fn) ? fn : fn())),
         $connect: vi.fn(() => Promise.resolve()),
         $disconnect: vi.fn(() => Promise.resolve()),
+        $queryRaw: vi.fn(() => Promise.resolve([])),
+        $queryRawUnsafe: vi.fn(() => Promise.resolve([])),
+        $executeRaw: vi.fn(() => Promise.resolve(0)),
+        $executeRawUnsafe: vi.fn(() => Promise.resolve(0)),
     },
 }));
 

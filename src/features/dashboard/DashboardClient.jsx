@@ -73,7 +73,7 @@ export default function DashboardClient() {
             );
         }
 
-        const campaignData = data.live?.find((l) => l.enemy === index);
+        const campaignData = data.status?.find((l) => l.enemy === index);
 
         if (campaignData?.status === CAMPAIGN_STATUS.DEFEATED) {
             const factionEvents = events?.filter((e) => e.enemy === index) ?? [];
@@ -206,7 +206,7 @@ export default function DashboardClient() {
                 <ComponentErrorBoundary name="Stats">
                     <h2>Stats — {FACTION_LABELS[faction]}</h2>
                     <FactionTabs active={faction} onChange={setFaction} />
-                    <StatGrid live={data.live} faction={faction} events={events} />
+                    <StatGrid live={data.status} faction={faction} events={events} />
                 </ComponentErrorBoundary>
             </section>
         </div>
