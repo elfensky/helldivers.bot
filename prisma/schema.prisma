@@ -56,6 +56,17 @@ model Session {
     @@index([userId])
 }
 
+model Verification {
+    id         String   @id @default(uuid(7))
+    identifier String
+    value      String
+    expiresAt  DateTime
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@unique([identifier, value])
+}
+
 model User {
     id            String    @id @default(uuid(7))
     name          String?

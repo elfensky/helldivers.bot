@@ -66,6 +66,7 @@ vi.mock('@/db/db', () => ({
         account: createModelMock(),
         Account: createModelMock(),
         session: createModelMock(),
+        verification: createModelMock(),
         // App models
         settings: createModelMock(),
         apiKey: createModelMock(),
