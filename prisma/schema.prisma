@@ -22,19 +22,6 @@ generator client {
 
 // #endregion
 
-// #region Configuration
-model App {
-    id            String @id @default(uuid(7))
-    version       String
-    // is_db_initialized Boolean @default(false)
-    active_season Int    @default(0)
-    // last_updated_status  DateTime
-    // last_updated_season  DateTime
-    // settings Json
-}
-
-// #endregion
-
 // #region Authentication & Authorization - BetterAuth
 model Account {
     id                    String    @id @default(uuid(7))
@@ -69,17 +56,6 @@ model Session {
     @@index([userId])
 }
 
-model Verification {
-    id         String   @id @default(uuid(7))
-    identifier String
-    value      String
-    expiresAt  DateTime
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
-
-    @@unique([identifier, value])
-}
-
 model User {
     id            String    @id @default(uuid(7))
     name          String?
@@ -96,7 +72,6 @@ model User {
 
     //custom relations
     settings Settings?
-    reviews  Review[]
     apiKeys  ApiKey[]
 }
 
@@ -109,17 +84,6 @@ model Settings {
     settings Json
     //relations
     user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Review {
-    id        String   @id @default(uuid(7))
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    title     String
-    content   String?
-    published Boolean  @default(false)
-    authorId  String
-    author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }
 
 model ApiKey {

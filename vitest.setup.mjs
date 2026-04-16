@@ -66,11 +66,8 @@ vi.mock('@/db/db', () => ({
         account: createModelMock(),
         Account: createModelMock(),
         session: createModelMock(),
-        verification: createModelMock(),
         // App models
-        app: createModelMock(),
         settings: createModelMock(),
-        review: createModelMock(),
         apiKey: createModelMock(),
         ApiKey: createModelMock(),
         // Helldivers models

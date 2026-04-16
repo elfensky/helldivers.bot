@@ -6,7 +6,7 @@ import { tryCatch } from '@/shared/utils/tryCatch';
 import { performanceTime } from '@/shared/utils/time';
 
 /**
- * Export all data for the authenticated user (profile, accounts, settings, reviews, API keys).
+ * Export all data for the authenticated user (profile, accounts, settings, API keys).
  * Auth guard: session must exist and match the requested userId.
  * @param {string} userId - User ID to export data for
  */
@@ -30,15 +30,6 @@ export async function exportUserData(userId) {
                     select: { providerId: true, accountId: true, createdAt: true },
                 },
                 settings: { select: { settings: true } },
-                reviews: {
-                    select: {
-                        id: true,
-                        title: true,
-                        content: true,
-                        published: true,
-                        createdAt: true,
-                    },
-                },
                 apiKeys: {
                     select: {
                         id: true,
