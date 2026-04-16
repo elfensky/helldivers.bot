@@ -5,6 +5,8 @@ import { auth } from '@/auth';
 import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch';
 import { updateSeason } from '@/update/season';
+import { computeBucket } from '@/update/bucketing';
+import db from '@/db/db';
 
 const seasonSchema = z.number().int().positive();
 
@@ -37,7 +39,21 @@ export async function reseedSeason(season) {
     const parsed = seasonSchema.safeParse(season);
     if (!parsed.success) return { error: 'Invalid season' };
 
-    const { error: seedError } = await tryCatch(updateSeason(parsed.data));
+    // If reseeding the active season, protect the live bucket so stale
+    // get_snapshots data doesn't overwrite the worker's fresher writes.
+    const opts = {};
+    const { data: latestSeason } = await tryCatch(
+        db.h1_season.findFirst({
+            where: { last_updated: { not: null } },
+            orderBy: { season: 'desc' },
+            select: { season: true },
+        }),
+    );
+    if (latestSeason && parsed.data >= latestSeason.season) {
+        opts.protectedBucket = computeBucket(Math.floor(Date.now() / 1000));
+    }
+
+    const { error: seedError } = await tryCatch(updateSeason(parsed.data, opts));
     if (seedError) return { error: seedError.message ?? 'Reseed failed' };
 
     revalidatePath('/archives');

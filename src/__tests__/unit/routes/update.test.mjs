@@ -57,7 +57,7 @@ describe('GET /api/h1/update', () => {
         expect(body.data.updated.season).toEqual(mockSeasonData);
         expect(body.data.timing).toHaveProperty('statusMs');
         expect(body.data.timing).toHaveProperty('seasonMs');
-        expect(updateSeason).toHaveBeenCalledWith(5);
+        expect(updateSeason).toHaveBeenCalledWith(5, { protectedBucket: 900 });
     });
 
     test('returns 500 when updateStatus fails and does not call updateSeason', async () => {
@@ -73,7 +73,7 @@ describe('GET /api/h1/update', () => {
     });
 
     test('returns 500 when updateSeason fails', async () => {
-        vi.mocked(updateStatus).mockResolvedValue({ season: 5 });
+        vi.mocked(updateStatus).mockResolvedValue({ season: 5, time: 1000 });
         vi.mocked(updateSeason).mockRejectedValue(new Error('DB write failed'));
 
         const req = new Request('http://localhost/api/h1/update', {
@@ -126,13 +126,13 @@ describe('GET /api/h1/update — season transition detection', () => {
         // Poll 1: no prior observation, no closing pass, only current-season call
         await transitionGET(makeReq());
         expect(transitionUpdateSeason).toHaveBeenCalledTimes(1);
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(1, 156);
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(1, 156, { protectedBucket: 900 });
 
-        // Poll 2: prior was 156, current is 157 — closing pass THEN current season
+        // Poll 2: prior was 156, current is 157 — closing pass (no opts) THEN current season (with protectedBucket)
         await transitionGET(makeReq());
         expect(transitionUpdateSeason).toHaveBeenCalledTimes(3);
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(2, 156);
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(3, 157);
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(2, 156); // closing pass — no protectedBucket
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(3, 157, { protectedBucket: 900 });
     });
 
     test('does not run closing pass when season stays the same across polls', async () => {
@@ -145,8 +145,8 @@ describe('GET /api/h1/update — season transition detection', () => {
         await transitionGET(makeReq());
 
         expect(transitionUpdateSeason).toHaveBeenCalledTimes(2);
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(1, 157);
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(2, 157);
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(1, 157, { protectedBucket: 900 });
+        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(2, 157, { protectedBucket: 900 });
     });
 
     test('closing pass failure is non-fatal and current season still processes', async () => {

@@ -290,6 +290,51 @@ describe('updateSeason', () => {
         consoleSpy.mockRestore();
     });
 
+    // --- protectedBucket tests ---
+    // Default BUCKET_SIZE = 900. Test data times: 1000 (bucket 900), 2000 (bucket 1800).
+
+    test('protectedBucket skips snapshots in or after the protected bucket', async () => {
+        setupHappyPath();
+
+        // Protect bucket 1800 — frame 2 (time 2000, bucket 1800) should be skipped
+        await updateSeason(SEASON, { protectedBucket: 1800 });
+
+        // Only frame 1 (time 1000, bucket 900) should produce 3 upserts
+        expect(queryUpsertStatus).toHaveBeenCalledTimes(3);
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 0, 1000, expect.anything());
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 1, 1000, expect.anything());
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 2, 1000, expect.anything());
+    });
+
+    test('protectedBucket skips all snapshots when all are in or after the protected bucket', async () => {
+        setupHappyPath();
+
+        // Protect bucket 900 — both frames (buckets 900, 1800) should be skipped
+        await updateSeason(SEASON, { protectedBucket: 900 });
+
+        expect(queryUpsertStatus).not.toHaveBeenCalled();
+    });
+
+    test('no protectedBucket writes all snapshots (existing behavior)', async () => {
+        setupHappyPath();
+
+        await updateSeason(SEASON);
+
+        // 2 frames x 3 factions = 6
+        expect(queryUpsertStatus).toHaveBeenCalledTimes(6);
+    });
+
+    test('protectedBucket does not affect events or season upserts', async () => {
+        setupHappyPath();
+
+        await updateSeason(SEASON, { protectedBucket: 900 });
+
+        // All snapshots skipped, but events and season still written
+        expect(queryUpsertSeason).toHaveBeenCalledWith(SEASON, false, expect.anything());
+        expect(queryUpsertSeason).toHaveBeenCalledWith(SEASON, true);
+        expect(queryUpsertEvent).toHaveBeenCalledTimes(2); // 1 defend + 1 attack
+    });
+
     test('attack events get region: 11 added', async () => {
         const dataWithMultipleAttacks = {
             ...mockFetchedData,

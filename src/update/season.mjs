@@ -5,12 +5,20 @@ import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
 import { EVENT_TYPE } from '@/shared/enums/events';
 import { fetchSeason } from '@/update/fetch';
 import { isValidSeason } from '@/validators/isValidSeason';
+import { computeBucket } from '@/update/bucketing';
 // db
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { queryUpsertEvent } from '@/db/queries/upsertEvent';
 import { queryUpsertStatus } from '@/db/queries/upsertStatus';
 
-export async function updateSeason(season) {
+/**
+ * @param {number} season
+ * @param {{ protectedBucket?: number }} opts  When set, skip writing h1_status
+ *   rows whose bucket >= this value. The worker poll passes this to prevent
+ *   stale get_snapshots data from overwriting the live bucket that
+ *   updateStatus() just wrote.
+ */
+export async function updateSeason(season, opts = {}) {
     const start = performance.now();
     if (!season) throw new Error('season is missing');
 
@@ -50,7 +58,12 @@ export async function updateSeason(season) {
 
     // 5. For each historical snapshot frame, bucket-upsert into h1_status per faction.
     // The snapshot `data` field is a stringified JSON array indexed by enemy.
+    // When protectedBucket is set, skip snapshots in or after the live bucket —
+    // updateStatus() owns that window and has already written fresher data.
+    const protectedBucket = opts.protectedBucket;
     for (const snap of fetchedData.snapshots) {
+        if (protectedBucket !== undefined && computeBucket(snap.time) >= protectedBucket) continue;
+
         const parsed = typeof snap.data === 'string' ? JSON.parse(snap.data) : snap.data;
         if (!Array.isArray(parsed) || parsed.length !== 3) continue;
 
