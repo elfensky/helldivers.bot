@@ -121,6 +121,7 @@ export async function updateStatus() {
     return {
         ms: performanceTime(start),
         season,
+        time: fetchedData.time,
         confirmSeason,
     };
 }

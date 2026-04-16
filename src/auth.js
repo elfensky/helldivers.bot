@@ -1,7 +1,7 @@
 /**
  * BetterAuth server configuration.
  *
- * Configures OAuth authentication with Discord and GitHub providers,
+ * Configures OAuth authentication with Discord, GitHub, and Google providers,
  * Prisma adapter for PostgreSQL, and a custom `role` field on User.
  *
  * Server-side session retrieval:
@@ -24,7 +24,8 @@ export const auth = process.env.BETTER_AUTH_SECRET
           }),
           account: {
               accountLinking: {
-                  trustedProviders: ['discord', 'github'],
+                  trustedProviders: ['discord', 'github', 'google'],
+                  allowDifferentEmails: true,
               },
           },
           socialProviders: {
@@ -35,6 +36,10 @@ export const auth = process.env.BETTER_AUTH_SECRET
               github: {
                   clientId: process.env.AUTH_GITHUB_ID,
                   clientSecret: process.env.AUTH_GITHUB_SECRET,
+              },
+              google: {
+                  clientId: process.env.AUTH_GOOGLE_ID,
+                  clientSecret: process.env.AUTH_GOOGLE_SECRET,
               },
           },
           user: {

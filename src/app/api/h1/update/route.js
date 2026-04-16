@@ -9,6 +9,7 @@ import db from '@/db/db';
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';
 import { checkAndNotify } from '@/update/pushNotifier';
+import { computeBucket } from '@/update/bucketing';
 
 // Tracks the season observed on the previous worker poll so we can detect
 // a season transition and run one final updateSeason() pass on the outgoing
@@ -88,8 +89,11 @@ export async function GET(request) {
     lastSeasonObserved = statusData.season;
 
     //SEASON
+    // Protect the bucket updateStatus() just wrote — stale snapshots from
+    // get_snapshots must not overwrite the fresher get_campaign_status data.
+    const protectedBucket = computeBucket(statusData.time);
     const { data: seasonData, error: seasonError } = await tryCatch(
-        updateSeason(statusData.season),
+        updateSeason(statusData.season, { protectedBucket }),
     );
     if (seasonError) {
         console.error(seasonError?.message, seasonError?.cause);

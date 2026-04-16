@@ -23,10 +23,14 @@ vi.mock('@/shared/utils/tryCatch', () => ({
 vi.mock('@/update/season', () => ({
     updateSeason: vi.fn(),
 }));
+vi.mock('@/db/db', () => ({
+    default: { h1_season: { findFirst: vi.fn() } },
+}));
 
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { updateSeason } from '@/update/season';
+import db from '@/db/db';
 
 const adminSession = { user: { role: 'admin', id: 'admin-1' } };
 
@@ -66,11 +70,28 @@ describe('reseedSeason', () => {
     });
 
     it('calls updateSeason and revalidates on success', async () => {
+        // DB returns null for latest season → no protectedBucket → empty opts
+        db.h1_season.findFirst.mockResolvedValue(null);
         const result = await reseedSeason(153);
-        // updateSeason stamps last_updated internally via queryUpsertSeason(season, true),
-        // so reseedSeason no longer does the manual stamp itself.
-        expect(updateSeason).toHaveBeenCalledWith(153);
+        expect(updateSeason).toHaveBeenCalledWith(153, {});
         expect(revalidatePath).toHaveBeenCalledWith('/archives');
+        expect(result).toEqual({ ok: true });
+    });
+
+    it('passes protectedBucket when reseeding the current active season', async () => {
+        db.h1_season.findFirst.mockResolvedValue({ season: 153 });
+        const result = await reseedSeason(153);
+        expect(updateSeason).toHaveBeenCalledWith(
+            153,
+            expect.objectContaining({ protectedBucket: expect.any(Number) }),
+        );
+        expect(result).toEqual({ ok: true });
+    });
+
+    it('does not pass protectedBucket when reseeding an older season', async () => {
+        db.h1_season.findFirst.mockResolvedValue({ season: 160 });
+        const result = await reseedSeason(153);
+        expect(updateSeason).toHaveBeenCalledWith(153, {});
         expect(result).toEqual({ ok: true });
     });
 

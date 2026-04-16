@@ -12,7 +12,7 @@ export const authClient = createAuthClient();
 
 /**
  * Trigger OAuth sign-in flow for a social provider.
- * @param {string} provider - OAuth provider name ('discord' or 'github')
+ * @param {string} provider - OAuth provider name ('discord', 'github', or 'google')
  * @param {{ callbackURL?: string }} [options] - Options. Defaults callbackURL to '/profile'.
  */
 export const signIn = (provider, options = {}) =>
@@ -33,14 +33,14 @@ export const signOut = () =>
 
 /**
  * Initiate OAuth flow to link a new social provider to the current account.
- * @param {string} provider - OAuth provider name ('discord' or 'github')
+ * @param {string} provider - OAuth provider name ('discord', 'github', or 'google')
  */
 export const linkSocial = (provider) =>
     authClient.linkSocial({ provider, callbackURL: '/profile' });
 
 /**
  * Unlink a social provider from the current account.
- * @param {string} providerId - Provider name ('discord' or 'github')
+ * @param {string} providerId - Provider name ('discord', 'github', or 'google')
  * @param {string} accountId - The provider-specific account ID
  */
 export const unlinkAccount = (providerId, accountId) =>

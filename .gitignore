@@ -60,6 +60,9 @@ next-env.d.ts
 .superpowers
 docs/superpowers/archive
 
+# Local reference data (may contain secrets)
+@references/
+
 # Tool state
 .claude-octopus/
 .playwright-mcp/
