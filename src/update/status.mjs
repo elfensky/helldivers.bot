@@ -5,7 +5,6 @@ import { fetchStatus } from '@/update/fetch.mjs';
 import { EVENT_TYPE } from '@/shared/enums/events';
 import { isValidStatus } from '@/validators/isValidStatus';
 // db
-import { queryUpsertRebroadcastStatus } from '@/db/queries/rebroadcast';
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { queryUpsertEvent } from '@/db/queries/upsertEvent';
 import { queryUpsertStatus } from '@/db/queries/upsertStatus';
@@ -35,18 +34,7 @@ export async function updateStatus() {
     // 3. Resolve season
     const season = getSeasonFromStatus(fetchedData);
 
-    // 4. Store raw rebroadcast (still exists during cutover)
-    const { error: storedRebroadcastError } = await tryCatch(
-        queryUpsertRebroadcastStatus(season, fetchedData),
-    );
-    if (storedRebroadcastError) {
-        throw new Error(
-            storedRebroadcastError?.message || 'Failed to store rebroadcast status',
-            { cause: 'update/status.mjs | queryUpsertRebroadcastStatus()' },
-        );
-    }
-
-    // 5. Upsert season metadata with inlined intro_order + points_max arrays + season_duration
+    // 4. Upsert season metadata with inlined intro_order + points_max arrays + season_duration
     const introOrder = fetchedData.campaign_status.map((c) => c.introduction_order);
     const pointsMax = fetchedData.campaign_status.map((c) => c.points_max);
     const seasonDuration = fetchedData.statistics[0]?.season_duration ?? 0;
@@ -57,7 +45,7 @@ export async function updateStatus() {
         throw new Error(seasonError?.message || 'Failed to upsert season');
     }
 
-    // 6. Upsert events (h1_event unchanged)
+    // 5. Upsert events (h1_event unchanged)
     if (fetchedData.defend_event) {
         const { error: defendError } = await tryCatch(
             queryUpsertEvent(season, EVENT_TYPE.DEFEND, fetchedData.defend_event),
@@ -76,7 +64,7 @@ export async function updateStatus() {
         }
     }
 
-    // 7. Bucket-upsert h1_status for all 3 factions (campaign progression timeseries)
+    // 6. Bucket-upsert h1_status for all 3 factions (campaign progression timeseries)
     for (let enemy = 0; enemy < 3; enemy++) {
         const campaign = fetchedData.campaign_status[enemy];
         const { error: statusError } = await tryCatch(
@@ -87,7 +75,7 @@ export async function updateStatus() {
         }
     }
 
-    // 8. Bucket-upsert h1_statistic for all 3 factions (stats timeseries)
+    // 7. Bucket-upsert h1_statistic for all 3 factions (stats timeseries)
     for (let enemy = 0; enemy < 3; enemy++) {
         const stats = fetchedData.statistics[enemy];
         const { error: statError } = await tryCatch(
@@ -98,7 +86,7 @@ export async function updateStatus() {
         }
     }
 
-    // 9. Bucket-upsert h1_event_progress for active events (event progression)
+    // 8. Bucket-upsert h1_event_progress for active events (event progression)
     if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
         const { error: defProgError } = await tryCatch(
             queryUpsertEventProgress(
@@ -122,7 +110,7 @@ export async function updateStatus() {
         }
     }
 
-    // 10. Confirm season update (sets last_updated = now)
+    // 9. Confirm season update (sets last_updated = now)
     const { data: confirmSeason, error: confirmError } = await tryCatch(
         queryUpsertSeason(season, true),
     );

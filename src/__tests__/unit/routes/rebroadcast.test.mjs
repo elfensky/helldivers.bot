@@ -47,8 +47,8 @@ function createPostRequest(formEntries) {
 function makeSeasonRow(overrides = {}) {
     return {
         season: 34,
-        intro_order_array: [0, 1, 2],
-        points_max_array: [1000, 2000, 3000],
+        introduction_order: [0, 1, 2],
+        points_max: [1000, 2000, 3000],
         season_duration: 604800,
         last_updated: new Date('2024-01-01T00:00:00Z'),
         ...overrides,

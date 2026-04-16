@@ -75,12 +75,12 @@ async function seedSeason(db, file) {
     const seasonUpdate = { last_updated: now };
     const seasonCreate = { season, last_updated: now };
     if (seasonData.introduction_order !== undefined) {
-        seasonUpdate.intro_order_array = seasonData.introduction_order ?? [];
-        seasonCreate.intro_order_array = seasonData.introduction_order ?? [];
+        seasonUpdate.introduction_order = seasonData.introduction_order ?? [];
+        seasonCreate.introduction_order = seasonData.introduction_order ?? [];
     }
     if (seasonData.points_max !== undefined) {
-        seasonUpdate.points_max_array = seasonData.points_max ?? [];
-        seasonCreate.points_max_array = seasonData.points_max ?? [];
+        seasonUpdate.points_max = seasonData.points_max ?? [];
+        seasonCreate.points_max = seasonData.points_max ?? [];
     }
     await db.h1_season.upsert({
         where: { season },

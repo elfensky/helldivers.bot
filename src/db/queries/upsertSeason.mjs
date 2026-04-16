@@ -42,12 +42,12 @@ export async function queryUpsertSeason(season, confirm = false, arrays = null) 
     }
 
     if (arrays?.introOrder !== undefined) {
-        update.intro_order_array = arrays.introOrder;
-        create.intro_order_array = arrays.introOrder;
+        update.introduction_order = arrays.introOrder;
+        create.introduction_order = arrays.introOrder;
     }
     if (arrays?.pointsMax !== undefined) {
-        update.points_max_array = arrays.pointsMax;
-        create.points_max_array = arrays.pointsMax;
+        update.points_max = arrays.pointsMax;
+        create.points_max = arrays.pointsMax;
     }
     if (arrays?.seasonDuration !== undefined) {
         update.season_duration = arrays.seasonDuration;

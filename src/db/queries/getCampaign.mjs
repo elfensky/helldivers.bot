@@ -62,8 +62,8 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         const stat = statByEnemy.get(r.enemy);
         return {
             ...r,
-            points_max: seasonRow.points_max_array?.[r.enemy] ?? 0,
-            introduction_order: seasonRow.intro_order_array?.[r.enemy] ?? 0,
+            points_max: seasonRow.points_max?.[r.enemy] ?? 0,
+            introduction_order: seasonRow.introduction_order?.[r.enemy] ?? 0,
             // Merge 11 per-faction stats fields from h1_statistic
             players: stat?.players ?? 0,
             total_unique_players: stat?.total_unique_players ?? 0,
@@ -115,8 +115,8 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         // looking in data.status[i].
         season_duration: seasonRow.season_duration ?? 0,
         status: liveRows,
-        introduction_order: { order: seasonRow.intro_order_array ?? [] },
-        points_max: { points: seasonRow.points_max_array ?? [] },
+        introduction_order: { order: seasonRow.introduction_order ?? [] },
+        points_max: { points: seasonRow.points_max ?? [] },
         snapshots,
         events,
     };
@@ -133,8 +133,8 @@ async function _findSeason(season) {
             select: {
                 season: true,
                 last_updated: true,
-                intro_order_array: true,
-                points_max_array: true,
+                introduction_order: true,
+                points_max: true,
                 season_duration: true,
             },
         }),

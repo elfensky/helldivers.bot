@@ -6,7 +6,6 @@ import { updateStatus } from '@/update/status.mjs';
 vi.mock('@/update/fetch.mjs', () => ({ fetchStatus: vi.fn() }));
 vi.mock('@/validators/isValidStatus', () => ({ isValidStatus: vi.fn() }));
 vi.mock('@/shared/utils/getSeason', () => ({ getSeasonFromStatus: vi.fn() }));
-vi.mock('@/db/queries/rebroadcast', () => ({ queryUpsertRebroadcastStatus: vi.fn() }));
 vi.mock('@/db/queries/upsertSeason', () => ({ queryUpsertSeason: vi.fn() }));
 vi.mock('@/db/queries/upsertEvent', () => ({ queryUpsertEvent: vi.fn() }));
 vi.mock('@/db/queries/upsertStatus', () => ({ queryUpsertStatus: vi.fn() }));
@@ -20,7 +19,6 @@ vi.mock('@/db/queries/upsertEventProgress', () => ({
 import { fetchStatus } from '@/update/fetch.mjs';
 import { isValidStatus } from '@/validators/isValidStatus';
 import { getSeasonFromStatus } from '@/shared/utils/getSeason';
-import { queryUpsertRebroadcastStatus } from '@/db/queries/rebroadcast';
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { queryUpsertEvent } from '@/db/queries/upsertEvent';
 import { queryUpsertStatus } from '@/db/queries/upsertStatus';
@@ -77,7 +75,6 @@ function setupHappyPath() {
     fetchStatus.mockResolvedValue(structuredClone(mockFetchedData));
     isValidStatus.mockReturnValue({ success: true });
     getSeasonFromStatus.mockReturnValue(5);
-    queryUpsertRebroadcastStatus.mockResolvedValue({});
     queryUpsertSeason.mockResolvedValue({});
     queryUpsertEvent.mockResolvedValue({});
     queryUpsertStatus.mockResolvedValue({});
@@ -103,28 +100,17 @@ describe('updateStatus', () => {
         await expect(updateStatus()).rejects.toThrow('bad data');
     });
 
-    // 3. Throws when rebroadcast upsert fails
-    it('throws when queryUpsertRebroadcastStatus rejects', async () => {
-        fetchStatus.mockResolvedValue(structuredClone(mockFetchedData));
-        isValidStatus.mockReturnValue({ success: true });
-        getSeasonFromStatus.mockReturnValue(5);
-        queryUpsertRebroadcastStatus.mockRejectedValue(new Error('db write failed'));
-
-        await expect(updateStatus()).rejects.toThrow('db write failed');
-    });
-
-    // 4. Throws when queryUpsertSeason fails
+    // 3. Throws when queryUpsertSeason fails
     it('throws when queryUpsertSeason rejects', async () => {
         fetchStatus.mockResolvedValue(structuredClone(mockFetchedData));
         isValidStatus.mockReturnValue({ success: true });
         getSeasonFromStatus.mockReturnValue(5);
-        queryUpsertRebroadcastStatus.mockResolvedValue({});
         queryUpsertSeason.mockRejectedValue(new Error('season write failed'));
 
         await expect(updateStatus()).rejects.toThrow('season write failed');
     });
 
-    // 5. Happy path: returns expected shape, calls all dependencies
+    // 4. Happy path: returns expected shape, calls all dependencies
     it('returns { ms, season, confirmSeason } on success', async () => {
         setupHappyPath();
 
@@ -139,7 +125,6 @@ describe('updateStatus', () => {
         expect(fetchStatus).toHaveBeenCalledOnce();
         expect(isValidStatus).toHaveBeenCalledOnce();
         expect(getSeasonFromStatus).toHaveBeenCalledOnce();
-        expect(queryUpsertRebroadcastStatus).toHaveBeenCalledWith(5, expect.any(Object));
         // Season upserted twice: once with arrays (false), once to confirm (true)
         expect(queryUpsertSeason).toHaveBeenCalledTimes(2);
         expect(queryUpsertSeason).toHaveBeenCalledWith(5, false, {
@@ -150,7 +135,7 @@ describe('updateStatus', () => {
         expect(queryUpsertSeason).toHaveBeenCalledWith(5, true);
     });
 
-    // 6. Defend event upserted when present
+    // 5. Defend event upserted when present
     it('upserts defend event when defend_event exists', async () => {
         setupHappyPath();
 
@@ -163,7 +148,7 @@ describe('updateStatus', () => {
         );
     });
 
-    // 7. Defend event skipped when null
+    // 6. Defend event skipped when null
     it('skips defend event upsert when defend_event is null', async () => {
         setupHappyPath();
         const dataNoDefend = structuredClone(mockFetchedData);
@@ -179,7 +164,7 @@ describe('updateStatus', () => {
         expect(defendCalls).toHaveLength(0);
     });
 
-    // 8. Attack events get region: 11 added
+    // 7. Attack events get region: 11 added
     it('adds region: 11 to each attack event', async () => {
         setupHappyPath();
 
@@ -192,7 +177,7 @@ describe('updateStatus', () => {
         expect(attackCalls[0][2]).toMatchObject({ event_id: 2, region: 11 });
     });
 
-    // 9. h1_status bucket-upserted for all 3 factions
+    // 8. h1_status bucket-upserted for all 3 factions
     it('upserts h1_status for enemy 0, 1, and 2', async () => {
         setupHappyPath();
 
@@ -209,7 +194,7 @@ describe('updateStatus', () => {
         }
     });
 
-    // 10. h1_statistic bucket-upserted for all 3 factions
+    // 9. h1_statistic bucket-upserted for all 3 factions
     it('upserts h1_statistic for enemy 0, 1, and 2', async () => {
         setupHappyPath();
 
@@ -226,7 +211,7 @@ describe('updateStatus', () => {
         }
     });
 
-    // 11. h1_event_progress upserted for active defend event + attack events
+    // 10. h1_event_progress upserted for active defend event + attack events
     it('upserts h1_event_progress for defend and attack events in current season', async () => {
         setupHappyPath();
 
@@ -246,7 +231,7 @@ describe('updateStatus', () => {
         );
     });
 
-    // 12. h1_event_progress skipped for lagged cross-season events
+    // 11. h1_event_progress skipped for lagged cross-season events
     it('skips h1_event_progress for attack events from a different season', async () => {
         setupHappyPath();
         const laggedData = structuredClone(mockFetchedData);

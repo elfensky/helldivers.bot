@@ -142,8 +142,8 @@ async function reconstructCampaignStatus() {
         orderBy: { season: 'desc' },
         select: {
             season: true,
-            intro_order_array: true,
-            points_max_array: true,
+            introduction_order: true,
+            points_max: true,
             season_duration: true,
         },
     });
@@ -184,9 +184,9 @@ async function reconstructCampaignStatus() {
             enemy: r.enemy,
             points: r.points,
             points_taken: r.points_taken,
-            points_max: seasonRow.points_max_array?.[r.enemy] ?? 0,
+            points_max: seasonRow.points_max?.[r.enemy] ?? 0,
             status: r.status,
-            introduction_order: seasonRow.intro_order_array?.[r.enemy] ?? 0,
+            introduction_order: seasonRow.introduction_order?.[r.enemy] ?? 0,
         })),
         statistics: [0, 1, 2].map((enemy) => {
             const s = statByEnemy.get(enemy);
@@ -211,8 +211,8 @@ async function reconstructCampaignStatus() {
         }),
         defend_event: activeEvents.find((e) => e.type === 'defend') ?? null,
         attack_events: activeEvents.filter((e) => e.type === 'attack'),
-        introduction_order: seasonRow.intro_order_array ?? [],
-        points_max: seasonRow.points_max_array ?? [],
+        introduction_order: seasonRow.introduction_order ?? [],
+        points_max: seasonRow.points_max ?? [],
     };
 }
 
@@ -232,8 +232,8 @@ async function reconstructSnapshots(season) {
         where: { season },
         select: {
             season: true,
-            intro_order_array: true,
-            points_max_array: true,
+            introduction_order: true,
+            points_max: true,
         },
     });
     if (!seasonRow) return null;
@@ -276,8 +276,8 @@ async function reconstructSnapshots(season) {
     return {
         time: Math.floor(Date.now() / 1000),
         error_code: 0,
-        introduction_order: seasonRow.intro_order_array ?? [],
-        points_max: seasonRow.points_max_array ?? [],
+        introduction_order: seasonRow.introduction_order ?? [],
+        points_max: seasonRow.points_max ?? [],
         snapshots,
         defend_events: allEvents.filter((e) => e.type === 'defend'),
         attack_events: allEvents.filter((e) => e.type === 'attack'),

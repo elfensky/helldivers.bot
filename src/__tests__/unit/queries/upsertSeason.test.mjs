@@ -62,8 +62,8 @@ describe('queryUpsertSeason', () => {
         const callArg = vi.mocked(db.h1_season.upsert).mock.calls[0][0];
         expect(callArg.where.season).toBe(5);
         // No array updates when not provided
-        expect(callArg.update).not.toHaveProperty('intro_order_array');
-        expect(callArg.update).not.toHaveProperty('points_max_array');
+        expect(callArg.update).not.toHaveProperty('introduction_order');
+        expect(callArg.update).not.toHaveProperty('points_max');
     });
 
     test('upserts season with intro_order + points_max arrays', async () => {
@@ -74,10 +74,10 @@ describe('queryUpsertSeason', () => {
         });
 
         const callArg = vi.mocked(db.h1_season.upsert).mock.calls[0][0];
-        expect(callArg.update.intro_order_array).toEqual([2, 1, 0]);
-        expect(callArg.update.points_max_array).toEqual([30000, 30000, 30000]);
-        expect(callArg.create.intro_order_array).toEqual([2, 1, 0]);
-        expect(callArg.create.points_max_array).toEqual([30000, 30000, 30000]);
+        expect(callArg.update.introduction_order).toEqual([2, 1, 0]);
+        expect(callArg.update.points_max).toEqual([30000, 30000, 30000]);
+        expect(callArg.create.introduction_order).toEqual([2, 1, 0]);
+        expect(callArg.create.points_max).toEqual([30000, 30000, 30000]);
     });
 
     test('confirm=true sets last_updated to now', async () => {
@@ -132,12 +132,12 @@ describe('queryUpsertSeason', () => {
 
         const callArg = vi.mocked(db.h1_season.upsert).mock.calls[0][0];
         expect(callArg.update.last_updated).toBeInstanceOf(Date);
-        expect(callArg.update.intro_order_array).toEqual([2, 1, 0]);
-        expect(callArg.update.points_max_array).toEqual([30000, 30000, 30000]);
+        expect(callArg.update.introduction_order).toEqual([2, 1, 0]);
+        expect(callArg.update.points_max).toEqual([30000, 30000, 30000]);
         expect(callArg.update.season_duration).toBe(54321);
         expect(callArg.create.last_updated).toBeInstanceOf(Date);
-        expect(callArg.create.intro_order_array).toEqual([2, 1, 0]);
-        expect(callArg.create.points_max_array).toEqual([30000, 30000, 30000]);
+        expect(callArg.create.introduction_order).toEqual([2, 1, 0]);
+        expect(callArg.create.points_max).toEqual([30000, 30000, 30000]);
         expect(callArg.create.season_duration).toBe(54321);
     });
 
@@ -150,7 +150,7 @@ describe('queryUpsertSeason', () => {
         expect(callArg.update.season_duration).toBe(12345);
         expect(callArg.create.season_duration).toBe(12345);
         // Other metadata fields stay absent when not provided.
-        expect(callArg.update).not.toHaveProperty('intro_order_array');
-        expect(callArg.update).not.toHaveProperty('points_max_array');
+        expect(callArg.update).not.toHaveProperty('introduction_order');
+        expect(callArg.update).not.toHaveProperty('points_max');
     });
 });

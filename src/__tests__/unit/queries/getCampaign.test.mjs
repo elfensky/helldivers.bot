@@ -8,8 +8,8 @@ import { getCampaign } from '@/db/queries/getCampaign.mjs';
 const mockSeasonRow = {
     season: 5,
     last_updated: new Date('2025-01-01'),
-    intro_order_array: [0, 1, 2],
-    points_max_array: [500, 600, 700],
+    introduction_order: [0, 1, 2],
+    points_max: [500, 600, 700],
     // Per-season scalar (not per-faction). Lives on h1_season and surfaces
     // at the top level of the getCampaign return value.
     season_duration: 7200,
@@ -147,7 +147,7 @@ describe('getCampaign', () => {
         expect(callArg.orderBy).toBeUndefined();
     });
 
-    test('selects inlined intro_order_array / points_max_array / season_duration from h1_season', async () => {
+    test('selects introduction_order / points_max / season_duration from h1_season', async () => {
         seedDbMocks();
 
         await getCampaign();
@@ -156,8 +156,8 @@ describe('getCampaign', () => {
         expect(callArg.select).toEqual({
             season: true,
             last_updated: true,
-            intro_order_array: true,
-            points_max_array: true,
+            introduction_order: true,
+            points_max: true,
             season_duration: true,
         });
     });
@@ -187,7 +187,7 @@ describe('getCampaign', () => {
             points: 100,
             points_taken: 10,
             status: 'active',
-            // Merged from h1_season.points_max_array[0]
+            // Merged from h1_season.points_max[enemy]
             points_max: 500,
             introduction_order: 0,
             // Merged from h1_statistic[enemy=0] — 11 per-faction fields.
@@ -324,8 +324,8 @@ describe('getCampaign', () => {
             seasonRow: {
                 season: 5,
                 last_updated: new Date('2025-01-01'),
-                intro_order_array: null,
-                points_max_array: null,
+                introduction_order: null,
+                points_max: null,
                 season_duration: null,
             },
         });

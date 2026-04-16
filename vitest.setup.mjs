@@ -73,19 +73,9 @@ vi.mock('@/db/db', () => ({
         review: createModelMock(),
         apiKey: createModelMock(),
         ApiKey: createModelMock(),
-        // Rebroadcast models
-        rebroadcast_status: createModelMock(),
-        rebroadcast_snapshot: createModelMock(),
-        // Historical models
+        // Helldivers models
         h1_season: createModelMock(),
-        h1_introduction_order: createModelMock(),
-        h1_points_max: createModelMock(),
-        h1_snapshot: createModelMock(),
         h1_event: createModelMock(),
-        h1_live: createModelMock(),
-        h1_live_snapshot: createModelMock(),
-        h1_event_snapshot: createModelMock(),
-        // NEW models (added alongside old during cutover)
         h1_status: createModelMock(),
         h1_statistic: createModelMock(),
         h1_event_progress: createModelMock(),
