@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 0.42.0
+
+### Features
+
+- **Google OAuth** — added Google as a third sign-in provider alongside Discord and GitHub via BetterAuth. Includes official Google branding button on the sign-in page and profile account linking (supports different emails).
+
+### Fixes
+
+- **Worker bucket collision** — `updateSeason` no longer overwrites live `h1_status` buckets when reseeding historical data. Prevents stale snapshot data from clobbering active campaign progress.
+
+### Chores
+
+- Added `@references/` to `.gitignore` to prevent accidental commit of local SQL dumps containing secrets.
+- Removed implemented `h1-tables-cleanup` design spec.
+
 ## 0.41.1
 
 ### Fixes
