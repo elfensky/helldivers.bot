@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.41.1
+
+### Fixes
+
+- **Galaxy map** — fixed false active-event indicator when the event timeline was off-screen. `useScrollEvent` now checks actual viewport visibility instead of pixel distance, preventing completed events from being shown as active on the map.
+- **Service worker caching** — added `Cache-Control: no-cache` header on `/sw.js` so browsers always check for updates on navigation, preventing stale app code after deploys.
+
 ## 0.41.0
 
 ### Database
