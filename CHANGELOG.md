@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+## 0.41.0
+
+### Database
+
+- **Schema consolidation** — 10 h1_*/rebroadcast tables → 5 normalized tables (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Dropped `h1_live`, `h1_live_snapshot`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`, `h1_event_snapshot`, `rebroadcast_status`, `rebroadcast_snapshot`, `App`, `Review`.
+- **Bucket-upsert pattern** — all timeseries tables use tumbling-window UPSERTs keyed on `(entity, bucket)` where `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE`. Sub-15s homepage freshness with ~120 MB bounded storage. `BUCKET_SIZE` is env-configurable (default 900 = 15 min).
+- **`h1_season` inlining** — `introduction_order Int[]`, `points_max Int[]`, and `season_duration Int` are now direct columns on `h1_season` (previously in separate 1:1 tables).
+- **`h1_snapshot.data` normalized** — stringified JSON-in-JSON column replaced by typed columns on `h1_status`. Consumers no longer need defensive `typeof === 'string' ? JSON.parse : data` parsing.
+- **`h1_live.map` dropped** — precomputed galaxy map column was never read; `computeMapState` already rebuilds at request time.
+
+### Worker
+
+- **`snapshotTimers.mjs` deleted** — 91 lines of stateful in-memory throttle tracking replaced by 5-line deterministic `src/update/bucketing.mjs` helper. The DB uniqueness constraint IS the throttle.
+- **`computeFactionMap` deleted** — precomputation removed; `computeMapState` rebuilds at request time.
+- **`data.live` → `data.status`** — cascade rename across all consumers to match the `h1_live` → `h1_status` table rename. `/api/h1/live` URL and `useLiveData` hook stay.
+
+### API
+
+- **Rebroadcast endpoint** — reconstructs HD1 wire format from normalized tables on demand (no raw cache dependency). 4 event-count stats fields (`defend_events`, `successful_defend_events`, `attack_events`, `successful_attack_events`) omitted from statistics[] (derivable from `h1_event`).
+- **`h1_event.players_at_start` null-protection** — update path only sets the field when a non-null value is present, preventing `get_snapshots` reseeds from clobbering live-captured values.
+
+### Tooling
+
+- **`scripts/backfill-h1-tables.mjs`** — offline reseed tool for production migration. Reads from pg_dump restore, writes to new schema via Prisma. Per-season transactional, resumable, `--force` flag.
+
+### Documentation
+
+- Updated DataFlowDiagram component, CLAUDE.md architecture section, and `/docs` pages (database, data-flow, utilities) for the new 5-table schema.
+
 ## 0.40.7
 
 ### Documentation
