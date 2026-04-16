@@ -72,7 +72,7 @@ export function useScrollEvent(events) {
                 }
             }
 
-            if (best) {
+            if (best && bestDist < visibleHeight) {
                 const key = best.dataset.eventKey;
                 const event = lookup.get(key);
                 if (event) setSelectedEvent(event);
