@@ -8,88 +8,71 @@
 const BODY = `
     subgraph Sources["DATA SOURCES"]
         api_status["get_campaign_status<br/><small>Live war state + stats</small>"]
-        api_snapshot["get_snapshots<br/><small>Historical time-series</small>"]
+        api_snapshot["get_snapshots<br/><small>Historical snapshots (current + backfill)</small>"]
         seed_files["prisma/seed/seasons/*.json<br/><small>Bootstrap (first deploy)</small>"]
-        api_refresh["get_snapshots (forced)<br/><small>Re-fetch any season</small>"]
     end
 
     subgraph Processing["PROCESSING"]
-        worker["Worker Thread<br/><small>cron.js — setTimeout loop<br/>poll > validate > upsert</small>"]
+        worker["Worker Thread<br/><small>cron.js — setTimeout loop<br/>poll > validate > bucket-upsert</small>"]
         seed_script["Seed Script<br/><small>prisma db seed / startup</small>"]
-        refresh_handler["updateSeason()<br/><small>fetch + validate + upsert</small>"]
     end
 
-    subgraph Raw["RAW CACHE"]
-        rb_status["rebroadcast_status<br/><small>1 row/season — raw JSON</small>"]
-        rb_snapshot["rebroadcast_snapshot<br/><small>1 row/season — raw JSON</small>"]
-    end
-
-    subgraph Normalized["NORMALIZED TABLES"]
-        h1_season["h1_season"]
-        h1_live["h1_live<br/><small>campaigns + stats + map</small>"]
-        h1_event["h1_event"]
-        h1_intro["h1_introduction_order"]
-        h1_points["h1_points_max"]
+    subgraph Normalized["NORMALIZED TABLES (5)"]
+        h1_season["h1_season<br/><small>per-season metadata + intro_order[] + points_max[]</small>"]
+        h1_status["h1_status<br/><small>bucketed campaign timeseries</small>"]
+        h1_statistic["h1_statistic<br/><small>bucketed stats timeseries</small>"]
+        h1_event["h1_event<br/><small>current event state (mutable)</small>"]
+        h1_event_progress["h1_event_progress<br/><small>bucketed event progression</small>"]
     end
 
     subgraph Frontend["FRONTEND"]
-        fe_live["Live Dashboard<br/><small>map + stats + players</small>"]
-        fe_events["Event Alerts<br/><small>active defend/attack</small>"]
+        fe_live["Live Dashboard<br/><small>latest bucket per faction</small>"]
+        fe_archives["Archives<br/><small>full timeseries</small>"]
+        fe_rebroadcast["Rebroadcast API<br/><small>reconstructed wire format</small>"]
     end
 
     %% Sources → Processing
-    api_status -->|"5-15s"| worker
-    api_snapshot -->|"~1h"| worker
+    api_status -->|"~15s"| worker
+    api_snapshot -->|"~15s + on demand"| worker
     seed_files -->|"once"| seed_script
-    api_refresh -->|"on demand"| refresh_handler
 
-    %% Processing → Raw Cache
-    worker --> rb_status
-    worker --> rb_snapshot
-
-    %% Worker → Normalized
+    %% Processing → Normalized
     worker --> h1_season
-    worker --> h1_live
+    worker --> h1_status
+    worker --> h1_statistic
     worker --> h1_event
-    worker --> h1_intro
-    worker --> h1_points
-
-    %% Seed → Normalized
+    worker --> h1_event_progress
     seed_script --> h1_season
-    seed_script -.-> h1_event
-    seed_script -.-> h1_intro
-    seed_script -.-> h1_points
-
-    %% Refresh → Raw + Normalized
-    refresh_handler --> rb_snapshot
-    refresh_handler --> h1_season
-    refresh_handler --> h1_event
-    refresh_handler --> h1_intro
-    refresh_handler --> h1_points
+    seed_script --> h1_status
+    seed_script --> h1_event
 
     %% DB → Frontend
-    h1_live -->|"read"| fe_live
-    h1_event -->|"read"| fe_events
+    h1_status -->|"latest bucket"| fe_live
+    h1_event -->|"active events"| fe_live
+    h1_season -->|"arrays"| fe_live
+    h1_status -->|"full history"| fe_archives
+    h1_event -->|"all events"| fe_archives
+    h1_event_progress -->|"progression"| fe_archives
+    h1_season -->|"reconstruct"| fe_rebroadcast
+    h1_status -->|"reconstruct"| fe_rebroadcast
+    h1_statistic -->|"reconstruct"| fe_rebroadcast
+    h1_event -->|"reconstruct"| fe_rebroadcast
 
-    %% Styles matching wiki color conventions
+    %% Styles
     classDef api fill:#1c1b1b,stroke:#3b82f6,color:#60a5fa
     classDef processing fill:#1c1b1b,stroke:#a855f7,color:#c084fc
-    classDef raw fill:#1c1b1b,stroke:#f59e0b,color:#fbbf24
     classDef norm fill:#1c1b1b,stroke:#22c55e,color:#4ade80
     classDef seed fill:#1c1b1b,stroke:#ec4899,color:#f472b6
     classDef frontend fill:#1c1b1b,stroke:#06b6d4,color:#22d3ee
 
-    class api_status,api_snapshot,api_refresh api
+    class api_status,api_snapshot api
     class worker processing
-    class rb_status,rb_snapshot raw
-    class h1_season,h1_live,h1_event,h1_intro,h1_points norm
+    class h1_season,h1_status,h1_statistic,h1_event,h1_event_progress norm
     class seed_files,seed_script seed
-    class fe_live,fe_events frontend
-    class refresh_handler api
+    class fe_live,fe_archives,fe_rebroadcast frontend
 
     style Sources fill:#131313,stroke:#3b82f6,color:#60a5fa
     style Processing fill:#131313,stroke:#a855f7,color:#c084fc
-    style Raw fill:#131313,stroke:#f59e0b,color:#fbbf24
     style Normalized fill:#131313,stroke:#22c55e,color:#4ade80
     style Frontend fill:#131313,stroke:#06b6d4,color:#22d3ee
 `;
