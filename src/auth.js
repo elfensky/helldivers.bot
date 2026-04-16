@@ -25,6 +25,7 @@ export const auth = process.env.BETTER_AUTH_SECRET
           account: {
               accountLinking: {
                   trustedProviders: ['discord', 'github', 'google'],
+                  allowDifferentEmails: true,
               },
           },
           socialProviders: {
