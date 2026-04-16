@@ -6,7 +6,7 @@ import { exportUserData, deleteUserAccount } from '@/db/queries/account';
 import { linkSocial, unlinkAccount } from '@/auth-client';
 import { tryCatch } from '@/shared/utils/tryCatch';
 
-const SOCIAL_PROVIDERS = ['discord', 'github'];
+const SOCIAL_PROVIDERS = ['discord', 'github', 'google'];
 
 export default function AccountActions({ user, avatarUrl, providers, canUnlink }) {
     const router = useRouter();
