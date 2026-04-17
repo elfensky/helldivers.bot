@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { vi } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 
-vi.mock('@/components/h1/Dashboard/DashboardClient.css', () => ({}));
+vi.mock('@/features/dashboard/DashboardClient.css', () => ({}));
 vi.mock('@/features/notifications/NotificationToggle', () => ({
     default: () => null,
 }));
@@ -11,39 +11,29 @@ vi.mock('@/features/notifications/NotificationToggle', () => ({
 // Capture-style mock: each EventCard render emits a <div> carrying the
 // props it received as JSON. Tests can then query and parse to inspect
 // exactly what the parent passed in (view, points, factionMap, barLabel…).
-vi.mock('@/features/galaxy/EventCard', () => ({
-    default: (props) => (
-        <div
-            data-testid={`event-card-${props.factionIndex}-${props.barLabel ?? 'none'}`}
-            data-props={JSON.stringify({
-                action: props.action,
-                region: props.region,
-                factionIndex: props.factionIndex,
-                barLabel: props.barLabel,
-                view: props.view,
-                points: props.points,
-                pointsMax: props.pointsMax,
-                hasFactionMap: props.factionMap != null,
-            })}
-        />
-    ),
-    computeFrontier: (campaignData, factionMap) => {
-        if (!campaignData || campaignData.status !== 'active') return null;
-        const pointsPerSector = campaignData.points_max / 10;
-        const sectorsEarned = Math.trunc(campaignData.points / pointsPerSector);
-        const frontier = sectorsEarned + 1;
-        if (frontier > 10) return null;
-        const pointsIntoFrontier = campaignData.points - sectorsEarned * pointsPerSector;
-        return {
-            sector: frontier,
-            region: factionMap?.[frontier]?.region || `Sector ${frontier}`,
-            percent: (pointsIntoFrontier / pointsPerSector) * 100,
-            points: Math.round(pointsIntoFrontier),
-            pointsMax: Math.round(pointsPerSector),
-            event: factionMap?.[frontier]?.event || '',
-        };
-    },
-}));
+// `computeFrontier` is preserved from the real module so tests exercise the
+// actual frontier math (avoids drift between mock + production).
+vi.mock('@/features/galaxy/EventCard', async () => {
+    const actual = await vi.importActual('@/features/galaxy/EventCard');
+    return {
+        ...actual,
+        default: (props) => (
+            <div
+                data-testid={`event-card-${props.factionIndex}-${props.barLabel ?? 'none'}`}
+                data-props={JSON.stringify({
+                    action: props.action,
+                    region: props.region,
+                    factionIndex: props.factionIndex,
+                    barLabel: props.barLabel,
+                    view: props.view,
+                    points: props.points,
+                    pointsMax: props.pointsMax,
+                    hasFactionMap: props.factionMap != null,
+                })}
+            />
+        ),
+    };
+});
 
 vi.mock('@/features/galaxy/DefeatedCard', () => ({
     default: (props) => (
@@ -199,10 +189,11 @@ describe('DashboardClient — regions view toggle persistence', () => {
     test('hydrates from localStorage when persisted value is campaign', async () => {
         localStorage.setItem('hd1-regions-view', 'campaign');
         render(<DashboardClient />);
-        // Effect runs after mount — wait a microtask
-        await new Promise((r) => setTimeout(r, 0));
-        const props = getCardProps('event-card-0-SECTOR_PROGRESS');
-        expect(props.view).toBe('campaign');
+        // Hydration effect runs after mount; wait for the re-render to pick it up.
+        await waitFor(() => {
+            const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+            expect(props?.view).toBe('campaign');
+        });
     });
 
     test('clicking toggle persists new value to localStorage', () => {
@@ -215,10 +206,12 @@ describe('DashboardClient — regions view toggle persistence', () => {
     test('ignores garbage localStorage values', async () => {
         localStorage.setItem('hd1-regions-view', 'totally-bogus');
         render(<DashboardClient />);
-        await new Promise((r) => setTimeout(r, 0));
-        const props = getCardProps('event-card-0-SECTOR_PROGRESS');
-        // garbage falls through → default 'sector'
-        expect(props.view).toBe('sector');
+        // Effect checks the saved value and leaves state unchanged. Use waitFor
+        // so the assertion runs after React has flushed the mount effects.
+        await waitFor(() => {
+            const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+            expect(props?.view).toBe('sector');
+        });
     });
 });
 
@@ -352,14 +345,24 @@ describe('DashboardClient — homeworld card suppression', () => {
     test('sector view renders separate HOMEWORLD_ASSAULT card', async () => {
         setupHomeworldAttack('sector');
         render(<DashboardClient />);
-        await new Promise((r) => setTimeout(r, 0));
-        expect(getCardProps('event-card-0-HOMEWORLD_ASSAULT')).not.toBeNull();
+        await waitFor(() =>
+            expect(getCardProps('event-card-0-HOMEWORLD_ASSAULT')).not.toBeNull(),
+        );
     });
 
     test('campaign view suppresses the separate homeworld card', async () => {
         setupHomeworldAttack('campaign');
         render(<DashboardClient />);
-        await new Promise((r) => setTimeout(r, 0));
+        // Wait for the toggle's aria-label to flip to "Switch to sector…",
+        // which indicates the hydration effect has applied the persisted
+        // campaign view. (Can't wait on a frontier card here because when
+        // all 10 sectors are captured, computeFrontier returns null and no
+        // frontier card is rendered — a separate edge case to the audit.)
+        await waitFor(() => {
+            expect(
+                screen.getByRole('button', { name: /switch to sector/i }),
+            ).toBeInTheDocument();
+        });
         expect(getCardProps('event-card-0-HOMEWORLD_ASSAULT')).toBeNull();
     });
 });
@@ -394,9 +397,11 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
         });
 
         render(<DashboardClient />);
-        await new Promise((r) => setTimeout(r, 0));
+        await waitFor(() => {
+            const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+            expect(props?.view).toBe('campaign');
+        });
         const props = getCardProps('event-card-0-SECTOR_PROGRESS');
-        expect(props.view).toBe('campaign');
         expect(props.points).toBe(3_200_000);
         expect(props.pointsMax).toBe(5_000_000);
         // factionMap must be forwarded in campaign view so the card can
@@ -428,9 +433,11 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
         });
 
         render(<DashboardClient />);
-        await new Promise((r) => setTimeout(r, 0));
+        await waitFor(() => {
+            const p = getCardProps('event-card-0-SECTOR_PROGRESS');
+            expect(p?.view).toBe('sector');
+        });
         const props = getCardProps('event-card-0-SECTOR_PROGRESS');
-        expect(props.view).toBe('sector');
         // pointsPerSector = 500K; sectorsEarned = 6; pointsIntoFrontier = 200K
         expect(props.points).toBe(200_000);
         expect(props.pointsMax).toBe(500_000);
@@ -510,8 +517,9 @@ describe('DashboardClient — defeated faction branch', () => {
         });
 
         render(<DashboardClient />);
-        await new Promise((r) => setTimeout(r, 0));
-        const props = getCardProps('defeated-card-2');
-        expect(props.view).toBe('campaign');
+        await waitFor(() => {
+            const props = getCardProps('defeated-card-2');
+            expect(props?.view).toBe('campaign');
+        });
     });
 });

@@ -2,7 +2,7 @@
 import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-vi.mock('@/components/h1/StatGrid/StatGrid.css', () => ({}));
+vi.mock('@/features/stats/StatGrid.css', () => ({}));
 
 import StatGrid from '@/features/stats/StatGrid';
 
@@ -70,12 +70,19 @@ describe('StatGrid', () => {
             render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
             // players: 100+200+150 = 450
             expect(screen.getByText('450')).toBeInTheDocument();
-            // kills: 500+1000+750 = 2,250
-            expect(screen.getByText('2,250')).toBeInTheDocument();
-            // deaths: 50+80+40 = 170
+            // deaths: 50+80+40 = 170 (< 1000 so not locale-formatted)
             expect(screen.getByText('170')).toBeInTheDocument();
             // accidental rate: (10+20+5)/(50+80+40) = 35/170 = 20.58...% → 20.6%
             expect(screen.getByText('20.6%')).toBeInTheDocument();
+        });
+
+        // formatNumber uses num.toLocaleString() without a locale argument for
+        // values 1K-999K, so the thousands separator is locale-dependent.
+        // Use a tolerant regex so this test survives non-en-US CI environments.
+        test('shows kills total with locale-tolerant separator', () => {
+            render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
+            // 500+1000+750 = 2,250 / 2.250 / 2 250 / 2\u202f250 depending on locale
+            expect(screen.getByText(/2[,.\s\u202f\u00a0]250/)).toBeInTheDocument();
         });
 
         test('shows win/loss counts from all factions', () => {

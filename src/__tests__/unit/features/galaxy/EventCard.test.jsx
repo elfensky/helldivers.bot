@@ -43,10 +43,12 @@ describe('EventCard (sector view — default)', () => {
         expect(screen.getByText('45.3%')).toBeDefined();
     });
 
-    test('idle card does not have event class', () => {
+    test('idle card has no flash classes on action or accent', () => {
         const { container } = render(<EventCard {...baseProps} />);
-        const card = container.querySelector('.sector-card');
-        expect(card.className).not.toContain('sector-card-event');
+        const action = container.querySelector('.sector-card-action');
+        const accent = container.querySelector('.sector-card-accent');
+        expect(action.className).not.toContain('sector-card-action-flash');
+        expect(accent.className).not.toContain('sector-card-accent-flash');
     });
 
     test('renders defending state with event class', () => {
