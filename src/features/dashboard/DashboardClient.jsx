@@ -1,10 +1,11 @@
 'use client';
 import './DashboardClient.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import DefeatedCard from '@/features/galaxy/DefeatedCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
+import RegionsViewToggle from '@/features/dashboard/RegionsViewToggle';
 import StatGrid from '@/features/stats/StatGrid';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
@@ -22,9 +23,31 @@ const FACTION_LABELS = {
     illuminate: 'Illuminate',
 };
 
+const REGIONS_VIEW_KEY = 'hd1-regions-view';
+
 export default function DashboardClient() {
     const { data, mapState } = useLiveDataContext();
     const [faction, setFaction] = useState('global');
+    const [regionsView, setRegionsView] = useState('sector');
+
+    // Hydrate persisted toggle state after mount (avoids SSR mismatch).
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(REGIONS_VIEW_KEY);
+            if (saved === 'sector' || saved === 'campaign') setRegionsView(saved);
+        } catch {
+            // localStorage unavailable — keep default
+        }
+    }, []);
+
+    function handleRegionsViewChange(next) {
+        setRegionsView(next);
+        try {
+            localStorage.setItem(REGIONS_VIEW_KEY, next);
+        } catch {
+            // ignore
+        }
+    }
 
     if (!data) {
         return (
@@ -40,6 +63,7 @@ export default function DashboardClient() {
 
     const events = sortEventsByRecent(data?.events);
     const pulseDelays = computePulseDelays(data?.events);
+    const isCampaignView = regionsView === 'campaign';
 
     const superEarthDefendEvent = events?.find(
         (e) =>
@@ -51,6 +75,7 @@ export default function DashboardClient() {
 
     function renderFrontierCard(index) {
         if (index === seDefenderIndex) {
+            // Super Earth defense is an event-focused interrupt — always sector view.
             return (
                 <li key={`frontier-${index}`}>
                     <EventCard
@@ -90,6 +115,7 @@ export default function DashboardClient() {
                         factionIndex={index}
                         startTime={earliestStart !== Infinity ? earliestStart : null}
                         endTime={defeatEvent?.end_time ?? null}
+                        view={regionsView}
                     />
                 </li>
             );
@@ -107,6 +133,17 @@ export default function DashboardClient() {
                 )
             :   null;
 
+        // Campaign view uses cumulative campaign totals in the meta row; bar is
+        // the 11-segment grid driven by mapState, not the per-sector percent.
+        const metaPoints =
+            isCampaignView ? campaignData.points
+            : isDefending && activeEvent ? activeEvent.points
+            : frontier.points;
+        const metaPointsMax =
+            isCampaignView ? campaignData.points_max
+            : isDefending && activeEvent ? activeEvent.points_max
+            : frontier.pointsMax;
+
         return (
             <li key={`frontier-${index}`}>
                 <EventCard
@@ -118,14 +155,8 @@ export default function DashboardClient() {
                             (activeEvent.points / activeEvent.points_max) * 100
                         :   frontier.percent
                     }
-                    points={
-                        isDefending && activeEvent ? activeEvent.points : frontier.points
-                    }
-                    pointsMax={
-                        isDefending && activeEvent ?
-                            activeEvent.points_max
-                        :   frontier.pointsMax
-                    }
+                    points={metaPoints}
+                    pointsMax={metaPointsMax}
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
                     endTime={activeEvent?.end_time}
@@ -134,6 +165,8 @@ export default function DashboardClient() {
                             pulseDelays.get(`${activeEvent.enemy}-${activeEvent.region}`)
                         :   undefined
                     }
+                    view={regionsView}
+                    factionMap={mapState[index]}
                 />
             </li>
         );
@@ -141,6 +174,9 @@ export default function DashboardClient() {
 
     function renderHomeworldCard(index) {
         if (index === seDefenderIndex) return null;
+        // In campaign view the homeworld assault is already represented as
+        // segment 11 of the frontier card — don't render a second card for it.
+        if (isCampaignView) return null;
         const homeworld = mapState[index]?.[HOMEWORLD_REGION];
         if (homeworld?.event !== 'active') return null;
         const attackEvent = events?.find(
@@ -194,7 +230,13 @@ export default function DashboardClient() {
                 </div>
             </div>
             <section className="flex flex-col gap-2">
-                <h2>Regions</h2>
+                <div className="flex items-center justify-between gap-2">
+                    <h2>Regions</h2>
+                    <RegionsViewToggle
+                        value={regionsView}
+                        onChange={handleRegionsViewChange}
+                    />
+                </div>
                 <ComponentErrorBoundary name="Regions">
                     <ul className="sector-grid list-none p-0">
                         {factionIndices.map(renderFrontierCard)}
@@ -206,7 +248,12 @@ export default function DashboardClient() {
                 <ComponentErrorBoundary name="Stats">
                     <h2>Stats — {FACTION_LABELS[faction]}</h2>
                     <FactionTabs active={faction} onChange={setFaction} />
-                    <StatGrid live={data.status} faction={faction} events={events} />
+                    <StatGrid
+                        live={data.status}
+                        faction={faction}
+                        events={events}
+                        lastUpdated={data.last_updated}
+                    />
                 </ComponentErrorBoundary>
             </section>
         </div>

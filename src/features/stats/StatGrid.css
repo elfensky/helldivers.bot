@@ -79,3 +79,11 @@
 .stat-card-accent-danger {
     background: var(--color-danger);
 }
+
+.stat-grid-footer {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+    text-align: right;
+}

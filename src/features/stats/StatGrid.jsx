@@ -1,10 +1,43 @@
+import { useEffect, useState } from 'react';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
+import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo.mjs';
 import './StatGrid.css';
 
 const factionMap = { bugs: 0, cyborgs: 1, illuminate: 2 };
 
-export default function StatGrid({ live, faction, events }) {
+/**
+ * Format an accidental-death rate: accidentals / deaths as a percentage.
+ * Returns '—' if deaths is zero (can't divide) — covers cold-start and edge cases.
+ */
+function formatAccidentalRate(accidentals, deaths) {
+    const a = Number(accidentals || 0);
+    const d = Number(deaths || 0);
+    if (d <= 0) return '—';
+    return `${((a / d) * 100).toFixed(1)}%`;
+}
+
+function accidentalRateTooltip(accidentals, deaths) {
+    const a = Number(accidentals || 0);
+    const d = Number(deaths || 0);
+    return `${formatNumber(a)} accidental / ${formatNumber(d)} total deaths`;
+}
+
+function LastUpdated({ lastUpdated }) {
+    const [, tick] = useState(0);
+    useEffect(() => {
+        const id = setInterval(() => tick((n) => n + 1), 5_000);
+        return () => clearInterval(id);
+    }, []);
+    if (!lastUpdated) return null;
+    return (
+        <div className="stat-grid-footer" suppressHydrationWarning>
+            {formatTimeAgo(lastUpdated)}
+        </div>
+    );
+}
+
+export default function StatGrid({ live, faction, events, lastUpdated }) {
     if (!live?.length) return null;
 
     const factionIndex = faction !== 'global' ? factionMap[faction] : null;
@@ -18,6 +51,10 @@ export default function StatGrid({ live, faction, events }) {
     const { wins, losses } = countOutcomes(resolved);
 
     if (faction === 'global') {
+        // Per-faction `players`, `kills`, `deaths`, and `accidentals` are disjoint
+        // (a helldiver engages one faction at a time), so summing them is correct.
+        // `total_unique_players` is a season-wide count replicated across all three
+        // rows — never sum it; use live[0] if you ever display it.
         const totals = live.reduce(
             (acc, s) => ({
                 players: acc.players + Number(s.players || 0),
@@ -28,17 +65,27 @@ export default function StatGrid({ live, faction, events }) {
             { players: 0, kills: 0, deaths: 0, accidentals: 0 },
         );
         return (
-            <div className="stat-grid">
-                <StatCard
-                    label="HELLDIVERS_ONLINE"
-                    value={formatNumber(totals.players)}
-                />
-                <StatCard label="ENEMIES_KILLED" value={formatNumber(totals.kills)} />
-                <StatCard label="HELLDIVERS_LOST" value={formatNumber(totals.deaths)} />
-                <StatCard label="ACCIDENTALS" value={formatNumber(totals.accidentals)} />
-                <StatCard label="WON" value={wins} accentColor="success" />
-                <StatCard label="LOST" value={losses} accentColor="danger" />
-            </div>
+            <>
+                <div className="stat-grid">
+                    <StatCard
+                        label="HELLDIVERS_ONLINE"
+                        value={formatNumber(totals.players)}
+                    />
+                    <StatCard label="ENEMIES_KILLED" value={formatNumber(totals.kills)} />
+                    <StatCard
+                        label="HELLDIVERS_LOST"
+                        value={formatNumber(totals.deaths)}
+                    />
+                    <StatCard
+                        label="ACCIDENTAL_RATE"
+                        value={formatAccidentalRate(totals.accidentals, totals.deaths)}
+                        title={accidentalRateTooltip(totals.accidentals, totals.deaths)}
+                    />
+                    <StatCard label="WON" value={wins} accentColor="success" />
+                    <StatCard label="LOST" value={losses} accentColor="danger" />
+                </div>
+                <LastUpdated lastUpdated={lastUpdated} />
+            </>
         );
     }
 
@@ -46,18 +93,36 @@ export default function StatGrid({ live, faction, events }) {
     if (!stats) return null;
 
     return (
-        <div className="stat-grid">
-            <StatCard label="ONLINE" value={formatNumber(stats.players)} />
-            <StatCard label="MISSIONS" value={formatNumber(stats.successful_missions)} />
-            <StatCard label="DEATHS" value={formatNumber(stats.deaths)} />
-            <StatCard label="ACCIDENTALS" value={formatNumber(stats.accidentals)} />
-            <StatCard label="WON" value={wins} accentColor="success" />
-            <StatCard label="LOST" value={losses} accentColor="danger" />
-        </div>
+        <>
+            <div className="stat-grid">
+                <StatCard label="ONLINE" value={formatNumber(stats.players)} />
+                <StatCard
+                    label="MISSIONS_WON"
+                    value={formatNumber(stats.successful_missions)}
+                />
+                <StatCard label="DEATHS" value={formatNumber(stats.deaths)} />
+                <StatCard
+                    label="ACCIDENTAL_RATE"
+                    value={formatAccidentalRate(stats.accidentals, stats.deaths)}
+                    title={accidentalRateTooltip(stats.accidentals, stats.deaths)}
+                />
+                <StatCard label="WON" value={wins} accentColor="success" />
+                <StatCard label="LOST" value={losses} accentColor="danger" />
+            </div>
+            <LastUpdated lastUpdated={lastUpdated} />
+        </>
     );
 }
 
-export function StatCard({ label, value, subtitle, accentColor, valueColor, onClick }) {
+export function StatCard({
+    label,
+    value,
+    subtitle,
+    accentColor,
+    valueColor,
+    onClick,
+    title,
+}) {
     const accentClass =
         accentColor === 'success' ? 'stat-card-accent-success'
         : accentColor === 'danger' ? 'stat-card-accent-danger'
@@ -69,7 +134,11 @@ export function StatCard({ label, value, subtitle, accentColor, valueColor, onCl
         : '';
 
     return (
-        <div className={`stat-card${onClick ? ' stat-card-clickable' : ''}`} onClick={onClick}>
+        <div
+            className={`stat-card${onClick ? ' stat-card-clickable' : ''}`}
+            onClick={onClick}
+            title={title}
+        >
             <div className="stat-card-content">
                 <span className="stat-card-label">{label}</span>
                 <span className={`stat-card-value ${valueColorClass}`}>{value}</span>

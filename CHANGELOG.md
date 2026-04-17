@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Features
+
+- **Regions campaign bar** — new `Sector / Campaign` toggle above the Regions cards on the homepage. Campaign view renders an 11-segment continuous progress bar per faction (sectors 1–10 driven by campaign points, segment 11 by the homeworld attack event). User preference persists in `localStorage`. In campaign view the dedicated homeworld-assault card is absorbed into segment 11 of the main card.
+
+### Audit / correctness
+
+- **StatGrid**: `ACCIDENTALS` replaced with `ACCIDENTAL_RATE` (accidentals/deaths as %) on global and per-faction views, with the absolute counts as hover title. Per-faction `MISSIONS` relabelled to `MISSIONS_WON` since the field is `successful_missions`. Added a "last updated" footer driven by `h1_season.last_updated` so bucket-based reads are no longer silent. Added a clarifying comment noting why per-faction `players` sum is correct (disjoint populations) and that `total_unique_players` must never be summed (globally replicated field).
+- **`evaluateProgress`** JSDoc now documents the linear-rate model and its known bias in early/late-season reads.
+- **`countOutcomes`** locked in with a unit test asserting strict `status ∈ {'success','fail'}` matching (no case-folding, no loose match on `'won'`/`'lost'`).
+
 ## 0.42.0
 
 ### Features
@@ -28,7 +38,7 @@
 
 ### Database
 
-- **Schema consolidation** — 10 h1_*/rebroadcast tables → 5 normalized tables (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Dropped `h1_live`, `h1_live_snapshot`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`, `h1_event_snapshot`, `rebroadcast_status`, `rebroadcast_snapshot`, `App`, `Review`.
+- **Schema consolidation** — 10 h1\_\*/rebroadcast tables → 5 normalized tables (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Dropped `h1_live`, `h1_live_snapshot`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`, `h1_event_snapshot`, `rebroadcast_status`, `rebroadcast_snapshot`, `App`, `Review`.
 - **Bucket-upsert pattern** — all timeseries tables use tumbling-window UPSERTs keyed on `(entity, bucket)` where `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE`. Sub-15s homepage freshness with ~120 MB bounded storage. `BUCKET_SIZE` is env-configurable (default 900 = 15 min).
 - **`h1_season` inlining** — `introduction_order Int[]`, `points_max Int[]`, and `season_duration Int` are now direct columns on `h1_season` (previously in separate 1:1 tables).
 - **`h1_snapshot.data` normalized** — stringified JSON-in-JSON column replaced by typed columns on `h1_status`. Consumers no longer need defensive `typeof === 'string' ? JSON.parse : data` parsing.

@@ -3,9 +3,15 @@ import factions from '@/shared/enums/factions';
 import humanizeDuration from 'humanize-duration';
 import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
 
-export default function DefeatedCard({ factionIndex, startTime, endTime }) {
+export default function DefeatedCard({
+    factionIndex,
+    startTime,
+    endTime,
+    view = 'sector',
+}) {
     const faction = factions[factionIndex];
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
+    const isCampaign = view === 'campaign';
 
     let timing = '—';
     if (startTime && endTime) {
@@ -24,7 +30,7 @@ export default function DefeatedCard({ factionIndex, startTime, endTime }) {
     return (
         <div
             className="sector-card sector-card-defeated"
-            style={{ '--accent-color': color }}
+            style={{ '--accent-color': color, '--faction-color': color }}
         >
             <div className="sector-card-content">
                 <div className="sector-card-header">
@@ -35,7 +41,9 @@ export default function DefeatedCard({ factionIndex, startTime, endTime }) {
                     >
                         Defeated
                     </span>
-                    <span className="sector-card-title">{faction.name}</span>
+                    <span className="sector-card-title">
+                        {isCampaign ? `${faction.name} · 11/11` : faction.name}
+                    </span>
                 </div>
                 <div className="sector-card-bar-label-row">
                     <span className="sector-card-bar-label">ALL_SECTORS_CAPTURED</span>
@@ -44,16 +52,28 @@ export default function DefeatedCard({ factionIndex, startTime, endTime }) {
                     <div
                         className="sector-card-bar"
                         role="progressbar"
-                        aria-valuenow={100}
+                        aria-valuenow={isCampaign ? 11 : 100}
                         aria-valuemin={0}
-                        aria-valuemax={100}
+                        aria-valuemax={isCampaign ? 11 : 100}
                     >
-                        <div
-                            className="sector-card-bar-fill"
-                            style={{ width: '100%', background: color }}
-                        />
+                        {isCampaign ?
+                            <div className="sector-card-segments">
+                                {Array.from({ length: 11 }, (_, i) => (
+                                    <div
+                                        key={i}
+                                        className="sector-card-segment sector-card-segment--captured"
+                                    />
+                                ))}
+                            </div>
+                        :   <div
+                                className="sector-card-bar-fill"
+                                style={{ width: '100%', background: color }}
+                            />
+                        }
                     </div>
-                    <span className="sector-card-pct">100%</span>
+                    <span className="sector-card-pct">
+                        {isCampaign ? '11/11' : '100%'}
+                    </span>
                 </div>
                 <div className="sector-card-meta">
                     <span className="sector-card-points">{timing}</span>
