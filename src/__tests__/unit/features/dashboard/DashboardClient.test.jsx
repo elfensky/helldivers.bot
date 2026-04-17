@@ -106,6 +106,7 @@ describe('DashboardClient — base rendering', () => {
                 ],
                 events: [],
                 last_updated: '2025-01-01',
+                season: 42,
             },
             mapState: baseMapState,
             status: 'live',
@@ -145,9 +146,9 @@ describe('DashboardClient — base rendering', () => {
         expect(screen.getByText('SIGNAL LOST')).toBeInTheDocument();
     });
 
-    test('renders Regions header with view toggle', () => {
+    test('renders Season header with view toggle', () => {
         render(<DashboardClient />);
-        expect(screen.getByText('Regions')).toBeInTheDocument();
+        expect(screen.getByText('Season 42')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /sector|campaign/i })).toBeDefined();
     });
 

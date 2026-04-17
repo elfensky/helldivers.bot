@@ -23,6 +23,7 @@ const factionIndices = [0, 1, 2];
 export default function DashboardClient({
     initialFaction = 'global',
     initialRegionsView = 'sector',
+    players24hAgo = null,
 }) {
     const { data, mapState } = useLiveDataContext();
     const [faction, setFaction] = usePersistedState(FACTION_KEY, initialFaction);
@@ -218,7 +219,7 @@ export default function DashboardClient({
             </div>
             <section className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                    <h2>Regions</h2>
+                    <h2>Season {data.season}</h2>
                     <RegionsViewToggle value={regionsView} onChange={setRegionsView} />
                 </div>
                 <ComponentErrorBoundary name="Regions">
@@ -234,7 +235,12 @@ export default function DashboardClient({
                         <h2>Stats</h2>
                         <FactionTabs active={faction} onChange={setFaction} />
                     </div>
-                    <StatGrid live={data.status} faction={faction} events={events} />
+                    <StatGrid
+                        live={data.status}
+                        faction={faction}
+                        events={events}
+                        players24hAgo={players24hAgo}
+                    />
                 </ComponentErrorBoundary>
             </section>
         </div>

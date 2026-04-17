@@ -95,6 +95,7 @@ export default function HomeClient({
     initialFaction = 'global',
     initialRegionsView = 'sector',
     initialSortOrder = 'desc',
+    players24hAgo = null,
 }) {
     const { data, mapState: liveMapState } = useLiveDataContext();
     const events = data?.events ?? [];
@@ -146,6 +147,7 @@ export default function HomeClient({
                     <DashboardClient
                         initialFaction={initialFaction}
                         initialRegionsView={initialRegionsView}
+                        players24hAgo={players24hAgo}
                     />
                 </ComponentErrorBoundary>
             </div>

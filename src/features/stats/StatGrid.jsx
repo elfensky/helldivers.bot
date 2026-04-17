@@ -21,7 +21,24 @@ function accidentalRateTooltip(accidentals, deaths) {
     return `${formatNumber(a)} accidental / ${formatNumber(d)} total deaths`;
 }
 
-export default function StatGrid({ live, faction, events }) {
+/**
+ * Format the "vs 24h ago" subtitle for the ONLINE card. Returns null if
+ * no baseline (new season) or the delta is zero. Arrow + color convey sign.
+ */
+function playersDeltaSubtitle(currentPlayers, players24hAgo) {
+    if (players24hAgo == null) return null;
+    const delta = currentPlayers - players24hAgo;
+    if (delta === 0) return null;
+    const arrow = delta > 0 ? '▲' : '▼';
+    const colorClass = delta > 0 ? 'text-success' : 'text-danger';
+    return (
+        <span className={colorClass}>
+            {arrow} {formatNumber(Math.abs(delta))} (24h)
+        </span>
+    );
+}
+
+export default function StatGrid({ live, faction, events, players24hAgo = null }) {
     if (!live?.length) return null;
 
     const factionIndex = faction !== 'global' ? factionMap[faction] : null;
@@ -48,11 +65,13 @@ export default function StatGrid({ live, faction, events }) {
             }),
             { players: 0, kills: 0, deaths: 0, accidentals: 0 },
         );
+        const onlineSubtitle = playersDeltaSubtitle(totals.players, players24hAgo);
         return (
             <div className="stat-grid">
                 <StatCard
                     label="HELLDIVERS_ONLINE"
                     value={formatNumber(totals.players)}
+                    subtitle={onlineSubtitle}
                 />
                 <StatCard label="ENEMIES_KILLED" value={formatNumber(totals.kills)} />
                 <StatCard label="HELLDIVERS_LOST" value={formatNumber(totals.deaths)} />

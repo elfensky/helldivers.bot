@@ -1,6 +1,9 @@
 import { cookies } from 'next/headers';
 import JsonLd from '@/shared/components/JsonLd';
 import HomeClient from '@/features/dashboard/HomeClient';
+import { getCampaign } from '@/db/queries/getCampaign';
+import { getPlayers24hAgo } from '@/db/queries/getPlayers24hAgo';
+import { tryCatch } from '@/shared/utils/tryCatch';
 import { FACTION_KEY, validateFaction } from '@/shared/preferences/faction.mjs';
 import {
     REGIONS_VIEW_KEY,
@@ -63,6 +66,13 @@ export default async function HomePage() {
     const initialRegionsView = validateRegionsView(c.get(REGIONS_VIEW_KEY)?.value);
     const initialSortOrder = validateSortOrder(c.get(SORT_ORDER_KEY)?.value);
 
+    // `getCampaign()` is React-cached, so this is a no-op DB hit — it's
+    // already been called in the layout. We only need the season number
+    // to fetch the 24h-ago player baseline for the ONLINE stat subtitle.
+    const { data: campaign } = await tryCatch(getCampaign());
+    const { data: players24hAgo } =
+        campaign ? await tryCatch(getPlayers24hAgo(campaign.season)) : { data: null };
+
     return (
         <>
             <JsonLd data={structuredData} />
@@ -70,6 +80,7 @@ export default async function HomePage() {
                 initialFaction={initialFaction}
                 initialRegionsView={initialRegionsView}
                 initialSortOrder={initialSortOrder}
+                players24hAgo={players24hAgo ?? null}
             />
         </>
     );
