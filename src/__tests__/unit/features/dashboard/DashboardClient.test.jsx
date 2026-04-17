@@ -350,20 +350,19 @@ describe('DashboardClient — homeworld card suppression', () => {
         );
     });
 
-    test('campaign view suppresses the separate homeworld card', async () => {
+    test('campaign view homeworld card receives view=campaign + factionMap', async () => {
         setupHomeworldAttack('campaign');
         render(<DashboardClient />);
-        // Wait for the toggle's aria-label to flip to "Switch to sector…",
-        // which indicates the hydration effect has applied the persisted
-        // campaign view. (Can't wait on a frontier card here because when
-        // all 10 sectors are captured, computeFrontier returns null and no
-        // frontier card is rendered — a separate edge case to the audit.)
+        // When all 10 sectors are captured and the homeworld is under attack,
+        // the frontier card returns null (computeFrontier → null) and the
+        // homeworld card becomes the faction's primary card. In campaign view
+        // it must carry the 11-segment bar, so we pass view + factionMap.
         await waitFor(() => {
-            expect(
-                screen.getByRole('button', { name: /switch to sector/i }),
-            ).toBeInTheDocument();
+            const props = getCardProps('event-card-0-HOMEWORLD_ASSAULT');
+            expect(props?.view).toBe('campaign');
         });
-        expect(getCardProps('event-card-0-HOMEWORLD_ASSAULT')).toBeNull();
+        const props = getCardProps('event-card-0-HOMEWORLD_ASSAULT');
+        expect(props.hasFactionMap).toBe(true);
     });
 });
 

@@ -174,15 +174,17 @@ export default function DashboardClient() {
 
     function renderHomeworldCard(index) {
         if (index === seDefenderIndex) return null;
-        // In campaign view the homeworld assault is already represented as
-        // segment 11 of the frontier card — don't render a second card for it.
-        if (isCampaignView) return null;
         const homeworld = mapState[index]?.[HOMEWORLD_REGION];
         if (homeworld?.event !== 'active') return null;
         const attackEvent = events?.find(
             (e) => e.enemy === index && e.type === 'attack' && e.status === 'active',
         );
 
+        // In campaign view this card's bar becomes the 11-segment overview
+        // (segments 1-10 from mapState, segment 11 from the active homeworld
+        // attack). During an actual homeworld assault, the frontier card for
+        // this faction returns null (all sectors captured → computeFrontier
+        // → null), so this homeworld card is the faction's primary card.
         return (
             <li key={`attack-${index}`}>
                 <EventCard
@@ -206,6 +208,8 @@ export default function DashboardClient() {
                             pulseDelays.get(`${attackEvent.enemy}-${attackEvent.region}`)
                         :   undefined
                     }
+                    view={regionsView}
+                    factionMap={isCampaignView ? mapState[index] : undefined}
                 />
             </li>
         );
