@@ -139,16 +139,19 @@ export default function ArchivesClient({
                 />
 
                 <section className="mt-4 flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                        <h2>Statistics</h2>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                            {isDefeat && (
-                                <EffectsToggle active={effects.headerScramble} />
-                            )}
+                            <h2>Statistics</h2>
+                            <FactionTabs active={faction} onChange={setFaction} />
+                        </div>
+                        <div className="flex items-center gap-2">
                             <SeasonSelector
                                 seasons={seasons}
                                 currentSeason={currentSeason}
                             />
+                            {isDefeat && (
+                                <EffectsToggle active={effects.headerScramble} />
+                            )}
                             {isAdmin && (
                                 <RefreshSeasonButton
                                     season={currentSeason}
@@ -157,7 +160,6 @@ export default function ArchivesClient({
                             )}
                         </div>
                     </div>
-                    <FactionTabs active={faction} onChange={setFaction} />
                     {faction === 'global' ?
                         <ArchiveStats
                             events={events}
