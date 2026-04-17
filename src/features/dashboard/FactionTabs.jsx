@@ -1,6 +1,6 @@
 'use client';
 
-import ToggleButton from '@/shared/components/ToggleButton/ToggleButton';
+import Button from '@/shared/components/Button/Button';
 import { useTrack } from '@/shared/hooks/useTrack.mjs';
 
 const TABS = [
@@ -8,25 +8,25 @@ const TABS = [
         id: 'global',
         label: 'Global',
         icon: '/icons/faction3.webp',
-        borderColor: 'primary',
+        variant: 'primary',
     },
     {
         id: 'bugs',
         label: 'Bugs',
         icon: '/icons/faction0.webp',
-        borderColor: 'faction-bugs',
+        variant: 'faction-bugs',
     },
     {
         id: 'cyborgs',
         label: 'Cyborgs',
         icon: '/icons/faction1.webp',
-        borderColor: 'faction-cyborgs',
+        variant: 'faction-cyborgs',
     },
     {
         id: 'illuminate',
         label: 'Illuminate',
         icon: '/icons/faction2.webp',
-        borderColor: 'faction-illuminate',
+        variant: 'faction-illuminate',
     },
 ];
 
@@ -34,15 +34,16 @@ export default function FactionTabs({ active, onChange }) {
     const track = useTrack();
     return (
         <div className="inline-flex gap-1">
-            {TABS.map(({ id, label, icon, borderColor }) => (
-                <ToggleButton
+            {TABS.map(({ id, label, icon, variant }) => (
+                <Button
                     key={id}
+                    size="icon"
+                    variant={variant}
                     active={active === id}
                     onClick={() => {
                         onChange(id);
                         track('faction-tab-switch', { faction: id });
                     }}
-                    borderColor={borderColor}
                     aria-label={label}
                     aria-pressed={active === id}
                     data-umami-event={`faction-toggle-${id}`}
@@ -52,7 +53,7 @@ export default function FactionTabs({ active, onChange }) {
                         alt=""
                         className="size-[26px] object-contain md:size-[18px]"
                     />
-                </ToggleButton>
+                </Button>
             ))}
         </div>
     );

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { exportUserData, deleteUserAccount } from '@/db/queries/account';
 import { linkSocial, unlinkAccount } from '@/auth-client';
 import { tryCatch } from '@/shared/utils/tryCatch';
+import Button from '@/shared/components/Button/Button';
 
 const SOCIAL_PROVIDERS = ['discord', 'github', 'google'];
 
@@ -108,8 +109,8 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
                                         </span>
                                         {linked ?
                                             !isOnlyAccount && (
-                                                <button
-                                                    type="button"
+                                                <Button
+                                                    variant="danger"
                                                     onClick={() =>
                                                         handleUnlink(
                                                             provider,
@@ -117,19 +118,17 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
                                                         )
                                                     }
                                                     disabled={isLoading}
-                                                    className="cursor-pointer border border-danger px-2 py-0.5 text-small font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     {isLoading ? 'Unlinking…' : 'Unlink'}
-                                                </button>
+                                                </Button>
                                             )
-                                        :   <button
-                                                type="button"
+                                        :   <Button
+                                                variant="primary"
                                                 onClick={() => handleLink(provider)}
                                                 disabled={isLoading}
-                                                className="cursor-pointer border border-primary px-2 py-0.5 text-small font-semibold text-primary hover:bg-primary hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
                                             >
                                                 {isLoading ? 'Linking…' : 'Link'}
-                                            </button>
+                                            </Button>
                                         }
                                     </div>
                                 );
@@ -144,21 +143,17 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
                 {/* Right: actions */}
                 <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={handleExport}
-                            className="cursor-pointer border border-primary px-4 py-2 text-body font-semibold text-primary hover:bg-primary hover:text-surface-0"
-                        >
+                        <Button variant="primary" size="lg" onClick={handleExport}>
                             Download My Data
-                        </button>
-                        <button
-                            type="button"
+                        </Button>
+                        <Button
+                            variant="danger"
+                            size="lg"
                             onClick={handleDelete}
                             disabled={deleting}
-                            className="cursor-pointer border border-danger px-4 py-2 text-body font-semibold text-danger hover:bg-danger hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {deleting ? 'Deleting…' : 'Delete Account'}
-                        </button>
+                        </Button>
                     </div>
                     {deleteError && (
                         <span role="alert" className="text-small text-danger">

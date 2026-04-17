@@ -1,6 +1,6 @@
 'use client';
 
-import ToggleButton from '@/shared/components/ToggleButton/ToggleButton';
+import Button from '@/shared/components/Button/Button';
 
 /**
  * Small square icon toggle for the Regions section. Switches between
@@ -16,7 +16,9 @@ export default function RegionsViewToggle({ value, onChange }) {
         :   'Switch to campaign view (11-segment bar)';
 
     return (
-        <ToggleButton
+        <Button
+            size="icon"
+            variant="primary"
             active={isCampaign}
             onClick={() => onChange(next)}
             aria-label={label}
@@ -36,6 +38,6 @@ export default function RegionsViewToggle({ value, onChange }) {
                 <rect x="6" y="2" width="2" height="10" fill="currentColor" />
                 <rect x="10" y="2" width="2" height="10" fill="currentColor" />
             </svg>
-        </ToggleButton>
+        </Button>
     );
 }

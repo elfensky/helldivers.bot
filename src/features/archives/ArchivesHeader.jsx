@@ -9,7 +9,7 @@ import {
     RESISTANCE_MESSAGES,
     PROPAGANDA_BODY,
 } from '@/features/archives/resistanceMessages.mjs';
-import ToggleButton from '@/shared/components/ToggleButton/ToggleButton';
+import Button from '@/shared/components/Button/Button';
 
 const PROPAGANDA_TITLE = 'Declassified Campaign Archives';
 const RESISTANCE_TITLE = 'Leaked Campaign Records';
@@ -61,7 +61,9 @@ export function EffectsToggle({ active }) {
     const label = `${active ? 'Disable' : 'Enable'} interference`;
 
     return (
-        <ToggleButton
+        <Button
+            size="icon"
+            variant="primary"
             active={active}
             onClick={handleToggle}
             title={label}
@@ -69,7 +71,7 @@ export function EffectsToggle({ active }) {
             data-umami-event="archive-effects-toggle"
         >
             ⚡
-        </ToggleButton>
+        </Button>
     );
 }
 
