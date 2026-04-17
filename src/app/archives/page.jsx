@@ -4,11 +4,13 @@ import { getCampaign } from '@/db/queries/getCampaign';
 import { updateSeason } from '@/update/season';
 //auth
 import { auth } from '@/auth';
-import { headers as nextHeaders } from 'next/headers';
+import { headers as nextHeaders, cookies } from 'next/headers';
 //components
 import JsonLd from '@/shared/components/JsonLd';
 import ArchivesClient from '@/features/archives/ArchivesClient';
 import { RESISTANCE_MESSAGES } from '@/features/archives/resistanceMessages.mjs';
+import { FACTION_KEY, validateFaction } from '@/shared/preferences/faction.mjs';
+import { SORT_ORDER_KEY, validateSortOrder } from '@/shared/preferences/sortOrder.mjs';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
 export const dynamic = 'force-dynamic';
@@ -92,6 +94,10 @@ export default async function WarHistoryPage({ searchParams }) {
         auth ? await auth.api.getSession({ headers: await nextHeaders() }) : null;
     const isAdmin = session?.user?.role === 'admin';
 
+    const c = await cookies();
+    const initialFaction = validateFaction(c.get(FACTION_KEY)?.value);
+    const initialSortOrder = validateSortOrder(c.get(SORT_ORDER_KEY)?.value);
+
     return (
         <div className="gutters pb-4">
             <h1 className="sr-only">War History</h1>
@@ -104,6 +110,8 @@ export default async function WarHistoryPage({ searchParams }) {
                     Math.random() * RESISTANCE_MESSAGES.length,
                 )}
                 isAdmin={isAdmin}
+                initialFaction={initialFaction}
+                initialSortOrder={initialSortOrder}
             />
         </div>
     );

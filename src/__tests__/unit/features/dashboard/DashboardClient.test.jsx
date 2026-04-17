@@ -186,32 +186,17 @@ describe('DashboardClient — regions view toggle persistence', () => {
 
     afterEach(() => cleanup());
 
-    test('hydrates from localStorage when persisted value is campaign', async () => {
-        localStorage.setItem('hd1-regions-view', 'campaign');
-        render(<DashboardClient />);
-        // Hydration effect runs after mount; wait for the re-render to pick it up.
-        await waitFor(() => {
-            const props = getCardProps('event-card-0-SECTOR_PROGRESS');
-            expect(props?.view).toBe('campaign');
-        });
+    test('initializes regions view from initialRegionsView prop', () => {
+        render(<DashboardClient initialRegionsView="campaign" />);
+        const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+        expect(props?.view).toBe('campaign');
     });
 
-    test('clicking toggle persists new value to localStorage', () => {
+    test('clicking toggle persists new value to cookie', () => {
         render(<DashboardClient />);
         const toggle = screen.getByRole('button', { name: /switch to campaign/i });
         fireEvent.click(toggle);
-        expect(localStorage.getItem('hd1-regions-view')).toBe('campaign');
-    });
-
-    test('ignores garbage localStorage values', async () => {
-        localStorage.setItem('hd1-regions-view', 'totally-bogus');
-        render(<DashboardClient />);
-        // Effect checks the saved value and leaves state unchanged. Use waitFor
-        // so the assertion runs after React has flushed the mount effects.
-        await waitFor(() => {
-            const props = getCardProps('event-card-0-SECTOR_PROGRESS');
-            expect(props?.view).toBe('sector');
-        });
+        expect(document.cookie).toContain('hd1-regions-view=campaign');
     });
 });
 
@@ -222,7 +207,6 @@ describe('DashboardClient — Super Earth defense branch', () => {
     afterEach(() => cleanup());
 
     test('attacker shown as defending Super Earth in sector view regardless of toggle', () => {
-        localStorage.setItem('hd1-regions-view', 'campaign');
         vi.mocked(useLiveDataContext).mockReturnValue({
             data: {
                 status: [
@@ -265,7 +249,7 @@ describe('DashboardClient — Super Earth defense branch', () => {
             isLeader: true,
         });
 
-        render(<DashboardClient />);
+        render(<DashboardClient initialRegionsView="campaign" />);
         // Defender (enemy=0) should get the SUPER_EARTH_DEFENSE card, not a
         // campaign-view frontier card
         const seCard = getCardProps('event-card-0-SUPER_EARTH_DEFENSE');
@@ -282,8 +266,7 @@ describe('DashboardClient — Super Earth defense branch', () => {
 });
 
 describe('DashboardClient — homeworld card suppression', () => {
-    function setupHomeworldAttack(view) {
-        localStorage.setItem('hd1-regions-view', view);
+    function setupHomeworldAttack() {
         vi.mocked(useLiveDataContext).mockReturnValue({
             data: {
                 status: [
@@ -343,16 +326,16 @@ describe('DashboardClient — homeworld card suppression', () => {
     afterEach(() => cleanup());
 
     test('sector view renders separate HOMEWORLD_ASSAULT card', async () => {
-        setupHomeworldAttack('sector');
-        render(<DashboardClient />);
+        setupHomeworldAttack();
+        render(<DashboardClient initialRegionsView="sector" />);
         await waitFor(() =>
             expect(getCardProps('event-card-0-HOMEWORLD_ASSAULT')).not.toBeNull(),
         );
     });
 
     test('campaign view homeworld card receives view=campaign + factionMap', async () => {
-        setupHomeworldAttack('campaign');
-        render(<DashboardClient />);
+        setupHomeworldAttack();
+        render(<DashboardClient initialRegionsView="campaign" />);
         // When all 10 sectors are captured and the homeworld is under attack,
         // the frontier card returns null (computeFrontier → null) and the
         // homeworld card becomes the faction's primary card. In campaign view
@@ -373,7 +356,6 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
     afterEach(() => cleanup());
 
     test('campaign view: EventCard receives points = campaignData.points (not per-sector)', async () => {
-        localStorage.setItem('hd1-regions-view', 'campaign');
         vi.mocked(useLiveDataContext).mockReturnValue({
             data: {
                 status: [
@@ -395,7 +377,7 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
             isLeader: true,
         });
 
-        render(<DashboardClient />);
+        render(<DashboardClient initialRegionsView="campaign" />);
         await waitFor(() => {
             const props = getCardProps('event-card-0-SECTOR_PROGRESS');
             expect(props?.view).toBe('campaign');
@@ -409,7 +391,6 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
     });
 
     test('sector view: EventCard receives per-sector points (frontier.points)', async () => {
-        localStorage.setItem('hd1-regions-view', 'sector');
         vi.mocked(useLiveDataContext).mockReturnValue({
             data: {
                 status: [
@@ -487,7 +468,6 @@ describe('DashboardClient — defeated faction branch', () => {
     });
 
     test('passes view=campaign to DefeatedCard when toggle is active', async () => {
-        localStorage.setItem('hd1-regions-view', 'campaign');
         vi.mocked(useLiveDataContext).mockReturnValue({
             data: {
                 status: [
@@ -515,7 +495,7 @@ describe('DashboardClient — defeated faction branch', () => {
             isLeader: true,
         });
 
-        render(<DashboardClient />);
+        render(<DashboardClient initialRegionsView="campaign" />);
         await waitFor(() => {
             const props = getCardProps('defeated-card-2');
             expect(props?.view).toBe('campaign');

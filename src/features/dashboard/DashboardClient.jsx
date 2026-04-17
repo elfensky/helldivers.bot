@@ -14,18 +14,21 @@ import { HOMEWORLD_REGION } from '@/shared/enums/worlds.mjs';
 import { CAMPAIGN_STATUS, EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
-import { useFactionPreference } from '@/shared/hooks/useFactionPreference.mjs';
 import { usePersistedState } from '@/shared/hooks/usePersistedState.mjs';
+import { FACTION_KEY } from '@/shared/preferences/faction.mjs';
+import { REGIONS_VIEW_KEY } from '@/shared/preferences/regionsView.mjs';
 
 const factionIndices = [0, 1, 2];
 
-export default function DashboardClient() {
+export default function DashboardClient({
+    initialFaction = 'global',
+    initialRegionsView = 'sector',
+}) {
     const { data, mapState } = useLiveDataContext();
-    const [faction, setFaction] = useFactionPreference();
+    const [faction, setFaction] = usePersistedState(FACTION_KEY, initialFaction);
     const [regionsView, setRegionsView] = usePersistedState(
-        'hd1-regions-view',
-        'sector',
-        (v) => v === 'sector' || v === 'campaign',
+        REGIONS_VIEW_KEY,
+        initialRegionsView,
     );
 
     if (!data) {

@@ -91,7 +91,11 @@ import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
  * Stale mobile state classes (from a viewport resize) are explicitly
  * reset in the lg+ media block to avoid cross-breakpoint leakage.
  */
-export default function HomeClient() {
+export default function HomeClient({
+    initialFaction = 'global',
+    initialRegionsView = 'sector',
+    initialSortOrder = 'desc',
+}) {
     const { data, mapState: liveMapState } = useLiveDataContext();
     const events = data?.events ?? [];
     const pulseDelays = computePulseDelays(events);
@@ -139,7 +143,10 @@ export default function HomeClient() {
         <div className="home-grid gutters">
             <div className="home-hero-sidebar">
                 <ComponentErrorBoundary name="Dashboard">
-                    <DashboardClient />
+                    <DashboardClient
+                        initialFaction={initialFaction}
+                        initialRegionsView={initialRegionsView}
+                    />
                 </ComponentErrorBoundary>
             </div>
 
@@ -169,6 +176,7 @@ export default function HomeClient() {
                         title="Event Log"
                         id="event-log"
                         layout="stack"
+                        initialSortOrder={initialSortOrder}
                         selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
                         railRef={railRef}
                     />

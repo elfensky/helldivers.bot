@@ -15,7 +15,8 @@ import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import { useCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
 import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
 import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
-import { useFactionPreference } from '@/shared/hooks/useFactionPreference.mjs';
+import { usePersistedState } from '@/shared/hooks/usePersistedState.mjs';
+import { FACTION_KEY } from '@/shared/preferences/faction.mjs';
 
 /**
  * Archives client — full-season retrospective view with a sticky
@@ -71,13 +72,14 @@ export default function ArchivesClient({
     currentSeason,
     defeatMessageIndex,
     isAdmin = false,
+    initialFaction = 'global',
+    initialSortOrder = 'desc',
 }) {
     const events = data?.events ?? [];
     // 'global' shows the whole-war overview (ArchiveStats); bugs/cyborgs/illuminate
-    // show a per-faction breakdown (FactionStats). Default to 'global' so visitors
-    // land on the big-picture view before drilling into factions. Persisted via
-    // localStorage and shared with the dashboard.
-    const [faction, setFaction] = useFactionPreference();
+    // show a per-faction breakdown (FactionStats). Persisted via cookies and
+    // shared with the dashboard; initial value is SSR-read in the archives page.
+    const [faction, setFaction] = usePersistedState(FACTION_KEY, initialFaction);
     // Mobile-only: toggle whether the archives map column is sticky
     // (pinned at the top as the user scrolls). Default ON here (unlike
     // the homepage) so the archives map is pinned from first paint —
@@ -205,6 +207,7 @@ export default function ArchivesClient({
                         timeFormat="absolute"
                         title="Event Log"
                         id="archives-event-log"
+                        initialSortOrder={initialSortOrder}
                         selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
                         railRef={railRef}
                         includeToday={false}

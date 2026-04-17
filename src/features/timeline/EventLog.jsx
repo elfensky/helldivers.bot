@@ -40,13 +40,14 @@ export default function EventLog({
     timeFormat,
     title = 'Event Log',
     id = 'event-log',
+    initialSortOrder,
     selectedEventKey = null,
     onHoverEvent,
     railRef,
     includeToday = true,
     layout = 'grid',
 }) {
-    const [sortOrder, toggleSortOrder] = useEventLogSort();
+    const [sortOrder, toggleSortOrder] = useEventLogSort(initialSortOrder);
     const groups = groupEventsByDay(events ?? [], { includeToday, sortOrder });
 
     return (

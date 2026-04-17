@@ -1,42 +1,24 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { setPreferenceCookie } from '@/shared/utils/cookies.mjs';
 
 /**
- * Scalar state persisted to localStorage under `key`. Initial render uses
- * `defaultValue` to keep SSR and hydration identical — the persisted value
- * is applied in a mount effect, so any SSR'd markup matches the client's
- * first paint.
+ * Scalar state persisted to a cookie under `key`. The `initial` value
+ * comes from the server (read from `cookies()` in the page component
+ * and forwarded as a prop), so the first client render matches what
+ * the server rendered — no hydration mismatch, no post-hydration flash.
  *
- * Values are stored as raw strings. `isValid` (optional) filters out
- * stale or garbage values from localStorage, falling back to `defaultValue`
- * if the stored value fails the check.
- *
- * Wrap for each preference concept (see `useFactionPreference`,
- * `useRegionsView`, `useEventLogSort`) so call sites stay concept-named
- * rather than passing raw keys + validators inline.
+ * The write side updates React state and the cookie in one call.
+ * Values are stored as raw strings; validate at the server boundary
+ * before passing initial in (see `src/shared/preferences/*`).
  */
-export function usePersistedState(key, defaultValue, isValid) {
-    const [value, setValue] = useState(defaultValue);
-
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem(key);
-            if (saved !== null && (!isValid || isValid(saved))) {
-                setValue(saved);
-            }
-        } catch {
-            // localStorage unavailable — keep default
-        }
-    }, [key]);
+export function usePersistedState(key, initial) {
+    const [value, setValue] = useState(initial);
 
     const update = useCallback(
         (next) => {
             setValue(next);
-            try {
-                localStorage.setItem(key, next);
-            } catch {
-                // ignore
-            }
+            setPreferenceCookie(key, next);
         },
         [key],
     );
