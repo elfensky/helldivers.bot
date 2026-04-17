@@ -5,10 +5,11 @@
 ### Features
 
 - **Regions campaign bar** — new `Sector / Campaign` toggle above the Regions cards on the homepage. Campaign view renders an 11-segment continuous progress bar per faction (sectors 1–10 driven by campaign points, segment 11 by the homeworld attack event). User preference persists in `localStorage`. In campaign view the dedicated homeworld-assault card is absorbed into segment 11 of the main card.
+- **Live "Updated Xs ago" counter** — extracted `LastUpdated` into a shared component (`src/shared/components/LastUpdated.jsx`) and moved it from a static footer under the StatGrid to the hero sidebar, on the same row as the notifications toggle. Ticks every second (was 5s and effectively frozen under `reactCompiler: true`) and resets when the next poll arrives. Pass `now` as state so the compiler can't elide re-renders on the hidden `Date.now()` dependency.
 
 ### Audit / correctness
 
-- **StatGrid**: `ACCIDENTALS` replaced with `ACCIDENTAL_RATE` (accidentals/deaths as %) on global and per-faction views, with the absolute counts as hover title. Per-faction `MISSIONS` relabelled to `MISSIONS_WON` since the field is `successful_missions`. Added a "last updated" footer driven by `h1_season.last_updated` so bucket-based reads are no longer silent. Added a clarifying comment noting why per-faction `players` sum is correct (disjoint populations) and that `total_unique_players` must never be summed (globally replicated field).
+- **StatGrid**: `ACCIDENTALS` replaced with `ACCIDENTAL_RATE` (accidentals/deaths as %) on global and per-faction views, with the absolute counts as hover title. Per-faction `MISSIONS` relabelled to `MISSIONS_WON` since the field is `successful_missions`. Added a clarifying comment noting why per-faction `players` sum is correct (disjoint populations) and that `total_unique_players` must never be summed (globally replicated field).
 - **`evaluateProgress`** JSDoc now documents the linear-rate model and its known bias in early/late-season reads.
 - **`countOutcomes`** locked in with a unit test asserting strict `status ∈ {'success','fail'}` matching (no case-folding, no loose match on `'won'`/`'lost'`).
 
