@@ -2,6 +2,7 @@
 import './DashboardClient.css';
 import { useState, useEffect } from 'react';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
+import LastUpdated from '@/shared/components/LastUpdated';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import DefeatedCard from '@/features/galaxy/DefeatedCard';
 import FactionTabs from '@/features/dashboard/FactionTabs';
@@ -16,12 +17,6 @@ import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 
 const factionIndices = [0, 1, 2];
-const FACTION_LABELS = {
-    global: 'Global',
-    bugs: 'Bugs',
-    cyborgs: 'Cyborgs',
-    illuminate: 'Illuminate',
-};
 
 const REGIONS_VIEW_KEY = 'hd1-regions-view';
 
@@ -230,6 +225,7 @@ export default function DashboardClient() {
                     peace, liberty, and managed democracy.
                 </p>
                 <div className="mt-2 flex items-center gap-3">
+                    <LastUpdated lastUpdated={data.last_updated} />
                     <NotificationToggle />
                 </div>
             </div>
@@ -250,14 +246,11 @@ export default function DashboardClient() {
             </section>
             <section className="flex flex-col gap-2">
                 <ComponentErrorBoundary name="Stats">
-                    <h2>Stats — {FACTION_LABELS[faction]}</h2>
-                    <FactionTabs active={faction} onChange={setFaction} />
-                    <StatGrid
-                        live={data.status}
-                        faction={faction}
-                        events={events}
-                        lastUpdated={data.last_updated}
-                    />
+                    <div className="flex items-center justify-between gap-2">
+                        <h2>Stats</h2>
+                        <FactionTabs active={faction} onChange={setFaction} />
+                    </div>
+                    <StatGrid live={data.status} faction={faction} events={events} />
                 </ComponentErrorBoundary>
             </section>
         </div>

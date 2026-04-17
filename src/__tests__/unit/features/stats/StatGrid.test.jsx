@@ -94,25 +94,6 @@ describe('StatGrid', () => {
             // losses: 2 (enemy0 fail + enemy2 fail)
             expect(screen.getByText('2')).toBeInTheDocument();
         });
-
-        test('renders last-updated footer when lastUpdated is provided', () => {
-            render(
-                <StatGrid
-                    live={mockLive}
-                    faction="global"
-                    events={mockEvents}
-                    lastUpdated={new Date(Date.now() - 30_000)}
-                />,
-            );
-            expect(screen.getByText(/Updated \d+s ago/)).toBeInTheDocument();
-        });
-
-        test('omits footer when lastUpdated is missing', () => {
-            const { container } = render(
-                <StatGrid live={mockLive} faction="global" events={mockEvents} />,
-            );
-            expect(container.querySelector('.stat-grid-footer')).toBeNull();
-        });
     });
 
     describe('faction view', () => {

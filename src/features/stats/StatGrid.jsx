@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
-import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo.mjs';
 import './StatGrid.css';
 
 const factionMap = { bugs: 0, cyborgs: 1, illuminate: 2 };
@@ -23,21 +21,7 @@ function accidentalRateTooltip(accidentals, deaths) {
     return `${formatNumber(a)} accidental / ${formatNumber(d)} total deaths`;
 }
 
-function LastUpdated({ lastUpdated }) {
-    const [, tick] = useState(0);
-    useEffect(() => {
-        const id = setInterval(() => tick((n) => n + 1), 5_000);
-        return () => clearInterval(id);
-    }, []);
-    if (!lastUpdated) return null;
-    return (
-        <div className="stat-grid-footer" suppressHydrationWarning>
-            {formatTimeAgo(lastUpdated)}
-        </div>
-    );
-}
-
-export default function StatGrid({ live, faction, events, lastUpdated }) {
+export default function StatGrid({ live, faction, events }) {
     if (!live?.length) return null;
 
     const factionIndex = faction !== 'global' ? factionMap[faction] : null;
@@ -65,27 +49,21 @@ export default function StatGrid({ live, faction, events, lastUpdated }) {
             { players: 0, kills: 0, deaths: 0, accidentals: 0 },
         );
         return (
-            <>
-                <div className="stat-grid">
-                    <StatCard
-                        label="HELLDIVERS_ONLINE"
-                        value={formatNumber(totals.players)}
-                    />
-                    <StatCard label="ENEMIES_KILLED" value={formatNumber(totals.kills)} />
-                    <StatCard
-                        label="HELLDIVERS_LOST"
-                        value={formatNumber(totals.deaths)}
-                    />
-                    <StatCard
-                        label="ACCIDENTAL_RATE"
-                        value={formatAccidentalRate(totals.accidentals, totals.deaths)}
-                        title={accidentalRateTooltip(totals.accidentals, totals.deaths)}
-                    />
-                    <StatCard label="WON" value={wins} accentColor="success" />
-                    <StatCard label="LOST" value={losses} accentColor="danger" />
-                </div>
-                <LastUpdated lastUpdated={lastUpdated} />
-            </>
+            <div className="stat-grid">
+                <StatCard
+                    label="HELLDIVERS_ONLINE"
+                    value={formatNumber(totals.players)}
+                />
+                <StatCard label="ENEMIES_KILLED" value={formatNumber(totals.kills)} />
+                <StatCard label="HELLDIVERS_LOST" value={formatNumber(totals.deaths)} />
+                <StatCard
+                    label="ACCIDENTAL_RATE"
+                    value={formatAccidentalRate(totals.accidentals, totals.deaths)}
+                    title={accidentalRateTooltip(totals.accidentals, totals.deaths)}
+                />
+                <StatCard label="WON" value={wins} accentColor="success" />
+                <StatCard label="LOST" value={losses} accentColor="danger" />
+            </div>
         );
     }
 
@@ -93,24 +71,21 @@ export default function StatGrid({ live, faction, events, lastUpdated }) {
     if (!stats) return null;
 
     return (
-        <>
-            <div className="stat-grid">
-                <StatCard label="ONLINE" value={formatNumber(stats.players)} />
-                <StatCard
-                    label="MISSIONS_WON"
-                    value={formatNumber(stats.successful_missions)}
-                />
-                <StatCard label="DEATHS" value={formatNumber(stats.deaths)} />
-                <StatCard
-                    label="ACCIDENTAL_RATE"
-                    value={formatAccidentalRate(stats.accidentals, stats.deaths)}
-                    title={accidentalRateTooltip(stats.accidentals, stats.deaths)}
-                />
-                <StatCard label="WON" value={wins} accentColor="success" />
-                <StatCard label="LOST" value={losses} accentColor="danger" />
-            </div>
-            <LastUpdated lastUpdated={lastUpdated} />
-        </>
+        <div className="stat-grid">
+            <StatCard label="ONLINE" value={formatNumber(stats.players)} />
+            <StatCard
+                label="MISSIONS_WON"
+                value={formatNumber(stats.successful_missions)}
+            />
+            <StatCard label="DEATHS" value={formatNumber(stats.deaths)} />
+            <StatCard
+                label="ACCIDENTAL_RATE"
+                value={formatAccidentalRate(stats.accidentals, stats.deaths)}
+                title={accidentalRateTooltip(stats.accidentals, stats.deaths)}
+            />
+            <StatCard label="WON" value={wins} accentColor="success" />
+            <StatCard label="LOST" value={losses} accentColor="danger" />
+        </div>
     );
 }
 

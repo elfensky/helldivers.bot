@@ -122,9 +122,9 @@ describe('DashboardClient — base rendering', () => {
         expect(screen.getByTestId('stat-grid')).toBeInTheDocument();
     });
 
-    test('shows "Stats — Global" heading initially', () => {
+    test('renders Stats heading', () => {
         render(<DashboardClient />);
-        expect(screen.getByText('Stats — Global')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Stats' })).toBeInTheDocument();
     });
 
     test('click Bugs tab updates stat-grid faction', () => {
