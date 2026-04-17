@@ -14,7 +14,7 @@ vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
     })),
 }));
 
-vi.mock('@/features/archives/ClientGlitchText', () => ({
+vi.mock('@/features/archives/GlitchText', () => ({
     default: ({ text, className }) => <span className={className}>{text}</span>,
 }));
 

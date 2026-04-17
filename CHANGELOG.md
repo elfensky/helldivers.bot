@@ -1,6 +1,30 @@
 # Changelog
 
-## Unreleased
+## 0.43.0
+
+### Features
+
+- **Regions campaign bar** — new `Sector / Campaign` toggle above the Regions cards on the homepage. Campaign view renders an 11-segment continuous progress bar per faction (sectors 1–10 driven by campaign points, segment 11 by the homeworld attack event). User preference persists in `localStorage`. In campaign view the dedicated homeworld-assault card is absorbed into segment 11 of the main card.
+- **Live "Updated Xs ago" counter** — extracted `LastUpdated` into a shared component (`src/shared/components/LastUpdated.jsx`) and moved it from a static footer under the StatGrid to the hero sidebar, on the same row as the notifications toggle. Ticks every second (was 5s and effectively frozen under `reactCompiler: true`) and resets when the next poll arrives. Pass `now` as state so the compiler can't elide re-renders on the hidden `Date.now()` dependency.
+- **Faction preference persistence** — homepage and archives both persist the selected faction (Global / Bugs / Cyborgs / Illuminate) to localStorage under `hd1-faction` and share the value across pages. Backed by a new generic `usePersistedState(key, default, isValid)` hook with domain wrappers (`useFactionPreference`, `useEventLogSort`).
+
+### Fixes
+
+- **Archives page flash** — `GlitchText` no longer uses `next/dynamic` with `ssr: false`. The h1 title and body text now ship in the initial HTML on defeat-season views instead of popping in after hydration. The glitch animation still plays as progressive enhancement post-hydration.
+- **Footer alignment** — the "Not affiliated…" disclaimer is now top-aligned with the "Humblebee UAV Drone Mk. IV" line on the bottom separator row (was centered between the two lines of the Humblebee stack).
+
+### Refactors
+
+- **Shared `<Button>` primitive** — consolidated all bordered-button patterns across the app (stats faction toggles, regions view toggle, event log sort, archives effects toggle, admin buttons, error pages, account actions, API form buttons) into one `src/shared/components/Button/Button.jsx` with variants (`primary` / `danger` / `success` / `ghost` + three `faction-*`) and sizes (`icon` / `sm` / `md` / `lg`). Replaces ~15 inline Tailwind button signatures with a single primitive. Touch targets improve on mobile: icon mode is 40×40 below the `md:` breakpoint and 30×30 above. Dropped the now-obsolete `FactionTabs.css` file.
+- **Homepage stats faction selector** — replaced the horizontal `FactionTabs` tab-bar with 4 faction-colored icon buttons rendered inline with the h2, matching the existing `RegionsViewToggle` convention. Static h2 reads "Stats" (was "Stats — {FactionName}").
+- **Archives stats header** — moved `FactionTabs` inline with the "Statistics" h2 (previously a full-width row below), and reordered the right-side control cluster to place `SeasonSelector` before `EffectsToggle`.
+- **`usePersistedState` hook** — extracted the scattered localStorage-backed preference logic (regions view, event log sort, faction) behind a single generic hook. Domain-named wrappers where de-duplication pays off; inline calls otherwise.
+
+### Audit / correctness
+
+- **StatGrid**: `ACCIDENTALS` replaced with `ACCIDENTAL_RATE` (accidentals/deaths as %) on global and per-faction views, with the absolute counts as hover title. Per-faction `MISSIONS` relabelled to `MISSIONS_WON` since the field is `successful_missions`. Added a clarifying comment noting why per-faction `players` sum is correct (disjoint populations) and that `total_unique_players` must never be summed (globally replicated field).
+- **`evaluateProgress`** JSDoc now documents the linear-rate model and its known bias in early/late-season reads.
+- **`countOutcomes`** locked in with a unit test asserting strict `status ∈ {'success','fail'}` matching (no case-folding, no loose match on `'won'`/`'lost'`).
 
 ## 0.42.0
 
@@ -28,7 +52,7 @@
 
 ### Database
 
-- **Schema consolidation** — 10 h1_*/rebroadcast tables → 5 normalized tables (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Dropped `h1_live`, `h1_live_snapshot`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`, `h1_event_snapshot`, `rebroadcast_status`, `rebroadcast_snapshot`, `App`, `Review`.
+- **Schema consolidation** — 10 h1\_\*/rebroadcast tables → 5 normalized tables (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Dropped `h1_live`, `h1_live_snapshot`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`, `h1_event_snapshot`, `rebroadcast_status`, `rebroadcast_snapshot`, `App`, `Review`.
 - **Bucket-upsert pattern** — all timeseries tables use tumbling-window UPSERTs keyed on `(entity, bucket)` where `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE`. Sub-15s homepage freshness with ~120 MB bounded storage. `BUCKET_SIZE` is env-configurable (default 900 = 15 min).
 - **`h1_season` inlining** — `introduction_order Int[]`, `points_max Int[]`, and `season_duration Int` are now direct columns on `h1_season` (previously in separate 1:1 tables).
 - **`h1_snapshot.data` normalized** — stringified JSON-in-JSON column replaced by typed columns on `h1_status`. Consumers no longer need defensive `typeof === 'string' ? JSON.parse : data` parsing.

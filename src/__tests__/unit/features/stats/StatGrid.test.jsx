@@ -2,7 +2,7 @@
 import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-vi.mock('@/components/h1/StatGrid/StatGrid.css', () => ({}));
+vi.mock('@/features/stats/StatGrid.css', () => ({}));
 
 import StatGrid from '@/features/stats/StatGrid';
 
@@ -61,19 +61,28 @@ describe('StatGrid', () => {
             expect(screen.getByText('HELLDIVERS_ONLINE')).toBeInTheDocument();
             expect(screen.getByText('ENEMIES_KILLED')).toBeInTheDocument();
             expect(screen.getByText('HELLDIVERS_LOST')).toBeInTheDocument();
-            expect(screen.getByText('ACCIDENTALS')).toBeInTheDocument();
+            expect(screen.getAllByText('ACCIDENTAL_RATE').length).toBeGreaterThanOrEqual(
+                1,
+            );
         });
 
         test('shows correct aggregated values', () => {
             render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
             // players: 100+200+150 = 450
             expect(screen.getByText('450')).toBeInTheDocument();
-            // kills: 500+1000+750 = 2,250
-            expect(screen.getByText('2,250')).toBeInTheDocument();
-            // deaths: 50+80+40 = 170
+            // deaths: 50+80+40 = 170 (< 1000 so not locale-formatted)
             expect(screen.getByText('170')).toBeInTheDocument();
-            // accidentals: 10+20+5 = 35
-            expect(screen.getByText('35')).toBeInTheDocument();
+            // accidental rate: (10+20+5)/(50+80+40) = 35/170 = 20.58...% → 20.6%
+            expect(screen.getByText('20.6%')).toBeInTheDocument();
+        });
+
+        // formatNumber uses num.toLocaleString() without a locale argument for
+        // values 1K-999K, so the thousands separator is locale-dependent.
+        // Use a tolerant regex so this test survives non-en-US CI environments.
+        test('shows kills total with locale-tolerant separator', () => {
+            render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
+            // 500+1000+750 = 2,250 / 2.250 / 2 250 / 2\u202f250 depending on locale
+            expect(screen.getByText(/2[,.\s\u202f\u00a0]250/)).toBeInTheDocument();
         });
 
         test('shows win/loss counts from all factions', () => {
@@ -91,18 +100,19 @@ describe('StatGrid', () => {
         test('shows faction-specific stat labels', () => {
             render(<StatGrid live={mockLive} faction="bugs" events={mockEvents} />);
             expect(screen.getByText('ONLINE')).toBeInTheDocument();
-            expect(screen.getByText('MISSIONS')).toBeInTheDocument();
+            expect(screen.getByText('MISSIONS_WON')).toBeInTheDocument();
             expect(screen.getByText('DEATHS')).toBeInTheDocument();
-            expect(screen.getByText('ACCIDENTALS')).toBeInTheDocument();
+            expect(screen.getByText('ACCIDENTAL_RATE')).toBeInTheDocument();
         });
 
         test('shows bugs faction values', () => {
             render(<StatGrid live={mockLive} faction="bugs" events={mockEvents} />);
-            // bugs: players=100, successful_missions=30, deaths=50, accidentals=10
+            // bugs: players=100, successful_missions=30, deaths=50
             expect(screen.getByText('100')).toBeInTheDocument();
             expect(screen.getByText('30')).toBeInTheDocument();
             expect(screen.getByText('50')).toBeInTheDocument();
-            expect(screen.getByText('10')).toBeInTheDocument();
+            // accidental rate: 10 / 50 = 20.0%
+            expect(screen.getByText('20.0%')).toBeInTheDocument();
         });
 
         test('shows faction-filtered win/loss counts', () => {
@@ -112,6 +122,37 @@ describe('StatGrid', () => {
             expect(screen.getByText('LOST')).toBeInTheDocument();
             const ones = screen.getAllByText('1');
             expect(ones).toHaveLength(2); // 1 win + 1 loss
+        });
+
+        test('accidental rate shows em-dash when deaths is zero', () => {
+            const zeroDeaths = [
+                {
+                    enemy: 0,
+                    players: 10,
+                    kills: 1,
+                    deaths: 0,
+                    accidentals: 0,
+                    successful_missions: 0,
+                },
+                {
+                    enemy: 1,
+                    players: 10,
+                    kills: 1,
+                    deaths: 0,
+                    accidentals: 0,
+                    successful_missions: 0,
+                },
+                {
+                    enemy: 2,
+                    players: 10,
+                    kills: 1,
+                    deaths: 0,
+                    accidentals: 0,
+                    successful_missions: 0,
+                },
+            ];
+            render(<StatGrid live={zeroDeaths} faction="bugs" events={[]} />);
+            expect(screen.getByText('—')).toBeInTheDocument();
         });
 
         test('returns null when faction not found in live data', () => {

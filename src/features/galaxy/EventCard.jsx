@@ -3,6 +3,7 @@ import './EventCard.css';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
+import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.mjs';
 import humanizeDuration from 'humanize-duration';
 
 /**
@@ -39,7 +40,9 @@ export function computeFrontier(campaignData, factionMap) {
 }
 
 function EventCountdown({ endTime }) {
-    const [remaining, setRemaining] = useState(() => endTime - Math.floor(Date.now() / 1000));
+    const [remaining, setRemaining] = useState(
+        () => endTime - Math.floor(Date.now() / 1000),
+    );
 
     useEffect(() => {
         setRemaining(endTime - Math.floor(Date.now() / 1000));
@@ -58,6 +61,33 @@ function EventCountdown({ endTime }) {
     );
 }
 
+function SegmentCell({ seg, factionColor }) {
+    const status = seg?.status;
+    if (status === 'captured') {
+        return <div className="sector-card-segment sector-card-segment--captured" />;
+    }
+    if (status === 'in_progress') {
+        const pct = Math.max(0, Math.min(100, seg?.percent ?? 0));
+        return (
+            <div
+                className="sector-card-segment sector-card-segment--in-progress"
+                style={{ '--segment-percent': `${pct}%` }}
+            />
+        );
+    }
+    if (status === 'active') {
+        // Homeworld attack in progress — uses danger color, matches defending aesthetic
+        const pct = Math.max(0, Math.min(100, seg?.percent ?? 0));
+        return (
+            <div
+                className="sector-card-segment sector-card-segment--active"
+                style={{ '--segment-percent': `${pct}%` }}
+            />
+        );
+    }
+    return <div className="sector-card-segment" />;
+}
+
 export default function EventCard({
     action,
     region,
@@ -69,6 +99,8 @@ export default function EventCard({
     endTime,
     barLabel,
     pulseDelay,
+    view = 'sector',
+    factionMap,
 }) {
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = !!endTime;
@@ -77,14 +109,17 @@ export default function EventCard({
     const barColor = isDefending ? 'var(--color-danger)' : color;
     const safePct = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
 
-    const cardStyle = { '--accent-color': color };
+    const isCampaign = view === 'campaign';
+    const { captured } = isCampaign ? countCapturedRegions(factionMap) : { captured: 0 };
+
+    const cardStyle = {
+        '--accent-color': color,
+        '--faction-color': color,
+    };
     if (pulseDelay != null) cardStyle['--pulse-delay'] = `${pulseDelay}s`;
 
     return (
-        <div
-            className="sector-card"
-            style={cardStyle}
-        >
+        <div className="sector-card" style={cardStyle}>
             <div className="sector-card-content">
                 <div className="sector-card-header">
                     <img
@@ -125,16 +160,32 @@ export default function EventCard({
                     <div
                         className="sector-card-bar"
                         role="progressbar"
-                        aria-valuenow={safePct}
+                        aria-valuenow={isCampaign ? captured : safePct}
                         aria-valuemin={0}
-                        aria-valuemax={100}
+                        aria-valuemax={isCampaign ? 11 : 100}
                     >
-                        <div
-                            className="sector-card-bar-fill"
-                            style={{ width: `${safePct}%`, background: barColor }}
-                        />
+                        {isCampaign ?
+                            <div className="sector-card-segments">
+                                {Array.from({ length: 11 }, (_, i) => {
+                                    const r = i + 1;
+                                    return (
+                                        <SegmentCell
+                                            key={r}
+                                            seg={factionMap?.[r]}
+                                            factionColor={barColor}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        :   <div
+                                className="sector-card-bar-fill"
+                                style={{ width: `${safePct}%`, background: barColor }}
+                            />
+                        }
                     </div>
-                    <span className="sector-card-pct">{safePct.toFixed(1)}%</span>
+                    <span className="sector-card-pct">
+                        {isCampaign ? `${captured}/11` : `${safePct.toFixed(1)}%`}
+                    </span>
                 </div>
                 <div className="sector-card-meta">
                     <span className="sector-card-points">
@@ -160,7 +211,11 @@ export default function EventCard({
                     )}
                 </div>
             </div>
-            <div className={'sector-card-accent' + (isEvent ? ' sector-card-accent-flash' : '')} />
+            <div
+                className={
+                    'sector-card-accent' + (isEvent ? ' sector-card-accent-flash' : '')
+                }
+            />
         </div>
     );
 }

@@ -325,7 +325,9 @@ formatTimeAgo(date: Date | null, now?: Date): string | null
 
 **Examples:** 45 seconds elapsed → `"Updated 45s ago"`, 3 minutes → `"Updated 3m ago"`.
 
-**Used by:** `Galaxy` component (timestamp below the map).
+**Used by:** `LastUpdated` (live hero-sidebar counter), `SystemOverview` (admin worker heartbeat display).
+
+**Note:** when used inside a component that ticks on an interval, pass `now` as state so the React Compiler can't elide re-renders — the hidden `Date.now()` fallback looks like a pure function to static analysis. See `LastUpdated.jsx` for the pattern.
 
 ---
 
@@ -786,8 +788,8 @@ This replaces the previous in-memory snapshot throttle system (`snapshotTimers.m
 
 ### Constants
 
-| Constant      | Default | Env var       | Meaning                                                  |
-| ------------- | ------- | ------------- | -------------------------------------------------------- |
+| Constant      | Default | Env var       | Meaning                                                    |
+| ------------- | ------- | ------------- | ---------------------------------------------------------- |
 | `BUCKET_SIZE` | `900`   | `BUCKET_SIZE` | Seconds per bucket window (15 min). Parsed at module load. |
 
 ### `computeBucket(pollTime)`
@@ -800,11 +802,11 @@ Returns `Math.floor(pollTime / BUCKET_SIZE) * BUCKET_SIZE` — the start of the 
 
 ### Used by
 
-| Query function            | Table               | Unique key                     |
-| ------------------------- | ------------------- | ------------------------------ |
-| `queryUpsertStatus`       | `h1_status`         | `[season, enemy, bucket]`      |
-| `queryUpsertStatistic`    | `h1_statistic`      | `[season, enemy, bucket]`      |
-| `queryUpsertEventProgress`| `h1_event_progress` | `[type, event_id, bucket]`     |
+| Query function             | Table               | Unique key                 |
+| -------------------------- | ------------------- | -------------------------- |
+| `queryUpsertStatus`        | `h1_status`         | `[season, enemy, bucket]`  |
+| `queryUpsertStatistic`     | `h1_statistic`      | `[season, enemy, bucket]`  |
+| `queryUpsertEventProgress` | `h1_event_progress` | `[type, event_id, bucket]` |
 
 ---
 

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { reseedSeason } from '@/features/archives/reseedSeason';
 import { useTrack } from '@/shared/hooks/useTrack.mjs';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
+import Button from '@/shared/components/Button/Button';
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
@@ -63,15 +64,14 @@ export default function RefreshSeasonButton({ season, lastUpdated }) {
     }
 
     return (
-        <button
-            type="button"
+        <Button
+            size="md"
             onClick={handleClick}
             disabled={disabled}
             title={title}
-            className="border border-ghost bg-surface-1 px-3 py-1.5 font-mono text-sm text-text hover:bg-surface-2 disabled:opacity-60"
             data-umami-event="archive-season-refresh-click"
         >
             {label}
-        </button>
+        </Button>
     );
 }

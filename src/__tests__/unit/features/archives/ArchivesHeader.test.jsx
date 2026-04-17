@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 // Mock the dynamic import — render text directly in tests
-vi.mock('@/features/archives/ClientGlitchText', () => ({
+vi.mock('@/features/archives/GlitchText', () => ({
     default: ({ text, className }) => <span className={className}>{text}</span>,
 }));
 
@@ -21,13 +21,25 @@ describe('ArchivesHeader', () => {
     });
 
     it('renders resistance copy on defeat with message index', () => {
-        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} defeatMessageIndex={0} />);
+        render(
+            <ArchivesHeader
+                isDefeat={true}
+                effects={defeatEffects}
+                defeatMessageIndex={0}
+            />,
+        );
         expect(screen.getByText(/Leaked Campaign Records/)).toBeDefined();
         expect(screen.getByText(RESISTANCE_MESSAGES[0])).toBeDefined();
     });
 
     it('renders different message for different index', () => {
-        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} defeatMessageIndex={3} />);
+        render(
+            <ArchivesHeader
+                isDefeat={true}
+                effects={defeatEffects}
+                defeatMessageIndex={3}
+            />,
+        );
         expect(screen.getByText(RESISTANCE_MESSAGES[3])).toBeDefined();
     });
 
@@ -37,12 +49,24 @@ describe('ArchivesHeader', () => {
     });
 
     it('does not render toggle (moved to ArchivesClient)', () => {
-        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} defeatMessageIndex={0} />);
+        render(
+            <ArchivesHeader
+                isDefeat={true}
+                effects={defeatEffects}
+                defeatMessageIndex={0}
+            />,
+        );
         expect(screen.queryByRole('button')).toBeNull();
     });
 
     it('falls back to first message for invalid index', () => {
-        render(<ArchivesHeader isDefeat={true} effects={defeatEffects} defeatMessageIndex={999} />);
+        render(
+            <ArchivesHeader
+                isDefeat={true}
+                effects={defeatEffects}
+                defeatMessageIndex={999}
+            />,
+        );
         expect(screen.getByText(RESISTANCE_MESSAGES[0])).toBeDefined();
     });
 });

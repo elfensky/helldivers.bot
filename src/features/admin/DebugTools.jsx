@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { sendTestNotification } from '@/features/admin/actions';
 import { showEventToast } from '@/features/notifications/eventToast';
 import { addDismissedEvent } from '@/features/notifications/dismissedEvents.mjs';
+import Button from '@/shared/components/Button/Button';
 
 const PUSH_KINDS = ['event_started', 'event_won', 'event_lost'];
 const TOAST_KINDS = ['event_started', 'event_won', 'event_lost', 'catch_up'];
@@ -40,8 +41,6 @@ function freshTestEvent(kind) {
     return { event_id, enemy, region, type, status: statusForKind(kind) };
 }
 
-const BTN =
-    'cursor-pointer border border-ghost px-2 py-0.5 text-small text-text-muted hover:text-text disabled:cursor-not-allowed disabled:opacity-50';
 const LABEL = 'font-mono text-small text-text-muted uppercase';
 
 export default function DebugTools() {
@@ -111,9 +110,8 @@ export default function DebugTools() {
                 <div className="flex flex-wrap items-center gap-2">
                     <span className={LABEL}>Toasts</span>
                     {TOAST_KINDS.map((kind) => (
-                        <button
+                        <Button
                             key={kind}
-                            type="button"
                             onClick={() => {
                                 const event = buildOrUpdateTestEvent(kind);
                                 const alertColor =
@@ -127,10 +125,9 @@ export default function DebugTools() {
                                         addDismissedEvent(event.event_id, event.status),
                                 });
                             }}
-                            className={BTN}
                         >
                             {KIND_LABELS[kind]}
-                        </button>
+                        </Button>
                     ))}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -138,19 +135,17 @@ export default function DebugTools() {
                     {PUSH_KINDS.map((kind) => {
                         const s = pushStatus[kind] || 'idle';
                         return (
-                            <button
+                            <Button
                                 key={kind}
-                                type="button"
                                 onClick={() => handleTestPush(kind)}
                                 disabled={s !== 'idle'}
-                                className={BTN}
                             >
                                 {s === 'sending' ?
                                     '...'
                                 : s === 'cooldown' ?
                                     'Sent'
                                 :   KIND_LABELS[kind]}
-                            </button>
+                            </Button>
                         );
                     })}
                     {pushMessage && (
@@ -163,8 +158,7 @@ export default function DebugTools() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <span className={LABEL}>Error</span>
-                    <button
-                        type="button"
+                    <Button
                         onClick={() => {
                             const err = new Error(
                                 'Admin test error — verifying GlitchTip integration',
@@ -172,11 +166,10 @@ export default function DebugTools() {
                             Sentry.captureException(err);
                             toast.success('Error sent to GlitchTip');
                         }}
-                        className={BTN}
                         data-umami-event="debug-trigger-error"
                     >
                         Trigger
-                    </button>
+                    </Button>
                 </div>
             </div>
         </section>
