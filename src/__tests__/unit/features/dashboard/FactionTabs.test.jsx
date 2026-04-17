@@ -2,8 +2,6 @@
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-vi.mock('@/components/h1/FactionTabs/FactionTabs.css', () => ({}));
-
 import FactionTabs from '@/features/dashboard/FactionTabs';
 
 describe('FactionTabs', () => {
@@ -12,13 +10,26 @@ describe('FactionTabs', () => {
         expect(screen.getAllByRole('button')).toHaveLength(4);
     });
 
-    test('active tab has "active" class', () => {
+    test('active tab has aria-pressed=true', () => {
         render(<FactionTabs active="bugs" onChange={() => {}} />);
-        const bugsButton = screen.getByRole('button', { name: 'Bugs' });
-        expect(bugsButton.className).toContain('active');
+        expect(screen.getByRole('button', { name: 'Bugs' })).toHaveAttribute(
+            'aria-pressed',
+            'true',
+        );
+        expect(screen.getByRole('button', { name: 'Global' })).toHaveAttribute(
+            'aria-pressed',
+            'false',
+        );
+    });
 
-        const globalButton = screen.getByRole('button', { name: 'Global' });
-        expect(globalButton.className).not.toContain('active');
+    test('inactive buttons have opacity-40 class, active does not', () => {
+        render(<FactionTabs active="bugs" onChange={() => {}} />);
+        expect(screen.getByRole('button', { name: 'Bugs' }).className).not.toContain(
+            'opacity-40',
+        );
+        expect(screen.getByRole('button', { name: 'Global' }).className).toContain(
+            'opacity-40',
+        );
     });
 
     test('clicking a tab calls onChange with correct id', () => {
@@ -40,11 +51,39 @@ describe('FactionTabs', () => {
         }
     });
 
-    test('renders correct labels', () => {
+    test('each button has a faction-specific data-umami-event', () => {
         render(<FactionTabs active="global" onChange={() => {}} />);
-        expect(screen.getByText('Global')).toBeInTheDocument();
-        expect(screen.getByText('Bugs')).toBeInTheDocument();
-        expect(screen.getByText('Cyborgs')).toBeInTheDocument();
-        expect(screen.getByText('Illuminate')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Global' })).toHaveAttribute(
+            'data-umami-event',
+            'faction-toggle-global',
+        );
+        expect(screen.getByRole('button', { name: 'Bugs' })).toHaveAttribute(
+            'data-umami-event',
+            'faction-toggle-bugs',
+        );
+        expect(screen.getByRole('button', { name: 'Cyborgs' })).toHaveAttribute(
+            'data-umami-event',
+            'faction-toggle-cyborgs',
+        );
+        expect(screen.getByRole('button', { name: 'Illuminate' })).toHaveAttribute(
+            'data-umami-event',
+            'faction-toggle-illuminate',
+        );
+    });
+
+    test('each button uses its faction-colored border', () => {
+        render(<FactionTabs active="global" onChange={() => {}} />);
+        expect(screen.getByRole('button', { name: 'Global' }).className).toContain(
+            'border-primary',
+        );
+        expect(screen.getByRole('button', { name: 'Bugs' }).className).toContain(
+            'border-faction-bugs',
+        );
+        expect(screen.getByRole('button', { name: 'Cyborgs' }).className).toContain(
+            'border-faction-cyborgs',
+        );
+        expect(screen.getByRole('button', { name: 'Illuminate' }).className).toContain(
+            'border-faction-illuminate',
+        );
     });
 });

@@ -37,7 +37,9 @@ describe('RegionsViewToggle', () => {
         expect(cls).toContain('text-primary');
         expect(cls).toContain('hover:bg-primary');
         expect(cls).toContain('hover:text-surface-0');
-        expect(cls).toContain('size-[30px]');
+        // Responsive touch target: 40×40 mobile, 30×30 from md: breakpoint.
+        expect(cls).toContain('size-[40px]');
+        expect(cls).toContain('md:size-[30px]');
     });
 
     test('clicking toggles to the opposite value', () => {

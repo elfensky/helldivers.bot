@@ -9,6 +9,7 @@ import {
     RESISTANCE_MESSAGES,
     PROPAGANDA_BODY,
 } from '@/features/archives/resistanceMessages.mjs';
+import ToggleButton from '@/shared/components/ToggleButton/ToggleButton';
 
 const PROPAGANDA_TITLE = 'Declassified Campaign Archives';
 const RESISTANCE_TITLE = 'Leaked Campaign Records';
@@ -16,9 +17,7 @@ const RESISTANCE_TITLE = 'Leaked Campaign Records';
 function PropagandaHeader() {
     return (
         <>
-            <h1 className="font-display text-body text-primary">
-                {PROPAGANDA_TITLE}
-            </h1>
+            <h1 className="font-display text-body text-primary">{PROPAGANDA_TITLE}</h1>
             <p className="mt-1 max-w-screen-md text-small text-text-muted">
                 {PROPAGANDA_BODY}
             </p>
@@ -59,15 +58,18 @@ export function EffectsToggle({ active }) {
         window.location.reload();
     }
 
+    const label = `${active ? 'Disable' : 'Enable'} interference`;
+
     return (
-        <button
+        <ToggleButton
+            active={active}
             onClick={handleToggle}
-            className={`inline-flex items-center justify-center size-[30px] border border-primary text-primary font-mono cursor-pointer hover:bg-primary hover:text-surface-0${active ? '' : ' opacity-40'}`}
-            title={`${active ? 'Disable' : 'Enable'} interference`}
+            title={label}
+            aria-label={label}
             data-umami-event="archive-effects-toggle"
         >
             ⚡
-        </button>
+        </ToggleButton>
     );
 }
 
@@ -94,8 +96,7 @@ export default function ArchivesHeader({
         );
     }
 
-    const message =
-        RESISTANCE_MESSAGES[defeatMessageIndex] ?? RESISTANCE_MESSAGES[0];
+    const message = RESISTANCE_MESSAGES[defeatMessageIndex] ?? RESISTANCE_MESSAGES[0];
 
     return (
         <div className="pb-2">
