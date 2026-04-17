@@ -7,41 +7,69 @@ vi.mock('@/features/dashboard/RegionsViewToggle.css', () => ({}));
 import RegionsViewToggle from '@/features/dashboard/RegionsViewToggle';
 
 describe('RegionsViewToggle', () => {
-    test('renders two buttons', () => {
+    test('renders one button', () => {
         render(<RegionsViewToggle value="sector" onChange={() => {}} />);
-        expect(screen.getAllByRole('tab')).toHaveLength(2);
+        expect(screen.getAllByRole('button')).toHaveLength(1);
     });
 
-    test('active button has "active" class and aria-selected=true', () => {
-        render(<RegionsViewToggle value="campaign" onChange={() => {}} />);
-        const campaign = screen.getByRole('tab', { name: 'Campaign' });
-        const sector = screen.getByRole('tab', { name: 'Sector' });
-        expect(campaign.className).toContain('active');
-        expect(campaign).toHaveAttribute('aria-selected', 'true');
-        expect(sector.className).not.toContain('active');
-        expect(sector).toHaveAttribute('aria-selected', 'false');
-    });
-
-    test('clicking a button calls onChange with its value', () => {
-        const onChange = vi.fn();
-        render(<RegionsViewToggle value="sector" onChange={onChange} />);
-
-        fireEvent.click(screen.getByRole('tab', { name: 'Campaign' }));
-        expect(onChange).toHaveBeenCalledWith('campaign');
-
-        fireEvent.click(screen.getByRole('tab', { name: 'Sector' }));
-        expect(onChange).toHaveBeenCalledWith('sector');
-    });
-
-    test('each button has a data-umami-event attribute', () => {
-        render(<RegionsViewToggle value="sector" onChange={() => {}} />);
-        expect(screen.getByRole('tab', { name: 'Sector' })).toHaveAttribute(
-            'data-umami-event',
-            'regions-view-sector',
+    test('aria-pressed reflects current value', () => {
+        const { rerender } = render(
+            <RegionsViewToggle value="sector" onChange={() => {}} />,
         );
-        expect(screen.getByRole('tab', { name: 'Campaign' })).toHaveAttribute(
+        expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'false');
+
+        rerender(<RegionsViewToggle value="campaign" onChange={() => {}} />);
+        expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    test('has active class in campaign view', () => {
+        render(<RegionsViewToggle value="campaign" onChange={() => {}} />);
+        expect(screen.getByRole('button').className).toContain('regions-toggle--active');
+    });
+
+    test('clicking toggles to the opposite value', () => {
+        const onChange = vi.fn();
+        const { rerender } = render(
+            <RegionsViewToggle value="sector" onChange={onChange} />,
+        );
+
+        fireEvent.click(screen.getByRole('button'));
+        expect(onChange).toHaveBeenLastCalledWith('campaign');
+
+        rerender(<RegionsViewToggle value="campaign" onChange={onChange} />);
+        fireEvent.click(screen.getByRole('button'));
+        expect(onChange).toHaveBeenLastCalledWith('sector');
+    });
+
+    test('aria-label describes the target state', () => {
+        const { rerender } = render(
+            <RegionsViewToggle value="sector" onChange={() => {}} />,
+        );
+        expect(screen.getByRole('button')).toHaveAttribute(
+            'aria-label',
+            expect.stringMatching(/campaign/i),
+        );
+
+        rerender(<RegionsViewToggle value="campaign" onChange={() => {}} />);
+        expect(screen.getByRole('button')).toHaveAttribute(
+            'aria-label',
+            expect.stringMatching(/sector/i),
+        );
+    });
+
+    test('data-umami-event reflects the target value', () => {
+        const { rerender } = render(
+            <RegionsViewToggle value="sector" onChange={() => {}} />,
+        );
+        expect(screen.getByRole('button')).toHaveAttribute(
             'data-umami-event',
             'regions-view-campaign',
+        );
+
+        rerender(<RegionsViewToggle value="campaign" onChange={() => {}} />);
+        expect(screen.getByRole('button')).toHaveAttribute(
+            'data-umami-event',
+            'regions-view-sector',
         );
     });
 });

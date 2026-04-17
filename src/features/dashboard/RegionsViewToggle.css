@@ -1,33 +1,39 @@
 .regions-toggle {
-    display: flex;
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-ghost);
-}
-
-.regions-toggle-btn {
-    padding: 0.25rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
     background: transparent;
-    border: none;
+    border: 1px solid var(--color-ghost);
     color: var(--color-text-muted);
-    font-family: var(--font-body);
-    font-size: var(--text-small);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
     transition:
         color 0.15s ease,
         border-color 0.15s ease,
         background 0.15s ease;
 }
 
-.regions-toggle-btn:hover {
+.regions-toggle:hover {
     color: var(--color-text);
-    background: var(--color-surface-2);
+    border-color: var(--color-text-muted);
 }
 
-.regions-toggle-btn.active {
+.regions-toggle--active {
     color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
+    border-color: var(--color-primary);
+    background: rgba(255, 224, 0, 0.08);
+}
+
+.regions-toggle svg rect {
+    fill: currentColor;
+}
+
+/* Inactive-state segments (campaign preview): keep the first 3 solid,
+ * dim the remaining 8 so the icon reads as "partial campaign progress"
+ * regardless of toggle state. */
+.regions-toggle svg rect.seg--dim {
+    fill: currentColor;
+    opacity: 0.35;
 }

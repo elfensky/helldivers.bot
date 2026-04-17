@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import './EventCard.css';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
-import { SECTOR_COUNT, HOMEWORLD_REGION } from '@/shared/enums/worlds.mjs';
+import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.mjs';
 import humanizeDuration from 'humanize-duration';
 
@@ -110,17 +110,7 @@ export default function EventCard({
     const safePct = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
 
     const isCampaign = view === 'campaign';
-    const { captured, inProgressRegion } =
-        isCampaign ?
-            countCapturedRegions(factionMap)
-        :   { captured: 0, inProgressRegion: null };
-
-    const campaignTitle =
-        isCampaign ?
-            inProgressRegion === HOMEWORLD_REGION ?
-                `Homeworld · ${captured}/11`
-            :   `Campaign · ${captured}/11`
-        :   region;
+    const { captured } = isCampaign ? countCapturedRegions(factionMap) : { captured: 0 };
 
     const cardStyle = {
         '--accent-color': color,
@@ -147,7 +137,7 @@ export default function EventCard({
                     >
                         {isDefending ? 'Defending' : 'Capturing'}
                     </span>
-                    <span className="sector-card-title">{campaignTitle}</span>
+                    <span className="sector-card-title">{region}</span>
                 </div>
                 {barLabel && (
                     <div className="sector-card-bar-label-row">

@@ -41,9 +41,7 @@ export default function DefeatedCard({
                     >
                         Defeated
                     </span>
-                    <span className="sector-card-title">
-                        {isCampaign ? `${faction.name} · 11/11` : faction.name}
-                    </span>
+                    <span className="sector-card-title">{faction.name}</span>
                 </div>
                 <div className="sector-card-bar-label-row">
                     <span className="sector-card-bar-label">ALL_SECTORS_CAPTURED</span>
