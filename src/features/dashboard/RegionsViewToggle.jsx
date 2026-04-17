@@ -37,74 +37,10 @@ export default function RegionsViewToggle({ value, onChange }) {
                 aria-hidden="true"
                 focusable="false"
             >
-                {/* 11 stylised segments — the icon depicts the campaign bar */}
-                <rect x="0" y="6" width="1" height="2" fill="currentColor" />
-                <rect x="1.25" y="6" width="1" height="2" fill="currentColor" />
-                <rect x="2.5" y="6" width="1" height="2" fill="currentColor" />
-                <rect
-                    x="3.75"
-                    y="6"
-                    width="1"
-                    height="2"
-                    fill="currentColor"
-                    opacity="0.4"
-                />
-                <rect
-                    x="5"
-                    y="6"
-                    width="1"
-                    height="2"
-                    fill="currentColor"
-                    opacity="0.4"
-                />
-                <rect
-                    x="6.25"
-                    y="6"
-                    width="1"
-                    height="2"
-                    fill="currentColor"
-                    opacity="0.4"
-                />
-                <rect
-                    x="7.5"
-                    y="6"
-                    width="1"
-                    height="2"
-                    fill="currentColor"
-                    opacity="0.4"
-                />
-                <rect
-                    x="8.75"
-                    y="6"
-                    width="1"
-                    height="2"
-                    fill="currentColor"
-                    opacity="0.4"
-                />
-                <rect
-                    x="10"
-                    y="6"
-                    width="1"
-                    height="2"
-                    fill="currentColor"
-                    opacity="0.4"
-                />
-                <rect
-                    x="11.25"
-                    y="6"
-                    width="1"
-                    height="2"
-                    fill="currentColor"
-                    opacity="0.4"
-                />
-                <rect
-                    x="12.5"
-                    y="6"
-                    width="1"
-                    height="2"
-                    fill="currentColor"
-                    opacity="0.4"
-                />
+                {/* 3 uniform vertical bars — reads as "segmented bars" */}
+                <rect x="2" y="2" width="2" height="10" fill="currentColor" />
+                <rect x="6" y="2" width="2" height="10" fill="currentColor" />
+                <rect x="10" y="2" width="2" height="10" fill="currentColor" />
             </svg>
         </button>
     );
