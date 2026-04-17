@@ -1,11 +1,11 @@
 'use client';
-import './RegionsViewToggle.css';
 
 /**
  * Small square icon toggle for the Regions section. Switches between
  * 'sector' (single-bar, active-sector zoom) and 'campaign' (11-segment
- * full-war bar). The icon depicts the segmented campaign bar; it renders
- * filled when campaign view is active and outlined otherwise.
+ * full-war bar). Matches the brandkit button pattern used by
+ * `EffectsToggle` in `ArchivesHeader.jsx` and `EventLogSortToggle`:
+ * 30x30 yellow border, opacity-40 when the view isn't active.
  */
 export default function RegionsViewToggle({ value, onChange }) {
     const isCampaign = value === 'campaign';
@@ -18,12 +18,17 @@ export default function RegionsViewToggle({ value, onChange }) {
     return (
         <button
             type="button"
-            className={'regions-toggle' + (isCampaign ? ' regions-toggle--active' : '')}
             onClick={() => onChange(next)}
             aria-label={label}
             aria-pressed={isCampaign}
             title={label}
             data-umami-event={`regions-view-${next}`}
+            className={
+                'inline-flex size-[30px] cursor-pointer items-center justify-center ' +
+                'border border-primary font-mono text-primary ' +
+                'hover:bg-primary hover:text-surface-0 ' +
+                (isCampaign ? '' : 'opacity-40')
+            }
         >
             <svg
                 width="14"
@@ -32,18 +37,74 @@ export default function RegionsViewToggle({ value, onChange }) {
                 aria-hidden="true"
                 focusable="false"
             >
-                {/* 11 stylised segments; 3 filled to imply a partial campaign. */}
-                <rect x="0" y="6" width="1" height="2" />
-                <rect x="1.25" y="6" width="1" height="2" />
-                <rect x="2.5" y="6" width="1" height="2" />
-                <rect x="3.75" y="6" width="1" height="2" className="seg--dim" />
-                <rect x="5" y="6" width="1" height="2" className="seg--dim" />
-                <rect x="6.25" y="6" width="1" height="2" className="seg--dim" />
-                <rect x="7.5" y="6" width="1" height="2" className="seg--dim" />
-                <rect x="8.75" y="6" width="1" height="2" className="seg--dim" />
-                <rect x="10" y="6" width="1" height="2" className="seg--dim" />
-                <rect x="11.25" y="6" width="1" height="2" className="seg--dim" />
-                <rect x="12.5" y="6" width="1" height="2" className="seg--dim" />
+                {/* 11 stylised segments — the icon depicts the campaign bar */}
+                <rect x="0" y="6" width="1" height="2" fill="currentColor" />
+                <rect x="1.25" y="6" width="1" height="2" fill="currentColor" />
+                <rect x="2.5" y="6" width="1" height="2" fill="currentColor" />
+                <rect
+                    x="3.75"
+                    y="6"
+                    width="1"
+                    height="2"
+                    fill="currentColor"
+                    opacity="0.4"
+                />
+                <rect
+                    x="5"
+                    y="6"
+                    width="1"
+                    height="2"
+                    fill="currentColor"
+                    opacity="0.4"
+                />
+                <rect
+                    x="6.25"
+                    y="6"
+                    width="1"
+                    height="2"
+                    fill="currentColor"
+                    opacity="0.4"
+                />
+                <rect
+                    x="7.5"
+                    y="6"
+                    width="1"
+                    height="2"
+                    fill="currentColor"
+                    opacity="0.4"
+                />
+                <rect
+                    x="8.75"
+                    y="6"
+                    width="1"
+                    height="2"
+                    fill="currentColor"
+                    opacity="0.4"
+                />
+                <rect
+                    x="10"
+                    y="6"
+                    width="1"
+                    height="2"
+                    fill="currentColor"
+                    opacity="0.4"
+                />
+                <rect
+                    x="11.25"
+                    y="6"
+                    width="1"
+                    height="2"
+                    fill="currentColor"
+                    opacity="0.4"
+                />
+                <rect
+                    x="12.5"
+                    y="6"
+                    width="1"
+                    height="2"
+                    fill="currentColor"
+                    opacity="0.4"
+                />
             </svg>
         </button>
     );

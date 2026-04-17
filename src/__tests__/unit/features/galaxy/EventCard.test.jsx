@@ -21,7 +21,20 @@ const baseProps = {
     barLabel: 'SECTOR_PROGRESS',
 };
 
-describe('EventCard', () => {
+/**
+ * Build a mapState[factionIndex] with the given sector statuses.
+ * Default: everything lost. Each entry in `overrides` keyed by region 1–11.
+ */
+function makeFactionMap(overrides = {}) {
+    const map = {};
+    for (let r = 1; r <= 11; r++) map[r] = { status: 'lost', percent: 0 };
+    for (const [key, val] of Object.entries(overrides)) {
+        map[Number(key)] = { ...map[Number(key)], ...val };
+    }
+    return map;
+}
+
+describe('EventCard (sector view — default)', () => {
     test('renders capturing state correctly', () => {
         render(<EventCard {...baseProps} />);
         expect(screen.getByText('Capturing')).toBeDefined();
@@ -172,5 +185,158 @@ describe('EventCard', () => {
         const { container } = render(<EventCard {...baseProps} />);
         const action = container.querySelector('.sector-card-action');
         expect(action.className).not.toContain('sector-card-action-flash');
+    });
+
+    test('sector view: aria-valuenow=safePct, aria-valuemax=100', () => {
+        const { container } = render(<EventCard {...baseProps} />);
+        const bar = container.querySelector('.sector-card-bar');
+        expect(bar.getAttribute('aria-valuenow')).toBe('45.3');
+        expect(bar.getAttribute('aria-valuemax')).toBe('100');
+    });
+
+    test('sector view does NOT render the 11-segment grid', () => {
+        const { container } = render(<EventCard {...baseProps} />);
+        expect(container.querySelector('.sector-card-segments')).toBeNull();
+        expect(container.querySelector('.sector-card-bar-fill')).not.toBeNull();
+    });
+});
+
+describe('EventCard (campaign view)', () => {
+    const campaignProps = {
+        ...baseProps,
+        view: 'campaign',
+        factionMap: makeFactionMap({
+            1: { status: 'captured', percent: 100 },
+            2: { status: 'captured', percent: 100 },
+            3: { status: 'captured', percent: 100 },
+            4: { status: 'in_progress', percent: 64 },
+        }),
+    };
+
+    test('renders .sector-card-segments grid instead of .sector-card-bar-fill', () => {
+        const { container } = render(<EventCard {...campaignProps} />);
+        expect(container.querySelector('.sector-card-segments')).not.toBeNull();
+        expect(container.querySelector('.sector-card-bar-fill')).toBeNull();
+    });
+
+    test('grid contains exactly 11 segment children', () => {
+        const { container } = render(<EventCard {...campaignProps} />);
+        const grid = container.querySelector('.sector-card-segments');
+        expect(grid.children).toHaveLength(11);
+        for (const child of grid.children) {
+            expect(child.className).toContain('sector-card-segment');
+        }
+    });
+
+    test('segments map status → class suffix correctly', () => {
+        const { container } = render(
+            <EventCard
+                {...baseProps}
+                view="campaign"
+                factionMap={makeFactionMap({
+                    1: { status: 'captured', percent: 100 },
+                    2: { status: 'captured', percent: 100 },
+                    3: { status: 'in_progress', percent: 30 },
+                    // 4-10 default to 'lost'
+                    11: { status: 'active', percent: 42 },
+                })}
+            />,
+        );
+        const segs = container.querySelectorAll('.sector-card-segment');
+        expect(segs[0].className).toContain('sector-card-segment--captured');
+        expect(segs[1].className).toContain('sector-card-segment--captured');
+        expect(segs[2].className).toContain('sector-card-segment--in-progress');
+        // lost sectors render as base class with no modifier
+        for (let i = 3; i <= 9; i++) {
+            expect(segs[i].className).not.toContain('--captured');
+            expect(segs[i].className).not.toContain('--in-progress');
+            expect(segs[i].className).not.toContain('--active');
+        }
+        expect(segs[10].className).toContain('sector-card-segment--active');
+    });
+
+    test('in-progress segment sets --segment-percent custom property', () => {
+        const { container } = render(<EventCard {...campaignProps} />);
+        const inProgress = container.querySelector('.sector-card-segment--in-progress');
+        expect(inProgress.style.getPropertyValue('--segment-percent')).toBe('64%');
+    });
+
+    test('active (homeworld) segment sets --segment-percent custom property', () => {
+        const { container } = render(
+            <EventCard
+                {...baseProps}
+                view="campaign"
+                factionMap={makeFactionMap({
+                    11: { status: 'active', percent: 42 },
+                })}
+            />,
+        );
+        const active = container.querySelector('.sector-card-segment--active');
+        expect(active.style.getPropertyValue('--segment-percent')).toBe('42%');
+    });
+
+    test('percent chip shows "N/11" count, not the sector percent', () => {
+        const { container } = render(<EventCard {...campaignProps} />);
+        const chip = container.querySelector('.sector-card-pct');
+        expect(chip.textContent).toBe('3/11');
+        // Make sure the sector-percent "45.3%" from props is NOT shown
+        expect(chip.textContent).not.toContain('45.3');
+    });
+
+    test('aria-valuenow=captured, aria-valuemax=11', () => {
+        const { container } = render(<EventCard {...campaignProps} />);
+        const bar = container.querySelector('.sector-card-bar');
+        expect(bar.getAttribute('aria-valuenow')).toBe('3');
+        expect(bar.getAttribute('aria-valuemax')).toBe('11');
+    });
+
+    test('card title stays as `region` prop — not overridden in campaign view', () => {
+        render(<EventCard {...campaignProps} region="Ross System" />);
+        expect(screen.getByText('Ross System')).toBeDefined();
+        expect(screen.queryByText(/campaign ·/i)).toBeNull();
+        expect(screen.queryByText(/homeworld ·/i)).toBeNull();
+    });
+
+    test('points meta displays the points/pointsMax passed by the parent', () => {
+        const { container } = render(
+            <EventCard
+                {...baseProps}
+                view="campaign"
+                factionMap={makeFactionMap()}
+                points={1234567}
+                pointsMax={5000000}
+            />,
+        );
+        const points = container.querySelector('.sector-card-points');
+        // formatNumber renders "1.2M / 5M" — exact formatting covered elsewhere;
+        // here we only assert both numbers made it through
+        expect(points.textContent).toMatch(/1.*2.*M/);
+        expect(points.textContent).toMatch(/5.*M/);
+    });
+
+    test('missing factionMap does not crash, renders all 11 empty segments', () => {
+        const { container } = render(
+            <EventCard {...baseProps} view="campaign" factionMap={undefined} />,
+        );
+        const segs = container.querySelectorAll('.sector-card-segment');
+        expect(segs).toHaveLength(11);
+        for (const s of segs) {
+            expect(s.className).not.toContain('--captured');
+            expect(s.className).not.toContain('--in-progress');
+            expect(s.className).not.toContain('--active');
+        }
+        expect(container.querySelector('.sector-card-pct').textContent).toBe('0/11');
+    });
+
+    test('campaign view still shows pace + countdown when present', () => {
+        const { container } = render(
+            <EventCard
+                {...campaignProps}
+                pace={{ status: 'ahead', label: '500 ahead' }}
+                endTime={Math.floor(Date.now() / 1000) + 3600}
+            />,
+        );
+        expect(container.textContent).toContain('500 ahead');
+        expect(container.querySelector('.sector-card-countdown')).not.toBeNull();
     });
 });

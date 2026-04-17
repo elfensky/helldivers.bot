@@ -2,8 +2,6 @@
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-vi.mock('@/features/dashboard/RegionsViewToggle.css', () => ({}));
-
 import RegionsViewToggle from '@/features/dashboard/RegionsViewToggle';
 
 describe('RegionsViewToggle', () => {
@@ -22,9 +20,24 @@ describe('RegionsViewToggle', () => {
         expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true');
     });
 
-    test('has active class in campaign view', () => {
-        render(<RegionsViewToggle value="campaign" onChange={() => {}} />);
-        expect(screen.getByRole('button').className).toContain('regions-toggle--active');
+    test('opacity-40 class present in sector view, absent in campaign view', () => {
+        const { rerender } = render(
+            <RegionsViewToggle value="sector" onChange={() => {}} />,
+        );
+        expect(screen.getByRole('button').className).toContain('opacity-40');
+
+        rerender(<RegionsViewToggle value="campaign" onChange={() => {}} />);
+        expect(screen.getByRole('button').className).not.toContain('opacity-40');
+    });
+
+    test('uses brandkit button classes (yellow border + hover invert)', () => {
+        render(<RegionsViewToggle value="sector" onChange={() => {}} />);
+        const cls = screen.getByRole('button').className;
+        expect(cls).toContain('border-primary');
+        expect(cls).toContain('text-primary');
+        expect(cls).toContain('hover:bg-primary');
+        expect(cls).toContain('hover:text-surface-0');
+        expect(cls).toContain('size-[30px]');
     });
 
     test('clicking toggles to the opposite value', () => {
