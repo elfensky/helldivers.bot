@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import './CyberstanInterference.css';
-import GlitchText from '@/features/archives/ClientGlitchText';
+import GlitchText from '@/features/archives/GlitchText';
 import { toggleCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
 import { useGlitchCycle } from '@/features/archives/useGlitchCycle.mjs';
 import {

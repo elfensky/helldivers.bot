@@ -2,7 +2,7 @@ import humanizeDuration from 'humanize-duration';
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
-import GlitchText from '@/features/archives/ClientGlitchText';
+import GlitchText from '@/features/archives/GlitchText';
 import factions from '@/shared/enums/factions.mjs';
 import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
 
