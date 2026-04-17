@@ -73,11 +73,12 @@ export default function StatGrid({ live, faction, events }) {
     return (
         <div className="stat-grid">
             <StatCard label="ONLINE" value={formatNumber(stats.players)} />
+            <StatCard label="ENEMIES_KILLED" value={formatNumber(stats.kills)} />
+            <StatCard label="DEATHS" value={formatNumber(stats.deaths)} />
             <StatCard
                 label="MISSIONS_WON"
                 value={formatNumber(stats.successful_missions)}
             />
-            <StatCard label="DEATHS" value={formatNumber(stats.deaths)} />
             <StatCard
                 label="ACCIDENTAL_RATE"
                 value={formatAccidentalRate(stats.accidentals, stats.deaths)}
