@@ -15,6 +15,7 @@ import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import { useCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
 import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
 import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
+import { useFactionPreference } from '@/shared/hooks/useFactionPreference.mjs';
 
 /**
  * Archives client — full-season retrospective view with a sticky
@@ -74,8 +75,9 @@ export default function ArchivesClient({
     const events = data?.events ?? [];
     // 'global' shows the whole-war overview (ArchiveStats); bugs/cyborgs/illuminate
     // show a per-faction breakdown (FactionStats). Default to 'global' so visitors
-    // land on the big-picture view before drilling into factions.
-    const [faction, setFaction] = useState('global');
+    // land on the big-picture view before drilling into factions. Persisted via
+    // localStorage and shared with the dashboard.
+    const [faction, setFaction] = useFactionPreference();
     // Mobile-only: toggle whether the archives map column is sticky
     // (pinned at the top as the user scrolls). Default ON here (unlike
     // the homepage) so the archives map is pinned from first paint —
@@ -140,11 +142,9 @@ export default function ArchivesClient({
 
                 <section className="mt-4 flex flex-col gap-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                            <h2>Statistics</h2>
+                        <h2>Statistics</h2>
+                        <div className="flex flex-wrap items-center gap-2">
                             <FactionTabs active={faction} onChange={setFaction} />
-                        </div>
-                        <div className="flex items-center gap-2">
                             <SeasonSelector
                                 seasons={seasons}
                                 currentSeason={currentSeason}

@@ -1,6 +1,5 @@
 'use client';
 import './DashboardClient.css';
-import { useState, useEffect } from 'react';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import LastUpdated from '@/shared/components/LastUpdated';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
@@ -15,34 +14,15 @@ import { HOMEWORLD_REGION } from '@/shared/enums/worlds.mjs';
 import { CAMPAIGN_STATUS, EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
+import { useFactionPreference } from '@/shared/hooks/useFactionPreference.mjs';
+import { useRegionsView } from '@/shared/hooks/useRegionsView.mjs';
 
 const factionIndices = [0, 1, 2];
 
-const REGIONS_VIEW_KEY = 'hd1-regions-view';
-
 export default function DashboardClient() {
     const { data, mapState } = useLiveDataContext();
-    const [faction, setFaction] = useState('global');
-    const [regionsView, setRegionsView] = useState('sector');
-
-    // Hydrate persisted toggle state after mount (avoids SSR mismatch).
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem(REGIONS_VIEW_KEY);
-            if (saved === 'sector' || saved === 'campaign') setRegionsView(saved);
-        } catch {
-            // localStorage unavailable — keep default
-        }
-    }, []);
-
-    function handleRegionsViewChange(next) {
-        setRegionsView(next);
-        try {
-            localStorage.setItem(REGIONS_VIEW_KEY, next);
-        } catch {
-            // ignore
-        }
-    }
+    const [faction, setFaction] = useFactionPreference();
+    const [regionsView, setRegionsView] = useRegionsView();
 
     if (!data) {
         return (
@@ -232,10 +212,7 @@ export default function DashboardClient() {
             <section className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
                     <h2>Regions</h2>
-                    <RegionsViewToggle
-                        value={regionsView}
-                        onChange={handleRegionsViewChange}
-                    />
+                    <RegionsViewToggle value={regionsView} onChange={setRegionsView} />
                 </div>
                 <ComponentErrorBoundary name="Regions">
                     <ul className="sector-grid list-none p-0">
