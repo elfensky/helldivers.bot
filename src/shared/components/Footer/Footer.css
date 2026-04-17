@@ -99,7 +99,7 @@
     padding-bottom: calc(48px + 1rem);
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     flex-wrap: wrap;
     gap: var(--space-3);
     font-family: var(--font-mono, monospace);
