@@ -130,7 +130,7 @@ export default function ArchivesClient({
     }, []);
 
     return (
-        <div className="archives-page">
+        <>
             {/* Full-width stats section */}
             <div
                 className={`archives-stats-section${isDefeat ? ' cyberstan-defeat' : ''}${effects.watermark ? ' cyberstan-watermark-active' : ''}`}
@@ -188,17 +188,6 @@ export default function ArchivesClient({
                 </section>
             </div>
 
-            {/* Mobile FAB to toggle sticky pinning — hidden at lg: */}
-            <button
-                className="archives-map-toggle"
-                onClick={togglePin}
-                aria-label={isMapSticky ? 'Unpin map' : 'Pin map to top'}
-                title={isMapSticky ? 'Unpin map' : 'Pin map to top'}
-                data-umami-event="archive-map-toggle"
-            >
-                {isMapSticky ? '✕' : '📌'}
-            </button>
-
             {/* Two-column scrollytelling: event log + sticky map */}
             <div className="archives-scrollytelling">
                 <div className="archives-event-col">
@@ -231,6 +220,17 @@ export default function ArchivesClient({
                     <ArchiveMap data={data} selectedEvent={selectedEvent} />
                 </div>
             </div>
-        </div>
+
+            {/* Mobile FAB to toggle sticky pinning — hidden at lg: */}
+            <button
+                className="archives-map-toggle"
+                onClick={togglePin}
+                aria-label={isMapSticky ? 'Unpin map' : 'Pin map to top'}
+                title={isMapSticky ? 'Unpin map' : 'Pin map to top'}
+                data-umami-event="archive-map-toggle"
+            >
+                {isMapSticky ? '✕' : '📌'}
+            </button>
+        </>
     );
 }

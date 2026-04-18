@@ -99,7 +99,7 @@ export default async function WarHistoryPage({ searchParams }) {
     const initialSortOrder = validateSortOrder(c.get(SORT_ORDER_KEY)?.value);
 
     return (
-        <div className="gutters pb-4">
+        <div className="gutters flex flex-col gap-4 py-4">
             <h1 className="sr-only">War History</h1>
             <JsonLd data={archivesStructuredData} />
             <ArchivesClient
