@@ -61,13 +61,52 @@ function playersDeltaSubtitle(currentPlayers, avgPlayers) {
  */
 function cumulativeAddedSubtitle(current, baseline) {
     if (baseline == null) return null;
-    const added = current - baseline;
+    // `current` may be a Prisma BigInt (kills/deaths/etc. are BIGINT in schema)
+    // while `baseline` is a plain JS number from `AVG(...)::int` — coerce
+    // both to Number before subtracting to avoid the "Cannot mix BigInt and
+    // other types" runtime error during SSR.
+    const added = Number(current) - Number(baseline);
     if (added <= 0) return null;
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
             <span>+{formatNumber(added)}</span>
             <span>Last 24h</span>
         </span>
+    );
+}
+
+/**
+ * Subtitle for the HELLDIVERS_LOST card — shows the absolute number
+ * of accidental deaths with a small `backstab` icon in place of a
+ * text label, plus the rate as a percentage of total deaths. Returns
+ * null when there are no accidentals to report (either deaths or
+ * accidentals is 0). The full count + rate is also surfaced via the
+ * card's tooltip.
+ */
+function accidentalSubtitle(accidentals, deaths) {
+    const count = Number(accidentals || 0);
+    if (!(Number(deaths) > 0) || count <= 0) return null;
+    return (
+        <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
+            <img src="/icons/backstab.png" alt="" width={14} height={14} />
+            <span>{formatNumber(count)}</span>
+            <span>{formatAccidentalRate(accidentals, deaths)}</span>
+        </span>
+    );
+}
+
+/**
+ * Value for the merged EVENTS card — renders `W : L` with the wins
+ * tinted success-green and the losses tinted danger-red. Reads as a
+ * scoreline (Super Earth vs the enemy) rather than a fraction.
+ */
+function eventsScoreValue(wins, losses) {
+    return (
+        <>
+            <span className="text-success">{wins}</span>
+            <span className="mx-1 text-ghost">:</span>
+            <span className="text-danger">{losses}</span>
+        </>
     );
 }
 
@@ -121,14 +160,13 @@ export default function StatGrid({
                     value={formatNumber(totals.kills)}
                     subtitle={killsSubtitle}
                 />
-                <StatCard label="HELLDIVERS_LOST" value={formatNumber(totals.deaths)} />
                 <StatCard
-                    label="ACCIDENTAL_RATE"
-                    value={formatAccidentalRate(totals.accidentals, totals.deaths)}
+                    label="HELLDIVERS_LOST"
+                    value={formatNumber(totals.deaths)}
+                    subtitle={accidentalSubtitle(totals.accidentals, totals.deaths)}
                     title={accidentalRateTooltip(totals.accidentals, totals.deaths)}
                 />
-                <StatCard label="WON" value={wins} accentColor="success" />
-                <StatCard label="LOST" value={losses} accentColor="danger" />
+                <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} />
             </div>
         );
     }
@@ -151,18 +189,17 @@ export default function StatGrid({
                 value={formatNumber(stats.kills)}
                 subtitle={killsSubtitle}
             />
-            <StatCard label="DEATHS" value={formatNumber(stats.deaths)} />
+            <StatCard
+                label="HELLDIVERS_LOST"
+                value={formatNumber(stats.deaths)}
+                subtitle={accidentalSubtitle(stats.accidentals, stats.deaths)}
+                title={accidentalRateTooltip(stats.accidentals, stats.deaths)}
+            />
             <StatCard
                 label="MISSIONS_WON"
                 value={formatNumber(stats.successful_missions)}
             />
-            <StatCard
-                label="ACCIDENTAL_RATE"
-                value={formatAccidentalRate(stats.accidentals, stats.deaths)}
-                title={accidentalRateTooltip(stats.accidentals, stats.deaths)}
-            />
-            <StatCard label="WON" value={wins} accentColor="success" />
-            <StatCard label="LOST" value={losses} accentColor="danger" />
+            <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} />
         </div>
     );
 }

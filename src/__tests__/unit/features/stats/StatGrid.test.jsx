@@ -61,9 +61,7 @@ describe('StatGrid', () => {
             expect(screen.getByText('HELLDIVERS_ONLINE')).toBeInTheDocument();
             expect(screen.getByText('ENEMIES_KILLED')).toBeInTheDocument();
             expect(screen.getByText('HELLDIVERS_LOST')).toBeInTheDocument();
-            expect(screen.getAllByText('ACCIDENTAL_RATE').length).toBeGreaterThanOrEqual(
-                1,
-            );
+            expect(screen.getByText('EVENTS')).toBeInTheDocument();
         });
 
         test('shows correct aggregated values', () => {
@@ -72,8 +70,8 @@ describe('StatGrid', () => {
             expect(screen.getByText('450')).toBeInTheDocument();
             // deaths: 50+80+40 = 170 (< 1000 so not locale-formatted)
             expect(screen.getByText('170')).toBeInTheDocument();
-            // accidental rate: (10+20+5)/(50+80+40) = 35/170 = 20.58...% → 20.6%
-            expect(screen.getByText('20.6%')).toBeInTheDocument();
+            // accidental count subtitle on HELLDIVERS_LOST: 10+20+5 = 35
+            expect(screen.getByText('35')).toBeInTheDocument();
         });
 
         // formatNumber uses num.toLocaleString() without a locale argument for
@@ -85,10 +83,10 @@ describe('StatGrid', () => {
             expect(screen.getByText(/2[,.\s\u202f\u00a0]250/)).toBeInTheDocument();
         });
 
-        test('shows win/loss counts from all factions', () => {
+        test('shows win/loss counts on the merged EVENTS card', () => {
             render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
-            expect(screen.getByText('WON')).toBeInTheDocument();
-            expect(screen.getByText('LOST')).toBeInTheDocument();
+            expect(screen.getByText('EVENTS')).toBeInTheDocument();
+            // EVENTS value is "W : L" split across spans — getByText finds each number separately.
             // wins: 3 (enemy0 success + enemy1 success + enemy1 success)
             expect(screen.getByText('3')).toBeInTheDocument();
             // losses: 2 (enemy0 fail + enemy2 fail)
@@ -100,9 +98,9 @@ describe('StatGrid', () => {
         test('shows faction-specific stat labels', () => {
             render(<StatGrid live={mockLive} faction="bugs" events={mockEvents} />);
             expect(screen.getByText('HELLDIVERS_ONLINE')).toBeInTheDocument();
+            expect(screen.getByText('HELLDIVERS_LOST')).toBeInTheDocument();
             expect(screen.getByText('MISSIONS_WON')).toBeInTheDocument();
-            expect(screen.getByText('DEATHS')).toBeInTheDocument();
-            expect(screen.getByText('ACCIDENTAL_RATE')).toBeInTheDocument();
+            expect(screen.getByText('EVENTS')).toBeInTheDocument();
         });
 
         test('shows bugs faction values', () => {
@@ -111,20 +109,19 @@ describe('StatGrid', () => {
             expect(screen.getByText('100')).toBeInTheDocument();
             expect(screen.getByText('30')).toBeInTheDocument();
             expect(screen.getByText('50')).toBeInTheDocument();
-            // accidental rate: 10 / 50 = 20.0%
-            expect(screen.getByText('20.0%')).toBeInTheDocument();
+            // accidental count subtitle on HELLDIVERS_LOST: 10
+            expect(screen.getByText('10')).toBeInTheDocument();
         });
 
-        test('shows faction-filtered win/loss counts', () => {
+        test('shows faction-filtered win/loss counts on the merged EVENTS card', () => {
             render(<StatGrid live={mockLive} faction="bugs" events={mockEvents} />);
-            // bugs (enemy=0): 1 success, 1 fail
-            expect(screen.getByText('WON')).toBeInTheDocument();
-            expect(screen.getByText('LOST')).toBeInTheDocument();
+            expect(screen.getByText('EVENTS')).toBeInTheDocument();
+            // bugs (enemy=0): 1 success, 1 fail — rendered as two separately-tinted spans.
             const ones = screen.getAllByText('1');
             expect(ones).toHaveLength(2); // 1 win + 1 loss
         });
 
-        test('accidental rate shows em-dash when deaths is zero', () => {
+        test('accidental subtitle is omitted when deaths is zero', () => {
             const zeroDeaths = [
                 {
                     enemy: 0,
@@ -151,8 +148,15 @@ describe('StatGrid', () => {
                     successful_missions: 0,
                 },
             ];
-            render(<StatGrid live={zeroDeaths} faction="bugs" events={[]} />);
-            expect(screen.getByText('—')).toBeInTheDocument();
+            const { container } = render(
+                <StatGrid live={zeroDeaths} faction="bugs" events={[]} />,
+            );
+            // HELLDIVERS_LOST card still renders with value 0, but no accidental
+            // subtitle (the backstab icon is the subtitle marker and is absent).
+            expect(screen.getByText('HELLDIVERS_LOST')).toBeInTheDocument();
+            expect(
+                container.querySelector('img[src="/icons/backstab.png"]'),
+            ).toBeNull();
         });
 
         test('returns null when faction not found in live data', () => {
