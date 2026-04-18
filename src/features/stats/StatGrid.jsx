@@ -23,10 +23,9 @@ function accidentalRateTooltip(accidentals, deaths) {
 
 /**
  * Format the "vs 24h ago" subtitle for the ONLINE card. Returns null if
- * no baseline (new season) or the delta is zero. Only the arrow is
- * coloured (success/danger); the numeric text inherits the default
- * muted subtitle colour. Inline-flex vertically centres the arrow
- * against the text baseline so ▲/▼ don't visually drop below the digits.
+ * no baseline (new season) or the delta is zero. Layout: coloured arrow,
+ * muted number, smaller uppercase "Last 24h" caption on the same line.
+ * inline-flex + items-center keeps glyphs of different sizes aligned.
  */
 function playersDeltaSubtitle(currentPlayers, players24hAgo) {
     if (players24hAgo == null) return null;
@@ -35,9 +34,12 @@ function playersDeltaSubtitle(currentPlayers, players24hAgo) {
     const arrow = delta > 0 ? '▲' : '▼';
     const colorClass = delta > 0 ? 'text-success' : 'text-danger';
     return (
-        <span className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-1.5">
             <span className={colorClass}>{arrow}</span>
-            <span>{formatNumber(Math.abs(delta))} (24h)</span>
+            <span>{formatNumber(Math.abs(delta))}</span>
+            <span className="text-[10px] tracking-[0.12em] uppercase opacity-60">
+                Last 24h
+            </span>
         </span>
     );
 }
