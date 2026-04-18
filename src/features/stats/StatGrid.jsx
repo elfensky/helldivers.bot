@@ -52,7 +52,32 @@ function playersDeltaSubtitle(currentPlayers, avgPlayers) {
     );
 }
 
-export default function StatGrid({ live, faction, events, playersAvg24h = null }) {
+/**
+ * Format the "+N LAST 24H" subtitle for cumulative counters (kills,
+ * deaths, etc. — monotonically increasing). Unlike the instantaneous
+ * delta, direction is always "up" so no arrow is shown; the number is
+ * prefixed with "+" to read as an addition over the last 24h. Ghost
+ * colour throughout — growth is not semantically good or bad here.
+ */
+function cumulativeAddedSubtitle(current, baseline) {
+    if (baseline == null) return null;
+    const added = current - baseline;
+    if (added <= 0) return null;
+    return (
+        <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
+            <span>+{formatNumber(added)}</span>
+            <span>Last 24h</span>
+        </span>
+    );
+}
+
+export default function StatGrid({
+    live,
+    faction,
+    events,
+    playersAvg24h = null,
+    kills24hAgo = null,
+}) {
     if (!live?.length) return null;
 
     const factionIndex = faction !== 'global' ? factionMap[faction] : null;
@@ -83,6 +108,7 @@ export default function StatGrid({ live, faction, events, playersAvg24h = null }
             totals.players,
             playersAvg24h?.global,
         );
+        const killsSubtitle = cumulativeAddedSubtitle(totals.kills, kills24hAgo?.global);
         return (
             <div className="stat-grid">
                 <StatCard
@@ -90,7 +116,11 @@ export default function StatGrid({ live, faction, events, playersAvg24h = null }
                     value={formatNumber(totals.players)}
                     subtitle={onlineSubtitle}
                 />
-                <StatCard label="ENEMIES_KILLED" value={formatNumber(totals.kills)} />
+                <StatCard
+                    label="ENEMIES_KILLED"
+                    value={formatNumber(totals.kills)}
+                    subtitle={killsSubtitle}
+                />
                 <StatCard label="HELLDIVERS_LOST" value={formatNumber(totals.deaths)} />
                 <StatCard
                     label="ACCIDENTAL_RATE"
@@ -107,6 +137,7 @@ export default function StatGrid({ live, faction, events, playersAvg24h = null }
     if (!stats) return null;
 
     const onlineSubtitle = playersDeltaSubtitle(stats.players, playersAvg24h?.[faction]);
+    const killsSubtitle = cumulativeAddedSubtitle(stats.kills, kills24hAgo?.[faction]);
 
     return (
         <div className="stat-grid">
@@ -115,7 +146,11 @@ export default function StatGrid({ live, faction, events, playersAvg24h = null }
                 value={formatNumber(stats.players)}
                 subtitle={onlineSubtitle}
             />
-            <StatCard label="ENEMIES_KILLED" value={formatNumber(stats.kills)} />
+            <StatCard
+                label="ENEMIES_KILLED"
+                value={formatNumber(stats.kills)}
+                subtitle={killsSubtitle}
+            />
             <StatCard label="DEATHS" value={formatNumber(stats.deaths)} />
             <StatCard
                 label="MISSIONS_WON"

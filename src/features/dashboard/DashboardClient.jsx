@@ -23,7 +23,8 @@ const factionIndices = [0, 1, 2];
 export default function DashboardClient({
     initialFaction = 'global',
     initialRegionsView = 'sector',
-    players24hAgo = null,
+    playersAvg24h = null,
+    kills24hAgo = null,
 }) {
     const { data, mapState } = useLiveDataContext();
     const [faction, setFaction] = usePersistedState(FACTION_KEY, initialFaction);
@@ -241,7 +242,8 @@ export default function DashboardClient({
                         live={data.status}
                         faction={faction}
                         events={events}
-                        players24hAgo={players24hAgo}
+                        playersAvg24h={playersAvg24h}
+                        kills24hAgo={kills24hAgo}
                     />
                 </ComponentErrorBoundary>
             </section>
