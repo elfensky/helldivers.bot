@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.44.0
+
+### Features
+
+- **Cookie-backed user preferences** — faction selector, regions view toggle, and event log sort now persist via cookies instead of localStorage. Server components read them via `next/headers.cookies()` and pre-render the correct initial state, eliminating the brief post-hydration flash where the UI switched from default to stored value. New `src/shared/preferences/*.mjs` modules hold each preference's key + default + validator; `usePersistedState(key, initial)` is now a thin wrapper over `useState` + cookie write; the old mount-effect reads are gone. Cookies use `path=/`, `max-age=1yr`, `SameSite=Lax`, `Secure` on HTTPS; classified as "strictly functional" so they sit under the GDPR consent exemption.
+- **Preference analytics** — fires a `preference-snapshot` Umami event once per session reporting the user's current faction / regions_view / sort_order. Complements the existing per-toggle click events: clicks capture churn ("how often do users flip?"); the snapshot captures distribution ("what % prefer X?", including default-stickers who never interact). Session-scoped via `sessionStorage` so SPA navigation doesn't double-count.
+- **24h player-count delta** — the `HELLDIVERS_ONLINE` stat card now shows a signed delta below the number comparing current concurrent players to ~24h ago. New `getPlayers24hAgo(season)` query sums `h1_statistic.players` at the bucket nearest `now - 86400`. Arrow (▲/▼) carries the success/danger colour, number + `LAST 24H` caption render in uppercase ghost text to match the card label. Hidden on new seasons (no baseline) or when delta is zero.
+
+### Fixes
+
+- **Per-faction stats missed ENEMIES_KILLED** — the per-faction view on the homepage never rendered `stats.kills` even though the data was present on each `h1_statistic` row. The global view already summed it. Added as position 2 in the per-faction grid (matching global's ordering).
+
+### Refactors
+
+- **Homepage layout consolidation** — merged the previously-separate `.home-hero-sidebar` and `.home-scrolly-log` into a single `.home-sidebar` flex column so the dashboard blocks (hero intro, season heading, region cards, stats) flow naturally into the event log below. Desktop grid drops from a 2-row-spanning-map to a straightforward 2-column layout: sidebar on the left, sticky galaxy map on the right. `DashboardClient` returns a Fragment instead of wrapping in `.dashboard-sidebar` so its sections sit directly as flex items of the sidebar, and the sidebar's `gap` provides uniform spacing across all boundaries. `ArchivesClient` and `src/app/archives/page.jsx` got the mirror cleanup (Fragment + Tailwind flex classes on the page wrapper).
+- **Homepage region heading** — the `<h2>Regions</h2>` becomes `<h2>Season N</h2>` (reads the active season from live data).
+
+### Documentation
+
+- `/docs/frontend-layout` updated to describe the simplified 2-column grid (no more `grid-template-areas` with `hero-sidebar` / `scrolly-log`).
+
 ## 0.43.0
 
 ### Features
