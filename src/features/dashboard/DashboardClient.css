@@ -1,15 +1,9 @@
 /* === Dashboard sidebar content ===
  *
- * DashboardClient no longer owns a grid — HomeClient does. This file
- * only styles the sidebar content (regions cards, stats, etc.) that
- * DashboardClient renders into the HomeClient's hero-sidebar grid cell.
+ * DashboardClient returns a Fragment — its children live directly in
+ * HomeClient's `.home-sidebar`, which owns the flex column + gap.
+ * This file only styles the sector-grid inside DashboardClient.
  */
-
-.dashboard-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
 
 /* === Sector Grid (campaign cards) === */
 

@@ -198,25 +198,27 @@ export default function DashboardClient({
         );
     }
 
-    // DashboardClient is just the hero sidebar content now — HomeClient
-    // owns the grid layout and the galaxy map (rendered once, spans both
-    // hero and scrollytelling rows).
+    // DashboardClient renders a Fragment — its children sit as direct
+    // flex items of HomeClient's `.home-sidebar`, so the sidebar's
+    // `gap: 0.5rem` provides uniform spacing for every block (hero
+    // intro, regions, stats) and the event log that follows.
     return (
-        <div className="dashboard-sidebar">
-            <div className="pb-2">
+        <>
+            <section className="flex flex-col gap-2">
                 <h1 className="font-display text-body text-primary">
                     Track Managed Democracy Across the Galaxy
                 </h1>
-                <p className="mt-1 text-small text-text-muted">
+                <p className="mb-0! text-small text-text-muted">
                     Don&apos;t miss a moment of the action! Follow the Helldivers&apos;
                     campaign progress as they battle the Bugs, Cyborgs, and Illuminate for
                     peace, liberty, and managed democracy.
                 </p>
-                <div className="mt-2 flex items-center gap-3">
+                <div className="flex items-center gap-3">
                     <LastUpdated lastUpdated={data.last_updated} />
                     <NotificationToggle />
                 </div>
-            </div>
+            </section>
+
             <section className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
                     <h2>Season {data.season}</h2>
@@ -243,6 +245,6 @@ export default function DashboardClient({
                     />
                 </ComponentErrorBoundary>
             </section>
-        </div>
+        </>
     );
 }
