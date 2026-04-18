@@ -99,7 +99,7 @@ describe('StatGrid', () => {
     describe('faction view', () => {
         test('shows faction-specific stat labels', () => {
             render(<StatGrid live={mockLive} faction="bugs" events={mockEvents} />);
-            expect(screen.getByText('ONLINE')).toBeInTheDocument();
+            expect(screen.getByText('HELLDIVERS_ONLINE')).toBeInTheDocument();
             expect(screen.getByText('MISSIONS_WON')).toBeInTheDocument();
             expect(screen.getByText('DEATHS')).toBeInTheDocument();
             expect(screen.getByText('ACCIDENTAL_RATE')).toBeInTheDocument();
