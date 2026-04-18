@@ -22,14 +22,15 @@ function accidentalRateTooltip(accidentals, deaths) {
 }
 
 /**
- * Format the "vs 24h ago" subtitle for the ONLINE card. Returns null if
- * no baseline (new season) or the delta is zero. Whole line is uppercase
- * and ghost-coloured (matching label styling) except the arrow, which
- * keeps its success/danger tint.
+ * Format the "LAST 24H" delta subtitle for the ONLINE card. Compares
+ * the current player count to the 24h rolling average baseline.
+ * Returns null if no baseline (new season) or the delta is zero.
+ * Whole line is uppercase and ghost-coloured (matching label styling)
+ * except the arrow, which keeps its success/danger tint.
  */
-function playersDeltaSubtitle(currentPlayers, players24hAgo) {
-    if (players24hAgo == null) return null;
-    const delta = currentPlayers - players24hAgo;
+function playersDeltaSubtitle(currentPlayers, avgPlayers) {
+    if (avgPlayers == null) return null;
+    const delta = currentPlayers - avgPlayers;
     if (delta === 0) return null;
     const arrow = delta > 0 ? '▲' : '▼';
     const colorClass = delta > 0 ? 'text-success' : 'text-danger';
@@ -42,7 +43,7 @@ function playersDeltaSubtitle(currentPlayers, players24hAgo) {
     );
 }
 
-export default function StatGrid({ live, faction, events, players24hAgo = null }) {
+export default function StatGrid({ live, faction, events, playersAvg24h = null }) {
     if (!live?.length) return null;
 
     const factionIndex = faction !== 'global' ? factionMap[faction] : null;
@@ -71,7 +72,7 @@ export default function StatGrid({ live, faction, events, players24hAgo = null }
         );
         const onlineSubtitle = playersDeltaSubtitle(
             totals.players,
-            players24hAgo?.global,
+            playersAvg24h?.global,
         );
         return (
             <div className="stat-grid">
@@ -96,12 +97,12 @@ export default function StatGrid({ live, faction, events, players24hAgo = null }
     const stats = live.find((s) => s.enemy === factionIndex);
     if (!stats) return null;
 
-    const onlineSubtitle = playersDeltaSubtitle(stats.players, players24hAgo?.[faction]);
+    const onlineSubtitle = playersDeltaSubtitle(stats.players, playersAvg24h?.[faction]);
 
     return (
         <div className="stat-grid">
             <StatCard
-                label="ONLINE"
+                label="HELLDIVERS_ONLINE"
                 value={formatNumber(stats.players)}
                 subtitle={onlineSubtitle}
             />
