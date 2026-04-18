@@ -1,20 +1,23 @@
 'use server';
 import db from '@/db/db';
 
+const FACTION_LABELS = { 0: 'bugs', 1: 'cyborgs', 2: 'illuminate' };
+
 /**
- * Returns the total online player count across factions from ~24 hours
- * ago for the given season — used as the baseline for the "vs 24h ago"
- * subtitle on the HELLDIVERS_ONLINE card.
+ * Returns the online player counts from ~24 hours ago for the given
+ * season, both globally and per-faction — used as the baseline for the
+ * "vs 24h ago" subtitle on the ONLINE card in both the global and
+ * per-faction stat views.
  *
- * Finds the latest `h1_statistic` bucket at or before `now - 86400`, then
- * sums `players` across the three faction rows at that bucket. Returns
- * null if the season is too young to have a 24h-ago bucket.
+ * Shape: `{ global, bugs, cyborgs, illuminate }` where `global` is the
+ * sum across factions. Returns `null` if the season is too young to
+ * have a 24h-ago bucket.
  */
 export async function getPlayers24hAgo(season) {
     const targetTimestamp = Math.floor(Date.now() / 1000) - 86400;
 
     const rows = await db.$queryRaw`
-        SELECT COALESCE(SUM(players), 0)::int AS total
+        SELECT enemy, players
         FROM h1_statistic
         WHERE season = ${season}
           AND bucket = (
@@ -23,6 +26,13 @@ export async function getPlayers24hAgo(season) {
           )
     `;
 
-    const total = rows[0]?.total ?? 0;
-    return total > 0 ? total : null;
+    if (rows.length === 0) return null;
+
+    const result = { global: 0 };
+    for (const row of rows) {
+        const label = FACTION_LABELS[row.enemy];
+        if (label) result[label] = row.players;
+        result.global += row.players;
+    }
+    return result;
 }

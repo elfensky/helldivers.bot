@@ -69,7 +69,10 @@ export default function StatGrid({ live, faction, events, players24hAgo = null }
             }),
             { players: 0, kills: 0, deaths: 0, accidentals: 0 },
         );
-        const onlineSubtitle = playersDeltaSubtitle(totals.players, players24hAgo);
+        const onlineSubtitle = playersDeltaSubtitle(
+            totals.players,
+            players24hAgo?.global,
+        );
         return (
             <div className="stat-grid">
                 <StatCard
@@ -93,9 +96,15 @@ export default function StatGrid({ live, faction, events, players24hAgo = null }
     const stats = live.find((s) => s.enemy === factionIndex);
     if (!stats) return null;
 
+    const onlineSubtitle = playersDeltaSubtitle(stats.players, players24hAgo?.[faction]);
+
     return (
         <div className="stat-grid">
-            <StatCard label="ONLINE" value={formatNumber(stats.players)} />
+            <StatCard
+                label="ONLINE"
+                value={formatNumber(stats.players)}
+                subtitle={onlineSubtitle}
+            />
             <StatCard label="ENEMIES_KILLED" value={formatNumber(stats.kills)} />
             <StatCard label="DEATHS" value={formatNumber(stats.deaths)} />
             <StatCard
