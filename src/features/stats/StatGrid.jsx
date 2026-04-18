@@ -24,19 +24,28 @@ function accidentalRateTooltip(accidentals, deaths) {
 /**
  * Format the "LAST 24H" delta subtitle for the ONLINE card. Compares
  * the current player count to the 24h rolling average baseline.
- * Returns null if no baseline (new season) or the delta is zero.
- * Whole line is uppercase and ghost-coloured (matching label styling)
- * except the arrow, which keeps its success/danger tint.
+ * Three states: ▲ (growth, success) / ▼ (decline, danger) / ▪ (flat,
+ * ghost). Returns null only when there's no baseline yet (new season).
+ * Whole line is uppercase and ghost-coloured; only the arrow carries
+ * a tinted override, and only when non-zero.
  */
 function playersDeltaSubtitle(currentPlayers, avgPlayers) {
     if (avgPlayers == null) return null;
     const delta = currentPlayers - avgPlayers;
-    if (delta === 0) return null;
-    const arrow = delta > 0 ? '▲' : '▼';
-    const colorClass = delta > 0 ? 'text-success' : 'text-danger';
+    const indicator =
+        delta > 0 ? '▲'
+        : delta < 0 ? '▼'
+        : '▪';
+    const colorClass =
+        delta > 0 ? 'text-success'
+        : delta < 0 ? 'text-danger'
+        : '';
+    // The ▲/▼ triangle glyphs sit below their optical centre — lift them.
+    // ▪ is already centred in its em box, so no nudge.
+    const nudgeClass = delta !== 0 ? '-translate-y-[1.5px]' : '';
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
-            <span className={`-translate-y-[1.5px] ${colorClass}`}>{arrow}</span>
+            <span className={`${nudgeClass} ${colorClass}`}>{indicator}</span>
             <span>{formatNumber(Math.abs(delta))}</span>
             <span>Last 24h</span>
         </span>
