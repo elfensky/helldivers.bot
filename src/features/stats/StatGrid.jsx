@@ -35,7 +35,7 @@ function playersDeltaSubtitle(currentPlayers, players24hAgo) {
     const colorClass = delta > 0 ? 'text-success' : 'text-danger';
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
-            <span className={colorClass}>{arrow}</span>
+            <span className={`-translate-y-[1.5px] ${colorClass}`}>{arrow}</span>
             <span>{formatNumber(Math.abs(delta))}</span>
             <span>Last 24h</span>
         </span>
