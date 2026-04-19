@@ -114,6 +114,18 @@ vi.mock('@/shared/providers/LiveDataContext.mjs', () => ({
 
 // #endregion
 
+// #region Third-Party Component Mocks
+
+/**
+ * Mock react-slot-counter — renders the current value as plain text so
+ * existing `getByText(...)` / `textContent` assertions keep working.
+ */
+vi.mock('react-slot-counter', () => ({
+    default: vi.fn(({ value }) => React.createElement('span', {}, String(value))),
+}));
+
+// #endregion
+
 // #region Next.js Mocks
 
 /**

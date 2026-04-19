@@ -1,18 +1,21 @@
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
+import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
 import './StatGrid.css';
+
+const asPercent = (v) => (Number.isFinite(v) ? `${v.toFixed(1)}%` : '—');
 
 const factionMap = { bugs: 0, cyborgs: 1, illuminate: 2 };
 
 /**
- * Format an accidental-death rate: accidentals / deaths as a percentage.
- * Returns '—' if deaths is zero (can't divide) — covers cold-start and edge cases.
+ * Compute accidental-death rate: accidentals / deaths as a raw percentage
+ * number (0-100). Returns null if deaths is zero so callers can render '—'.
  */
-function formatAccidentalRate(accidentals, deaths) {
+function computeAccidentalRate(accidentals, deaths) {
     const a = Number(accidentals || 0);
     const d = Number(deaths || 0);
-    if (d <= 0) return '—';
-    return `${((a / d) * 100).toFixed(1)}%`;
+    if (d <= 0) return null;
+    return (a / d) * 100;
 }
 
 function accidentalRateTooltip(accidentals, deaths) {
@@ -46,7 +49,9 @@ function playersDeltaSubtitle(currentPlayers, avgPlayers) {
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
             <span className={`${nudgeClass} ${colorClass}`}>{indicator}</span>
-            <span>{formatNumber(Math.abs(delta))}</span>
+            <span>
+                <AnimatedStat value={Math.abs(delta)} />
+            </span>
             <span>Last 24h</span>
         </span>
     );
@@ -69,7 +74,9 @@ function cumulativeAddedSubtitle(current, baseline) {
     if (added <= 0) return null;
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
-            <span>+{formatNumber(added)}</span>
+            <span>
+                +<AnimatedStat value={added} />
+            </span>
             <span>Last 24h</span>
         </span>
     );
@@ -86,11 +93,16 @@ function cumulativeAddedSubtitle(current, baseline) {
 function accidentalSubtitle(accidentals, deaths) {
     const count = Number(accidentals || 0);
     if (!(Number(deaths) > 0) || count <= 0) return null;
+    const rate = computeAccidentalRate(accidentals, deaths);
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
             <img src="/icons/backstab.png" alt="" width={14} height={14} />
-            <span>{formatNumber(count)}</span>
-            <span>{formatAccidentalRate(accidentals, deaths)}</span>
+            <span>
+                <AnimatedStat value={count} />
+            </span>
+            <span>
+                (<AnimatedStat value={rate} format={asPercent} />)
+            </span>
         </span>
     );
 }
@@ -103,9 +115,13 @@ function accidentalSubtitle(accidentals, deaths) {
 function eventsScoreValue(wins, losses) {
     return (
         <>
-            <span className="text-success">{wins}</span>
+            <span className="text-success">
+                <AnimatedStat value={wins} />
+            </span>
             <span className="mx-1 text-ghost">:</span>
-            <span className="text-danger">{losses}</span>
+            <span className="text-danger">
+                <AnimatedStat value={losses} />
+            </span>
         </>
     );
 }
@@ -152,17 +168,17 @@ export default function StatGrid({
             <div className="stat-grid">
                 <StatCard
                     label="HELLDIVERS_ONLINE"
-                    value={formatNumber(totals.players)}
+                    value={<AnimatedStat value={totals.players} />}
                     subtitle={onlineSubtitle}
                 />
                 <StatCard
                     label="ENEMIES_KILLED"
-                    value={formatNumber(totals.kills)}
+                    value={<AnimatedStat value={totals.kills} />}
                     subtitle={killsSubtitle}
                 />
                 <StatCard
                     label="HELLDIVERS_LOST"
-                    value={formatNumber(totals.deaths)}
+                    value={<AnimatedStat value={totals.deaths} />}
                     subtitle={accidentalSubtitle(totals.accidentals, totals.deaths)}
                     title={accidentalRateTooltip(totals.accidentals, totals.deaths)}
                 />
@@ -181,23 +197,23 @@ export default function StatGrid({
         <div className="stat-grid">
             <StatCard
                 label="HELLDIVERS_ONLINE"
-                value={formatNumber(stats.players)}
+                value={<AnimatedStat value={stats.players} />}
                 subtitle={onlineSubtitle}
             />
             <StatCard
                 label="ENEMIES_KILLED"
-                value={formatNumber(stats.kills)}
+                value={<AnimatedStat value={stats.kills} />}
                 subtitle={killsSubtitle}
             />
             <StatCard
                 label="HELLDIVERS_LOST"
-                value={formatNumber(stats.deaths)}
+                value={<AnimatedStat value={stats.deaths} />}
                 subtitle={accidentalSubtitle(stats.accidentals, stats.deaths)}
                 title={accidentalRateTooltip(stats.accidentals, stats.deaths)}
             />
             <StatCard
                 label="MISSIONS_WON"
-                value={formatNumber(stats.successful_missions)}
+                value={<AnimatedStat value={stats.successful_missions} />}
             />
             <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} />
         </div>

@@ -4,7 +4,12 @@ import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.mjs';
+import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
 import humanizeDuration from 'humanize-duration';
+
+const passThrough = (v) => (v == null ? '—' : String(v));
+const formatSectorPct = (v) =>
+    Number.isFinite(v) ? `${Math.max(0, Math.min(100, v)).toFixed(1)}%` : '—';
 
 /**
  * Compute frontier progress from campaign-level live data and map state.
@@ -150,7 +155,10 @@ export default function EventCard({
                                     style={{ color: PACE_COLORS[pace.status] }}
                                     suppressHydrationWarning
                                 >
-                                    {pace.label}
+                                    <AnimatedStat
+                                        value={pace.label}
+                                        format={passThrough}
+                                    />
                                 </span>
                             </>
                         )}
@@ -184,12 +192,17 @@ export default function EventCard({
                         }
                     </div>
                     <span className="sector-card-pct">
-                        {isCampaign ? `${captured}/11` : `${safePct.toFixed(1)}%`}
+                        {isCampaign ?
+                            <>
+                                <AnimatedStat value={captured} format={passThrough} />
+                                /11
+                            </>
+                        :   <AnimatedStat value={safePct} format={formatSectorPct} />}
                     </span>
                 </div>
                 <div className="sector-card-meta">
                     <span className="sector-card-points">
-                        {formatNumber(points)} / {formatNumber(pointsMax)}
+                        <AnimatedStat value={points} /> / {formatNumber(pointsMax)}
                     </span>
                     {endTime && (
                         <>

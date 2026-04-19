@@ -1,21 +1,13 @@
 .stat-grid {
     display: grid;
-    /* minmax(0, 1fr) not bare 1fr — bare 1fr respects content min-width, causing overflow on tiny viewports */
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    /* Container-driven wrap: each card gets a 11rem (176px) minimum track
+     * and fills 1fr beyond that. Cards wrap whenever the container can't
+     * fit another 11rem track — no media queries needed. `minmax(0, 1fr)`
+     * isn't used here because auto-fit's minmax already prevents overflow
+     * (the 11rem floor is an explicit length, not content-driven). */
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
     gap: 0.5rem;
     width: 100%;
-}
-
-@media (min-width: 768px) {
-    .stat-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 1024px) {
-    .home-sidebar .stat-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
 }
 
 .stat-card {
