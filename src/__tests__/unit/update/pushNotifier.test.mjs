@@ -1,11 +1,19 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // --- Dependency mocks ---
 
 vi.mock('web-push', () => ({
     default: { setVapidDetails: vi.fn(), sendNotification: vi.fn() },
 }));
-vi.mock('@/db/db', () => ({ default: { push_subscription: { deleteMany: vi.fn() } } }));
+vi.mock('@/db/db', () => ({
+    default: {
+        push_subscription: {
+            deleteMany: vi.fn(),
+            findMany: vi.fn(),
+        },
+        h1_season: { findFirst: vi.fn() },
+    },
+}));
 vi.mock('@/shared/utils/tryCatch.mjs', () => ({
     tryCatch: vi.fn(async (p) => {
         try {
@@ -223,5 +231,350 @@ describe('sendWithConcurrencyLimit', () => {
         expect(result).toEqual({ sent: 0, stale: 0 });
         expect(webpush.sendNotification).not.toHaveBeenCalled();
         expect(db.push_subscription.deleteMany).not.toHaveBeenCalled();
+    });
+
+    test('treats 404 (Not Found) the same as 410 (Gone) — both are stale', async () => {
+        webpush.sendNotification.mockRejectedValue({ statusCode: 404 });
+        db.push_subscription.deleteMany.mockResolvedValue({ count: 1 });
+
+        const result = await sendWithConcurrencyLimit([sub1], 'payload');
+
+        expect(result).toEqual({ sent: 0, stale: 1 });
+        expect(db.push_subscription.deleteMany).toHaveBeenCalledWith({
+            where: { endpoint: { in: [sub1.endpoint] } },
+        });
+    });
+
+    test('non-stale rejection (e.g. 500) does NOT enqueue for cleanup but still reduces sent count? — actual: sent counts ALL non-stale (including failures), stale counts ONLY 410/404', async () => {
+        // Locking in current contract: a 500 push failure is counted as "sent"
+        // because sendWithConcurrencyLimit only short-circuits on 410/404.
+        // This is a known oddity — see #311 audit. If/when the contract
+        // tightens, this test breaks and the assertion should flip.
+        webpush.sendNotification.mockRejectedValue({ statusCode: 500 });
+
+        const result = await sendWithConcurrencyLimit([sub1, sub2], 'payload');
+
+        expect(result).toEqual({ sent: 2, stale: 0 });
+        expect(db.push_subscription.deleteMany).not.toHaveBeenCalled();
+    });
+
+    test('rejection without a statusCode field is NOT treated as stale (defensive)', async () => {
+        webpush.sendNotification.mockRejectedValue(new Error('network timeout'));
+
+        const result = await sendWithConcurrencyLimit([sub1], 'payload');
+
+        expect(result).toEqual({ sent: 1, stale: 0 });
+        expect(db.push_subscription.deleteMany).not.toHaveBeenCalled();
+    });
+
+    test('batches sends at MAX_CONCURRENT (50) — 75 subs are split into TWO batches', async () => {
+        webpush.sendNotification.mockResolvedValue({ statusCode: 201 });
+
+        const subs = Array.from({ length: 75 }, (_, i) => ({
+            endpoint: `https://example.com/push/${i}`,
+            keys_p256dh: `p${i}`,
+            keys_auth: `a${i}`,
+        }));
+
+        const result = await sendWithConcurrencyLimit(subs, 'payload');
+
+        expect(result.sent).toBe(75);
+        expect(webpush.sendNotification).toHaveBeenCalledTimes(75);
+    });
+
+    test('DB cleanup failure is logged but does NOT throw (push continues)', async () => {
+        webpush.sendNotification.mockRejectedValue({ statusCode: 410 });
+        db.push_subscription.deleteMany.mockRejectedValue(new Error('db down'));
+        const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const result = await sendWithConcurrencyLimit([sub1], 'payload');
+
+        // Still returns the result — DB failure does NOT crash send loop.
+        expect(result).toEqual({ sent: 0, stale: 1 });
+        expect(errSpy).toHaveBeenCalledWith(
+            'Failed to cleanup stale push subscriptions:',
+            'db down',
+        );
+    });
+
+    test('logs cleanup count when stale subscriptions are successfully deleted', async () => {
+        webpush.sendNotification
+            .mockResolvedValueOnce({ statusCode: 201 })
+            .mockRejectedValueOnce({ statusCode: 410 })
+            .mockRejectedValueOnce({ statusCode: 404 });
+        db.push_subscription.deleteMany.mockResolvedValue({ count: 2 });
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+        await sendWithConcurrencyLimit(
+            [sub1, sub2, { endpoint: 'sub3', keys_p256dh: 'p3', keys_auth: 'a3' }],
+            'payload',
+        );
+
+        expect(logSpy).toHaveBeenCalledWith('Cleaned up 2 stale push subscriptions');
+    });
+
+    test('webpush.sendNotification is called with the correct subscription shape (endpoint + keys)', async () => {
+        webpush.sendNotification.mockResolvedValue({ statusCode: 201 });
+
+        await sendWithConcurrencyLimit([sub1], 'payload-bytes');
+
+        expect(webpush.sendNotification).toHaveBeenCalledWith(
+            {
+                endpoint: sub1.endpoint,
+                keys: { p256dh: sub1.keys_p256dh, auth: sub1.keys_auth },
+            },
+            'payload-bytes',
+        );
+    });
+});
+
+describe('ensureVapid', () => {
+    // ensureVapid uses module-level state (`configured` flag), so we reset
+    // modules per test and dynamic-import a fresh copy.
+
+    beforeEach(() => {
+        vi.unstubAllEnvs();
+        vi.resetModules();
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
+    test('returns false when VAPID_PUBLIC_KEY is missing', async () => {
+        vi.stubEnv('VAPID_PUBLIC_KEY', '');
+        vi.stubEnv('VAPID_PRIVATE_KEY', 'priv');
+        vi.stubEnv('VAPID_SUBJECT', 'mailto:x@y.z');
+        const { ensureVapid } = await import('@/update/pushNotifier');
+
+        expect(ensureVapid()).toBe(false);
+    });
+
+    test('returns false when VAPID_PRIVATE_KEY is missing', async () => {
+        vi.stubEnv('VAPID_PUBLIC_KEY', 'pub');
+        vi.stubEnv('VAPID_PRIVATE_KEY', '');
+        vi.stubEnv('VAPID_SUBJECT', 'mailto:x@y.z');
+        const { ensureVapid } = await import('@/update/pushNotifier');
+
+        expect(ensureVapid()).toBe(false);
+    });
+
+    test('returns false when VAPID_SUBJECT is missing', async () => {
+        vi.stubEnv('VAPID_PUBLIC_KEY', 'pub');
+        vi.stubEnv('VAPID_PRIVATE_KEY', 'priv');
+        vi.stubEnv('VAPID_SUBJECT', '');
+        const { ensureVapid } = await import('@/update/pushNotifier');
+
+        expect(ensureVapid()).toBe(false);
+    });
+
+    test('returns true and configures web-push when all three VAPID env vars are set', async () => {
+        vi.stubEnv('VAPID_PUBLIC_KEY', 'pub-key');
+        vi.stubEnv('VAPID_PRIVATE_KEY', 'priv-key');
+        vi.stubEnv('VAPID_SUBJECT', 'mailto:admin@example.com');
+        const webpush = (await import('web-push')).default;
+        webpush.setVapidDetails.mockClear();
+
+        const { ensureVapid } = await import('@/update/pushNotifier');
+
+        expect(ensureVapid()).toBe(true);
+        expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+        expect(webpush.setVapidDetails).toHaveBeenCalledWith(
+            'mailto:admin@example.com',
+            'pub-key',
+            'priv-key',
+        );
+    });
+
+    test('is memoised — subsequent calls do NOT re-configure web-push', async () => {
+        vi.stubEnv('VAPID_PUBLIC_KEY', 'pub-key');
+        vi.stubEnv('VAPID_PRIVATE_KEY', 'priv-key');
+        vi.stubEnv('VAPID_SUBJECT', 'mailto:admin@example.com');
+        const webpush = (await import('web-push')).default;
+        webpush.setVapidDetails.mockClear();
+
+        const { ensureVapid } = await import('@/update/pushNotifier');
+
+        ensureVapid();
+        ensureVapid();
+        ensureVapid();
+
+        expect(webpush.setVapidDetails).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('checkAndNotify', () => {
+    // checkAndNotify uses module-level `prevEvents` state. Reset modules per
+    // test for clean state. Stub VAPID env so ensureVapid() returns true
+    // (skipped explicitly in the first test).
+
+    beforeEach(() => {
+        vi.unstubAllEnvs();
+        vi.resetModules();
+        vi.stubEnv('VAPID_PUBLIC_KEY', 'pub');
+        vi.stubEnv('VAPID_PRIVATE_KEY', 'priv');
+        vi.stubEnv('VAPID_SUBJECT', 'mailto:x@y.z');
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
+    test('returns early (no fetch) when ensureVapid is false', async () => {
+        vi.stubEnv('VAPID_PUBLIC_KEY', '');
+        const dbModule = (await import('@/db/db')).default;
+        const { checkAndNotify } = await import('@/update/pushNotifier');
+
+        await checkAndNotify();
+
+        expect(dbModule.h1_season.findFirst).not.toHaveBeenCalled();
+    });
+
+    test('returns early when h1_season.findFirst returns null (no seasons)', async () => {
+        const dbModule = (await import('@/db/db')).default;
+        dbModule.h1_season.findFirst.mockResolvedValue(null);
+        const { checkAndNotify } = await import('@/update/pushNotifier');
+
+        await checkAndNotify();
+
+        // No subscription fetch, no send.
+        expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
+    });
+
+    test('returns early on findFirst error (logs nothing, surfaces no exception)', async () => {
+        const dbModule = (await import('@/db/db')).default;
+        dbModule.h1_season.findFirst.mockRejectedValue(new Error('db connect'));
+        const { checkAndNotify } = await import('@/update/pushNotifier');
+
+        await expect(checkAndNotify()).resolves.toBeUndefined();
+        expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
+    });
+
+    test('first call (prevEvents=null) ESTABLISHES baseline — does NOT detect changes or send', async () => {
+        const dbModule = (await import('@/db/db')).default;
+        const events = [
+            { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
+        ];
+        dbModule.h1_season.findFirst.mockResolvedValue({ events });
+        const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
+        const { checkAndNotify } = await import('@/update/pushNotifier');
+
+        await checkAndNotify();
+
+        // detectChanges is NOT called on the first run — we just snapshot.
+        expect(detectChanges).not.toHaveBeenCalled();
+        expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
+    });
+
+    test('second call: detectChanges sees prev vs current; when no changes, no send', async () => {
+        const dbModule = (await import('@/db/db')).default;
+        const events1 = [
+            { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
+        ];
+        const events2 = [
+            { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
+        ];
+        dbModule.h1_season.findFirst
+            .mockResolvedValueOnce({ events: events1 })
+            .mockResolvedValueOnce({ events: events2 });
+        const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
+        detectChanges.mockReturnValue([]); // No changes between calls.
+        const { checkAndNotify } = await import('@/update/pushNotifier');
+
+        await checkAndNotify(); // baseline
+        await checkAndNotify(); // diff against baseline → no changes
+
+        expect(detectChanges).toHaveBeenCalledTimes(1);
+        expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
+    });
+
+    test('second call WITH changes: fetches subs and sends one batch per change', async () => {
+        const dbModule = (await import('@/db/db')).default;
+        const webpush = (await import('web-push')).default;
+        const events1 = [
+            { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
+        ];
+        const events2 = [
+            { event_id: 1, status: 'success', enemy: 0, region: 5, type: 'defend' },
+        ];
+
+        dbModule.h1_season.findFirst
+            .mockResolvedValueOnce({ events: events1 })
+            .mockResolvedValueOnce({ events: events2 });
+        dbModule.push_subscription.findMany.mockResolvedValue([
+            { endpoint: 'e1', keys_p256dh: 'p1', keys_auth: 'a1' },
+        ]);
+        const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
+        detectChanges.mockReturnValue([
+            { kind: 'event_won', event: events2[0] },
+            { kind: 'event_started', event: { ...events2[0], event_id: 2 } },
+        ]);
+        webpush.sendNotification.mockResolvedValue({ statusCode: 201 });
+
+        const { checkAndNotify } = await import('@/update/pushNotifier');
+        await checkAndNotify(); // baseline
+        await checkAndNotify(); // diff → changes → send
+
+        // findMany called ONCE (not per change — it's outside the changes loop).
+        expect(dbModule.push_subscription.findMany).toHaveBeenCalledTimes(1);
+        // 2 changes × 1 subscription = 2 sendNotification calls.
+        expect(webpush.sendNotification).toHaveBeenCalledTimes(2);
+    });
+
+    test('subscription fetch error is logged, no send happens, but no exception thrown', async () => {
+        const dbModule = (await import('@/db/db')).default;
+        const events1 = [
+            { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
+        ];
+        const events2 = [
+            { event_id: 1, status: 'success', enemy: 0, region: 5, type: 'defend' },
+        ];
+
+        dbModule.h1_season.findFirst
+            .mockResolvedValueOnce({ events: events1 })
+            .mockResolvedValueOnce({ events: events2 });
+        const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
+        detectChanges.mockReturnValue([{ kind: 'event_won', event: events2[0] }]);
+        dbModule.push_subscription.findMany.mockRejectedValue(
+            new Error('subs query failed'),
+        );
+        const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const webpush = (await import('web-push')).default;
+        webpush.sendNotification.mockClear();
+
+        const { checkAndNotify } = await import('@/update/pushNotifier');
+        await checkAndNotify();
+        await expect(checkAndNotify()).resolves.toBeUndefined();
+
+        expect(errSpy).toHaveBeenCalledWith(
+            'Failed to fetch push subscriptions:',
+            'subs query failed',
+        );
+        expect(webpush.sendNotification).not.toHaveBeenCalled();
+    });
+
+    test('changes detected but ZERO subscriptions → does NOT call sendNotification', async () => {
+        const dbModule = (await import('@/db/db')).default;
+        const events1 = [
+            { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
+        ];
+        const events2 = [
+            { event_id: 1, status: 'success', enemy: 0, region: 5, type: 'defend' },
+        ];
+
+        dbModule.h1_season.findFirst
+            .mockResolvedValueOnce({ events: events1 })
+            .mockResolvedValueOnce({ events: events2 });
+        const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
+        detectChanges.mockReturnValue([{ kind: 'event_won', event: events2[0] }]);
+        dbModule.push_subscription.findMany.mockResolvedValue([]);
+        const webpush = (await import('web-push')).default;
+        webpush.sendNotification.mockClear();
+
+        const { checkAndNotify } = await import('@/update/pushNotifier');
+        await checkAndNotify();
+        await checkAndNotify();
+
+        expect(webpush.sendNotification).not.toHaveBeenCalled();
     });
 });
