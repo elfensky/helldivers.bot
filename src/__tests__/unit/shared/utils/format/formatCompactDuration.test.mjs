@@ -54,17 +54,23 @@ describe('formatCompactDuration — two-unit composition (largest: 2)', () => {
 });
 
 describe('formatCompactDuration — rounding', () => {
-    test('59.5 seconds rounds to "1m" (boundary rounding from seconds → minutes)', () => {
-        // humanize-duration with round:true rounds the smallest displayed unit.
-        // 59.5s shown as 59 or 60 depending on rounding behaviour — assert
-        // either matches expected short-form.
-        const out = formatCompactDuration(59.5);
-        expect(out).toMatch(/^(1m|60s|59s)$/);
+    test('59.5 seconds rounds UP to "1m" (boundary crosses into the next unit)', () => {
+        // Exact behaviour locked in: humanize-duration's round:true rounds the
+        // smallest displayed unit half-up. Largest:2 then promotes 60s → 1m.
+        expect(formatCompactDuration(59.5)).toBe('1m');
     });
 
-    test('non-integer seconds still produce a finite short string', () => {
-        const out = formatCompactDuration(125.4);
-        expect(out).toMatch(/^\d+(m|h|s|d)\d*[a-z]*$/);
+    test('59.4 seconds rounds DOWN to "59s" (stays in the seconds unit)', () => {
+        expect(formatCompactDuration(59.4)).toBe('59s');
+    });
+
+    test('125.5 seconds → "2m6s" (rounds the trailing seconds half-up)', () => {
+        // 125.5s = 2m + 5.5s → rounded → 2m6s.
+        expect(formatCompactDuration(125.5)).toBe('2m6s');
+    });
+
+    test('125.4 seconds → "2m5s" (rounds the trailing seconds down)', () => {
+        expect(formatCompactDuration(125.4)).toBe('2m5s');
     });
 });
 

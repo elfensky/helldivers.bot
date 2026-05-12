@@ -47,6 +47,7 @@ describe('GET /api/h1/live', () => {
         expect(body).toEqual({ data: mockCampaign, mapState: mockMapState });
         expect(body).not.toHaveProperty('time');
         expect(body).not.toHaveProperty('code');
+        expect(body).not.toHaveProperty('message');
     });
 
     test('passes only active events to computeMapState (not completed/success/fail)', async () => {
@@ -115,23 +116,49 @@ describe('GET /api/h1/live', () => {
         expectErrorEnvelope(body, { code: 500, error: 'No campaign data' });
     });
 
-    test('serialises BigInt values as numbers, not the n-suffixed literal', async () => {
+    test('serialises BigInts within Number.MAX_SAFE_INTEGER as exact numbers', async () => {
+        const safeBig = 9007199254740990n; // < MAX_SAFE_INTEGER
         const mockCampaign = {
             season: 1,
             events: [],
             status: [],
-            big_id: 9007199254740993n,
+            big_id: safeBig,
         };
         getCampaign.mockResolvedValue(mockCampaign);
         computeMapState.mockReturnValue([]);
 
         const response = await GET();
+        const body = await response.json();
+
+        // Round-trips exactly because the value is < MAX_SAFE_INTEGER.
+        expect(body.data.big_id).toBe(9007199254740990);
+        // The n-suffixed literal must never reach the wire.
+        expect(JSON.stringify(body)).not.toMatch(/\d+n/);
+    });
+
+    test('BigInts above MAX_SAFE_INTEGER are CURRENTLY truncated to the nearest representable double (KNOWN PRECISION LOSS — documenting current behaviour)', async () => {
+        // This documents the current contract: the response transform uses
+        // `Number(bigint)`, which silently loses precision above MAX_SAFE_INTEGER.
+        // If this ever causes a real bug (event IDs, statistics counters
+        // colliding), the right fix is a string serialisation strategy and a
+        // matching contract change in clients — at which point this test
+        // should flip to assert the safer behaviour.
+        const unsafeBig = 9007199254740993n; // > MAX_SAFE_INTEGER by 1
+        getCampaign.mockResolvedValue({
+            season: 1,
+            events: [],
+            status: [],
+            big_id: unsafeBig,
+        });
+        computeMapState.mockReturnValue([]);
+
+        const response = await GET();
         const text = await response.text();
 
-        // Number-cast truncates above Number.MAX_SAFE_INTEGER — assert the
-        // truncated value appears, NOT the original BigInt.
+        // 9007199254740993 round-trips through Number() as 9007199254740992
+        // (the nearest representable double). Asserting the truncated form
+        // is what locks in the current — admittedly lossy — behaviour.
         expect(text).toContain('9007199254740992');
-        // The n-suffixed literal must never reach the wire.
         expect(text).not.toMatch(/\d+n/);
     });
 });

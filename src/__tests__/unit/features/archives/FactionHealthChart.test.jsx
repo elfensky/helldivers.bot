@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { cloneElement } from 'react';
 import { render, screen } from '@testing-library/react';
 
 // FactionHealthChart wires snapshot/pointsMax data into recharts. Two
@@ -61,17 +62,23 @@ vi.mock('recharts', () => ({
         />
     ),
     CartesianGrid: () => <div data-testid="grid" />,
+    // The Tooltip mock CAPTURES the `content` render-prop function so tests
+    // can call it directly with active/payload variants. Recharts invokes
+    // `content` with { active, payload } at render time; we mirror that.
     Tooltip: ({ content }) => {
-        // Surface the content via a captureable render — but only when given a
-        // synthetic payload (the test renders it explicitly).
-        return <div data-testid="tooltip-host">{content}</div>;
+        tooltipContent = content;
+        return <div data-testid="tooltip-host" />;
     },
 }));
+
+// Surfaced by the Tooltip mock above so tests can invoke it.
+let tooltipContent = null;
 
 import FactionHealthChart from '@/features/archives/FactionHealthChart';
 
 beforeEach(() => {
     composedChartProps.length = 0;
+    tooltipContent = null;
 });
 
 // --- Test fixtures ---
@@ -278,5 +285,79 @@ describe('FactionHealthChart — chart configuration (locked)', () => {
             '45%',
         );
         expect(screen.getByTestId('yaxis').getAttribute('data-domain')).toBe('[0,100]');
+    });
+});
+
+describe('FactionHealthChart — ChartTooltip (render-prop element, cloned with synthetic props)', () => {
+    // recharts' Tooltip mock above captures the `content` prop into
+    // `tooltipContent`. FactionHealthChart passes `<ChartTooltip />` as a
+    // JSX ELEMENT (not a function), and recharts internally clones it with
+    // { active, payload } injected at render time. We reproduce that by
+    // cloning the captured element with synthetic props.
+
+    function renderTooltipWith(props) {
+        render(
+            <FactionHealthChart
+                snapshots={[snapshot(0, [f(50), f(50), f(50)])]}
+                pointsMax={{ points: [100, 100, 100] }}
+            />,
+        );
+        expect(tooltipContent).toBeTruthy();
+        return render(cloneElement(tooltipContent, props));
+    }
+
+    test('renders nothing when inactive', () => {
+        const { container } = renderTooltipWith({ active: false, payload: [] });
+        expect(container.firstChild).toBeNull();
+    });
+
+    test('renders nothing when active but payload is empty', () => {
+        const { container } = renderTooltipWith({ active: true, payload: [] });
+        expect(container.firstChild).toBeNull();
+    });
+
+    test('renders nothing when payload entry has no inner .payload field', () => {
+        const { container } = renderTooltipWith({ active: true, payload: [{}] });
+        expect(container.firstChild).toBeNull();
+    });
+
+    test('renders "Day <n>" header and one row per faction with a non-null value', () => {
+        const { container } = renderTooltipWith({
+            active: true,
+            payload: [
+                {
+                    payload: {
+                        day: 4,
+                        time: 1700000000,
+                        bugs: 75,
+                        cyborgs: null,
+                        illuminate: 50,
+                    },
+                },
+            ],
+        });
+
+        // Day header.
+        expect(container.textContent).toContain('Day 4');
+
+        // Bugs and Illuminate rows show with percentage; Cyborgs (null) omitted.
+        expect(container.textContent).toContain('Bugs');
+        expect(container.textContent).toContain('75%');
+        expect(container.textContent).toContain('Illuminate');
+        expect(container.textContent).toContain('50%');
+        expect(container.textContent).not.toContain('Cyborgs');
+    });
+
+    test('row text color matches the faction brand stroke', () => {
+        const { container } = renderTooltipWith({
+            active: true,
+            payload: [{ payload: { day: 1, bugs: 10, cyborgs: 20, illuminate: 30 } }],
+        });
+
+        const rows = container.querySelectorAll('div[style*="color"]');
+        const colors = Array.from(rows).map((r) => r.style.color);
+        expect(colors).toContain('rgb(232, 130, 42)'); // #e8822a bugs
+        expect(colors).toContain('rgb(139, 45, 45)'); // #8b2d2d cyborgs
+        expect(colors).toContain('rgb(126, 200, 227)'); // #7ec8e3 illuminate
     });
 });
