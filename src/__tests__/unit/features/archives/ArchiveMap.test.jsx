@@ -68,9 +68,14 @@ describe('ArchiveMap', () => {
 
         const mapState = readMapState(getByTestId('galaxy'));
         expect(mapState).toEqual(expected);
-        // Hidden fallback never produces an active campaign — every sector
-        // should carry the "hidden" tag from HIDDEN_STATES.
-        expect(JSON.stringify(mapState)).not.toContain('"status":"active"');
+        // Hidden fallback never produces an active campaign — no sector entry
+        // (or nested faction state) should carry status: 'active'.
+        const allStatuses = Object.values(mapState ?? {})
+            .flatMap((entry) =>
+                entry && typeof entry === 'object' ? Object.values(entry) : [entry],
+            )
+            .filter((v) => typeof v === 'string');
+        expect(allStatuses).not.toContain('active');
     });
 
     it('re-render with the same selectedEvent reference does not change the mapState passed to Galaxy', () => {

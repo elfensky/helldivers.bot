@@ -12,16 +12,9 @@ afterEach(() => {
 });
 
 describe('usePersistedState — initial value', () => {
-    test('first render returns defaultValue (SSR-safe baseline)', () => {
-        // Before the mount effect runs, the hook returns defaultValue.
-        // We can observe this by reading result.current synchronously after
-        // renderHook — but React 18 commits the mount effect before exposing
-        // result, so we have to assert what's left after effects: the stored
-        // value if present, otherwise the default.
-        const { result } = renderHook(() => usePersistedState('test-key', 'default'));
-        // No stored value → still default.
-        expect(result.current[0]).toBe('default');
-    });
+    // React Testing Library's renderHook commits the mount effect before
+    // exposing result.current, so the visible state after renderHook is
+    // "post-effect": the stored value when present, otherwise defaultValue.
 
     test('after mount, hydrates from localStorage when key is present', () => {
         localStorage.setItem('test-key', 'stored-value');
@@ -208,27 +201,22 @@ describe('usePersistedState — localStorage failure modes', () => {
         expect(setItem).toHaveBeenCalled();
     });
 
-    test('validator throwing is NOT caught (loud failure — fix your validator)', () => {
-        // Document the current contract: validators are trusted to be pure +
-        // total. A throwing validator surfaces as a render error. If this is
-        // ever an issue in production, the right fix is to wrap the validator
-        // call in try/catch in the hook — not silence it in tests.
+    test('validator throwing is caught by the localStorage try/catch (falls back to default)', () => {
+        // The mount effect's try/catch wraps the entire localStorage block —
+        // including the isValid() call. So a throwing validator does NOT
+        // surface to the consumer; the hook silently falls back to default.
+        // This is the current contract; if it ever becomes "validators must
+        // not throw and we surface them loudly", flip this test.
         const isValid = vi.fn(() => {
             throw new Error('validator boom');
         });
         localStorage.setItem('test-key', 'some-stored');
 
-        // The mount effect synchronously calls isValid; the throw escapes the
-        // effect's surrounding try/catch (which only wraps the getItem call).
-        // We assert the hook surfaces the error rather than silently swallowing.
-        // If the contract changes, update this expectation.
-        let result;
-        expect(() => {
-            const r = renderHook(() => usePersistedState('test-key', 'default', isValid));
-            result = r.result;
-        }).not.toThrow();
-        // Despite the validator throwing, the hook still rendered with default
-        // (the throw lives inside the localStorage try/catch).
+        const { result } = renderHook(() =>
+            usePersistedState('test-key', 'default', isValid),
+        );
+
+        expect(isValid).toHaveBeenCalledWith('some-stored');
         expect(result.current[0]).toBe('default');
     });
 });

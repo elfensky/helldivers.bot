@@ -81,6 +81,9 @@ afterEach(() => {
     delete globalThis.fetch;
     openChannels.forEach((c) => c.close());
     openChannels = [];
+    // Reset document.hidden in case a visibilitychange test set it. jsdom's
+    // default getter returns false, but tests Object.defineProperty it.
+    delete document.hidden;
 });
 
 // Flush microtasks + the setTimeout(0) used by emit() — WITHOUT advancing
@@ -88,12 +91,15 @@ afterEach(() => {
 // scheduled poll; tests opt in to that by calling advanceTimersByTimeAsync
 // with POLL_INTERVAL explicitly.
 //
-// poll() has TWO awaits (fetch + res.json) and emit() schedules setTimeout(0).
-// Each phase is one microtask hop, plus the listener setState commit. Several
-// drains in a row settle everything; calling more than necessary is harmless.
+// Fixed-point loop: keep draining 0-delay timers until the pending-timer
+// count stops decreasing. This survives any future change to the number of
+// awaits in poll() / await hops in the emit→listener→setState chain.
 async function flushAll() {
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 20; i += 1) {
+        const before = vi.getTimerCount();
         await vi.advanceTimersByTimeAsync(0);
+        const after = vi.getTimerCount();
+        if (after === 0 || after === before) break;
     }
 }
 
@@ -257,16 +263,14 @@ describe('useLiveData — status transitions', () => {
     });
 });
 
-describe('useLiveData — offline at startup', () => {
-    // Note: connect() *attempts* to set status=offline when navigator.onLine
-    // is false, but poll() runs synchronously after and overwrites to
-    // 'polling' (the emits coalesce, so listeners only see the second value).
-    // This means the offline-at-startup behaviour is effectively a no-op
-    // until the fetch actually rejects. Test the reachable contract:
-    // status settles to 'offline' once fetch rejects, regardless of the
-    // navigator.onLine signal at start.
+describe('useLiveData — offline state (reachable via fetch failure)', () => {
+    // Note: the navigator.onLine check in connect() is dead code — poll()
+    // runs synchronously after and overwrites the offline status before
+    // emit's setTimeout(0) fires (the emits coalesce). Tracked in #320.
+    // The reachable offline state is what we test here: status settles
+    // to 'offline' once the fetch rejects.
 
-    test('navigator.onLine false + rejected fetch → status settles to offline', async () => {
+    test('rejected fetch → status settles to offline (regardless of navigator.onLine)', async () => {
         setOnline(false);
         globalThis.fetch = vi.fn(() => Promise.reject(new Error('offline')));
         const { useLiveData } = await loadHookFresh();
@@ -500,6 +504,40 @@ describe('useLiveData — BroadcastChannel leader election', () => {
             await flushAll();
         });
 
+        expect(result.current.isLeader).toBe(true);
+    });
+
+    test('leader is NOT claimed before the election timeout elapses', async () => {
+        // Un-stub Math.random so the election uses a real (>0) delay. The
+        // beforeEach stub forces 0ms, which is degenerate — this test proves
+        // the setTimeout actually has to elapse before isLeader flips.
+        Math.random.mockRestore();
+        vi.spyOn(Math, 'random').mockReturnValue(0.5); // → 250ms delay
+
+        globalThis.fetch = vi.fn(() =>
+            Promise.resolve(makeFetchResponse({ data: {}, mapState: {} })),
+        );
+        const { useLiveData } = await loadHookFresh();
+
+        const { result } = renderHook(() => useLiveData(null, null));
+        await act(async () => {
+            await flushAll();
+        });
+        // Initial state: election started but timeout hasn't fired.
+        expect(result.current.isLeader).toBe(false);
+
+        // Just before the deadline — still not leader.
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(200);
+            await flushAll();
+        });
+        expect(result.current.isLeader).toBe(false);
+
+        // Cross the deadline — leader claim fires.
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(100);
+            await flushAll();
+        });
         expect(result.current.isLeader).toBe(true);
     });
 

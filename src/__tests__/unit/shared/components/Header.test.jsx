@@ -5,11 +5,14 @@ import { render, screen } from '@testing-library/react';
 // Capture-style Script mock: records the props (nonce + src + strategy) so we
 // can assert Header is wiring the nonce through correctly — this is the
 // security-relevant part (CSP nonce must flow from next/headers to <Script>).
+// We deliberately serialise `nonce` via String() so `undefined` shows as
+// "undefined" and absence is observable — otherwise the mock's defaulting
+// would be what the test asserts, instead of Header's wiring.
 vi.mock('next/script', () => ({
     default: ({ children, nonce, src, strategy, ...rest }) => (
         <script
             data-testid="next-script"
-            data-nonce={nonce ?? ''}
+            data-nonce={String(nonce)}
             data-src={src}
             data-strategy={strategy}
             {...rest}
@@ -100,15 +103,17 @@ describe('Header — CSP nonce wiring', () => {
         expect(script.getAttribute('data-strategy')).toBe('afterInteractive');
     });
 
-    test('passes undefined nonce (rendered as empty) when x-nonce header is absent', async () => {
+    test('passes undefined nonce to <Script> when x-nonce header is absent', async () => {
         headersGet.mockImplementation(() => null);
 
         render(await Header());
 
-        // The component uses `?? undefined` — the Script mock writes empty
-        // for undefined. The contract is: no nonce header → no nonce attr.
+        // Header uses `headers().get('x-nonce') ?? undefined`. The Script
+        // mock stringifies whatever it received — "undefined" here proves
+        // Header forwarded undefined rather than coercing to empty string
+        // (which would be a CSP-affecting change).
         const script = screen.getByTestId('next-script');
-        expect(script.getAttribute('data-nonce')).toBe('');
+        expect(script.getAttribute('data-nonce')).toBe('undefined');
     });
 
     test('reads the x-nonce header (not some other header)', async () => {
