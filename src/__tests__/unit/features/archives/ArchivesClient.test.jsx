@@ -396,8 +396,9 @@ describe('ArchivesClient — pin state machine (defaults to pinned, unlike HomeC
         expect(mapCol.className).toContain('archives-map-col--sticky');
     });
 
-    test('unmount clears the pending animation timer (no setState-after-unmount)', () => {
+    test('unmount calls clearTimeout on the pending animation timer (verifies the cleanup effect runs)', () => {
         vi.useFakeTimers();
+        const clearSpy = vi.spyOn(globalThis, 'clearTimeout');
         const { unmount } = render(
             <ArchivesClient data={baseData} seasons={[]} currentSeason={157} />,
         );
@@ -409,8 +410,12 @@ describe('ArchivesClient — pin state machine (defaults to pinned, unlike HomeC
         act(() => {
             fireEvent.click(screen.getByLabelText('Pin map to top'));
         });
+        const callsBeforeUnmount = clearSpy.mock.calls.length;
 
         unmount();
+
+        // Cleanup effect from useEffect's return invoked clearTimeout.
+        expect(clearSpy.mock.calls.length).toBeGreaterThan(callsBeforeUnmount);
 
         expect(() => {
             vi.advanceTimersByTime(1000);

@@ -322,20 +322,27 @@ describe('HomeClient — pin/unpin state machine', () => {
         expect(homeMap.className).not.toContain('home-map--pinning');
     });
 
-    test('unmount clears the pending animation timer (no setState-after-unmount)', () => {
+    test('unmount calls clearTimeout on the pending animation timer (verifies the cleanup effect runs)', () => {
         vi.useFakeTimers();
+        const clearSpy = vi.spyOn(globalThis, 'clearTimeout');
         const { unmount } = render(<HomeClient />);
 
         // Pin to schedule the animation timer.
         act(() => {
             fireEvent.click(screen.getByLabelText('Pin map to top'));
         });
+        const callsBeforeUnmount = clearSpy.mock.calls.length;
 
         // Unmount before the timer fires.
         unmount();
 
-        // Advance — the timer's setState would warn loudly if not cleaned up
-        // (now that the global console mock is gone — see #307).
+        // Cleanup effect must have invoked clearTimeout AFTER unmount, beyond
+        // any earlier internal clears (the togglePin's own clearTimeout fires
+        // first; the cleanup is in the dedicated useEffect return).
+        expect(clearSpy.mock.calls.length).toBeGreaterThan(callsBeforeUnmount);
+
+        // Sanity check: advancing past the animation interval after unmount
+        // produces no setState/warn — there's no more pending timer to fire.
         expect(() => {
             vi.advanceTimersByTime(1000);
         }).not.toThrow();

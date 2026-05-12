@@ -11,6 +11,12 @@ import path from 'path';
 // built-in) so we monkey-patch Module._load to inject a controllable
 // parentPort BEFORE Node resolves cron.js's top-level require.
 
+// `require` is not defined in ESM `.mjs` scope. We construct a CommonJS
+// require here via createRequire — both for require()ing cron.js (which is
+// CJS) AND for accessing the require.cache (so we can evict cron.js between
+// tests and re-evaluate it with our patched Module._load in place).
+const requireFromHere = createRequire(import.meta.url);
+
 const cronPath = path.resolve(process.cwd(), 'public/workers/cron.js');
 const cronLogicPath = path.resolve(process.cwd(), 'public/workers/cronLogic.js');
 
@@ -44,21 +50,19 @@ beforeEach(() => {
     };
 
     // Clear Node's require cache so re-importing cron.js re-evaluates it
-    // with our patched _load.
-    delete require.cache?.[cronPath];
+    // with our patched _load. require.cache is per-Module-system; the
+    // createRequire'd require shares Node's main require.cache.
+    delete requireFromHere.cache[cronPath];
 });
 
 afterEach(() => {
     Module._load = originalLoad;
-    delete require.cache?.[cronPath];
+    delete requireFromHere.cache[cronPath];
     vi.restoreAllMocks();
 });
 
 describe('public/workers/cron.js — entry shell wiring', () => {
     test('registers a "message" listener on parentPort at module load', () => {
-        // Use Node's createRequire so we can require the CJS file from this
-        // ESM test. The Module._load patch is in effect.
-        const requireFromHere = createRequire(import.meta.url);
         requireFromHere(cronPath);
 
         expect(parentPortMock.on).toHaveBeenCalledTimes(1);
@@ -66,7 +70,6 @@ describe('public/workers/cron.js — entry shell wiring', () => {
     });
 
     test('on receipt of a message, calls makeDoWork(msg, parentPort) and immediately invokes the returned doWork', () => {
-        const requireFromHere = createRequire(import.meta.url);
         requireFromHere(cronPath);
 
         const handler = registeredListeners.get('message');
@@ -84,7 +87,6 @@ describe('public/workers/cron.js — entry shell wiring', () => {
     });
 
     test('does NOT call makeDoWork or doWork at module load (only on message)', () => {
-        const requireFromHere = createRequire(import.meta.url);
         requireFromHere(cronPath);
 
         expect(makeDoWorkSpy).not.toHaveBeenCalled();
