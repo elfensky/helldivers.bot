@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.43.1
+
+### Chores
+
+- **Dependency bumps (npm minor/patch group)** — `next` & `@next/mdx` 16.2.4 → 16.2.6 (multiple HIGH-severity security advisories: SSRF via WebSocket upgrades, middleware/proxy bypasses, RSC DoS, RSC cache poisoning), `@prisma/client` & `@prisma/adapter-pg` & `prisma` 7.7.0 → 7.8.0, `@sentry/nextjs` 10.49.0 → 10.52.0, `@serwist/next` 9.5.7 → 9.5.11, `better-auth` 1.6.5 → 1.6.10, `axios` 1.15.0 → 1.16.0 (resolves `follow-redirects` 1.15.11 → 1.16.0 transitively), `react` & `react-dom` 19.2.5 → 19.2.6, `@tailwindcss/postcss` 4.2.2 → 4.3.0, `@vitest/coverage-v8` 4.1.4 → 4.1.5, `jsdom` 29.0.2 → 29.1.1, `prettier-plugin-tailwindcss` 0.7.2 → 0.8.0.
+- **GitHub Actions bumps (actions group)** — `actions/setup-node` 6.3.0 → 6.4.0, `github/codeql-action` 3.30.6 → 3.30.8, `actions/dependency-review-action` 4.8.0 → 4.8.2, `docker/build-push-action` 6.21.1 → 6.22.0.
+
 ## 0.43.0
 
 ### Features
