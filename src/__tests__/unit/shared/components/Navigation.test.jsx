@@ -9,9 +9,6 @@ vi.mock('@/shared/components/Navigation/HeaderNav', () => ({
 vi.mock('@/shared/components/Navigation/UserSection', () => ({
     default: () => <div data-testid="user-section" />,
 }));
-vi.mock('next/link', () => ({
-    default: ({ children, ...props }) => <a {...props}>{children}</a>,
-}));
 
 import Navigation from '@/shared/components/Navigation/Navigation';
 
