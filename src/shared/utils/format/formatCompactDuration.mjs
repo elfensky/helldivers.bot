@@ -16,6 +16,7 @@ export function formatCompactDuration(seconds) {
         largest: 2,
         round: true,
         spacer: '',
+        delimiter: '',
         language: 'shortEn',
         languages: { shortEn: shortEnglish },
     });
