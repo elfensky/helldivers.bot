@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Global MISSIONS_WON card** — the global stats view now shows a `MISSIONS_WON` card (sum of `successful_missions` across factions), matching the per-faction view. Both global and per-faction cards display a "N TOTAL" subtitle showing total missions attempted.
+- **Event total subtitle** — the `EVENTS` W : L scoreline card now shows a "N TOTAL" subtitle with the combined win + loss count, in both global and per-faction views.
+- **Animated stat counter** — live stat values on the homepage use a slot-counter animation (`AnimatedStat` component via `react-slot-counter`) that rolls digits when values change. Sandbox page at `/sandbox/slot-counter` for development.
+
+### Fixes
+
+- **formatNumber M threshold raised to 10M** — compact "M" suffix now kicks in at 10,000,000 instead of 1,000,000. Values between 1M and 9.99M display with full locale grouping (e.g. `5,000,000`) so users see precise numbers in the range most relevant to Helldivers stats.
+
+### Chores
+
+- **Supply chain quarantine** — new `npm run update:safe` script uses `npx npm-check-updates --cooldown 7d` to only bump to package versions published at least 7 days ago, giving the community time to detect compromised releases.
+- **Dependency bumps** — all npm dependencies updated to latest versions.
+
 ## 0.44.1
 
 ### CI & dev tooling
