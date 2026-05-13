@@ -6,8 +6,6 @@
 # `RUN --mount=type=secret,...` for Sentry credentials.
 # BuildKit is the default builder in Docker Desktop and modern docker engine.
 FROM node:24-alpine AS base
-# Install tini to avoid zombie processes
-RUN apk add --no-cache tini
 
 #region deps
 # Install dependencies only when needed
@@ -76,47 +74,36 @@ RUN --mount=type=cache,target=/app/.next/cache,sharing=locked \
 #endregion
 
 #region runner
-# copy the build files for a minimal image, add prisma and run the server
-FROM base AS runner
+# Hardened minimal runtime — Chainguard images are rebuilt daily with patched
+# packages and carry near-zero CVEs. The free `:latest` tag tracks current
+# stable Node. No shell, no package manager, no wget/curl — only the Node
+# runtime. Runs as `nonroot` (uid 65532) by default with ENTRYPOINT ["node"].
+FROM cgr.dev/chainguard/node:latest AS runner
 WORKDIR /app
 # Pass the version from the build step
-ARG VERSION 
-# Label the container
+ARG VERSION
 LABEL org.opencontainers.image.source="https://github.com/elfensky/helldivers.bot"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.title="Helldivers Bot"
 LABEL version="${VERSION}"
 LABEL description="nextjs application that serves as an api rebroadcaster and formatter for Helldivers 1"
 # defaults to production, but can be overriden at build time
-ARG NODE_ENV=production 
+ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=node:node /app/.next/standalone ./
-COPY --from=builder --chown=node:node /app/.next/static ./.next/static
-COPY --from=builder --chown=node:node /app/public ./public
-# Run as non-root user (node user is built into node:*-alpine images)
-USER node
+COPY --from=builder --chown=nonroot:nonroot /app/.next/standalone ./
+COPY --from=builder --chown=nonroot:nonroot /app/.next/static ./.next/static
+COPY --from=builder --chown=nonroot:nonroot /app/public ./public
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-# Set tini as the init system
-ENTRYPOINT ["/sbin/tini", "--"]
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
-CMD ["node", "server.js"] 
-# CMD ["npm", "run", "start"]
-# healthcheck using a standard api route in the application
-#
-# Uses busybox `wget --spider` (HEAD-style probe, no body download) because
-# `node:24-alpine` does NOT ship `curl` — the previous version of this
-# directive used curl and silently failed every probe, leaving the container
-# reported as `unhealthy` forever. `127.0.0.1` is the loopback the container
-# should hit (not `0.0.0.0` which is the bind address).
-#
-# `--start-period=30s` (was 5s) gives the Next.js standalone server enough
-# headroom to boot before health probes start counting failures. Cold start
-# can be 5–15 seconds.
+# Image ENTRYPOINT is ["node"], so CMD is just the script path.
+CMD ["server.js"]
+# Node's built-in fetch (stable since Node 21) replaces wget/curl probes.
+# Exec form (JSON array) bypasses /bin/sh, which Chainguard doesn't ship.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD wget --quiet --spider --tries=1 http://127.0.0.1:3000/api/healthcheck || exit 1
+    CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 #endregion

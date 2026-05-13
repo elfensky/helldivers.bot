@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.45.1
+
+### Fixes
+
+- **Dependency security** — bumped hono override to >=4.12.18 (5 CVEs).
+- **Docker migrate image** — added missing `zod` + `isValidSeason.mjs` deps for seed script validation; switched CMD to JSON exec form for proper signal handling.
+
+### Chores
+
+- **Hardened app runtime** — production runner stage switched from `node:24-alpine` to `cgr.dev/chainguard/node:latest` (Chainguard Wolfi-based, near-zero CVEs). Build stages remain Alpine. Removed tini (Next.js standalone handles SIGTERM natively). Healthcheck switched from wget to Node.js `fetch()` for shell-less compatibility.
+- **CI deduplication** — added concurrency groups to prevent redundant CI and CodeQL workflow runs; renamed Build Staging workflow to Build Develop.
+
 ## 0.45.0
 
 ### Features
