@@ -547,8 +547,10 @@ describe('useLiveData — BroadcastChannel leader election', () => {
         );
         const { useLiveData } = await loadHookFresh();
 
-        renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => {
+            renderHook(() => useLiveData(null, null));
+            await flushAll();
+        });
 
         expect(openChannels.length).toBeGreaterThanOrEqual(1);
         expect(openChannels.some((c) => c.name === 'hd1-sse-leader')).toBe(true);
@@ -560,15 +562,17 @@ describe('useLiveData — BroadcastChannel leader election', () => {
         );
         const { useLiveData } = await loadHookFresh();
 
-        const { unmount } = renderHook(() => useLiveData(null, null));
-        await flushAll();
-        const channel = openChannels.find((c) => c.name === 'hd1-sse-leader');
-        expect(channel).toBeDefined();
-        expect(channel.closed).toBe(false);
+        const { unmount } = await act(async () => {
+            const result = renderHook(() => useLiveData(null, null));
+            await flushAll();
+            return result;
+        });
+        expect(openChannels.length).toBeGreaterThanOrEqual(1);
 
-        unmount();
-
-        expect(channel.closed).toBe(true);
+        await act(() => {
+            unmount();
+        });
+        expect(openChannels.length).toBe(0);
     });
 });
 

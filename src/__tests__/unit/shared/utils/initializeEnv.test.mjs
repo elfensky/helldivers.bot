@@ -27,10 +27,13 @@ describe('initializeEnvironmentVariables', () => {
         for (const [key, value] of Object.entries(ALL_ENV_VARS)) {
             vi.stubEnv(key, value);
         }
+        // Suppress console.info messages during tests
+        vi.spyOn(console, 'info').mockImplementation(() => {});
     });
 
     afterEach(() => {
         vi.unstubAllEnvs();
+        vi.restoreAllMocks();
     });
 
     test('returns { auth: true, analytics: true } when all env vars are set', async () => {
