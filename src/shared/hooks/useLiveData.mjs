@@ -128,13 +128,6 @@ function connect() {
     if (pollTimer) return;
     isFirstMessage = true;
 
-    // If browser knows it's offline (PWA, airplane mode), start as offline
-    if (!navigator.onLine) {
-        store = { ...store, status: 'offline' };
-        emit();
-    }
-
-    // First poll immediately (will fail fast if offline)
     poll();
 
     // Start interval
