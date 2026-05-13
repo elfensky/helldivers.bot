@@ -21,23 +21,35 @@ describe('LastUpdated', () => {
     test('renders formatTimeAgo output', () => {
         const thirtySecondsAgo = new Date(Date.now() - 30_000);
         render(<LastUpdated lastUpdated={thirtySecondsAgo} />);
-        expect(screen.getByText(/Updated \d+s ago/)).toBeInTheDocument();
+        expect(screen.getByText(/Updated \d+ seconds? ago/)).toBeInTheDocument();
     });
 
     test('ticks every second', () => {
         const start = new Date();
         render(<LastUpdated lastUpdated={start} />);
-        expect(screen.getByText(/Updated 0s ago/)).toBeInTheDocument();
+        expect(screen.getByText('Updated just now')).toBeInTheDocument();
 
         act(() => {
             vi.advanceTimersByTime(1_000);
         });
-        expect(screen.getByText(/Updated 1s ago/)).toBeInTheDocument();
+        // timeago.js shows "just now" for the first few seconds
+        expect(screen.getByText('Updated just now')).toBeInTheDocument();
 
+        // Advance enough time to show actual seconds (timeago.js typically shows "just now" for < 10 seconds)
         act(() => {
-            vi.advanceTimersByTime(1_000);
+            vi.advanceTimersByTime(10_000);
         });
-        expect(screen.getByText(/Updated 2s ago/)).toBeInTheDocument();
+        // After 10+ seconds, it should show the actual time
+        expect(screen.getByText(/Updated \d+ seconds? ago/)).toBeInTheDocument();
+    });
+        // timeago.js shows "just now" for the first few seconds
+        expect(screen.getByText('Updated just now')).toBeInTheDocument();
+
+        // Advance enough time to show actual seconds (timeago.js shows "just now" for first 10s)
+        act(() => {
+            vi.advanceTimersByTime(11_000);
+        });
+        expect(screen.getByText(/Updated \d+ seconds? ago/)).toBeInTheDocument();
     });
 
     test('clears the interval on unmount', () => {
