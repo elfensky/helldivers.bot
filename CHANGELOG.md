@@ -2,10 +2,18 @@
 
 ## 0.45.1
 
+### Features
+
+- **Healthcheck probes database** — `/api/healthcheck` now runs `SELECT 1` via Prisma and returns 503 when the database is unreachable, instead of a hardcoded `{ alive: true }`.
+
 ### Fixes
 
 - **Dependency security** — bumped hono override to >=4.12.18 (5 CVEs).
 - **Docker migrate image** — added missing `zod` + `isValidSeason.mjs` deps for seed script validation; switched CMD to JSON exec form for proper signal handling.
+- **`useLiveData` dead code removal** — removed `navigator.onLine` check in `connect()` that was immediately overwritten by `poll()`.
+- **`useTrack` partial-umami guard** — guard now checks `typeof window.umami?.track === 'function'` so ad-blocker stubs (`window.umami = {}`) no-op instead of throwing.
+- **`vitest.setup.mjs` `after()` mock** — stopped auto-invoking callbacks synchronously. Now records calls without executing, exposing response-timing bugs that were previously hidden.
+- **Dismissed-toast-events garbage collection** — entries now carry timestamps and are capped at 200. Oldest entries are pruned on write. Migrates legacy formats (arrays, plain strings) on read.
 
 ### Chores
 
