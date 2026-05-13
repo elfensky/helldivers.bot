@@ -1,15 +1,14 @@
 const STORAGE_KEY = 'dismissed-toast-events';
+const MAX_ENTRIES = 200;
 
 /**
- * localStorage-backed record of dismissed toasts, keyed by event id with the
- * event's status at time of dismissal as the value. The status pairing lets
- * us fully suppress dismissed toasts until their status changes.
+ * localStorage-backed record of dismissed toasts, keyed by event id.
  *
- * Shape: `Record<string, 'active'|'success'|'fail'>`.
+ * Shape: `Record<string, { status: 'active'|'success'|'fail', ts: number }>`.
  *
- * Legacy format (array of ids) is migrated in-place on read — dismissed ids
- * with no recorded status default to 'active' since that's the only status a
- * user could realistically have dismissed before the migration.
+ * Legacy formats are migrated in-place on read:
+ *   - Array of ids → `{ status: 'active', ts: 0 }`
+ *   - Plain string values → `{ status: value, ts: 0 }`
  */
 export function getDismissedEvents() {
     try {
@@ -17,9 +16,17 @@ export function getDismissedEvents() {
         if (!raw) return {};
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-            return Object.fromEntries(parsed.map((id) => [String(id), 'active']));
+            return Object.fromEntries(
+                parsed.map((id) => [String(id), { status: 'active', ts: 0 }]),
+            );
         }
-        return parsed && typeof parsed === 'object' ? parsed : {};
+        if (!parsed || typeof parsed !== 'object') return {};
+        const migrated = {};
+        for (const [id, val] of Object.entries(parsed)) {
+            migrated[id] =
+                typeof val === 'string' ? { status: val, ts: 0 } : val;
+        }
+        return migrated;
     } catch {
         return {};
     }
@@ -28,8 +35,15 @@ export function getDismissedEvents() {
 export function addDismissedEvent(eventId, status) {
     try {
         const record = getDismissedEvents();
-        record[String(eventId)] = status;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+        record[String(eventId)] = { status, ts: Date.now() };
+        const entries = Object.entries(record);
+        if (entries.length > MAX_ENTRIES) {
+            entries.sort((a, b) => (b[1].ts || 0) - (a[1].ts || 0));
+            const pruned = Object.fromEntries(entries.slice(0, MAX_ENTRIES));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
+        } else {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+        }
     } catch {
         // localStorage unavailable — silently skip
     }
@@ -42,5 +56,7 @@ export function addDismissedEvent(eventId, status) {
  */
 export function isDismissedAtStatus(eventId, status) {
     const record = getDismissedEvents();
-    return record[String(eventId)] === status;
+    const entry = record[String(eventId)];
+    if (!entry) return false;
+    return (typeof entry === 'string' ? entry : entry.status) === status;
 }
