@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.44.0
+
+### Test suite quality (Phase 12)
+
+Suite went from **882 → 1244 tests** (+362 high-signal). Coverage moved from **63.5% → 81.8% statements** / 58.3% → 73.7% branches. Five multi-LLM code review rounds (Codex + OpenCode) applied across the work; every must-fix finding addressed.
+
+- **Theater removal** — rewrote 5 highest-theater test files (`healthcheck`, `useTrack`, `ArchiveMap`, `Header`, `Navigation`) to verify real behaviour instead of stub-rendering. Stopped globally mocking `console.error/warn/log/info` in `vitest.setup.mjs` so React `act()` warnings and source error logs are audible.
+- **API route coverage** — 0% → comprehensive for `/api/notifications/subscribe` (Zod validation + Prisma upsert/delete contract + 410-graceful + 500-with-DB-call-asserted), `/api/glitchtip` (DSN parsing, ingest URL forwarding, 502 upstream failure), `/api/auth/[...all]` (auth-disabled 503 vs configured delegate to BetterAuth). Added `expectSuccessEnvelope` / `expectErrorEnvelope` helpers in `@test-utils` and retrofitted `live` + `update` route tests to use them.
+- **Hook coverage** — `useLiveData` (was 0% / 284 L): 23 tests covering polling cadence, status state machine, visibility-change handler, singleton-with-multiple-consumers, localStorage cache hydration + write, and BroadcastChannel leader election. `usePersistedState` (foundation hook): 16 tests covering value hydration, validator gating, key changes, and storage failure modes. `useTrack`, `useHeaderGlassFilter`, `useScrollEvent`, `useCyberstanEffects`, `useGlitchCycle` — all now have meaningful coverage with cleanup discipline.
+- **Component coverage** — `UserSection`, galaxy `Map`, `eventToast`, `NotificationToggle`, `LiveToasts`, `FactionHealthChart`, `HomeClient`, `ArchivesClient`. Used a capture-style child-mock pattern (`testid` with JSON-encoded prop data) to verify orchestrator wiring without rendering real children.
+- **Worker coverage** — `public/workers/cron.js` split into a thin entry shell + `cronLogic.js`. The shell is tested via `Module._load` monkey-patching; the logic via direct unit tests covering setTimeout-not-setInterval non-overlap, X-Worker-Startup first-poll header, error recovery without crashing the loop, and config wiring.
+
+### Fixes
+
+- **`/api/h1/update` worker thread was broken in production** — `public/workers/cron.js` uses CommonJS `require('worker_threads')`, but the project's root `"type": "module"` made Node load it as ESM, crashing on every spawn. Fixed by adding `public/workers/package.json` with `{"type": "commonjs"}` to scope just the worker directory to CJS. Worker now stays online; worker-heartbeat data should resume in production.
+- **`sendWithConcurrencyLimit` reported failed sends as "sent"** — the function returned `sent: subscriptions.length - staleEndpoints.length`, which counted 5xx and network errors as if they had succeeded. Now counts only `Promise.allSettled` results with status `'fulfilled'`. The admin `sendTestNotification` UI is the only consumer; its `{ sent, stale }` display is now truthful.
+- **`formatCompactDuration` produced "1h, 30m" instead of "1h30m"** — set `delimiter: ''` alongside the existing `spacer: ''` to match the function's compact-output intent. Consumers (`FactionStats` avg duration, `RefreshSeasonButton` countdown, `EventLogCard` duration) all benefit from the tighter formatting.
+
+### Follow-ups filed during the campaign
+
+- `#319` `/api/healthcheck` should probe DB on health check (currently returns a hardcoded `{ alive: true }`)
+- `#320` `useLiveData` `navigator.onLine` check is dead code (overwritten by `poll()`)
+- `#321` `useTrack` partial-umami guard (throws when `window.umami` exists but `track` is missing)
+- `#322` `vitest.setup.mjs` `after()` mock auto-invokes synchronously (hides response-timing bugs)
+- `#323` `public/workers/*` needed local `package.json` with `type: commonjs` (fixed in this release)
+
 ## 0.43.1
 
 ### Chores
