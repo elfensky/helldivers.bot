@@ -1541,7 +1541,7 @@ Closes #283.
 - Add database migration for Phase 1 schema rewrite
 - Implement fluid typography with CSS `clamp()` for responsive text scaling
 - Add ESM `"type": "module"` to `package.json`
-- Add Playwright smoke tests (`npm run test:smoke`)
+- Add Vitest smoke tests (`npm run test:smoke`)
 
 ## 0.8.0 (2025-12-09)
 
