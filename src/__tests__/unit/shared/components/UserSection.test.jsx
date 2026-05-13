@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 
 // UserSection has 4 distinct render branches gated on (status, isPending,
 // session, avatarUrl): offline → null; pending → skeleton; logged-out → SignIn;
@@ -46,13 +46,14 @@ afterEach(() => {
 });
 
 describe('UserSection — render gates', () => {
-    test('renders null when status is offline (the live-data layer hides auth UI)', () => {
+    test('renders null when status is offline (the live-data layer hides auth UI)', async () => {
         vi.mocked(useLiveDataContext).mockReturnValue({ status: 'offline' });
         vi.mocked(useSession).mockReturnValue({ data: baseSession, isPending: false });
 
         const { container } = render(<UserSection />);
 
         expect(container.firstChild).toBeNull();
+        await act(async () => {});
     });
 
     test('renders skeleton while session is pending', () => {

@@ -114,7 +114,7 @@ describe('useLiveData — initial mount', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => { await flushAll(); });
 
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock).toHaveBeenCalledWith('/api/h1/live');
@@ -128,21 +128,25 @@ describe('useLiveData — initial mount', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => { await flushAll(); });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // Advance ~9.9s — no second fetch yet.
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL - 100);
+        await act(async () => { await vi.advanceTimersByTimeAsync(POLL_INTERVAL - 100); });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // Cross the threshold → second fetch.
-        await vi.advanceTimersByTimeAsync(200);
-        await flushAll();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(200);
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(2);
 
         // Another full interval → third fetch.
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
-        await flushAll();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(3);
     });
 
@@ -293,7 +297,7 @@ describe('useLiveData — visibilitychange handler', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => { await flushAll(); });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // Simulate tab focus
@@ -301,8 +305,10 @@ describe('useLiveData — visibilitychange handler', () => {
             value: false,
             configurable: true,
         });
-        document.dispatchEvent(new Event('visibilitychange'));
-        await flushAll();
+        await act(async () => {
+            document.dispatchEvent(new Event('visibilitychange'));
+            await flushAll();
+        });
 
         // visibilitychange triggered an extra fetch before the next interval.
         expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -316,15 +322,17 @@ describe('useLiveData — visibilitychange handler', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => { await flushAll(); });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         Object.defineProperty(document, 'hidden', {
             value: true,
             configurable: true,
         });
-        document.dispatchEvent(new Event('visibilitychange'));
-        await flushAll();
+        await act(async () => {
+            document.dispatchEvent(new Event('visibilitychange'));
+            await flushAll();
+        });
 
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
@@ -340,14 +348,16 @@ describe('useLiveData — singleton & cleanup', () => {
 
         renderHook(() => useLiveData(null, null));
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => { await flushAll(); });
 
         // Both consumers triggered the SAME initial poll (set up by the first mount),
         // not a fetch per consumer.
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
-        await flushAll();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
+            await flushAll();
+        });
 
         // Only one fresh interval fire — not two.
         expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -361,13 +371,15 @@ describe('useLiveData — singleton & cleanup', () => {
         const { useLiveData } = await loadHookFresh();
 
         const a = renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => { await flushAll(); });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         a.unmount();
 
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL * 3);
-        await flushAll();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL * 3);
+            await flushAll();
+        });
 
         // Interval cleared on last unmount → no further fetches.
         expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -381,7 +393,7 @@ describe('useLiveData — singleton & cleanup', () => {
         const { useLiveData } = await loadHookFresh();
 
         const { unmount } = renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => { await flushAll(); });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         unmount();
@@ -390,8 +402,10 @@ describe('useLiveData — singleton & cleanup', () => {
             value: false,
             configurable: true,
         });
-        document.dispatchEvent(new Event('visibilitychange'));
-        await flushAll();
+        await act(async () => {
+            document.dispatchEvent(new Event('visibilitychange'));
+            await flushAll();
+        });
 
         // Listener removed → focus event must not trigger a poll.
         expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -428,7 +442,7 @@ describe('useLiveData — localStorage cache fallback', () => {
         expect(result.current.mapState).toEqual({ 0: 'illuminate' });
 
         resolveFetch?.(makeFetchResponse({ data: {}, mapState: {} }));
-        await flushAll();
+        await act(async () => { await flushAll(); });
     });
 
     test('writes the latest successful poll payload to localStorage', async () => {

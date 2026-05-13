@@ -28,23 +28,25 @@ describe('useHeaderGlassFilter — initial value', () => {
         expect(result.current).toBe('none');
     });
 
-    test('reads the CSS var on mount when set BEFORE the hook mounts', () => {
+    test('reads the CSS var on mount when set BEFORE the hook mounts', async () => {
         document.documentElement.style.setProperty(
             '--header-glass-filter',
             'blur(8.8px)',
         );
 
         const { result } = renderHook(() => useHeaderGlassFilter());
+        await act(async () => {});
         expect(result.current).toBe('blur(8.8px)');
     });
 
-    test('trims whitespace from the CSS var value', () => {
+    test('trims whitespace from the CSS var value', async () => {
         document.documentElement.style.setProperty(
             '--header-glass-filter',
             '   blur(4px)   ',
         );
 
         const { result } = renderHook(() => useHeaderGlassFilter());
+        await act(async () => {});
         expect(result.current).toBe('blur(4px)');
     });
 
@@ -59,6 +61,7 @@ describe('useHeaderGlassFilter — initial value', () => {
 describe('useHeaderGlassFilter — MutationObserver updates', () => {
     test('updates when <html>.style is mutated with a new --header-glass-filter value', async () => {
         const { result } = renderHook(() => useHeaderGlassFilter());
+        await act(async () => {});
         expect(result.current).toBe('none');
 
         await act(async () => {
@@ -80,6 +83,7 @@ describe('useHeaderGlassFilter — MutationObserver updates', () => {
             renders.push(v);
             return v;
         });
+        await act(async () => {});
 
         await act(async () => {
             document.documentElement.style.setProperty(
@@ -105,6 +109,7 @@ describe('useHeaderGlassFilter — MutationObserver updates', () => {
 
     test('updates again when the value changes to something different', async () => {
         const { result } = renderHook(() => useHeaderGlassFilter());
+        await act(async () => {});
 
         await act(async () => {
             document.documentElement.style.setProperty(

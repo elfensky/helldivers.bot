@@ -1,9 +1,7 @@
 // @vitest-environment jsdom
-import { describe, test, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import fs from 'fs/promises';
-import path from 'path';
 
 // Mock all child components to test wiring without implementation details
 vi.mock('@/features/archives/ArchiveStats', () => ({
@@ -103,39 +101,7 @@ vi.mock('next/navigation', () => ({
 
 import ArchivesClient from '@/features/archives/ArchivesClient';
 
-// Load all seed files
-const seedsDir = path.join(__dirname, '../../../../../prisma/seed/seasons');
-
-async function loadSeedFiles() {
-    try {
-        const files = await fs.readdir(seedsDir);
-        const seedFiles = files
-            .filter(file => file.startsWith('season-') && file.endsWith('.json'))
-            .sort((a, b) => {
-                const numA = parseInt(a.match(/season-(\d+)/)?.[1] || '0');
-                const numB = parseInt(b.match(/season-(\d+)/)?.[1] || '0');
-                return numA - numB;
-            });
-        
-        const seeds = [];
-        for (const file of seedFiles) {
-            const content = await fs.readFile(path.join(seedsDir, file), 'utf8');
-            const data = JSON.parse(content);
-            const seasonNumber = parseInt(file.match(/season-(\d+)/)?.[1] || '0');
-            seeds.push({ season: seasonNumber, file, data });
-        }
-        
-        return seeds;
-    } catch (error) {
-        console.error('Error loading seed files:', error);
-        return [];
-    }
-}
-
-let allSeeds = [];
-
-// Fallback test data in case seed files are not available
-const fallbackTestData = {
+const testSeasonData = {
     time: 1700000000,
     error_code: 0,
     introduction_order: [0, 1, 2],
@@ -176,18 +142,15 @@ const fallbackTestData = {
     ],
 };
 
-beforeAll(async () => {
-    allSeeds = await loadSeedFiles();
-    if (allSeeds.length === 0) {
-        console.warn('No seed files found, using fallback test data');
-        allSeeds = [
-            { season: 1, file: 'fallback-test-data.json', data: fallbackTestData },
-            { season: 2, file: 'fallback-test-data-2.json', data: { ...fallbackTestData, season: 2 } },
-        ];
-    } else {
-        console.log(`Loaded ${allSeeds.length} seed files for testing`);
-    }
-});
+const season2Data = {
+    ...testSeasonData,
+    snapshots: testSeasonData.snapshots.map((s) => ({ ...s, season: 2 })),
+};
+
+const allSeeds = [
+    { season: 1, file: 'season-1.json', data: testSeasonData },
+    { season: 2, file: 'season-2.json', data: season2Data },
+];
 
 beforeEach(() => {
     // Reset mocks before each test
@@ -259,7 +222,7 @@ describe('Archive Components Integration Tests', () => {
             const props = JSON.parse(statsElement.getAttribute('data-props') || '{}');
             
             expect(props).toHaveProperty('events', data.events);
-            expect(props).toHaveProperty('live', data.status);
+            expect(props.live).toBe(data.status);
             expect(props).toHaveProperty('data', data);
         });
 
