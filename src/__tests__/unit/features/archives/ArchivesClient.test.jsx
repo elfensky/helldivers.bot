@@ -110,8 +110,8 @@ vi.mock('@/features/archives/useScrollEvent.mjs', () => ({
 vi.mock('@/shared/hooks/useHeaderGlassFilter.mjs', () => ({
     useHeaderGlassFilter: mocks.useHeaderGlassFilterMock,
 }));
-vi.mock('@/shared/hooks/useFactionPreference.mjs', () => ({
-    useFactionPreference: mocks.useFactionPreferenceMock,
+vi.mock('@/shared/hooks/usePersistedState.mjs', () => ({
+    usePersistedState: mocks.useFactionPreferenceMock,
 }));
 
 import ArchivesClient from '@/features/archives/ArchivesClient';
