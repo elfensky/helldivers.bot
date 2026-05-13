@@ -12,7 +12,7 @@
         "test:unit": "vitest run",
         "test:coverage": "vitest run --coverage",
         "test:e2e": "vitest run --config vitest.smoke.config.mjs",
-        "update:safe": "npm update --before=$(node -e \"console.log(new Date(Date.now()-7*864e5).toISOString())\")"
+        "update:safe": "npx npm-check-updates --cooldown 7d -u && npm install"
     },
     "dependencies": {
         "@asteasolutions/zod-to-openapi": "^8.5.0",
