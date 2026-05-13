@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.44.1
+
+### CI & dev tooling
+
+- **CodeQL now runs on pull requests** — `Analyze (javascript-typescript)` is a required status check on `main`'s branch protection, but the workflow only triggered on `push` to `main`/`develop`. PRs that needed it to merge were permanently `BLOCKED`. Added `pull_request: { branches: [main, develop] }` to `.github/workflows/codeql.yml` so the required check actually fires on PR heads.
+- **GitGuardian secret scanning excludes test fixtures** — synthetic VAPID-shaped keys, push subscription endpoints, and JWT-shaped tokens in `src/__tests__/**`, `**/*.test.{js,jsx,mjs,ts,tsx}`, `**/*.spec.{js,jsx,mjs,ts,tsx}`, `**/__fixtures__/**`, and `**/__mocks__/**` are now excluded from secret scanning via `.gitguardian.yaml`. These fixtures are designed to look real so the code-under-test exercises the same validation paths it would in production, but they're random/hand-crafted and not valid anywhere.
+- **VAPID test fixtures use obvious placeholder strings** — `notifications-subscribe.test.mjs` previously used an 87-char base64url-shaped `p256dh` that was indistinguishable in shape from a real VAPID public key (GitGuardian flagged it). Replaced both keys with `TEST_*_PLACEHOLDER` strings that still satisfy the Zod regex + length constraints. Suite still 1244/1244.
+
 ## 0.44.0
 
 ### Test suite quality (Phase 12)
