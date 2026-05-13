@@ -2,6 +2,7 @@
 import { useActionState } from 'react';
 import Image from 'next/image';
 import { updateUserRole, toggleUserBan } from '@/db/queries/admin';
+import Button from '@/shared/components/Button/Button';
 
 export default function UserTableClient({ users, adminCount, currentUserId }) {
     return (
@@ -51,7 +52,9 @@ function UserRow({ user, adminCount, currentUserId }) {
     const providers = user.accounts?.map((a) => a.providerId) ?? [];
 
     return (
-        <tr className={`border-t border-ghost/30 ${isBanned ? 'opacity-50' : ''} hover:bg-surface-2`}>
+        <tr
+            className={`border-t border-ghost/30 ${isBanned ? 'opacity-50' : ''} hover:bg-surface-2`}
+        >
             <td className="p-3">
                 <div className="flex items-center gap-2">
                     {user.image && (
@@ -64,7 +67,9 @@ function UserRow({ user, adminCount, currentUserId }) {
                         />
                     )}
                     <div>
-                        <div className={`text-small text-text ${isBanned ? 'line-through' : ''}`}>
+                        <div
+                            className={`text-small text-text ${isBanned ? 'line-through' : ''}`}
+                        >
                             {user.name ?? 'Anonymous'}
                         </div>
                         <div className="text-small text-text-muted">{user.email}</div>
@@ -96,11 +101,14 @@ function UserRow({ user, adminCount, currentUserId }) {
                         disabled={roleDisabled}
                         title={
                             isSelf ? 'Cannot change your own role'
-                            : isLastAdmin ? 'Cannot demote the last admin'
-                            : undefined
+                            : isLastAdmin ?
+                                'Cannot demote the last admin'
+                            :   undefined
                         }
                         className={`bg-surface-2 px-2 py-0.5 font-mono text-small ${
-                            roleDisabled ? 'cursor-not-allowed text-text-muted' : 'text-text'
+                            roleDisabled ?
+                                'cursor-not-allowed text-text-muted'
+                            :   'text-text'
                         }`}
                     >
                         <option value="user">user</option>
@@ -117,18 +125,14 @@ function UserRow({ user, adminCount, currentUserId }) {
                             name="banned"
                             value={isBanned ? 'false' : 'true'}
                         />
-                        <button
+                        <Button
                             type="submit"
+                            variant={isBanned ? 'success' : 'danger'}
                             disabled={banDisabled}
                             title={isLastAdmin ? 'Cannot ban the last admin' : undefined}
-                            className={`cursor-pointer border px-2 py-0.5 text-small disabled:cursor-not-allowed disabled:opacity-50 ${
-                                isBanned
-                                    ? 'border-green-400/30 text-green-400/70'
-                                    : 'border-danger/30 text-danger/70 hover:text-danger'
-                            }`}
                         >
                             {isBanned ? 'Unban' : 'Ban'}
-                        </button>
+                        </Button>
                     </form>
                 )}
             </td>

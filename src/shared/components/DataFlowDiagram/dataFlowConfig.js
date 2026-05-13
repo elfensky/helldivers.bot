@@ -5,57 +5,53 @@
 export const dataFlowConfig = {
     views: [
         { key: 'all', label: 'All Flows' },
-        { key: 'live', label: 'Live Polling (5-15s)' },
+        { key: 'live', label: 'Live Polling (~15s)' },
         { key: 'snapshot', label: 'Snapshot Sync' },
         { key: 'seed', label: 'Seed (Bootstrap)' },
-        { key: 'refresh', label: 'Force Refresh' },
-        { key: 'read', label: 'Frontend Reads' },
+        { key: 'read_live', label: 'Frontend: Live' },
+        { key: 'read_archives', label: 'Frontend: Archives' },
+        { key: 'read_rebroadcast', label: 'Frontend: Rebroadcast' },
     ],
 
     flows: {
         live: [
             'api_status',
             'worker',
-            'rb_status',
             'h1_season',
-            'h1_live',
+            'h1_status',
+            'h1_statistic',
             'h1_event',
-            'h1_intro',
-            'h1_points',
+            'h1_event_progress',
         ],
         snapshot: [
             'api_snapshot',
             'worker',
-            'rb_snapshot',
             'h1_season',
+            'h1_status',
+            'h1_statistic',
             'h1_event',
-            'h1_intro',
-            'h1_points',
+            'h1_event_progress',
         ],
-        seed: [
-            'seed_files',
-            'seed_script',
+        seed: ['seed_files', 'seed_script', 'h1_season', 'h1_status', 'h1_event'],
+        read_live: ['h1_status', 'h1_event', 'h1_season', 'fe_live'],
+        read_archives: [
+            'h1_status',
+            'h1_event',
+            'h1_event_progress',
+            'fe_archives',
+        ],
+        read_rebroadcast: [
             'h1_season',
+            'h1_status',
+            'h1_statistic',
             'h1_event',
-            'h1_intro',
-            'h1_points',
+            'fe_rebroadcast',
         ],
-        refresh: [
-            'api_refresh',
-            'refresh_handler',
-            'rb_snapshot',
-            'h1_season',
-            'h1_event',
-            'h1_intro',
-            'h1_points',
-        ],
-        read: ['h1_live', 'h1_event', 'fe_live', 'fe_events'],
     },
 
     legend: [
         { color: '#3b82f6', label: 'Official API' },
         { color: '#a855f7', label: 'Worker / Processing' },
-        { color: '#f59e0b', label: 'Raw Cache (rebroadcast)' },
         { color: '#22c55e', label: 'Normalized (h1_*)' },
         { color: '#ec4899', label: 'Seed Files (past wars)' },
         { color: '#06b6d4', label: 'Frontend Components' },
@@ -73,11 +69,11 @@ export const dataFlowConfig = {
                 {
                     type: 'text',
                     content:
-                        'Returns the live state of the current war. Polled every 5-15 seconds.',
+                        'Returns the live state of the current war. Polled every ~15 seconds.',
                 },
                 {
                     type: 'tags',
-                    items: [{ text: '5-15s poll', cls: 'tag-interval' }],
+                    items: [{ text: '~15s poll', cls: 'tag-interval' }],
                 },
                 { type: 'heading', content: 'Response shape' },
                 {
@@ -94,11 +90,11 @@ export const dataFlowConfig = {
                 {
                     type: 'text',
                     content:
-                        'Returns the full history of a war: time-series snapshots + all events. For past wars, data is immutable.',
+                        'Returns the full history of a war: time-series snapshots + all events. For past wars, data is immutable. Also used for on-demand backfill of missing seasons.',
                 },
                 {
                     type: 'tags',
-                    items: [{ text: '~1h poll (current war)', cls: 'tag-interval' }],
+                    items: [{ text: '~15s poll + on demand', cls: 'tag-interval' }],
                 },
                 { type: 'heading', content: 'Response shape' },
                 {
@@ -124,52 +120,12 @@ export const dataFlowConfig = {
                 {
                     type: 'text',
                     content:
-                        'Does NOT replace the ability to re-fetch from the API. Seed gets the app running without API dependency; force refresh updates data from the live API.',
+                        'Does NOT replace the ability to re-fetch from the API. Seed gets the app running without API dependency; on-demand backfill updates data from the live API.',
                 },
                 {
                     type: 'code',
                     content:
-                        'prisma/seed/seasons/\n  001.json\n  002.json\n  ...\n  155.json',
-                },
-            ],
-        },
-        api_refresh: {
-            title: 'get_snapshots (forced)',
-            subtitle: 'On-demand season refresh',
-            sections: [
-                {
-                    type: 'text',
-                    content:
-                        'Re-fetch any season from the live API to update or correct data. Triggered by admin action (e.g., /api/h1/update?season=148&force=true).',
-                },
-                {
-                    type: 'tags',
-                    items: [{ text: 'on demand', cls: 'tag-interval' }],
-                },
-                {
-                    type: 'text',
-                    content:
-                        'Use cases: pick up a newly completed season, correct corrupted data, backfill a season not in seed files. Goes through the same normalization pipeline as the regular snapshot sync.',
-                },
-            ],
-        },
-        refresh_handler: {
-            title: 'updateSeason()',
-            subtitle: 'src/update/season.mjs',
-            sections: [
-                {
-                    type: 'text',
-                    content:
-                        'Same function used by the regular snapshot sync. Fetches get_snapshots for the specified season, validates with Zod, upserts into rebroadcast_snapshot + all normalized h1_* tables.',
-                },
-                {
-                    type: 'tags',
-                    items: [{ text: 'fetch + validate + upsert', cls: 'tag-upsert' }],
-                },
-                {
-                    type: 'text',
-                    content:
-                        'Overwrites existing data for that season (idempotent via unique constraints).',
+                        'prisma/seed/seasons/\n  season-001.json\n  season-002.json\n  ...\n  season-155.json',
                 },
             ],
         },
@@ -180,17 +136,22 @@ export const dataFlowConfig = {
                 {
                     type: 'text',
                     content:
-                        'Uses setTimeout (not setInterval) to prevent overlapping requests.',
+                        'Uses setTimeout (not setInterval) to prevent overlapping requests. Both API endpoints polled every ~15s.',
                 },
                 {
                     type: 'tags',
-                    items: [{ text: '5-15s loop', cls: 'tag-interval' }],
+                    items: [{ text: '~15s loop', cls: 'tag-interval' }],
                 },
                 { type: 'heading', content: 'Update cycle' },
                 {
                     type: 'text',
                     content:
-                        '1. Fetch API response\n2. Validate with Zod schemas\n3. Upsert raw JSON into rebroadcast table\n4. Normalize into h1_* tables\n5. Schedule next poll via setTimeout',
+                        '1. Fetch API response\n2. Validate with Zod schemas\n3. Bucket-upsert into h1_* tables\n4. Schedule next poll via setTimeout',
+                },
+                {
+                    type: 'text',
+                    content:
+                        'Bucket-upsert groups polls into configurable time buckets (BUCKET_SIZE env var). Within a bucket, values are overwritten; a new bucket creates a new row.',
                 },
             ],
         },
@@ -209,61 +170,14 @@ export const dataFlowConfig = {
                 },
             ],
         },
-        rb_status: {
-            title: 'rebroadcast_status',
-            subtitle: 'Raw cache layer',
-            sections: [
-                {
-                    type: 'text',
-                    content:
-                        'Stores the latest raw API response per season. Upserted on every poll. No history.',
-                },
-                {
-                    type: 'tags',
-                    items: [{ text: 'upsert by season', cls: 'tag-upsert' }],
-                },
-                {
-                    type: 'table',
-                    headers: ['Field', 'Type', 'Note'],
-                    rows: [
-                        ['season', 'Int', '@unique'],
-                        ['last_updated', 'DateTime', 'poll timestamp'],
-                        ['json', 'JSONB', 'full response'],
-                    ],
-                },
-            ],
-        },
-        rb_snapshot: {
-            title: 'rebroadcast_snapshot',
-            subtitle: 'Raw cache layer',
-            sections: [
-                {
-                    type: 'text',
-                    content:
-                        'Stores the latest raw snapshot response per season. Not time-series \u2014 that is h1_snapshot.',
-                },
-                {
-                    type: 'tags',
-                    items: [{ text: 'upsert by season', cls: 'tag-upsert' }],
-                },
-                {
-                    type: 'table',
-                    headers: ['Field', 'Type', 'Note'],
-                    rows: [
-                        ['season', 'Int', '@unique'],
-                        ['last_updated', 'DateTime', 'poll timestamp'],
-                        ['json', 'JSONB', 'full response'],
-                    ],
-                },
-            ],
-        },
         h1_season: {
             title: 'h1_season',
             subtitle: 'Root anchor for all game data',
             sections: [
                 {
                     type: 'text',
-                    content: 'Every normalized table FKs back to this via season (Int).',
+                    content:
+                        'Every normalized table FKs back to this via season (Int). Inlines introduction_order[] and points_max[] arrays (formerly separate tables) plus season_duration[].',
                 },
                 {
                     type: 'table',
@@ -271,24 +185,30 @@ export const dataFlowConfig = {
                     rows: [
                         ['season', 'Int @unique'],
                         ['last_updated', 'DateTime?'],
+                        ['introduction_order', 'Int[]'],
+                        ['points_max', 'Int[]'],
+                        ['season_duration', 'Int[]'],
                     ],
                 },
             ],
         },
-        h1_live: {
-            title: 'h1_live',
-            subtitle: 'Current season live state',
+        h1_status: {
+            title: 'h1_status',
+            subtitle: 'Bucketed campaign timeseries',
             sections: [
                 {
                     type: 'text',
                     content:
-                        'One row per (season, enemy). Merges campaign_status + statistics + computed map data. Overwritten every 5-15s poll. Current season only \u2014 not populated for past seasons.',
+                        'One row per (season, enemy, bucket). Stores campaign progress (points, status) at each time bucket. Both API paths write here \u2014 unified source for live dashboard and archives.',
                 },
                 {
                     type: 'tags',
                     items: [
-                        { text: 'upsert by (season, enemy)', cls: 'tag-upsert' },
-                        { text: 'Live Dashboard', cls: 'tag-read' },
+                        {
+                            text: 'bucket-upsert by (season, enemy, bucket)',
+                            cls: 'tag-upsert',
+                        },
+                        { text: 'Live Dashboard + Archives', cls: 'tag-read' },
                     ],
                 },
                 {
@@ -297,18 +217,45 @@ export const dataFlowConfig = {
                     rows: [
                         ['season', 'Int FK'],
                         ['enemy', 'Int (0/1/2)'],
+                        ['bucket', 'DateTime'],
                         ['points / points_max', 'Int'],
                         ['status', 'String'],
                         ['players', 'Int'],
-                        ['kills / deaths', 'BigInt'],
-                        ['missions', 'Int'],
-                        ['map', 'Json?'],
                     ],
                 },
+            ],
+        },
+        h1_statistic: {
+            title: 'h1_statistic',
+            subtitle: 'Bucketed stats timeseries',
+            sections: [
                 {
                     type: 'text',
                     content:
-                        'Replaces h1_campaign + h1_statistic + App.map (v1 consolidation). Frontend reads 3 rows for full live dashboard.',
+                        'One row per (season, enemy, bucket). Stores gameplay statistics (kills, deaths, shots, missions) at each time bucket. Used by the rebroadcast API to reconstruct wire format.',
+                },
+                {
+                    type: 'tags',
+                    items: [
+                        {
+                            text: 'bucket-upsert by (season, enemy, bucket)',
+                            cls: 'tag-upsert',
+                        },
+                        { text: 'Rebroadcast API', cls: 'tag-read' },
+                    ],
+                },
+                {
+                    type: 'table',
+                    headers: ['Field', 'Type'],
+                    rows: [
+                        ['season', 'Int FK'],
+                        ['enemy', 'Int (0/1/2)'],
+                        ['bucket', 'DateTime'],
+                        ['kills / deaths', 'BigInt'],
+                        ['missions', 'Int'],
+                        ['shots / hits', 'BigInt'],
+                        ['accidentals', 'BigInt'],
+                    ],
                 },
             ],
         },
@@ -319,7 +266,7 @@ export const dataFlowConfig = {
                 {
                     type: 'text',
                     content:
-                        'Single table with type discriminator. Region 1-10 = sectors, 11 = homeworld.',
+                        'Single table with type discriminator. Region 1-10 = sectors, 11 = homeworld. Mutable \u2014 status and points updated in place as events progress.',
                 },
                 {
                     type: 'tags',
@@ -342,103 +289,90 @@ export const dataFlowConfig = {
                         ['players_at_start', 'Int?'],
                     ],
                 },
-                {
-                    type: 'text',
-                    content:
-                        'Replaces h1_defend_event + h1_attack_event (v1 consolidation)',
-                },
             ],
         },
-        h1_intro: {
-            title: 'h1_introduction_order',
-            subtitle: 'Faction war-entry ordering per season',
+        h1_event_progress: {
+            title: 'h1_event_progress',
+            subtitle: 'Bucketed event progression',
             sections: [
                 {
                     type: 'text',
                     content:
-                        'One row per season. Which factions entered the war and in what order. Indexed by enemy: [Bugs, Cyborgs, Illuminate].',
-                },
-                {
-                    type: 'tags',
-                    items: [{ text: 'upsert by season', cls: 'tag-upsert' }],
-                },
-                {
-                    type: 'table',
-                    headers: ['Field', 'Type'],
-                    rows: [
-                        ['season', 'Int @unique FK'],
-                        ['order', 'Int[]'],
-                    ],
-                },
-                {
-                    type: 'text',
-                    content:
-                        'Populated from campaign_status (current season) or get_snapshots (past seasons). Redundant json field dropped in v1.',
-                },
-            ],
-        },
-        h1_points: {
-            title: 'h1_points_max',
-            subtitle: 'Max liberation points per season',
-            sections: [
-                {
-                    type: 'text',
-                    content:
-                        'One row per season. Max points needed to trigger homeworld assault per faction. Indexed by enemy: [Bugs, Cyborgs, Illuminate].',
-                },
-                {
-                    type: 'tags',
-                    items: [{ text: 'upsert by season', cls: 'tag-upsert' }],
-                },
-                {
-                    type: 'table',
-                    headers: ['Field', 'Type'],
-                    rows: [
-                        ['season', 'Int @unique FK'],
-                        ['points', 'Int[]'],
-                    ],
-                },
-                {
-                    type: 'text',
-                    content:
-                        'Populated from campaign_status (current season) or get_snapshots (past seasons). Redundant json field dropped in v1.',
-                },
-            ],
-        },
-        fe_live: {
-            title: 'Live Dashboard',
-            subtitle: 'Map + Stats + Players',
-            sections: [
-                {
-                    type: 'text',
-                    content:
-                        'Reads all 3 h1_live rows for the active season. Renders galaxy map (3 factions x 11 regions), stat cards (kills, deaths, accuracy), and player counts.',
-                },
-                {
-                    type: 'tags',
-                    items: [{ text: 'reads h1_live', cls: 'tag-read' }],
-                },
-                {
-                    type: 'text',
-                    content:
-                        "Each h1_live row contains one faction's campaign progress, statistics, and pre-computed map slice. Frontend assembles the full view from all 3 rows.",
-                },
-            ],
-        },
-        fe_events: {
-            title: 'Event Alerts',
-            subtitle: 'Active defend/attack events',
-            sections: [
-                {
-                    type: 'text',
-                    content:
-                        'Shows alerts for ongoing events with progress and countdown timer.',
+                        'One row per (event_id, bucket). Tracks how event points change over time. Used by archives to show event progression charts.',
                 },
                 {
                     type: 'tags',
                     items: [
                         {
-                            text: 'reads h1_event WHERE status = active',
+                            text: 'bucket-upsert by (event_id, bucket)',
+                            cls: 'tag-upsert',
+                        },
+                        { text: 'Archives progression', cls: 'tag-read' },
+                    ],
+                },
+                {
+                    type: 'table',
+                    headers: ['Field', 'Type'],
+                    rows: [
+                        ['event_id', 'Int FK'],
+                        ['bucket', 'DateTime'],
+                        ['points', 'Int'],
+                        ['points_max', 'Int'],
+                    ],
+                },
+            ],
+        },
+        fe_live: {
+            title: 'Live Dashboard',
+            subtitle: 'Latest bucket per faction',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Reads the latest h1_status bucket for each faction in the active season, plus active events and season arrays. Renders galaxy map, stat cards, and player counts.',
+                },
+                {
+                    type: 'tags',
+                    items: [
+                        { text: 'reads h1_status (latest)', cls: 'tag-read' },
+                    ],
+                },
+            ],
+        },
+        fe_archives: {
+            title: 'Archives',
+            subtitle: 'Full timeseries history',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Reads full h1_status timeseries + all h1_event records + h1_event_progress for any season. Missing seasons backfilled on demand from the official API.',
+                },
+                {
+                    type: 'tags',
+                    items: [
+                        {
+                            text: 'reads h1_status + h1_event + h1_event_progress',
+                            cls: 'tag-read',
+                        },
+                    ],
+                },
+            ],
+        },
+        fe_rebroadcast: {
+            title: 'Rebroadcast API',
+            subtitle: 'Reconstructed wire format',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Reconstructs the original API wire format from normalized tables for third-party consumers. Reads h1_season + h1_status + h1_statistic + h1_event.',
+                },
+                {
+                    type: 'tags',
+                    items: [
+                        {
+                            text: 'reconstructs from 4 tables',
                             cls: 'tag-read',
                         },
                     ],

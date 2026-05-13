@@ -1,19 +1,18 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
+import Button from '@/shared/components/Button/Button';
 
 export default function RefreshButton() {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
 
     return (
-        <button
-            type="button"
+        <Button
             onClick={() => startTransition(() => router.refresh())}
             disabled={isPending}
-            className="cursor-pointer border border-ghost px-2 py-0.5 text-small text-text-muted hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
         >
             {isPending ? 'Refreshing...' : 'Refresh'}
-        </button>
+        </Button>
     );
 }

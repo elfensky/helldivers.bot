@@ -14,22 +14,23 @@ import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
 import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
 
 /**
- * Homepage client — owns the two-row grid that spans the hero and the
- * scrollytelling event log, with a single galaxy map column that can
- * be pinned (mobile/tablet) or lives in a real grid cell (desktop).
+ * Homepage client — owns a two-column grid: one sidebar that stacks
+ * the dashboard (season heading, region cards, stats) and the event
+ * log, and a single sticky galaxy map column that can be pinned
+ * (mobile/tablet) or lives in its own grid cell (desktop).
  *
  * Layout:
  *
  *   Desktop (lg+):               Mobile/Tablet (<lg, unpinned):
  *   ┌──────────────┬─────────┐   ┌──────────────────┐
- *   │ hero sidebar │         │   │   hero sidebar   │
- *   ├──────────────┤   map   │   ├──────────────────┤
- *   │ event log    │         │   │    ┌────────┐    │  map in normal
- *   └──────────────┴─────────┘   │    │  map   │    │  flow, scrolls
- *     grid-area: map spans         │    └────────┘    │  away
- *     both rows, sticky            ├──────────────────┤
- *     top:80px in right            │   event log      │
- *     column                       └──────────────────┘
+ *   │   sidebar    │         │   │    ┌────────┐    │  map in normal
+ *   │  (dashboard  │   map   │   │    │  map   │    │  flow, scrolls
+ *   │  + event log)│ sticky  │   │    └────────┘    │  away
+ *   └──────────────┴─────────┘   ├──────────────────┤
+ *     map sticky at                │   sidebar        │
+ *     top:80px in                  │   (dashboard     │
+ *     right column                 │   + event log)   │
+ *                                  └──────────────────┘
  *
  *   Mobile/Tablet (<lg, pinned via FAB):
  *   ┌──────────────────┐
@@ -91,7 +92,13 @@ import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
  * Stale mobile state classes (from a viewport resize) are explicitly
  * reset in the lg+ media block to avoid cross-breakpoint leakage.
  */
-export default function HomeClient() {
+export default function HomeClient({
+    initialFaction = 'global',
+    initialRegionsView = 'sector',
+    initialSortOrder = 'desc',
+    playersAvg24h = null,
+    kills24hAgo = null,
+}) {
     const { data, mapState: liveMapState } = useLiveDataContext();
     const events = data?.events ?? [];
     const pulseDelays = computePulseDelays(events);
@@ -137,9 +144,26 @@ export default function HomeClient() {
 
     return (
         <div className="home-grid gutters">
-            <div className="home-hero-sidebar">
+            <div className="home-sidebar gap-8">
                 <ComponentErrorBoundary name="Dashboard">
-                    <DashboardClient />
+                    <DashboardClient
+                        initialFaction={initialFaction}
+                        initialRegionsView={initialRegionsView}
+                        playersAvg24h={playersAvg24h}
+                        kills24hAgo={kills24hAgo}
+                    />
+                </ComponentErrorBoundary>
+                <ComponentErrorBoundary name="Event Log">
+                    <EventLog
+                        events={events}
+                        timeFormat="live"
+                        title="Event Log"
+                        id="event-log"
+                        layout="stack"
+                        initialSortOrder={initialSortOrder}
+                        selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
+                        railRef={railRef}
+                    />
                 </ComponentErrorBoundary>
             </div>
 
@@ -158,20 +182,6 @@ export default function HomeClient() {
             >
                 <ComponentErrorBoundary name="Galaxy Map">
                     {mapState && <Galaxy mapState={mapState} pulseDelays={pulseDelays} />}
-                </ComponentErrorBoundary>
-            </div>
-
-            <div className="home-scrolly-log">
-                <ComponentErrorBoundary name="Event Log">
-                    <EventLog
-                        events={events}
-                        timeFormat="live"
-                        title="Event Log"
-                        id="event-log"
-                        layout="stack"
-                        selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
-                        railRef={railRef}
-                    />
                 </ComponentErrorBoundary>
             </div>
 

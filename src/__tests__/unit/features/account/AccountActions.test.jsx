@@ -38,4 +38,9 @@ describe('AccountActions', () => {
         const deleteBtn = screen.getByRole('button', { name: /delete/i });
         expect(downloadBtn.parentElement).toBe(deleteBtn.parentElement);
     });
+
+    test('renders google provider', () => {
+        render(<AccountActions {...props} />);
+        expect(screen.getByText('google')).toBeInTheDocument();
+    });
 });

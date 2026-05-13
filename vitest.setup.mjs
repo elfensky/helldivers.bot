@@ -68,23 +68,15 @@ vi.mock('@/db/db', () => ({
         session: createModelMock(),
         verification: createModelMock(),
         // App models
-        app: createModelMock(),
         settings: createModelMock(),
-        review: createModelMock(),
         apiKey: createModelMock(),
         ApiKey: createModelMock(),
-        // Rebroadcast models
-        rebroadcast_status: createModelMock(),
-        rebroadcast_snapshot: createModelMock(),
-        // Historical models
+        // Helldivers models
         h1_season: createModelMock(),
-        h1_introduction_order: createModelMock(),
-        h1_points_max: createModelMock(),
-        h1_snapshot: createModelMock(),
         h1_event: createModelMock(),
-        h1_live: createModelMock(),
-        h1_live_snapshot: createModelMock(),
-        h1_event_snapshot: createModelMock(),
+        h1_status: createModelMock(),
+        h1_statistic: createModelMock(),
+        h1_event_progress: createModelMock(),
         // Worker health
         worker_heartbeat: createModelMock(),
         // Push subscriptions
@@ -93,6 +85,10 @@ vi.mock('@/db/db', () => ({
         $transaction: vi.fn((fn) => Promise.resolve(Array.isArray(fn) ? fn : fn())),
         $connect: vi.fn(() => Promise.resolve()),
         $disconnect: vi.fn(() => Promise.resolve()),
+        $queryRaw: vi.fn(() => Promise.resolve([])),
+        $queryRawUnsafe: vi.fn(() => Promise.resolve([])),
+        $executeRaw: vi.fn(() => Promise.resolve(0)),
+        $executeRawUnsafe: vi.fn(() => Promise.resolve(0)),
     },
 }));
 
@@ -114,6 +110,18 @@ vi.mock('@/shared/providers/LiveDataContext.mjs', () => ({
         prevData: null,
         isLeader: false,
     })),
+}));
+
+// #endregion
+
+// #region Third-Party Component Mocks
+
+/**
+ * Mock react-slot-counter — renders the current value as plain text so
+ * existing `getByText(...)` / `textContent` assertions keep working.
+ */
+vi.mock('react-slot-counter', () => ({
+    default: vi.fn(({ value }) => React.createElement('span', {}, String(value))),
 }));
 
 // #endregion
@@ -170,10 +178,26 @@ vi.mock('next/headers', () => ({
 }));
 
 /**
- * Mock Next.js Image — renders as <img> element
+ * Mock Next.js Image — renders as <img>, stripping Next.js-specific props
+ * (priority, placeholder, quality, fill, loader, sizes, unoptimized, loading,
+ * blurDataURL, onLoadingComplete) so React doesn't warn about non-DOM attributes.
  */
 vi.mock('next/image', () => ({
-    default: vi.fn((props) => React.createElement('img', props)),
+    default: vi.fn(
+        ({
+            priority,
+            placeholder,
+            quality,
+            fill,
+            loader,
+            sizes,
+            unoptimized,
+            loading,
+            blurDataURL,
+            onLoadingComplete,
+            ...props
+        }) => React.createElement('img', props),
+    ),
 }));
 
 /**
@@ -189,18 +213,11 @@ vi.mock('next/link', () => ({
 
 // #region Global Test Lifecycle
 
-// Suppress console noise from source code during tests (error paths, debug logs).
-// Tests that need to assert console output can use vi.spyOn(console, 'error').
-beforeAll(() => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.spyOn(console, 'info').mockImplementation(() => {});
-});
-
-afterAll(() => {
-    vi.restoreAllMocks();
-});
+// Console is NOT globally mocked — silencing console.error here would hide React
+// act() warnings, missing-dependency warnings, and source-code error logs, which
+// is how theater tests creep in. Tests that legitimately need to suppress or assert
+// on console output should use `vi.spyOn(console, 'error').mockImplementation(...)`
+// scoped to their own file/test.
 
 beforeEach(() => {
     vi.clearAllMocks();

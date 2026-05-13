@@ -238,7 +238,18 @@ export async function getSystemStats() {
         Promise.all([
             db.worker_heartbeat.findUnique({ where: { worker_type: 'cron_api_poller' } }),
             currentSeason ?
-                db.h1_live.count({ where: { status: 'active', season: currentSeason } })
+                // Count factions currently active in the current season.
+                // Reads latest h1_status row per enemy via $queryRaw DISTINCT ON,
+                // filters by status='active' in SQL.
+                db.$queryRaw`
+                    SELECT COUNT(*)::int AS count FROM (
+                        SELECT DISTINCT ON (enemy) status
+                        FROM h1_status
+                        WHERE season = ${currentSeason}
+                        ORDER BY enemy ASC, bucket DESC
+                    ) latest
+                    WHERE latest.status = 'active'
+                `.then((rows) => rows[0]?.count ?? 0)
             :   Promise.resolve(0),
             db.h1_event.count(),
             db.h1_season.count(),

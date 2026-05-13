@@ -1,7 +1,20 @@
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 
 /**
- * Evaluate event pace vs linear schedule.
+ * Evaluate event pace vs a LINEAR expected schedule.
+ *
+ * Assumes a constant rate of progress from start to end: `expectedRate =
+ * points_max / (end_time - start_time)`. Real player activity rarely follows
+ * a linear curve — expect optimistic reads during early-season player surges
+ * (actual rate > linear) and pessimistic reads late in a season as engagement
+ * tapers (actual rate < linear). This is intentional; treat the output as
+ * "how we're doing against a simple yardstick," not "will we make it."
+ *
+ * A ±10% buffer around the linear target keeps small fluctuations from
+ * flipping the label between 'ahead' and 'on_track'. 'behind' has no buffer
+ * — any shortfall is reported.
+ *
+ * Returns null if the event is not active or the time window is degenerate.
  *
  * @param {{ start_time: number, end_time: number, points: number, points_max: number, status: string }} event
  * @returns {{ status: 'ahead'|'behind'|'on_track', delta: number, deltaPercent: number, currentRate: number, requiredRate: number, label: string } | null}
@@ -45,9 +58,6 @@ export function evaluateProgress(event) {
         deltaPercent,
         currentRate,
         requiredRate,
-        label:
-            status === 'on_track' ? 'On track' : (
-                `${formatNumber(delta)} ${status}`
-            ),
+        label: status === 'on_track' ? 'On track' : `${formatNumber(delta)} ${status}`,
     };
 }

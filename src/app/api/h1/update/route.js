@@ -9,6 +9,18 @@ import db from '@/db/db';
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';
 import { checkAndNotify } from '@/update/pushNotifier';
+import { computeBucket } from '@/update/bucketing';
+
+// Tracks the season observed on the previous worker poll so we can detect
+// a season transition and run one final updateSeason() pass on the outgoing
+// season. HD1 writes a final "closing" snapshot to the old season a few
+// minutes after the transition point — without this detection, the worker
+// moves on to the new season before that closing frame is published and it
+// never lands in h1_snapshot. Resets to null on worker restart; the only
+// impact of a restart during the tiny transition window is that the closing
+// snapshot for that single transition is missed, which the admin can recover
+// via the /archives refresh button.
+let lastSeasonObserved = null;
 
 async function writeHeartbeat(start, isStartup, errorMsg = null) {
     const now = new Date();
@@ -55,9 +67,33 @@ export async function GET(request) {
     }
     const statusTime = roundedPerformanceTime(start);
 
+    //SEASON TRANSITION CLOSING PASS
+    // If the current poll's season is higher than the one observed on the
+    // previous poll, we've just crossed a transition boundary. Run
+    // updateSeason() once on the outgoing season to capture the closing
+    // snapshot HD1 writes a few minutes after the transition. Non-fatal on
+    // error — the current season's update is more critical, and the admin
+    // can always recover missing snapshots via the /archives refresh button.
+    if (lastSeasonObserved !== null && lastSeasonObserved < statusData.season) {
+        console.log(
+            `Season transition detected: ${lastSeasonObserved} → ${statusData.season}. Running closing pass on outgoing season.`,
+        );
+        const { error: closingError } = await tryCatch(updateSeason(lastSeasonObserved));
+        if (closingError) {
+            console.error(
+                `Closing pass for season ${lastSeasonObserved} failed:`,
+                closingError.message,
+            );
+        }
+    }
+    lastSeasonObserved = statusData.season;
+
     //SEASON
+    // Protect the bucket updateStatus() just wrote — stale snapshots from
+    // get_snapshots must not overwrite the fresher get_campaign_status data.
+    const protectedBucket = computeBucket(statusData.time);
     const { data: seasonData, error: seasonError } = await tryCatch(
-        updateSeason(statusData.season),
+        updateSeason(statusData.season, { protectedBucket }),
     );
     if (seasonError) {
         console.error(seasonError?.message, seasonError?.cause);

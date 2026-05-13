@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Form from 'next/form';
 import { useActionState } from 'react';
 import { generateApiKey, deleteApiKey } from '@/db/queries/api';
+import Button from '@/shared/components/Button/Button';
 
 const MAX_DESCRIPTION_LENGTH = 32;
 
@@ -54,17 +55,16 @@ export function GenerateApiKeyForm({ userId }) {
                             state?.errors?.description ? 'description-error' : undefined
                         }
                     />
-                    <span className={`text-small ${descLength >= MAX_DESCRIPTION_LENGTH ? 'text-danger' : 'text-text-muted'}`}>
+                    <span
+                        className={`text-small ${descLength >= MAX_DESCRIPTION_LENGTH ? 'text-danger' : 'text-text-muted'}`}
+                    >
                         {descLength}/{MAX_DESCRIPTION_LENGTH}
                     </span>
                 </fieldset>
 
-                <button
-                    className="cursor-pointer border border-primary px-4 py-2 text-body font-semibold text-primary hover:bg-primary hover:text-surface-0 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={pending}
-                >
+                <Button type="submit" variant="primary" size="lg" disabled={pending}>
                     Generate
-                </button>
+                </Button>
             </Form>
         </>
     );
@@ -84,13 +84,9 @@ export function DeleteApiKeyForm({ userId, apikeyId }) {
             <Form action={formAction}>
                 <input type="hidden" name="userId" value={userId} />
                 <input type="hidden" name="apikeyId" value={apikeyId} />
-                <button
-                    type="submit"
-                    disabled={pending}
-                    className="cursor-pointer text-body text-danger hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-                >
+                <Button type="submit" variant="danger" disabled={pending}>
                     Delete
-                </button>
+                </Button>
             </Form>
         </>
     );

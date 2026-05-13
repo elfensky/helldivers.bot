@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, expect } from 'vitest';
 
 /**
  * Create a mock Request object for API route handler tests.
@@ -49,6 +49,57 @@ export function createMockSession(overrides = {}) {
         },
         ...overrides,
     };
+}
+
+/**
+ * Assert that a response body matches the standard success envelope from
+ * `src/shared/utils/api/responses.mjs::successResponse`:
+ *
+ *   { time, code, message, data }
+ *
+ * The `code` defaults to `expect.any(Number)`. Pass `{ code, data }` to lock
+ * in specific values; `data` accepts an exact value, a partial matcher, or
+ * `expect.any(...)`. Errors that the standard envelope guarantees are absent
+ * (the `error` key) are explicitly asserted not-present.
+ *
+ * @param {object} body - JSON-parsed response body
+ * @param {{ code?: number, data?: unknown }} [opts]
+ */
+export function expectSuccessEnvelope(body, { code, data } = {}) {
+    expect(body).toMatchObject({
+        time: expect.any(Number),
+        code: code ?? expect.any(Number),
+        message: expect.any(String),
+        ...(data !== undefined && { data }),
+    });
+    expect(typeof body.time).toBe('number');
+    expect(Number.isFinite(body.time)).toBe(true);
+    expect(body).not.toHaveProperty('error');
+}
+
+/**
+ * Assert that a response body matches the standard error envelope from
+ * `src/shared/utils/api/responses.mjs::errorResponse`:
+ *
+ *   { time, code, message, error }
+ *
+ * The `code` defaults to `expect.any(Number)`. Pass `{ code, error }` to lock
+ * in specific values; `error` can be a string, a partial matcher, or omitted.
+ *
+ * @param {object} body - JSON-parsed response body
+ * @param {{ code?: number, error?: unknown }} [opts]
+ */
+export function expectErrorEnvelope(body, { code, error } = {}) {
+    expect(body).toMatchObject({
+        time: expect.any(Number),
+        code: code ?? expect.any(Number),
+        message: expect.any(String),
+        ...(error !== undefined && { error }),
+    });
+    expect(typeof body.time).toBe('number');
+    expect(Number.isFinite(body.time)).toBe(true);
+    expect(body).toHaveProperty('error');
+    expect(body).not.toHaveProperty('data');
 }
 
 /**

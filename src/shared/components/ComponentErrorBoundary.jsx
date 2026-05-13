@@ -1,6 +1,7 @@
 'use client';
 
 import { Component } from 'react';
+import Button from '@/shared/components/Button/Button';
 
 export default class ComponentErrorBoundary extends Component {
     constructor(props) {
@@ -16,16 +17,13 @@ export default class ComponentErrorBoundary extends Component {
         if (this.state.hasError) {
             return (
                 <div className="flex items-center justify-center border border-danger/30 bg-surface-1 p-6">
-                    <div className="text-center">
+                    <div className="flex flex-col items-center gap-2 text-center">
                         <p className="text-sm text-text-muted">
                             {this.props.name ?? 'Section'} failed to load
                         </p>
-                        <button
-                            onClick={() => this.setState({ hasError: false })}
-                            className="mt-2 cursor-pointer text-xs text-primary hover:underline"
-                        >
+                        <Button onClick={() => this.setState({ hasError: false })}>
                             Retry
-                        </button>
+                        </Button>
                     </div>
                 </div>
             );

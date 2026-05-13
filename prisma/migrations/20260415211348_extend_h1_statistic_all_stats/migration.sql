@@ -1,0 +1,17 @@
+-- AlterTable
+ALTER TABLE "h1_statistic" ADD COLUMN     "accidentals" BIGINT NOT NULL DEFAULT 0,
+ADD COLUMN     "attack_events" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "completed_planets" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "defend_events" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "hits" BIGINT NOT NULL DEFAULT 0,
+ADD COLUMN     "missions" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "season_duration" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "shots" BIGINT NOT NULL DEFAULT 0,
+ADD COLUMN     "successful_attack_events" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "successful_defend_events" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "successful_missions" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "total_mission_difficulty" INTEGER NOT NULL DEFAULT 0,
+ALTER COLUMN "players" SET DEFAULT 0,
+ALTER COLUMN "total_unique_players" SET DEFAULT 0,
+ALTER COLUMN "kills" SET DEFAULT 0,
+ALTER COLUMN "deaths" SET DEFAULT 0;

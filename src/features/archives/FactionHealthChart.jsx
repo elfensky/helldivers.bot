@@ -23,8 +23,7 @@ function buildChartData(snapshots, pointsMax) {
     const firstTime = snapshots[0].time;
 
     return snapshots.map((snap) => {
-        const parsed =
-            typeof snap.data === 'string' ? JSON.parse(snap.data) : snap.data;
+        const parsed = snap.data;
         if (!parsed) return null;
 
         const entry = {

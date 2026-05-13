@@ -1,21 +1,23 @@
 'use client';
 
+import Button from '@/shared/components/Button/Button';
+
 /**
- * 30×30 square toggle button that flips the event log sort order.
- * Mirrors the `EffectsToggle` pattern from `ArchivesHeader.jsx`.
+ * Square toggle button that flips the event log sort order.
  */
 export default function EventLogSortToggle({ sortOrder, onToggle }) {
     const isDesc = sortOrder === 'desc';
+    const label = isDesc ? 'Sort oldest first' : 'Sort newest first';
     return (
-        <button
-            type="button"
+        <Button
+            size="icon"
+            variant="primary"
             onClick={onToggle}
-            title={isDesc ? 'Sort oldest first' : 'Sort newest first'}
-            aria-label={isDesc ? 'Sort oldest first' : 'Sort newest first'}
+            title={label}
+            aria-label={label}
             data-umami-event="event-log-sort-toggle"
-            className="inline-flex size-[30px] cursor-pointer items-center justify-center border border-primary font-mono text-primary hover:bg-primary hover:text-surface-0"
         >
             {isDesc ? '↓' : '↑'}
-        </button>
+        </Button>
     );
 }

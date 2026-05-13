@@ -68,8 +68,8 @@ Three classes, three responsibilities:
 ### `.home-map` (base)
 
 Nothing but layout order inside the flex column. Order `1` on mobile
-(sits between the hero sidebar and the event log), `grid-area: map` on
-desktop.
+(sits above the sidebar, which stacks the dashboard and event log
+below it), `grid-column: 2` on desktop.
 
 ### `.home-map--sticky` (persistent pinned state)
 
@@ -295,26 +295,30 @@ re-renders when the glass state actually flips between `none` and
 
 At `≥1024px` the FAB is hidden via
 `.home-map-toggle { display: none }` and the entire pin state
-machine becomes irrelevant. The map lives in a real CSS grid cell
-defined in [`HomeClient.css`](https://github.com/elfensky/helldivers.bot/blob/main/src/features/dashboard/HomeClient.css):
+machine becomes irrelevant. The grid is a simple two-column layout:
+the sidebar column stacks the dashboard (season, regions, stats) and
+the event log; the map column is a single sticky cell. Defined in
+[`HomeClient.css`](https://github.com/elfensky/helldivers.bot/blob/main/src/features/dashboard/HomeClient.css):
 
 ```css
 .home-grid {
     display: grid;
-    grid-template-areas:
-        'hero-sidebar map'
-        'scrolly-log  map';
     grid-template-columns: minmax(260px, 1fr) minmax(
             0,
             calc((100dvh - 80px) * 806.93 / 868.81)
         );
-    grid-template-rows: minmax(calc(100dvh - 80px), auto) auto;
     column-gap: 6rem;
     row-gap: 0;
 }
 
+.home-sidebar {
+    grid-column: 1;
+    order: 0; /* reset mobile order so grid auto-places in DOM order */
+}
+
 .home-map {
-    grid-area: map;
+    grid-column: 2;
+    order: 0;
     position: sticky;
     top: 80px;
     /* flex chain so the inner Galaxy SVG has a concrete sizing context */
@@ -328,7 +332,11 @@ defined in [`HomeClient.css`](https://github.com/elfensky/helldivers.bot/blob/ma
 The right column's width is computed from the viewport height and the
 galaxy's intrinsic aspect ratio (`806.93 / 868.81 ≈ 0.928`), so the
 SVG fills the cell exactly without any overflow. A `minmax(0, …)`
-wrapper prevents grid blowout.
+wrapper prevents grid blowout. The mobile `order` values (set so the
+map renders first in the flex column) are explicitly reset to `0` at
+lg+ — otherwise the grid auto-placement visits `.home-map` first, its
+`grid-column: 2` moves the cursor past column 1, and the sidebar
+wraps to a second row.
 
 Stale mobile modifier classes (from a viewport resize between
 breakpoints) are explicitly reset inside the lg+ media block:

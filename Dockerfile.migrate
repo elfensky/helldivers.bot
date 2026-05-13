@@ -63,6 +63,10 @@ COPY package.json /tmp/project-package.json
 # deploy` + seed.mjs (at runtime).
 COPY prisma ./prisma/
 
+# The seed script imports isValidSeason (Zod schema) from src/validators/.
+# Only this one file is needed — zod is installed below alongside prisma.
+COPY src/validators/isValidSeason.mjs ./src/validators/isValidSeason.mjs
+
 # Loaded by every prisma CLI invocation. Imports dotenv at top-of-file and
 # calls env('POSTGRES_URL') to validate the connection string is present.
 # Both dotenv and the prisma CLI must be installed for this file to load.
@@ -85,6 +89,7 @@ RUN \
     CLIENT_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/client']") && \
     ADAPTER_PG_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/adapter-pg']") && \
     DOTENV_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.dotenv") && \
+    ZOD_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.zod") && \
     \
     # 2. Write a minimal package.json in /app. Without this, npm install would
     #    either fail (no manifest in cwd) or — much worse — if we'd copied the
@@ -93,7 +98,7 @@ RUN \
     #    install only what I explicitly ask for."
     echo '{"name":"migrate","version":"1.0.0","private":true,"type":"module"}' > package.json && \
     \
-    # 3. Install ONLY these 4 packages (and their transitive deps):
+    # 3. Install ONLY these 5 packages (and their transitive deps):
     #    - prisma:             the CLI that runs `migrate deploy`
     #    - @prisma/client:     runtime needed by seed.mjs (which imports
     #                          PrismaClient from src/generated/prisma)
@@ -101,13 +106,16 @@ RUN \
     #                          built-in pg driver, you must pass an adapter
     #    - dotenv:             loaded synchronously by prisma.config.mjs at
     #                          startup of every prisma CLI invocation
+    #    - zod:                used by src/validators/isValidSeason.mjs
+    #                          (imported by the seed script)
     #    --no-audit --no-fund: skip telemetry/postinstall noise that adds
     #                          ~5-10 seconds to the build
     npm install --no-audit --no-fund \
       prisma@$PRISMA_VERSION \
       @prisma/client@$CLIENT_VERSION \
       @prisma/adapter-pg@$ADAPTER_PG_VERSION \
-      dotenv@$DOTENV_VERSION && \
+      dotenv@$DOTENV_VERSION \
+      zod@$ZOD_VERSION && \
     \
     # 4. Generate the Prisma client into src/generated/prisma (per the
     #    `output` field in prisma/schema.prisma's `generator client {}` block).

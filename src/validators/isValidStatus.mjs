@@ -58,10 +58,14 @@ const statisticsSchema = z.object({
 const rootSchema = z.object({
     time: z.number().int().min(1000000000).max(2000000000),
     error_code: z.number(),
-    campaign_status: z.array(campaignStatusSchema),
+    // campaign_status and statistics must be non-empty — the real HD1 API always
+    // returns one entry per faction (3 total). Empty arrays would break the
+    // current-season resolver in getSeasonFromStatus, so we reject malformed
+    // responses at the validator boundary instead of letting them reach the worker.
+    campaign_status: z.array(campaignStatusSchema).min(1),
     defend_event: defendEventSchema.nullable(),
     attack_events: z.array(attackEventSchema),
-    statistics: z.array(statisticsSchema),
+    statistics: z.array(statisticsSchema).min(1),
 });
 
 export const isValidStatus = (data) => rootSchema.safeParse(data);

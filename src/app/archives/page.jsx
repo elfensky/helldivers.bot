@@ -1,14 +1,16 @@
 //db
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
-import { fetchAndSeedSeason } from '@/db/queries/fetchAndSeedSeason';
+import { updateSeason } from '@/update/season';
 //auth
 import { auth } from '@/auth';
-import { headers as nextHeaders } from 'next/headers';
+import { headers as nextHeaders, cookies } from 'next/headers';
 //components
 import JsonLd from '@/shared/components/JsonLd';
 import ArchivesClient from '@/features/archives/ArchivesClient';
 import { RESISTANCE_MESSAGES } from '@/features/archives/resistanceMessages.mjs';
+import { FACTION_KEY, validateFaction } from '@/shared/preferences/faction.mjs';
+import { SORT_ORDER_KEY, validateSortOrder } from '@/shared/preferences/sortOrder.mjs';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
 export const dynamic = 'force-dynamic';
@@ -50,11 +52,12 @@ export default async function WarHistoryPage({ searchParams }) {
     // Fetch requested season from DB
     let { data, error } = await tryCatch(getCampaign(resolvedSeason));
 
-    // If season not in DB, fetch from official API and seed it
+    // If season not in DB, fetch from official API and seed it via the
+    // shared updateSeason pipeline (same helper the worker uses).
     if (!error && !data && resolvedSeason !== null) {
-        const { error: seedError } = await tryCatch(fetchAndSeedSeason(resolvedSeason));
+        const { error: seedError } = await tryCatch(updateSeason(resolvedSeason));
         if (seedError) {
-            console.error('fetchAndSeedSeason failed:', seedError);
+            console.error('updateSeason failed:', seedError);
             return (
                 <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
                     Unable to fetch season {resolvedSeason} from the official API.
@@ -91,8 +94,12 @@ export default async function WarHistoryPage({ searchParams }) {
         auth ? await auth.api.getSession({ headers: await nextHeaders() }) : null;
     const isAdmin = session?.user?.role === 'admin';
 
+    const c = await cookies();
+    const initialFaction = validateFaction(c.get(FACTION_KEY)?.value);
+    const initialSortOrder = validateSortOrder(c.get(SORT_ORDER_KEY)?.value);
+
     return (
-        <div className="gutters pb-4">
+        <div className="gutters flex flex-col gap-4 py-4">
             <h1 className="sr-only">War History</h1>
             <JsonLd data={archivesStructuredData} />
             <ArchivesClient
@@ -103,6 +110,8 @@ export default async function WarHistoryPage({ searchParams }) {
                     Math.random() * RESISTANCE_MESSAGES.length,
                 )}
                 isAdmin={isAdmin}
+                initialFaction={initialFaction}
+                initialSortOrder={initialSortOrder}
             />
         </div>
     );

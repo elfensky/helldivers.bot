@@ -3,8 +3,14 @@ name: CodeQL
 on:
     push:
         branches: [main, develop]
+    pull_request:
+        branches: [main, develop]
     schedule:
         - cron: '0 6 * * 1' # Every Monday at 06:00 UTC
+
+concurrency:
+    group: codeql-${{ github.event.pull_request.number || github.sha }}
+    cancel-in-progress: true
 
 permissions:
     actions: read
@@ -26,14 +32,14 @@ jobs:
               uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
             - name: Initialize CodeQL
-              uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4
+              uses: github/codeql-action/init@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4
               with:
                   languages: ${{ matrix.language }}
 
             - name: Autobuild
-              uses: github/codeql-action/autobuild@c10b8064de6f491fea524254123dbe5e09572f13 # v4
+              uses: github/codeql-action/autobuild@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4
 
             - name: Perform CodeQL Analysis
-              uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4
+              uses: github/codeql-action/analyze@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4
               with:
                   category: '/language:${{ matrix.language }}'

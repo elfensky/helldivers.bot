@@ -26,6 +26,11 @@ const nextConfig = {
             },
             {
                 protocol: 'https',
+                hostname: 'lh3.googleusercontent.com',
+                pathname: '/a/**',
+            },
+            {
+                protocol: 'https',
                 hostname: 'www.gravatar.com',
                 pathname: '/avatar/**',
             },
@@ -122,6 +127,19 @@ const nextConfig = {
                     {
                         key: 'Cache-Control',
                         value: 'public, max-age=604800, immutable',
+                    },
+                ],
+            },
+            {
+                // Service worker must never be HTTP-cached — browsers need to
+                // fetch the latest sw.js on every navigation to detect updates.
+                // skipWaiting + clientsClaim in src/sw.js handle activation;
+                // this header ensures the *detection* step isn't stale.
+                source: '/sw.js',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'no-cache, no-store, must-revalidate',
                     },
                 ],
             },

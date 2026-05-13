@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -14,7 +15,10 @@ function getWordBounds(text) {
     const words = [];
     let i = 0;
     while (i < text.length) {
-        if (text[i] === ' ') { i++; continue; }
+        if (text[i] === ' ') {
+            i++;
+            continue;
+        }
         const start = i;
         while (i < text.length && text[i] !== ' ') i++;
         words.push({ start, end: i });
@@ -114,26 +118,41 @@ export default function GlitchText({
                 intervalRef.current = setInterval(() => {
                     setChars((prev) =>
                         prev.map((c) =>
-                            c.style === 'normal' && c.display !== ' ' && c.display !== ''
-                                ? { display: randomChar(), style: 'cyberstan' }
-                                : c,
+                            (
+                                c.style === 'normal' &&
+                                c.display !== ' ' &&
+                                c.display !== ''
+                            ) ?
+                                { display: randomChar(), style: 'cyberstan' }
+                            :   c,
                         ),
                     );
                 }, TICK_MS);
 
                 // Settle word batches onto altText (use alt's word bounds)
-                const perBatch = altBatches.length > 0 ? takeoverMs / altBatches.length : takeoverMs;
+                const perBatch =
+                    altBatches.length > 0 ? takeoverMs / altBatches.length : takeoverMs;
                 altBatches.forEach((batch, bi) => {
                     addTimeout(() => {
                         setChars((prev) => {
                             // Expand to maxLen if needed
-                            const padded = prev.length < maxLen
-                                ? [...prev, ...Array.from({ length: maxLen - prev.length }, () => ({ display: '', style: 'normal' }))]
-                                : prev;
+                            const padded =
+                                prev.length < maxLen ?
+                                    [
+                                        ...prev,
+                                        ...Array.from(
+                                            { length: maxLen - prev.length },
+                                            () => ({ display: '', style: 'normal' }),
+                                        ),
+                                    ]
+                                :   prev;
                             return padded.map((c, idx) => {
                                 for (const w of batch) {
                                     if (idx >= w.start && idx < w.end) {
-                                        return { display: idx < alt.length ? alt[idx] : '', style: 'alt' };
+                                        return {
+                                            display: idx < alt.length ? alt[idx] : '',
+                                            style: 'alt',
+                                        };
                                     }
                                 }
                                 return c;
@@ -155,12 +174,15 @@ export default function GlitchText({
                         Array.from({ length: maxLen }, (_, i) => {
                             const tc = i < text.length ? text[i] : '';
                             const ac = i < alt.length ? alt[i] : '';
-                            if (tc === ' ' && ac === ' ') return { display: ' ', style: 'normal' };
+                            if (tc === ' ' && ac === ' ')
+                                return { display: ' ', style: 'normal' };
                             if (!tc && !ac) return { display: '', style: 'normal' };
                             const roll = Math.random();
-                            if (roll < 0.25) return { display: tc || ac, style: 'normal' };
-                            if (roll < 0.50) return { display: ac || tc, style: 'alt' };
-                            if (roll < 0.80) return { display: randomChar(), style: 'cyberstan' };
+                            if (roll < 0.25)
+                                return { display: tc || ac, style: 'normal' };
+                            if (roll < 0.5) return { display: ac || tc, style: 'alt' };
+                            if (roll < 0.8)
+                                return { display: randomChar(), style: 'cyberstan' };
                             return { display: randomChar(), style: 'normal' };
                         }),
                     );
@@ -172,25 +194,31 @@ export default function GlitchText({
                 intervalRef.current = setInterval(() => {
                     setChars((prev) =>
                         prev.map((c) =>
-                            c.style !== 'normal' && c.display !== ''
-                                ? { display: randomChar(), style: 'cyberstan' }
-                                : c,
+                            c.style !== 'normal' && c.display !== '' ?
+                                { display: randomChar(), style: 'cyberstan' }
+                            :   c,
                         ),
                     );
                 }, TICK_MS);
 
                 // Settle word batches back to base text (use text's word bounds)
-                const perBatchR = textBatches.length > 0 ? restoreMs / textBatches.length : restoreMs;
+                const perBatchR =
+                    textBatches.length > 0 ? restoreMs / textBatches.length : restoreMs;
                 textBatches.forEach((batch, bi) => {
                     addTimeout(() => {
                         setChars((prev) => {
                             const result = Array.from({ length: maxLen }, (_, idx) => {
                                 for (const w of batch) {
                                     if (idx >= w.start && idx < w.end) {
-                                        return { display: idx < text.length ? text[idx] : '', style: 'normal' };
+                                        return {
+                                            display: idx < text.length ? text[idx] : '',
+                                            style: 'normal',
+                                        };
                                     }
                                 }
-                                return idx < prev.length ? prev[idx] : { display: '', style: 'normal' };
+                                return idx < prev.length ?
+                                        prev[idx]
+                                    :   { display: '', style: 'normal' };
                             });
                             return result;
                         });

@@ -3,12 +3,12 @@ import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 describe('getWarOutcome', () => {
     test('returns null when no data', () => {
         expect(getWarOutcome({})).toBeNull();
-        expect(getWarOutcome({ snapshots: [], events: [], live: [] })).toBeNull();
+        expect(getWarOutcome({ snapshots: [], events: [], status: [] })).toBeNull();
     });
 
     test('returns victory when all 3 live factions defeated (early return)', () => {
         const data = {
-            live: [
+            status: [
                 { status: 'defeated' },
                 { status: 'defeated' },
                 { status: 'defeated' },
@@ -23,7 +23,7 @@ describe('getWarOutcome', () => {
 
     test('returns victory when all 3 homeworlds captured via events (no defeat signal)', () => {
         const data = {
-            live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
+            status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
             events: [
                 { type: 'attack', status: 'success', enemy: 0, end_time: 100 },
@@ -38,14 +38,14 @@ describe('getWarOutcome', () => {
 
     test('returns victory when snapshot shows all 3 defeated', () => {
         const data = {
-            live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
+            status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [
                 {
-                    data: JSON.stringify([
+                    data: [
                         { status: 'defeated' },
                         { status: 'defeated' },
                         { status: 'defeated' },
-                    ]),
+                    ],
                 },
             ],
             events: [],
@@ -56,7 +56,7 @@ describe('getWarOutcome', () => {
 
     test('returns defeat when last region-0 defend event failed', () => {
         const data = {
-            live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
+            status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
             events: [
                 { type: 'defend', region: 0, status: 'fail', enemy: 1, end_time: 100 },
@@ -69,7 +69,7 @@ describe('getWarOutcome', () => {
 
     test('attributes defeat faction to the LATEST failed r0 defend', () => {
         const data = {
-            live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
+            status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
             events: [
                 { type: 'defend', region: 0, status: 'fail', enemy: 0, end_time: 100 },
@@ -83,7 +83,7 @@ describe('getWarOutcome', () => {
 
     test('defeat faction is null when there is no failed r0 defend evidence', () => {
         const data = {
-            live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
+            status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
             events: [{ type: 'attack', status: 'fail', enemy: 0 }],
         };
@@ -96,7 +96,7 @@ describe('getWarOutcome', () => {
         // Last SE defend was successful — by product rule, there is no single
         // faction that "defeated" the Helldivers. Do not guess from other signals.
         const data = {
-            live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
+            status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
             events: [
                 {
@@ -119,7 +119,7 @@ describe('getWarOutcome', () => {
 
     test('defeat signal overrides victory signal (conflicting signals)', () => {
         const data = {
-            live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
+            status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
             events: [
                 { type: 'attack', status: 'success', enemy: 0 },
@@ -134,7 +134,7 @@ describe('getWarOutcome', () => {
 
     test('returns defeat when no victory signal and data exists', () => {
         const data = {
-            live: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
+            status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
             snapshots: [],
             events: [{ type: 'attack', status: 'fail', enemy: 0 }],
         };
@@ -146,7 +146,7 @@ describe('getWarOutcome', () => {
         const data = {
             snapshots: [],
             events: [],
-            live: [],
+            status: [],
         };
         expect(getWarOutcome(data)).toBeNull();
     });

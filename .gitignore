@@ -58,7 +58,10 @@ next-env.d.ts
 .claude
 .worktrees
 .superpowers
-docs/superpowers
+docs/superpowers/archive
+
+# Local reference data (may contain secrets)
+@references/
 
 # Tool state
 .claude-octopus/

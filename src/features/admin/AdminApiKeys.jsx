@@ -1,5 +1,6 @@
 import { getAllApiKeys, adminRevokeApiKey } from '@/db/queries/admin';
 import { timeSince } from '@/shared/utils/time';
+import Button from '@/shared/components/Button/Button';
 
 export default async function AdminApiKeys() {
     const result = await getAllApiKeys();
@@ -12,11 +13,12 @@ export default async function AdminApiKeys() {
 
     return (
         <section>
-            <h3 className="mb-2 font-mono text-small text-text-muted uppercase">API Keys</h3>
-            {keys.length === 0 ? (
+            <h3 className="mb-2 font-mono text-small text-text-muted uppercase">
+                API Keys
+            </h3>
+            {keys.length === 0 ?
                 <p className="text-small text-text-muted">No API keys.</p>
-            ) : (
-                <div className="overflow-x-auto border border-ghost bg-surface-1">
+            :   <div className="overflow-x-auto border border-ghost bg-surface-1">
                     <table className="w-full text-body">
                         <thead>
                             <tr className="text-left font-mono text-small text-text-muted uppercase">
@@ -31,7 +33,10 @@ export default async function AdminApiKeys() {
                         </thead>
                         <tbody>
                             {keys.map((key) => (
-                                <tr key={key.id} className="border-t border-ghost/30 hover:bg-surface-2">
+                                <tr
+                                    key={key.id}
+                                    className="border-t border-ghost/30 hover:bg-surface-2"
+                                >
                                     <td className="p-3 font-mono text-small text-text">
                                         ****{key.visible}
                                     </td>
@@ -51,13 +56,14 @@ export default async function AdminApiKeys() {
                                     </td>
                                     <td className="p-3">
                                         <form action={adminRevokeApiKey}>
-                                            <input type="hidden" name="apikeyId" value={key.id} />
-                                            <button
-                                                type="submit"
-                                                className="cursor-pointer border border-danger/30 px-2 py-0.5 text-small text-danger/70 hover:text-danger"
-                                            >
+                                            <input
+                                                type="hidden"
+                                                name="apikeyId"
+                                                value={key.id}
+                                            />
+                                            <Button type="submit" variant="danger">
                                                 Revoke
-                                            </button>
+                                            </Button>
                                         </form>
                                     </td>
                                 </tr>
@@ -65,7 +71,7 @@ export default async function AdminApiKeys() {
                         </tbody>
                     </table>
                 </div>
-            )}
+            }
         </section>
     );
 }

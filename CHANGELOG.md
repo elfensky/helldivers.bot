@@ -1,6 +1,394 @@
 # Changelog
 
-## Unreleased
+## 0.45.0
+
+### Features
+
+- **Global MISSIONS_WON card** — the global stats view now shows a `MISSIONS_WON` card (sum of `successful_missions` across factions), matching the per-faction view. Both global and per-faction cards display a "N TOTAL" subtitle showing total missions attempted.
+- **Event total subtitle** — the `EVENTS` W : L scoreline card now shows a "N TOTAL" subtitle with the combined win + loss count, in both global and per-faction views.
+- **Animated stat counter** — live stat values on the homepage use a slot-counter animation (`AnimatedStat` component via `react-slot-counter`) that rolls digits when values change. Sandbox page at `/sandbox/slot-counter` for development.
+
+### Fixes
+
+- **formatNumber M threshold raised to 10M** — compact "M" suffix now kicks in at 10,000,000 instead of 1,000,000. Values between 1M and 9.99M display with full locale grouping (e.g. `5,000,000`) so users see precise numbers in the range most relevant to Helldivers stats.
+
+### Chores
+
+- **Supply chain quarantine** — new `npm run update:safe` script uses `npx npm-check-updates --cooldown 7d` to only bump to package versions published at least 7 days ago, giving the community time to detect compromised releases.
+- **Dependency bumps** — all npm dependencies updated to latest versions.
+
+## 0.44.1
+
+### CI & dev tooling
+
+- **CodeQL now runs on pull requests** — `Analyze (javascript-typescript)` is a required status check on `main`'s branch protection, but the workflow only triggered on `push` to `main`/`develop`. PRs that needed it to merge were permanently `BLOCKED`. Added `pull_request: { branches: [main, develop] }` to `.github/workflows/codeql.yml` so the required check actually fires on PR heads.
+- **GitGuardian secret scanning excludes test fixtures** — synthetic VAPID-shaped keys, push subscription endpoints, and JWT-shaped tokens in `src/__tests__/**`, `**/*.test.{js,jsx,mjs,ts,tsx}`, `**/*.spec.{js,jsx,mjs,ts,tsx}`, `**/__fixtures__/**`, and `**/__mocks__/**` are now excluded from secret scanning via `.gitguardian.yaml`. These fixtures are designed to look real so the code-under-test exercises the same validation paths it would in production, but they're random/hand-crafted and not valid anywhere.
+- **VAPID test fixtures use obvious placeholder strings** — `notifications-subscribe.test.mjs` previously used an 87-char base64url-shaped `p256dh` that was indistinguishable in shape from a real VAPID public key (GitGuardian flagged it). Replaced both keys with `TEST_*_PLACEHOLDER` strings that still satisfy the Zod regex + length constraints. Suite still 1244/1244.
+
+## 0.44.0
+
+### Features
+
+- **Cookie-backed user preferences** — faction selector, regions view toggle, and event log sort now persist via cookies instead of localStorage. Server components read them via `next/headers.cookies()` and pre-render the correct initial state, eliminating the brief post-hydration flash where the UI switched from default to stored value. New `src/shared/preferences/*.mjs` modules hold each preference's key + default + validator; `usePersistedState(key, initial)` is now a thin wrapper over `useState` + cookie write; the old mount-effect reads are gone. Cookies use `path=/`, `max-age=1yr`, `SameSite=Lax`, `Secure` on HTTPS; classified as "strictly functional" so they sit under the GDPR consent exemption.
+- **Preference analytics** — fires a `preference-snapshot` Umami event once per session reporting the user's current faction / regions_view / sort_order. Complements the existing per-toggle click events: clicks capture churn ("how often do users flip?"); the snapshot captures distribution ("what % prefer X?", including default-stickers who never interact). Session-scoped via `sessionStorage` so SPA navigation doesn't double-count.
+- **24h player-count delta** — the `HELLDIVERS_ONLINE` / `ONLINE` stat card now shows a signed delta below the number comparing current concurrent players to the 24h rolling average baseline. `getPlayersAvg24h(season)` query returns `{ global, bugs, cyborgs, illuminate }`: per-faction averages come from `AVG(players) GROUP BY enemy` over buckets in the last 24h window, and `global` is the average of per-bucket SUMs (disjoint per-front counts) — more robust to sparse buckets than a single-point "24h ago" snapshot would be. Arrow (▲/▼) carries the success/danger colour, number + `LAST 24H` caption render in uppercase ghost text to match the card label. Hidden on new seasons (no baseline) or when delta is zero.
+
+### Test suite quality (Phase 12)
+
+Suite went from **882 → 1244 tests** (+362 high-signal). Coverage moved from **63.5% → 81.8% statements** / 58.3% → 73.7% branches. Five multi-LLM code review rounds (Codex + OpenCode) applied across the work; every must-fix finding addressed.
+
+- **Theater removal** — rewrote 5 highest-theater test files (`healthcheck`, `useTrack`, `ArchiveMap`, `Header`, `Navigation`) to verify real behaviour instead of stub-rendering. Stopped globally mocking `console.error/warn/log/info` in `vitest.setup.mjs` so React `act()` warnings and source error logs are audible.
+- **API route coverage** — 0% → comprehensive for `/api/notifications/subscribe` (Zod validation + Prisma upsert/delete contract + 410-graceful + 500-with-DB-call-asserted), `/api/glitchtip` (DSN parsing, ingest URL forwarding, 502 upstream failure), `/api/auth/[...all]` (auth-disabled 503 vs configured delegate to BetterAuth). Added `expectSuccessEnvelope` / `expectErrorEnvelope` helpers in `@test-utils` and retrofitted `live` + `update` route tests to use them.
+- **Hook coverage** — `useLiveData` (was 0% / 284 L): 23 tests covering polling cadence, status state machine, visibility-change handler, singleton-with-multiple-consumers, localStorage cache hydration + write, and BroadcastChannel leader election. `usePersistedState` (foundation hook): 16 tests covering value hydration, validator gating, key changes, and storage failure modes. `useTrack`, `useHeaderGlassFilter`, `useScrollEvent`, `useCyberstanEffects`, `useGlitchCycle` — all now have meaningful coverage with cleanup discipline.
+- **Component coverage** — `UserSection`, galaxy `Map`, `eventToast`, `NotificationToggle`, `LiveToasts`, `FactionHealthChart`, `HomeClient`, `ArchivesClient`. Used a capture-style child-mock pattern (`testid` with JSON-encoded prop data) to verify orchestrator wiring without rendering real children.
+- **Worker coverage** — `public/workers/cron.js` split into a thin entry shell + `cronLogic.js`. The shell is tested via `Module._load` monkey-patching; the logic via direct unit tests covering setTimeout-not-setInterval non-overlap, X-Worker-Startup first-poll header, error recovery without crashing the loop, and config wiring.
+
+### Fixes
+
+- **Per-faction stats missed ENEMIES_KILLED** — the per-faction view on the homepage never rendered `stats.kills` even though the data was present on each `h1_statistic` row. The global view already summed it. Added as position 2 in the per-faction grid (matching global's ordering).
+- **`/api/h1/update` worker thread was broken in production** — `public/workers/cron.js` uses CommonJS `require('worker_threads')`, but the project's root `"type": "module"` made Node load it as ESM, crashing on every spawn. Fixed by adding `public/workers/package.json` with `{"type": "commonjs"}` to scope just the worker directory to CJS. Worker now stays online; worker-heartbeat data should resume in production.
+- **`sendWithConcurrencyLimit` reported failed sends as "sent"** — the function returned `sent: subscriptions.length - staleEndpoints.length`, which counted 5xx and network errors as if they had succeeded. Now counts only `Promise.allSettled` results with status `'fulfilled'`. The admin `sendTestNotification` UI is the only consumer; its `{ sent, stale }` display is now truthful.
+- **`formatCompactDuration` produced "1h, 30m" instead of "1h30m"** — set `delimiter: ''` alongside the existing `spacer: ''` to match the function's compact-output intent. Consumers (`FactionStats` avg duration, `RefreshSeasonButton` countdown, `EventLogCard` duration) all benefit from the tighter formatting.
+
+### Refactors
+
+- **Homepage layout consolidation** — merged the previously-separate `.home-hero-sidebar` and `.home-scrolly-log` into a single `.home-sidebar` flex column so the dashboard blocks (hero intro, season heading, region cards, stats) flow naturally into the event log below. Desktop grid drops from a 2-row-spanning-map to a straightforward 2-column layout: sidebar on the left, sticky galaxy map on the right. `DashboardClient` returns a Fragment instead of wrapping in `.dashboard-sidebar` so its sections sit directly as flex items of the sidebar, and the sidebar's `gap` provides uniform spacing across all boundaries. `ArchivesClient` and `src/app/archives/page.jsx` got the mirror cleanup (Fragment + Tailwind flex classes on the page wrapper).
+- **Homepage region heading** — the `<h2>Regions</h2>` becomes `<h2>Season N</h2>` (reads the active season from live data).
+
+### Documentation
+
+- `/docs/frontend-layout` updated to describe the simplified 2-column grid (no more `grid-template-areas` with `hero-sidebar` / `scrolly-log`).
+
+### Follow-ups filed during the campaign
+
+- `#319` `/api/healthcheck` should probe DB on health check (currently returns a hardcoded `{ alive: true }`)
+- `#320` `useLiveData` `navigator.onLine` check is dead code (overwritten by `poll()`)
+- `#321` `useTrack` partial-umami guard (throws when `window.umami` exists but `track` is missing)
+- `#322` `vitest.setup.mjs` `after()` mock auto-invokes synchronously (hides response-timing bugs)
+- `#323` `public/workers/*` needed local `package.json` with `type: commonjs` (fixed in this release)
+
+## 0.43.1
+
+### Chores
+
+- **Dependency bumps (npm minor/patch group)** — `next` & `@next/mdx` 16.2.4 → 16.2.6 (multiple HIGH-severity security advisories: SSRF via WebSocket upgrades, middleware/proxy bypasses, RSC DoS, RSC cache poisoning), `@prisma/client` & `@prisma/adapter-pg` & `prisma` 7.7.0 → 7.8.0, `@sentry/nextjs` 10.49.0 → 10.52.0, `@serwist/next` 9.5.7 → 9.5.11, `better-auth` 1.6.5 → 1.6.10, `axios` 1.15.0 → 1.16.0 (resolves `follow-redirects` 1.15.11 → 1.16.0 transitively), `react` & `react-dom` 19.2.5 → 19.2.6, `@tailwindcss/postcss` 4.2.2 → 4.3.0, `@vitest/coverage-v8` 4.1.4 → 4.1.5, `jsdom` 29.0.2 → 29.1.1, `prettier-plugin-tailwindcss` 0.7.2 → 0.8.0.
+- **GitHub Actions bumps (actions group)** — `actions/setup-node` 6.3.0 → 6.4.0, `github/codeql-action` 3.30.6 → 3.30.8, `actions/dependency-review-action` 4.8.0 → 4.8.2, `docker/build-push-action` 6.21.1 → 6.22.0.
+
+## 0.43.0
+
+### Features
+
+- **Regions campaign bar** — new `Sector / Campaign` toggle above the Regions cards on the homepage. Campaign view renders an 11-segment continuous progress bar per faction (sectors 1–10 driven by campaign points, segment 11 by the homeworld attack event). User preference persists in `localStorage`. In campaign view the dedicated homeworld-assault card is absorbed into segment 11 of the main card.
+- **Live "Updated Xs ago" counter** — extracted `LastUpdated` into a shared component (`src/shared/components/LastUpdated.jsx`) and moved it from a static footer under the StatGrid to the hero sidebar, on the same row as the notifications toggle. Ticks every second (was 5s and effectively frozen under `reactCompiler: true`) and resets when the next poll arrives. Pass `now` as state so the compiler can't elide re-renders on the hidden `Date.now()` dependency.
+- **Faction preference persistence** — homepage and archives both persist the selected faction (Global / Bugs / Cyborgs / Illuminate) to localStorage under `hd1-faction` and share the value across pages. Backed by a new generic `usePersistedState(key, default, isValid)` hook with domain wrappers (`useFactionPreference`, `useEventLogSort`).
+
+### Fixes
+
+- **Archives page flash** — `GlitchText` no longer uses `next/dynamic` with `ssr: false`. The h1 title and body text now ship in the initial HTML on defeat-season views instead of popping in after hydration. The glitch animation still plays as progressive enhancement post-hydration.
+- **Footer alignment** — the "Not affiliated…" disclaimer is now top-aligned with the "Humblebee UAV Drone Mk. IV" line on the bottom separator row (was centered between the two lines of the Humblebee stack).
+
+### Refactors
+
+- **Shared `<Button>` primitive** — consolidated all bordered-button patterns across the app (stats faction toggles, regions view toggle, event log sort, archives effects toggle, admin buttons, error pages, account actions, API form buttons) into one `src/shared/components/Button/Button.jsx` with variants (`primary` / `danger` / `success` / `ghost` + three `faction-*`) and sizes (`icon` / `sm` / `md` / `lg`). Replaces ~15 inline Tailwind button signatures with a single primitive. Touch targets improve on mobile: icon mode is 40×40 below the `md:` breakpoint and 30×30 above. Dropped the now-obsolete `FactionTabs.css` file.
+- **Homepage stats faction selector** — replaced the horizontal `FactionTabs` tab-bar with 4 faction-colored icon buttons rendered inline with the h2, matching the existing `RegionsViewToggle` convention. Static h2 reads "Stats" (was "Stats — {FactionName}").
+- **Archives stats header** — moved `FactionTabs` inline with the "Statistics" h2 (previously a full-width row below), and reordered the right-side control cluster to place `SeasonSelector` before `EffectsToggle`.
+- **`usePersistedState` hook** — extracted the scattered localStorage-backed preference logic (regions view, event log sort, faction) behind a single generic hook. Domain-named wrappers where de-duplication pays off; inline calls otherwise.
+
+### Audit / correctness
+
+- **StatGrid**: `ACCIDENTALS` replaced with `ACCIDENTAL_RATE` (accidentals/deaths as %) on global and per-faction views, with the absolute counts as hover title. Per-faction `MISSIONS` relabelled to `MISSIONS_WON` since the field is `successful_missions`. Added a clarifying comment noting why per-faction `players` sum is correct (disjoint populations) and that `total_unique_players` must never be summed (globally replicated field).
+- **`evaluateProgress`** JSDoc now documents the linear-rate model and its known bias in early/late-season reads.
+- **`countOutcomes`** locked in with a unit test asserting strict `status ∈ {'success','fail'}` matching (no case-folding, no loose match on `'won'`/`'lost'`).
+
+## 0.42.0
+
+### Features
+
+- **Google OAuth** — added Google as a third sign-in provider alongside Discord and GitHub via BetterAuth. Includes official Google branding button on the sign-in page and profile account linking (supports different emails).
+
+### Fixes
+
+- **Worker bucket collision** — `updateSeason` no longer overwrites live `h1_status` buckets when reseeding historical data. Prevents stale snapshot data from clobbering active campaign progress.
+
+### Chores
+
+- Added `@references/` to `.gitignore` to prevent accidental commit of local SQL dumps containing secrets.
+- Removed implemented `h1-tables-cleanup` design spec.
+
+## 0.41.1
+
+### Fixes
+
+- **Galaxy map** — fixed false active-event indicator when the event timeline was off-screen. `useScrollEvent` now checks actual viewport visibility instead of pixel distance, preventing completed events from being shown as active on the map.
+- **Service worker caching** — added `Cache-Control: no-cache` header on `/sw.js` so browsers always check for updates on navigation, preventing stale app code after deploys.
+
+## 0.41.0
+
+### Database
+
+- **Schema consolidation** — 10 h1\_\*/rebroadcast tables → 5 normalized tables (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Dropped `h1_live`, `h1_live_snapshot`, `h1_snapshot`, `h1_introduction_order`, `h1_points_max`, `h1_event_snapshot`, `rebroadcast_status`, `rebroadcast_snapshot`, `App`, `Review`.
+- **Bucket-upsert pattern** — all timeseries tables use tumbling-window UPSERTs keyed on `(entity, bucket)` where `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE`. Sub-15s homepage freshness with ~120 MB bounded storage. `BUCKET_SIZE` is env-configurable (default 900 = 15 min).
+- **`h1_season` inlining** — `introduction_order Int[]`, `points_max Int[]`, and `season_duration Int` are now direct columns on `h1_season` (previously in separate 1:1 tables).
+- **`h1_snapshot.data` normalized** — stringified JSON-in-JSON column replaced by typed columns on `h1_status`. Consumers no longer need defensive `typeof === 'string' ? JSON.parse : data` parsing.
+- **`h1_live.map` dropped** — precomputed galaxy map column was never read; `computeMapState` already rebuilds at request time.
+
+### Worker
+
+- **`snapshotTimers.mjs` deleted** — 91 lines of stateful in-memory throttle tracking replaced by 5-line deterministic `src/update/bucketing.mjs` helper. The DB uniqueness constraint IS the throttle.
+- **`computeFactionMap` deleted** — precomputation removed; `computeMapState` rebuilds at request time.
+- **`data.live` → `data.status`** — cascade rename across all consumers to match the `h1_live` → `h1_status` table rename. `/api/h1/live` URL and `useLiveData` hook stay.
+
+### API
+
+- **Rebroadcast endpoint** — reconstructs HD1 wire format from normalized tables on demand (no raw cache dependency). 4 event-count stats fields (`defend_events`, `successful_defend_events`, `attack_events`, `successful_attack_events`) omitted from statistics[] (derivable from `h1_event`).
+- **`h1_event.players_at_start` null-protection** — update path only sets the field when a non-null value is present, preventing `get_snapshots` reseeds from clobbering live-captured values.
+
+### Tooling
+
+- **`scripts/backfill-h1-tables.mjs`** — offline reseed tool for production migration. Reads from pg_dump restore, writes to new schema via Prisma. Per-season transactional, resumable, `--force` flag.
+
+### Documentation
+
+- Updated DataFlowDiagram component, CLAUDE.md architecture section, and `/docs` pages (database, data-flow, utilities) for the new 5-table schema.
+
+## 0.40.7
+
+### Documentation
+
+- **`CLAUDE.md`** — replaced stale `fetchAndSeedSeason` reference on
+  the "On-demand season fetching" bullet. That function was deleted in
+  0.40.5 during the backfill consolidation; the bullet now correctly
+  names `updateSeason` (`src/update/season.mjs`) and enumerates which
+  tables it writes plus the `last_updated` stamping behavior.
+- **`prisma/seed/readme.md`** — expanded from a 4-line placeholder to
+  a full workflow guide. Covers the layout of the seed directory, when
+  and how to refresh the JSON files via `fetch-seasons.mjs` (including
+  the post-0.40.6 "never active season" guarantee), how `seed.mjs`
+  loads them via `prisma db seed`, the `FORCE_SEED=true` override for
+  re-seeding when the DB already has parity, and how the three
+  backfill paths (seed, fetch-seasons, runtime `updateSeason`) relate
+  without conflict.
+- **`src/app/docs/infrastructure/page.mdx`** — added a paragraph to
+  the `Dockerfile.migrate` section explaining where the
+  `seasons/*.json` files come from (`fetch-seasons.mjs`), why the
+  active season is never captured, and pointing readers to
+  `prisma/seed/readme.md` for the full workflow. Also noted the
+  `seed.mjs` short-circuit behavior (`dbCount === jsonFiles.length`)
+  and the `FORCE_SEED=true` override.
+
+## 0.40.6
+
+### Changed
+
+- **`prisma/seed/fetch-seasons.mjs` no longer fetches the currently-active
+  season.** The script's `--to` default used to resolve to the
+  auto-detected current season from `get_campaign_status`, which meant
+  every run captured the active season's partial mid-war state to disk.
+  That partial file would then reseed incomplete data on every fresh
+  deploy until the next manual refresh — exactly the failure pattern
+  that caused season 156 to have only 17 snapshots on disk when its
+  final state was 37. Now:
+    - `--to` defaults to `currentSeason - 1` (the last completed season).
+    - An explicit `--to=<current-or-higher>` is clamped to
+      `currentSeason - 1` with a warning, so users cannot accidentally
+      capture the active war.
+    - A new guard exits early with an informative message if
+      `--from > --to` after clamping (e.g. `--from=157 --to=157` when
+      season 157 is active).
+
+### Data
+
+- **Refreshed all 156 completed-season seed files in
+  `prisma/seed/seasons/`.** Running the updated script against the live
+  API brought disk data to parity for 9 seasons with real drift:
+    - Seasons 148-152: each was missing exactly one snapshot + one event
+      (the closing frame pattern the 0.40.5 worker fix now prevents going
+      forward).
+    - Season 153: missing 21 snapshots + 39 defend events + 3 attack
+      events (unusual drift — suggests an earlier run captured 153
+      mid-war; 0.40.5 + the script guard would have prevented this).
+    - Season 156: missing 20 snapshots + 33 defend events + 1 attack
+      event (the known Apr 4 mid-season fetch, now complete).
+    - Seasons 1-147, 154, 155 had no data changes; only the top-level
+      `time` field (fetch timestamp) was refreshed. The `time` field is
+      kept intentionally — it serves as a provenance marker for when each
+      seed file was last validated against the live API.
+
+    Fresh deploys using `prisma db seed` now get complete historical data
+    for all 156 completed seasons instead of the partial Apr 4 snapshot.
+
+## 0.40.5
+
+### Fixed
+
+- **Worker now captures the closing snapshot of an outgoing season during
+  transitions.** When the HD1 API transitions from one season to the next,
+  it writes one final "closing" snapshot to the old season's history a few
+  minutes after the transition point. Previously,
+  `src/app/api/h1/update/route.js` called `updateSeason(currentSeason)`
+  only — once `getSeasonFromStatus` flipped to the new season, the worker
+  abandoned the old one and never fetched that closing frame. Verified on
+  season 156: DB had 36 snapshots, live API had 37 (the missing one at unix
+  time `1776189902`, 4 minutes after our DB's `last_updated`). Fix:
+  module-level `lastSeasonObserved` state in the route handler; if the
+  current poll's season is higher, run `updateSeason(previousSeason)` once
+  before processing the current season. Non-fatal on error — the current
+  season's update still proceeds. Three new unit tests in
+  `update.test.mjs` cover transition detection, no-op when season stays
+  the same, and closing-pass failure isolation.
+- **Season 156 missing closing snapshot.** One-time recovery: click the
+  admin "Refresh" button on `/archives?season=156` after deploy to
+  backfill the missing frame. The transition fix above prevents this
+  recurring on future transitions.
+
+### Changed
+
+- **Consolidated `updateSeason` and `fetchAndSeedSeason` into one helper.**
+  `src/db/queries/fetchAndSeedSeason.mjs` was a near-duplicate of
+  `src/update/season.mjs` (`updateSeason`) — both did "fetch
+  `get_snapshots`, validate, upsert into normalized tables."
+  `updateSeason` does strictly more (also writes to `rebroadcast_season`
+  and stamps `h1_season.last_updated` via `queryUpsertSeason(season, true)`).
+    - Deleted `src/db/queries/fetchAndSeedSeason.mjs` and
+      `src/__tests__/unit/queries/fetchAndSeedSeason.test.mjs`.
+    - Migrated `src/app/archives/page.jsx` to call `updateSeason(season)`.
+    - Migrated `src/features/archives/reseedSeason.mjs` to call
+      `updateSeason(season)` and removed the now-redundant manual
+      `db.h1_season.update({ last_updated: new Date() })` block
+      (`updateSeason` stamps it internally). Updated
+      `reseedSeason.test.mjs` accordingly.
+    - Net effect: one backfill helper instead of two, no behavioral
+      regression. The `/archives` on-demand path now also writes to
+      `rebroadcast_season` — a pure addition; nothing previously depended
+      on the absence of that write.
+
+### Documentation
+
+- **`CLAUDE.md`** updated the data-source separation rule to refer to
+  `updateSeason` (post-consolidation) and added a new bullet documenting
+  the season transition closing pass pattern.
+- **`src/app/docs/utilities/page.mdx`** — section 13 rewritten from
+  "On-Demand Season Fetching — `fetchAndSeedSeason`" to
+  "On-Demand Season Fetching — `updateSeason`" with the three caller
+  paths enumerated (worker poll, `/archives` on-demand, admin refresh).
+- **`src/app/docs/data-flow/page.mdx`** — frontend on-demand fetching
+  section updated to reference `updateSeason`; new "Season transition
+  closing pass" subsection added.
+
+## 0.40.4
+
+### Fixed
+
+- **Worker no longer spams `Multiple seasons present in status data`
+  on every poll.** `getSeasonFromStatus` was aggregating the season
+  field from `defend_event` into the current-season resolver, but the
+  HD1 API's `defend_event` slot is a "most recent event" slot that
+  persists across season transitions until replaced by a new defend
+  event — exactly the same reason `attack_events` was already
+  excluded with a `//can be from old season` comment. After the
+  156→157 transition, `defend_event.season: 156` stuck around while
+  `campaign_status` and `statistics` were all on 157, and the
+  resolver's dedup log warned on every 10s poll. The algorithm's
+  output was still accidentally correct (because `campaign_status`
+  came first in the aggregation and `Set` iteration preserved
+  insertion order, so `uniqueSeasons[0]` = 157), but the signal was
+  fragile and the noise floor was unacceptable. Fix: exclude
+  `defend_event` from `getSeasonFromStatus` entirely. The existing
+  cross-season safety guard in `queryUpsertEvent`
+  (`if (event.season !== season) skip`) already prevents lagged
+  events from leaking into the wrong season bucket, so no new guards
+  are needed downstream.
+
+### Changed
+
+- **`isValidStatus` now requires at least one entry in both
+  `campaign_status` and `statistics`.** Previously the Zod schema
+  accepted empty arrays, which would have crashed
+  `getSeasonFromStatus` with `No seasons found in status data`. The
+  real HD1 API always returns 3 entries each, so this `.min(1)`
+  tightening codifies an assumption the resolver already made;
+  malformed responses now fail at the input validator boundary
+  instead of deeper in the worker pipeline. Replaced the old
+  "accepts empty arrays" test with three separate cases covering
+  the new contract.
+
+### Documentation
+
+- **`CLAUDE.md` now documents the data-source separation rule and
+  the lagged event slots.** Added two bullets under
+  **Architecture — Stack**:
+    - `get_campaign_status` → `h1_live` (homepage live section) +
+      `h1_event` (new events); `get_snapshots` → `h1_snapshot` +
+      `h1_event` (historical); the two pipelines must not interact in
+      backfill paths, and `fetchAndSeedSeason` must never touch
+      `h1_live`. `h1_live_snapshot` is currently write-only — no
+      consumers except `snapshotTimers.mjs`' throttle bootstrap.
+    - `defend_event` and `attack_events` in `get_campaign_status` are
+      "most recent event" slots that persist across transitions;
+      `getSeasonFromStatus` must not use their `.season` as a
+      current-season signal, and `queryUpsertEvent` has the skip guard
+      as a safety net.
+
+## 0.40.3
+
+### Fixed
+
+- **`/archives?season=N` no longer crashes with `TypeError: Cannot mix
+BigInt and other types` for seasons that have both events and
+  `h1_live` rows** (i.e. any season the worker was polling during).
+  `ArchiveStats.sumBigInt` seeded its accumulator with `0n` and added
+  `(f[field] ?? 0n)`, but only 5 of the 16 numeric fields in `h1_live`
+  are actually `BigInt` in the Prisma schema (`kills`, `deaths`,
+  `shots`, `hits`, `accidentals`); the others (`missions`,
+  `successful_missions`, `total_unique_players`, `players`, ...) are
+  `Int` and come back from Prisma as plain JS `Number`. Mixing them
+  with a BigInt accumulator threw. Fix: coerce to BigInt explicitly
+  with `BigInt(f[field] ?? 0)`, which is idempotent on BigInt input
+  and safely converts integer Numbers. Added a JSDoc warning on
+  `sumBigInt` listing the BigInt-vs-Int column split and the
+  per-season fields that must never be summed.
+- **`TOTAL_DIVERS` on `/archives` no longer triple-counts.**
+  `ArchiveStats.jsx:160` was calling `sumBigInt(live, 'total_unique_players')`,
+  but that field is documented in `/docs/database` and `/docs/hd1-api`
+  as "Unique players across the season" — a global per-season value
+  that the API repeats verbatim across all three faction rows. Summing
+  turned a real `983` into `2,949`. Fixed by reading from a single row
+  (`live[0]?.total_unique_players`). This was a latent bug masked by
+  the BigInt crash; fixing the crash alone would have shipped wrong
+  numbers publicly, so both fixes land together. Caught during a
+  4-way adversarial design review (Gemini flagged it first).
+- **Test fixtures now mirror real Prisma return types.** The existing
+  `mockLive` in `ArchiveStats.test.jsx` used BigInt literals for every
+  field including `missions`, `successful_missions`,
+  `total_unique_players`, and `players` — fields that Prisma actually
+  returns as JS `Number`. The test never reproduced the production
+  bug. Rewrote the fixture so Int columns use `Number` and only the
+  five actual BigInt columns use BigInt literals. Added a correctness
+  assertion verifying `total_unique_players` is read from a single
+  row (`100,000`), not summed across all three (`300,000`), so the
+  triple-count regression cannot sneak back in.
+- **Defensive zero-check in `formatPercent`/`formatRatio`.** Changed
+  `denominator === 0n` → `!denominator`, which works for both BigInt
+  `0n` and plain `0`. Safe today because denominators come from
+  `sumBigInt` and are always BigInt, but the strict-equality check was
+  brittle against any future caller passing a plain Number.
+
+## 0.40.2
+
+### Documentation
+
+- **Release process in `CLAUDE.md` now documents the merge-back step.**
+  After tagging `vX.Y.Z` on `main`, `main` must be merged back into
+  `develop` (`git checkout develop && git merge origin/main && git push`)
+  so that the PR merge commit GitHub creates on `main` lands on
+  `develop` too. Without this, every release PR eventually fails the
+  "head branch not up to date with base" protection check, because
+  `main` accumulates merge commits `develop` has never seen — even
+  though no actual code diverges. Discovered while releasing v0.40.1:
+  three prior release merge commits (#276, #263, #237) had to be
+  back-merged in one lump before the release PR could be merged.
+  Going forward, doing the merge-back after every release keeps the
+  topology clean.
 
 ## 0.40.1
 

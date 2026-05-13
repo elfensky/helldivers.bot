@@ -7,6 +7,7 @@ import { Space_Grotesk, Inter } from 'next/font/google';
 import Header from '@/shared/components/Header/Header';
 import Footer from '@/shared/components/Footer/Footer';
 import BottomNav from '@/shared/components/BottomNav/BottomNav';
+import PreferenceTracker from '@/shared/components/PreferenceTracker';
 import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 //data
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
@@ -63,7 +64,7 @@ export default async function RootLayout({ children }) {
     const activeEvents = (data?.events ?? []).filter(
         (e) => e.status === EVENT_STATUS.ACTIVE,
     );
-    const initialMapState = data ? computeMapState(data.live, activeEvents) : null;
+    const initialMapState = data ? computeMapState(data.status, activeEvents) : null;
 
     return (
         <html
@@ -198,6 +199,7 @@ export default async function RootLayout({ children }) {
                     initialData={data ?? null}
                     initialMapState={initialMapState}
                 >
+                    <PreferenceTracker />
                     <Header />
                     <main
                         id="main"

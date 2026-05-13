@@ -289,7 +289,7 @@ describe('getSystemStats', () => {
             last_error: null,
             started_at: new Date(Date.now() - 3600000),
         });
-        vi.mocked(db.h1_live.count).mockResolvedValue(2);
+        vi.mocked(db.$queryRaw).mockResolvedValue([{ count: 2 }]);
         vi.mocked(db.h1_event.count).mockResolvedValue(1842);
         vi.mocked(db.h1_season.count).mockResolvedValue(8);
         vi.mocked(db.user.count).mockResolvedValue(24);
@@ -313,7 +313,7 @@ describe('getSystemStats', () => {
     test('returns healthy/degraded/down health states', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
         vi.mocked(db.h1_season.findFirst).mockResolvedValue({ season: 1 });
-        vi.mocked(db.h1_live.count).mockResolvedValue(0);
+        vi.mocked(db.$queryRaw).mockResolvedValue([{ count: 0 }]);
         vi.mocked(db.h1_event.count).mockResolvedValue(0);
         vi.mocked(db.h1_season.count).mockResolvedValue(1);
         vi.mocked(db.user.count).mockResolvedValue(1);

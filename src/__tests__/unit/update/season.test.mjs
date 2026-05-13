@@ -1,47 +1,59 @@
-import { vi } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { updateSeason } from '@/update/season';
-import { fetchSeason } from '@/update/fetch';
-import { isValidSeason } from '@/validators/isValidSeason';
-import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
-import { queryUpsertRebroadcastSeason } from '@/db/queries/rebroadcast';
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertIntroductionOrder } from '@/db/queries/upsertIntroductionOrder';
-import { queryUpsertPointsMax } from '@/db/queries/upsertPointsMax';
-import { queryUpsertSnapshots } from '@/db/queries/upsertSnapshots';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
+
+// --- Dependency mocks ---
 
 vi.mock('@/update/fetch', () => ({ fetchSeason: vi.fn() }));
 vi.mock('@/validators/isValidSeason', () => ({ isValidSeason: vi.fn() }));
 vi.mock('@/shared/utils/getSeason', () => ({ getSeasonFromSnapshot: vi.fn() }));
-vi.mock('@/db/queries/rebroadcast', () => ({ queryUpsertRebroadcastSeason: vi.fn() }));
 vi.mock('@/db/queries/upsertSeason', () => ({ queryUpsertSeason: vi.fn() }));
-vi.mock('@/db/queries/upsertIntroductionOrder', () => ({
-    queryUpsertIntroductionOrder: vi.fn(),
-}));
-vi.mock('@/db/queries/upsertPointsMax', () => ({ queryUpsertPointsMax: vi.fn() }));
-vi.mock('@/db/queries/upsertSnapshots', () => ({ queryUpsertSnapshots: vi.fn() }));
 vi.mock('@/db/queries/upsertEvent', () => ({ queryUpsertEvent: vi.fn() }));
+vi.mock('@/db/queries/upsertStatus', () => ({ queryUpsertStatus: vi.fn() }));
+
+// --- Import mocked modules ---
+
+import { fetchSeason } from '@/update/fetch';
+import { isValidSeason } from '@/validators/isValidSeason';
+import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
+import { queryUpsertSeason } from '@/db/queries/upsertSeason';
+import { queryUpsertEvent } from '@/db/queries/upsertEvent';
+import { queryUpsertStatus } from '@/db/queries/upsertStatus';
+
+// --- Test data ---
 
 const SEASON = 5;
+
+// Each snapshot.data is a stringified JSON array of 3 faction entries (by enemy).
+const FRAME_ONE = JSON.stringify([
+    { points: 10, points_taken: 1, status: 'active' },
+    { points: 20, points_taken: 2, status: 'active' },
+    { points: 30, points_taken: 3, status: 'active' },
+]);
+const FRAME_TWO = JSON.stringify([
+    { points: 15, points_taken: 5, status: 'active' },
+    { points: 25, points_taken: 6, status: 'active' },
+    { points: 35, points_taken: 7, status: 'defeated' },
+]);
 
 const mockFetchedData = {
     introduction_order: [0, 1, 2],
     points_max: [100, 200, 300],
-    snapshots: [{ time: 1000, data: {} }],
+    snapshots: [
+        { season: SEASON, time: 1000, data: FRAME_ONE },
+        { season: SEASON, time: 2000, data: FRAME_TWO },
+    ],
     defend_events: [{ event_id: 1, region: 3, enemy: 0 }],
     attack_events: [{ event_id: 2, enemy: 1 }],
 };
 
+/** Wire up all mocks for a successful run. */
 function setupHappyPath() {
-    vi.mocked(fetchSeason).mockResolvedValue(mockFetchedData);
+    vi.mocked(fetchSeason).mockResolvedValue(structuredClone(mockFetchedData));
     vi.mocked(isValidSeason).mockReturnValue({ success: true });
     vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
-    vi.mocked(queryUpsertRebroadcastSeason).mockResolvedValue({});
     vi.mocked(queryUpsertSeason).mockResolvedValue({ id: 1, season: SEASON });
-    vi.mocked(queryUpsertIntroductionOrder).mockResolvedValue({});
-    vi.mocked(queryUpsertPointsMax).mockResolvedValue({});
-    vi.mocked(queryUpsertSnapshots).mockResolvedValue({});
     vi.mocked(queryUpsertEvent).mockResolvedValue({});
+    vi.mocked(queryUpsertStatus).mockResolvedValue({});
 }
 
 describe('updateSeason', () => {
@@ -59,7 +71,7 @@ describe('updateSeason', () => {
     });
 
     test('throws when validation fails', async () => {
-        vi.mocked(fetchSeason).mockResolvedValue(mockFetchedData);
+        vi.mocked(fetchSeason).mockResolvedValue(structuredClone(mockFetchedData));
         vi.mocked(isValidSeason).mockReturnValue({
             success: false,
             error: { issues: [{ message: 'bad' }] },
@@ -69,55 +81,20 @@ describe('updateSeason', () => {
     });
 
     test('throws when fetched season does not match input season', async () => {
-        vi.mocked(fetchSeason).mockResolvedValue(mockFetchedData);
+        vi.mocked(fetchSeason).mockResolvedValue(structuredClone(mockFetchedData));
         vi.mocked(isValidSeason).mockReturnValue({ success: true });
         vi.mocked(getSeasonFromSnapshot).mockReturnValue(99);
 
         await expect(updateSeason(SEASON)).rejects.toThrow('Invalid season');
     });
 
-    test('throws when rebroadcast upsert fails', async () => {
-        vi.mocked(fetchSeason).mockResolvedValue(mockFetchedData);
-        vi.mocked(isValidSeason).mockReturnValue({ success: true });
-        vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
-        vi.mocked(queryUpsertRebroadcastSeason).mockRejectedValue(
-            new Error('db rebroadcast error'),
-        );
-
-        await expect(updateSeason(SEASON)).rejects.toThrow('db rebroadcast error');
-    });
-
     test('throws when queryUpsertSeason fails', async () => {
-        vi.mocked(fetchSeason).mockResolvedValue(mockFetchedData);
+        vi.mocked(fetchSeason).mockResolvedValue(structuredClone(mockFetchedData));
         vi.mocked(isValidSeason).mockReturnValue({ success: true });
         vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
-        vi.mocked(queryUpsertRebroadcastSeason).mockResolvedValue({});
         vi.mocked(queryUpsertSeason).mockRejectedValue(new Error('db season error'));
 
         await expect(updateSeason(SEASON)).rejects.toThrow('db season error');
-    });
-
-    test('throws when parallel upsert for introductionOrder fails', async () => {
-        setupHappyPath();
-        vi.mocked(queryUpsertIntroductionOrder).mockRejectedValue(
-            new Error('intro order error'),
-        );
-
-        await expect(updateSeason(SEASON)).rejects.toThrow('intro order error');
-    });
-
-    test('throws when parallel upsert for pointsMax fails', async () => {
-        setupHappyPath();
-        vi.mocked(queryUpsertPointsMax).mockRejectedValue(new Error('points max error'));
-
-        await expect(updateSeason(SEASON)).rejects.toThrow('points max error');
-    });
-
-    test('throws when parallel upsert for snapshots fails', async () => {
-        setupHappyPath();
-        vi.mocked(queryUpsertSnapshots).mockRejectedValue(new Error('snapshots error'));
-
-        await expect(updateSeason(SEASON)).rejects.toThrow('snapshots error');
     });
 
     test('throws when defend event upsert fails', async () => {
@@ -148,56 +125,214 @@ describe('updateSeason', () => {
         expect(fetchSeason).toHaveBeenCalledWith(SEASON);
 
         // 2. validate
-        expect(isValidSeason).toHaveBeenCalledWith(mockFetchedData);
+        expect(isValidSeason).toHaveBeenCalled();
 
         // 3. season check
-        expect(getSeasonFromSnapshot).toHaveBeenCalledWith(mockFetchedData);
+        expect(getSeasonFromSnapshot).toHaveBeenCalled();
 
-        // 4. rebroadcast
-        expect(queryUpsertRebroadcastSeason).toHaveBeenCalledWith(
-            SEASON,
-            mockFetchedData,
-        );
+        // 4. season upserted twice: once with arrays (false), once to confirm (true)
+        expect(queryUpsertSeason).toHaveBeenCalledWith(SEASON, false, {
+            introOrder: [0, 1, 2],
+            pointsMax: [100, 200, 300],
+        });
+        expect(queryUpsertSeason).toHaveBeenCalledWith(SEASON, true);
 
-        // 5.1 create season (first call with false)
-        expect(queryUpsertSeason).toHaveBeenCalledWith(SEASON, false);
+        // 5. h1_status bucket-upserted: 2 frames x 3 factions = 6 calls
+        expect(queryUpsertStatus).toHaveBeenCalledTimes(6);
 
-        // 5.2-5.4 parallel upserts
-        expect(queryUpsertIntroductionOrder).toHaveBeenCalledWith(
-            SEASON,
-            mockFetchedData.introduction_order,
-        );
-        expect(queryUpsertPointsMax).toHaveBeenCalledWith(
-            SEASON,
-            mockFetchedData.points_max,
-        );
-        expect(queryUpsertSnapshots).toHaveBeenCalledWith(
-            SEASON,
-            mockFetchedData.snapshots,
-        );
-
-        // 5.5 defend events
+        // 6. defend events
         expect(queryUpsertEvent).toHaveBeenCalledWith(SEASON, 'defend', {
             event_id: 1,
             region: 3,
             enemy: 0,
         });
 
-        // 5.6 attack events with region: 11
+        // 7. attack events with region: 11
         expect(queryUpsertEvent).toHaveBeenCalledWith(SEASON, 'attack', {
             event_id: 2,
             enemy: 1,
             region: 11,
         });
 
-        // 6. confirm season (second call with true)
-        expect(queryUpsertSeason).toHaveBeenCalledWith(SEASON, true);
-
         // Return value
         expect(result).toHaveProperty('ms');
         expect(typeof result.ms).toBe('number');
         expect(result.season).toBe(SEASON);
         expect(result.confirmSeason).toEqual(confirmResult);
+    });
+
+    test('parses stringified snapshot data and upserts h1_status per frame per faction', async () => {
+        setupHappyPath();
+
+        await updateSeason(SEASON);
+
+        // Frame 1 @ time 1000 — enemy 0,1,2
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 0, 1000, {
+            points: 10,
+            points_taken: 1,
+            status: 'active',
+        });
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 1, 1000, {
+            points: 20,
+            points_taken: 2,
+            status: 'active',
+        });
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 2, 1000, {
+            points: 30,
+            points_taken: 3,
+            status: 'active',
+        });
+
+        // Frame 2 @ time 2000 — enemy 0,1,2
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 0, 2000, {
+            points: 15,
+            points_taken: 5,
+            status: 'active',
+        });
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 1, 2000, {
+            points: 25,
+            points_taken: 6,
+            status: 'active',
+        });
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 2, 2000, {
+            points: 35,
+            points_taken: 7,
+            status: 'defeated',
+        });
+    });
+
+    test('accepts already-parsed snapshot data (non-stringified)', async () => {
+        const parsedData = {
+            ...mockFetchedData,
+            snapshots: [
+                {
+                    season: SEASON,
+                    time: 5000,
+                    data: [
+                        { points: 1, points_taken: 1, status: 'active' },
+                        { points: 2, points_taken: 2, status: 'active' },
+                        { points: 3, points_taken: 3, status: 'active' },
+                    ],
+                },
+            ],
+        };
+        vi.mocked(fetchSeason).mockResolvedValue(parsedData);
+        vi.mocked(isValidSeason).mockReturnValue({ success: true });
+        vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
+
+        vi.mocked(queryUpsertSeason).mockResolvedValue({ id: 1, season: SEASON });
+        vi.mocked(queryUpsertEvent).mockResolvedValue({});
+        vi.mocked(queryUpsertStatus).mockResolvedValue({});
+
+        await updateSeason(SEASON);
+
+        expect(queryUpsertStatus).toHaveBeenCalledTimes(3);
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 0, 5000, {
+            points: 1,
+            points_taken: 1,
+            status: 'active',
+        });
+    });
+
+    test('skips snapshot frames whose parsed data is not a 3-element array', async () => {
+        const malformedData = {
+            ...mockFetchedData,
+            snapshots: [
+                // Object instead of array — skip
+                { season: SEASON, time: 1000, data: JSON.stringify({ foo: 'bar' }) },
+                // Array with wrong length — skip
+                {
+                    season: SEASON,
+                    time: 2000,
+                    data: JSON.stringify([{ points: 1 }]),
+                },
+                // Valid frame — process
+                {
+                    season: SEASON,
+                    time: 3000,
+                    data: JSON.stringify([
+                        { points: 1, points_taken: 1, status: 'active' },
+                        { points: 2, points_taken: 2, status: 'active' },
+                        { points: 3, points_taken: 3, status: 'active' },
+                    ]),
+                },
+            ],
+        };
+        vi.mocked(fetchSeason).mockResolvedValue(malformedData);
+        vi.mocked(isValidSeason).mockReturnValue({ success: true });
+        vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
+
+        vi.mocked(queryUpsertSeason).mockResolvedValue({ id: 1, season: SEASON });
+        vi.mocked(queryUpsertEvent).mockResolvedValue({});
+        vi.mocked(queryUpsertStatus).mockResolvedValue({});
+
+        await updateSeason(SEASON);
+
+        // Only the 3rd (valid) frame emits 3 upserts
+        expect(queryUpsertStatus).toHaveBeenCalledTimes(3);
+        expect(queryUpsertStatus).toHaveBeenCalledWith(
+            SEASON,
+            0,
+            3000,
+            expect.objectContaining({ points: 1 }),
+        );
+    });
+
+    test('logs status upsert errors but does not throw', async () => {
+        setupHappyPath();
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        vi.mocked(queryUpsertStatus).mockRejectedValue(new Error('status failed'));
+
+        // Should not throw — status errors are logged and skipped
+        await expect(updateSeason(SEASON)).resolves.toBeDefined();
+        expect(consoleSpy).toHaveBeenCalled();
+
+        consoleSpy.mockRestore();
+    });
+
+    // --- protectedBucket tests ---
+    // Default BUCKET_SIZE = 900. Test data times: 1000 (bucket 900), 2000 (bucket 1800).
+
+    test('protectedBucket skips snapshots in or after the protected bucket', async () => {
+        setupHappyPath();
+
+        // Protect bucket 1800 — frame 2 (time 2000, bucket 1800) should be skipped
+        await updateSeason(SEASON, { protectedBucket: 1800 });
+
+        // Only frame 1 (time 1000, bucket 900) should produce 3 upserts
+        expect(queryUpsertStatus).toHaveBeenCalledTimes(3);
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 0, 1000, expect.anything());
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 1, 1000, expect.anything());
+        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 2, 1000, expect.anything());
+    });
+
+    test('protectedBucket skips all snapshots when all are in or after the protected bucket', async () => {
+        setupHappyPath();
+
+        // Protect bucket 900 — both frames (buckets 900, 1800) should be skipped
+        await updateSeason(SEASON, { protectedBucket: 900 });
+
+        expect(queryUpsertStatus).not.toHaveBeenCalled();
+    });
+
+    test('no protectedBucket writes all snapshots (existing behavior)', async () => {
+        setupHappyPath();
+
+        await updateSeason(SEASON);
+
+        // 2 frames x 3 factions = 6
+        expect(queryUpsertStatus).toHaveBeenCalledTimes(6);
+    });
+
+    test('protectedBucket does not affect events or season upserts', async () => {
+        setupHappyPath();
+
+        await updateSeason(SEASON, { protectedBucket: 900 });
+
+        // All snapshots skipped, but events and season still written
+        expect(queryUpsertSeason).toHaveBeenCalledWith(SEASON, false, expect.anything());
+        expect(queryUpsertSeason).toHaveBeenCalledWith(SEASON, true);
+        expect(queryUpsertEvent).toHaveBeenCalledTimes(2); // 1 defend + 1 attack
     });
 
     test('attack events get region: 11 added', async () => {
@@ -211,12 +346,10 @@ describe('updateSeason', () => {
         vi.mocked(fetchSeason).mockResolvedValue(dataWithMultipleAttacks);
         vi.mocked(isValidSeason).mockReturnValue({ success: true });
         vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
-        vi.mocked(queryUpsertRebroadcastSeason).mockResolvedValue({});
+
         vi.mocked(queryUpsertSeason).mockResolvedValue({ id: 1, season: SEASON });
-        vi.mocked(queryUpsertIntroductionOrder).mockResolvedValue({});
-        vi.mocked(queryUpsertPointsMax).mockResolvedValue({});
-        vi.mocked(queryUpsertSnapshots).mockResolvedValue({});
         vi.mocked(queryUpsertEvent).mockResolvedValue({});
+        vi.mocked(queryUpsertStatus).mockResolvedValue({});
 
         await updateSeason(SEASON);
 

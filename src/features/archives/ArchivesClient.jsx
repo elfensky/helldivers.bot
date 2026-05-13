@@ -15,6 +15,8 @@ import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import { useCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
 import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
 import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
+import { usePersistedState } from '@/shared/hooks/usePersistedState.mjs';
+import { FACTION_KEY } from '@/shared/preferences/faction.mjs';
 
 /**
  * Archives client — full-season retrospective view with a sticky
@@ -70,12 +72,14 @@ export default function ArchivesClient({
     currentSeason,
     defeatMessageIndex,
     isAdmin = false,
+    initialFaction = 'global',
+    initialSortOrder = 'desc',
 }) {
     const events = data?.events ?? [];
     // 'global' shows the whole-war overview (ArchiveStats); bugs/cyborgs/illuminate
-    // show a per-faction breakdown (FactionStats). Default to 'global' so visitors
-    // land on the big-picture view before drilling into factions.
-    const [faction, setFaction] = useState('global');
+    // show a per-faction breakdown (FactionStats). Persisted via cookies and
+    // shared with the dashboard; initial value is SSR-read in the archives page.
+    const [faction, setFaction] = usePersistedState(FACTION_KEY, initialFaction);
     // Mobile-only: toggle whether the archives map column is sticky
     // (pinned at the top as the user scrolls). Default ON here (unlike
     // the homepage) so the archives map is pinned from first paint —
@@ -126,7 +130,7 @@ export default function ArchivesClient({
     }, []);
 
     return (
-        <div className="archives-page">
+        <>
             {/* Full-width stats section */}
             <div
                 className={`archives-stats-section${isDefeat ? ' cyberstan-defeat' : ''}${effects.watermark ? ' cyberstan-watermark-active' : ''}`}
@@ -139,16 +143,17 @@ export default function ArchivesClient({
                 />
 
                 <section className="mt-4 flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                         <h2>Statistics</h2>
-                        <div className="flex items-center gap-2">
-                            {isDefeat && (
-                                <EffectsToggle active={effects.headerScramble} />
-                            )}
+                        <div className="flex flex-wrap items-center gap-2">
+                            <FactionTabs active={faction} onChange={setFaction} />
                             <SeasonSelector
                                 seasons={seasons}
                                 currentSeason={currentSeason}
                             />
+                            {isDefeat && (
+                                <EffectsToggle active={effects.headerScramble} />
+                            )}
                             {isAdmin && (
                                 <RefreshSeasonButton
                                     season={currentSeason}
@@ -157,11 +162,10 @@ export default function ArchivesClient({
                             )}
                         </div>
                     </div>
-                    <FactionTabs active={faction} onChange={setFaction} />
                     {faction === 'global' ?
                         <ArchiveStats
                             events={events}
-                            live={data?.live}
+                            live={data?.status}
                             data={data}
                             effects={effects}
                             glitchPhase={glitchPhase}
@@ -184,17 +188,6 @@ export default function ArchivesClient({
                 </section>
             </div>
 
-            {/* Mobile FAB to toggle sticky pinning — hidden at lg: */}
-            <button
-                className="archives-map-toggle"
-                onClick={togglePin}
-                aria-label={isMapSticky ? 'Unpin map' : 'Pin map to top'}
-                title={isMapSticky ? 'Unpin map' : 'Pin map to top'}
-                data-umami-event="archive-map-toggle"
-            >
-                {isMapSticky ? '✕' : '📌'}
-            </button>
-
             {/* Two-column scrollytelling: event log + sticky map */}
             <div className="archives-scrollytelling">
                 <div className="archives-event-col">
@@ -203,6 +196,7 @@ export default function ArchivesClient({
                         timeFormat="absolute"
                         title="Event Log"
                         id="archives-event-log"
+                        initialSortOrder={initialSortOrder}
                         selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
                         railRef={railRef}
                         includeToday={false}
@@ -226,6 +220,17 @@ export default function ArchivesClient({
                     <ArchiveMap data={data} selectedEvent={selectedEvent} />
                 </div>
             </div>
-        </div>
+
+            {/* Mobile FAB to toggle sticky pinning — hidden at lg: */}
+            <button
+                className="archives-map-toggle"
+                onClick={togglePin}
+                aria-label={isMapSticky ? 'Unpin map' : 'Pin map to top'}
+                title={isMapSticky ? 'Unpin map' : 'Pin map to top'}
+                data-umami-event="archive-map-toggle"
+            >
+                {isMapSticky ? '✕' : '📌'}
+            </button>
+        </>
     );
 }

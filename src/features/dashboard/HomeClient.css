@@ -1,16 +1,16 @@
 /*
- * HomeClient grid — single continuous grid that spans the hero and the
- * scrollytelling event log, with one galaxy map column that can be
- * pinned (mobile/tablet) or lives in a real sticky grid cell (desktop).
+ * HomeClient grid — sidebar (dashboard + event log stacked) next to a
+ * single galaxy map column that can be pinned (mobile/tablet) or lives
+ * in its own sticky grid cell (desktop).
  *
- * Mobile (<lg): flex column. Map → sidebar → event log, in that order.
+ * Mobile (<lg): flex column. Map → sidebar, in that order.
+ *   Sidebar contains dashboard (season, regions, stats) then event log.
  *   User can pin the map via the FAB, which adds `.home-map--sticky`.
  *
- * Desktop (lg+): two-row grid with a spanning map column.
- *   Row 1: hero-sidebar content (regions cards, stats) — minimum
- *           100dvh - 80px tall (matches the old hero feel).
- *   Row 2: event log, natural-height.
- *   Right column: single sticky galaxy map cell spanning both rows.
+ * Desktop (lg+): two-column grid.
+ *   Left column: sidebar — dashboard (regions, stats) then event log.
+ *   Right column: sticky galaxy map, pinned at top:80px as the sidebar
+ *   scrolls past.
  *
  * ## Class layering (mobile/tablet)
  *
@@ -211,16 +211,27 @@
     }
 }
 
-.home-hero-sidebar {
+.home-sidebar {
     order: 2;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    /* gap: 0.5rem; */
+    min-width: 0;
 }
 
-.home-scrolly-log {
-    order: 3;
-    min-width: 0;
+/*
+ * Event log lives inside the sidebar now — drop its own vertical
+ * padding so the sidebar's `gap: 0.5rem` is the single source of
+ * spacing between Stats and the Event Log heading. Without this,
+ * `.event-log-section { padding: 1.5rem 0 }` (→ 2rem at md+) stacks
+ * on top of the flex gap, making Stats → Event Log noticeably taller
+ * than Season → Stats. Archives use `.event-log-section` directly
+ * (no `.home-sidebar` ancestor), so their 2rem breathing room is
+ * unaffected by this override.
+ */
+.home-sidebar .event-log-section {
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 /* Floating action button: toggle map visibility on mobile.
@@ -249,25 +260,28 @@
 @media (min-width: 1024px) {
     .home-grid {
         display: grid;
-        grid-template-areas:
-            'hero-sidebar map'
-            'scrolly-log  map';
         grid-template-columns: minmax(260px, 1fr) minmax(
                 0,
                 calc((100dvh - 80px) * 806.93 / 868.81)
             );
-        grid-template-rows: minmax(calc(100dvh - 80px), auto) auto;
         column-gap: 6rem;
         row-gap: 0;
     }
 
-    .home-hero-sidebar {
-        grid-area: hero-sidebar;
-    }
-
-    .home-scrolly-log {
-        grid-area: scrolly-log;
+    /*
+     * Reset the mobile `order` overrides so the grid auto-placement runs
+     * in DOM order (sidebar first, then map). With the mobile `order`
+     * values still applied, the grid visits the map (order:1) first —
+     * it has `grid-column: 2`, which moves the cursor past column 1 in
+     * row 1; the sidebar (order:2, `grid-column: 1`) then wraps to
+     * row 2 instead of sitting next to the map. Explicit placement on
+     * row 1 would also fix it, but resetting order keeps the
+     * responsive intent obvious: order only matters on mobile flex.
+     */
+    .home-sidebar {
+        grid-column: 1;
         min-width: 0;
+        order: 0;
     }
 
     /*
@@ -278,7 +292,8 @@
      * the grid cell. Same pattern archives uses on .archives-map-col.
      */
     .home-map {
-        grid-area: map;
+        grid-column: 2;
+        order: 0;
         position: sticky;
         top: 80px;
         align-self: start;

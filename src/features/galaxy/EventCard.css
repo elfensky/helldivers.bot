@@ -133,3 +133,43 @@
 .sector-card-defeated {
     opacity: 0.333;
 }
+
+/* 11-segment campaign bar (sectors 1-10 + homeworld).
+ * Replaces the single .sector-card-bar-fill when EventCard is in campaign view.
+ * Data driven entirely by computeMapState — see countCapturedRegions.mjs. */
+.sector-card-segments {
+    display: grid;
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+    gap: 2px;
+    height: 100%;
+    width: 100%;
+}
+
+.sector-card-segment {
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sector-card-segment--captured {
+    background: var(--faction-color);
+    border: 1px solid transparent;
+}
+
+.sector-card-segment--in-progress {
+    background: linear-gradient(
+        to right,
+        var(--faction-color) var(--segment-percent, 0%),
+        rgba(255, 255, 255, 0.1) var(--segment-percent, 0%)
+    );
+    border: 1px solid var(--faction-color);
+}
+
+.sector-card-segment--active {
+    background: linear-gradient(
+        to right,
+        var(--color-danger) var(--segment-percent, 0%),
+        rgba(255, 255, 255, 0.1) var(--segment-percent, 0%)
+    );
+    border: 1px solid var(--color-danger);
+}

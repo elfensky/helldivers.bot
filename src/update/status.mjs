@@ -4,90 +4,17 @@ import { getSeasonFromStatus } from '@/shared/utils/getSeason';
 import { fetchStatus } from '@/update/fetch.mjs';
 import { EVENT_TYPE } from '@/shared/enums/events';
 import { isValidStatus } from '@/validators/isValidStatus';
-import map from '@/shared/enums/map';
-//db
-import { queryUpsertRebroadcastStatus } from '@/db/queries/rebroadcast';
+// db
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertLive } from '@/db/queries/upsertLive';
-import { queryUpsertIntroductionOrder } from '@/db/queries/upsertIntroductionOrder';
-import { queryUpsertPointsMax } from '@/db/queries/upsertPointsMax';
-import { queryCreateLiveSnapshots } from '@/db/queries/createLiveSnapshots';
-import { queryCreateEventSnapshot } from '@/db/queries/createEventSnapshots';
-import {
-    shouldTakeLiveSnapshot,
-    recordLiveSnapshotTime,
-    shouldTakeEventSnapshot,
-    recordEventSnapshotTime,
-} from '@/update/snapshotTimers';
-
-function computeFactionMap(enemy, campaign, defendEvent, attackEvents, season) {
-    const factionMap = JSON.parse(JSON.stringify(map[enemy]));
-
-    const totalPoints = campaign.points_max > 0 ? campaign.points_max : 1;
-    for (const regionKey of Object.keys(factionMap)) {
-        const region = factionMap[regionKey];
-        region.status = campaign.status;
-        if (parseInt(regionKey) === 11) {
-            region.points = campaign.points;
-            region.points_max = campaign.points_max;
-            region.percent = Math.round((campaign.points_taken / totalPoints) * 100);
-        }
-    }
-
-    if (defendEvent && defendEvent.enemy === enemy && defendEvent.season === season) {
-        const region = factionMap[defendEvent.region];
-        if (region) {
-            region.event = EVENT_TYPE.DEFEND;
-        }
-    }
-
-    if (attackEvents) {
-        for (const event of attackEvents) {
-            if (
-                event.season === season &&
-                event.enemy === enemy &&
-                event.status === 'active'
-            ) {
-                if (factionMap[11]) {
-                    factionMap[11].event = EVENT_TYPE.ATTACK;
-                }
-            }
-        }
-    }
-
-    return factionMap;
-}
-
-async function captureEventSnapshot(season, time, type, event, eventData) {
-    if (
-        event.status !== 'active' &&
-        event.status !== 'success' &&
-        event.status !== 'fail'
-    )
-        return;
-    const { data: shouldSnapshot, error: timerError } = await tryCatch(
-        shouldTakeEventSnapshot(type, event.event_id, time),
-    );
-    if (timerError) {
-        console.error('Event snapshot timer error:', timerError.message);
-        return;
-    }
-    if (!shouldSnapshot) return;
-    const { error: snapError } = await tryCatch(
-        queryCreateEventSnapshot(season, type, eventData, time),
-    );
-    if (snapError) {
-        console.error(`${type} event snapshot error:`, snapError.message);
-    } else {
-        recordEventSnapshotTime(type, event.event_id, time);
-    }
-}
+import { queryUpsertStatus } from '@/db/queries/upsertStatus';
+import { queryUpsertStatistic } from '@/db/queries/upsertStatistic';
+import { queryUpsertEventProgress } from '@/db/queries/upsertEventProgress';
 
 export async function updateStatus() {
     const start = performance.now();
 
-    //1. fetch
+    // 1. Fetch
     const { data: fetchedData, error: fetchedError } = await tryCatch(fetchStatus());
     if (fetchedError) {
         throw new Error(fetchedError?.message || 'Failed to fetch status from the API', {
@@ -95,7 +22,7 @@ export async function updateStatus() {
         });
     }
 
-    //2. validate
+    // 2. Validate
     const check = isValidStatus(fetchedData);
     if (!check.success) {
         console.error(check.error);
@@ -104,28 +31,21 @@ export async function updateStatus() {
         });
     }
 
-    //3. get season
+    // 3. Resolve season
     const season = getSeasonFromStatus(fetchedData);
 
-    //4. store raw rebroadcast
-    const { error: storedRebroadcastError } = await tryCatch(
-        queryUpsertRebroadcastStatus(season, fetchedData),
+    // 4. Upsert season metadata with inlined intro_order + points_max arrays + season_duration
+    const introOrder = fetchedData.campaign_status.map((c) => c.introduction_order);
+    const pointsMax = fetchedData.campaign_status.map((c) => c.points_max);
+    const seasonDuration = fetchedData.statistics[0]?.season_duration ?? 0;
+    const { error: seasonError } = await tryCatch(
+        queryUpsertSeason(season, false, { introOrder, pointsMax, seasonDuration }),
     );
-    if (storedRebroadcastError) {
-        throw new Error(
-            storedRebroadcastError?.message || 'Failed to store rebroadcast status',
-            { cause: 'update/status.mjs | queryUpsertRebroadcastStatus()' },
-        );
+    if (seasonError) {
+        throw new Error(seasonError?.message || 'Failed to upsert season');
     }
 
-    //5. upsert season
-    const { error: newSeasonError } = await tryCatch(queryUpsertSeason(season, false));
-    if (newSeasonError) {
-        throw new Error(newSeasonError?.message || 'Failed to upsert season');
-    }
-
-    //6. upsert events
-    // Defend event (guard for null — API omits when no defend active)
+    // 5. Upsert events (h1_event unchanged)
     if (fetchedData.defend_event) {
         const { error: defendError } = await tryCatch(
             queryUpsertEvent(season, EVENT_TYPE.DEFEND, fetchedData.defend_event),
@@ -135,7 +55,6 @@ export async function updateStatus() {
         }
     }
 
-    // Attack events
     for (const event of fetchedData.attack_events) {
         const { error: attackError } = await tryCatch(
             queryUpsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
@@ -145,93 +64,64 @@ export async function updateStatus() {
         }
     }
 
-    //6.5 capture event snapshots (10-min throttle)
-    // Defend event snapshot
-    if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
-        await captureEventSnapshot(
-            season,
-            fetchedData.time,
-            EVENT_TYPE.DEFEND,
-            fetchedData.defend_event,
-            fetchedData.defend_event,
-        );
-    }
-
-    // Attack event snapshots
-    for (const event of fetchedData.attack_events) {
-        if (event.season !== season) continue;
-        await captureEventSnapshot(season, fetchedData.time, EVENT_TYPE.ATTACK, event, {
-            ...event,
-            region: 11,
-        });
-    }
-
-    //7. derive introduction_order and points_max from campaign_status
-    const introOrder = fetchedData.campaign_status.map((c) => c.introduction_order);
-    const pointsMax = fetchedData.campaign_status.map((c) => c.points_max);
-
-    const { error: introError } = await tryCatch(
-        queryUpsertIntroductionOrder(season, introOrder),
-    );
-    if (introError) {
-        throw new Error(introError?.message || 'Failed to upsert introduction_order');
-    }
-
-    const { error: pointsError } = await tryCatch(
-        queryUpsertPointsMax(season, pointsMax),
-    );
-    if (pointsError) {
-        throw new Error(pointsError?.message || 'Failed to upsert points_max');
-    }
-
-    //8. upsert h1_live (one row per faction)
+    // 6. Bucket-upsert h1_status for all 3 factions (campaign progression timeseries)
     for (let enemy = 0; enemy < 3; enemy++) {
         const campaign = fetchedData.campaign_status[enemy];
+        const { error: statusError } = await tryCatch(
+            queryUpsertStatus(season, enemy, fetchedData.time, campaign),
+        );
+        if (statusError) {
+            throw new Error(statusError?.message || 'Failed to upsert h1_status');
+        }
+    }
+
+    // 7. Bucket-upsert h1_statistic for all 3 factions (stats timeseries)
+    for (let enemy = 0; enemy < 3; enemy++) {
         const stats = fetchedData.statistics[enemy];
-        const factionMap = computeFactionMap(
-            enemy,
-            campaign,
-            fetchedData.defend_event,
-            fetchedData.attack_events,
-            season,
+        const { error: statError } = await tryCatch(
+            queryUpsertStatistic(season, enemy, fetchedData.time, stats),
         );
-
-        const { error: liveError } = await tryCatch(
-            queryUpsertLive(season, enemy, campaign, stats, factionMap),
-        );
-        if (liveError) {
-            throw new Error(liveError?.message || 'Failed to upsert h1_live');
+        if (statError) {
+            throw new Error(statError?.message || 'Failed to upsert h1_statistic');
         }
     }
 
-    //8.5 capture live statistic snapshots (15-min throttle)
-    const { data: shouldSnapshot, error: liveTimerError } = await tryCatch(
-        shouldTakeLiveSnapshot(season, fetchedData.time),
-    );
-    if (liveTimerError) {
-        console.error('Live snapshot timer error:', liveTimerError.message);
-    } else if (shouldSnapshot) {
-        const { error: liveSnapError } = await tryCatch(
-            queryCreateLiveSnapshots(season, fetchedData.time, fetchedData.statistics),
+    // 8. Bucket-upsert h1_event_progress for active events (event progression)
+    if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
+        const { error: defProgError } = await tryCatch(
+            queryUpsertEventProgress(
+                EVENT_TYPE.DEFEND,
+                fetchedData.defend_event,
+                fetchedData.time,
+            ),
         );
-        if (liveSnapError) {
-            console.error('Live snapshot error:', liveSnapError.message);
-        } else {
-            recordLiveSnapshotTime(fetchedData.time);
+        if (defProgError) {
+            console.error('Defend event progress error:', defProgError.message);
         }
     }
 
-    //9. confirm season update
-    const { data: confirmSeason, error: confirmSeasonError } = await tryCatch(
+    for (const event of fetchedData.attack_events) {
+        if (event.season !== season) continue;
+        const { error: atkProgError } = await tryCatch(
+            queryUpsertEventProgress(EVENT_TYPE.ATTACK, event, fetchedData.time),
+        );
+        if (atkProgError) {
+            console.error('Attack event progress error:', atkProgError.message);
+        }
+    }
+
+    // 9. Confirm season update (sets last_updated = now)
+    const { data: confirmSeason, error: confirmError } = await tryCatch(
         queryUpsertSeason(season, true),
     );
-    if (confirmSeasonError) {
-        throw new Error(confirmSeasonError?.message || 'Failed to update last_updated');
+    if (confirmError) {
+        throw new Error(confirmError?.message || 'Failed to update last_updated');
     }
 
     return {
         ms: performanceTime(start),
-        season: season,
+        season,
+        time: fetchedData.time,
         confirmSeason,
     };
 }
