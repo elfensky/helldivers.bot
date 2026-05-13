@@ -142,7 +142,7 @@ vi.mock('next/cache', () => ({
  */
 vi.mock('next/server', async (importOriginal) => {
     const actual = await importOriginal();
-    return { ...actual, after: vi.fn((fn) => fn()) };
+    return { ...actual, after: vi.fn() };
 });
 
 /**
