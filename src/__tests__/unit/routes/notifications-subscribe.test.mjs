@@ -28,11 +28,14 @@ function deleteJson(body) {
     });
 }
 
+// Placeholders that pass the schema's regex/length validation without
+// resembling real VAPID material (GitGuardian flags realistic-format
+// base64url strings of the right length as potential secrets).
 const validBody = {
-    endpoint: 'https://fcm.googleapis.com/fcm/send/abc123',
+    endpoint: 'https://fcm.googleapis.com/fcm/send/test-endpoint',
     keys: {
-        p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM',
-        auth: 'tBHItJI5svbpez7KI4CCXg',
+        p256dh: 'TEST_P256DH_PLACEHOLDER_AAAAAAAAAAAAAAAAAAAAAAAAA',
+        auth: 'TEST_AUTH_PLACEHOLDER_AA',
     },
 };
 
