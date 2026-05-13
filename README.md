@@ -13,12 +13,12 @@
 <!-- ![Website](https://img.shields.io/website?url=https%3A%2F%2Fstaging.helldivers.bot&up_message=online&down_message=offline&label=staging)
 ![Website](https://img.shields.io/website?url=https%3A%2F%2Fhelldivers.bot&up_message=online&down_message=offline&label=production) -->
 
-![uptime](https://uptimekuma.lav.ren/api/badge/5/uptime/30d?labelPrefix=production+-+&style=plastic)
+<!-- ![uptime](https://uptimekuma.lav.ren/api/badge/5/uptime/30d?labelPrefix=production+-+&style=plastic)
 ![ping](https://uptimekuma.lav.ren/api/badge/5/ping/30d?labelPrefix=production+-+&style=plastic)
 ![status](https://uptimekuma.lav.ren/api/badge/5/status?style=plastic)<br>
 ![uptime](https://uptimekuma.lav.ren/api/badge/6/uptime/30d?labelPrefix=staging+-+&style=plastic)
 ![ping](https://uptimekuma.lav.ren/api/badge/6/ping/30d?labelPrefix=staging+-+&style=plastic)
-![status](https://uptimekuma.lav.ren/api/badge/6/status?style=plastic)
+![status](https://uptimekuma.lav.ren/api/badge/6/status?style=plastic) -->
 
 [![Metrics](https://raw.githubusercontent.com/elfensky/helldivers.bot/metrics/metrics.plugin.pagespeed.svg)](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fhelldivers.bot%2F)
 
@@ -103,7 +103,7 @@ On startup, it runs instrumentation.js (once) which will:
 3. initialize the database:
     1. run migrations.
     2. fetch remote currentStatus + currentSeason
-    3. save normalized data in the 5-table h1_* schema (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Past seasons referenced by lagged event slots are skipped per `queryUpsertEvent`'s `event.season !== season` guard rather than being seeded as empty rows.
+    3. save normalized data in the 5-table h1\_\* schema (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Past seasons referenced by lagged event slots are skipped per `queryUpsertEvent`'s `event.season !== season` guard rather than being seeded as empty rows.
 
 4. start a worker thread that will continiously update the database from the official Helldivers API. It simply queries the /api/h1/update endpoint every `UPDATE_INTERVAL` seconds using the `UPDATE_KEY` token.
 
