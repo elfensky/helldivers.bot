@@ -98,6 +98,11 @@ describe('GET /api/h1/live', () => {
         computeMapState.mockReturnValue([]);
 
         const response = await GET();
+        // Lock that getCampaign WAS invoked — otherwise a route that never
+        // touches the DB would also produce a 500 envelope.
+        expect(getCampaign).toHaveBeenCalledTimes(1);
+        // And computeMapState was NOT called (we short-circuit on the error).
+        expect(computeMapState).not.toHaveBeenCalled();
         expect(response.status).toBe(500);
         const body = await response.json();
         expectErrorEnvelope(body, {
@@ -111,6 +116,8 @@ describe('GET /api/h1/live', () => {
         computeMapState.mockReturnValue([]);
 
         const response = await GET();
+        expect(getCampaign).toHaveBeenCalledTimes(1);
+        expect(computeMapState).not.toHaveBeenCalled();
         expect(response.status).toBe(500);
         const body = await response.json();
         expectErrorEnvelope(body, { code: 500, error: 'No campaign data' });

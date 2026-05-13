@@ -164,6 +164,9 @@ describe('POST /api/notifications/subscribe — failure', () => {
         const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         const res = await POST(postJson(validBody));
+        // Lock that upsert WAS invoked — distinguishes "500 from real DB
+        // failure" from "500 from never-attempted no-op".
+        expect(db.push_subscription.upsert).toHaveBeenCalledTimes(1);
         expect(res.status).toBe(500);
         expect(res.headers.get('Content-Type')).toBe('application/json');
         const body = await res.json();
@@ -242,6 +245,8 @@ describe('DELETE /api/notifications/subscribe', () => {
         const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         const res = await DELETE(deleteJson({ endpoint: validBody.endpoint }));
+        // Lock that delete WAS attempted.
+        expect(db.push_subscription.delete).toHaveBeenCalledTimes(1);
         expect(res.status).toBe(500);
         const body = await res.json();
         expect(body.error).toBe('Failed to remove subscription');

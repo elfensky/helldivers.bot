@@ -24,6 +24,9 @@ describe('GET /api/h1/update', () => {
         const res = await GET(req);
         expect(res.status).toBe(401);
         expectErrorEnvelope(await res.json(), { code: 401 });
+        // Auth gate must short-circuit BEFORE any work happens.
+        expect(updateStatus).not.toHaveBeenCalled();
+        expect(updateSeason).not.toHaveBeenCalled();
     });
 
     test('returns 401 when authorization header has no Bearer prefix', async () => {
@@ -33,6 +36,8 @@ describe('GET /api/h1/update', () => {
         const res = await GET(req);
         expect(res.status).toBe(401);
         expectErrorEnvelope(await res.json(), { code: 401 });
+        expect(updateStatus).not.toHaveBeenCalled();
+        expect(updateSeason).not.toHaveBeenCalled();
     });
 
     test('returns 401 when key does not match', async () => {
@@ -42,6 +47,8 @@ describe('GET /api/h1/update', () => {
         const res = await GET(req);
         expect(res.status).toBe(401);
         expectErrorEnvelope(await res.json(), { code: 401 });
+        expect(updateStatus).not.toHaveBeenCalled();
+        expect(updateSeason).not.toHaveBeenCalled();
     });
 
     test('returns 200 with correct key and update data', async () => {
