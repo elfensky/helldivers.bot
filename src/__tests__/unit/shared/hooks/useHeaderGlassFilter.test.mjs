@@ -141,11 +141,22 @@ describe('useHeaderGlassFilter — MutationObserver updates', () => {
 });
 
 describe('useHeaderGlassFilter — cleanup', () => {
+    // Capture/restore MutationObserver in afterEach (not at the end of the
+    // test body) so a thrown assertion does NOT leave the fake class
+    // installed for subsequent tests.
+    let realMutationObserver;
+    afterEach(() => {
+        if (realMutationObserver) {
+            globalThis.MutationObserver = realMutationObserver;
+            realMutationObserver = undefined;
+        }
+    });
+
     test('disconnects the MutationObserver on unmount', async () => {
         const disconnectSpy = vi.fn();
-        const realObserver = globalThis.MutationObserver;
+        realMutationObserver = globalThis.MutationObserver;
         // Wrap real MutationObserver so we can spy on disconnect.
-        globalThis.MutationObserver = class extends realObserver {
+        globalThis.MutationObserver = class extends realMutationObserver {
             constructor(cb) {
                 super(cb);
                 this.disconnect = vi.fn().mockImplementation(() => {
@@ -160,8 +171,30 @@ describe('useHeaderGlassFilter — cleanup', () => {
         unmount();
 
         expect(disconnectSpy).toHaveBeenCalledTimes(1);
+    });
 
-        globalThis.MutationObserver = realObserver;
+    test('observes <html> with attributeFilter: ["style"] — the constraint flows through to MutationObserver.observe()', () => {
+        // Strengthens the prior "non-style attr does not fire" test, which
+        // would pass trivially if the observer simply re-read an unchanged
+        // CSS var. Here we directly inspect the args passed to observe().
+        const observeSpy = vi.fn();
+        realMutationObserver = globalThis.MutationObserver;
+        globalThis.MutationObserver = class extends realMutationObserver {
+            observe(target, opts) {
+                observeSpy(target, opts);
+                return super.observe(target, opts);
+            }
+        };
+
+        renderHook(() => useHeaderGlassFilter());
+
+        expect(observeSpy).toHaveBeenCalledTimes(1);
+        const [target, opts] = observeSpy.mock.calls[0];
+        expect(target).toBe(document.documentElement);
+        expect(opts).toEqual({
+            attributes: true,
+            attributeFilter: ['style'],
+        });
     });
 
     test('after unmount, subsequent <html>.style writes do NOT update the (now-orphaned) state', async () => {

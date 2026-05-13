@@ -48,6 +48,21 @@ vi.mock('@/features/archives/eventKey.mjs', () => ({
 let originalRAF;
 let originalCAF;
 let pendingRAFs;
+// Capture original viewport property descriptors so afterEach can restore
+// them — without this, the Object.defineProperty stubs leak to subsequent
+// test files run by the same jsdom worker.
+let originalDescriptors;
+
+function captureDescriptor(target, key) {
+    return Object.getOwnPropertyDescriptor(target, key);
+}
+function restoreDescriptor(target, key, descriptor) {
+    if (descriptor) {
+        Object.defineProperty(target, key, descriptor);
+    } else {
+        delete target[key];
+    }
+}
 
 beforeEach(() => {
     document.body.innerHTML = '';
@@ -63,6 +78,14 @@ beforeEach(() => {
     globalThis.cancelAnimationFrame = (id) => {
         const entry = pendingRAFs.find((r) => r.id === id);
         if (entry) entry.cancelled = true;
+    };
+
+    // Capture original descriptors before stubbing.
+    originalDescriptors = {
+        innerHeight: captureDescriptor(window, 'innerHeight'),
+        innerWidth: captureDescriptor(window, 'innerWidth'),
+        scrollY: captureDescriptor(window, 'scrollY'),
+        scrollHeight: captureDescriptor(document.documentElement, 'scrollHeight'),
     };
 
     // Stub viewport dimensions to known values.
@@ -82,6 +105,16 @@ beforeEach(() => {
 afterEach(() => {
     globalThis.requestAnimationFrame = originalRAF;
     globalThis.cancelAnimationFrame = originalCAF;
+    // Restore the original property descriptors so subsequent tests (and
+    // subsequent test files in the same pool) don't inherit the stubs.
+    restoreDescriptor(window, 'innerHeight', originalDescriptors.innerHeight);
+    restoreDescriptor(window, 'innerWidth', originalDescriptors.innerWidth);
+    restoreDescriptor(window, 'scrollY', originalDescriptors.scrollY);
+    restoreDescriptor(
+        document.documentElement,
+        'scrollHeight',
+        originalDescriptors.scrollHeight,
+    );
     document.body.innerHTML = '';
     vi.restoreAllMocks();
 });
