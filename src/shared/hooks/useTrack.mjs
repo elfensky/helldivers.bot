@@ -18,7 +18,7 @@ import { useCallback } from 'react';
  */
 export function useTrack() {
     return useCallback((eventName, data) => {
-        if (typeof window !== 'undefined' && window.umami) {
+        if (typeof window !== 'undefined' && typeof window.umami?.track === 'function') {
             window.umami.track(eventName, data);
         }
     }, []);
