@@ -21,7 +21,9 @@ function stubMatchMedia(reducedMotion) {
 beforeEach(() => {
     localStorage.clear();
     stubMatchMedia(false);
-    vi.spyOn(Math, 'random').mockReturnValue(0); // watermark off by default
+    // random=0 → watermark ON when no gate blocks (0 < 0.5 is true). Tests
+    // that need watermark OFF explicitly set random > 0.5.
+    vi.spyOn(Math, 'random').mockReturnValue(0);
 });
 
 afterEach(() => {

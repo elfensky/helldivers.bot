@@ -260,6 +260,9 @@ describe('sendWithConcurrencyLimit', () => {
 
         const result = await sendWithConcurrencyLimit([sub1, sub2], 'payload');
 
+        // First assert sendNotification was actually invoked — otherwise a
+        // no-op implementation would also produce { sent: 0, stale: 0 }.
+        expect(webpush.sendNotification).toHaveBeenCalledTimes(2);
         expect(result).toEqual({ sent: 0, stale: 0 });
         expect(db.push_subscription.deleteMany).not.toHaveBeenCalled();
     });
@@ -269,6 +272,9 @@ describe('sendWithConcurrencyLimit', () => {
 
         const result = await sendWithConcurrencyLimit([sub1], 'payload');
 
+        // Lock that we DID try to send — distinguishes "fails open" from
+        // "never attempted".
+        expect(webpush.sendNotification).toHaveBeenCalledTimes(1);
         expect(result).toEqual({ sent: 0, stale: 0 });
         expect(db.push_subscription.deleteMany).not.toHaveBeenCalled();
     });
@@ -283,7 +289,37 @@ describe('sendWithConcurrencyLimit', () => {
         const sub3 = { endpoint: 'e3', keys_p256dh: 'p3', keys_auth: 'a3' };
         const result = await sendWithConcurrencyLimit([sub1, sub2, sub3], 'payload');
 
+        // All three subs were dispatched (no early bail-out on the rejected ones).
+        expect(webpush.sendNotification).toHaveBeenCalledTimes(3);
         expect(result).toEqual({ sent: 1, stale: 1 });
+    });
+
+    test('batch boundary: first 50 all reject, second batch still dispatches (no early exit)', async () => {
+        // Per-call mocks: first 50 reject with 410 (stale), next 5 succeed.
+        // If the loop bailed out after the first batch's rejections, the
+        // second batch's 5 calls would never happen.
+        let callCount = 0;
+        webpush.sendNotification.mockImplementation(() => {
+            callCount += 1;
+            if (callCount <= 50) {
+                return Promise.reject({ statusCode: 410 });
+            }
+            return Promise.resolve({ statusCode: 201 });
+        });
+        db.push_subscription.deleteMany.mockResolvedValue({ count: 50 });
+
+        const subs = Array.from({ length: 55 }, (_, i) => ({
+            endpoint: `https://example.com/push/${i}`,
+            keys_p256dh: `p${i}`,
+            keys_auth: `a${i}`,
+        }));
+
+        const result = await sendWithConcurrencyLimit(subs, 'payload');
+
+        // All 55 dispatched (the second batch of 5 ran despite the first
+        // batch's 50 rejections).
+        expect(webpush.sendNotification).toHaveBeenCalledTimes(55);
+        expect(result).toEqual({ sent: 5, stale: 50 });
     });
 
     test('batches sends at MAX_CONCURRENT (50) — second batch waits for first to settle', async () => {

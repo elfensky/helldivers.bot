@@ -57,10 +57,11 @@ describe('useGlitchCycle — disabled', () => {
 
 describe('useGlitchCycle — phase progression', () => {
     // Each phase transition requires: timer fires → setPhase commits →
-    // effect re-runs → new timer scheduled. Between act() blocks, React
-    // commits the state update, but the effect re-run that schedules the
-    // NEXT timer hasn't necessarily completed. So we advance time CUMULATIVELY
-    // inside a single act() to let the whole chain settle in one go.
+    // effect re-runs → new timer scheduled. We use separate act() blocks
+    // per advance so React commits the state update + runs the effect that
+    // schedules the next timer in between — this is what makes the
+    // "just before" boundary assertions meaningful (each phase actually
+    // dwells for its configured time before the next transition fires).
 
     test('idle → takeover after IDLE_MIN_MS (Math.random=0 → min delay)', () => {
         const { result } = renderHook(() => useGlitchCycle(true));
@@ -73,28 +74,43 @@ describe('useGlitchCycle — phase progression', () => {
         expect(result.current.phase).toBe('takeover');
     });
 
-    test('full cycle: idle → takeover → hold → fight → restore → idle', () => {
+    test('full cycle: idle → takeover → hold → fight → restore → idle, each phase dwells for its full configured time', () => {
+        // Strengthened with "just before" assertions for each fixed dwell:
+        // if a phase used a shorter delay than configured, the just-before
+        // assertion would already see the next phase. (Required by the
+        // user's strict-theater bar — otherwise the test would only prove
+        // the state advanced eventually, not at the right time.)
         const { result } = renderHook(() => useGlitchCycle(true));
         expect(result.current.phase).toBe('idle');
 
-        // idle → takeover (6000ms)
-        act(() => vi.advanceTimersByTime(IDLE_MIN_MS + 1));
+        // idle → takeover: dwells for IDLE_MIN_MS (random=0 → min delay).
+        act(() => vi.advanceTimersByTime(IDLE_MIN_MS - 1));
+        expect(result.current.phase).toBe('idle'); // just before threshold
+        act(() => vi.advanceTimersByTime(2));
         expect(result.current.phase).toBe('takeover');
 
-        // takeover → hold (+800ms = 6801 total)
-        act(() => vi.advanceTimersByTime(TAKEOVER_MS + 1));
+        // takeover → hold: dwells exactly TAKEOVER_MS.
+        act(() => vi.advanceTimersByTime(TAKEOVER_MS - 1));
+        expect(result.current.phase).toBe('takeover'); // just before threshold
+        act(() => vi.advanceTimersByTime(2));
         expect(result.current.phase).toBe('hold');
 
-        // hold → fight (+1000ms = 7802 total)
-        act(() => vi.advanceTimersByTime(HOLD_MS + 1));
+        // hold → fight: dwells exactly HOLD_MS.
+        act(() => vi.advanceTimersByTime(HOLD_MS - 1));
+        expect(result.current.phase).toBe('hold');
+        act(() => vi.advanceTimersByTime(2));
         expect(result.current.phase).toBe('fight');
 
-        // fight → restore (+1000ms = 8803 total, MIN_MS at random=0)
-        act(() => vi.advanceTimersByTime(FIGHT_MIN_MS + 1));
+        // fight → restore: dwells for FIGHT_MIN_MS (random=0 → min delay).
+        act(() => vi.advanceTimersByTime(FIGHT_MIN_MS - 1));
+        expect(result.current.phase).toBe('fight');
+        act(() => vi.advanceTimersByTime(2));
         expect(result.current.phase).toBe('restore');
 
-        // restore → idle (+800ms = 9604 total)
-        act(() => vi.advanceTimersByTime(RESTORE_MS + 1));
+        // restore → idle: dwells exactly RESTORE_MS.
+        act(() => vi.advanceTimersByTime(RESTORE_MS - 1));
+        expect(result.current.phase).toBe('restore');
+        act(() => vi.advanceTimersByTime(2));
         expect(result.current.phase).toBe('idle');
     });
 });
