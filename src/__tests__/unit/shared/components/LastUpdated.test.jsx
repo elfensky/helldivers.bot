@@ -35,11 +35,9 @@ describe('LastUpdated', () => {
         // timeago.js shows "just now" for the first few seconds
         expect(screen.getByText('Updated just now')).toBeInTheDocument();
 
-        // Advance enough time to show actual seconds (timeago.js typically shows "just now" for < 10 seconds)
         act(() => {
-            vi.advanceTimersByTime(10_000);
+            vi.advanceTimersByTime(11_000);
         });
-        // After 10+ seconds, it should show the actual time
         expect(screen.getByText(/Updated \d+ seconds? ago/)).toBeInTheDocument();
     });
 
