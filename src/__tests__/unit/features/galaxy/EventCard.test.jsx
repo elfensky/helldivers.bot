@@ -310,10 +310,9 @@ describe('EventCard (campaign view)', () => {
             />,
         );
         const points = container.querySelector('.sector-card-points');
-        // formatNumber renders "1.2M / 5M" — exact formatting covered elsewhere;
-        // here we only assert both numbers made it through
-        expect(points.textContent).toMatch(/1.*2.*M/);
-        expect(points.textContent).toMatch(/5.*M/);
+        // Values under 10M use locale grouping (e.g. 1,234,567 / 5,000,000)
+        expect(points.textContent).toMatch(/1.*234.*567/);
+        expect(points.textContent).toMatch(/5.*000.*000/);
     });
 
     test('missing factionMap does not crash, renders all 11 empty segments', () => {

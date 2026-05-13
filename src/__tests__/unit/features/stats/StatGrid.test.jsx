@@ -61,6 +61,7 @@ describe('StatGrid', () => {
             expect(screen.getByText('HELLDIVERS_ONLINE')).toBeInTheDocument();
             expect(screen.getByText('ENEMIES_KILLED')).toBeInTheDocument();
             expect(screen.getByText('HELLDIVERS_LOST')).toBeInTheDocument();
+            expect(screen.getByText('MISSIONS_WON')).toBeInTheDocument();
             expect(screen.getByText('EVENTS')).toBeInTheDocument();
         });
 

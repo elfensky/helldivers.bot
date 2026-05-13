@@ -107,6 +107,19 @@ function accidentalSubtitle(accidentals, deaths) {
     );
 }
 
+function missionTotalSubtitle(total) {
+    const n = Number(total || 0);
+    if (n <= 0) return null;
+    return (
+        <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
+            <span>
+                <AnimatedStat value={n} />
+            </span>
+            <span>Total</span>
+        </span>
+    );
+}
+
 /**
  * Value for the merged EVENTS card — renders `W : L` with the wins
  * tinted success-green and the losses tinted danger-red. Reads as a
@@ -144,6 +157,8 @@ export default function StatGrid({
         }) ?? [];
 
     const { wins, losses } = countOutcomes(resolved);
+    const totalEvents = wins + losses;
+    const eventsSubtitle = totalEvents > 0 ? missionTotalSubtitle(totalEvents) : null;
 
     if (faction === 'global') {
         // Per-faction `players`, `kills`, `deaths`, and `accidentals` are disjoint
@@ -156,8 +171,10 @@ export default function StatGrid({
                 kills: acc.kills + Number(s.kills || 0),
                 deaths: acc.deaths + Number(s.deaths || 0),
                 accidentals: acc.accidentals + Number(s.accidentals || 0),
+                won: acc.won + Number(s.successful_missions || 0),
+                allMissions: acc.allMissions + Number(s.missions || 0),
             }),
-            { players: 0, kills: 0, deaths: 0, accidentals: 0 },
+            { players: 0, kills: 0, deaths: 0, accidentals: 0, won: 0, allMissions: 0 },
         );
         const onlineSubtitle = playersDeltaSubtitle(
             totals.players,
@@ -182,7 +199,12 @@ export default function StatGrid({
                     subtitle={accidentalSubtitle(totals.accidentals, totals.deaths)}
                     title={accidentalRateTooltip(totals.accidentals, totals.deaths)}
                 />
-                <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} />
+                <StatCard
+                    label="MISSIONS_WON"
+                    value={<AnimatedStat value={totals.won} />}
+                    subtitle={missionTotalSubtitle(totals.allMissions)}
+                />
+                <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} subtitle={eventsSubtitle} />
             </div>
         );
     }
@@ -214,8 +236,9 @@ export default function StatGrid({
             <StatCard
                 label="MISSIONS_WON"
                 value={<AnimatedStat value={stats.successful_missions} />}
+                subtitle={missionTotalSubtitle(stats.missions)}
             />
-            <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} />
+            <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} subtitle={eventsSubtitle} />
         </div>
     );
 }
