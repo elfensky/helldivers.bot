@@ -1,6 +1,7 @@
-name: Build Staging
+name: Build Develop
 on:
-    workflow_dispatch: # allows requesting workflow manually from the website
+    workflow_dispatch:
+        inputs: {}
     push:
         branches:
             - develop
