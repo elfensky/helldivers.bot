@@ -52,6 +52,7 @@ export function buildPayload(change) {
 
 export async function sendWithConcurrencyLimit(subscriptions, payload) {
     const staleEndpoints = [];
+    let sentCount = 0;
 
     for (let i = 0; i < subscriptions.length; i += MAX_CONCURRENT) {
         const batch = subscriptions.slice(i, i + MAX_CONCURRENT);
@@ -67,10 +68,13 @@ export async function sendWithConcurrencyLimit(subscriptions, payload) {
             ),
         );
 
-        // Clean up stale subscriptions (410 Gone or 404 Not Found)
         for (let j = 0; j < batchResults.length; j++) {
             const result = batchResults[j];
-            if (result.status === 'rejected') {
+            if (result.status === 'fulfilled') {
+                sentCount++;
+            } else {
+                // Reject — clean up stale (410 Gone / 404 Not Found); other
+                // failures (network, 5xx) are counted as neither sent nor stale.
                 const statusCode = result.reason?.statusCode;
                 if (statusCode === 410 || statusCode === 404) {
                     staleEndpoints.push(batch[j].endpoint);
@@ -94,7 +98,7 @@ export async function sendWithConcurrencyLimit(subscriptions, payload) {
     }
 
     return {
-        sent: subscriptions.length - staleEndpoints.length,
+        sent: sentCount,
         stale: staleEndpoints.length,
     };
 }
