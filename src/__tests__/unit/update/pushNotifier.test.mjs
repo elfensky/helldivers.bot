@@ -194,6 +194,13 @@ describe('sendWithConcurrencyLimit', () => {
         db = (await import('@/db/db')).default;
     });
 
+    afterEach(() => {
+        // Restore any console spies created inside individual tests so they
+        // don't leak silencing into later tests (and into other suites in this
+        // file).
+        vi.restoreAllMocks();
+    });
+
     test('returns { sent: 2, stale: 0 } when all sends succeed', async () => {
         webpush.sendNotification.mockResolvedValue({ statusCode: 201 });
 
@@ -245,30 +252,53 @@ describe('sendWithConcurrencyLimit', () => {
         });
     });
 
-    test('non-stale rejection (e.g. 500) does NOT enqueue for cleanup but still reduces sent count? — actual: sent counts ALL non-stale (including failures), stale counts ONLY 410/404', async () => {
-        // Locking in current contract: a 500 push failure is counted as "sent"
-        // because sendWithConcurrencyLimit only short-circuits on 410/404.
-        // This is a known oddity — see #311 audit. If/when the contract
-        // tightens, this test breaks and the assertion should flip.
+    test('5xx rejections are counted as NEITHER sent nor stale — `sent` reflects only fulfilled sendNotification calls', async () => {
+        // Updated contract (was: 5xx counted as sent). `sent` now means
+        // "actually accepted by web-push" — failed sends regardless of cause
+        // are excluded. 410/404 are tagged stale separately.
         webpush.sendNotification.mockRejectedValue({ statusCode: 500 });
 
         const result = await sendWithConcurrencyLimit([sub1, sub2], 'payload');
 
-        expect(result).toEqual({ sent: 2, stale: 0 });
+        expect(result).toEqual({ sent: 0, stale: 0 });
         expect(db.push_subscription.deleteMany).not.toHaveBeenCalled();
     });
 
-    test('rejection without a statusCode field is NOT treated as stale (defensive)', async () => {
+    test('rejection without statusCode (network error) is counted as neither sent nor stale', async () => {
         webpush.sendNotification.mockRejectedValue(new Error('network timeout'));
 
         const result = await sendWithConcurrencyLimit([sub1], 'payload');
 
-        expect(result).toEqual({ sent: 1, stale: 0 });
+        expect(result).toEqual({ sent: 0, stale: 0 });
         expect(db.push_subscription.deleteMany).not.toHaveBeenCalled();
     });
 
-    test('batches sends at MAX_CONCURRENT (50) — 75 subs are split into TWO batches', async () => {
-        webpush.sendNotification.mockResolvedValue({ statusCode: 201 });
+    test('mixed batch: 1 success + 1 stale (410) + 1 network error → sent:1 stale:1', async () => {
+        webpush.sendNotification
+            .mockResolvedValueOnce({ statusCode: 201 })
+            .mockRejectedValueOnce({ statusCode: 410 })
+            .mockRejectedValueOnce(new Error('timeout'));
+        db.push_subscription.deleteMany.mockResolvedValue({ count: 1 });
+
+        const sub3 = { endpoint: 'e3', keys_p256dh: 'p3', keys_auth: 'a3' };
+        const result = await sendWithConcurrencyLimit([sub1, sub2, sub3], 'payload');
+
+        expect(result).toEqual({ sent: 1, stale: 1 });
+    });
+
+    test('batches sends at MAX_CONCURRENT (50) — second batch waits for first to settle', async () => {
+        // Prove batching by gating the first 50 sends: their promises only
+        // resolve when we say so. If the implementation fired all 75 at once
+        // (no batching), the call count would already be 75 before we resolve.
+        // With batching, only 50 should be in flight until the first batch
+        // settles. Then the second batch of 25 starts.
+        const resolvers = [];
+        webpush.sendNotification.mockImplementation(
+            () =>
+                new Promise((res) => {
+                    resolvers.push(res);
+                }),
+        );
 
         const subs = Array.from({ length: 75 }, (_, i) => ({
             endpoint: `https://example.com/push/${i}`,
@@ -276,10 +306,29 @@ describe('sendWithConcurrencyLimit', () => {
             keys_auth: `a${i}`,
         }));
 
-        const result = await sendWithConcurrencyLimit(subs, 'payload');
+        const promise = sendWithConcurrencyLimit(subs, 'payload');
 
-        expect(result.sent).toBe(75);
+        // Let the synchronous chunk of the first batch dispatch.
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // First batch only: 50 in flight.
+        expect(resolvers.length).toBe(50);
+        expect(webpush.sendNotification).toHaveBeenCalledTimes(50);
+
+        // Resolve the first batch and let the loop pick up the next iteration.
+        resolvers.slice(0, 50).forEach((res) => res({ statusCode: 201 }));
+        await Promise.resolve();
+        await Promise.resolve();
+
+        // Second batch of 25 now dispatched.
+        expect(resolvers.length).toBe(75);
         expect(webpush.sendNotification).toHaveBeenCalledTimes(75);
+
+        // Drain the rest so the outer promise resolves.
+        resolvers.slice(50, 75).forEach((res) => res({ statusCode: 201 }));
+        const result = await promise;
+        expect(result.sent).toBe(75);
     });
 
     test('DB cleanup failure is logged but does NOT throw (push continues)', async () => {
@@ -418,6 +467,9 @@ describe('checkAndNotify', () => {
 
     afterEach(() => {
         vi.unstubAllEnvs();
+        // Restore any console.error/log spies created inside individual tests
+        // so they don't leak silencing into later tests.
+        vi.restoreAllMocks();
     });
 
     test('returns early (no fetch) when ensureVapid is false', async () => {
@@ -441,7 +493,7 @@ describe('checkAndNotify', () => {
         expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
     });
 
-    test('returns early on findFirst error (logs nothing, surfaces no exception)', async () => {
+    test('returns early on findFirst error — resolves cleanly, does not fetch subscriptions', async () => {
         const dbModule = (await import('@/db/db')).default;
         dbModule.h1_season.findFirst.mockRejectedValue(new Error('db connect'));
         const { checkAndNotify } = await import('@/update/pushNotifier');
@@ -466,7 +518,11 @@ describe('checkAndNotify', () => {
         expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
     });
 
-    test('second call: detectChanges sees prev vs current; when no changes, no send', async () => {
+    test('second call: detectChanges is invoked with (prevEvents, currentEvents) in that order', async () => {
+        // Strengthened from "called once" to also assert the actual args:
+        // baseline events FIRST, then the new snapshot. A regression that
+        // swaps the order would still get "called once" but compare the
+        // wrong snapshots.
         const dbModule = (await import('@/db/db')).default;
         const events1 = [
             { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
@@ -485,6 +541,7 @@ describe('checkAndNotify', () => {
         await checkAndNotify(); // diff against baseline → no changes
 
         expect(detectChanges).toHaveBeenCalledTimes(1);
+        expect(detectChanges).toHaveBeenCalledWith(events1, events2);
         expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
     });
 
