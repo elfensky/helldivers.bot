@@ -103,10 +103,7 @@ On startup, it runs instrumentation.js (once) which will:
 3. initialize the database:
     1. run migrations.
     2. fetch remote currentStatus + currentSeason
-    3. save raw json in the rebroadcast_tables.
-    4. save normalized data in the h1_tables.
-        - option1: generate empty (last_updated = null) seasons in h1_season. This is needed because the official API sometimes includes events from past seasons. This happens when we completely loose, and no attack events were recorded for that campaign. In that case, the api will return the last recorded attack events (instead of leaving them as null). When this happens, that old season needs to exist in the database, so we can save the related events.
-        - option2: we pass along the current season, and if it doesn't match with the event, we ignore and do not save it. Might be a simpler better solution actually.
+    3. save normalized data in the 5-table h1_* schema (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`). Past seasons referenced by lagged event slots are skipped per `queryUpsertEvent`'s `event.season !== season` guard rather than being seeded as empty rows.
 
 4. start a worker thread that will continiously update the database from the official Helldivers API. It simply queries the /api/h1/update endpoint every `UPDATE_INTERVAL` seconds using the `UPDATE_KEY` token.
 
@@ -119,14 +116,15 @@ tunnels).
 
 - `GET /api/h1/update`
     - Triggers a fresh campaign status + snapshot refresh from the
-      official Helldivers 1 API and persists the result to both the
-      raw `rebroadcast_*` tables and the normalized `h1_*` tables.
+      official Helldivers 1 API and persists the result to the
+      normalized `h1_*` tables via the shared bucket-upsert pipeline.
     - Requires a valid `key` query parameter matching the server's
       `UPDATE_KEY` environment variable — this is the same token
       the background worker uses.
 - `GET /api/h1/rebroadcast`
     - Mirrors the official Helldivers 1 API behavior byte-for-byte
-      from the cached `rebroadcast_*` tables.
+      by reconstructing the wire format on demand from the
+      normalized `h1_*` tables.
     - Request body:
         - `action`: string — one of `get_campaign_status`,
           `get_snapshot`

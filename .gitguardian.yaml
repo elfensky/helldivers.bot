@@ -1,0 +1,21 @@
+# GitGuardian config — skips synthetic test fixtures from secret scanning.
+#
+# Test files contain controlled, deterministic payloads designed to LOOK like
+# real secrets (VAPID keys, JWT tokens, API keys, push subscription
+# endpoints) so the code-under-test exercises the same validation and
+# parsing paths it would in production. None of these strings are valid
+# anywhere — they're random or hand-crafted to match a regex / length /
+# entropy constraint and nothing more.
+#
+# This file uses the v2 schema documented at:
+# https://docs.gitguardian.com/ggshield-docs/reference/cli-commands/config
+
+version: 2
+
+secret:
+  ignored_paths:
+    - "src/__tests__/**"
+    - "**/*.test.{js,jsx,mjs,ts,tsx}"
+    - "**/*.spec.{js,jsx,mjs,ts,tsx}"
+    - "**/__fixtures__/**"
+    - "**/__mocks__/**"

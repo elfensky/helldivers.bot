@@ -178,10 +178,26 @@ vi.mock('next/headers', () => ({
 }));
 
 /**
- * Mock Next.js Image — renders as <img> element
+ * Mock Next.js Image — renders as <img>, stripping Next.js-specific props
+ * (priority, placeholder, quality, fill, loader, sizes, unoptimized, loading,
+ * blurDataURL, onLoadingComplete) so React doesn't warn about non-DOM attributes.
  */
 vi.mock('next/image', () => ({
-    default: vi.fn((props) => React.createElement('img', props)),
+    default: vi.fn(
+        ({
+            priority,
+            placeholder,
+            quality,
+            fill,
+            loader,
+            sizes,
+            unoptimized,
+            loading,
+            blurDataURL,
+            onLoadingComplete,
+            ...props
+        }) => React.createElement('img', props),
+    ),
 }));
 
 /**
@@ -197,18 +213,11 @@ vi.mock('next/link', () => ({
 
 // #region Global Test Lifecycle
 
-// Suppress console noise from source code during tests (error paths, debug logs).
-// Tests that need to assert console output can use vi.spyOn(console, 'error').
-beforeAll(() => {
-    vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.spyOn(console, 'info').mockImplementation(() => {});
-});
-
-afterAll(() => {
-    vi.restoreAllMocks();
-});
+// Console is NOT globally mocked — silencing console.error here would hide React
+// act() warnings, missing-dependency warnings, and source-code error logs, which
+// is how theater tests creep in. Tests that legitimately need to suppress or assert
+// on console output should use `vi.spyOn(console, 'error').mockImplementation(...)`
+// scoped to their own file/test.
 
 beforeEach(() => {
     vi.clearAllMocks();

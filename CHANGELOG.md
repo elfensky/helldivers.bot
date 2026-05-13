@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.44.1
+
+### CI & dev tooling
+
+- **CodeQL now runs on pull requests** — `Analyze (javascript-typescript)` is a required status check on `main`'s branch protection, but the workflow only triggered on `push` to `main`/`develop`. PRs that needed it to merge were permanently `BLOCKED`. Added `pull_request: { branches: [main, develop] }` to `.github/workflows/codeql.yml` so the required check actually fires on PR heads.
+- **GitGuardian secret scanning excludes test fixtures** — synthetic VAPID-shaped keys, push subscription endpoints, and JWT-shaped tokens in `src/__tests__/**`, `**/*.test.{js,jsx,mjs,ts,tsx}`, `**/*.spec.{js,jsx,mjs,ts,tsx}`, `**/__fixtures__/**`, and `**/__mocks__/**` are now excluded from secret scanning via `.gitguardian.yaml`. These fixtures are designed to look real so the code-under-test exercises the same validation paths it would in production, but they're random/hand-crafted and not valid anywhere.
+- **VAPID test fixtures use obvious placeholder strings** — `notifications-subscribe.test.mjs` previously used an 87-char base64url-shaped `p256dh` that was indistinguishable in shape from a real VAPID public key (GitGuardian flagged it). Replaced both keys with `TEST_*_PLACEHOLDER` strings that still satisfy the Zod regex + length constraints. Suite still 1244/1244.
+
 ## 0.44.0
 
 ### Features
@@ -8,9 +16,22 @@
 - **Preference analytics** — fires a `preference-snapshot` Umami event once per session reporting the user's current faction / regions_view / sort_order. Complements the existing per-toggle click events: clicks capture churn ("how often do users flip?"); the snapshot captures distribution ("what % prefer X?", including default-stickers who never interact). Session-scoped via `sessionStorage` so SPA navigation doesn't double-count.
 - **24h player-count delta** — the `HELLDIVERS_ONLINE` / `ONLINE` stat card now shows a signed delta below the number comparing current concurrent players to the 24h rolling average baseline. `getPlayersAvg24h(season)` query returns `{ global, bugs, cyborgs, illuminate }`: per-faction averages come from `AVG(players) GROUP BY enemy` over buckets in the last 24h window, and `global` is the average of per-bucket SUMs (disjoint per-front counts) — more robust to sparse buckets than a single-point "24h ago" snapshot would be. Arrow (▲/▼) carries the success/danger colour, number + `LAST 24H` caption render in uppercase ghost text to match the card label. Hidden on new seasons (no baseline) or when delta is zero.
 
+### Test suite quality (Phase 12)
+
+Suite went from **882 → 1244 tests** (+362 high-signal). Coverage moved from **63.5% → 81.8% statements** / 58.3% → 73.7% branches. Five multi-LLM code review rounds (Codex + OpenCode) applied across the work; every must-fix finding addressed.
+
+- **Theater removal** — rewrote 5 highest-theater test files (`healthcheck`, `useTrack`, `ArchiveMap`, `Header`, `Navigation`) to verify real behaviour instead of stub-rendering. Stopped globally mocking `console.error/warn/log/info` in `vitest.setup.mjs` so React `act()` warnings and source error logs are audible.
+- **API route coverage** — 0% → comprehensive for `/api/notifications/subscribe` (Zod validation + Prisma upsert/delete contract + 410-graceful + 500-with-DB-call-asserted), `/api/glitchtip` (DSN parsing, ingest URL forwarding, 502 upstream failure), `/api/auth/[...all]` (auth-disabled 503 vs configured delegate to BetterAuth). Added `expectSuccessEnvelope` / `expectErrorEnvelope` helpers in `@test-utils` and retrofitted `live` + `update` route tests to use them.
+- **Hook coverage** — `useLiveData` (was 0% / 284 L): 23 tests covering polling cadence, status state machine, visibility-change handler, singleton-with-multiple-consumers, localStorage cache hydration + write, and BroadcastChannel leader election. `usePersistedState` (foundation hook): 16 tests covering value hydration, validator gating, key changes, and storage failure modes. `useTrack`, `useHeaderGlassFilter`, `useScrollEvent`, `useCyberstanEffects`, `useGlitchCycle` — all now have meaningful coverage with cleanup discipline.
+- **Component coverage** — `UserSection`, galaxy `Map`, `eventToast`, `NotificationToggle`, `LiveToasts`, `FactionHealthChart`, `HomeClient`, `ArchivesClient`. Used a capture-style child-mock pattern (`testid` with JSON-encoded prop data) to verify orchestrator wiring without rendering real children.
+- **Worker coverage** — `public/workers/cron.js` split into a thin entry shell + `cronLogic.js`. The shell is tested via `Module._load` monkey-patching; the logic via direct unit tests covering setTimeout-not-setInterval non-overlap, X-Worker-Startup first-poll header, error recovery without crashing the loop, and config wiring.
+
 ### Fixes
 
 - **Per-faction stats missed ENEMIES_KILLED** — the per-faction view on the homepage never rendered `stats.kills` even though the data was present on each `h1_statistic` row. The global view already summed it. Added as position 2 in the per-faction grid (matching global's ordering).
+- **`/api/h1/update` worker thread was broken in production** — `public/workers/cron.js` uses CommonJS `require('worker_threads')`, but the project's root `"type": "module"` made Node load it as ESM, crashing on every spawn. Fixed by adding `public/workers/package.json` with `{"type": "commonjs"}` to scope just the worker directory to CJS. Worker now stays online; worker-heartbeat data should resume in production.
+- **`sendWithConcurrencyLimit` reported failed sends as "sent"** — the function returned `sent: subscriptions.length - staleEndpoints.length`, which counted 5xx and network errors as if they had succeeded. Now counts only `Promise.allSettled` results with status `'fulfilled'`. The admin `sendTestNotification` UI is the only consumer; its `{ sent, stale }` display is now truthful.
+- **`formatCompactDuration` produced "1h, 30m" instead of "1h30m"** — set `delimiter: ''` alongside the existing `spacer: ''` to match the function's compact-output intent. Consumers (`FactionStats` avg duration, `RefreshSeasonButton` countdown, `EventLogCard` duration) all benefit from the tighter formatting.
 
 ### Refactors
 
@@ -20,6 +41,21 @@
 ### Documentation
 
 - `/docs/frontend-layout` updated to describe the simplified 2-column grid (no more `grid-template-areas` with `hero-sidebar` / `scrolly-log`).
+
+### Follow-ups filed during the campaign
+
+- `#319` `/api/healthcheck` should probe DB on health check (currently returns a hardcoded `{ alive: true }`)
+- `#320` `useLiveData` `navigator.onLine` check is dead code (overwritten by `poll()`)
+- `#321` `useTrack` partial-umami guard (throws when `window.umami` exists but `track` is missing)
+- `#322` `vitest.setup.mjs` `after()` mock auto-invokes synchronously (hides response-timing bugs)
+- `#323` `public/workers/*` needed local `package.json` with `type: commonjs` (fixed in this release)
+
+## 0.43.1
+
+### Chores
+
+- **Dependency bumps (npm minor/patch group)** — `next` & `@next/mdx` 16.2.4 → 16.2.6 (multiple HIGH-severity security advisories: SSRF via WebSocket upgrades, middleware/proxy bypasses, RSC DoS, RSC cache poisoning), `@prisma/client` & `@prisma/adapter-pg` & `prisma` 7.7.0 → 7.8.0, `@sentry/nextjs` 10.49.0 → 10.52.0, `@serwist/next` 9.5.7 → 9.5.11, `better-auth` 1.6.5 → 1.6.10, `axios` 1.15.0 → 1.16.0 (resolves `follow-redirects` 1.15.11 → 1.16.0 transitively), `react` & `react-dom` 19.2.5 → 19.2.6, `@tailwindcss/postcss` 4.2.2 → 4.3.0, `@vitest/coverage-v8` 4.1.4 → 4.1.5, `jsdom` 29.0.2 → 29.1.1, `prettier-plugin-tailwindcss` 0.7.2 → 0.8.0.
+- **GitHub Actions bumps (actions group)** — `actions/setup-node` 6.3.0 → 6.4.0, `github/codeql-action` 3.30.6 → 3.30.8, `actions/dependency-review-action` 4.8.0 → 4.8.2, `docker/build-push-action` 6.21.1 → 6.22.0.
 
 ## 0.43.0
 

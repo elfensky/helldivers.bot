@@ -28,9 +28,9 @@ How data moves from the official Helldivers 1 API through validation, storage, a
 
 ## Key Concepts
 
-### Two-Table Strategy
+### Normalized 5-Table Schema
 
-Raw API responses are stored in rebroadcast tables (faithful JSON), while normalized `h1_*` tables enable filtering, joining, and aggregation. Both coexist to avoid trade-offs.
+A single normalized schema (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`, `h1_event_progress`) is the source of truth. The `/api/h1/rebroadcast` endpoint reconstructs the official wire format on demand — there are no separate raw-cache tables.
 
 ### Worker Thread
 
