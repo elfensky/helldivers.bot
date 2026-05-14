@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { guardedReload, clearReloadGuard } from '@/shared/utils/reloadGuard.mjs';
 
 const CACHE_KEY = 'hd1-live-cache';
 const POLL_INTERVAL = 10_000;
@@ -90,6 +91,14 @@ async function poll() {
         const res = await fetch('/api/h1/live');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const parsed = await res.json();
+
+        if (parsed.appVersion) {
+            if (parsed.appVersion !== process.env.NEXT_PUBLIC_APP_VERSION) {
+                guardedReload('version');
+                return;
+            }
+            clearReloadGuard();
+        }
 
         saveCachedState(parsed.data, parsed.mapState);
 

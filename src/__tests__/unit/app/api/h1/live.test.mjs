@@ -44,7 +44,11 @@ describe('GET /api/h1/live', () => {
         // standard { time, code, message, data } — because the client reads
         // it as a single live snapshot. Locking in the exact shape so a
         // future "let's standardise envelopes" PR has to update this test.
-        expect(body).toEqual({ data: mockCampaign, mapState: mockMapState });
+        expect(body).toEqual({
+            data: mockCampaign,
+            mapState: mockMapState,
+            appVersion: process.env.NEXT_PUBLIC_APP_VERSION,
+        });
         expect(body).not.toHaveProperty('time');
         expect(body).not.toHaveProperty('code');
         expect(body).not.toHaveProperty('message');

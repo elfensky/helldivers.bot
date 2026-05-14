@@ -19,8 +19,9 @@ export async function GET() {
     );
     const mapState = computeMapState(data.status, activeEvents);
 
-    const json = JSON.stringify({ data, mapState }, (_, v) =>
-        typeof v === 'bigint' ? Number(v) : v,
+    const json = JSON.stringify(
+        { data, mapState, appVersion: process.env.NEXT_PUBLIC_APP_VERSION },
+        (_, v) => (typeof v === 'bigint' ? Number(v) : v),
     );
 
     return new Response(json, {
