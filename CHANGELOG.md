@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Stale version auto-reload** — three-layer detection prevents `ChunkLoadError` crashes after deployments: (1) Next.js `deploymentId` triggers hard navigation on version skew, (2) `appVersion` field in `/api/h1/live` enables poll-based detection within ~10s, (3) global `unhandledrejection` handler catches chunk/module load failures across all browsers including Safari. Shared `guardedReload()` utility uses localStorage circuit breaker (30s TTL, max 3 attempts) to prevent infinite reload loops.
+
 ## 0.45.2
 
 ### Chores

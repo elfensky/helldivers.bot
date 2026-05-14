@@ -81,6 +81,12 @@ The dashboard uses client-side polling to fetch live campaign data.
 - **Status tri-state**: `'polling'` (request in flight), `'live'` (last poll succeeded), `'offline'` (last poll failed or `navigator.onLine` is false)
 - **Leader election**: BroadcastChannel ensures only one tab fires Web Notifications
 
+### Version Detection & Auto-Reload
+
+The polling endpoint includes an `appVersion` field in its JSON response. `useLiveData` compares the server's version against the build-time `NEXT_PUBLIC_APP_VERSION` baked into the client bundle. On mismatch (i.e., the server was redeployed with a new version), the client triggers `guardedReload('version')` — a hard page reload protected by a localStorage-backed circuit breaker (30s TTL, max 3 attempts) to prevent infinite loops. Detection happens within ~10 seconds of a deployment.
+
+This is one of three detection layers — see `src/shared/utils/reloadGuard.mjs` for the shared guard utility.
+
 ### Deferred emissions
 
 Poll data lives outside React in a module-level store object. React subscribes via `useState` + `useEffect` — the `emit()` function notifies listeners when the store changes. To prevent a crash (`chunk.reason.enqueueModel is not a function`) caused by `setState` firing during RSC Flight stream processing on client-side navigation (`vercel/next.js#92362`), `emit()` defers listener notification to `requestIdleCallback` (with `setTimeout` fallback). Rapid-fire emissions are coalesced so listeners always receive the latest snapshot.
@@ -242,8 +248,10 @@ The web app manifest (`src/app/site.webmanifest`) and layout metadata enable ful
 | --------------------------------------------------- | ------------------------------------------------ |
 | `src/sw.js`                                         | Serwist SW source (precache + push handlers)     |
 | `serwist.config.js`                                 | Serwist build config (configurator mode)         |
-| `src/app/api/h1/live/route.js`                      | Polling endpoint (getCampaign + computeMapState) |
-| `src/shared/hooks/useLiveData.mjs`                  | Polling hook + BroadcastChannel leader           |
+| `src/app/api/h1/live/route.js`                      | Polling endpoint (getCampaign + computeMapState + appVersion) |
+| `src/shared/hooks/useLiveData.mjs`                  | Polling hook + BroadcastChannel leader + version detection |
+| `src/shared/utils/reloadGuard.mjs`                  | Version mismatch reload guard (circuit breaker)  |
+| `src/instrumentation-client.js`                      | ChunkLoadError handler (global safety net)       |
 | `src/shared/utils/game/detectChanges.mjs`           | Event transition detection (shared)              |
 | `src/features/notifications/LiveToasts.jsx`         | Sonner toasts + Web Notifications                |
 | `src/features/notifications/NotificationToggle.jsx` | Combined notification + push toggle              |
