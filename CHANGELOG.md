@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.45.2
+
+### Chores
+
+- **Test script reorganization** — `test:e2e` renamed to `test:smoke` for accuracy; `test` now runs unit tests only; added `test:all` for running both unit and smoke tests.
+- **Agent skills reference docs** — added `.agents/skills/` reference documentation for React, Next.js, Prisma, Vitest, Zod, Tailwind, and more.
+- **Desloppify skill** — added `.opencode/skills/desloppify/SKILL.md` codebase health scanner definition.
+- **`formatTimeAgo` simplification** — removed try/catch fallback wrapper; `timeago.js` `format()` is called directly.
+
+### Tests
+
+- **ArchiveComponentsIntegration tests** — added integration tests for archive page components.
+- **Async test stabilization** — inlined archive seed data, fixed `act()` usage and suppressed spurious log noise.
+- **LastUpdated test timing fix** — adjusted test timing to account for `timeago.js` formatting behavior.
+
 ## 0.45.1
 
 ### Features
