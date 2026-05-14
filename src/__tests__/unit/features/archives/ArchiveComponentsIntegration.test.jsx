@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 // Mock all child components to test wiring without implementation details

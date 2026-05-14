@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // useLiveData uses a module-level singleton store. Every test re-imports the
