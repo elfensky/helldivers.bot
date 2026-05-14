@@ -52,12 +52,6 @@ function checkAnalytics() {
             'SENTRY_DSN is set but SENTRY_AUTH_TOKEN is missing — error tracking will work but source maps will not upload',
         );
     }
-    if (!hasSentryToken && !hasSentryDsn) {
-        // Only warn about token when DSN is also missing (otherwise the warning above covers it)
-    } else if (!hasSentryToken && !hasSentryDsn) {
-        // Both missing — already warned about DSN
-    }
-
     return hasSentryDsn || hasUmami;
 }
 
