@@ -2,6 +2,7 @@ import { cache } from 'react';
 import db from '@/db/db';
 import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
+import { groupStatusByBucket } from '@/shared/utils/bucketing';
 
 /**
  * Fetch the campaign data for a season (or the latest season if null).
@@ -90,7 +91,10 @@ export const getCampaign = cache(async function getCampaign(season = null) {
     // Group full history by bucket into the legacy snapshot shape.
     // Each snapshot has { time, data: [f0, f1, f2] } — the consumer pattern
     // for archives charts (FactionHealthChart, getWarOutcome, etc.).
-    const snapshots = _groupByBucket(allStatusRows);
+    const snapshots = groupStatusByBucket(allStatusRows).map(({ time, factions }) => ({
+        time,
+        data: factions,
+    }));
 
     // Step 4: Events for the season.
     const events = await db.h1_event.findMany({
@@ -146,36 +150,3 @@ async function _findSeason(season) {
     return data;
 }
 
-function _groupByBucket(statusRows) {
-    // Group rows by bucket. Within each bucket, order by enemy so data[0]
-    // is Bugs, data[1] is Cyborgs, data[2] is Illuminate — matches the
-    // legacy h1_snapshot.data array layout.
-    const byBucket = new Map();
-    for (const row of statusRows) {
-        if (!byBucket.has(row.bucket)) {
-            byBucket.set(row.bucket, { time: row.time, buckets: [null, null, null] });
-        }
-        const entry = byBucket.get(row.bucket);
-        entry.buckets[row.enemy] = {
-            points: row.points,
-            points_taken: row.points_taken,
-            status: row.status,
-        };
-        // The `time` field is the latest poll time within the bucket, which
-        // drifts as the row gets upserted. Use the max across enemies for
-        // the snapshot's representative time.
-        if (row.time > entry.time) entry.time = row.time;
-    }
-
-    return (
-        Array.from(byBucket.entries())
-            .sort(([a], [b]) => a - b)
-            // Drop sparse buckets (missing one or more factions). The worker
-            // writes all 3 factions per poll, so a missing slot indicates an
-            // incomplete bucket that shouldn't render. Leaving null slots here
-            // would crash downstream consumers like getWarOutcome.mjs that do
-            // factionData.every((f) => f.status === ...) on each snapshot.
-            .filter(([, { buckets }]) => buckets.every((f) => f !== null))
-            .map(([, { time, buckets }]) => ({ time, data: buckets }))
-    );
-}

@@ -18,3 +18,22 @@ export const BUCKET_SIZE =
 export function computeBucket(pollTime) {
     return Math.floor(pollTime / BUCKET_SIZE) * BUCKET_SIZE;
 }
+
+export function groupStatusByBucket(statusRows) {
+    const byBucket = new Map();
+    for (const row of statusRows) {
+        if (!byBucket.has(row.bucket)) {
+            byBucket.set(row.bucket, { time: row.time, factions: [null, null, null] });
+        }
+        const entry = byBucket.get(row.bucket);
+        entry.factions[row.enemy] = {
+            points: row.points,
+            points_taken: row.points_taken,
+            status: row.status,
+        };
+        if (row.time > entry.time) entry.time = row.time;
+    }
+    return Array.from(byBucket.values())
+        .sort((a, b) => a.time - b.time)
+        .filter(({ factions }) => factions.every((f) => f !== null));
+}

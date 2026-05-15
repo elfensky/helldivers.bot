@@ -18,6 +18,7 @@ import { validateApiKey, API_KEY_ERROR } from '@/db/queries/validateApiKey';
 import { umamiTrackEvent } from '@/shared/utils/umami';
 //enums
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
+import { groupStatusByBucket } from '@/shared/utils/bucketing';
 
 export async function POST(request) {
     //0. initialize
@@ -248,32 +249,11 @@ async function reconstructSnapshots(season) {
         where: { season },
     });
 
-    // Group h1_status rows by bucket into snapshot frames whose `data` field
-    // is a stringified JSON array indexed by enemy — matching the legacy
-    // h1_snapshot wire shape that external consumers parse on receipt.
-    const byBucket = new Map();
-    for (const r of allStatus) {
-        if (!byBucket.has(r.bucket)) {
-            byBucket.set(r.bucket, { time: r.bucket, factions: [null, null, null] });
-        }
-        const entry = byBucket.get(r.bucket);
-        entry.factions[r.enemy] = {
-            points: r.points,
-            points_taken: r.points_taken,
-            status: r.status,
-        };
-        // Use the latest poll time within the bucket as the frame's time.
-        if (r.time > entry.time) entry.time = r.time;
-    }
-    const snapshots = Array.from(byBucket.values())
-        .sort((a, b) => a.time - b.time)
-        // Drop sparse buckets missing any faction (see getCampaign.mjs).
-        .filter(({ factions }) => factions.every((f) => f !== null))
-        .map(({ time, factions }) => ({
-            season,
-            time,
-            data: JSON.stringify(factions),
-        }));
+    const snapshots = groupStatusByBucket(allStatus).map(({ time, factions }) => ({
+        season,
+        time,
+        data: JSON.stringify(factions),
+    }));
 
     return {
         time: Math.floor(Date.now() / 1000),
