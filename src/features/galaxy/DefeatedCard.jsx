@@ -1,7 +1,6 @@
 import './EventCard.css';
 import factions from '@/shared/enums/factions.mjs';
-// Direct import for long-form output; compact variant: @/shared/utils/format/formatCompactDuration
-import humanizeDuration from 'humanize-duration';
+import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
 
 export default function DefeatedCard({
@@ -16,10 +15,7 @@ export default function DefeatedCard({
 
     let timing = '—';
     if (startTime && endTime) {
-        const duration = humanizeDuration((endTime - startTime) * 1000, {
-            largest: 2,
-            round: true,
-        });
+        const duration = formatDuration(endTime - startTime);
         const date = new Date(endTime * 1000).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',

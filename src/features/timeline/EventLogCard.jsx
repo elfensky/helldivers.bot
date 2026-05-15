@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-// Direct import for long-form output; compact variant: @/shared/utils/format/formatCompactDuration
-import humanizeDuration from 'humanize-duration';
+import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
@@ -138,8 +137,8 @@ function LiveTimeLine({ event, isCompleted }) {
     const elapsed = isCompleted ? now - event.end_time : now - event.start_time;
     const text =
         isCompleted ?
-            `Ended ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`
-        :   `Started ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`;
+            `Ended ${formatDuration(elapsed)} ago`
+        :   `Started ${formatDuration(elapsed)} ago`;
 
     return (
         <span className="text-small text-text-muted" suppressHydrationWarning>

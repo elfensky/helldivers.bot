@@ -1,4 +1,4 @@
-import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events';
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import factions from '@/shared/enums/factions.mjs';
 
 /**

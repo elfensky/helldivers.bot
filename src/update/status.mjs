@@ -2,7 +2,7 @@ import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performanceTime } from '@/shared/utils/time';
 import { getSeasonFromStatus } from '@/shared/utils/getSeason';
 import { fetchStatus } from '@/update/fetch.mjs';
-import { EVENT_TYPE } from '@/shared/enums/events';
+import { EVENT_TYPE } from '@/shared/enums/events.mjs';
 import { isValidStatus } from '@/validators/isValidStatus';
 // db
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';

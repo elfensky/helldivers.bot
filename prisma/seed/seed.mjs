@@ -132,68 +132,30 @@ async function seedSeason(db, file) {
         }
     }
 
-    // 4. Upsert events + h1_status rows in parallel. h1_event is unchanged
-    //    structurally — same upsert shape as before. Attack events get
-    //    region=11 (homeworld) injected, matching the worker pipeline.
+    // 4. Upsert events + h1_status rows in parallel.
+    function upsertEvent(event, type) {
+        const region = type === 'attack' ? 11 : event.region;
+        const fields = {
+            season: event.season,
+            start_time: event.start_time,
+            end_time: event.end_time,
+            region,
+            enemy: event.enemy,
+            points_max: event.points_max,
+            points: event.points,
+            status: event.status,
+            players_at_start: event.players_at_start ?? null,
+        };
+        return db.h1_event.upsert({
+            where: { type_event_id: { type, event_id: event.event_id } },
+            update: fields,
+            create: { ...fields, type, event_id: event.event_id },
+        });
+    }
+
     await Promise.all([
-        ...defendEvents.map((event) =>
-            db.h1_event.upsert({
-                where: { type_event_id: { type: 'defend', event_id: event.event_id } },
-                update: {
-                    season: event.season,
-                    start_time: event.start_time,
-                    end_time: event.end_time,
-                    region: event.region,
-                    enemy: event.enemy,
-                    points_max: event.points_max,
-                    points: event.points,
-                    status: event.status,
-                    players_at_start: event.players_at_start ?? null,
-                },
-                create: {
-                    season: event.season,
-                    type: 'defend',
-                    event_id: event.event_id,
-                    start_time: event.start_time,
-                    end_time: event.end_time,
-                    region: event.region,
-                    enemy: event.enemy,
-                    points_max: event.points_max,
-                    points: event.points,
-                    status: event.status,
-                    players_at_start: event.players_at_start ?? null,
-                },
-            }),
-        ),
-        ...attackEvents.map((event) =>
-            db.h1_event.upsert({
-                where: { type_event_id: { type: 'attack', event_id: event.event_id } },
-                update: {
-                    season: event.season,
-                    start_time: event.start_time,
-                    end_time: event.end_time,
-                    region: 11,
-                    enemy: event.enemy,
-                    points_max: event.points_max,
-                    points: event.points,
-                    status: event.status,
-                    players_at_start: event.players_at_start ?? null,
-                },
-                create: {
-                    season: event.season,
-                    type: 'attack',
-                    event_id: event.event_id,
-                    start_time: event.start_time,
-                    end_time: event.end_time,
-                    region: 11,
-                    enemy: event.enemy,
-                    points_max: event.points_max,
-                    points: event.points,
-                    status: event.status,
-                    players_at_start: event.players_at_start ?? null,
-                },
-            }),
-        ),
+        ...defendEvents.map((e) => upsertEvent(e, 'defend')),
+        ...attackEvents.map((e) => upsertEvent(e, 'attack')),
         ...statusOps,
     ]);
 

@@ -2,7 +2,7 @@ import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/shared/utils/time';
 import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
-import { EVENT_TYPE } from '@/shared/enums/events';
+import { EVENT_TYPE } from '@/shared/enums/events.mjs';
 import { fetchSeason } from '@/update/fetch';
 import { isValidSeason } from '@/validators/isValidSeason';
 import { computeBucket } from '@/shared/utils/bucketing';

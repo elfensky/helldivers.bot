@@ -1,5 +1,4 @@
-// Direct import for long-form output; compact variant: @/shared/utils/format/formatCompactDuration
-import humanizeDuration from 'humanize-duration';
+import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
@@ -40,10 +39,7 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
             snapshots[snapshots.length - 1].time - snapshots[0].time
         :   sorted[sorted.length - 1].end_time - sorted[0].start_time;
     const seasonDays = Math.round(seasonSeconds / 86400);
-    const seasonHumanDuration = humanizeDuration(seasonSeconds * 1000, {
-        largest: 2,
-        round: true,
-    });
+    const seasonHumanDuration = formatDuration(seasonSeconds);
 
     // Defense / attack rates — split out from the old global WIN_RATE so the
     // two activities can be read independently.

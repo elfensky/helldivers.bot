@@ -5,8 +5,7 @@ import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.mjs';
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
-// Direct import for long-form output; compact variant: @/shared/utils/format/formatCompactDuration
-import humanizeDuration from 'humanize-duration';
+import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 
 const passThrough = (v) => (v == null ? '—' : String(v));
 const formatSectorPct = (v) =>
@@ -59,7 +58,7 @@ function EventCountdown({ endTime }) {
     }, [endTime]);
 
     if (remaining <= 0) return <span className="sector-card-countdown">Expired</span>;
-    const text = humanizeDuration(remaining * 1000, { largest: 2, round: true });
+    const text = formatDuration(remaining);
     return (
         <span className="sector-card-countdown" suppressHydrationWarning>
             {text} left
