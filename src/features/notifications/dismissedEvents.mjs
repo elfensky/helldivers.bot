@@ -43,8 +43,8 @@ export function addDismissedEvent(eventId, status) {
         } else {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
         }
-    } catch {
-        // localStorage unavailable — silently skip
+    } catch (err) {
+        console.debug('[dismissedEvents] localStorage write failed:', err?.message);
     }
 }
 
