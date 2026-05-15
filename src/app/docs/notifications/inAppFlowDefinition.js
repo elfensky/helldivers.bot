@@ -1,10 +1,5 @@
-/**
- * Mermaid definition for the in-app notification flow (Polling + Toasts).
- * More granular than the overview diagram — shows each processing step.
- * Two independent paths: server writes + client polls.
- *
- * Two variants: LR (horizontal, desktop) and TD (vertical, mobile).
- */
+import { buildMermaidDefinition } from './buildMermaidDefinition';
+
 const BODY = `
     %% Server write path
     hd1_api["Official HD1 API<br/><small>~1s updates</small>"]
@@ -53,8 +48,4 @@ const BODY = `
     class sonner_toast,web_noti notification
 `;
 
-/** Horizontal layout (desktop) */
-export const DEFINITION_LR = `graph LR\n${BODY}`;
-
-/** Vertical layout (mobile) */
-export const DEFINITION_TD = `graph TD\n${BODY}`;
+export const { DEFINITION_LR, DEFINITION_TD } = buildMermaidDefinition(BODY);

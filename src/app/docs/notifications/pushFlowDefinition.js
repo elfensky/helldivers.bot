@@ -1,9 +1,5 @@
-/**
- * Mermaid definition for the push notification flow.
- * Purely linear: update route → push notifier → service worker.
- *
- * Two variants: LR (horizontal, desktop) and TD (vertical, mobile).
- */
+import { buildMermaidDefinition } from './buildMermaidDefinition';
+
 const BODY = `
     post_update["POST /api/h1/update"]
     check_notify["checkAndNotify()<br/><small>fire-and-forget, non-blocking</small>"]
@@ -32,8 +28,4 @@ const BODY = `
     class sw_push,show_noti notification
 `;
 
-/** Horizontal layout (desktop) */
-export const DEFINITION_LR = `graph LR\n${BODY}`;
-
-/** Vertical layout (mobile) */
-export const DEFINITION_TD = `graph TD\n${BODY}`;
+export const { DEFINITION_LR, DEFINITION_TD } = buildMermaidDefinition(BODY);

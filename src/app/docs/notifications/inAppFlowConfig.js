@@ -1,10 +1,7 @@
-/**
- * Configuration for the in-app notification flow diagram (Polling + Toasts).
- * Single-flow diagram — no view filters needed.
- */
-export const inAppFlowConfig = {
+import { createFlowConfig } from './createFlowConfig';
+
+export const inAppFlowConfig = createFlowConfig({
     views: [{ key: 'all', label: 'All' }],
-    flows: {},
 
     legend: [
         { color: '#3b82f6', label: 'External API / Transport' },
@@ -160,4 +157,4 @@ export const inAppFlowConfig = {
             ],
         },
     },
-};
+});

@@ -1,10 +1,7 @@
-/**
- * Configuration for the push notification flow diagram.
- * Single-flow diagram — no view filters needed.
- */
-export const pushFlowConfig = {
+import { createFlowConfig } from './createFlowConfig';
+
+export const pushFlowConfig = createFlowConfig({
     views: [{ key: 'all', label: 'All' }],
-    flows: {},
 
     legend: [
         { color: '#a855f7', label: 'Server' },
@@ -96,4 +93,4 @@ export const pushFlowConfig = {
             ],
         },
     },
-};
+});

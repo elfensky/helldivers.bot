@@ -1,8 +1,6 @@
-/**
- * Configuration for the notification system flow diagram.
- * Combines views, flow mappings, node details, and legend.
- */
-export const notificationFlowConfig = {
+import { createFlowConfig } from './createFlowConfig';
+
+export const notificationFlowConfig = createFlowConfig({
     views: [
         { key: 'all', label: 'All Flows' },
         { key: 'polling', label: 'Live Polling' },
@@ -232,4 +230,4 @@ export const notificationFlowConfig = {
             ],
         },
     },
-};
+});

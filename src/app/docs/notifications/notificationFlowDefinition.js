@@ -1,9 +1,5 @@
-/**
- * Mermaid definition for the notification system flow diagram.
- * Same color conventions as the docs (/docs/notifications).
- *
- * Two variants: LR (horizontal, desktop) and TD (vertical, mobile).
- */
+import { buildMermaidDefinition } from './buildMermaidDefinition';
+
 const BODY = `
     %% Server
     worker["Worker Thread<br/><small>polls every ~20s</small>"]
@@ -57,8 +53,4 @@ const BODY = `
     class toast,webnoti,sw notification
 `;
 
-/** Horizontal layout (desktop) */
-export const DEFINITION_LR = `graph LR\n${BODY}`;
-
-/** Vertical layout (mobile) */
-export const DEFINITION_TD = `graph TD\n${BODY}`;
+export const { DEFINITION_LR, DEFINITION_TD } = buildMermaidDefinition(BODY);
