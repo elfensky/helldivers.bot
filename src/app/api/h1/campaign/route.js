@@ -50,21 +50,11 @@ export async function GET(request) {
         const { data: fetchData, error: fetchError } = await tryCatch(
             updateSeason(season),
         );
-        //1.1 process error(s)
         if (fetchError) {
-            if (fetchError?.issues) {
-                if (
-                    fetchError?.issues[0]?.code === 'invalid_type' &&
-                    // fetchError?.issues[0]?.path[0] === 'introduction_order' &&
-                    fetchError?.issues[0]?.received === 'null'
-                ) {
-                    let message = `Couldn't find campaign with season ${season}`;
-                    return errorResponse(404, start, message);
-                }
-                return errorResponse(500, start, fetchError?.issues);
-            } else {
-                return errorResponse(500, start, fetchError);
+            if (fetchError.cause === 'SEASON_NOT_FOUND') {
+                return errorResponse(404, start, fetchError.message);
             }
+            return errorResponse(500, start, fetchError?.message);
         }
 
         //2. fetch local data

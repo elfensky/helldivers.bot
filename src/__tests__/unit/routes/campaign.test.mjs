@@ -65,11 +65,11 @@ describe('GET /api/h1/campaign', () => {
         expect(body.data).toEqual(mockCampaign);
     });
 
-    test('returns 404 when season not found remotely (invalid_type error)', async () => {
+    test('returns 404 when season not found remotely', async () => {
         vi.mocked(getCampaign).mockResolvedValue(null);
-        vi.mocked(updateSeason).mockRejectedValue({
-            issues: [{ code: 'invalid_type', received: 'null' }],
-        });
+        vi.mocked(updateSeason).mockRejectedValue(
+            new Error('Season 999 not found', { cause: 'SEASON_NOT_FOUND' }),
+        );
 
         const res = await GET(createRouteRequest('/api/h1/campaign?season=999'));
 
