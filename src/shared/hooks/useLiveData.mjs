@@ -120,7 +120,8 @@ async function poll() {
             };
         }
         emit();
-    } catch {
+    } catch (err) {
+        console.warn('[useLiveData] poll failed:', err?.message);
         if (store.status !== 'offline') {
             store = { ...store, status: 'offline' };
             emit();
@@ -202,10 +203,7 @@ function setupLeader() {
             if (store.isLeader) {
                 // Yield to the other tab's claim — re-elect
                 store = { ...store, isLeader: false };
-                leaderTimeout = setTimeout(
-                    claimLeadership,
-                    Math.random() * 500,
-                );
+                leaderTimeout = setTimeout(claimLeadership, Math.random() * 500);
                 emit();
             }
         }
@@ -285,8 +283,7 @@ export function useLiveData(initialData, initialMapState) {
 
     return {
         data: snapshot.data ?? initialData ?? cachedState?.data ?? null,
-        mapState:
-            snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
+        mapState: snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
         status: snapshot.status,
         prevData: snapshot.prevData,
         isLeader: snapshot.isLeader,

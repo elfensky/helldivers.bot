@@ -3,7 +3,7 @@ import { useState, useCallback, useRef } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { toast } from 'sonner';
 import { sendTestNotification } from '@/features/admin/actions';
-import { showEventToast } from '@/features/notifications/eventToast';
+import { showEventToast } from '@/features/notifications/EventToast';
 import { addDismissedEvent } from '@/features/notifications/dismissedEvents.mjs';
 import Button from '@/shared/components/Button/Button';
 
@@ -88,12 +88,13 @@ export default function DebugTools() {
             event_id: event.event_id,
         });
 
-        if (result.error) {
-            setPushMessage({ text: result.error, isError: true });
+        if (result.errors) {
+            const msg = Object.values(result.errors).join('; ');
+            setPushMessage({ text: msg, isError: true });
             setPushStatus((prev) => ({ ...prev, [kind]: 'idle' }));
         } else {
-            const parts = [`Sent to ${result.sent}`];
-            if (result.stale > 0) parts.push(`${result.stale} stale`);
+            const parts = [`Sent to ${result.data.sent}`];
+            if (result.data.stale > 0) parts.push(`${result.data.stale} stale`);
             setPushMessage({ text: parts.join(', '), isError: false });
             setPushStatus((prev) => ({ ...prev, [kind]: 'cooldown' }));
             setTimeout(

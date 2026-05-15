@@ -6,6 +6,8 @@ import { performance } from 'perf_hooks';
 /**
  * Fetch the campaign data for a season (or the latest season if null).
  *
+ * @returns {Promise<Object|null>} Campaign data, or null if no season exists
+ *
  * Returns a shape compatible with the legacy getCampaign output:
  *   { season, last_updated, status, introduction_order, points_max, snapshots, events }
  *

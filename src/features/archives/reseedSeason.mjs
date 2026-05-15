@@ -4,9 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch';
+import { performance } from 'perf_hooks';
+import { performanceTime } from '@/shared/utils/time';
 import { updateSeason } from '@/update/season';
-import { computeBucket } from '@/update/bucketing';
+import { computeBucket } from '@/shared/utils/bucketing';
 import db from '@/db/db';
+import { ROLE } from '@/shared/enums/roles.mjs';
 
 const seasonSchema = z.number().int().positive();
 
@@ -29,15 +32,18 @@ const seasonSchema = z.number().int().positive();
  * restart during the transition window).
  */
 export async function reseedSeason(season) {
-    if (!auth) return { error: 'Auth not configured' };
+    const start = performance.now();
+    if (!auth)
+        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
 
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user || session.user.role !== 'admin') {
-        return { error: 'Forbidden' };
+    if (!session?.user || session.user.role !== ROLE.ADMIN) {
+        return { errors: { auth: 'Forbidden' }, time: performanceTime(start) };
     }
 
     const parsed = seasonSchema.safeParse(season);
-    if (!parsed.success) return { error: 'Invalid season' };
+    if (!parsed.success)
+        return { errors: { season: 'Invalid season' }, time: performanceTime(start) };
 
     // If reseeding the active season, protect the live bucket so stale
     // get_snapshots data doesn't overwrite the worker's fresher writes.
@@ -54,8 +60,12 @@ export async function reseedSeason(season) {
     }
 
     const { error: seedError } = await tryCatch(updateSeason(parsed.data, opts));
-    if (seedError) return { error: seedError.message ?? 'Reseed failed' };
+    if (seedError)
+        return {
+            errors: { season: seedError.message ?? 'Reseed failed' },
+            time: performanceTime(start),
+        };
 
     revalidatePath('/archives');
-    return { ok: true };
+    return { data: { ok: true }, time: performanceTime(start) };
 }

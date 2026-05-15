@@ -65,7 +65,7 @@ export async function initializeWorker() {
             return true;
         } catch (error) {
             console.error(error.message, {
-                cause: '/src/utils/initialize.worker.mjs',
+                cause: '/src/shared/utils/initializeWorker.mjs',
             });
             return false;
         }

@@ -12,8 +12,18 @@ import {
 
 const FACTIONS = [
     { key: 'bugs', label: 'Bugs', stroke: '#e8822a', fill: 'rgba(232, 130, 42, 0.2)' },
-    { key: 'cyborgs', label: 'Cyborgs', stroke: '#8b2d2d', fill: 'rgba(139, 45, 45, 0.2)' },
-    { key: 'illuminate', label: 'Illuminate', stroke: '#7ec8e3', fill: 'rgba(126, 200, 227, 0.2)' },
+    {
+        key: 'cyborgs',
+        label: 'Cyborgs',
+        stroke: '#8b2d2d',
+        fill: 'rgba(139, 45, 45, 0.2)',
+    },
+    {
+        key: 'illuminate',
+        label: 'Illuminate',
+        stroke: '#7ec8e3',
+        fill: 'rgba(126, 200, 227, 0.2)',
+    },
 ];
 
 function buildChartData(snapshots, pointsMax) {
@@ -22,33 +32,37 @@ function buildChartData(snapshots, pointsMax) {
     const maxPoints = pointsMax.points;
     const firstTime = snapshots[0].time;
 
-    return snapshots.map((snap) => {
-        const parsed = snap.data;
-        if (!parsed) return null;
+    return snapshots
+        .map((snap) => {
+            const parsed = snap.data;
+            if (!parsed) return null;
 
-        const entry = {
-            day: Math.round((snap.time - firstTime) / 86400),
-            time: snap.time,
-        };
+            const entry = {
+                day: Math.round((snap.time - firstTime) / 86400),
+                time: snap.time,
+            };
 
-        for (let i = 0; i < 3; i++) {
-            const faction = parsed[i];
-            if (!faction || faction.status === 'hidden') {
-                entry[FACTIONS[i].key] = null;
-            } else if (faction.status === 'defeated') {
-                // Homeworld captured — full conquest
-                entry[FACTIONS[i].key] = 100;
-            } else {
-                // Sector progress scaled to 10/11 of chart (sectors 1-10).
-                // The last 1/11 (90.9% → 100%) represents the homeworld attack.
-                // A faction at max sector points shows ~91% — "at the gates".
-                const sectorPct = maxPoints[i] > 0 ? (faction.points / maxPoints[i]) : 0;
-                entry[FACTIONS[i].key] = Math.round(sectorPct * (10 / 11) * 1000) / 10;
+            for (let i = 0; i < 3; i++) {
+                const faction = parsed[i];
+                if (!faction || faction.status === 'hidden') {
+                    entry[FACTIONS[i].key] = null;
+                } else if (faction.status === 'defeated') {
+                    // Homeworld captured — full conquest
+                    entry[FACTIONS[i].key] = 100;
+                } else {
+                    // Sector progress scaled to 10/11 of chart (sectors 1-10).
+                    // The last 1/11 (90.9% → 100%) represents the homeworld attack.
+                    // A faction at max sector points shows ~91% — "at the gates".
+                    const sectorPct =
+                        maxPoints[i] > 0 ? faction.points / maxPoints[i] : 0;
+                    entry[FACTIONS[i].key] =
+                        Math.round(sectorPct * (10 / 11) * 1000) / 10;
+                }
             }
-        }
 
-        return entry;
-    }).filter(Boolean);
+            return entry;
+        })
+        .filter(Boolean);
 }
 
 function ChartTooltip({ active, payload }) {
@@ -100,10 +114,7 @@ export default function FactionHealthChart({ snapshots, pointsMax }) {
                 data={data}
                 margin={{ top: 10, right: 10, bottom: 5, left: 0 }}
             >
-                <CartesianGrid
-                    stroke="var(--color-surface-3)"
-                    strokeDasharray="3 3"
-                />
+                <CartesianGrid stroke="var(--color-surface-3)" strokeDasharray="3 3" />
                 <XAxis
                     dataKey="day"
                     stroke="var(--color-surface-4)"

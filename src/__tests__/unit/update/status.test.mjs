@@ -65,9 +65,7 @@ const mockFetchedData = {
         status: 'active',
         points: 10,
     },
-    attack_events: [
-        { event_id: 2, enemy: 1, season: 5, status: 'active', points: 20 },
-    ],
+    attack_events: [{ event_id: 2, enemy: 1, season: 5, status: 'active', points: 20 }],
 };
 
 /** Wire up all mocks for a successful run. */

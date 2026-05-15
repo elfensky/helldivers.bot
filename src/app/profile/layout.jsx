@@ -27,9 +27,5 @@ export default async function ProfileLayout({ children }) {
         redirect('/');
     }
 
-    return (
-        <section className="gutters flex flex-col gap-6 py-6">
-            {children}
-        </section>
-    );
+    return <section className="gutters flex flex-col gap-6 py-6">{children}</section>;
 }

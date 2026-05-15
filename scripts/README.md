@@ -14,9 +14,9 @@ current production schema (h1_status, h1_statistic, h1_event_progress).
 1. Restore a pg_dump of the old database into a separate Postgres instance
    (or a different database on the same instance).
 2. Set environment variables:
-   - `LEGACY_POSTGRES_URL` -- connection string for the restored dump
-   - `POSTGRES_URL` -- connection string for the target (production) database
-   - `BUCKET_SIZE` -- (optional) tumbling-window size in seconds, default 900
+    - `LEGACY_POSTGRES_URL` -- connection string for the restored dump
+    - `POSTGRES_URL` -- connection string for the target (production) database
+    - `BUCKET_SIZE` -- (optional) tumbling-window size in seconds, default 900
 
 ### Usage
 

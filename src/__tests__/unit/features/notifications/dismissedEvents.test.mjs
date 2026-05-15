@@ -98,10 +98,7 @@ describe('dismissedEvents', () => {
         });
 
         test('handles legacy string-value format', () => {
-            localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify({ 42: 'active' }),
-            );
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ 42: 'active' }));
             expect(isDismissedAtStatus(42, 'active')).toBe(true);
             expect(isDismissedAtStatus(42, 'success')).toBe(false);
         });

@@ -204,7 +204,11 @@ export default function StatGrid({
                     value={<AnimatedStat value={totals.won} />}
                     subtitle={missionTotalSubtitle(totals.allMissions)}
                 />
-                <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} subtitle={eventsSubtitle} />
+                <StatCard
+                    label="EVENTS"
+                    value={eventsScoreValue(wins, losses)}
+                    subtitle={eventsSubtitle}
+                />
             </div>
         );
     }
@@ -238,7 +242,11 @@ export default function StatGrid({
                 value={<AnimatedStat value={stats.successful_missions} />}
                 subtitle={missionTotalSubtitle(stats.missions)}
             />
-            <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} subtitle={eventsSubtitle} />
+            <StatCard
+                label="EVENTS"
+                value={eventsScoreValue(wins, losses)}
+                subtitle={eventsSubtitle}
+            />
         </div>
     );
 }

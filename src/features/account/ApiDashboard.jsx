@@ -21,7 +21,7 @@ export default async function ApiDashboard({ user }) {
 
 async function ApiKeysList({ userId }) {
     const result = await getApiKeysByUserId(userId);
-    const apiKeys = result.query;
+    const apiKeys = result.data;
 
     if (!apiKeys || apiKeys.length === 0) {
         return <p className="text-body text-text-muted">No API keys yet.</p>;

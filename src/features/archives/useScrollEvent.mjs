@@ -74,7 +74,8 @@ export function useScrollEvent(events) {
 
             if (best) {
                 const rect = best.getBoundingClientRect();
-                const isVisible = rect.bottom > headerHeight && rect.top < window.innerHeight;
+                const isVisible =
+                    rect.bottom > headerHeight && rect.top < window.innerHeight;
                 if (isVisible) {
                     const key = best.dataset.eventKey;
                     const event = lookup.get(key);

@@ -93,7 +93,7 @@ There are two distinct pipelines that share this shape:
 
 ## 2. Worker Thread Lifecycle
 
-Sources: `public/workers/cron.js`, `src/utils/initialize.worker.mjs`
+Sources: `public/workers/cron.js`, `src/shared/utils/initializeWorker.mjs`
 
 ### Startup
 
@@ -237,7 +237,9 @@ const season = getSeasonFromStatus(fetchedData);
 **Step 4 — Create unconfirmed season record with inlined metadata**
 
 ```js
-await tryCatch(queryUpsertSeason(season, false, { introOrder, pointsMax, seasonDuration }));
+await tryCatch(
+    queryUpsertSeason(season, false, { introOrder, pointsMax, seasonDuration }),
+);
 ```
 
 A row for this season is created in `h1_season` with `last_updated` left as `null` and the season-level metadata (`introduction_order`, `points_max`, `season_duration`) inlined directly on the row. The `false` parameter signals that this is the initial, unconfirmed creation. See the Confirm Pattern section below.
@@ -378,11 +380,13 @@ The season number embedded in the response payload is compared against the reque
 **Step 4 — Create unconfirmed season record with inlined metadata**
 
 ```js
-await tryCatch(queryUpsertSeason(season, false, {
-    introOrder: fetchedData.introduction_order,
-    pointsMax: fetchedData.points_max,
-    seasonDuration: fetchedData.season_duration,
-}));
+await tryCatch(
+    queryUpsertSeason(season, false, {
+        introOrder: fetchedData.introduction_order,
+        pointsMax: fetchedData.points_max,
+        seasonDuration: fetchedData.season_duration,
+    }),
+);
 ```
 
 Same confirm pattern as the status pipeline. Season-level metadata is inlined directly on the `h1_season` row.
@@ -465,25 +469,25 @@ All data is stored in normalized relational tables using the `h1_*` prefix. Ther
 
 ### H1 tables
 
-| Table               | Relationship                               | Written by           |
-| ------------------- | ------------------------------------------ | -------------------- |
-| `h1_season`         | Root; one row per season (+ inlined arrays)| Both pipelines       |
-| `h1_event`          | Many per season (defend + attack unified)  | Both pipelines       |
-| `h1_event_progress` | Many per event (bucket-upsert)             | Status pipeline only |
-| `h1_status`         | Many per season (bucket-upsert per faction)| Both pipelines       |
-| `h1_statistic`      | Many per season (bucket-upsert per faction)| Status pipeline only |
+| Table               | Relationship                                | Written by           |
+| ------------------- | ------------------------------------------- | -------------------- |
+| `h1_season`         | Root; one row per season (+ inlined arrays) | Both pipelines       |
+| `h1_event`          | Many per season (defend + attack unified)   | Both pipelines       |
+| `h1_event_progress` | Many per event (bucket-upsert)              | Status pipeline only |
+| `h1_status`         | Many per season (bucket-upsert per faction) | Both pipelines       |
+| `h1_statistic`      | Many per season (bucket-upsert per faction) | Status pipeline only |
 
 These tables store normalized, relational data keyed on `season`. They accumulate historical records across every update cycle, enabling structured queries, aggregations, and time-series analysis. They are used by the `/api/h1/campaign` endpoint, the `/api/h1/rebroadcast` endpoint (which reconstructs the official API format on demand), and the frontend.
 
 ### Bucket-upsert pattern
 
-All timeseries tables (`h1_status`, `h1_statistic`, `h1_event_progress`) use a tumbling-window bucket-upsert pattern. Each poll computes `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` via `computeBucket()` from `src/update/bucketing.mjs`. Within an active bucket window, subsequent polls UPDATE the existing row. At a bucket boundary, a new row is INSERTed. `BUCKET_SIZE` is configurable via env var (default 900 = 15 min). This replaces the previous in-memory snapshot throttle system with deterministic, stateless bucket math.
+All timeseries tables (`h1_status`, `h1_statistic`, `h1_event_progress`) use a tumbling-window bucket-upsert pattern. Each poll computes `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` via `computeBucket()` from `src/shared/utils/bucketing.mjs`. Within an active bucket window, subsequent polls UPDATE the existing row. At a bucket boundary, a new row is INSERTed. `BUCKET_SIZE` is configurable via env var (default 900 = 15 min). This replaces the previous in-memory snapshot throttle system with deterministic, stateless bucket math.
 
 ---
 
 ## 6. Bucketing System
 
-Source: `src/update/bucketing.mjs`
+Source: `src/shared/utils/bucketing.mjs`
 
 The status pipeline runs on every worker tick (typically every few seconds), but writing a new row on every tick would generate excessive data. The bucketing system controls write granularity using deterministic bucket math — no in-memory state or database cold-start queries needed.
 
@@ -504,8 +508,8 @@ Each query function (`queryUpsertStatus`, `queryUpsertStatistic`, `queryUpsertEv
 
 ### Configuration
 
-| Setting       | Default | Env var       | Notes                                               |
-| ------------- | ------- | ------------- | --------------------------------------------------- |
+| Setting       | Default | Env var       | Notes                                                  |
+| ------------- | ------- | ------------- | ------------------------------------------------------ |
 | `BUCKET_SIZE` | `900`   | `BUCKET_SIZE` | Seconds per bucket window. Parsed once at module load. |
 
 ### Advantages over the previous throttle system

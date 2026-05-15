@@ -6,20 +6,20 @@
  * @throws {Error} if a core env var is unset, or if auth is partially configured
  */
 export async function initializeEnvironmentVariables() {
-    checkDatabase();
-    checkUpdates();
+    validateDatabase();
+    validateUpdates();
     const analytics = checkAnalytics();
     const auth = checkAuth();
     return { auth, analytics };
 }
 
-function checkDatabase() {
+function validateDatabase() {
     if (!process.env.POSTGRES_URL) {
         throw new Error('POSTGRES_URL is not set');
     }
 }
 
-function checkUpdates() {
+function validateUpdates() {
     if (!process.env.UPDATE_KEY) {
         throw new Error('UPDATE_KEY is not set');
     }

@@ -780,7 +780,7 @@ Identical preprocessing behavior to `schemaNumber` in `isValidFormData.js` — c
 
 ## 11. Bucket Math — `computeBucket`
 
-`src/update/bucketing.mjs`
+`src/shared/utils/bucketing.mjs`
 
 Shared helper that computes tumbling-window bucket boundaries for all timeseries tables (`h1_status`, `h1_statistic`, `h1_event_progress`). Each query function calls `computeBucket(time)` and uses the result as part of the unique constraint key in a Prisma upsert — within a bucket window the existing row is updated, at a boundary a new row is inserted.
 

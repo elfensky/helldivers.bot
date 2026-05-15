@@ -8,10 +8,7 @@
 import { auth } from '@/auth';
 
 const disabledHandler = () =>
-    Response.json(
-        { error: 'Auth is not configured on this instance' },
-        { status: 503 },
-    );
+    Response.json({ error: 'Auth is not configured on this instance' }, { status: 503 });
 
 let GET = disabledHandler;
 let POST = disabledHandler;

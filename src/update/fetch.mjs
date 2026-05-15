@@ -3,6 +3,8 @@ import https from 'https';
 import { isValidNumber } from '@/validators/isValidNumber';
 import { tryCatch } from '@/shared/utils/tryCatch';
 
+// axios is used instead of native fetch because Node's fetch doesn't support
+// custom https.Agent, which is needed to disable cert validation on the HD1 API.
 const HD1_API_URL = 'https://api.helldiversgame.com/1.0/';
 
 async function fetchWithUntrustedCert(url, formData) {

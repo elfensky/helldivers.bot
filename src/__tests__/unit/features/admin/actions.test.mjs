@@ -20,14 +20,16 @@ vi.mock('@/shared/utils/tryCatch', () => ({
 vi.mock('@/update/pushNotifier', () => ({
     ensureVapid: vi.fn(),
     sendWithConcurrencyLimit: vi.fn(),
-    buildPayload: vi.fn(() => JSON.stringify({
-        title: 'Test Region under attack',
-        body: 'Defend event started',
-        icon: '/icons/faction0.webp',
-        badge: '/favicons/favicon-96x96.png',
-        tag: 'event-test',
-        renotify: true,
-    })),
+    buildPayload: vi.fn(() =>
+        JSON.stringify({
+            title: 'Test Region under attack',
+            body: 'Defend event started',
+            icon: '/icons/faction0.webp',
+            badge: '/favicons/favicon-96x96.png',
+            tag: 'event-test',
+            renotify: true,
+        }),
+    ),
 }));
 vi.mock('@/db/db', () => ({
     default: { push_subscription: { findMany: vi.fn() } },
@@ -43,49 +45,59 @@ beforeEach(() => {
     vi.resetAllMocks();
     auth.api.getSession.mockResolvedValue(adminSession);
     ensureVapid.mockReturnValue(true);
-    db.push_subscription.findMany.mockResolvedValue([{ endpoint: 'a' }, { endpoint: 'b' }]);
+    db.push_subscription.findMany.mockResolvedValue([
+        { endpoint: 'a' },
+        { endpoint: 'b' },
+    ]);
     sendWithConcurrencyLimit.mockResolvedValue({ sent: 2, stale: 0 });
 });
 
 describe('sendTestNotification', () => {
-    it('returns { error: "Unauthorized" } when session is null', async () => {
+    it('returns errors when session is null', async () => {
         auth.api.getSession.mockResolvedValue(null);
         const result = await sendTestNotification();
-        expect(result).toEqual({ error: 'Unauthorized' });
+        expect(result.errors).toEqual({ auth: 'Unauthorized' });
+        expect(result.time).toEqual(expect.any(Number));
     });
 
-    it('returns { error: "Unauthorized" } when user is not admin', async () => {
+    it('returns errors when user is not admin', async () => {
         auth.api.getSession.mockResolvedValue({ user: { role: 'user' } });
         const result = await sendTestNotification();
-        expect(result).toEqual({ error: 'Unauthorized' });
+        expect(result.errors).toEqual({ auth: 'Unauthorized' });
+        expect(result.time).toEqual(expect.any(Number));
     });
 
-    it('returns { error: "VAPID keys not configured" } when ensureVapid returns false', async () => {
+    it('returns errors when ensureVapid returns false', async () => {
         ensureVapid.mockReturnValue(false);
         const result = await sendTestNotification();
-        expect(result).toEqual({ error: 'VAPID keys not configured' });
+        expect(result.errors).toEqual({ vapid: 'VAPID keys not configured' });
+        expect(result.time).toEqual(expect.any(Number));
     });
 
-    it('returns { error: "No push subscribers" } when no subscriptions', async () => {
+    it('returns errors when no subscriptions', async () => {
         db.push_subscription.findMany.mockResolvedValue([]);
         const result = await sendTestNotification();
-        expect(result).toEqual({ error: 'No push subscribers' });
+        expect(result.errors).toEqual({ subscribers: 'No push subscribers' });
+        expect(result.time).toEqual(expect.any(Number));
     });
 
-    it('returns { sent, stale } on success', async () => {
+    it('returns { data, time } on success', async () => {
         const result = await sendTestNotification();
-        expect(result).toEqual({ sent: 2, stale: 0 });
+        expect(result.data).toEqual({ sent: 2, stale: 0 });
+        expect(result.time).toEqual(expect.any(Number));
     });
 
-    it('returns { error } when sendWithConcurrencyLimit throws', async () => {
+    it('returns errors when sendWithConcurrencyLimit throws', async () => {
         sendWithConcurrencyLimit.mockRejectedValue(new Error('send failed'));
         const result = await sendTestNotification();
-        expect(result).toEqual({ error: 'send failed' });
+        expect(result.errors).toEqual({ send: 'send failed' });
+        expect(result.time).toEqual(expect.any(Number));
     });
 
-    it('returns { error } when findMany throws', async () => {
+    it('returns errors when findMany throws', async () => {
         db.push_subscription.findMany.mockRejectedValue(new Error('db error'));
         const result = await sendTestNotification();
-        expect(result).toEqual({ error: 'db error' });
+        expect(result.errors).toEqual({ db: 'db error' });
+        expect(result.time).toEqual(expect.any(Number));
     });
 });

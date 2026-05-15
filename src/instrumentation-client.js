@@ -23,9 +23,7 @@ const CHUNK_ERROR_RE =
 window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason;
     const msg =
-        typeof reason === 'string'
-            ? reason
-            : reason?.message || reason?.name || '';
+        typeof reason === 'string' ? reason : reason?.message || reason?.name || '';
     if (CHUNK_ERROR_RE.test(msg)) {
         guardedReload('chunk');
     }

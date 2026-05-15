@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+// Direct import for long-form output; compact variant: @/shared/utils/format/formatCompactDuration
 import humanizeDuration from 'humanize-duration';
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
-import { EVENT_TYPE } from '@/shared/enums/events';
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import EventCardLayout, { STATUS_STYLES } from '@/features/timeline/EventCardLayout';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { getEventActionLabel } from '@/shared/utils/game/getEventActionLabel.mjs';
@@ -26,7 +27,8 @@ export default function EventLogCard({
     onMouseEnter,
     onMouseLeave,
 }) {
-    const isCompleted = event.status === 'success' || event.status === 'fail';
+    const isCompleted =
+        event.status === EVENT_STATUS.SUCCESS || event.status === EVENT_STATUS.FAIL;
     const actionLabel = getEventActionLabel(event);
     const regionLabel = getEventRegionLabel(event);
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
@@ -74,7 +76,8 @@ export default function EventLogCard({
  */
 function DurationPill({ event, styles, timeFormat }) {
     const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-    const isCompleted = event.status === 'success' || event.status === 'fail';
+    const isCompleted =
+        event.status === EVENT_STATUS.SUCCESS || event.status === EVENT_STATUS.FAIL;
     const shouldTick = timeFormat === 'live' && !isCompleted;
 
     useEffect(() => {

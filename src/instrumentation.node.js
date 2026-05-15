@@ -1,5 +1,5 @@
-import { initializeEnvironmentVariables } from '@/shared/utils/initialize.env';
-import { initializeWorker } from '@/shared/utils/initialize.worker';
+import { initializeEnvironmentVariables } from '@/shared/utils/initializeEnv';
+import { initializeWorker } from '@/shared/utils/initializeWorker';
 import { tryCatch } from '@/shared/utils/tryCatch';
 
 export async function initializeHelldivers1Api() {

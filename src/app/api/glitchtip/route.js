@@ -16,7 +16,12 @@ export async function POST(request) {
     }
 
     const body = await request.text();
-    const ingestUrl = parseDsn();
+    const { data: ingestUrl, error: dsnError } = await tryCatch(
+        Promise.resolve().then(() => parseDsn()),
+    );
+    if (dsnError) {
+        return new Response('Invalid DSN configuration', { status: 500 });
+    }
 
     const { data: response, error } = await tryCatch(
         fetch(ingestUrl, {

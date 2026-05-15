@@ -14,7 +14,7 @@ export default function LegalPage() {
     return (
         <div className="gutters mx-auto max-w-3xl py-8 sm:py-12">
             <header className="mb-8 sm:mb-12">
-                <h1 className="font-display text-h1 uppercase text-text">
+                <h1 className="font-display text-h1 text-text uppercase">
                     Civic Compliance Protocols
                 </h1>
                 <p className="mt-2 text-small text-text-muted">
@@ -27,7 +27,7 @@ export default function LegalPage() {
 
             {/* ── TERMS OF USE ──────────────────────────────── */}
             <section id="terms" className="scroll-mt-20">
-                <h2 className="font-display text-h2 uppercase text-primary">
+                <h2 className="font-display text-h2 text-primary uppercase">
                     Citizen Service Agreement
                 </h2>
                 <p className="mt-1 text-small text-text-muted italic">
@@ -37,40 +37,41 @@ export default function LegalPage() {
                 <div className="mt-6 flex flex-col gap-4 text-body text-text">
                     <p>
                         By accessing this Ministry of Truth broadcast terminal, you hereby
-                        affirm your status as a loyal citizen of Super Earth and agree to the
-                        following terms of continued access. Failure to comply may result in
-                        reclassification of your citizenship status.
+                        affirm your status as a loyal citizen of Super Earth and agree to
+                        the following terms of continued access. Failure to comply may
+                        result in reclassification of your citizenship status.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Nature of This Broadcast
                     </h3>
                     <p>
-                        This terminal is an independent, non-commercial fan project operated by
-                        a private citizen. It is not affiliated with, endorsed by, or connected
-                        to Arrowhead Game Studios or Sony Interactive Entertainment. All game
-                        data is sourced from the official Helldivers 1 API and rebroadcast for
-                        informational purposes.
+                        This terminal is an independent, non-commercial fan project
+                        operated by a private citizen. It is not affiliated with, endorsed
+                        by, or connected to Arrowhead Game Studios or Sony Interactive
+                        Entertainment. All game data is sourced from the official
+                        Helldivers 1 API and rebroadcast for informational purposes.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         No Guarantee of Service
                     </h3>
                     <p>
-                        This broadcast is provided &ldquo;as is&rdquo; with no warranties of
-                        any kind. Super Earth High Command cannot guarantee uninterrupted
-                        service, data accuracy, or uptime. Campaign intelligence may lag behind
-                        the official feed. Service may be suspended at any time without notice.
+                        This broadcast is provided &ldquo;as is&rdquo; with no warranties
+                        of any kind. Super Earth High Command cannot guarantee
+                        uninterrupted service, data accuracy, or uptime. Campaign
+                        intelligence may lag behind the official feed. Service may be
+                        suspended at any time without notice.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Intellectual Property
                     </h3>
                     <p>
-                        Helldivers, Super Earth, and all related names, logos, and imagery are
-                        the property of Arrowhead Game Studios AB. This terminal uses these
-                        elements under fair use as a non-commercial fan work. The source code
-                        of this terminal is open and available on{' '}
+                        Helldivers, Super Earth, and all related names, logos, and imagery
+                        are the property of Arrowhead Game Studios AB. This terminal uses
+                        these elements under fair use as a non-commercial fan work. The
+                        source code of this terminal is open and available on{' '}
                         <a
                             href="https://github.com/elfensky/helldivers.bot"
                             target="_blank"
@@ -82,23 +83,24 @@ export default function LegalPage() {
                         .
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         API Access Protocols
                     </h3>
                     <p>
-                        Authenticated citizens may access this terminal&apos;s API for personal
-                        and non-commercial use. Commercial resale or redistribution of
-                        intelligence data is prohibited. Rate limits are enforced. Abuse of API
-                        access will result in immediate revocation of credentials.
+                        Authenticated citizens may access this terminal&apos;s API for
+                        personal and non-commercial use. Commercial resale or
+                        redistribution of intelligence data is prohibited. Rate limits are
+                        enforced. Abuse of API access will result in immediate revocation
+                        of credentials.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Citizen Accounts
                     </h3>
                     <p>
-                        Registration is facilitated through Discord or GitHub authentication.
-                        Accounts may be suspended or terminated for abuse. Citizens may delete
-                        their account at any time from the{' '}
+                        Registration is facilitated through Discord or GitHub
+                        authentication. Accounts may be suspended or terminated for abuse.
+                        Citizens may delete their account at any time from the{' '}
                         <Link
                             href="/profile"
                             prefetch={false}
@@ -109,14 +111,14 @@ export default function LegalPage() {
                         .
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Amendments to This Directive
                     </h3>
                     <p>
                         High Command reserves the right to update these terms at any time.
                         Continued access to this terminal constitutes acceptance of any
-                        modifications. The &ldquo;last updated&rdquo; date at the top of this
-                        document will reflect the most recent revision.
+                        modifications. The &ldquo;last updated&rdquo; date at the top of
+                        this document will reflect the most recent revision.
                     </p>
                 </div>
             </section>
@@ -125,7 +127,7 @@ export default function LegalPage() {
 
             {/* ── PRIVACY POLICY ────────────────────────────── */}
             <section id="privacy" className="scroll-mt-20">
-                <h2 className="font-display text-h2 uppercase text-primary">
+                <h2 className="font-display text-h2 text-primary uppercase">
                     Bureau of Intelligence Data Protocols
                 </h2>
                 <p className="mt-1 text-small text-text-muted italic">
@@ -136,45 +138,45 @@ export default function LegalPage() {
                 <div className="mt-6 flex flex-col gap-4 text-body text-text">
                     <p>
                         The Ministry of Truth operates a surveillance-free intelligence
-                        network. Unlike certain hostile civilizations, Super Earth respects the
-                        digital autonomy of its citizens. All monitoring infrastructure is
-                        self-hosted on Ministry-controlled servers. No intelligence is sold,
-                        traded, or shared with third parties, advertising networks, or data
-                        brokers.
+                        network. Unlike certain hostile civilizations, Super Earth
+                        respects the digital autonomy of its citizens. All monitoring
+                        infrastructure is self-hosted on Ministry-controlled servers. No
+                        intelligence is sold, traded, or shared with third parties,
+                        advertising networks, or data brokers.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Operational Analytics
                     </h3>
                     <p>
-                        This terminal employs a self-hosted analytics system (Umami) to monitor
-                        operational efficiency. This system is entirely cookieless — it
-                        identifies sessions using a one-way hash of your IP address, browser
-                        user-agent, and hostname. No personal data is stored. Page views and
-                        interaction events are tracked in aggregate for internal use only.
-                        Analytics are active in production environments only.
+                        This terminal employs a self-hosted analytics system (Umami) to
+                        monitor operational efficiency. This system is entirely cookieless
+                        — it identifies sessions using a one-way hash of your IP address,
+                        browser user-agent, and hostname. No personal data is stored. Page
+                        views and interaction events are tracked in aggregate for internal
+                        use only. Analytics are active in production environments only.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Authenticated Citizen Analytics
                     </h3>
                     <p>
-                        When you are logged in, your internal citizen ID and authentication
-                        provider (Discord or GitHub) are linked to your analytics session. This
-                        allows the Ministry to understand how authenticated citizens use the
-                        terminal. This data is used for internal operational analysis only and
-                        is never shared externally.
+                        When you are logged in, your internal citizen ID and
+                        authentication provider (Discord or GitHub) are linked to your
+                        analytics session. This allows the Ministry to understand how
+                        authenticated citizens use the terminal. This data is used for
+                        internal operational analysis only and is never shared externally.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Authentication Intelligence
                     </h3>
                     <p>
                         Signing in via Discord or GitHub provides this terminal with your
-                        username, avatar URL, and provider account ID. This data is stored in a
-                        Ministry-controlled database. Your session is maintained via a secure,
-                        HttpOnly cookie. You may unlink authentication providers or delete your
-                        account entirely from the{' '}
+                        username, avatar URL, and provider account ID. This data is stored
+                        in a Ministry-controlled database. Your session is maintained via
+                        a secure, HttpOnly cookie. You may unlink authentication providers
+                        or delete your account entirely from the{' '}
                         <Link
                             href="/profile"
                             prefetch={false}
@@ -185,48 +187,48 @@ export default function LegalPage() {
                         .
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Stability Monitoring
                     </h3>
                     <p>
-                        A self-hosted error tracking system (GlitchTip) collects crash reports
-                        when the terminal malfunctions. These reports may include device
-                        information, IP address, and browser user-agent. This data is used
-                        solely to diagnose and repair technical failures. Session tracking is
-                        disabled.
+                        A self-hosted error tracking system (GlitchTip) collects crash
+                        reports when the terminal malfunctions. These reports may include
+                        device information, IP address, and browser user-agent. This data
+                        is used solely to diagnose and repair technical failures. Session
+                        tracking is disabled.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Push Alert Subscriptions
                     </h3>
                     <p>
-                        When you enable push notifications, your browser&apos;s subscription
-                        endpoint is stored in the database to deliver game event alerts. This
-                        subscription is deleted immediately when you disable notifications. It
-                        is used for no other purpose.
+                        When you enable push notifications, your browser&apos;s
+                        subscription endpoint is stored in the database to deliver game
+                        event alerts. This subscription is deleted immediately when you
+                        disable notifications. It is used for no other purpose.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Data Retention Protocols
                     </h3>
                     <p>
                         Account data persists while your account exists. Analytics data is
-                        aggregated and anonymized by the analytics system. Error reports are
-                        retained per standard stability monitoring practices. Push notification
-                        subscriptions are deleted on unsubscribe.
+                        aggregated and anonymized by the analytics system. Error reports
+                        are retained per standard stability monitoring practices. Push
+                        notification subscriptions are deleted on unsubscribe.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Citizen Rights
                     </h3>
                     <p>
-                        You may delete your account from the profile page at any time. This
-                        triggers a cascading deletion of all associated data. You may disable
-                        push notifications at any time. Analytics data cannot be traced back to
-                        you without an authenticated session.
+                        You may delete your account from the profile page at any time.
+                        This triggers a cascading deletion of all associated data. You may
+                        disable push notifications at any time. Analytics data cannot be
+                        traced back to you without an authenticated session.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Contact the Operator
                     </h3>
                     <p>
@@ -257,7 +259,7 @@ export default function LegalPage() {
 
             {/* ── COOKIES ───────────────────────────────────── */}
             <section id="cookies" className="scroll-mt-20">
-                <h2 className="font-display text-h2 uppercase text-primary">
+                <h2 className="font-display text-h2 text-primary uppercase">
                     Automated Tracking Rations
                 </h2>
                 <p className="mt-1 text-small text-text-muted italic">
@@ -266,28 +268,31 @@ export default function LegalPage() {
 
                 <div className="mt-6 flex flex-col gap-4 text-body text-text">
                     <p>
-                        Unlike certain hostile alien civilizations, Super Earth respects the
-                        digital autonomy of its citizens. This terminal deploys minimal
-                        tracking mechanisms — only what is strictly necessary for operation.
+                        Unlike certain hostile alien civilizations, Super Earth respects
+                        the digital autonomy of its citizens. This terminal deploys
+                        minimal tracking mechanisms — only what is strictly necessary for
+                        operation.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Cookie Inventory
                     </h3>
                     <div className="overflow-x-auto">
                         <table className="w-full text-small">
                             <thead>
                                 <tr className="border-b border-ghost text-left text-text-muted">
-                                    <th className="pb-2 pr-4 font-mono font-normal">
+                                    <th className="pr-4 pb-2 font-mono font-normal">
                                         Designation
                                     </th>
-                                    <th className="pb-2 pr-4 font-mono font-normal">
+                                    <th className="pr-4 pb-2 font-mono font-normal">
                                         Classification
                                     </th>
-                                    <th className="pb-2 pr-4 font-mono font-normal">
+                                    <th className="pr-4 pb-2 font-mono font-normal">
                                         Purpose
                                     </th>
-                                    <th className="pb-2 font-mono font-normal">Duration</th>
+                                    <th className="pb-2 font-mono font-normal">
+                                        Duration
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -299,29 +304,29 @@ export default function LegalPage() {
                                     <td className="py-2 pr-4">
                                         Maintains your authenticated session
                                     </td>
-                                    <td className="py-2">
-                                        Until expiry or logout
-                                    </td>
+                                    <td className="py-2">Until expiry or logout</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <p className="text-small text-text-muted">
-                        This cookie is set only when you sign in via Discord or GitHub. It is
-                        strictly necessary for authentication and requires no consent.
+                        This cookie is set only when you sign in via Discord or GitHub. It
+                        is strictly necessary for authentication and requires no consent.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Local Storage Requisitions
                     </h3>
                     <div className="overflow-x-auto">
                         <table className="w-full text-small">
                             <thead>
                                 <tr className="border-b border-ghost text-left text-text-muted">
-                                    <th className="pb-2 pr-4 font-mono font-normal">
+                                    <th className="pr-4 pb-2 font-mono font-normal">
                                         Designation
                                     </th>
-                                    <th className="pb-2 font-mono font-normal">Purpose</th>
+                                    <th className="pb-2 font-mono font-normal">
+                                        Purpose
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -337,7 +342,7 @@ export default function LegalPage() {
                         </table>
                     </div>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         What This Terminal Does Not Deploy
                     </h3>
                     <ul className="list-inside list-disc text-text-muted">
@@ -347,18 +352,18 @@ export default function LegalPage() {
                         <li>No browser fingerprinting</li>
                     </ul>
                     <p>
-                        The operational analytics system (Umami) is entirely cookieless. It
-                        does not store any data in your browser.
+                        The operational analytics system (Umami) is entirely cookieless.
+                        It does not store any data in your browser.
                     </p>
 
-                    <h3 className="text-h3 font-bold uppercase text-text">
+                    <h3 className="text-h3 font-bold text-text uppercase">
                         Citizen Override Controls
                     </h3>
                     <p>
-                        You may clear cookies and local storage from your browser at any time.
-                        Clearing the session cookie will log you out. Clearing local storage
-                        removes the offline campaign cache — it will repopulate automatically
-                        on your next visit.
+                        You may clear cookies and local storage from your browser at any
+                        time. Clearing the session cookie will log you out. Clearing local
+                        storage removes the offline campaign cache — it will repopulate
+                        automatically on your next visit.
                     </p>
                 </div>
             </section>
@@ -374,7 +379,7 @@ export default function LegalPage() {
                 <Link
                     href="/"
                     prefetch={false}
-                    className="mt-4 inline-block cursor-pointer border border-primary px-3 py-1.5 font-body text-small font-bold uppercase tracking-[0.02em] text-primary hover:bg-primary hover:text-surface-0"
+                    className="mt-4 inline-block cursor-pointer border border-primary px-3 py-1.5 font-body text-small font-bold tracking-[0.02em] text-primary uppercase hover:bg-primary hover:text-surface-0"
                 >
                     Resume approved broadcast
                 </Link>

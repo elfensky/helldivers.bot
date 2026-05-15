@@ -1,5 +1,5 @@
-import mapTemplate from '@/shared/enums/map';
-import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events';
+import mapTemplate from '@/shared/enums/map.mjs';
+import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 
 /**

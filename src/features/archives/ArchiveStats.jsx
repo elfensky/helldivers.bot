@@ -1,3 +1,4 @@
+// Direct import for long-form output; compact variant: @/shared/utils/format/formatCompactDuration
 import humanizeDuration from 'humanize-duration';
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
@@ -5,6 +6,7 @@ import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import GlitchText from '@/features/archives/GlitchText';
 import factions from '@/shared/enums/factions.mjs';
 import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 // Only 5 fields in h1_live are BigInt in the Prisma schema: kills, deaths,
 // shots, hits, accidentals. The other stat columns (missions, successful_missions,
@@ -45,10 +47,14 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
 
     // Defense / attack rates — split out from the old global WIN_RATE so the
     // two activities can be read independently.
-    const defends = events.filter((e) => e.type === 'defend');
-    const attacks = events.filter((e) => e.type === 'attack');
-    const successfulDefends = defends.filter((e) => e.status === 'success').length;
-    const successfulAttacks = attacks.filter((e) => e.status === 'success').length;
+    const defends = events.filter((e) => e.type === EVENT_TYPE.DEFEND);
+    const attacks = events.filter((e) => e.type === EVENT_TYPE.ATTACK);
+    const successfulDefends = defends.filter(
+        (e) => e.status === EVENT_STATUS.SUCCESS,
+    ).length;
+    const successfulAttacks = attacks.filter(
+        (e) => e.status === EVENT_STATUS.SUCCESS,
+    ).length;
     const defenseRate =
         defends.length > 0 ?
             Math.round((successfulDefends / defends.length) * 100)

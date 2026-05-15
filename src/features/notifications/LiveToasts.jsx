@@ -9,7 +9,7 @@ import {
     addDismissedEvent,
 } from '@/features/notifications/dismissedEvents.mjs';
 import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
-import { showEventToast, toastLabel } from '@/features/notifications/eventToast';
+import { showEventToast, toastLabel } from '@/features/notifications/EventToast';
 
 function showWebNotification(message, event) {
     if (typeof Notification === 'undefined') return;

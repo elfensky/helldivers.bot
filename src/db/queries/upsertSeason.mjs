@@ -10,18 +10,15 @@ import { isValidNumber } from '@/validators/isValidNumber';
  *   - pointsMax    — number[3] indexed by enemy (per-faction point ceiling)
  *   - seasonDuration — scalar int (per-season state, not per-faction)
  *
- * The `arrays` parameter name is stale (it's not only arrays anymore) but
- * several callers already pass by the `arrays` keyword — keep the name.
- *
  * @param {number}   season
  * @param {boolean}  confirm   When true, sets last_updated to now (signals
  *                             "season's normalized data is saved").
- * @param {object?}  arrays    Optional per-season metadata:
- *                             { introOrder?: number[3],
- *                               pointsMax?: number[3],
- *                               seasonDuration?: number }
+ * @param {object?}  metadata  Optional per-season metadata:
+ *                              { introOrder?: number[3],
+ *                                pointsMax?: number[3],
+ *                                seasonDuration?: number }
  */
-export async function queryUpsertSeason(season, confirm = false, arrays = null) {
+export async function queryUpsertSeason(season, confirm = false, metadata = null) {
     'use server';
     const start = performance.now();
 
@@ -41,17 +38,17 @@ export async function queryUpsertSeason(season, confirm = false, arrays = null) 
         create.last_updated = now;
     }
 
-    if (arrays?.introOrder !== undefined) {
-        update.introduction_order = arrays.introOrder;
-        create.introduction_order = arrays.introOrder;
+    if (metadata?.introOrder !== undefined) {
+        update.introduction_order = metadata.introOrder;
+        create.introduction_order = metadata.introOrder;
     }
-    if (arrays?.pointsMax !== undefined) {
-        update.points_max = arrays.pointsMax;
-        create.points_max = arrays.pointsMax;
+    if (metadata?.pointsMax !== undefined) {
+        update.points_max = metadata.pointsMax;
+        create.points_max = metadata.pointsMax;
     }
-    if (arrays?.seasonDuration !== undefined) {
-        update.season_duration = arrays.seasonDuration;
-        create.season_duration = arrays.seasonDuration;
+    if (metadata?.seasonDuration !== undefined) {
+        update.season_duration = metadata.seasonDuration;
+        create.season_duration = metadata.seasonDuration;
     }
 
     const { data: upsertRecord, error } = await tryCatch(

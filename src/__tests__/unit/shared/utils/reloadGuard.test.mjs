@@ -1,4 +1,8 @@
-import { guardedReload, clearReloadGuard, GUARD_KEY } from '@/shared/utils/reloadGuard.mjs';
+import {
+    guardedReload,
+    clearReloadGuard,
+    GUARD_KEY,
+} from '@/shared/utils/reloadGuard.mjs';
 
 const storage = new Map();
 const mockReload = vi.fn();
@@ -30,12 +34,13 @@ describe('guardedReload', () => {
         expect(raw).toMatch(/^version:\d+:1$/);
     });
 
-    test('suppresses reload if guard was set less than 30s ago', () => {
+    test('increments counter and reloads if guard was set less than 30s ago', () => {
         storage.set(GUARD_KEY, `version:${Date.now()}:1`);
 
         guardedReload('chunk');
 
-        expect(mockReload).not.toHaveBeenCalled();
+        expect(mockReload).toHaveBeenCalledOnce();
+        expect(storage.get(GUARD_KEY)).toMatch(/^chunk:\d+:2$/);
     });
 
     test('allows reload if guard is older than 30s', () => {
@@ -44,11 +49,11 @@ describe('guardedReload', () => {
         guardedReload('chunk');
 
         expect(mockReload).toHaveBeenCalledOnce();
-        expect(storage.get(GUARD_KEY)).toMatch(/^chunk:\d+:2$/);
+        expect(storage.get(GUARD_KEY)).toMatch(/^chunk:\d+:1$/);
     });
 
     test('stops reloading after 3 attempts', () => {
-        storage.set(GUARD_KEY, `version:${Date.now() - 31_000}:3`);
+        storage.set(GUARD_KEY, `version:${Date.now()}:3`);
 
         guardedReload('version');
 

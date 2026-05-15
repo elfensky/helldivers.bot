@@ -26,7 +26,9 @@ export default async function SystemOverview() {
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <h3 className="font-mono text-small text-text-muted uppercase">System Overview</h3>
+                <h3 className="font-mono text-small text-text-muted uppercase">
+                    System Overview
+                </h3>
                 <RefreshButton />
             </div>
 

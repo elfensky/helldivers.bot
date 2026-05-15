@@ -5,7 +5,7 @@ import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
 import { EVENT_TYPE } from '@/shared/enums/events';
 import { fetchSeason } from '@/update/fetch';
 import { isValidSeason } from '@/validators/isValidSeason';
-import { computeBucket } from '@/update/bucketing';
+import { computeBucket } from '@/shared/utils/bucketing';
 // db
 import { queryUpsertSeason } from '@/db/queries/upsertSeason';
 import { queryUpsertEvent } from '@/db/queries/upsertEvent';
@@ -62,7 +62,8 @@ export async function updateSeason(season, opts = {}) {
     // updateStatus() owns that window and has already written fresher data.
     const protectedBucket = opts.protectedBucket;
     for (const snap of fetchedData.snapshots) {
-        if (protectedBucket !== undefined && computeBucket(snap.time) >= protectedBucket) continue;
+        if (protectedBucket !== undefined && computeBucket(snap.time) >= protectedBucket)
+            continue;
 
         const parsed = typeof snap.data === 'string' ? JSON.parse(snap.data) : snap.data;
         if (!Array.isArray(parsed) || parsed.length !== 3) continue;

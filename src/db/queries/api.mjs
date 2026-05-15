@@ -16,21 +16,20 @@ import { revalidatePath } from 'next/cache';
  */
 export async function getApiKeysByUserId(userId) {
     const start = performance.now();
-    if (!auth) return { ms: performanceTime(start), query: null, errors: { auth: 'Auth not configured' } };
+    if (!auth)
+        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
     const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session || !session.user) {
         return {
-            ms: performanceTime(start),
-            query: null,
             errors: { auth: 'No session found' },
+            time: performanceTime(start),
         };
     }
     if (session.user.id !== userId) {
         return {
-            ms: performanceTime(start),
-            query: null,
             errors: { auth: 'User does not match' },
+            time: performanceTime(start),
         };
     }
 
@@ -48,7 +47,7 @@ export async function getApiKeysByUserId(userId) {
     );
     if (error) throw error;
 
-    return { ms: performanceTime(start), query: result };
+    return { data: result, time: performanceTime(start) };
 }
 
 /**
@@ -59,7 +58,8 @@ export async function getApiKeysByUserId(userId) {
  */
 export async function generateApiKey(_, formData) {
     const start = performance.now();
-    if (!auth) return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
+    if (!auth)
+        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
 
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session?.user) {
@@ -137,7 +137,8 @@ export async function generateApiKey(_, formData) {
  */
 export async function deleteApiKey(_, formData) {
     const start = performance.now();
-    if (!auth) return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
+    if (!auth)
+        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
 
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session?.user) {

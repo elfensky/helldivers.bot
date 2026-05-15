@@ -23,8 +23,7 @@ export function getDismissedEvents() {
         if (!parsed || typeof parsed !== 'object') return {};
         const migrated = {};
         for (const [id, val] of Object.entries(parsed)) {
-            migrated[id] =
-                typeof val === 'string' ? { status: val, ts: 0 } : val;
+            migrated[id] = typeof val === 'string' ? { status: val, ts: 0 } : val;
         }
         return migrated;
     } catch {

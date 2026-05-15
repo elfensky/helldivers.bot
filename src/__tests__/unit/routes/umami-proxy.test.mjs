@@ -10,9 +10,7 @@ describe('POST /api/umami', () => {
 
     beforeEach(() => {
         originalFetch = global.fetch;
-        global.fetch = vi.fn(() =>
-            Promise.resolve(new Response('ok', { status: 200 })),
-        );
+        global.fetch = vi.fn(() => Promise.resolve(new Response('ok', { status: 200 })));
     });
 
     afterEach(() => {

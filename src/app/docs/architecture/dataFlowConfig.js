@@ -34,12 +34,7 @@ export const dataFlowConfig = {
         ],
         seed: ['seed_files', 'seed_script', 'h1_season', 'h1_status', 'h1_event'],
         read_live: ['h1_status', 'h1_event', 'h1_season', 'fe_live'],
-        read_archives: [
-            'h1_status',
-            'h1_event',
-            'h1_event_progress',
-            'fe_archives',
-        ],
+        read_archives: ['h1_status', 'h1_event', 'h1_event_progress', 'fe_archives'],
         read_rebroadcast: [
             'h1_season',
             'h1_status',
@@ -333,9 +328,7 @@ export const dataFlowConfig = {
                 },
                 {
                     type: 'tags',
-                    items: [
-                        { text: 'reads h1_status (latest)', cls: 'tag-read' },
-                    ],
+                    items: [{ text: 'reads h1_status (latest)', cls: 'tag-read' }],
                 },
             ],
         },

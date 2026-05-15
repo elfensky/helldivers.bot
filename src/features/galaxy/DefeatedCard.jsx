@@ -1,5 +1,6 @@
 import './EventCard.css';
-import factions from '@/shared/enums/factions';
+import factions from '@/shared/enums/factions.mjs';
+// Direct import for long-form output; compact variant: @/shared/utils/format/formatCompactDuration
 import humanizeDuration from 'humanize-duration';
 import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
 

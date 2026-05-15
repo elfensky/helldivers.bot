@@ -4,7 +4,7 @@ import { errorResponse } from '@/shared/utils/api/responses';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { computeMapState } from '@/shared/utils/game/computeMapState';
-import { EVENT_STATUS } from '@/shared/enums/events';
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 export async function GET() {
     const start = performance.now();

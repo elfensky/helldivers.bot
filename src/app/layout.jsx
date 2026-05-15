@@ -13,7 +13,7 @@ import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign';
 import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
-import { EVENT_STATUS } from '@/shared/enums/events';
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],

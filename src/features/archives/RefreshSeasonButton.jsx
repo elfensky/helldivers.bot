@@ -55,8 +55,8 @@ export default function RefreshSeasonButton({ season, lastUpdated }) {
         startTransition(async () => {
             track('archive-season-refresh', { season });
             const result = await reseedSeason(season);
-            if (result?.error) {
-                setError(result.error);
+            if (result?.errors) {
+                setError(Object.values(result.errors).join('; '));
                 return;
             }
             router.refresh();

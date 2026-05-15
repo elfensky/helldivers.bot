@@ -1,6 +1,7 @@
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import map from '@/shared/enums/map.mjs';
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 const factionMap = { bugs: 0, cyborgs: 1, illuminate: 2 };
 
@@ -11,10 +12,14 @@ export default function FactionStats({ events, snapshots, pointsMax, faction }) 
     const factionEvents = (events ?? []).filter((e) => e.enemy === factionIndex);
     if (!factionEvents.length) return null;
 
-    const defends = factionEvents.filter((e) => e.type === 'defend');
-    const attacks = factionEvents.filter((e) => e.type === 'attack');
-    const successfulDefends = defends.filter((e) => e.status === 'success').length;
-    const successfulAttacks = attacks.filter((e) => e.status === 'success').length;
+    const defends = factionEvents.filter((e) => e.type === EVENT_TYPE.DEFEND);
+    const attacks = factionEvents.filter((e) => e.type === EVENT_TYPE.ATTACK);
+    const successfulDefends = defends.filter(
+        (e) => e.status === EVENT_STATUS.SUCCESS,
+    ).length;
+    const successfulAttacks = attacks.filter(
+        (e) => e.status === EVENT_STATUS.SUCCESS,
+    ).length;
 
     const defenseRate =
         defends.length > 0 ?

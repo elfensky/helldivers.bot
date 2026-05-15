@@ -231,7 +231,7 @@ register()   [src/instrumentation.js]
 └── NEXT_RUNTIME === 'nodejs'
     └── initializeHelldivers1Api()
         │
-        ├── Step 1: initializeEnvironmentVariables()   [src/utils/initialize.env.mjs]
+        ├── Step 1: initializeEnvironmentVariables()   [src/shared/utils/initializeEnv.mjs]
         │   ├── checkDatabase()    → POSTGRES_URL                              ← REQUIRED, throws
         │   ├── checkUpdates()     → UPDATE_KEY, UPDATE_INTERVAL               ← REQUIRED, throws (PORT optional)
         │   ├── checkAnalytics()   → UMAMI_SITE_ID, SENTRY_DSN, SENTRY_AUTH_TOKEN  ← OPTIONAL, warns
@@ -244,7 +244,7 @@ register()   [src/instrumentation.js]
         │   ├── staging:     falls through to false (neither branch matches NODE_ENV=staging)
         │   └── false → throw (crashes the process)
         │
-        └── Step 3: initializeWorker()                 [src/utils/initialize.worker.mjs]
+        └── Step 3: initializeWorker()                 [src/shared/utils/initializeWorker.mjs]
             ├── Resolves worker path:
             │   ├── development: path.resolve(process.cwd(), 'public/workers/cron.js')
             │   └── production:  path.resolve('/app/public/workers/cron.js')
@@ -346,7 +346,7 @@ Source maps are uploaded to GlitchTip at build time for readable stack traces. T
 
 ## Section 5: Environment Variables
 
-Variables are checked at startup by `initializeEnvironmentVariables()` in `src/utils/initialize.env.mjs`. The function uses **progressive enhancement**: core variables throw on missing (app cannot function), while auth and analytics variables warn and degrade gracefully. Returns `{ auth: boolean, analytics: boolean }` so the startup log shows which features are active.
+Variables are checked at startup by `initializeEnvironmentVariables()` in `src/shared/utils/initializeEnv.mjs`. The function uses **progressive enhancement**: core variables throw on missing (app cannot function), while auth and analytics variables warn and degrade gracefully. Returns `{ auth: boolean, analytics: boolean }` so the startup log shows which features are active.
 
 **Validation rules:**
 

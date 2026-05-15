@@ -13,9 +13,11 @@ import { isValidFormData } from '@/validators/isValidFormData';
 //db
 import { updateSeason } from '@/update/season';
 //auth
-import { validateApiKey } from '@/db/queries/validateApiKey';
+import { validateApiKey, API_KEY_ERROR } from '@/db/queries/validateApiKey';
 //track
 import { umamiTrackEvent } from '@/shared/utils/umami';
+//enums
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 export async function POST(request) {
     //0. initialize
@@ -25,7 +27,7 @@ export async function POST(request) {
 
     //0.5 validate API key
     const { error: keyError } = await validateApiKey(request);
-    if (keyError === 'disabled') {
+    if (keyError === API_KEY_ERROR.DISABLED) {
         return errorResponse(403, start, 'Forbidden');
     }
     if (keyError) {
@@ -86,7 +88,7 @@ export async function POST(request) {
             const { data: statusBody, error: statusError } = await tryCatch(
                 reconstructCampaignStatus(),
             );
-            if (statusError) return errorResponse(404, start, 'Not found');
+            if (statusError) return errorResponse(500, start, 'Not found');
             data = statusBody;
             break;
         }
@@ -94,7 +96,7 @@ export async function POST(request) {
             const { data: snapshotBody, error: snapshotError } = await tryCatch(
                 reconstructSnapshots(formValues.season),
             );
-            if (snapshotError) return errorResponse(404, start, 'Not found');
+            if (snapshotError) return errorResponse(500, start, 'Not found');
             data = snapshotBody;
 
             // fetch from remote if the season isn't populated locally yet
@@ -103,12 +105,12 @@ export async function POST(request) {
                     updateSeason(formValues.season),
                 );
                 if (seasonFetchError) {
-                    return errorResponse(404, start, 'Not found');
+                    return errorResponse(500, start, 'Not found');
                 }
                 const { data: retryBody, error: retryError } = await tryCatch(
                     reconstructSnapshots(formValues.season),
                 );
-                if (retryError) return errorResponse(404, start, 'Not found');
+                if (retryError) return errorResponse(500, start, 'Not found');
                 data = retryBody;
             }
             break;
@@ -166,7 +168,7 @@ async function reconstructCampaignStatus() {
         ORDER BY enemy ASC, bucket DESC
     `;
     const activeEvents = await db.h1_event.findMany({
-        where: { season: targetSeason, status: 'active' },
+        where: { season: targetSeason, status: EVENT_STATUS.ACTIVE },
     });
 
     const statByEnemy = new Map(latestStats.map((r) => [r.enemy, r]));
@@ -209,8 +211,8 @@ async function reconstructCampaignStatus() {
                 hits: s?.hits != null ? Number(s.hits) : 0,
             };
         }),
-        defend_event: activeEvents.find((e) => e.type === 'defend') ?? null,
-        attack_events: activeEvents.filter((e) => e.type === 'attack'),
+        defend_event: activeEvents.find((e) => e.type === EVENT_TYPE.DEFEND) ?? null,
+        attack_events: activeEvents.filter((e) => e.type === EVENT_TYPE.ATTACK),
         introduction_order: seasonRow.introduction_order ?? [],
         points_max: seasonRow.points_max ?? [],
     };
@@ -279,8 +281,8 @@ async function reconstructSnapshots(season) {
         introduction_order: seasonRow.introduction_order ?? [],
         points_max: seasonRow.points_max ?? [],
         snapshots,
-        defend_events: allEvents.filter((e) => e.type === 'defend'),
-        attack_events: allEvents.filter((e) => e.type === 'attack'),
+        defend_events: allEvents.filter((e) => e.type === EVENT_TYPE.DEFEND),
+        attack_events: allEvents.filter((e) => e.type === EVENT_TYPE.ATTACK),
     };
 }
 

@@ -9,7 +9,7 @@ import db from '@/db/db';
 import { updateStatus } from '@/update/status';
 import { updateSeason } from '@/update/season';
 import { checkAndNotify } from '@/update/pushNotifier';
-import { computeBucket } from '@/update/bucketing';
+import { computeBucket } from '@/shared/utils/bucketing';
 
 // Tracks the season observed on the previous worker poll so we can detect
 // a season transition and run one final updateSeason() pass on the outgoing

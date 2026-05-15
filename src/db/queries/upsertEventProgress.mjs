@@ -2,7 +2,7 @@ import db from '@/db/db';
 import { tryCatch } from '@/shared/utils/tryCatch';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/shared/utils/time';
-import { computeBucket } from '@/update/bucketing';
+import { computeBucket } from '@/shared/utils/bucketing';
 
 /**
  * Upsert a single h1_event_progress row for one event at the bucket

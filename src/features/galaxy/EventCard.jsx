@@ -5,6 +5,7 @@ import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.mjs';
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
+// Direct import for long-form output; compact variant: @/shared/utils/format/formatCompactDuration
 import humanizeDuration from 'humanize-duration';
 
 const passThrough = (v) => (v == null ? '—' : String(v));

@@ -16,7 +16,7 @@ vi.mock('perf_hooks', () => ({
     performance: { now: vi.fn(() => 0) },
 }));
 
-const { initializeWorker } = await import('@/shared/utils/initialize.worker.mjs');
+const { initializeWorker } = await import('@/shared/utils/initializeWorker.mjs');
 
 describe('initializeWorker', () => {
     beforeEach(() => {

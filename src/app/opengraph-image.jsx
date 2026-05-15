@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { EVENT_STATUS } from '@/shared/enums/events';
+import { EVENT_STATUS, EVENT_TYPE, CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import {
     bugPaths,
@@ -129,7 +129,8 @@ export default async function Image() {
     let statusColor = COLORS.yellow;
 
     const allDefeated =
-        data.status.length === 3 && data.status.every((f) => f.status === 'defeated');
+        data.status.length === 3 &&
+        data.status.every((f) => f.status === CAMPAIGN_STATUS.DEFEATED);
     if (allDefeated) {
         statusText = 'VICTORY';
     } else if (events.length > 0) {
@@ -147,8 +148,8 @@ export default async function Image() {
                 :   'ACTIVE EVENT';
         } else {
             const lastEvent = events.toSorted((a, b) => b.end_time - a.end_time)[0];
-            const won = lastEvent.status === 'success';
-            const verb = lastEvent.type === 'defend' ? 'DEFEND' : 'ATTACK';
+            const won = lastEvent.status === EVENT_STATUS.SUCCESS;
+            const verb = lastEvent.type === EVENT_TYPE.DEFEND ? 'DEFEND' : 'ATTACK';
             statusText = won ? `${verb} WON` : `${verb} LOST`;
             statusColor = won ? COLORS.yellow : COLORS.cyborgsText;
         }
