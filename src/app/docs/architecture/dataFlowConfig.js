@@ -1,8 +1,6 @@
-/**
- * Configuration for the data flow architecture diagram.
- * Combines views, flow mappings, node details, and legend.
- */
-export const dataFlowConfig = {
+import { createFlowConfig } from '@/shared/utils/diagram.mjs';
+
+export const dataFlowConfig = createFlowConfig({
     views: [
         { key: 'all', label: 'All Flows' },
         { key: 'live', label: 'Live Polling (~15s)' },
@@ -373,4 +371,4 @@ export const dataFlowConfig = {
             ],
         },
     },
-};
+});

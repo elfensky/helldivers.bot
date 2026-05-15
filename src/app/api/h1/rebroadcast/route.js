@@ -88,7 +88,7 @@ export async function POST(request) {
             const { data: statusBody, error: statusError } = await tryCatch(
                 reconstructCampaignStatus(),
             );
-            if (statusError) return errorResponse(500, start, 'Not found');
+            if (statusError) return errorResponse(500, start, 'Internal server error');
             data = statusBody;
             break;
         }
@@ -96,7 +96,7 @@ export async function POST(request) {
             const { data: snapshotBody, error: snapshotError } = await tryCatch(
                 reconstructSnapshots(formValues.season),
             );
-            if (snapshotError) return errorResponse(500, start, 'Not found');
+            if (snapshotError) return errorResponse(500, start, 'Internal server error');
             data = snapshotBody;
 
             // fetch from remote if the season isn't populated locally yet
@@ -105,12 +105,12 @@ export async function POST(request) {
                     updateSeason(formValues.season),
                 );
                 if (seasonFetchError) {
-                    return errorResponse(500, start, 'Not found');
+                    return errorResponse(500, start, 'Internal server error');
                 }
                 const { data: retryBody, error: retryError } = await tryCatch(
                     reconstructSnapshots(formValues.season),
                 );
-                if (retryError) return errorResponse(500, start, 'Not found');
+                if (retryError) return errorResponse(500, start, 'Internal server error');
                 data = retryBody;
             }
             break;

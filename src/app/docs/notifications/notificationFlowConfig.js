@@ -1,4 +1,4 @@
-import { createFlowConfig } from './createFlowConfig';
+import { createFlowConfig } from '@/shared/utils/diagram.mjs';
 
 export const notificationFlowConfig = createFlowConfig({
     views: [

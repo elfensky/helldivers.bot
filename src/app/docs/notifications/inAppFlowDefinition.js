@@ -1,4 +1,4 @@
-import { buildMermaidDefinition } from './buildMermaidDefinition';
+import { buildMermaidDefinition } from '@/shared/utils/diagram.mjs';
 
 const BODY = `
     %% Server write path
