@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+## 0.46.1
+
+### Chores
+
+- **desloppify cleanup pass** — knocked out 9 trivial review issues across the codebase:
+    - `getCampaign.mjs` JSDoc now documents `season_duration` in the return shape.
+    - `eventFilters.mjs` JSDoc trimmed: removed English description lines that just restated the function names, kept `@param`/`@returns` for type info.
+    - `glitchtip/route.js`: `SENTRY_DSN` is read inside the `POST` handler (was module-scope const), `parseDsn()` no longer wrapped in `Promise.resolve().then()` (uses local try/catch since the project `tryCatch` is async-only), `OPTIONS` handler added to match the `methodNotAllowed` convention used by all sibling routes.
+    - `season.mjs`: raw `ZodError` throw wrapped in `Error` with `cause` to match `status.mjs` pattern; `getSeasonFromSnapshot()` no longer wrapped in `Promise.resolve()` (uses local try/catch since the function is synchronous-throwing); `updateSeason` return shape now includes `time` to match `updateStatus`.
+    - Validators (`isValidStatus.mjs`, `isValidSeason.mjs`): `z.enum` derived from `CAMPAIGN_STATUS` and `EVENT_STATUS` constants instead of inline string arrays.
+    - `admin.mjs` Zod schema: `newRole` now uses `z.enum(Object.values(ROLE))`.
+    - `auth.js`: BetterAuth `role` field `defaultValue` now uses `ROLE.USER`.
+    - `getEventRegionLabel.mjs`, `computeMapState.mjs`, `FactionHealthChart.jsx`: raw `'defend'` / `''` / `'hidden'` / `'defeated'` strings replaced with `EVENT_TYPE.DEFEND` / `MAP_STATUS.IDLE` / `CAMPAIGN_STATUS.*` constants.
+
+- **Deleted single-consumer `formdata.mjs` wrapper** — `formDataToObject` was a one-liner used by exactly one caller. Inlined `Object.fromEntries(formData.entries())` at the call site (`rebroadcast/route.js`) and removed the module + test + docs entries.
+
+- **Moved vestigial `features/docs/` module** — `overviewConfig.mjs` and `overviewDefinition.mjs` relocated to `src/app/docs/` next to their only consumer (`page.mdx`); imports rewritten to relative paths; empty `features/docs/` directory removed.
+
+- **Added `computeMapStateAtEvent` test coverage** — 7 cases covering hidden-state fallback for empty/null inputs, nearest-snapshot selection by time delta, snapshot fallback when none precedes the event, gap-event replay between snapshot and selected time, active-event overlay, and the `campaign.points_max` fallback path.
+
 ## 0.46.0
 
 ### Features

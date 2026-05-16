@@ -1,7 +1,6 @@
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 /**
- * Filters an event array to only those with status 'active'.
  * @param {Array<{status: string}>} events
  * @returns {Array<{status: string}>}
  */
@@ -10,7 +9,6 @@ export function getActiveEvents(events) {
 }
 
 /**
- * Returns a copy of the events array sorted by start_time descending (newest first).
  * @param {Array<{start_time: number}>} events
  * @returns {Array<{start_time: number}>}
  */
@@ -19,7 +17,6 @@ export function sortEventsByRecent(events) {
 }
 
 /**
- * Counts wins (status 'success') and losses (status 'fail') in an event array.
  * @param {Array<{status: string}>} events
  * @returns {{ wins: number, losses: number }}
  */

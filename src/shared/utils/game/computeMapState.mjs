@@ -149,7 +149,7 @@ export function computeMapState(factionStates, events = []) {
     if (activeSuperEarthDefend && map[activeSuperEarthDefend.enemy]) {
         for (const regionKey of Object.keys(map[activeSuperEarthDefend.enemy])) {
             map[activeSuperEarthDefend.enemy][regionKey].status = MAP_STATUS.LOST;
-            map[activeSuperEarthDefend.enemy][regionKey].event = '';
+            map[activeSuperEarthDefend.enemy][regionKey].event = MAP_STATUS.IDLE;
             map[activeSuperEarthDefend.enemy][regionKey].percent = 0;
         }
     }

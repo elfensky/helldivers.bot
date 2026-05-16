@@ -1,4 +1,5 @@
 import map from '@/shared/enums/map.mjs';
+import { EVENT_TYPE } from '@/shared/enums/events.mjs';
 
 /**
  * Resolve a human-readable region label from an event.
@@ -9,7 +10,7 @@ import map from '@/shared/enums/map.mjs';
  * former is what players recognize from the game.
  */
 export function getEventRegionLabel(event) {
-    if (event?.type === 'defend' && event?.region === 0) {
+    if (event?.type === EVENT_TYPE.DEFEND && event?.region === 0) {
         return map[3][0].capital;
     }
     return map[event?.enemy]?.[event?.region]?.region ?? 'Unknown Region';

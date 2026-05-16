@@ -14,6 +14,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import db from '@/db/db';
+import { ROLE } from '@/shared/enums/roles.mjs';
 
 export const auth =
     process.env.BETTER_AUTH_SECRET ?
@@ -47,7 +48,7 @@ export const auth =
                 additionalFields: {
                     role: {
                         type: 'string',
-                        defaultValue: 'user',
+                        defaultValue: ROLE.USER,
                         input: false,
                     },
                 },
