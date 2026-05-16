@@ -43,7 +43,8 @@ export async function POST(request) {
     }
 
     //2. get FormData and convert it to an object
-    const formData = await request.formData();
+    const { data: formData, error: formError } = await tryCatch(request.formData());
+    if (formError) return errorResponse(400, start, 'Invalid request body');
     formValues = formDataToObject(formData);
 
     if (typeof formValues.action !== 'string') {

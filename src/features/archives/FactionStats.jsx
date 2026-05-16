@@ -2,11 +2,10 @@ import { StatCard } from '@/features/stats/StatGrid';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import map from '@/shared/enums/map.mjs';
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
-
-const factionMap = { bugs: 0, cyborgs: 1, illuminate: 2 };
+import { FACTION_INDEX } from '@/shared/enums/factions.mjs';
 
 export default function FactionStats({ events, snapshots, pointsMax, faction }) {
-    const factionIndex = factionMap[faction];
+    const factionIndex = FACTION_INDEX[faction];
     if (factionIndex === undefined) return null;
 
     const factionEvents = (events ?? []).filter((e) => e.enemy === factionIndex);
