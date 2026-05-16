@@ -50,7 +50,7 @@ export const inAppFlowConfig = createFlowConfig({
         },
         update_status: {
             title: 'updateStatus()',
-            subtitle: 'src/update/updateStatus.mjs',
+            subtitle: 'src/update/status.mjs',
             sections: [
                 {
                     type: 'text',

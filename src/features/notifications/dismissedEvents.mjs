@@ -59,5 +59,5 @@ export function isDismissedAtStatus(eventId, status) {
     const record = getDismissedEvents();
     const entry = record[String(eventId)];
     if (!entry) return false;
-    return (typeof entry === 'string' ? entry : entry.status) === status;
+    return entry.status === status;
 }

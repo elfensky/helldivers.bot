@@ -1,4 +1,5 @@
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
 
 const DSN = process.env.SENTRY_DSN;
 
@@ -37,3 +38,8 @@ export async function POST(request) {
 
     return new Response(null, { status: response.status });
 }
+
+export const GET = methodNotAllowed;
+export const PUT = methodNotAllowed;
+export const DELETE = methodNotAllowed;
+export const PATCH = methodNotAllowed;
