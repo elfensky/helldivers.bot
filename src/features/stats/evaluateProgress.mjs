@@ -1,4 +1,5 @@
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 /**
  * Evaluate event pace vs a LINEAR expected schedule.
@@ -20,7 +21,7 @@ import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
  * @returns {{ status: 'ahead'|'behind'|'on_track', delta: number, deltaPercent: number, currentRate: number, requiredRate: number, label: string } | null}
  */
 export function evaluateProgress(event) {
-    if (event.status !== 'active') return null;
+    if (event.status !== EVENT_STATUS.ACTIVE) return null;
 
     const currentTime = Math.floor(Date.now() / 1000);
     const totalTime = event.end_time - event.start_time;

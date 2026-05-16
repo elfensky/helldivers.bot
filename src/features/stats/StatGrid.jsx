@@ -1,11 +1,12 @@
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
+import { FACTION_INDEX } from '@/shared/enums/factions.mjs';
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
 import './StatGrid.css';
 
 const asPercent = (v) => (Number.isFinite(v) ? `${v.toFixed(1)}%` : '—');
 
-const factionMap = { bugs: 0, cyborgs: 1, illuminate: 2 };
 
 /**
  * Compute accidental-death rate: accidentals / deaths as a raw percentage
@@ -148,12 +149,12 @@ export default function StatGrid({
 }) {
     if (!live?.length) return null;
 
-    const factionIndex = faction !== 'global' ? factionMap[faction] : null;
+    const factionIndex = faction !== 'global' ? FACTION_INDEX[faction] : null;
 
     const resolved =
         events?.filter((e) => {
             if (factionIndex !== null && e.enemy !== factionIndex) return false;
-            return e.status === 'success' || e.status === 'fail';
+            return e.status === EVENT_STATUS.SUCCESS || e.status === EVENT_STATUS.FAIL;
         }) ?? [];
 
     const { wins, losses } = countOutcomes(resolved);
@@ -204,7 +205,11 @@ export default function StatGrid({
                     value={<AnimatedStat value={totals.won} />}
                     subtitle={missionTotalSubtitle(totals.allMissions)}
                 />
-                <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} subtitle={eventsSubtitle} />
+                <StatCard
+                    label="EVENTS"
+                    value={eventsScoreValue(wins, losses)}
+                    subtitle={eventsSubtitle}
+                />
             </div>
         );
     }
@@ -238,7 +243,11 @@ export default function StatGrid({
                 value={<AnimatedStat value={stats.successful_missions} />}
                 subtitle={missionTotalSubtitle(stats.missions)}
             />
-            <StatCard label="EVENTS" value={eventsScoreValue(wins, losses)} subtitle={eventsSubtitle} />
+            <StatCard
+                label="EVENTS"
+                value={eventsScoreValue(wins, losses)}
+                subtitle={eventsSubtitle}
+            />
         </div>
     );
 }

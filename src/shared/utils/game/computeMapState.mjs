@@ -1,5 +1,5 @@
-import mapTemplate from '@/shared/enums/map';
-import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events';
+import mapTemplate from '@/shared/enums/map.mjs';
+import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS, MAP_STATUS } from '@/shared/enums/events.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 
 /**
@@ -38,12 +38,12 @@ export function computeMapState(factionStates, events = []) {
 
                 if (region === 11) {
                     // Homeworld — default to lost, overwritten by attack events below
-                    map[faction][region].status = 'lost';
+                    map[faction][region].status = MAP_STATUS.LOST;
                     map[faction][region].percent = 0;
                 } else if (region === sectorsInProgress) {
                     const remainingPoints =
                         points - (totalPointsForSector - pointsPerSector);
-                    map[faction][region].status = 'in_progress';
+                    map[faction][region].status = MAP_STATUS.IN_PROGRESS;
                     map[faction][region].points = points;
                     map[faction][region].points_max = totalPointsForSector;
                     map[faction][region].points_sector = remainingPoints;
@@ -51,14 +51,14 @@ export function computeMapState(factionStates, events = []) {
                     map[faction][region].percent =
                         (remainingPoints / pointsPerSector) * 100;
                 } else if (region <= sectorsEarned) {
-                    map[faction][region].status = 'captured';
+                    map[faction][region].status = MAP_STATUS.CAPTURED;
                     map[faction][region].points = totalPointsForSector;
                     map[faction][region].points_max = totalPointsForSector;
                     map[faction][region].points_sector = pointsPerSector;
                     map[faction][region].points_sector_max = pointsPerSector;
                     map[faction][region].percent = 100;
                 } else {
-                    map[faction][region].status = 'lost';
+                    map[faction][region].status = MAP_STATUS.LOST;
                     map[faction][region].points = points;
                     map[faction][region].points_max = totalPointsForSector;
                     map[faction][region].points_sector = 0;
@@ -68,13 +68,13 @@ export function computeMapState(factionStates, events = []) {
             }
         } else if (campaign.status === CAMPAIGN_STATUS.DEFEATED) {
             for (const regionKey of Object.keys(map[faction])) {
-                map[faction][regionKey].status = 'captured';
+                map[faction][regionKey].status = MAP_STATUS.CAPTURED;
                 map[faction][regionKey].percent = 100;
             }
         } else {
             // hidden or other — all lost
             for (const regionKey of Object.keys(map[faction])) {
-                map[faction][regionKey].status = 'lost';
+                map[faction][regionKey].status = MAP_STATUS.LOST;
                 map[faction][regionKey].percent = 0;
             }
         }
@@ -97,13 +97,13 @@ export function computeMapState(factionStates, events = []) {
                 // Failed defend: sector and all beyond it revert to lost
                 for (let r = event.region; r <= 10; r++) {
                     if (map[event.enemy][r]) {
-                        map[event.enemy][r].status = 'lost';
-                        map[event.enemy][r].event = 'idle';
+                        map[event.enemy][r].status = MAP_STATUS.LOST;
+                        map[event.enemy][r].event = MAP_STATUS.IDLE;
                         map[event.enemy][r].percent = 0;
                     }
                 }
             } else {
-                map[event.enemy][event.region].event = 'idle';
+                map[event.enemy][event.region].event = MAP_STATUS.IDLE;
             }
         }
     }
@@ -123,11 +123,11 @@ export function computeMapState(factionStates, events = []) {
             map[event.enemy][11].percent = (event.points / event.points_max) * 100;
             map[event.enemy][11].points = event.points;
             map[event.enemy][11].points_max = event.points_max;
-            map[event.enemy][11].status = 'captured';
-            map[event.enemy][11].event = 'idle';
+            map[event.enemy][11].status = MAP_STATUS.CAPTURED;
+            map[event.enemy][11].event = MAP_STATUS.IDLE;
         } else if (event.status === EVENT_STATUS.FAIL) {
-            map[event.enemy][11].status = 'lost';
-            map[event.enemy][11].event = 'idle';
+            map[event.enemy][11].status = MAP_STATUS.LOST;
+            map[event.enemy][11].event = MAP_STATUS.IDLE;
         }
     }
 
@@ -143,7 +143,7 @@ export function computeMapState(factionStates, events = []) {
     );
     if (activeSuperEarthDefend && map[activeSuperEarthDefend.enemy]) {
         for (const regionKey of Object.keys(map[activeSuperEarthDefend.enemy])) {
-            map[activeSuperEarthDefend.enemy][regionKey].status = 'lost';
+            map[activeSuperEarthDefend.enemy][regionKey].status = MAP_STATUS.LOST;
             map[activeSuperEarthDefend.enemy][regionKey].event = '';
             map[activeSuperEarthDefend.enemy][regionKey].percent = 0;
         }

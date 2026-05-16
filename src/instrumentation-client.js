@@ -3,6 +3,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from '@sentry/nextjs';
+import { guardedReload } from '@/shared/utils/reloadGuard.mjs';
 
 Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -15,3 +16,15 @@ Sentry.init({
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+
+const CHUNK_ERROR_RE =
+    /ChunkLoadError|Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i;
+
+window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    const msg =
+        typeof reason === 'string' ? reason : reason?.message || reason?.name || '';
+    if (CHUNK_ERROR_RE.test(msg)) {
+        guardedReload('chunk');
+    }
+});

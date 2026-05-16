@@ -1,4 +1,4 @@
-import { generateOpenApiSpec } from '@/shared/utils/api/openapi.registry';
+import { generateOpenApiSpec } from '@/shared/utils/api/openapiRegistry.mjs';
 import EndpointCard from './EndpointCard';
 
 export const metadata = {

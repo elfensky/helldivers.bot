@@ -1,8 +1,6 @@
-/**
- * Configuration for the notification system flow diagram.
- * Combines views, flow mappings, node details, and legend.
- */
-export const notificationFlowConfig = {
+import { createFlowConfig } from '@/shared/utils/diagram.mjs';
+
+export const notificationFlowConfig = createFlowConfig({
     views: [
         { key: 'all', label: 'All Flows' },
         { key: 'polling', label: 'Live Polling' },
@@ -223,8 +221,8 @@ export const notificationFlowConfig = {
                     type: 'table',
                     headers: ['Table', 'Purpose'],
                     rows: [
-                        ['rebroadcast_status', 'Raw API JSON (1 row/season)'],
-                        ['h1_live', 'Normalized campaigns + stats'],
+                        ['h1_status', 'Bucketed campaign timeseries'],
+                        ['h1_statistic', 'Bucketed stats timeseries'],
                         ['h1_event', 'Historical attack/defend events'],
                         ['push_subscription', 'Web push subscription endpoints'],
                     ],
@@ -232,4 +230,4 @@ export const notificationFlowConfig = {
             ],
         },
     },
-};
+});

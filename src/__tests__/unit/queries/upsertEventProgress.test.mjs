@@ -68,8 +68,8 @@ describe('queryUpsertEventProgress', () => {
 
     test('propagates DB errors', async () => {
         vi.mocked(db.h1_event_progress.upsert).mockRejectedValue(new Error('db boom'));
-        await expect(
-            queryUpsertEventProgress('defend', baseEvent, 1000),
-        ).rejects.toThrow('db boom');
+        await expect(queryUpsertEventProgress('defend', baseEvent, 1000)).rejects.toThrow(
+            'db boom',
+        );
     });
 });

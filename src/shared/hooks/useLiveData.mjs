@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { guardedReload, clearReloadGuard } from '@/shared/utils/reloadGuard.mjs';
 
 const CACHE_KEY = 'hd1-live-cache';
 const POLL_INTERVAL = 10_000;
@@ -91,6 +92,14 @@ async function poll() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const parsed = await res.json();
 
+        if (parsed.appVersion) {
+            if (parsed.appVersion !== process.env.NEXT_PUBLIC_APP_VERSION) {
+                guardedReload('version');
+                return;
+            }
+            clearReloadGuard();
+        }
+
         saveCachedState(parsed.data, parsed.mapState);
 
         if (isFirstMessage) {
@@ -111,7 +120,8 @@ async function poll() {
             };
         }
         emit();
-    } catch {
+    } catch (err) {
+        console.warn('[useLiveData] poll failed:', err?.message);
         if (store.status !== 'offline') {
             store = { ...store, status: 'offline' };
             emit();
@@ -193,10 +203,7 @@ function setupLeader() {
             if (store.isLeader) {
                 // Yield to the other tab's claim — re-elect
                 store = { ...store, isLeader: false };
-                leaderTimeout = setTimeout(
-                    claimLeadership,
-                    Math.random() * 500,
-                );
+                leaderTimeout = setTimeout(claimLeadership, Math.random() * 500);
                 emit();
             }
         }
@@ -276,8 +283,7 @@ export function useLiveData(initialData, initialMapState) {
 
     return {
         data: snapshot.data ?? initialData ?? cachedState?.data ?? null,
-        mapState:
-            snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
+        mapState: snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
         status: snapshot.status,
         prevData: snapshot.prevData,
         isLeader: snapshot.isLeader,

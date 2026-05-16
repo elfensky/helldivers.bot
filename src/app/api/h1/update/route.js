@@ -1,22 +1,22 @@
 import crypto from 'node:crypto';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { errorResponse, successResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import db from '@/db/db';
 //update
-import { updateStatus } from '@/update/status';
-import { updateSeason } from '@/update/season';
-import { checkAndNotify } from '@/update/pushNotifier';
-import { computeBucket } from '@/update/bucketing';
+import { updateStatus } from '@/update/status.mjs';
+import { updateSeason } from '@/update/season.mjs';
+import { checkAndNotify } from '@/update/pushNotifier.mjs';
+import { computeBucket } from '@/shared/utils/bucketing.mjs';
 
 // Tracks the season observed on the previous worker poll so we can detect
 // a season transition and run one final updateSeason() pass on the outgoing
 // season. HD1 writes a final "closing" snapshot to the old season a few
 // minutes after the transition point — without this detection, the worker
 // moves on to the new season before that closing frame is published and it
-// never lands in h1_snapshot. Resets to null on worker restart; the only
+// never lands in h1_status. Resets to null on worker restart; the only
 // impact of a restart during the tiny transition window is that the closing
 // snapshot for that single transition is missed, which the admin can recover
 // via the /archives refresh button.

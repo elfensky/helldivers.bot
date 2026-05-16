@@ -1,7 +1,7 @@
-import { getSystemStats } from '@/db/queries/admin';
-import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo';
-import { formatUptime } from '@/shared/utils/format/formatUptime';
-import { formatNumber } from '@/shared/utils/format/formatNumber';
+import { getSystemStats } from '@/db/queries/admin.mjs';
+import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo.mjs';
+import { formatUptime } from '@/shared/utils/format/formatUptime.mjs';
+import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import RefreshButton from '@/features/admin/RefreshButton';
 
 export default async function SystemOverview() {
@@ -26,7 +26,9 @@ export default async function SystemOverview() {
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <h3 className="font-mono text-small text-text-muted uppercase">System Overview</h3>
+                <h3 className="font-mono text-small text-text-muted uppercase">
+                    System Overview
+                </h3>
                 <RefreshButton />
             </div>
 

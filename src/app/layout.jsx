@@ -11,9 +11,9 @@ import PreferenceTracker from '@/shared/components/PreferenceTracker';
 import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 //data
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { getCampaign } from '@/db/queries/getCampaign';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
-import { EVENT_STATUS } from '@/shared/enums/events';
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],

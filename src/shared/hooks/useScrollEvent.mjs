@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { eventKey } from '@/features/archives/eventKey.mjs';
+import { eventKey } from '@/shared/utils/game/eventKey.mjs';
 
 /**
  * Scroll-driven event selection.
@@ -74,7 +74,8 @@ export function useScrollEvent(events) {
 
             if (best) {
                 const rect = best.getBoundingClientRect();
-                const isVisible = rect.bottom > headerHeight && rect.top < window.innerHeight;
+                const isVisible =
+                    rect.bottom > headerHeight && rect.top < window.innerHeight;
                 if (isVisible) {
                     const key = best.dataset.eventKey;
                     const event = lookup.get(key);

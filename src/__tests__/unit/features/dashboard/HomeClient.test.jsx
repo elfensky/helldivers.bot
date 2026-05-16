@@ -59,13 +59,13 @@ vi.mock('@/shared/utils/game/computeMapStateAtEvent.mjs', () => ({
 vi.mock('@/shared/utils/game/pulseDelays.mjs', () => ({
     computePulseDelays: mocks.computePulseDelaysMock,
 }));
-vi.mock('@/features/archives/useScrollEvent.mjs', () => ({
+vi.mock('@/shared/hooks/useScrollEvent.mjs', () => ({
     useScrollEvent: mocks.useScrollEventMock,
 }));
 vi.mock('@/shared/hooks/useHeaderGlassFilter.mjs', () => ({
     useHeaderGlassFilter: mocks.useHeaderGlassFilterMock,
 }));
-vi.mock('@/features/archives/eventKey.mjs', () => ({
+vi.mock('@/shared/utils/game/eventKey.mjs', () => ({
     eventKey: (e) => `evt-${e.event_id}`,
 }));
 

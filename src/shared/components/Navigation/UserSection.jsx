@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useSession } from '@/auth-client';
 import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
-import { getGravatarUrl } from '@/shared/utils/gravatar';
+import { getGravatarUrl } from '@/shared/utils/gravatar.mjs';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 
 export default function UserSection() {
@@ -28,7 +28,8 @@ export default function UserSection() {
     useEffect(() => {
         if (session?.user?.id && !identifiedRef.current && window.umami) {
             identifiedRef.current = true;
-            const provider = session.user.image?.includes('discord') ? 'discord'
+            const provider =
+                session.user.image?.includes('discord') ? 'discord'
                 : session.user.image?.includes('github') ? 'github'
                 : 'unknown';
             window.umami.identify(session.user.id, { provider });
@@ -46,7 +47,9 @@ export default function UserSection() {
     if (!session?.user) {
         return (
             <div className="user-section-content">
-                <SignIn className={pathname === '/sign-in' ? 'header-nav-link--active' : ''} />
+                <SignIn
+                    className={pathname === '/sign-in' ? 'header-nav-link--active' : ''}
+                />
             </div>
         );
     }

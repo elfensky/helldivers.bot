@@ -17,13 +17,13 @@ vi.mock('@/db/queries/upsertEventProgress', () => ({
 // --- Import mocked modules ---
 
 import { fetchStatus } from '@/update/fetch.mjs';
-import { isValidStatus } from '@/validators/isValidStatus';
-import { getSeasonFromStatus } from '@/shared/utils/getSeason';
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus';
-import { queryUpsertStatistic } from '@/db/queries/upsertStatistic';
-import { queryUpsertEventProgress } from '@/db/queries/upsertEventProgress';
+import { isValidStatus } from '@/validators/isValidStatus.mjs';
+import { getSeasonFromStatus } from '@/shared/utils/getSeason.mjs';
+import { queryUpsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { queryUpsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { queryUpsertStatus } from '@/db/queries/upsertStatus.mjs';
+import { queryUpsertStatistic } from '@/db/queries/upsertStatistic.mjs';
+import { queryUpsertEventProgress } from '@/db/queries/upsertEventProgress.mjs';
 
 // --- Test data ---
 
@@ -65,9 +65,7 @@ const mockFetchedData = {
         status: 'active',
         points: 10,
     },
-    attack_events: [
-        { event_id: 2, enemy: 1, season: 5, status: 'active', points: 20 },
-    ],
+    attack_events: [{ event_id: 2, enemy: 1, season: 5, status: 'active', points: 20 }],
 };
 
 /** Wire up all mocks for a successful run. */

@@ -3,10 +3,11 @@ import { z } from 'zod';
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
-import { tryCatch } from '@/shared/utils/tryCatch';
-import { performanceTime } from '@/shared/utils/time';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { performanceTime } from '@/shared/utils/time.mjs';
 import { revalidatePath } from 'next/cache';
-import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth';
+import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth.mjs';
+import { ROLE } from '@/shared/enums/roles.mjs';
 
 /**
  * Verify the current request is from an authenticated admin user.
@@ -16,7 +17,7 @@ async function requireAdmin() {
     if (!auth) return { error: 'Auth not configured' };
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session.user) return { error: 'Not authenticated' };
-    if (session.user.role !== 'admin') return { error: 'Forbidden' };
+    if (session.user.role !== ROLE.ADMIN) return { error: 'Forbidden' };
     return { user: session.user };
 }
 
@@ -75,9 +76,9 @@ export async function updateUserRole(_, formData) {
     }
 
     // Last-admin protection: block demotion if this is the only admin
-    if (formValues.newRole === 'user') {
+    if (formValues.newRole === ROLE.USER) {
         const { data: adminCount, error: countError } = await tryCatch(
-            db.user.count({ where: { role: 'admin' } }),
+            db.user.count({ where: { role: ROLE.ADMIN } }),
         );
         if (countError) throw countError;
 
@@ -140,9 +141,9 @@ export async function toggleUserBan(_, formData) {
         );
         if (targetError) throw targetError;
 
-        if (target?.role === 'admin') {
+        if (target?.role === ROLE.ADMIN) {
             const { data: adminCount, error: countError } = await tryCatch(
-                db.user.count({ where: { role: 'admin' } }),
+                db.user.count({ where: { role: ROLE.ADMIN } }),
             );
             if (countError) throw countError;
 

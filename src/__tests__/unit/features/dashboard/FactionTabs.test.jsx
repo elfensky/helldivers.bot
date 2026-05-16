@@ -2,7 +2,7 @@
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-import FactionTabs from '@/features/dashboard/FactionTabs';
+import FactionTabs from '@/shared/components/FactionTabs';
 
 describe('FactionTabs', () => {
     test('renders 4 buttons', () => {

@@ -1,8 +1,8 @@
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/shared/utils/time';
-import { computeBucket } from '@/update/bucketing';
+import { performanceTime } from '@/shared/utils/time.mjs';
+import { computeBucket } from '@/shared/utils/bucketing.mjs';
 
 /**
  * Upsert a single h1_event_progress row for one event at the bucket

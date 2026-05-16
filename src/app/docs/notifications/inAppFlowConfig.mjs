@@ -1,10 +1,7 @@
-/**
- * Configuration for the in-app notification flow diagram (Polling + Toasts).
- * Single-flow diagram — no view filters needed.
- */
-export const inAppFlowConfig = {
+import { createFlowConfig } from '@/shared/utils/diagram.mjs';
+
+export const inAppFlowConfig = createFlowConfig({
     views: [{ key: 'all', label: 'All' }],
-    flows: {},
 
     legend: [
         { color: '#3b82f6', label: 'External API / Transport' },
@@ -53,12 +50,12 @@ export const inAppFlowConfig = {
         },
         update_status: {
             title: 'updateStatus()',
-            subtitle: 'src/update/updateStatus.mjs',
+            subtitle: 'src/update/status.mjs',
             sections: [
                 {
                     type: 'text',
                     content:
-                        'Writes campaign progress, event states, and statistics to h1_live, h1_event, and snapshot tables via Prisma.',
+                        'Writes campaign progress, event states, and statistics to h1_status, h1_event, and h1_statistic tables via Prisma.',
                 },
             ],
         },
@@ -160,4 +157,4 @@ export const inAppFlowConfig = {
             ],
         },
     },
-};
+});

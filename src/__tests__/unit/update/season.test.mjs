@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { updateSeason } from '@/update/season';
+import { updateSeason } from '@/update/season.mjs';
 
 // --- Dependency mocks ---
 
@@ -12,12 +12,12 @@ vi.mock('@/db/queries/upsertStatus', () => ({ queryUpsertStatus: vi.fn() }));
 
 // --- Import mocked modules ---
 
-import { fetchSeason } from '@/update/fetch';
-import { isValidSeason } from '@/validators/isValidSeason';
-import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus';
+import { fetchSeason } from '@/update/fetch.mjs';
+import { isValidSeason } from '@/validators/isValidSeason.mjs';
+import { getSeasonFromSnapshot } from '@/shared/utils/getSeason.mjs';
+import { queryUpsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { queryUpsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { queryUpsertStatus } from '@/db/queries/upsertStatus.mjs';
 
 // --- Test data ---
 
@@ -301,9 +301,24 @@ describe('updateSeason', () => {
 
         // Only frame 1 (time 1000, bucket 900) should produce 3 upserts
         expect(queryUpsertStatus).toHaveBeenCalledTimes(3);
-        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 0, 1000, expect.anything());
-        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 1, 1000, expect.anything());
-        expect(queryUpsertStatus).toHaveBeenCalledWith(SEASON, 2, 1000, expect.anything());
+        expect(queryUpsertStatus).toHaveBeenCalledWith(
+            SEASON,
+            0,
+            1000,
+            expect.anything(),
+        );
+        expect(queryUpsertStatus).toHaveBeenCalledWith(
+            SEASON,
+            1,
+            1000,
+            expect.anything(),
+        );
+        expect(queryUpsertStatus).toHaveBeenCalledWith(
+            SEASON,
+            2,
+            1000,
+            expect.anything(),
+        );
     });
 
     test('protectedBucket skips all snapshots when all are in or after the protected bucket', async () => {

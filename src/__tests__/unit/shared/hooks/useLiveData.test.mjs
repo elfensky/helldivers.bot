@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // useLiveData uses a module-level singleton store. Every test re-imports the
@@ -114,7 +114,9 @@ describe('useLiveData — initial mount', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await act(async () => { await flushAll(); });
+        await act(async () => {
+            await flushAll();
+        });
 
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock).toHaveBeenCalledWith('/api/h1/live');
@@ -128,11 +130,15 @@ describe('useLiveData — initial mount', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await act(async () => { await flushAll(); });
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // Advance ~9.9s — no second fetch yet.
-        await act(async () => { await vi.advanceTimersByTimeAsync(POLL_INTERVAL - 100); });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL - 100);
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // Cross the threshold → second fetch.
@@ -297,7 +303,9 @@ describe('useLiveData — visibilitychange handler', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await act(async () => { await flushAll(); });
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // Simulate tab focus
@@ -322,7 +330,9 @@ describe('useLiveData — visibilitychange handler', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await act(async () => { await flushAll(); });
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         Object.defineProperty(document, 'hidden', {
@@ -348,7 +358,9 @@ describe('useLiveData — singleton & cleanup', () => {
 
         renderHook(() => useLiveData(null, null));
         renderHook(() => useLiveData(null, null));
-        await act(async () => { await flushAll(); });
+        await act(async () => {
+            await flushAll();
+        });
 
         // Both consumers triggered the SAME initial poll (set up by the first mount),
         // not a fetch per consumer.
@@ -371,7 +383,9 @@ describe('useLiveData — singleton & cleanup', () => {
         const { useLiveData } = await loadHookFresh();
 
         const a = renderHook(() => useLiveData(null, null));
-        await act(async () => { await flushAll(); });
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         a.unmount();
@@ -393,7 +407,9 @@ describe('useLiveData — singleton & cleanup', () => {
         const { useLiveData } = await loadHookFresh();
 
         const { unmount } = renderHook(() => useLiveData(null, null));
-        await act(async () => { await flushAll(); });
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         unmount();
@@ -442,7 +458,9 @@ describe('useLiveData — localStorage cache fallback', () => {
         expect(result.current.mapState).toEqual({ 0: 'illuminate' });
 
         resolveFetch?.(makeFetchResponse({ data: {}, mapState: {} }));
-        await act(async () => { await flushAll(); });
+        await act(async () => {
+            await flushAll();
+        });
     });
 
     test('writes the latest successful poll payload to localStorage', async () => {

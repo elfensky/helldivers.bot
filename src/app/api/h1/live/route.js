@@ -1,10 +1,10 @@
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { errorResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
-import { getCampaign } from '@/db/queries/getCampaign';
-import { computeMapState } from '@/shared/utils/game/computeMapState';
-import { EVENT_STATUS } from '@/shared/enums/events';
+import { errorResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 export async function GET() {
     const start = performance.now();
@@ -19,8 +19,9 @@ export async function GET() {
     );
     const mapState = computeMapState(data.status, activeEvents);
 
-    const json = JSON.stringify({ data, mapState }, (_, v) =>
-        typeof v === 'bigint' ? Number(v) : v,
+    const json = JSON.stringify(
+        { data, mapState, appVersion: process.env.NEXT_PUBLIC_APP_VERSION },
+        (_, v) => (typeof v === 'bigint' ? Number(v) : v),
     );
 
     return new Response(json, {

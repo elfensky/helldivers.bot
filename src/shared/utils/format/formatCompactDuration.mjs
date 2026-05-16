@@ -21,3 +21,7 @@ export function formatCompactDuration(seconds) {
         languages: { shortEn: shortEnglish },
     });
 }
+
+export function formatDuration(seconds) {
+    return humanizeDuration(seconds * 1000, { largest: 2, round: true });
+}

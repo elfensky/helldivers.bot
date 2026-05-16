@@ -1,10 +1,13 @@
 import { cache } from 'react';
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
+import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
 
 /**
  * Fetch the campaign data for a season (or the latest season if null).
+ *
+ * @returns {Promise<Object|null>} Campaign data, or null if no season exists
  *
  * Returns a shape compatible with the legacy getCampaign output:
  *   { season, last_updated, status, introduction_order, points_max, snapshots, events }
@@ -12,7 +15,7 @@ import { performance } from 'perf_hooks';
  * - `status`     — 3 rows from h1_status, one per faction, latest bucket each.
  *                  Consumers cast this as an array of faction states.
  * - `snapshots`  — full h1_status history for the season, returned as a
- *                  shape compatible with the legacy h1_snapshot output:
+ *                  shape:
  *                  [{ time, data: [faction0, faction1, faction2] }, ...]
  *                  The archives chart readers iterate this list and access
  *                  data[enemy] for each time point.
@@ -39,9 +42,8 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         ORDER BY enemy ASC, bucket DESC
     `;
 
-    // Latest h1_statistic row per faction — stats signals live on a separate
-    // table since Task 7. The legacy h1_live row had these inline, so all
-    // consumers reading data.status[i].players/kills/deaths/total_unique_players
+    // Latest h1_statistic row per faction — stats live on a separate table.
+    // Consumers reading data.status[i].players/kills/deaths/total_unique_players
     // expect them to travel with the campaign row.
     const rawStatRows = await db.$queryRaw`
         SELECT DISTINCT ON (enemy) *
@@ -50,13 +52,10 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         ORDER BY enemy ASC, bucket DESC
     `;
 
-    // Merge h1_status + h1_statistic + season constants into legacy liveRow
+    // Merge h1_status + h1_statistic + season constants into per-faction
     // shape. Consumers (computeMapState, StatGrid, EventCard, opengraph-image)
-    // read this as the per-faction "current state" and must find the fields
-    // they historically read from h1_live: campaign progression + points_max +
-    // introduction_order + 11 per-faction stats fields. season_duration is
-    // no longer per-faction — it now lives on h1_season and is exposed at
-    // the top level of the return object instead.
+    // read this as the per-faction "current state": campaign progression +
+    // points_max + introduction_order + 11 per-faction stats fields.
     const statByEnemy = new Map(rawStatRows.map((r) => [r.enemy, r]));
     const liveRows = rawLiveRows.map((r) => {
         const stat = statByEnemy.get(r.enemy);
@@ -88,7 +87,10 @@ export const getCampaign = cache(async function getCampaign(season = null) {
     // Group full history by bucket into the legacy snapshot shape.
     // Each snapshot has { time, data: [f0, f1, f2] } — the consumer pattern
     // for archives charts (FactionHealthChart, getWarOutcome, etc.).
-    const snapshots = _groupByBucket(allStatusRows);
+    const snapshots = groupStatusByBucket(allStatusRows).map(({ time, factions }) => ({
+        time,
+        data: factions,
+    }));
 
     // Step 4: Events for the season.
     const events = await db.h1_event.findMany({
@@ -144,36 +146,3 @@ async function _findSeason(season) {
     return data;
 }
 
-function _groupByBucket(statusRows) {
-    // Group rows by bucket. Within each bucket, order by enemy so data[0]
-    // is Bugs, data[1] is Cyborgs, data[2] is Illuminate — matches the
-    // legacy h1_snapshot.data array layout.
-    const byBucket = new Map();
-    for (const row of statusRows) {
-        if (!byBucket.has(row.bucket)) {
-            byBucket.set(row.bucket, { time: row.time, buckets: [null, null, null] });
-        }
-        const entry = byBucket.get(row.bucket);
-        entry.buckets[row.enemy] = {
-            points: row.points,
-            points_taken: row.points_taken,
-            status: row.status,
-        };
-        // The `time` field is the latest poll time within the bucket, which
-        // drifts as the row gets upserted. Use the max across enemies for
-        // the snapshot's representative time.
-        if (row.time > entry.time) entry.time = row.time;
-    }
-
-    return (
-        Array.from(byBucket.entries())
-            .sort(([a], [b]) => a - b)
-            // Drop sparse buckets (missing one or more factions). The worker
-            // writes all 3 factions per poll, so a missing slot indicates an
-            // incomplete bucket that shouldn't render. Leaving null slots here
-            // would crash downstream consumers like getWarOutcome.mjs that do
-            // factionData.every((f) => f.status === ...) on each snapshot.
-            .filter(([, { buckets }]) => buckets.every((f) => f !== null))
-            .map(([, { time, buckets }]) => ({ time, data: buckets }))
-    );
-}

@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
 import './HomeClient.css';
+import { useMapPin } from '@/shared/hooks/useMapPin.mjs';
 import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 import Galaxy from '@/features/galaxy/Galaxy';
 import DashboardClient from '@/features/dashboard/DashboardClient';
 import EventLog from '@/features/timeline/EventLog';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
-import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
-import { eventKey } from '@/features/archives/eventKey.mjs';
+import { useScrollEvent } from '@/shared/hooks/useScrollEvent.mjs';
+import { eventKey } from '@/shared/utils/game/eventKey.mjs';
 import { computeMapStateAtEvent } from '@/shared/utils/game/computeMapStateAtEvent.mjs';
 import { computePulseDelays } from '@/shared/utils/game/pulseDelays.mjs';
 import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
@@ -108,30 +108,7 @@ export default function HomeClient({
     // away with the hero like normal flow; user pins it via the FAB.
     // On desktop (lg+) the CSS applies its own grid-based sticky rules
     // regardless of this state.
-    const [isMapSticky, setIsMapSticky] = useState(false);
-    // Transient flag for the pin-in slide animation. True for 400ms after
-    // togglePin flips the map from unpinned → pinned; gates the
-    // `.home-map--pinning` modifier class that runs the keyframe. Kept
-    // separate from `isMapSticky` so the animation only plays on explicit
-    // pin transitions — not on first mount, not on unpin.
-    const [isAnimating, setIsAnimating] = useState(false);
-    const animTimerRef = useRef(null);
-
-    const togglePin = useCallback(() => {
-        setIsMapSticky((v) => {
-            const next = !v;
-            clearTimeout(animTimerRef.current);
-            if (next) {
-                setIsAnimating(true);
-                animTimerRef.current = setTimeout(() => setIsAnimating(false), 400);
-            } else {
-                setIsAnimating(false);
-            }
-            return next;
-        });
-    }, []);
-
-    useEffect(() => () => clearTimeout(animTimerRef.current), []);
+    const { isMapSticky, isAnimating, togglePin } = useMapPin(false);
 
     // Backdrop-filter on the pinned map at md+ is applied inline because
     // Lightning CSS strips `backdrop-filter: var(--header-glass-filter)`

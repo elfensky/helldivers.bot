@@ -8,6 +8,7 @@ const nextConfig = {
     env: {
         NEXT_PUBLIC_APP_VERSION: APP_VERSION,
     },
+    deploymentId: APP_VERSION.replaceAll('.', '-'),
     pageExtensions: ['js', 'jsx', 'mdx'],
     reactCompiler: true,
     output: 'standalone',

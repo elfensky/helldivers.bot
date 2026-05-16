@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { GET, POST, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/campaign/route';
-import { getCampaign } from '@/db/queries/getCampaign';
-import { updateSeason } from '@/update/season';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { updateSeason } from '@/update/season.mjs';
 
 vi.mock('@/db/queries/getCampaign', () => ({ getCampaign: vi.fn() }));
 vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
@@ -65,11 +65,11 @@ describe('GET /api/h1/campaign', () => {
         expect(body.data).toEqual(mockCampaign);
     });
 
-    test('returns 404 when season not found remotely (invalid_type error)', async () => {
+    test('returns 404 when season not found remotely', async () => {
         vi.mocked(getCampaign).mockResolvedValue(null);
-        vi.mocked(updateSeason).mockRejectedValue({
-            issues: [{ code: 'invalid_type', received: 'null' }],
-        });
+        vi.mocked(updateSeason).mockRejectedValue(
+            new Error('Season 999 not found', { cause: 'SEASON_NOT_FOUND' }),
+        );
 
         const res = await GET(createRouteRequest('/api/h1/campaign?season=999'));
 

@@ -3,6 +3,7 @@ import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { detectChanges } from '@/shared/utils/game/detectChanges.mjs';
 import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 import factions from '@/shared/enums/factions.mjs';
+import { EVENT_TYPE } from '@/shared/enums/events.mjs';
 import db from '@/db/db';
 
 const MAX_CONCURRENT = 50;
@@ -24,7 +25,7 @@ export function ensureVapid() {
 
 export function buildPayload(change) {
     const region = getEventRegionLabel(change.event);
-    const isDefend = change.event.type === 'defend';
+    const isDefend = change.event.type === EVENT_TYPE.DEFEND;
 
     const titles = {
         event_started: isDefend ? `${region} under attack` : `Attacking ${region}`,

@@ -1,15 +1,15 @@
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { performanceTime } from '@/shared/utils/time';
-import { getSeasonFromStatus } from '@/shared/utils/getSeason';
+import { performanceTime } from '@/shared/utils/time.mjs';
+import { getSeasonFromStatus } from '@/shared/utils/getSeason.mjs';
 import { fetchStatus } from '@/update/fetch.mjs';
-import { EVENT_TYPE } from '@/shared/enums/events';
-import { isValidStatus } from '@/validators/isValidStatus';
+import { EVENT_TYPE } from '@/shared/enums/events.mjs';
+import { isValidStatus } from '@/validators/isValidStatus.mjs';
 // db
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus';
-import { queryUpsertStatistic } from '@/db/queries/upsertStatistic';
-import { queryUpsertEventProgress } from '@/db/queries/upsertEventProgress';
+import { queryUpsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { queryUpsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { queryUpsertStatus } from '@/db/queries/upsertStatus.mjs';
+import { queryUpsertStatistic } from '@/db/queries/upsertStatistic.mjs';
+import { queryUpsertEventProgress } from '@/db/queries/upsertEventProgress.mjs';
 
 export async function updateStatus() {
     const start = performance.now();

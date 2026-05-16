@@ -1,4 +1,4 @@
-import { generateOpenApiSpec } from '@/shared/utils/api/openapi.registry.mjs';
+import { generateOpenApiSpec } from '@/shared/utils/api/openapiRegistry.mjs';
 
 describe('generateOpenApiSpec', () => {
     const spec = generateOpenApiSpec();

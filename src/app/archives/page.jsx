@@ -1,10 +1,12 @@
 //db
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { getCampaign } from '@/db/queries/getCampaign';
-import { updateSeason } from '@/update/season';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { updateSeason } from '@/update/season.mjs';
 //auth
 import { auth } from '@/auth';
 import { headers as nextHeaders, cookies } from 'next/headers';
+//enums
+import { ROLE } from '@/shared/enums/roles.mjs';
 //components
 import JsonLd from '@/shared/components/JsonLd';
 import ArchivesClient from '@/features/archives/ArchivesClient';
@@ -92,7 +94,7 @@ export default async function WarHistoryPage({ searchParams }) {
     // stays false — the button is simply hidden.
     const session =
         auth ? await auth.api.getSession({ headers: await nextHeaders() }) : null;
-    const isAdmin = session?.user?.role === 'admin';
+    const isAdmin = session?.user?.role === ROLE.ADMIN;
 
     const c = await cookies();
     const initialFaction = validateFaction(c.get(FACTION_KEY)?.value);

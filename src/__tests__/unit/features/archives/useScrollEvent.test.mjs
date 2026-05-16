@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useScrollEvent } from '@/features/archives/useScrollEvent.mjs';
+import { useScrollEvent } from '@/shared/hooks/useScrollEvent.mjs';
 
 // useScrollEvent computes which event card is "selected" based on scroll
 // position. Depends heavily on getBoundingClientRect (which jsdom returns
@@ -32,7 +32,7 @@ function buildRail(events, getRectByKey) {
     return rail;
 }
 
-// eventKey from @/features/archives/eventKey.mjs builds keys deterministically
+// eventKey from @/shared/utils/game/eventKey.mjs builds keys deterministically
 // from event fields. We mirror that here for our fixtures.
 function fixtureKey(e) {
     return `evt-${e.event_id}-${e.enemy}-${e.region}-${e.type}`;
@@ -41,7 +41,7 @@ function fixtureKey(e) {
 // We need the hook's lookup map to find events by the SAME key shape the
 // real eventKey() produces. The hook imports eventKey internally — so we
 // mock it to use our fixture format.
-vi.mock('@/features/archives/eventKey.mjs', () => ({
+vi.mock('@/shared/utils/game/eventKey.mjs', () => ({
     eventKey: (e) => `evt-${e.event_id}-${e.enemy}-${e.region}-${e.type}`,
 }));
 

@@ -1,10 +1,7 @@
-/**
- * Configuration for the push notification flow diagram.
- * Single-flow diagram — no view filters needed.
- */
-export const pushFlowConfig = {
+import { createFlowConfig } from '@/shared/utils/diagram.mjs';
+
+export const pushFlowConfig = createFlowConfig({
     views: [{ key: 'all', label: 'All' }],
-    flows: {},
 
     legend: [
         { color: '#a855f7', label: 'Server' },
@@ -15,7 +12,7 @@ export const pushFlowConfig = {
 
     title: 'Push Notification Flow',
     description:
-        'How push notifications are sent from the update route to the user\'s device via web-push and the service worker',
+        "How push notifications are sent from the update route to the user's device via web-push and the service worker",
 
     details: {
         post_update: {
@@ -96,4 +93,4 @@ export const pushFlowConfig = {
             ],
         },
     },
-};
+});

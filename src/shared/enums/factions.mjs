@@ -21,3 +21,5 @@ const factions = {
     },
 };
 export default factions;
+
+export const FACTION_INDEX = { bugs: 0, cyborgs: 1, illuminate: 2 };

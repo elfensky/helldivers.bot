@@ -1,3 +1,5 @@
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
+
 const STORAGE_KEY = 'dismissed-toast-events';
 const MAX_ENTRIES = 200;
 
@@ -17,14 +19,13 @@ export function getDismissedEvents() {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
             return Object.fromEntries(
-                parsed.map((id) => [String(id), { status: 'active', ts: 0 }]),
+                parsed.map((id) => [String(id), { status: EVENT_STATUS.ACTIVE, ts: 0 }]),
             );
         }
         if (!parsed || typeof parsed !== 'object') return {};
         const migrated = {};
         for (const [id, val] of Object.entries(parsed)) {
-            migrated[id] =
-                typeof val === 'string' ? { status: val, ts: 0 } : val;
+            migrated[id] = typeof val === 'string' ? { status: val, ts: 0 } : val;
         }
         return migrated;
     } catch {
@@ -44,8 +45,8 @@ export function addDismissedEvent(eventId, status) {
         } else {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
         }
-    } catch {
-        // localStorage unavailable — silently skip
+    } catch (err) {
+        console.debug('[dismissedEvents] localStorage write failed:', err?.message);
     }
 }
 
@@ -58,5 +59,5 @@ export function isDismissedAtStatus(eventId, status) {
     const record = getDismissedEvents();
     const entry = record[String(eventId)];
     if (!entry) return false;
-    return (typeof entry === 'string' ? entry : entry.status) === status;
+    return entry.status === status;
 }

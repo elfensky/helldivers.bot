@@ -1,5 +1,5 @@
-import { getAllApiKeys, adminRevokeApiKey } from '@/db/queries/admin';
-import { timeSince } from '@/shared/utils/time';
+import { getAllApiKeys, adminRevokeApiKey } from '@/db/queries/admin.mjs';
+import { timeSince } from '@/shared/utils/time.mjs';
 import Button from '@/shared/components/Button/Button';
 
 export default async function AdminApiKeys() {

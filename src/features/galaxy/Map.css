@@ -2,7 +2,9 @@
     stroke-width: 2px;
     stroke-linecap: round;
     stroke-linejoin: round;
-    transition: fill 0.4s ease, stroke 0.3s ease;
+    transition:
+        fill 0.4s ease,
+        stroke 0.3s ease;
 }
 
 .lost {

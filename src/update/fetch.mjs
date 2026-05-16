@@ -1,11 +1,11 @@
 import axios from 'axios';
 import https from 'https';
-import { isValidNumber } from '@/validators/isValidNumber';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { isValidNumber } from '@/validators/isValidNumber.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 
-function getApiURL() {
-    return 'https://api.helldiversgame.com/1.0/';
-}
+// axios is used instead of native fetch because Node's fetch doesn't support
+// custom https.Agent, which is needed to disable cert validation on the HD1 API.
+const HD1_API_URL = 'https://api.helldiversgame.com/1.0/';
 
 async function fetchWithUntrustedCert(url, formData) {
     const agent = new https.Agent({
@@ -38,7 +38,7 @@ async function fetchWithUntrustedCert(url, formData) {
 }
 
 export async function fetchStatus() {
-    const url = getApiURL();
+    const url = HD1_API_URL;
     const form = new FormData();
     form.append('action', 'get_campaign_status');
     return fetchWithUntrustedCert(url, form);
@@ -47,7 +47,7 @@ export async function fetchStatus() {
 export async function fetchSeason(season) {
     if (!isValidNumber.safeParse(season).success) throw new Error('Invalid season');
 
-    const url = getApiURL();
+    const url = HD1_API_URL;
     const form = new FormData();
     form.append('action', 'get_snapshots');
     form.append('season', season.toString());

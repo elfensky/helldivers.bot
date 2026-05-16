@@ -1,17 +1,17 @@
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { errorResponse, successResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 
 import { after } from 'next/server';
 //validators
-import { isValidNumber } from '@/validators/isValidNumber';
+import { isValidNumber } from '@/validators/isValidNumber.mjs';
 //db and fetch
-import { getCampaign } from '@/db/queries/getCampaign';
-import { updateSeason } from '@/update/season';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { updateSeason } from '@/update/season.mjs';
 //track
-import { umamiTrackEvent } from '@/shared/utils/umami';
+import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 
 export async function GET(request) {
     //0. initialize
@@ -47,24 +47,14 @@ export async function GET(request) {
     //3. if no data, attempt fetch remote data
     if (!campaignData) {
         //1. fetch remote data
-        const { data: fetchData, error: fetchError } = await tryCatch(
+        const { error: fetchError } = await tryCatch(
             updateSeason(season),
         );
-        //1.1 process error(s)
         if (fetchError) {
-            if (fetchError?.issues) {
-                if (
-                    fetchError?.issues[0]?.code === 'invalid_type' &&
-                    // fetchError?.issues[0]?.path[0] === 'introduction_order' &&
-                    fetchError?.issues[0]?.received === 'null'
-                ) {
-                    let message = `Couldn't find campaign with season ${season}`;
-                    return errorResponse(404, start, message);
-                }
-                return errorResponse(500, start, fetchError?.issues);
-            } else {
-                return errorResponse(500, start, fetchError);
+            if (fetchError.cause === 'SEASON_NOT_FOUND') {
+                return errorResponse(404, start, fetchError.message);
             }
+            return errorResponse(500, start, fetchError?.message);
         }
 
         //2. fetch local data

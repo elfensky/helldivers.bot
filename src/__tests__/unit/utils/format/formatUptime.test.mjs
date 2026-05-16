@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { formatUptime } from '@/shared/utils/format/formatUptime';
+import { formatUptime } from '@/shared/utils/format/formatUptime.mjs';
 
 describe('formatUptime', () => {
     test('returns dash for null input', () => {

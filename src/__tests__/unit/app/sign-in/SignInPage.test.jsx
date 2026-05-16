@@ -11,17 +11,23 @@ import SignInPage from '@/app/sign-in/page';
 describe('SignInPage', () => {
     test('renders Discord sign-in button', () => {
         render(<SignInPage />);
-        expect(screen.getByRole('button', { name: /sign in with discord/i })).toBeInTheDocument();
+        expect(
+            screen.getByRole('button', { name: /sign in with discord/i }),
+        ).toBeInTheDocument();
     });
 
     test('renders GitHub sign-in button', () => {
         render(<SignInPage />);
-        expect(screen.getByRole('button', { name: /sign in with github/i })).toBeInTheDocument();
+        expect(
+            screen.getByRole('button', { name: /sign in with github/i }),
+        ).toBeInTheDocument();
     });
 
     test('renders Google sign-in button', () => {
         render(<SignInPage />);
-        expect(screen.getByRole('button', { name: /sign in with google/i })).toBeInTheDocument();
+        expect(
+            screen.getByRole('button', { name: /sign in with google/i }),
+        ).toBeInTheDocument();
     });
 
     test('Google button has correct umami tracking', () => {

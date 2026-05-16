@@ -32,7 +32,7 @@ vi.mock('@/shared/enums/colors.mjs', () => ({
 }));
 
 import { toast } from 'sonner';
-import { toastLabel, showEventToast } from '@/features/notifications/eventToast';
+import { toastLabel, showEventToast } from '@/features/notifications/EventToast';
 
 beforeEach(() => {
     vi.mocked(toast).mockClear();

@@ -1,9 +1,5 @@
-/**
- * Mermaid definition for the docs overview diagram.
- * Shows the high-level architecture: Frontend → Backend → Data Layer.
- *
- * Two variants: LR (horizontal, desktop) and TD (vertical, mobile).
- */
+import { buildMermaidDefinition } from '@/shared/utils/diagram.mjs';
+
 const BODY = `
     subgraph Frontend["FRONTEND"]
         dash["Dashboard<br/><small>Live campaign view</small>"]
@@ -45,8 +41,4 @@ const BODY = `
     style Data fill:#131313,stroke:#f59e0b,color:#fbbf24
 `;
 
-/** Horizontal layout (desktop) */
-export const DEFINITION_LR = `graph LR\n${BODY}`;
-
-/** Vertical layout (mobile) */
-export const DEFINITION_TD = `graph TD\n${BODY}`;
+export const { DEFINITION_LR, DEFINITION_TD } = buildMermaidDefinition(BODY);

@@ -33,7 +33,7 @@
  * @param {object} data - Campaign data with snapshots[], events[], status[]
  * @returns {{ outcome: 'victory'|'defeat', reason: string, faction: number|null } | null}
  */
-import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events';
+import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
 
 export function getWarOutcome(data) {
     const snapshots = data?.snapshots || [];

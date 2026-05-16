@@ -1,10 +1,5 @@
-/**
- * Mermaid definition for the data flow architecture diagram.
- * Same color conventions as the docs (/docs/architecture).
- * Node IDs use underscores (Mermaid treats hyphens as minus operators).
- *
- * Two variants: LR (horizontal, desktop) and TD (vertical, mobile).
- */
+import { buildMermaidDefinition } from '@/shared/utils/diagram.mjs';
+
 const BODY = `
     subgraph Sources["DATA SOURCES"]
         api_status["get_campaign_status<br/><small>Live war state + stats</small>"]
@@ -77,8 +72,4 @@ const BODY = `
     style Frontend fill:#131313,stroke:#06b6d4,color:#22d3ee
 `;
 
-/** Horizontal layout (desktop) */
-export const DEFINITION_LR = `graph LR\n${BODY}`;
-
-/** Vertical layout (mobile) */
-export const DEFINITION_TD = `graph TD\n${BODY}`;
+export const { DEFINITION_LR, DEFINITION_TD } = buildMermaidDefinition(BODY);

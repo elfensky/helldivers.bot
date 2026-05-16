@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { reseedSeason } from '@/features/archives/reseedSeason';
+import { reseedSeason } from '@/features/archives/reseedSeason.mjs';
 
 vi.mock('@/auth', () => ({
     auth: { api: { getSession: vi.fn() } },
@@ -29,7 +29,7 @@ vi.mock('@/db/db', () => ({
 
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { updateSeason } from '@/update/season';
+import { updateSeason } from '@/update/season.mjs';
 import db from '@/db/db';
 
 const adminSession = { user: { role: 'admin', id: 'admin-1' } };
@@ -41,31 +41,36 @@ beforeEach(() => {
 });
 
 describe('reseedSeason', () => {
-    it('returns { error: "Forbidden" } when session is null', async () => {
+    it('returns errors when session is null', async () => {
         auth.api.getSession.mockResolvedValue(null);
         const result = await reseedSeason(153);
-        expect(result).toEqual({ error: 'Forbidden' });
+        expect(result.errors).toEqual({ auth: 'Forbidden' });
+        expect(result.time).toEqual(expect.any(Number));
         expect(updateSeason).not.toHaveBeenCalled();
     });
 
-    it('returns { error: "Forbidden" } when user is not admin', async () => {
+    it('returns errors when user is not admin', async () => {
         auth.api.getSession.mockResolvedValue({ user: { role: 'user', id: 'u-1' } });
         const result = await reseedSeason(153);
-        expect(result).toEqual({ error: 'Forbidden' });
+        expect(result.errors).toEqual({ auth: 'Forbidden' });
+        expect(result.time).toEqual(expect.any(Number));
         expect(updateSeason).not.toHaveBeenCalled();
     });
 
-    it('returns { error: "Invalid season" } for non-integer input', async () => {
+    it('returns errors for non-integer input', async () => {
         const result = await reseedSeason('abc');
-        expect(result.error).toBe('Invalid season');
+        expect(result.errors).toEqual({ season: 'Invalid season' });
+        expect(result.time).toEqual(expect.any(Number));
         expect(updateSeason).not.toHaveBeenCalled();
     });
 
-    it('returns { error: "Invalid season" } for zero or negative', async () => {
+    it('returns errors for zero or negative', async () => {
         const zero = await reseedSeason(0);
-        expect(zero.error).toBe('Invalid season');
+        expect(zero.errors).toEqual({ season: 'Invalid season' });
+        expect(zero.time).toEqual(expect.any(Number));
         const neg = await reseedSeason(-5);
-        expect(neg.error).toBe('Invalid season');
+        expect(neg.errors).toEqual({ season: 'Invalid season' });
+        expect(neg.time).toEqual(expect.any(Number));
         expect(updateSeason).not.toHaveBeenCalled();
     });
 
@@ -75,7 +80,8 @@ describe('reseedSeason', () => {
         const result = await reseedSeason(153);
         expect(updateSeason).toHaveBeenCalledWith(153, {});
         expect(revalidatePath).toHaveBeenCalledWith('/archives');
-        expect(result).toEqual({ ok: true });
+        expect(result.data).toEqual({ ok: true });
+        expect(result.time).toEqual(expect.any(Number));
     });
 
     it('passes protectedBucket when reseeding the current active season', async () => {
@@ -85,20 +91,23 @@ describe('reseedSeason', () => {
             153,
             expect.objectContaining({ protectedBucket: expect.any(Number) }),
         );
-        expect(result).toEqual({ ok: true });
+        expect(result.data).toEqual({ ok: true });
+        expect(result.time).toEqual(expect.any(Number));
     });
 
     it('does not pass protectedBucket when reseeding an older season', async () => {
         db.h1_season.findFirst.mockResolvedValue({ season: 160 });
         const result = await reseedSeason(153);
         expect(updateSeason).toHaveBeenCalledWith(153, {});
-        expect(result).toEqual({ ok: true });
+        expect(result.data).toEqual({ ok: true });
+        expect(result.time).toEqual(expect.any(Number));
     });
 
     it('surfaces updateSeason errors without revalidating', async () => {
         updateSeason.mockRejectedValueOnce(new Error('API down'));
         const result = await reseedSeason(153);
-        expect(result.error).toBe('API down');
+        expect(result.errors).toEqual({ season: 'API down' });
+        expect(result.time).toEqual(expect.any(Number));
         expect(revalidatePath).not.toHaveBeenCalled();
     });
 });

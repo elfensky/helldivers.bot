@@ -1,15 +1,15 @@
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/shared/utils/time';
-import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
-import { EVENT_TYPE } from '@/shared/enums/events';
-import { fetchSeason } from '@/update/fetch';
-import { isValidSeason } from '@/validators/isValidSeason';
-import { computeBucket } from '@/update/bucketing';
+import { performanceTime } from '@/shared/utils/time.mjs';
+import { getSeasonFromSnapshot } from '@/shared/utils/getSeason.mjs';
+import { EVENT_TYPE } from '@/shared/enums/events.mjs';
+import { fetchSeason } from '@/update/fetch.mjs';
+import { isValidSeason } from '@/validators/isValidSeason.mjs';
+import { computeBucket } from '@/shared/utils/bucketing.mjs';
 // db
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus';
+import { queryUpsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { queryUpsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { queryUpsertStatus } from '@/db/queries/upsertStatus.mjs';
 
 /**
  * @param {number} season
@@ -41,8 +41,15 @@ export async function updateSeason(season, opts = {}) {
         throw check.error;
     }
 
-    // 3. Verify season parameter matches fetched data
-    const fetchedSeason = getSeasonFromSnapshot(fetchedData);
+    // 3. Verify season parameter matches fetched data.
+    //    getSeasonFromSnapshot throws "No seasons found" when snapshots/events
+    //    are all empty — that means the season doesn't exist on the HD1 API.
+    const { data: fetchedSeason, error: seasonResolveError } = await tryCatch(
+        Promise.resolve(getSeasonFromSnapshot(fetchedData)),
+    );
+    if (seasonResolveError) {
+        throw new Error(`Season ${season} not found`, { cause: 'SEASON_NOT_FOUND' });
+    }
     if (season !== fetchedSeason) throw new Error('Invalid season');
 
     // 4. Upsert season with inlined arrays
@@ -62,7 +69,8 @@ export async function updateSeason(season, opts = {}) {
     // updateStatus() owns that window and has already written fresher data.
     const protectedBucket = opts.protectedBucket;
     for (const snap of fetchedData.snapshots) {
-        if (protectedBucket !== undefined && computeBucket(snap.time) >= protectedBucket) continue;
+        if (protectedBucket !== undefined && computeBucket(snap.time) >= protectedBucket)
+            continue;
 
         const parsed = typeof snap.data === 'string' ? JSON.parse(snap.data) : snap.data;
         if (!Array.isArray(parsed) || parsed.length !== 3) continue;

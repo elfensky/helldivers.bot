@@ -37,7 +37,7 @@ vi.mock('sonner', () => ({
         );
     },
 }));
-vi.mock('@/features/notifications/eventToast', () => ({
+vi.mock('@/features/notifications/EventToast', () => ({
     showEventToast: mocks.showEventToastMock,
     toastLabel: mocks.toastLabelMock,
 }));

@@ -1,8 +1,6 @@
-/**
- * Configuration for the docs overview diagram.
- * Single-view diagram (no flow filtering) with node details.
- */
-export const overviewConfig = {
+import { createFlowConfig } from '@/shared/utils/diagram.mjs';
+
+export const overviewConfig = createFlowConfig({
     views: [{ key: 'all', label: 'All' }],
 
     flows: {},
@@ -140,4 +138,4 @@ export const overviewConfig = {
             ],
         },
     },
-};
+});

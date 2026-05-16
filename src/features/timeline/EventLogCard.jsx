@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import humanizeDuration from 'humanize-duration';
+import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
-import { EVENT_TYPE } from '@/shared/enums/events';
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import EventCardLayout, { STATUS_STYLES } from '@/features/timeline/EventCardLayout';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { getEventActionLabel } from '@/shared/utils/game/getEventActionLabel.mjs';
@@ -26,7 +26,8 @@ export default function EventLogCard({
     onMouseEnter,
     onMouseLeave,
 }) {
-    const isCompleted = event.status === 'success' || event.status === 'fail';
+    const isCompleted =
+        event.status === EVENT_STATUS.SUCCESS || event.status === EVENT_STATUS.FAIL;
     const actionLabel = getEventActionLabel(event);
     const regionLabel = getEventRegionLabel(event);
     const percent = ((event.points / event.points_max) * 100).toFixed(2);
@@ -74,7 +75,8 @@ export default function EventLogCard({
  */
 function DurationPill({ event, styles, timeFormat }) {
     const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-    const isCompleted = event.status === 'success' || event.status === 'fail';
+    const isCompleted =
+        event.status === EVENT_STATUS.SUCCESS || event.status === EVENT_STATUS.FAIL;
     const shouldTick = timeFormat === 'live' && !isCompleted;
 
     useEffect(() => {
@@ -135,8 +137,8 @@ function LiveTimeLine({ event, isCompleted }) {
     const elapsed = isCompleted ? now - event.end_time : now - event.start_time;
     const text =
         isCompleted ?
-            `Ended ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`
-        :   `Started ${humanizeDuration(elapsed * 1000, { largest: 2, round: true })} ago`;
+            `Ended ${formatDuration(elapsed)} ago`
+        :   `Started ${formatDuration(elapsed)} ago`;
 
     return (
         <span className="text-small text-text-muted" suppressHydrationWarning>

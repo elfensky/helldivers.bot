@@ -1,3 +1,5 @@
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
+
 /**
  * Compute per-event animation delay offsets so that simultaneous events
  * pulse out of phase with each other, while all UI elements for the
@@ -11,7 +13,7 @@
  * @returns {Map<string, number>}
  */
 export function computePulseDelays(events, cycleDuration = 1.5) {
-    const active = events?.filter((e) => e.status === 'active') ?? [];
+    const active = events?.filter((e) => e.status === EVENT_STATUS.ACTIVE) ?? [];
     const delays = new Map();
     for (let i = 0; i < active.length; i++) {
         const key = `${active[i].enemy}-${active[i].region}`;

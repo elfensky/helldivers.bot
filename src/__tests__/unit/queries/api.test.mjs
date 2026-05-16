@@ -21,7 +21,7 @@ describe('getApiKeysByUserId', () => {
         const result = await getApiKeysByUserId(userId);
 
         expect(result.errors.auth).toBe('No session found');
-        expect(result.query).toBeNull();
+        expect(result.data).toBeUndefined();
     });
 
     test('returns auth error when user id does not match', async () => {
@@ -30,7 +30,7 @@ describe('getApiKeysByUserId', () => {
         const result = await getApiKeysByUserId(otherUserId);
 
         expect(result.errors.auth).toBe('User does not match');
-        expect(result.query).toBeNull();
+        expect(result.data).toBeUndefined();
     });
 
     test('returns api keys for matching user', async () => {
@@ -48,8 +48,8 @@ describe('getApiKeysByUserId', () => {
 
         const result = await getApiKeysByUserId(userId);
 
-        expect(result.query).toEqual(mockKeys);
-        expect(typeof result.ms).toBe('number');
+        expect(result.data).toEqual(mockKeys);
+        expect(typeof result.time).toBe('number');
         expect(db.ApiKey.findMany).toHaveBeenCalledWith(
             expect.objectContaining({
                 where: { userId },

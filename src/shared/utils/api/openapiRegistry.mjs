@@ -291,7 +291,9 @@ registry.registerPath({
                 'application/json': {
                     schema: z.object({
                         data: z.any().openapi({ description: 'Full campaign object' }),
-                        mapState: z.array(z.any()).openapi({ description: 'Sector ownership array' }),
+                        mapState: z
+                            .array(z.any())
+                            .openapi({ description: 'Sector ownership array' }),
                     }),
                 },
             },

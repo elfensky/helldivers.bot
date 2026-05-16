@@ -1,9 +1,28 @@
 import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { CAMPAIGN_STATUS, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 const HIDDEN_STATES = [
-    { enemy: 0, points: 0, points_taken: 0, points_max: 1, status: 'hidden' },
-    { enemy: 1, points: 0, points_taken: 0, points_max: 1, status: 'hidden' },
-    { enemy: 2, points: 0, points_taken: 0, points_max: 1, status: 'hidden' },
+    {
+        enemy: 0,
+        points: 0,
+        points_taken: 0,
+        points_max: 1,
+        status: CAMPAIGN_STATUS.HIDDEN,
+    },
+    {
+        enemy: 1,
+        points: 0,
+        points_taken: 0,
+        points_max: 1,
+        status: CAMPAIGN_STATUS.HIDDEN,
+    },
+    {
+        enemy: 2,
+        points: 0,
+        points_taken: 0,
+        points_max: 1,
+        status: CAMPAIGN_STATUS.HIDDEN,
+    },
 ];
 
 /**
@@ -69,7 +88,7 @@ export function computeMapStateAtEvent(selectedEvent, data) {
     // Active events: happening at the selected moment.
     const activeEvents = allEvents
         .filter((e) => e.start_time <= time && e.end_time > time)
-        .map((e) => ({ ...e, status: 'active' }));
+        .map((e) => ({ ...e, status: EVENT_STATUS.ACTIVE }));
 
     return computeMapState(factionStates, [...gapEvents, ...activeEvents]);
 }

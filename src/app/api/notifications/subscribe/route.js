@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { performance } from 'perf_hooks';
-import { tryCatch } from '@/shared/utils/tryCatch';
-import { errorResponse, successResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import db from '@/db/db';
 
 const subscriptionSchema = z.object({

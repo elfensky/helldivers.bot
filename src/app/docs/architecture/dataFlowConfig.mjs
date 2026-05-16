@@ -1,8 +1,6 @@
-/**
- * Configuration for the data flow architecture diagram.
- * Combines views, flow mappings, node details, and legend.
- */
-export const dataFlowConfig = {
+import { createFlowConfig } from '@/shared/utils/diagram.mjs';
+
+export const dataFlowConfig = createFlowConfig({
     views: [
         { key: 'all', label: 'All Flows' },
         { key: 'live', label: 'Live Polling (~15s)' },
@@ -34,12 +32,7 @@ export const dataFlowConfig = {
         ],
         seed: ['seed_files', 'seed_script', 'h1_season', 'h1_status', 'h1_event'],
         read_live: ['h1_status', 'h1_event', 'h1_season', 'fe_live'],
-        read_archives: [
-            'h1_status',
-            'h1_event',
-            'h1_event_progress',
-            'fe_archives',
-        ],
+        read_archives: ['h1_status', 'h1_event', 'h1_event_progress', 'fe_archives'],
         read_rebroadcast: [
             'h1_season',
             'h1_status',
@@ -333,9 +326,7 @@ export const dataFlowConfig = {
                 },
                 {
                     type: 'tags',
-                    items: [
-                        { text: 'reads h1_status (latest)', cls: 'tag-read' },
-                    ],
+                    items: [{ text: 'reads h1_status (latest)', cls: 'tag-read' }],
                 },
             ],
         },
@@ -380,4 +371,4 @@ export const dataFlowConfig = {
             ],
         },
     },
-};
+});
