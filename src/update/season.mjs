@@ -120,5 +120,9 @@ export async function updateSeason(season, opts = {}) {
         throw new Error(confirmError?.message || 'Failed to confirm season');
     }
 
-    return { ms: performanceTime(start), season, confirmSeason };
+    const time =
+        fetchedData?.time ??
+        fetchedData?.snapshots?.[fetchedData.snapshots.length - 1]?.time ??
+        null;
+    return { ms: performanceTime(start), season, time, confirmSeason };
 }

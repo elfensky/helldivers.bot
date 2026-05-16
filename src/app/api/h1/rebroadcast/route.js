@@ -5,8 +5,6 @@ import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
 import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { after } from 'next/server';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
-//parsers
-import { formDataToObject } from '@/shared/utils/formdata.mjs';
 //validators
 import { isValidContentType } from '@/validators/isValidContentType.mjs';
 import { isValidFormData } from '@/validators/isValidFormData.mjs';
@@ -45,7 +43,7 @@ export async function POST(request) {
     //2. get FormData and convert it to an object
     const { data: formData, error: formError } = await tryCatch(request.formData());
     if (formError) return errorResponse(400, start, 'Invalid request body');
-    formValues = formDataToObject(formData);
+    formValues = Object.fromEntries(formData.entries());
 
     if (typeof formValues.action !== 'string') {
         return errorResponse(400, start, 'No action set');

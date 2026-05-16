@@ -353,18 +353,6 @@ addOrdinalSuffix(num: number): string
 
 ## 6. Other Utilities
 
-### `formDataToObject(formData)`
-
-`src/shared/utils/formdata.mjs`
-
-```ts
-formDataToObject(formData: FormData): Record<string, string>
-```
-
-Iterates `formData.entries()` and builds a plain object. The result is what gets passed to `isValidFormData` for Zod validation in the rebroadcast endpoint. No type coercion is performed here — that is the validator's job.
-
----
-
 ### `getGravatarUrl(email)`
 
 `src/shared/utils/gravatar.mjs`
@@ -709,7 +697,7 @@ The distinction between defend and attack events is enforced via `.refine()`:
 
 **Export type:** Zod schema object (not a function) — call `.safeParse(data)` directly
 
-Discriminated union on the `action` field. Used by the `/api/h1/rebroadcast` endpoint after `formDataToObject` converts the request body.
+Discriminated union on the `action` field. Used by the `/api/h1/rebroadcast` endpoint after `Object.fromEntries(formData.entries())` converts the request body.
 
 **Actions and their required/optional fields:**
 
