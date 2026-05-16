@@ -15,7 +15,7 @@ import { groupStatusByBucket } from '@/shared/utils/bucketing';
  * - `status`     — 3 rows from h1_status, one per faction, latest bucket each.
  *                  Consumers cast this as an array of faction states.
  * - `snapshots`  — full h1_status history for the season, returned as a
- *                  shape compatible with the legacy h1_snapshot output:
+ *                  shape:
  *                  [{ time, data: [faction0, faction1, faction2] }, ...]
  *                  The archives chart readers iterate this list and access
  *                  data[enemy] for each time point.
@@ -42,9 +42,8 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         ORDER BY enemy ASC, bucket DESC
     `;
 
-    // Latest h1_statistic row per faction — stats signals live on a separate
-    // table since Task 7. The legacy h1_live row had these inline, so all
-    // consumers reading data.status[i].players/kills/deaths/total_unique_players
+    // Latest h1_statistic row per faction — stats live on a separate table.
+    // Consumers reading data.status[i].players/kills/deaths/total_unique_players
     // expect them to travel with the campaign row.
     const rawStatRows = await db.$queryRaw`
         SELECT DISTINCT ON (enemy) *
@@ -53,13 +52,10 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         ORDER BY enemy ASC, bucket DESC
     `;
 
-    // Merge h1_status + h1_statistic + season constants into legacy liveRow
+    // Merge h1_status + h1_statistic + season constants into per-faction
     // shape. Consumers (computeMapState, StatGrid, EventCard, opengraph-image)
-    // read this as the per-faction "current state" and must find the fields
-    // they historically read from h1_live: campaign progression + points_max +
-    // introduction_order + 11 per-faction stats fields. season_duration is
-    // no longer per-faction — it now lives on h1_season and is exposed at
-    // the top level of the return object instead.
+    // read this as the per-faction "current state": campaign progression +
+    // points_max + introduction_order + 11 per-faction stats fields.
     const statByEnemy = new Map(rawStatRows.map((r) => [r.enemy, r]));
     const liveRows = rawLiveRows.map((r) => {
         const stat = statByEnemy.get(r.enemy);

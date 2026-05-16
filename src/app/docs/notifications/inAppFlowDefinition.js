@@ -5,7 +5,7 @@ const BODY = `
     hd1_api["Official HD1 API<br/><small>~1s updates</small>"]
     worker["Worker Thread<br/><small>polls every ~20s</small>"]
     post_update["POST /api/h1/update"]
-    update_status["updateStatus()<br/><small>DB writes: h1_live, h1_event, snapshots</small>"]
+    update_status["updateStatus()<br/><small>DB writes: h1_status, h1_event, h1_statistic</small>"]
 
     %% Client poll path
     poll["Client poll<br/><small>every 10s via setInterval</small>"]

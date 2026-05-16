@@ -7,7 +7,7 @@ import factions from '@/shared/enums/factions.mjs';
 import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
-// Only 5 fields in h1_live are BigInt in the Prisma schema: kills, deaths,
+// Only 5 fields in h1_statistic are BigInt in the Prisma schema: kills, deaths,
 // shots, hits, accidentals. The other stat columns (missions, successful_missions,
 // players, total_unique_players, ...) are Int and come back as plain JS Number.
 // BigInt() coerces either losslessly. DO NOT use sumBigInt for global-per-season
@@ -73,7 +73,7 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
     // Notable moments
     const worstCascade = findWorstCascade(events);
 
-    // h1_live combat stats (only for seasons with live data)
+    // h1_statistic combat stats (only for seasons with live data)
     const hasLive = live?.length > 0;
     let liveCards = null;
     if (hasLive) {

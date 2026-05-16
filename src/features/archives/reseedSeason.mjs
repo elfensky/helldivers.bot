@@ -15,9 +15,9 @@ const seasonSchema = z.number().int().positive();
 
 /**
  * Admin-only: force re-fetch a specific season from the official HD1 API and
- * upsert it into `h1_event`, `h1_snapshot`, `h1_season`, etc. Delegates to
+ * upsert it into `h1_event`, `h1_status`, `h1_season`, etc. Delegates to
  * `updateSeason` — the same pipeline the worker runs every poll — which also
- * writes the raw response to `rebroadcast_season` and stamps
+ * writes normalized data and stamps
  * `h1_season.last_updated = now` at the end of its pipeline. Idempotent.
  *
  * The `last_updated` stamp lets the client enforce a 24-hour cooldown on the

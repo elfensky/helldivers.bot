@@ -221,8 +221,8 @@ export const notificationFlowConfig = createFlowConfig({
                     type: 'table',
                     headers: ['Table', 'Purpose'],
                     rows: [
-                        ['rebroadcast_status', 'Raw API JSON (1 row/season)'],
-                        ['h1_live', 'Normalized campaigns + stats'],
+                        ['h1_status', 'Bucketed campaign timeseries'],
+                        ['h1_statistic', 'Bucketed stats timeseries'],
                         ['h1_event', 'Historical attack/defend events'],
                         ['push_subscription', 'Web push subscription endpoints'],
                     ],

@@ -16,7 +16,7 @@ import { computeBucket } from '@/shared/utils/bucketing';
 // season. HD1 writes a final "closing" snapshot to the old season a few
 // minutes after the transition point — without this detection, the worker
 // moves on to the new season before that closing frame is published and it
-// never lands in h1_snapshot. Resets to null on worker restart; the only
+// never lands in h1_status. Resets to null on worker restart; the only
 // impact of a restart during the tiny transition window is that the closing
 // snapshot for that single transition is missed, which the admin can recover
 // via the /archives refresh button.

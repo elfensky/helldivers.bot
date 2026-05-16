@@ -55,7 +55,7 @@ export const inAppFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Writes campaign progress, event states, and statistics to h1_live, h1_event, and snapshot tables via Prisma.',
+                        'Writes campaign progress, event states, and statistics to h1_status, h1_event, and h1_statistic tables via Prisma.',
                 },
             ],
         },

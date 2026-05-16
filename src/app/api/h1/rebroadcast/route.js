@@ -71,7 +71,7 @@ export async function POST(request) {
             action: formValues.action,
             ms: roundedPerformanceTime(start),
         };
-        if (data?.action === 'get_snapshots') {
+        if (data.action === 'get_snapshots') {
             data.season = formValues.season;
         }
         await umamiTrackEvent(
