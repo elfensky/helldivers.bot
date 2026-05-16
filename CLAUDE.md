@@ -6,7 +6,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 
 - **KISS.** Simple solutions only. Do not overengineer or add abstractions for hypothetical future needs.
 - **Never commit or push directly to `main` or `develop`** — always branch first, merge via PR.
-- **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit`.
+- **Always verify** after implementing a feature: run `npm run lint`, `npm run typecheck`, `npm run test:unit`, and `npm run build`. All four must pass.
 - **Assume the dev server is already running on :3000.** Ask the user to (re)start it separately if needed to clear cache or if it crashed.
 - Report outcomes faithfully: if tests fail, say so with the relevant output; if you did not run a verification step, say that rather than implying it succeeded. Never claim "all tests pass" when output shows failures, never suppress or simplify failing checks (tests, lints, type errors) to manufacture a green result, and never characterize incomplete or broken work as done.
 
@@ -108,9 +108,11 @@ All external data validated with Zod schemas (`src/validators/`) before database
 
 `@/*` maps to `./src/*` (configured in `jsconfig.json`).
 
-### Formatting
+### Formatting & Linting
 
-Prettier with tailwindcss plugin. No ESLint configured. **Always run `npx prettier --write .` before committing** — not during development.
+Prettier with tailwindcss plugin handles formatting. ESLint v9 (flat config in `eslint.config.mjs`) handles lint, with Prettier wired in as a rule via `eslint-plugin-prettier` — so `npm run lint` catches both formatting and lint violations. `npm run lint:fix` auto-fixes both. **Always run `npm run lint:fix` before committing** — not during development.
+
+Type checking: `npm run typecheck` runs `tsc --noEmit` against `jsconfig.json` with `checkJs: true`, validating JSDoc annotations across the project. Tests are excluded from the typecheck scope (they're validated by vitest).
 
 ### Styling
 
