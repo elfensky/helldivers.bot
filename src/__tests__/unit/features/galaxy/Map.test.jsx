@@ -16,7 +16,7 @@ vi.mock('@/features/galaxy/Map.css', () => ({}));
 // Build a complete faction state matrix: factions [0,1,2,3] × sectors 0..11.
 // Each entry has { status, event } so the sector className is derivable.
 function buildMapState(overrides = {}) {
-    const empty = (sector) => ({ status: 'captured', event: 'no-event' });
+    const empty = (_sector) => ({ status: 'captured', event: 'no-event' });
     const matrix = [0, 1, 2, 3].map(() => {
         const sectors = {};
         for (let i = 0; i <= 11; i += 1) sectors[i] = empty(i);

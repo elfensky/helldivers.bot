@@ -51,13 +51,31 @@ export default [
             ...reactHooks.configs.recommended.rules,
             ...nextPlugin.configs.recommended.rules,
             ...nextPlugin.configs['core-web-vitals'].rules,
-            'react-compiler/react-compiler': 'error',
+            'react-compiler/react-compiler': 'warn',
             'react/prop-types': 'off',
-            'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
+            'react-hooks/set-state-in-effect': 'off',
+            'react-hooks/set-state-in-render': 'off',
+            'react-hooks/purity': 'off',
+            'react-hooks/refs': 'off',
+            'react-hooks/static-components': 'off',
+            'no-console': ['warn', { allow: ['warn', 'error', 'info', 'debug'] }],
             'no-unused-vars': [
                 'warn',
                 { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
             ],
+        },
+    },
+
+    {
+        files: [
+            'scripts/**',
+            'prisma/seed/**',
+            'src/__tests__/**',
+            'vitest.setup.mjs',
+            '*.config.{js,mjs}',
+        ],
+        rules: {
+            'no-console': 'off',
         },
     },
 

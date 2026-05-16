@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import './EventCard.css';
 import factions from '@/shared/enums/factions.mjs';
 import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
@@ -31,7 +32,7 @@ export default function DefeatedCard({
         >
             <div className="sector-card-content">
                 <div className="sector-card-header">
-                    <img src={faction.icon} alt="" width={16} height={16} />
+                    <Image src={faction.icon} alt="" width={16} height={16} />
                     <span
                         className="sector-card-action"
                         style={{ color: 'var(--color-gold-muted)' }}

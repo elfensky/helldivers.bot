@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
@@ -51,7 +52,13 @@ export default function EventLogCard({
                     </span>
                     <DurationPill event={event} styles={s} timeFormat={timeFormat} />
                     {faction && (
-                        <img src={faction.icon} alt={faction.name} className="size-5" />
+                        <Image
+                            src={faction.icon}
+                            alt={faction.name}
+                            width={20}
+                            height={20}
+                            className="size-5"
+                        />
                     )}
                 </div>
                 <TimeLine

@@ -194,7 +194,7 @@ afterEach(() => {
 });
 
 describe('Archive Components Integration Tests', () => {
-    describe.each(allSeeds)('Season $season ($file)', ({ season, file, data }) => {
+    describe.each(allSeeds)('Season $season ($file)', ({ season, file: _file, data }) => {
         test('ArchivesClient renders without crashing', () => {
             const seasons = [season];
             const { container } = render(
@@ -618,7 +618,7 @@ describe('Archive Components Integration Tests', () => {
     describe('Data Consistency Tests', () => {
         test('Event data consistency across seasons', () => {
             // Verify that events have consistent structure across all seasons
-            allSeeds.forEach(({ season, data }) => {
+            allSeeds.forEach(({ season: _season, data }) => {
                 if (data.events && data.events.length > 0) {
                     data.events.forEach((event) => {
                         expect(event).toHaveProperty('event_id');

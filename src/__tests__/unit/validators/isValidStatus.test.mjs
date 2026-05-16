@@ -148,7 +148,7 @@ describe('isValidStatus', () => {
         });
 
         test('rejects missing required field', () => {
-            const { points_max, ...incomplete } = makeCampaignStatus();
+            const { points_max: _points_max, ...incomplete } = makeCampaignStatus();
             const result = isValidStatus(
                 makeValidStatus({ campaign_status: [incomplete] }),
             );
@@ -178,7 +178,7 @@ describe('isValidStatus', () => {
         });
 
         test('rejects missing region', () => {
-            const { region, ...noRegion } = makeDefendEvent();
+            const { region: _region, ...noRegion } = makeDefendEvent();
             const result = isValidStatus(makeValidStatus({ defend_event: noRegion }));
             expect(result.success).toBe(false);
         });
@@ -186,7 +186,8 @@ describe('isValidStatus', () => {
 
     describe('attack_events', () => {
         test('rejects missing players_at_start', () => {
-            const { players_at_start, ...incomplete } = makeAttackEvent();
+            const { players_at_start: _players_at_start, ...incomplete } =
+                makeAttackEvent();
             const result = isValidStatus(
                 makeValidStatus({ attack_events: [incomplete] }),
             );
@@ -194,7 +195,7 @@ describe('isValidStatus', () => {
         });
 
         test('rejects missing max_event_id', () => {
-            const { max_event_id, ...incomplete } = makeAttackEvent();
+            const { max_event_id: _max_event_id, ...incomplete } = makeAttackEvent();
             const result = isValidStatus(
                 makeValidStatus({ attack_events: [incomplete] }),
             );
@@ -204,7 +205,7 @@ describe('isValidStatus', () => {
 
     describe('statistics', () => {
         test('rejects missing required field', () => {
-            const { kills, ...incomplete } = makeStatistics();
+            const { kills: _kills, ...incomplete } = makeStatistics();
             const result = isValidStatus(makeValidStatus({ statistics: [incomplete] }));
             expect(result.success).toBe(false);
         });
@@ -233,7 +234,7 @@ describe('isValidStatus', () => {
         });
 
         test('rejects missing top-level fields', () => {
-            const { campaign_status, ...rest } = makeValidStatus();
+            const { campaign_status: _campaign_status, ...rest } = makeValidStatus();
             expect(isValidStatus(rest).success).toBe(false);
         });
 

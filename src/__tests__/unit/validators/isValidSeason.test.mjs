@@ -26,7 +26,7 @@ const makeDefendEvent = (overrides = {}) => ({
 });
 
 const makeAttackEvent = (overrides = {}) => {
-    const { region, ...base } = makeDefendEvent(overrides);
+    const { region: _region, ...base } = makeDefendEvent(overrides);
     return { ...base, ...overrides };
 };
 
@@ -60,12 +60,12 @@ describe('isValidSeason', () => {
 
     describe('top-level fields', () => {
         test('rejects missing time', () => {
-            const { time, ...rest } = makeValidSeason();
+            const { time: _time, ...rest } = makeValidSeason();
             expect(isValidSeason(rest).success).toBe(false);
         });
 
         test('rejects missing error_code', () => {
-            const { error_code, ...rest } = makeValidSeason();
+            const { error_code: _error_code, ...rest } = makeValidSeason();
             expect(isValidSeason(rest).success).toBe(false);
         });
 

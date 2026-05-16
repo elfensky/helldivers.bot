@@ -77,9 +77,7 @@ export async function deleteUserAccount(_, formData) {
     );
     if (revokeError) throw revokeError;
 
-    const { data: deleted, error } = await tryCatch(
-        db.user.delete({ where: { id: userId } }),
-    );
+    const { error } = await tryCatch(db.user.delete({ where: { id: userId } }));
     if (error) throw error;
 
     return { data: { deleted: true }, time: performanceTime(start) };

@@ -5,7 +5,7 @@ import { EVENT_STATUS } from '@/shared/enums/events.mjs';
  *
  * @param {Array} prevEvents - Previous event array (may be null on first call)
  * @param {Array} nextEvents - Current event array
- * @returns {Array<{ kind: string, event: Object }>}
+ * @returns {Array<{kind: string, event: object}>}
  */
 export function detectChanges(prevEvents, nextEvents) {
     if (!prevEvents || !nextEvents) return [];

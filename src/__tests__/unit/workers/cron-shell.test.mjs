@@ -18,7 +18,7 @@ import path from 'path';
 const requireFromHere = createRequire(import.meta.url);
 
 const cronPath = path.resolve(process.cwd(), 'public/workers/cron.js');
-const cronLogicPath = path.resolve(process.cwd(), 'public/workers/cronLogic.js');
+const _cronLogicPath = path.resolve(process.cwd(), 'public/workers/cronLogic.js');
 
 let parentPortMock;
 let originalLoad;

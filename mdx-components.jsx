@@ -34,12 +34,12 @@ export function useMDXComponents(components) {
             </div>
         ),
         th: ({ children }) => (
-            <th className="border border-outline-variant bg-surface-1 px-3 py-2 text-left font-semibold text-text">
+            <th className="border-outline-variant border bg-surface-1 px-3 py-2 text-left font-semibold text-text">
                 {children}
             </th>
         ),
         td: ({ children }) => (
-            <td className="border border-outline-variant px-3 py-2 text-text-muted">
+            <td className="border-outline-variant border px-3 py-2 text-text-muted">
                 {children}
             </td>
         ),
@@ -55,7 +55,7 @@ export function useMDXComponents(components) {
                 {children}
             </blockquote>
         ),
-        hr: () => <hr className="my-8 border-outline-variant" />,
+        hr: () => <hr className="border-outline-variant my-8" />,
         ...components,
     };
 }

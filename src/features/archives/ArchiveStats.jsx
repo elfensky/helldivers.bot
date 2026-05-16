@@ -27,7 +27,13 @@ function formatRatio(numerator, denominator) {
     return (Number(numerator) / Number(denominator)).toFixed(1);
 }
 
-export default function ArchiveStats({ events, live, data, effects, glitchPhase }) {
+export default function ArchiveStats({
+    events,
+    live,
+    data,
+    effects: _effects,
+    glitchPhase,
+}) {
     if (!events?.length) return null;
 
     // Event-derived stats

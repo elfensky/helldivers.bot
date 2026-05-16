@@ -5,7 +5,7 @@ import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import db from '@/db/db';
 
-export async function GET(request) {
+export async function GET(_request) {
     const start = performance.now();
     const { error } = await tryCatch(db.$queryRaw`SELECT 1`);
     if (error) {

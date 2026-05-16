@@ -12,7 +12,7 @@ import LiveToasts from '@/features/notifications/LiveToasts';
  * component) so that LiveToasts and the Sonner Toaster share the
  * same module singleton.
  *
- * @param {{ initialData: Object|null, initialMapState: Object|null, children: React.ReactNode }} props
+ * @param {{initialData: object | null, initialMapState: object | null, children: React.ReactNode}} props
  */
 export default function LiveDataProvider({ initialData, initialMapState, children }) {
     const { data, mapState, status, prevData, isLeader } = useLiveData(

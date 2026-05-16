@@ -8,7 +8,7 @@ import { EVENT_STATUS, MAP_STATUS } from '@/shared/enums/events.mjs';
  * status. Used by the 11-segment Campaign Bar on EventCard/DefeatedCard for
  * the "N/11" chip and for aria-valuenow.
  *
- * @param {Object} factionMap - mapState[factionIndex]: { [region]: { status, percent } }
+ * @param {object} factionMap - mapState[factionIndex]: { [region]: { status, percent } }
  * @returns {{ captured: number, inProgressRegion: number | null, total: number }}
  */
 export function countCapturedRegions(factionMap) {

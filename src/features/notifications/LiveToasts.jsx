@@ -36,7 +36,7 @@ function showWebNotification(message, event) {
  * - The `<Toaster>` is co-located here (not in the root layout) so that
  *   `toast()` and `<Toaster>` share the same Sonner module instance.
  *
- * @param {{ prevData: Object, data: Object, isLeader: boolean }} props
+ * @param {{prevData: object, data: object, isLeader: boolean}} props
  */
 export default function LiveToasts({ prevData, data, isLeader }) {
     const hasRendered = useRef(false);
@@ -89,7 +89,10 @@ export default function LiveToasts({ prevData, data, isLeader }) {
                     // User dismissed the active toast; event has since
                     // transitioned. Show the terminal outcome so the user
                     // doesn't silently miss a status change.
-                    const kind = event.status === EVENT_STATUS.SUCCESS ? 'event_won' : 'event_lost';
+                    const kind =
+                        event.status === EVENT_STATUS.SUCCESS ?
+                            'event_won'
+                        :   'event_lost';
                     const alertColor =
                         kind === 'event_won' ? 'var(--color-success)' : (
                             'var(--color-danger)'
