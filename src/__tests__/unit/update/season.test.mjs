@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { updateSeason } from '@/update/season';
+import { updateSeason } from '@/update/season.mjs';
 
 // --- Dependency mocks ---
 
@@ -12,12 +12,12 @@ vi.mock('@/db/queries/upsertStatus', () => ({ queryUpsertStatus: vi.fn() }));
 
 // --- Import mocked modules ---
 
-import { fetchSeason } from '@/update/fetch';
-import { isValidSeason } from '@/validators/isValidSeason';
-import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus';
+import { fetchSeason } from '@/update/fetch.mjs';
+import { isValidSeason } from '@/validators/isValidSeason.mjs';
+import { getSeasonFromSnapshot } from '@/shared/utils/getSeason.mjs';
+import { queryUpsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { queryUpsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { queryUpsertStatus } from '@/db/queries/upsertStatus.mjs';
 
 // --- Test data ---
 

@@ -1,15 +1,15 @@
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/shared/utils/time';
-import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
+import { performanceTime } from '@/shared/utils/time.mjs';
+import { getSeasonFromSnapshot } from '@/shared/utils/getSeason.mjs';
 import { EVENT_TYPE } from '@/shared/enums/events.mjs';
-import { fetchSeason } from '@/update/fetch';
-import { isValidSeason } from '@/validators/isValidSeason';
-import { computeBucket } from '@/shared/utils/bucketing';
+import { fetchSeason } from '@/update/fetch.mjs';
+import { isValidSeason } from '@/validators/isValidSeason.mjs';
+import { computeBucket } from '@/shared/utils/bucketing.mjs';
 // db
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus';
+import { queryUpsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { queryUpsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { queryUpsertStatus } from '@/db/queries/upsertStatus.mjs';
 
 /**
  * @param {number} season

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useTrack } from '@/shared/hooks/useTrack';
+import { useTrack } from '@/shared/hooks/useTrack.mjs';
 import { useMermaidRender } from './useMermaidRender';
 import DetailPanel from './DetailPanel';
 import './MermaidDiagram.css';

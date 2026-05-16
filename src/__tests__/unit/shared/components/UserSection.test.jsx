@@ -17,7 +17,7 @@ vi.mock('@/shared/utils/gravatar', () => ({
 
 import { useSession } from '@/auth-client';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
-import { getGravatarUrl } from '@/shared/utils/gravatar';
+import { getGravatarUrl } from '@/shared/utils/gravatar.mjs';
 import UserSection from '@/shared/components/Navigation/UserSection';
 
 const baseSession = {

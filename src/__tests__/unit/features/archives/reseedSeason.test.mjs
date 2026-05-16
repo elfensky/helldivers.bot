@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { reseedSeason } from '@/features/archives/reseedSeason';
+import { reseedSeason } from '@/features/archives/reseedSeason.mjs';
 
 vi.mock('@/auth', () => ({
     auth: { api: { getSession: vi.fn() } },
@@ -29,7 +29,7 @@ vi.mock('@/db/db', () => ({
 
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { updateSeason } from '@/update/season';
+import { updateSeason } from '@/update/season.mjs';
 import db from '@/db/db';
 
 const adminSession = { user: { role: 'admin', id: 'admin-1' } };

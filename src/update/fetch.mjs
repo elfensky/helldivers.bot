@@ -1,7 +1,7 @@
 import axios from 'axios';
 import https from 'https';
-import { isValidNumber } from '@/validators/isValidNumber';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { isValidNumber } from '@/validators/isValidNumber.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 
 // axios is used instead of native fetch because Node's fetch doesn't support
 // custom https.Agent, which is needed to disable cert validation on the HD1 API.

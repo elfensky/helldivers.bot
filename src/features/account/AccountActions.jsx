@@ -2,9 +2,9 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { exportUserData, deleteUserAccount } from '@/db/queries/account';
+import { exportUserData, deleteUserAccount } from '@/db/queries/account.mjs';
 import { linkSocial, unlinkAccount } from '@/auth-client';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import Button from '@/shared/components/Button/Button';
 
 const SOCIAL_PROVIDERS = ['discord', 'github', 'google'];

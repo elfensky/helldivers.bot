@@ -3,11 +3,11 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/shared/utils/time';
-import { updateSeason } from '@/update/season';
-import { computeBucket } from '@/shared/utils/bucketing';
+import { performanceTime } from '@/shared/utils/time.mjs';
+import { updateSeason } from '@/update/season.mjs';
+import { computeBucket } from '@/shared/utils/bucketing.mjs';
 import db from '@/db/db';
 import { ROLE } from '@/shared/enums/roles.mjs';
 

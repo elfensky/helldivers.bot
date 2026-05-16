@@ -2,7 +2,7 @@
 import { useState, useCallback, useRef } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { toast } from 'sonner';
-import { sendTestNotification } from '@/features/admin/actions';
+import { sendTestNotification } from '@/features/admin/actions.mjs';
 import { showEventToast } from '@/features/notifications/EventToast';
 import { addDismissedEvent } from '@/features/notifications/dismissedEvents.mjs';
 import Button from '@/shared/components/Button/Button';

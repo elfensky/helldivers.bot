@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth';
+import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth.mjs';
 
 describe('computeWorkerHealth', () => {
     test('returns "down" when heartbeat is null (worker never started)', () => {

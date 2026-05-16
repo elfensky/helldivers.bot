@@ -2,8 +2,8 @@
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
-import { tryCatch } from '@/shared/utils/tryCatch';
-import { performanceTime } from '@/shared/utils/time';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { performanceTime } from '@/shared/utils/time.mjs';
 
 /**
  * Export all data for the authenticated user (profile, accounts, settings, API keys).

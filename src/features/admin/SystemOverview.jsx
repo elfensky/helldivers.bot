@@ -1,7 +1,7 @@
-import { getSystemStats } from '@/db/queries/admin';
-import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo';
-import { formatUptime } from '@/shared/utils/format/formatUptime';
-import { formatNumber } from '@/shared/utils/format/formatNumber';
+import { getSystemStats } from '@/db/queries/admin.mjs';
+import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo.mjs';
+import { formatUptime } from '@/shared/utils/format/formatUptime.mjs';
+import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import RefreshButton from '@/features/admin/RefreshButton';
 
 export default async function SystemOverview() {

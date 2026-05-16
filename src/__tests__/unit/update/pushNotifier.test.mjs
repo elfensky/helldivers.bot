@@ -26,7 +26,7 @@ vi.mock('@/shared/utils/tryCatch.mjs', () => ({
 }));
 vi.mock('@/shared/utils/game/detectChanges.mjs', () => ({ detectChanges: vi.fn() }));
 
-import { buildPayload, sendWithConcurrencyLimit } from '@/update/pushNotifier';
+import { buildPayload, sendWithConcurrencyLimit } from '@/update/pushNotifier.mjs';
 
 describe('buildPayload', () => {
     const bugAttackStarted = {

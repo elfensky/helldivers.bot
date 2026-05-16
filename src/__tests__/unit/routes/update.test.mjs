@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { GET, POST, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/update/route';
-import { updateStatus } from '@/update/status';
-import { updateSeason } from '@/update/season';
+import { updateStatus } from '@/update/status.mjs';
+import { updateSeason } from '@/update/season.mjs';
 import { expectSuccessEnvelope, expectErrorEnvelope } from '@test-utils';
 
 vi.mock('@/update/status', () => ({ updateStatus: vi.fn() }));

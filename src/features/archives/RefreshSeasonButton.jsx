@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { reseedSeason } from '@/features/archives/reseedSeason';
+import { reseedSeason } from '@/features/archives/reseedSeason.mjs';
 import { useTrack } from '@/shared/hooks/useTrack.mjs';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import Button from '@/shared/components/Button/Button';

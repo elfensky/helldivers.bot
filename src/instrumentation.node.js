@@ -1,6 +1,6 @@
-import { initializeEnvironmentVariables } from '@/shared/utils/initializeEnv';
-import { initializeWorker } from '@/shared/utils/initializeWorker';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { initializeEnvironmentVariables } from '@/shared/utils/initializeEnv.mjs';
+import { initializeWorker } from '@/shared/utils/initializeWorker.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 
 export async function initializeHelldivers1Api() {
     //ENVIRONMENT - are the required .env variables present and set

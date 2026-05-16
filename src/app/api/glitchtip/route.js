@@ -1,5 +1,5 @@
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 
 const DSN = process.env.SENTRY_DSN;
 

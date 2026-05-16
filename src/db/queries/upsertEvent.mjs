@@ -1,7 +1,7 @@
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/shared/utils/time';
+import { performanceTime } from '@/shared/utils/time.mjs';
 
 export async function queryUpsertEvent(season, type, event) {
     'use server';

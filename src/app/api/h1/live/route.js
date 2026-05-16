@@ -1,9 +1,9 @@
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { errorResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
-import { getCampaign } from '@/db/queries/getCampaign';
-import { computeMapState } from '@/shared/utils/game/computeMapState';
+import { errorResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 export async function GET() {

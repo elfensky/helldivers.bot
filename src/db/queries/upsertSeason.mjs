@@ -1,8 +1,8 @@
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/shared/utils/time';
-import { isValidNumber } from '@/validators/isValidNumber';
+import { performanceTime } from '@/shared/utils/time.mjs';
+import { isValidNumber } from '@/validators/isValidNumber.mjs';
 
 /**
  * Upsert an h1_season row. Optionally takes inlined per-season metadata:

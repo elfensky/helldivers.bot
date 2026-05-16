@@ -1,17 +1,17 @@
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { errorResponse, successResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 
 import { after } from 'next/server';
 //validators
-import { isValidNumber } from '@/validators/isValidNumber';
+import { isValidNumber } from '@/validators/isValidNumber.mjs';
 //db and fetch
-import { getCampaign } from '@/db/queries/getCampaign';
-import { updateSeason } from '@/update/season';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { updateSeason } from '@/update/season.mjs';
 //track
-import { umamiTrackEvent } from '@/shared/utils/umami';
+import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 
 export async function GET(request) {
     //0. initialize

@@ -1,4 +1,4 @@
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 
 /**

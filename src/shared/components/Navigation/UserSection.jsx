@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useSession } from '@/auth-client';
 import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
-import { getGravatarUrl } from '@/shared/utils/gravatar';
+import { getGravatarUrl } from '@/shared/utils/gravatar.mjs';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 
 export default function UserSection() {

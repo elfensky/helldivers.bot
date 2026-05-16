@@ -1,8 +1,8 @@
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { successResponse, errorResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { successResponse, errorResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import db from '@/db/db';
 
 export async function GET(request) {

@@ -1,24 +1,24 @@
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { errorResponse, successResponse } from '@/shared/utils/api/responses';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { after } from 'next/server';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 //parsers
-import { formDataToObject } from '@/shared/utils/formdata';
+import { formDataToObject } from '@/shared/utils/formdata.mjs';
 //validators
-import { isValidContentType } from '@/validators/isValidContentType';
-import { isValidFormData } from '@/validators/isValidFormData';
+import { isValidContentType } from '@/validators/isValidContentType.mjs';
+import { isValidFormData } from '@/validators/isValidFormData.mjs';
 //db
-import { updateSeason } from '@/update/season';
+import { updateSeason } from '@/update/season.mjs';
 //auth
-import { validateApiKey, API_KEY_ERROR } from '@/db/queries/validateApiKey';
+import { validateApiKey, API_KEY_ERROR } from '@/db/queries/validateApiKey.mjs';
 //track
-import { umamiTrackEvent } from '@/shared/utils/umami';
+import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 //enums
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
-import { groupStatusByBucket } from '@/shared/utils/bucketing';
+import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
 
 export async function POST(request) {
     //0. initialize

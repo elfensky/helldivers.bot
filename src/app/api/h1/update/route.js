@@ -1,15 +1,15 @@
 import crypto from 'node:crypto';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { errorResponse, successResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import db from '@/db/db';
 //update
-import { updateStatus } from '@/update/status';
-import { updateSeason } from '@/update/season';
-import { checkAndNotify } from '@/update/pushNotifier';
-import { computeBucket } from '@/shared/utils/bucketing';
+import { updateStatus } from '@/update/status.mjs';
+import { updateSeason } from '@/update/season.mjs';
+import { checkAndNotify } from '@/update/pushNotifier.mjs';
+import { computeBucket } from '@/shared/utils/bucketing.mjs';
 
 // Tracks the season observed on the previous worker poll so we can detect
 // a season transition and run one final updateSeason() pass on the outgoing

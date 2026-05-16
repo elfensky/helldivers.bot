@@ -40,8 +40,8 @@ vi.mock('next/server', async (importOriginal) => {
 
 import { POST, GET, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/rebroadcast/route';
 import db from '@/db/db';
-import { validateApiKey } from '@/db/queries/validateApiKey';
-import { updateSeason } from '@/update/season';
+import { validateApiKey } from '@/db/queries/validateApiKey.mjs';
+import { updateSeason } from '@/update/season.mjs';
 
 function createPostRequest(formEntries) {
     const formData = new FormData();

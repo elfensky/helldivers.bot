@@ -1,5 +1,5 @@
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { createHash } from 'crypto';
 
 export const API_KEY_ERROR = Object.freeze({

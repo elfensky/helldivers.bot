@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { GET, POST, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/campaign/route';
-import { getCampaign } from '@/db/queries/getCampaign';
-import { updateSeason } from '@/update/season';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { updateSeason } from '@/update/season.mjs';
 
 vi.mock('@/db/queries/getCampaign', () => ({ getCampaign: vi.fn() }));
 vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));

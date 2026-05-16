@@ -1,4 +1,4 @@
-import { performanceTime } from '@/shared/utils/time';
+import { performanceTime } from '@/shared/utils/time.mjs';
 import { NextResponse } from 'next/server';
 
 /**

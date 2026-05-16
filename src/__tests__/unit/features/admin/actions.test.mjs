@@ -36,7 +36,7 @@ vi.mock('@/db/db', () => ({
 }));
 
 import { auth } from '@/auth';
-import { ensureVapid, sendWithConcurrencyLimit } from '@/update/pushNotifier';
+import { ensureVapid, sendWithConcurrencyLimit } from '@/update/pushNotifier.mjs';
 import db from '@/db/db';
 
 const adminSession = { user: { role: 'admin', id: '1' } };

@@ -1,4 +1,4 @@
-import { isValidNumber } from '@/validators/isValidNumber';
+import { isValidNumber } from '@/validators/isValidNumber.mjs';
 
 function resolveSeason(allSeasons, errorContext) {
     const uniqueSeasons = [...new Set(allSeasons)];

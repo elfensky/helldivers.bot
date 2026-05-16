@@ -1,8 +1,8 @@
 import { cache } from 'react';
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { groupStatusByBucket } from '@/shared/utils/bucketing';
+import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
 
 /**
  * Fetch the campaign data for a season (or the latest season if null).

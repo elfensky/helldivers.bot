@@ -3,10 +3,10 @@ import { z } from 'zod';
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
-import { tryCatch } from '@/shared/utils/tryCatch';
-import { performanceTime } from '@/shared/utils/time';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { performanceTime } from '@/shared/utils/time.mjs';
 import { revalidatePath } from 'next/cache';
-import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth';
+import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth.mjs';
 import { ROLE } from '@/shared/enums/roles.mjs';
 
 /**
