@@ -388,14 +388,14 @@ describe('sendWithConcurrencyLimit', () => {
             .mockRejectedValueOnce({ statusCode: 410 })
             .mockRejectedValueOnce({ statusCode: 404 });
         db.push_subscription.deleteMany.mockResolvedValue({ count: 2 });
-        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
 
         await sendWithConcurrencyLimit(
             [sub1, sub2, { endpoint: 'sub3', keys_p256dh: 'p3', keys_auth: 'a3' }],
             'payload',
         );
 
-        expect(logSpy).toHaveBeenCalledWith('Cleaned up 2 stale push subscriptions');
+        expect(infoSpy).toHaveBeenCalledWith('Cleaned up 2 stale push subscriptions');
     });
 
     test('webpush.sendNotification is called with the correct subscription shape (endpoint + keys)', async () => {

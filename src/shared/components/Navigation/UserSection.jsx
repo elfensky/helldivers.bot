@@ -17,13 +17,14 @@ export default function UserSection() {
     const [avatarUrl, setAvatarUrl] = useState(session?.user?.image ?? null);
     const identifiedRef = useRef(false);
 
+    const user = session?.user;
     useEffect(() => {
-        if (session?.user && !session.user.image) {
-            getGravatarUrl(session.user.email).then(setAvatarUrl);
-        } else if (session?.user?.image) {
-            setAvatarUrl(session.user.image);
+        if (user && !user.image) {
+            getGravatarUrl(user.email).then(setAvatarUrl);
+        } else if (user?.image) {
+            setAvatarUrl(user.image);
         }
-    }, [session?.user?.image, session?.user?.email]);
+    }, [user]);
 
     useEffect(() => {
         if (session?.user?.id && !identifiedRef.current && window.umami) {
