@@ -9,6 +9,7 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from 'recharts';
+import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
 
 const FACTIONS = [
     { key: 'bugs', label: 'Bugs', stroke: '#e8822a', fill: 'rgba(232, 130, 42, 0.2)' },
@@ -44,9 +45,9 @@ function buildChartData(snapshots, pointsMax) {
 
             for (let i = 0; i < 3; i++) {
                 const faction = parsed[i];
-                if (!faction || faction.status === 'hidden') {
+                if (!faction || faction.status === CAMPAIGN_STATUS.HIDDEN) {
                     entry[FACTIONS[i].key] = null;
-                } else if (faction.status === 'defeated') {
+                } else if (faction.status === CAMPAIGN_STATUS.DEFEATED) {
                     // Homeworld captured — full conquest
                     entry[FACTIONS[i].key] = 100;
                 } else {

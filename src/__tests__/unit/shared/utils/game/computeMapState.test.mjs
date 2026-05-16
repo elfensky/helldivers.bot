@@ -120,7 +120,7 @@ describe('computeMapState', () => {
         // All Cyborg sectors (including homeworld) forced to lost
         for (let r = 1; r <= 11; r++) {
             expect(map[1][r].status).toBe('lost');
-            expect(map[1][r].event).toBe('');
+            expect(map[1][r].event).toBe('idle');
             expect(map[1][r].percent).toBe(0);
         }
 

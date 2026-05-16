@@ -1,26 +1,24 @@
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 
-const DSN = process.env.SENTRY_DSN;
-
-function parseDsn() {
-    const url = new URL(DSN);
+function parseDsn(dsn) {
+    const url = new URL(dsn);
     const publicKey = url.username;
     const projectId = url.pathname.replace('/', '');
-    const ingestUrl = `${url.protocol}//${url.host}/api/${projectId}/envelope/?sentry_key=${publicKey}&sentry_version=7`;
-    return ingestUrl;
+    return `${url.protocol}//${url.host}/api/${projectId}/envelope/?sentry_key=${publicKey}&sentry_version=7`;
 }
 
 export async function POST(request) {
-    if (!DSN) {
+    const dsn = process.env.SENTRY_DSN;
+    if (!dsn) {
         return new Response('Tunnel not configured', { status: 503 });
     }
 
     const body = await request.text();
-    const { data: ingestUrl, error: dsnError } = await tryCatch(
-        Promise.resolve().then(() => parseDsn()),
-    );
-    if (dsnError) {
+    let ingestUrl;
+    try {
+        ingestUrl = parseDsn(dsn);
+    } catch {
         return new Response('Invalid DSN configuration', { status: 500 });
     }
 
@@ -43,3 +41,4 @@ export const GET = methodNotAllowed;
 export const PUT = methodNotAllowed;
 export const DELETE = methodNotAllowed;
 export const PATCH = methodNotAllowed;
+export const OPTIONS = methodNotAllowed;

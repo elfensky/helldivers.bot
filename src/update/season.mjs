@@ -38,16 +38,18 @@ export async function updateSeason(season, opts = {}) {
         for (const issue of check?.error?.issues ?? []) {
             console.error('update/season.mjs | isValidSeason() | ', issue.message);
         }
-        throw check.error;
+        throw new Error(check?.error?.message || 'Invalid season data', {
+            cause: 'update/season.mjs | isValidSeason(fetchedData)',
+        });
     }
 
     // 3. Verify season parameter matches fetched data.
     //    getSeasonFromSnapshot throws "No seasons found" when snapshots/events
     //    are all empty — that means the season doesn't exist on the HD1 API.
-    const { data: fetchedSeason, error: seasonResolveError } = await tryCatch(
-        Promise.resolve(getSeasonFromSnapshot(fetchedData)),
-    );
-    if (seasonResolveError) {
+    let fetchedSeason;
+    try {
+        fetchedSeason = getSeasonFromSnapshot(fetchedData);
+    } catch {
         throw new Error(`Season ${season} not found`, { cause: 'SEASON_NOT_FOUND' });
     }
     if (season !== fetchedSeason) throw new Error('Invalid season');

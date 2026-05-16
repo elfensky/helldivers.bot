@@ -58,7 +58,7 @@ export async function updateUserRole(_, formData) {
 
     const schema = z.object({
         userId: z.string().min(1),
-        newRole: z.enum(['user', 'admin']),
+        newRole: z.enum(Object.values(ROLE)),
     });
     const check = schema.safeParse(formValues);
     if (!check.success) {

@@ -9,7 +9,7 @@ import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
  * @returns {Promise<object | null>} Campaign data, or null if no season exists
  *
  * Returns a shape compatible with the legacy getCampaign output:
- *   { season, last_updated, status, introduction_order, points_max, snapshots, events }
+ *   { season, last_updated, season_duration, status, introduction_order, points_max, snapshots, events }
  *
  * - `status`     — 3 rows from h1_status, one per faction, latest bucket each.
  *                  Consumers cast this as an array of faction states.
@@ -21,6 +21,7 @@ import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
  * - `introduction_order` / `points_max` — read from the new h1_season
  *                  columns as shape `{ order: number[] }` / `{ points: number[] }`
  *                  to stay API-compatible with the legacy 1:1 relations.
+ * - `season_duration` — scalar int from h1_season (per-season, not per-faction).
  */
 export const getCampaign = cache(async function getCampaign(season = null) {
     'use server';
