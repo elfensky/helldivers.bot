@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { eventKey } from '@/features/archives/eventKey.mjs';
+import { eventKey } from '@/shared/utils/game/eventKey.mjs';
 
 /**
  * Scroll-driven event selection.

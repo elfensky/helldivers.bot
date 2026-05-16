@@ -79,7 +79,7 @@ vi.mock('@/features/archives/useCyberstanEffects.mjs', () => ({
     useCyberstanEffects: mockUseCyberstanEffects,
 }));
 
-vi.mock('@/features/archives/useScrollEvent.mjs', () => ({
+vi.mock('@/shared/hooks/useScrollEvent.mjs', () => ({
     useScrollEvent: mockUseScrollEvent,
 }));
 
@@ -91,7 +91,7 @@ vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
     getWarOutcome: mockGetWarOutcome,
 }));
 
-vi.mock('@/features/archives/eventKey.mjs', () => ({
+vi.mock('@/shared/utils/game/eventKey.mjs', () => ({
     eventKey: (e) => `evt-${e?.event_id || 'null'}`,
 }));
 

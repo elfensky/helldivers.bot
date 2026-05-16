@@ -95,7 +95,7 @@ vi.mock('@/features/archives/RefreshSeasonButton', () => ({
     ),
 }));
 
-vi.mock('@/features/archives/eventKey.mjs', () => ({
+vi.mock('@/shared/utils/game/eventKey.mjs', () => ({
     eventKey: (e) => `evt-${e.event_id}`,
 }));
 vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
@@ -104,7 +104,7 @@ vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
 vi.mock('@/features/archives/useCyberstanEffects.mjs', () => ({
     useCyberstanEffects: mocks.useCyberstanEffectsMock,
 }));
-vi.mock('@/features/archives/useScrollEvent.mjs', () => ({
+vi.mock('@/shared/hooks/useScrollEvent.mjs', () => ({
     useScrollEvent: mocks.useScrollEventMock,
 }));
 vi.mock('@/shared/hooks/useHeaderGlassFilter.mjs', () => ({
