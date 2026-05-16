@@ -2,9 +2,25 @@
 
 ## Unreleased
 
+## 0.46.0
+
 ### Features
 
 - **Stale version auto-reload** — three-layer detection prevents `ChunkLoadError` crashes after deployments: (1) Next.js `deploymentId` triggers hard navigation on version skew, (2) `appVersion` field in `/api/h1/live` enables poll-based detection within ~10s, (3) global `unhandledrejection` handler catches chunk/module load failures across all browsers including Safari. Shared `guardedReload()` utility uses localStorage circuit breaker (30s TTL, max 3 attempts) to prevent infinite reload loops.
+
+### Fixes
+
+- **`ApiForm.jsx` Rules of Hooks violation** — `useActionState`/`useState` were called after an early `return` on `!userId` in `GenerateApiKeyForm` and `DeleteApiKeyForm`. Moved hooks above the guard so React's hook call order stays consistent across renders.
+- **`UserSection.jsx` exhaustive-deps** — `useEffect` accessed `session.user.image`/`.email` directly while depending on optional-chained property paths; extracted `const user = session?.user` and depend on the whole user object.
+- **`DebugTools.jsx` exhaustive-deps** — `handleTestPush` `useCallback` referenced `buildOrUpdatePushEvent` but had `[]` deps; added the dependency (the callee itself has stable `[]` deps so no re-render cascade).
+
+### Chores
+
+- **ESLint v9 flat config + tsc checkJs** — `npm run lint` now gates Prettier formatting, JSDoc validity, React Hooks rules, React Compiler hints, and Next.js core-web-vitals rules through a single command. `npm run typecheck` runs `tsc --noEmit` against an expanded `jsconfig.json` with `checkJs: true`, validating JSDoc annotations across the project without converting any files to TypeScript. CI runs both before tests/build. CLAUDE.md verification rule updated to require all four (`lint`, `typecheck`, `test:unit`, `build`).
+- **`<img>` → `next/image`** in 6 spots (faction icons in `DefeatedCard`, `EventCard`, `EventToast`, `EventLogCard`, `FactionTabs`; backstab icon in `StatGrid`). All had explicit width/height; converted to satisfy `@next/next/no-img-element`.
+- **`console.log` → `console.info`** in worker lifecycle (`initializeWorker.mjs`), season-transition closing pass (`/api/h1/update`), and push-notification cleanup messages.
+- **Dead `start = performance.now()` declarations** removed from `getCampaign.mjs` and `initializeWorker.mjs` (leftover timing scaffold with no `performanceTime(start)` callers).
+- **Unused destructures** in `admin.mjs` simplified — `{ user, error: authError } = await requireAdmin()` shortened to `{ error: authError }` in paths where `user` was never read.
 
 ## 0.45.2
 
