@@ -49,7 +49,7 @@ vi.mock('@/features/galaxy/DefeatedCard', () => ({
     ),
 }));
 
-vi.mock('@/features/dashboard/FactionTabs', () => ({
+vi.mock('@/shared/components/FactionTabs', () => ({
     default: ({ active, onChange }) => (
         <div data-testid="faction-tabs">
             <button onClick={() => onChange('bugs')}>Bugs</button>

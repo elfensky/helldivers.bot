@@ -4,7 +4,7 @@ import './ArchivesLayout.css';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 import ArchivesHeader, { EffectsToggle } from '@/features/archives/ArchivesHeader';
 import FactionHealthChart from '@/features/archives/FactionHealthChart';
-import FactionTabs from '@/features/dashboard/FactionTabs';
+import FactionTabs from '@/shared/components/FactionTabs';
 import FactionStats from '@/features/archives/FactionStats';
 import EventLog from '@/features/timeline/EventLog';
 import ArchiveMap from '@/features/archives/ArchiveMap';

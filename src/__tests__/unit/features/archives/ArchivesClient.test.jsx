@@ -49,7 +49,7 @@ vi.mock('@/features/archives/FactionHealthChart', () => ({
         />
     ),
 }));
-vi.mock('@/features/dashboard/FactionTabs', () => ({
+vi.mock('@/shared/components/FactionTabs', () => ({
     default: ({ active, onChange }) => (
         <button
             data-testid="faction-tabs-stub"

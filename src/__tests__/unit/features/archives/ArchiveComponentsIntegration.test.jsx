@@ -43,7 +43,7 @@ vi.mock('@/features/archives/ArchivesHeader', () => ({
     ),
 }));
 
-vi.mock('@/features/dashboard/FactionTabs', () => ({
+vi.mock('@/shared/components/FactionTabs', () => ({
     default: (props) => (
         <div data-testid="faction-tabs-mock" data-props={JSON.stringify(props)} />
     ),
