@@ -1,5 +1,6 @@
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
 import './StatGrid.css';
 
@@ -153,7 +154,7 @@ export default function StatGrid({
     const resolved =
         events?.filter((e) => {
             if (factionIndex !== null && e.enemy !== factionIndex) return false;
-            return e.status === 'success' || e.status === 'fail';
+            return e.status === EVENT_STATUS.SUCCESS || e.status === EVENT_STATUS.FAIL;
         }) ?? [];
 
     const { wins, losses } = countOutcomes(resolved);

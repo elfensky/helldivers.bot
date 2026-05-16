@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 import factions from '@/shared/enums/factions.mjs';
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 import { detectChanges } from '@/shared/utils/game/detectChanges.mjs';
 import {
     getDismissedEvents,
@@ -78,17 +79,17 @@ export default function LiveToasts({ prevData, data, isLeader }) {
 
                 if (dismissedAtCurrent) continue; // fully suppressed
 
-                if (event.status === 'active') {
+                if (event.status === EVENT_STATUS.ACTIVE) {
                     showEventToast(event, 'catch_up', {
                         pulseDelay: delays.get(`${event.enemy}-${event.region}`),
                         onDismiss: () => addDismissedEvent(event.event_id, event.status),
                     });
                     shownCount++;
-                } else if (dismissedAt === 'active') {
+                } else if (dismissedAt === EVENT_STATUS.ACTIVE) {
                     // User dismissed the active toast; event has since
                     // transitioned. Show the terminal outcome so the user
                     // doesn't silently miss a status change.
-                    const kind = event.status === 'success' ? 'event_won' : 'event_lost';
+                    const kind = event.status === EVENT_STATUS.SUCCESS ? 'event_won' : 'event_lost';
                     const alertColor =
                         kind === 'event_won' ? 'var(--color-success)' : (
                             'var(--color-danger)'

@@ -5,6 +5,7 @@ import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.mjs';
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
+import { CAMPAIGN_STATUS, EVENT_STATUS, MAP_STATUS } from '@/shared/enums/events.mjs';
 import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 
 const passThrough = (v) => (v == null ? '—' : String(v));
@@ -20,7 +21,7 @@ const formatSectorPct = (v) =>
  * @returns {{ sector, region, percent, points, pointsMax, event }} | null
  */
 export function computeFrontier(campaignData, factionMap) {
-    if (!campaignData || !factionMap || campaignData.status !== 'active') return null;
+    if (!campaignData || !factionMap || campaignData.status !== CAMPAIGN_STATUS.ACTIVE) return null;
 
     const pointsMax = campaignData.points_max > 0 ? campaignData.points_max : 1;
     const points = campaignData.points;
@@ -68,10 +69,10 @@ function EventCountdown({ endTime }) {
 
 function SegmentCell({ seg, factionColor }) {
     const status = seg?.status;
-    if (status === 'captured') {
+    if (status === MAP_STATUS.CAPTURED) {
         return <div className="sector-card-segment sector-card-segment--captured" />;
     }
-    if (status === 'in_progress') {
+    if (status === MAP_STATUS.IN_PROGRESS) {
         const pct = Math.max(0, Math.min(100, seg?.percent ?? 0));
         return (
             <div
@@ -80,7 +81,7 @@ function SegmentCell({ seg, factionColor }) {
             />
         );
     }
-    if (status === 'active') {
+    if (status === EVENT_STATUS.ACTIVE) {
         // Homeworld attack in progress — uses danger color, matches defending aesthetic
         const pct = Math.max(0, Math.min(100, seg?.percent ?? 0));
         return (

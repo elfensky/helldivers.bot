@@ -1,3 +1,5 @@
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
+
 const STORAGE_KEY = 'dismissed-toast-events';
 const MAX_ENTRIES = 200;
 
@@ -17,7 +19,7 @@ export function getDismissedEvents() {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
             return Object.fromEntries(
-                parsed.map((id) => [String(id), { status: 'active', ts: 0 }]),
+                parsed.map((id) => [String(id), { status: EVENT_STATUS.ACTIVE, ts: 0 }]),
             );
         }
         if (!parsed || typeof parsed !== 'object') return {};

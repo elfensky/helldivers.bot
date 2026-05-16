@@ -2,6 +2,7 @@ import { toast } from 'sonner';
 import factions from '@/shared/enums/factions.mjs';
 import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
+import { EVENT_TYPE } from '@/shared/enums/events.mjs';
 
 /**
  * Build title + subtitle for a toast based on event kind and type.
@@ -12,7 +13,7 @@ import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs
  */
 export function toastLabel(kind, event) {
     const region = getEventRegionLabel(event);
-    const isDefend = event.type === 'defend';
+    const isDefend = event.type === EVENT_TYPE.DEFEND;
 
     const titles = {
         event_started: isDefend ? `${region} under attack` : `Attacking ${region}`,
