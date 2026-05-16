@@ -75,7 +75,7 @@ export async function GET(request) {
     // error — the current season's update is more critical, and the admin
     // can always recover missing snapshots via the /archives refresh button.
     if (lastSeasonObserved !== null && lastSeasonObserved < statusData.season) {
-        console.log(
+        console.info(
             `Season transition detected: ${lastSeasonObserved} → ${statusData.season}. Running closing pass on outgoing season.`,
         );
         const { error: closingError } = await tryCatch(updateSeason(lastSeasonObserved));

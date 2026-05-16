@@ -2,7 +2,7 @@
  * Group events by calendar day (UTC).
  *
  * @param {Array<{ start_time: number }>} events - Events with Unix timestamps (seconds)
- * @param {Object} [opts]
+ * @param {object} [opts]
  * @param {boolean} [opts.includeToday=true] - If true, prepend an empty TODAY group when no events exist for today (only applies to the default newest-first sort).
  * @param {'desc' | 'asc'} [opts.sortOrder='desc'] - `'desc'` = newest first (days and events-within-day). `'asc'` = oldest first.
  * @returns {Array<{ date: string, label: string, events: Array }>}

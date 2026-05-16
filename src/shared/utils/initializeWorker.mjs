@@ -17,11 +17,9 @@ export async function initializeWorker() {
         }
         const port = process.env.PORT || 3000;
 
-        const { performance } = await import('perf_hooks');
         const { Worker } = await import('worker_threads');
         const path = await import('path');
 
-        const start = performance.now();
         try {
             let workerPath = '';
             if (process.env.NODE_ENV === 'development') {
@@ -42,12 +40,12 @@ export async function initializeWorker() {
             });
 
             worker.on('exit', (code) => {
-                console.log(`Worker stopped with exit code ${code}`);
+                console.info(`Worker stopped with exit code ${code}`);
                 worker = null;
             });
 
             process.on('SIGINT', async () => {
-                console.log('SIGINT received, terminating update worker...');
+                console.info('SIGINT received, terminating update worker...');
                 if (worker) {
                     await worker.terminate();
                 }
@@ -55,7 +53,7 @@ export async function initializeWorker() {
             });
 
             process.on('SIGTERM', async () => {
-                console.log('SIGTERM received, terminating update worker...');
+                console.info('SIGTERM received, terminating update worker...');
                 if (worker) {
                     await worker.terminate();
                 }

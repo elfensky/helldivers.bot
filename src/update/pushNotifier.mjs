@@ -94,7 +94,7 @@ export async function sendWithConcurrencyLimit(subscriptions, payload) {
         if (error) {
             console.error('Failed to cleanup stale push subscriptions:', error.message);
         } else {
-            console.log(`Cleaned up ${staleEndpoints.length} stale push subscriptions`);
+            console.info(`Cleaned up ${staleEndpoints.length} stale push subscriptions`);
         }
     }
 

@@ -1,13 +1,12 @@
 import { cache } from 'react';
 import db from '@/db/db';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { performance } from 'perf_hooks';
 import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
 
 /**
  * Fetch the campaign data for a season (or the latest season if null).
  *
- * @returns {Promise<Object|null>} Campaign data, or null if no season exists
+ * @returns {Promise<object | null>} Campaign data, or null if no season exists
  *
  * Returns a shape compatible with the legacy getCampaign output:
  *   { season, last_updated, status, introduction_order, points_max, snapshots, events }
@@ -25,7 +24,6 @@ import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
  */
 export const getCampaign = cache(async function getCampaign(season = null) {
     'use server';
-    const start = performance.now();
 
     // Step 1: Find the target season row.
     const seasonRow = await _findSeason(season);
@@ -145,4 +143,3 @@ async function _findSeason(season) {
     if (error) throw error;
     return data;
 }
-

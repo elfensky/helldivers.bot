@@ -23,7 +23,7 @@ async function requireAdmin() {
 
 export async function getAllUsers() {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const { data: users, error } = await tryCatch(
@@ -170,7 +170,7 @@ export async function toggleUserBan(_, formData) {
 
 export async function adminGetUserApiKeys(_, formData) {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const userId = formData.get('userId');
@@ -199,7 +199,7 @@ export async function adminGetUserApiKeys(_, formData) {
 
 export async function adminRevokeApiKey(_, formData) {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const apikeyId = formData.get('apikeyId');
@@ -223,7 +223,7 @@ export async function adminRevokeApiKey(_, formData) {
 
 export async function getSystemStats() {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     // Step 1: Get current season (needed for active factions query)
@@ -289,7 +289,7 @@ export async function getSystemStats() {
 
 export async function getAllApiKeys() {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const { data: keys, error } = await tryCatch(

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Button from '@/shared/components/Button/Button';
 import { useTrack } from '@/shared/hooks/useTrack.mjs';
 
@@ -48,9 +49,11 @@ export default function FactionTabs({ active, onChange }) {
                     aria-pressed={active === id}
                     data-umami-event={`faction-toggle-${id}`}
                 >
-                    <img
+                    <Image
                         src={icon}
                         alt=""
+                        width={26}
+                        height={26}
                         className="size-[26px] object-contain md:size-[18px]"
                     />
                 </Button>

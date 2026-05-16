@@ -47,9 +47,7 @@ export async function GET(request) {
     //3. if no data, attempt fetch remote data
     if (!campaignData) {
         //1. fetch remote data
-        const { error: fetchError } = await tryCatch(
-            updateSeason(season),
-        );
+        const { error: fetchError } = await tryCatch(updateSeason(season));
         if (fetchError) {
             if (fetchError.cause === 'SEASON_NOT_FOUND') {
                 return errorResponse(404, start, fetchError.message);

@@ -244,9 +244,9 @@ function teardownLeader() {
  *   notifications. Leaders yield on conflicting claims to prevent dupes.
  * - Fallback chain: live poll → server-rendered → localStorage cache → null.
  *
- * @param {Object} initialData - Server-rendered campaign data (null if offline)
- * @param {Object} initialMapState - Server-rendered map state (null if offline)
- * @returns {{ data: Object, mapState: Object, status: string, prevData: Object, isLeader: boolean }}
+ * @param {object} initialData - Server-rendered campaign data (null if offline)
+ * @param {object} initialMapState - Server-rendered map state (null if offline)
+ * @returns {{data: object, mapState: object, status: string, prevData: object, isLeader: boolean}}
  */
 export function useLiveData(initialData, initialMapState) {
     const [snapshot, setSnapshot] = useState(INITIAL_STORE);

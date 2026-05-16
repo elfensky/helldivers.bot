@@ -1,5 +1,10 @@
 import mapTemplate from '@/shared/enums/map.mjs';
-import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS, MAP_STATUS } from '@/shared/enums/events.mjs';
+import {
+    EVENT_TYPE,
+    EVENT_STATUS,
+    CAMPAIGN_STATUS,
+    MAP_STATUS,
+} from '@/shared/enums/events.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 
 /**
@@ -17,7 +22,7 @@ import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
  *
  * @param {Array} factionStates - Array of 3 objects: { enemy, points, points_taken, points_max, status }
  * @param {Array} events - Pre-filtered events (caller handles filtering — see note above)
- * @returns {Object} Deep clone of map template with computed state
+ * @returns {object} Deep clone of map template with computed state
  */
 export function computeMapState(factionStates, events = []) {
     const map = JSON.parse(JSON.stringify(mapTemplate));

@@ -2,7 +2,12 @@ import { ImageResponse } from 'next/og';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { EVENT_STATUS, EVENT_TYPE, CAMPAIGN_STATUS, MAP_STATUS } from '@/shared/enums/events.mjs';
+import {
+    EVENT_STATUS,
+    EVENT_TYPE,
+    CAMPAIGN_STATUS,
+    MAP_STATUS,
+} from '@/shared/enums/events.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import {
     bugPaths,

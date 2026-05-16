@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import Image from 'next/image';
 import factions from '@/shared/enums/factions.mjs';
 import { FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
@@ -42,7 +43,7 @@ function ToastContent({ event, kind, accentClass }) {
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {icon && <img src={icon} alt="" width={24} height={24} />}
+            {icon && <Image src={icon} alt="" width={24} height={24} />}
             <div>
                 <div style={{ fontWeight: 600 }}>{title}</div>
                 <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
@@ -65,7 +66,7 @@ let flashToggle = false;
  *
  * @param {{ id: string|number, enemy: number, region: number, type: string }} event
  * @param {'event_started'|'event_won'|'event_lost'|'catch_up'} kind
- * @param {Object}  [opts]
+ * @param {object}  [opts]
  * @param {number}  [opts.duration]    - Sonner duration (default Infinity)
  * @param {string}  [opts.alertColor]  - Blink overlay color (default danger)
  * @param {number}  [opts.pulseDelay]  - Animation delay in seconds for per-event offset

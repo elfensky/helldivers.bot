@@ -2,7 +2,7 @@
 
 import RouteError from '@/shared/components/RouteError';
 
-export default function GlobalError({ error, reset }) {
+export default function GlobalError({ error: _error, reset }) {
     return (
         <html lang="en">
             <body className="bg-surface-0 text-text">

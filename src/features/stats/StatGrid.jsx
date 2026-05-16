@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
@@ -6,7 +7,6 @@ import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
 import './StatGrid.css';
 
 const asPercent = (v) => (Number.isFinite(v) ? `${v.toFixed(1)}%` : '—');
-
 
 /**
  * Compute accidental-death rate: accidentals / deaths as a raw percentage
@@ -97,7 +97,7 @@ function accidentalSubtitle(accidentals, deaths) {
     const rate = computeAccidentalRate(accidentals, deaths);
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
-            <img src="/icons/backstab.png" alt="" width={14} height={14} />
+            <Image src="/icons/backstab.png" alt="" width={14} height={14} />
             <span>
                 <AnimatedStat value={count} />
             </span>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import './EventCard.css';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
@@ -21,7 +22,8 @@ const formatSectorPct = (v) =>
  * @returns {{ sector, region, percent, points, pointsMax, event }} | null
  */
 export function computeFrontier(campaignData, factionMap) {
-    if (!campaignData || !factionMap || campaignData.status !== CAMPAIGN_STATUS.ACTIVE) return null;
+    if (!campaignData || !factionMap || campaignData.status !== CAMPAIGN_STATUS.ACTIVE)
+        return null;
 
     const pointsMax = campaignData.points_max > 0 ? campaignData.points_max : 1;
     const points = campaignData.points;
@@ -67,7 +69,7 @@ function EventCountdown({ endTime }) {
     );
 }
 
-function SegmentCell({ seg, factionColor }) {
+function SegmentCell({ seg, factionColor: _factionColor }) {
     const status = seg?.status;
     if (status === MAP_STATUS.CAPTURED) {
         return <div className="sector-card-segment sector-card-segment--captured" />;
@@ -128,7 +130,7 @@ export default function EventCard({
         <div className="sector-card" style={cardStyle}>
             <div className="sector-card-content">
                 <div className="sector-card-header">
-                    <img
+                    <Image
                         src={`/icons/faction${factionIndex}.webp`}
                         alt=""
                         width={16}

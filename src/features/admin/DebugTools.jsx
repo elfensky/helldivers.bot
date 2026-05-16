@@ -75,34 +75,37 @@ export default function DebugTools() {
         return testPushEventRef.current;
     }, []);
 
-    const handleTestPush = useCallback(async (kind) => {
-        setPushStatus((prev) => ({ ...prev, [kind]: 'sending' }));
-        setPushMessage(null);
+    const handleTestPush = useCallback(
+        async (kind) => {
+            setPushStatus((prev) => ({ ...prev, [kind]: 'sending' }));
+            setPushMessage(null);
 
-        const event = buildOrUpdatePushEvent(kind);
-        const result = await sendTestNotification({
-            enemy: event.enemy,
-            region: event.region,
-            type: event.type,
-            kind,
-            event_id: event.event_id,
-        });
+            const event = buildOrUpdatePushEvent(kind);
+            const result = await sendTestNotification({
+                enemy: event.enemy,
+                region: event.region,
+                type: event.type,
+                kind,
+                event_id: event.event_id,
+            });
 
-        if (result.errors) {
-            const msg = Object.values(result.errors).join('; ');
-            setPushMessage({ text: msg, isError: true });
-            setPushStatus((prev) => ({ ...prev, [kind]: 'idle' }));
-        } else {
-            const parts = [`Sent to ${result.data.sent}`];
-            if (result.data.stale > 0) parts.push(`${result.data.stale} stale`);
-            setPushMessage({ text: parts.join(', '), isError: false });
-            setPushStatus((prev) => ({ ...prev, [kind]: 'cooldown' }));
-            setTimeout(
-                () => setPushStatus((prev) => ({ ...prev, [kind]: 'idle' })),
-                5_000,
-            );
-        }
-    }, []);
+            if (result.errors) {
+                const msg = Object.values(result.errors).join('; ');
+                setPushMessage({ text: msg, isError: true });
+                setPushStatus((prev) => ({ ...prev, [kind]: 'idle' }));
+            } else {
+                const parts = [`Sent to ${result.data.sent}`];
+                if (result.data.stale > 0) parts.push(`${result.data.stale} stale`);
+                setPushMessage({ text: parts.join(', '), isError: false });
+                setPushStatus((prev) => ({ ...prev, [kind]: 'cooldown' }));
+                setTimeout(
+                    () => setPushStatus((prev) => ({ ...prev, [kind]: 'idle' })),
+                    5_000,
+                );
+            }
+        },
+        [buildOrUpdatePushEvent],
+    );
 
     return (
         <section>

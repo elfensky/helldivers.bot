@@ -110,7 +110,7 @@ describe('NotificationToggle — render gates', () => {
 
     test('renders "Notifications unavailable" link when Notification API is missing', async () => {
         // Notification global NOT defined.
-        const { container } = render(<NotificationToggle />);
+        const { container: _container } = render(<NotificationToggle />);
 
         await waitFor(() => {
             expect(screen.getByText('Notifications unavailable')).toBeInTheDocument();

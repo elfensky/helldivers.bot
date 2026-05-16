@@ -8,12 +8,12 @@ import Button from '@/shared/components/Button/Button';
 const MAX_DESCRIPTION_LENGTH = 32;
 
 export function GenerateApiKeyForm({ userId }) {
+    const [state, formAction, pending] = useActionState(generateApiKey, null);
+    const [descLength, setDescLength] = useState(0);
+
     if (!userId) {
         return <div>CreateApiKey - No user found</div>;
     }
-
-    const [state, formAction, pending] = useActionState(generateApiKey, null);
-    const [descLength, setDescLength] = useState(0);
 
     return (
         <>
@@ -71,11 +71,12 @@ export function GenerateApiKeyForm({ userId }) {
 }
 
 export function DeleteApiKeyForm({ userId, apikeyId }) {
+    const [state, formAction, pending] = useActionState(deleteApiKey, null);
+
     if (!userId || !apikeyId) {
         return <div className="flex items-center justify-center text-danger">Error</div>;
     }
 
-    const [state, formAction, pending] = useActionState(deleteApiKey, null);
     return (
         <>
             {state?.errors?.auth ?
