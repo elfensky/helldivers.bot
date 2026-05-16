@@ -1,6 +1,7 @@
 'use client';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import './ArchivesLayout.css';
+import { useMapPin } from '@/shared/hooks/useMapPin.mjs';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 import ArchivesHeader, { EffectsToggle } from '@/features/archives/ArchivesHeader';
 import FactionHealthChart from '@/features/archives/FactionHealthChart';
@@ -87,29 +88,7 @@ export default function ArchivesClient({
     // until the user scrolls down to it, at which point native sticky
     // engages. The FAB can unpin. On desktop (lg+) the grid-based
     // sticky rules apply regardless of this state.
-    const [isMapSticky, setIsMapSticky] = useState(true);
-    // Transient flag for the slide animation. Only true for 400ms after
-    // togglePin flips the map from unpinned → pinned. Starts false on
-    // mount so the default-pinned archives page does NOT play the
-    // animation on first load.
-    const [isAnimating, setIsAnimating] = useState(false);
-    const animTimerRef = useRef(null);
-
-    const togglePin = useCallback(() => {
-        setIsMapSticky((v) => {
-            const next = !v;
-            clearTimeout(animTimerRef.current);
-            if (next) {
-                setIsAnimating(true);
-                animTimerRef.current = setTimeout(() => setIsAnimating(false), 400);
-            } else {
-                setIsAnimating(false);
-            }
-            return next;
-        });
-    }, []);
-
-    useEffect(() => () => clearTimeout(animTimerRef.current), []);
+    const { isMapSticky, isAnimating, togglePin } = useMapPin(true);
 
     // Inline backdrop-filter workaround — see HomeClient.jsx / the
     // `useHeaderGlassFilter` hook for the reasoning (Lightning CSS
