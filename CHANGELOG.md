@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Chores
+
+- **GitHub Actions pin format switched from SHA → semver tag** across all six workflows (`ci.yml`, `codeql.yml`, `dependency-review.yml`, `metrics.yml`, `release.docker.yml`, `staging.docker.yml`). Bumped each action to its latest released tag at the same time: `actions/checkout@v6.0.2`, `actions/setup-node@v6.4.0`, `github/codeql-action/*@v4.35.5`, `docker/setup-buildx-action@v4.0.0`, `docker/login-action@v4.1.0`, `docker/build-push-action@v7.1.0`, `dorny/paths-filter@v4.0.1`, `lowlighter/metrics@v3.34`. `actions/dependency-review-action@v5.0.0` and `snok/container-retention-policy@v3.0.1` were already current — only the pin format changed. Dependabot's `github-actions` ecosystem will now bump these in-place without needing SHA resolution.
+
 ## 0.46.1
 
 ### Chores
