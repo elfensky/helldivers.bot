@@ -335,6 +335,8 @@ Call sites pass a `route` and `stage` tag for API routes (e.g. `{ route: '/api/h
 
 The tunnel route (`/api/glitchtip`) is deliberately not wired with `reportError`; capturing there would self-loop when GlitchTip itself is the failing upstream.
 
+Caught errors flowing through `src/shared/utils/tryCatch.mjs` — the project's canonical error-handling pattern, used at ~30+ call sites — are also auto-reported with `source: 'tryCatch'` and `level: 'warning'`. The explicit `reportError(...)` calls at 5xx sites still fire at the default `error` level. Sentry groups by stack-trace fingerprint so duplicate events for the same throw roll up into one issue, while the severity tag keeps caught-and-recovered errors visually distinct from user-visible failures in the inbox.
+
 ### Worker uptime heartbeat
 
 `public/workers/cronLogic.js` POSTs to `GLITCHTIP_HEARTBEAT_URL` after each successful (`response.ok`) poll of `/api/h1/update`. Fire-and-forget — heartbeat fetch failures are swallowed and don't affect the poll loop. GlitchTip's uptime monitor flips red when heartbeats stop, which surfaces: worker thread death, sustained 5xx from the API route, or DB unavailability. The worker reads the URL from `process.env` (Node `worker_threads` inherits the parent's env by default), so no message passing is needed.
