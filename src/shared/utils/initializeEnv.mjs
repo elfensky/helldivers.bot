@@ -2,6 +2,13 @@
  * Validates environment variables at startup.
  * Core vars (database, worker) throw if missing — the app cannot function without them.
  * Optional vars (auth, analytics) warn if missing — features degrade gracefully.
+ *
+ * Marked `async` even though no body awaits anything: the keyword wraps
+ * sync throws from the validate/check helpers into a rejected promise so
+ * callers can use the project's `tryCatch` wrapper uniformly. Dropping the
+ * keyword would force callers into raw try/catch blocks (banned by the
+ * codebase convention in CLAUDE.md).
+ *
  * @returns {Promise<{ auth: boolean, analytics: boolean }>}
  * @throws {Error} if a core env var is unset, or if auth is partially configured
  */

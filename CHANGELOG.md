@@ -4,6 +4,16 @@
 
 ### Chores
 
+- **Small-mechanical-wins bundle.** Eight low-risk cleanups grouped into one diff to amortise PR cost:
+    - **CLAUDE.md path drift fixed.** The four `src/utils/{tryCatch,responses,time,computeMapState}.mjs` citations now point at the real `src/shared/utils/...` locations; the map-state line also mentions the new `computeLiveMapState` helper.
+    - **`diagram.mjs` moved next to its consumers.** The flow/diagram helper had 10/10 importers in `src/app/docs/*` but lived under `src/shared/utils/`. Moved to `src/app/docs/_diagram.mjs` (underscore prefix matches the docs subdir convention for non-route files) and updated all 10 importers + the unit test. The empty `src/shared/utils/diagram.mjs` is gone.
+    - **`umami.mjs` uses `tryCatch` and a clear log.** The `sendUmamiEvent` helper previously chained `.then().catch()` and logged `Error:` with no context. Now uses `tryCatch` and logs `[umami] sendUmamiEvent failed: <message>`. Inlined the production hostname (`helldivers.bot`) and removed the dead `getHostname()` switch — the function early-returns in non-production, so the dev/staging branches were never reachable.
+    - **`reloadGuard.mjs` flattened.** The two stacked conditionals around localStorage parsing collapsed into a single `prevAttempts` decision: parse → bail-if-too-many → write fresh state → reload. Semantics unchanged; one fewer write site to reason about.
+    - **`responses.mjs` numeric range check.** Replaced `String(code).startsWith('1' | '2' | '3')` with `code < 400 || code > 599` (and the success equivalent). Reads as the actual intent.
+    - **Scaffolding comments removed.** Dropped the `//0. initialize`, `//1. validate`, ... step-prefix comments from `/api/h1/campaign` and `/api/h1/rebroadcast` — they were a bullet-pointed outline of code that no longer needed it.
+    - **`seed.mjs` indirection dropped.** `let files; ...; files = data;` collapsed into a single destructure `const { data: files, error } = ...`.
+    - **`initializeEnvironmentVariables` kept `async` deliberately.** Observed as `async-without-await`, but dropping it would convert internal sync throws into unhandled exceptions at the call site, forcing a raw try/catch (banned by CLAUDE.md). Added a comment documenting why the keyword is load-bearing for error semantics.
+
 - **`computeLiveMapState` helper protects the active-events invariant.** The pattern `events.filter(status === ACTIVE) → computeMapState(status, ...)` was duplicated across `src/app/layout.jsx`, `src/app/api/h1/live/route.js`, and `src/app/opengraph-image.jsx`. Encapsulated into `computeLiveMapState(data)` in `src/shared/utils/game/computeMapState.mjs` — call sites can no longer accidentally pass completed events. The existing JSDoc warning on `computeMapState` about live-view filtering is now load-bearing in only one place.
 - **`X-Worker-Startup` header is a named constant.** Both ends of the worker → `/api/h1/update` contract previously used a magic string. Now `public/workers/cronLogic.js` exports `WORKER_STARTUP_HEADER` and `src/app/api/h1/update/route.js` exports the same name; a new cross-module test (`src/__tests__/unit/workers/cron.test.mjs`) asserts the two stay in sync case-insensitively.
 

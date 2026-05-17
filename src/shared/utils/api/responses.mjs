@@ -11,9 +11,7 @@ import { NextResponse } from 'next/server';
  * @throws {Error} If the code is not an error status code (i.e., not 4xx or 5xx).
  */
 export function errorResponse(code, start, error = null) {
-    if (String(code).startsWith('1')) throw new Error('Invalid error code');
-    if (String(code).startsWith('2')) throw new Error('Invalid error code');
-    if (String(code).startsWith('3')) throw new Error('Invalid error code');
+    if (code < 400 || code > 599) throw new Error('Invalid error code');
 
     let status = code;
     let message = '';
@@ -89,7 +87,7 @@ export function errorResponse(code, start, error = null) {
  * @throws {Error} If the code does not start with "2".
  */
 export function successResponse(code, start, data, opts = {}) {
-    if (!String(code).startsWith('2')) throw new Error('Invalid success code');
+    if (code < 200 || code > 299) throw new Error('Invalid success code');
 
     let status = code;
     let message = '';

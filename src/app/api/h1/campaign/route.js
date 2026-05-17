@@ -14,7 +14,6 @@ import { updateSeason } from '@/update/season.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 
 export async function GET(request) {
-    //0. initialize
     const start = performance.now();
 
     after(async () => {
@@ -26,15 +25,13 @@ export async function GET(request) {
     let data = null;
     let season = null;
 
-    //1. validate query parameters (if any)
     if (request.nextUrl.searchParams.get('season')) {
         const check = isValidNumber.safeParse(request.nextUrl.searchParams.get('season'));
         if (!check.success)
-            return errorResponse(400, start, check?.error?.issues[0]?.message); //invalid season
+            return errorResponse(400, start, check?.error?.issues[0]?.message);
         season = Number(request.nextUrl.searchParams.get('season'));
     }
 
-    //2. get data from db
     const { data: campaignData, error: campaignError } = await tryCatch(
         getCampaign(season),
     );
@@ -44,9 +41,7 @@ export async function GET(request) {
 
     data = campaignData;
 
-    //3. if no data, attempt fetch remote data
     if (!campaignData) {
-        //1. fetch remote data
         const { error: fetchError } = await tryCatch(updateSeason(season));
         if (fetchError) {
             if (fetchError.cause === 'SEASON_NOT_FOUND') {
@@ -55,17 +50,14 @@ export async function GET(request) {
             return errorResponse(500, start, fetchError?.message);
         }
 
-        //2. fetch local data
         const { data: retriedCampaignData, error: retriedCampaignError } = await tryCatch(
             getCampaign(season),
         );
         if (retriedCampaignError)
             return errorResponse(500, start, retriedCampaignError?.message);
 
-        //3. set result to variable
         data = retriedCampaignData;
     }
-    //4. return response
     return successResponse(200, start, data);
 }
 
