@@ -1,4 +1,4 @@
-import { buildMermaidDefinition } from '@/shared/utils/diagram.mjs';
+import { buildMermaidDefinition } from '@/app/docs/_diagram.mjs';
 
 const BODY = `
     subgraph Frontend["FRONTEND"]

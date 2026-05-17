@@ -156,3 +156,19 @@ export function computeMapState(factionStates, events = []) {
 
     return map;
 }
+
+/**
+ * Compute map state for a live campaign payload. Filters `data.events` to
+ * active-only and then delegates to `computeMapState` — protects the
+ * "only active events" invariant documented above so call sites can't
+ * accidentally pass completed events.
+ *
+ * @param {{ status: Array, events?: Array }} data
+ * @returns {object} Map state from computeMapState
+ */
+export function computeLiveMapState(data) {
+    const activeEvents = (data?.events ?? []).filter(
+        (e) => e.status === EVENT_STATUS.ACTIVE,
+    );
+    return computeMapState(data?.status ?? [], activeEvents);
+}

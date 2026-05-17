@@ -1,5 +1,9 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { makeDoWork } from '../../../../public/workers/cronLogic.js';
+import {
+    makeDoWork,
+    WORKER_STARTUP_HEADER as CRON_WORKER_STARTUP_HEADER,
+} from '../../../../public/workers/cronLogic.js';
+import { WORKER_STARTUP_HEADER as ROUTE_WORKER_STARTUP_HEADER } from '@/app/api/h1/update/route.js';
 
 // public/workers/cron.js is the entry shell — it only wires up
 // parentPort.on('message', ...) → makeDoWork(...). The interesting logic
@@ -60,6 +64,15 @@ describe('cron worker — first poll', () => {
 });
 
 describe('cron worker — first-poll header', () => {
+    test('cron worker constant matches the route handler (case-insensitive)', () => {
+        // The worker writes the header as-is; HTTP normalises the name on the
+        // wire. NextRequest.headers.get(...) lowercases on lookup. This test
+        // protects against either side drifting the spelling without the other.
+        expect(CRON_WORKER_STARTUP_HEADER.toLowerCase()).toBe(
+            ROUTE_WORKER_STARTUP_HEADER.toLowerCase(),
+        );
+    });
+
     test('sends X-Worker-Startup: 1 on the first poll', async () => {
         globalThis.fetch = vi.fn(() =>
             Promise.resolve({ json: () => Promise.resolve({ ok: true }) }),

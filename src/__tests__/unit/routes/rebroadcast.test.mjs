@@ -105,7 +105,7 @@ beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(validateApiKey).mockResolvedValue({
         data: { userId: '1', keyId: '1' },
-        error: null,
+        code: null,
     });
 });
 
@@ -113,7 +113,7 @@ describe('POST /api/h1/rebroadcast — auth & validation', () => {
     test('returns 401 when API key is invalid', async () => {
         vi.mocked(validateApiKey).mockResolvedValue({
             data: null,
-            error: 'invalid',
+            code: 'invalid',
         });
         const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
         expect(res.status).toBe(401);
@@ -123,7 +123,7 @@ describe('POST /api/h1/rebroadcast — auth & validation', () => {
         const { API_KEY_ERROR } = await import('@/db/queries/validateApiKey');
         vi.mocked(validateApiKey).mockResolvedValue({
             data: null,
-            error: API_KEY_ERROR.DISABLED,
+            code: API_KEY_ERROR.DISABLED,
         });
         const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
         expect(res.status).toBe(403);

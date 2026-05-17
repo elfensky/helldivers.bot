@@ -43,12 +43,12 @@ const makeValidSeason = (overrides = {}) => ({
 
 describe('isValidSeason', () => {
     test('accepts valid season data', () => {
-        const result = isValidSeason(makeValidSeason());
+        const result = isValidSeason.safeParse(makeValidSeason());
         expect(result.success).toBe(true);
     });
 
     test('accepts empty arrays for events and snapshots', () => {
-        const result = isValidSeason(
+        const result = isValidSeason.safeParse(
             makeValidSeason({
                 snapshots: [],
                 defend_events: [],
@@ -61,16 +61,16 @@ describe('isValidSeason', () => {
     describe('top-level fields', () => {
         test('rejects missing time', () => {
             const { time: _time, ...rest } = makeValidSeason();
-            expect(isValidSeason(rest).success).toBe(false);
+            expect(isValidSeason.safeParse(rest).success).toBe(false);
         });
 
         test('rejects missing error_code', () => {
             const { error_code: _error_code, ...rest } = makeValidSeason();
-            expect(isValidSeason(rest).success).toBe(false);
+            expect(isValidSeason.safeParse(rest).success).toBe(false);
         });
 
         test('rejects non-number introduction_order elements', () => {
-            const result = isValidSeason(
+            const result = isValidSeason.safeParse(
                 makeValidSeason({ introduction_order: ['a', 'b'] }),
             );
             expect(result.success).toBe(false);
@@ -79,7 +79,7 @@ describe('isValidSeason', () => {
 
     describe('snapshots', () => {
         test('rejects invalid snapshot data JSON', () => {
-            const result = isValidSeason(
+            const result = isValidSeason.safeParse(
                 makeValidSeason({
                     snapshots: [makeSnapshot({ data: 'not json' })],
                 }),
@@ -88,7 +88,7 @@ describe('isValidSeason', () => {
         });
 
         test('rejects snapshot data with invalid status', () => {
-            const result = isValidSeason(
+            const result = isValidSeason.safeParse(
                 makeValidSeason({
                     snapshots: [
                         makeSnapshot({
@@ -105,7 +105,7 @@ describe('isValidSeason', () => {
         });
 
         test('rejects snapshot data with wrong length', () => {
-            const result = isValidSeason(
+            const result = isValidSeason.safeParse(
                 makeValidSeason({
                     snapshots: [
                         makeSnapshot({
@@ -121,7 +121,7 @@ describe('isValidSeason', () => {
 
         test('accepts all valid statuses in snapshot data', () => {
             for (const status of ['hidden', 'active', 'defeated']) {
-                const result = isValidSeason(
+                const result = isValidSeason.safeParse(
                     makeValidSeason({
                         snapshots: [
                             makeSnapshot({
@@ -139,7 +139,7 @@ describe('isValidSeason', () => {
         });
 
         test('rejects snapshot with missing season', () => {
-            const result = isValidSeason(
+            const result = isValidSeason.safeParse(
                 makeValidSeason({
                     snapshots: [makeSnapshot({ season: undefined })],
                 }),
@@ -152,12 +152,14 @@ describe('isValidSeason', () => {
         test('rejects defend_event without region', () => {
             const event = makeDefendEvent();
             delete event.region;
-            const result = isValidSeason(makeValidSeason({ defend_events: [event] }));
+            const result = isValidSeason.safeParse(
+                makeValidSeason({ defend_events: [event] }),
+            );
             expect(result.success).toBe(false);
         });
 
         test('rejects defend_event with invalid status', () => {
-            const result = isValidSeason(
+            const result = isValidSeason.safeParse(
                 makeValidSeason({
                     defend_events: [makeDefendEvent({ status: 'active' })],
                 }),
@@ -167,7 +169,7 @@ describe('isValidSeason', () => {
 
         test('accepts fail and success statuses', () => {
             for (const status of ['fail', 'success']) {
-                const result = isValidSeason(
+                const result = isValidSeason.safeParse(
                     makeValidSeason({
                         defend_events: [makeDefendEvent({ status })],
                     }),
@@ -179,7 +181,7 @@ describe('isValidSeason', () => {
 
     describe('attack_events', () => {
         test('rejects attack_event with region', () => {
-            const result = isValidSeason(
+            const result = isValidSeason.safeParse(
                 makeValidSeason({
                     attack_events: [makeAttackEvent({ region: 5 })],
                 }),
@@ -190,26 +192,28 @@ describe('isValidSeason', () => {
         test('accepts attack_event without region', () => {
             const event = makeDefendEvent();
             delete event.region;
-            const result = isValidSeason(makeValidSeason({ attack_events: [event] }));
+            const result = isValidSeason.safeParse(
+                makeValidSeason({ attack_events: [event] }),
+            );
             expect(result.success).toBe(true);
         });
     });
 
     describe('edge cases', () => {
         test('rejects null', () => {
-            expect(isValidSeason(null).success).toBe(false);
+            expect(isValidSeason.safeParse(null).success).toBe(false);
         });
 
         test('rejects undefined', () => {
-            expect(isValidSeason(undefined).success).toBe(false);
+            expect(isValidSeason.safeParse(undefined).success).toBe(false);
         });
 
         test('rejects empty object', () => {
-            expect(isValidSeason({}).success).toBe(false);
+            expect(isValidSeason.safeParse({}).success).toBe(false);
         });
 
         test('rejects string', () => {
-            expect(isValidSeason('not an object').success).toBe(false);
+            expect(isValidSeason.safeParse('not an object').success).toBe(false);
         });
     });
 });

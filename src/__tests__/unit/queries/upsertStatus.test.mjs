@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
 import db from '@/db/db';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus.mjs';
+import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
 
 const baseCampaign = {
     points: 1500,
@@ -10,39 +10,39 @@ const baseCampaign = {
     introduction_order: 0,
 };
 
-describe('queryUpsertStatus', () => {
+describe('upsertStatus', () => {
     test('throws when season is missing', async () => {
-        await expect(queryUpsertStatus(null, 0, 1000, baseCampaign)).rejects.toThrow(
+        await expect(upsertStatus(null, 0, 1000, baseCampaign)).rejects.toThrow(
             'season is missing',
         );
     });
 
     test('throws when enemy is undefined', async () => {
-        await expect(queryUpsertStatus(5, undefined, 1000, baseCampaign)).rejects.toThrow(
+        await expect(upsertStatus(5, undefined, 1000, baseCampaign)).rejects.toThrow(
             'enemy is missing',
         );
     });
 
     test('accepts enemy=0 (falsy but valid)', async () => {
         vi.mocked(db.h1_status.upsert).mockResolvedValue({ id: 'a' });
-        await expect(queryUpsertStatus(5, 0, 1000, baseCampaign)).resolves.toBeDefined();
+        await expect(upsertStatus(5, 0, 1000, baseCampaign)).resolves.toBeDefined();
     });
 
     test('throws when pollTime is missing', async () => {
-        await expect(queryUpsertStatus(5, 0, null, baseCampaign)).rejects.toThrow(
+        await expect(upsertStatus(5, 0, null, baseCampaign)).rejects.toThrow(
             'pollTime is missing',
         );
     });
 
     test('throws when campaign is missing', async () => {
-        await expect(queryUpsertStatus(5, 0, 1000, null)).rejects.toThrow(
+        await expect(upsertStatus(5, 0, 1000, null)).rejects.toThrow(
             'campaign is missing',
         );
     });
 
     test('computes bucket from pollTime using default BUCKET_SIZE=900', async () => {
         vi.mocked(db.h1_status.upsert).mockResolvedValue({ id: 'a' });
-        await queryUpsertStatus(5, 0, 1000, baseCampaign);
+        await upsertStatus(5, 0, 1000, baseCampaign);
 
         const callArg = vi.mocked(db.h1_status.upsert).mock.calls[0][0];
         // floor(1000 / 900) * 900 = 900
@@ -51,7 +51,7 @@ describe('queryUpsertStatus', () => {
 
     test('upserts with correct where clause', async () => {
         vi.mocked(db.h1_status.upsert).mockResolvedValue({ id: 'a' });
-        await queryUpsertStatus(5, 2, 1000, baseCampaign);
+        await upsertStatus(5, 2, 1000, baseCampaign);
 
         const callArg = vi.mocked(db.h1_status.upsert).mock.calls[0][0];
         expect(callArg.where).toEqual({
@@ -61,7 +61,7 @@ describe('queryUpsertStatus', () => {
 
     test('update path sets time + campaign fields only', async () => {
         vi.mocked(db.h1_status.upsert).mockResolvedValue({ id: 'a' });
-        await queryUpsertStatus(5, 0, 1000, baseCampaign);
+        await upsertStatus(5, 0, 1000, baseCampaign);
 
         const callArg = vi.mocked(db.h1_status.upsert).mock.calls[0][0];
         expect(callArg.update).toEqual({
@@ -76,7 +76,7 @@ describe('queryUpsertStatus', () => {
 
     test('create path sets all columns including bucket', async () => {
         vi.mocked(db.h1_status.upsert).mockResolvedValue({ id: 'a' });
-        await queryUpsertStatus(5, 1, 1000, baseCampaign);
+        await upsertStatus(5, 1, 1000, baseCampaign);
 
         const callArg = vi.mocked(db.h1_status.upsert).mock.calls[0][0];
         expect(callArg.create).toEqual({
@@ -92,8 +92,8 @@ describe('queryUpsertStatus', () => {
 
     test('same bucket for two polls within the same window', async () => {
         vi.mocked(db.h1_status.upsert).mockResolvedValue({ id: 'a' });
-        await queryUpsertStatus(5, 0, 1000, baseCampaign);
-        await queryUpsertStatus(5, 0, 1500, baseCampaign);
+        await upsertStatus(5, 0, 1000, baseCampaign);
+        await upsertStatus(5, 0, 1500, baseCampaign);
 
         const call1 = vi.mocked(db.h1_status.upsert).mock.calls[0][0];
         const call2 = vi.mocked(db.h1_status.upsert).mock.calls[1][0];
@@ -103,8 +103,8 @@ describe('queryUpsertStatus', () => {
 
     test('new bucket at window boundary', async () => {
         vi.mocked(db.h1_status.upsert).mockResolvedValue({ id: 'a' });
-        await queryUpsertStatus(5, 0, 899, baseCampaign); // bucket 0
-        await queryUpsertStatus(5, 0, 900, baseCampaign); // bucket 900
+        await upsertStatus(5, 0, 899, baseCampaign); // bucket 0
+        await upsertStatus(5, 0, 900, baseCampaign); // bucket 900
 
         const call1 = vi.mocked(db.h1_status.upsert).mock.calls[0][0];
         const call2 = vi.mocked(db.h1_status.upsert).mock.calls[1][0];
@@ -115,7 +115,7 @@ describe('queryUpsertStatus', () => {
     test('propagates DB errors', async () => {
         const dbError = new Error('database boom');
         vi.mocked(db.h1_status.upsert).mockRejectedValue(dbError);
-        await expect(queryUpsertStatus(5, 0, 1000, baseCampaign)).rejects.toThrow(
+        await expect(upsertStatus(5, 0, 1000, baseCampaign)).rejects.toThrow(
             'database boom',
         );
     });

@@ -21,10 +21,13 @@ function setOnline(value) {
 }
 
 function makeFetchResponse(payload, { ok = true, status = 200 } = {}) {
+    // /api/h1/live now wraps its body in the standard successResponse envelope.
+    // Tests describe the inner payload — wrap it here so each test stays
+    // focused on { data, mapState, appVersion? }.
     return {
         ok,
         status,
-        json: async () => payload,
+        json: async () => (payload === null ? null : { code: status, data: payload }),
     };
 }
 

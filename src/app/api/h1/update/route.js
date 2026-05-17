@@ -11,6 +11,14 @@ import { updateSeason } from '@/update/season.mjs';
 import { checkAndNotify } from '@/update/pushNotifier.mjs';
 import { computeBucket } from '@/shared/utils/bucketing.mjs';
 
+// Custom header set on the very first poll of a worker session so the
+// handler can run a one-time startup pass (e.g. backfill missing seasons).
+// Mirror of WORKER_STARTUP_HEADER in public/workers/cronLogic.js — the test
+// in src/__tests__/unit/workers/cron.test.mjs asserts the two stay aligned.
+// HTTP header names are case-insensitive; we read it lowercase here to
+// match what `request.headers.get(...)` normalises to.
+export const WORKER_STARTUP_HEADER = 'x-worker-startup';
+
 // Tracks the season observed on the previous worker poll so we can detect
 // a season transition and run one final updateSeason() pass on the outgoing
 // season. HD1 writes a final "closing" snapshot to the old season a few
@@ -56,7 +64,7 @@ export async function GET(request) {
     const expected = crypto.createHash('sha256').update(secret).digest();
     if (!crypto.timingSafeEqual(actual, expected)) return errorResponse(401, start);
 
-    const isStartup = request.headers.get('x-worker-startup') === '1';
+    const isStartup = request.headers.get(WORKER_STARTUP_HEADER) === '1';
 
     //STATUS
     const { data: statusData, error: statusError } = await tryCatch(updateStatus());
@@ -101,6 +109,17 @@ export async function GET(request) {
         return errorResponse(500, start, seasonError?.message);
     }
     const seasonTime = roundedPerformanceTime(start);
+
+    // Log any non-fatal warnings the orchestrators collected (upsertEventProgress
+    // and per-snapshot status upserts). They're also returned in the response
+    // body so clients can surface them, but logging here gives operators
+    // visibility without parsing the JSON envelope.
+    for (const warning of [
+        ...(statusData?.warnings ?? []),
+        ...(seasonData?.warnings ?? []),
+    ]) {
+        console.warn('[update] warning:', warning.stage, warning.message);
+    }
 
     // Fire-and-forget: check for event transitions and send push notifications
     checkAndNotify().catch((err) =>

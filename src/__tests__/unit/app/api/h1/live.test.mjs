@@ -1,16 +1,19 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { expectErrorEnvelope } from '@test-utils';
 
-// Mock dependencies before import.
+// Mock dependencies before import. The route now calls computeLiveMapState,
+// which internally filters and delegates to computeMapState; we stub both
+// to keep the tests focused on route-level wiring rather than map maths.
 vi.mock('@/db/queries/getCampaign', () => ({
     getCampaign: vi.fn(),
 }));
 vi.mock('@/shared/utils/game/computeMapState', () => ({
     computeMapState: vi.fn(),
+    computeLiveMapState: vi.fn(),
 }));
 
 const { getCampaign } = await import('@/db/queries/getCampaign');
-const { computeMapState } = await import('@/shared/utils/game/computeMapState');
+const { computeLiveMapState } = await import('@/shared/utils/game/computeMapState');
 const { GET, POST, PUT, DELETE, PATCH, OPTIONS } =
     await import('@/app/api/h1/live/route');
 
@@ -19,7 +22,7 @@ describe('GET /api/h1/live', () => {
         vi.clearAllMocks();
     });
 
-    test('returns 200 with { data, mapState } envelope and no-store cache header', async () => {
+    test('returns 200 with standard success envelope and no-store cache header', async () => {
         const mockCampaign = {
             season: 1,
             events: [
@@ -31,7 +34,7 @@ describe('GET /api/h1/live', () => {
         const mockMapState = [0.5];
 
         getCampaign.mockResolvedValue(mockCampaign);
-        computeMapState.mockReturnValue(mockMapState);
+        computeLiveMapState.mockReturnValue(mockMapState);
 
         const response = await GET();
         const body = await response.json();
@@ -40,21 +43,22 @@ describe('GET /api/h1/live', () => {
         expect(response.headers.get('Content-Type')).toBe('application/json');
         // no-store is load-bearing: clients (useLiveData) rely on fresh polls.
         expect(response.headers.get('Cache-Control')).toBe('no-store');
-        // Success envelope on this route is INTENTIONALLY flat — not the
-        // standard { time, code, message, data } — because the client reads
-        // it as a single live snapshot. Locking in the exact shape so a
-        // future "let's standardise envelopes" PR has to update this test.
-        expect(body).toEqual({
-            data: mockCampaign,
-            mapState: mockMapState,
-            appVersion: process.env.NEXT_PUBLIC_APP_VERSION,
+        // Standard { time, code, message, data } envelope from successResponse,
+        // with the live snapshot nested under `data`. `appVersion` is read from
+        // process.env.NEXT_PUBLIC_APP_VERSION at request time and may be
+        // undefined in test (JSON.stringify drops undefined keys).
+        expect(body).toMatchObject({
+            code: 200,
+            message: 'OK',
+            data: {
+                data: mockCampaign,
+                mapState: mockMapState,
+            },
         });
-        expect(body).not.toHaveProperty('time');
-        expect(body).not.toHaveProperty('code');
-        expect(body).not.toHaveProperty('message');
+        expect(typeof body.time).toBe('number');
     });
 
-    test('passes only active events to computeMapState (not completed/success/fail)', async () => {
+    test('forwards the full campaign payload to computeLiveMapState (filter lives in the helper)', async () => {
         const mockCampaign = {
             season: 1,
             events: [
@@ -65,48 +69,48 @@ describe('GET /api/h1/live', () => {
             status: [{ enemy: 'bugs', points: 50, points_max: 100 }],
         };
         getCampaign.mockResolvedValue(mockCampaign);
-        computeMapState.mockReturnValue([]);
+        computeLiveMapState.mockReturnValue([]);
 
         await GET();
 
-        // Completed events are already reflected in status snapshot points —
-        // re-applying them would double-count. Active events only.
-        expect(computeMapState).toHaveBeenCalledWith(mockCampaign.status, [
-            mockCampaign.events[0],
-        ]);
+        // The active-events filter is now encapsulated in computeLiveMapState —
+        // see its own unit test for the "only active events" invariant. The
+        // route's job is just to hand the full payload to the helper.
+        expect(computeLiveMapState).toHaveBeenCalledWith(mockCampaign);
     });
 
-    test('handles empty events array (mapState computed from status alone)', async () => {
+    test('handles empty events array (forwards payload as-is)', async () => {
         const mockCampaign = { season: 1, events: [], status: [] };
         getCampaign.mockResolvedValue(mockCampaign);
-        computeMapState.mockReturnValue([]);
+        computeLiveMapState.mockReturnValue([]);
 
         await GET();
 
-        expect(computeMapState).toHaveBeenCalledWith([], []);
+        expect(computeLiveMapState).toHaveBeenCalledWith(mockCampaign);
     });
 
-    test('treats missing events field as empty (defaults to [])', async () => {
+    test('treats missing events field as part of the same forwarded payload', async () => {
         const mockCampaign = { season: 1, status: [] };
         getCampaign.mockResolvedValue(mockCampaign);
-        computeMapState.mockReturnValue([]);
+        computeLiveMapState.mockReturnValue([]);
 
         await GET();
 
-        // events ?? [] in the source — must filter on an empty array, not crash.
-        expect(computeMapState).toHaveBeenCalledWith([], []);
+        // computeLiveMapState handles the events ?? [] default internally —
+        // the route forwards whatever getCampaign returned without massaging.
+        expect(computeLiveMapState).toHaveBeenCalledWith(mockCampaign);
     });
 
     test('returns 500 with the full error envelope when getCampaign rejects', async () => {
         getCampaign.mockRejectedValue(new Error('DB connection failed'));
-        computeMapState.mockReturnValue([]);
+        computeLiveMapState.mockReturnValue([]);
 
         const response = await GET();
         // Lock that getCampaign WAS invoked — otherwise a route that never
         // touches the DB would also produce a 500 envelope.
         expect(getCampaign).toHaveBeenCalledTimes(1);
-        // And computeMapState was NOT called (we short-circuit on the error).
-        expect(computeMapState).not.toHaveBeenCalled();
+        // And computeLiveMapState was NOT called (we short-circuit on the error).
+        expect(computeLiveMapState).not.toHaveBeenCalled();
         expect(response.status).toBe(500);
         const body = await response.json();
         expectErrorEnvelope(body, {
@@ -117,11 +121,11 @@ describe('GET /api/h1/live', () => {
 
     test('returns 500 with "No campaign data" envelope when getCampaign returns null', async () => {
         getCampaign.mockResolvedValue(null);
-        computeMapState.mockReturnValue([]);
+        computeLiveMapState.mockReturnValue([]);
 
         const response = await GET();
         expect(getCampaign).toHaveBeenCalledTimes(1);
-        expect(computeMapState).not.toHaveBeenCalled();
+        expect(computeLiveMapState).not.toHaveBeenCalled();
         expect(response.status).toBe(500);
         const body = await response.json();
         expectErrorEnvelope(body, { code: 500, error: 'No campaign data' });
@@ -136,13 +140,14 @@ describe('GET /api/h1/live', () => {
             big_id: safeBig,
         };
         getCampaign.mockResolvedValue(mockCampaign);
-        computeMapState.mockReturnValue([]);
+        computeLiveMapState.mockReturnValue([]);
 
         const response = await GET();
         const body = await response.json();
 
         // Round-trips exactly because the value is < MAX_SAFE_INTEGER.
-        expect(body.data.big_id).toBe(9007199254740990);
+        // body.data is the envelope payload; body.data.data is the campaign.
+        expect(body.data.data.big_id).toBe(9007199254740990);
         // The n-suffixed literal must never reach the wire.
         expect(JSON.stringify(body)).not.toMatch(/\d+n/);
     });
@@ -161,7 +166,7 @@ describe('GET /api/h1/live', () => {
             status: [],
             big_id: unsafeBig,
         });
-        computeMapState.mockReturnValue([]);
+        computeLiveMapState.mockReturnValue([]);
 
         const response = await GET();
         const text = await response.text();

@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import db from '@/db/db';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { upsertEvent } from '@/db/queries/upsertEvent.mjs';
 
 const mockEvent = {
     season: 5,
@@ -15,28 +15,24 @@ const mockEvent = {
     players_at_start: 1500,
 };
 
-describe('queryUpsertEvent', () => {
+describe('upsertEvent', () => {
     test('throws when season is missing', async () => {
-        await expect(queryUpsertEvent(null, 'defend', mockEvent)).rejects.toThrow(
+        await expect(upsertEvent(null, 'defend', mockEvent)).rejects.toThrow(
             'season is missing',
         );
     });
 
     test('throws when type is missing', async () => {
-        await expect(queryUpsertEvent(5, null, mockEvent)).rejects.toThrow(
-            'type is missing',
-        );
+        await expect(upsertEvent(5, null, mockEvent)).rejects.toThrow('type is missing');
     });
 
     test('throws when event is missing', async () => {
-        await expect(queryUpsertEvent(5, 'defend', null)).rejects.toThrow(
-            'event is missing',
-        );
+        await expect(upsertEvent(5, 'defend', null)).rejects.toThrow('event is missing');
     });
 
     test('returns skipped when event season differs from provided season', async () => {
         const crossSeasonEvent = { ...mockEvent, season: 4 };
-        const result = await queryUpsertEvent(5, 'defend', crossSeasonEvent);
+        const result = await upsertEvent(5, 'defend', crossSeasonEvent);
 
         expect(result).toEqual({ ms: 0, query: null, skipped: true });
         expect(db.h1_event.upsert).not.toHaveBeenCalled();
@@ -46,7 +42,7 @@ describe('queryUpsertEvent', () => {
         const mockRecord = { id: 1, ...mockEvent, type: 'defend' };
         vi.mocked(db.h1_event.upsert).mockResolvedValue(mockRecord);
 
-        const result = await queryUpsertEvent(5, 'defend', mockEvent);
+        const result = await upsertEvent(5, 'defend', mockEvent);
 
         expect(db.h1_event.upsert).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -64,7 +60,7 @@ describe('queryUpsertEvent', () => {
 
     test('includes players_at_start in update path when value is present', async () => {
         vi.mocked(db.h1_event.upsert).mockResolvedValue({});
-        await queryUpsertEvent(5, 'defend', mockEvent);
+        await upsertEvent(5, 'defend', mockEvent);
 
         const callArg = vi.mocked(db.h1_event.upsert).mock.calls[0][0];
         expect(callArg.update.players_at_start).toBe(1500);
@@ -73,7 +69,7 @@ describe('queryUpsertEvent', () => {
     test('OMITS players_at_start from update path when value is null', async () => {
         vi.mocked(db.h1_event.upsert).mockResolvedValue({});
         const noPlayers = { ...mockEvent, players_at_start: null };
-        await queryUpsertEvent(5, 'defend', noPlayers);
+        await upsertEvent(5, 'defend', noPlayers);
 
         const callArg = vi.mocked(db.h1_event.upsert).mock.calls[0][0];
         expect(callArg.update).not.toHaveProperty('players_at_start');
@@ -83,7 +79,7 @@ describe('queryUpsertEvent', () => {
         vi.mocked(db.h1_event.upsert).mockResolvedValue({});
         const noPlayers = { ...mockEvent };
         delete noPlayers.players_at_start;
-        await queryUpsertEvent(5, 'defend', noPlayers);
+        await upsertEvent(5, 'defend', noPlayers);
 
         const callArg = vi.mocked(db.h1_event.upsert).mock.calls[0][0];
         expect(callArg.update).not.toHaveProperty('players_at_start');
@@ -94,7 +90,7 @@ describe('queryUpsertEvent', () => {
         // Only update should avoid overwriting with null.
         vi.mocked(db.h1_event.upsert).mockResolvedValue({});
         const noPlayers = { ...mockEvent, players_at_start: null };
-        await queryUpsertEvent(5, 'defend', noPlayers);
+        await upsertEvent(5, 'defend', noPlayers);
 
         const callArg = vi.mocked(db.h1_event.upsert).mock.calls[0][0];
         expect(callArg.create.players_at_start).toBeNull();
@@ -105,7 +101,7 @@ describe('queryUpsertEvent', () => {
             new Error('unique constraint violated'),
         );
 
-        await expect(queryUpsertEvent(5, 'defend', mockEvent)).rejects.toThrow(
+        await expect(upsertEvent(5, 'defend', mockEvent)).rejects.toThrow(
             'unique constraint violated',
         );
     });

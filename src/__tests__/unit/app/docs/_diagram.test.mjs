@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createFlowConfig, buildMermaidDefinition } from '@/shared/utils/diagram.mjs';
+import { createFlowConfig, buildMermaidDefinition } from '@/app/docs/_diagram.mjs';
 
 describe('createFlowConfig', () => {
     it('returns config with all required keys', () => {

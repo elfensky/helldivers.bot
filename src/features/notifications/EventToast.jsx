@@ -9,7 +9,7 @@ import { EVENT_TYPE } from '@/shared/enums/events.mjs';
  * Build title + subtitle for a toast based on event kind and type.
  *
  * @param {'event_started'|'event_won'|'event_lost'|'catch_up'} kind
- * @param {{ enemy: number, region: number, type: string }} event
+ * @param {{ enemy: number, region: number, type: 'attack'|'defend' }} event
  * @returns {{ title: string, subtitle: string }}
  */
 export function toastLabel(kind, event) {
@@ -64,7 +64,7 @@ let flashToggle = false;
 /**
  * Show (or replace) an event toast with faction-colored blinking accent border.
  *
- * @param {{ id: string|number, enemy: number, region: number, type: string }} event
+ * @param {{ event_id: number, enemy: number, region: number, type: 'attack'|'defend' }} event
  * @param {'event_started'|'event_won'|'event_lost'|'catch_up'} kind
  * @param {object}  [opts]
  * @param {number}  [opts.duration]    - Sonner duration (default Infinity)

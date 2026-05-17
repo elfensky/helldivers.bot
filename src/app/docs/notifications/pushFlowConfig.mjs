@@ -1,4 +1,4 @@
-import { createFlowConfig } from '@/shared/utils/diagram.mjs';
+import { createFlowConfig } from '@/app/docs/_diagram.mjs';
 
 export const pushFlowConfig = createFlowConfig({
     views: [{ key: 'all', label: 'All' }],

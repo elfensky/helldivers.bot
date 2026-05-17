@@ -162,7 +162,7 @@ describe('getCampaign', () => {
         });
     });
 
-    test('returns legacy-compatible shape with status/snapshots/events/introduction_order/points_max', async () => {
+    test('returns public-shape with status/snapshots/events/introduction_order/points_max', async () => {
         seedDbMocks();
 
         const result = await getCampaign();
@@ -177,7 +177,7 @@ describe('getCampaign', () => {
             events: mockEvents,
         });
         // data.status must carry all fields consumers historically read from
-        // the legacy h1_live row: campaign progression (from h1_status) +
+        // the original h1_live row: campaign progression (from h1_status) +
         // points_max / introduction_order (from h1_season arrays) + 11
         // per-faction stats fields (from h1_statistic). season_duration and
         // the 4 event-count fields are explicitly NOT present anymore.
@@ -242,7 +242,7 @@ describe('getCampaign', () => {
         });
         expect(result.status[2]).not.toHaveProperty('season_duration');
         // snapshots is derived from the full h1_status history and has the
-        // legacy { time, data: [f0, f1, f2] } shape.
+        // public { time, data: [f0, f1, f2] } shape.
         expect(Array.isArray(result.snapshots)).toBe(true);
         expect(result.snapshots).toHaveLength(2);
         expect(result.snapshots[0]).toMatchObject({
@@ -332,7 +332,7 @@ describe('getCampaign', () => {
 
         const result = await getCampaign();
 
-        // Legacy-shape relations return empty arrays.
+        // Public-shape relations return empty arrays.
         expect(result.introduction_order).toEqual({ order: [] });
         expect(result.points_max).toEqual({ points: [] });
         // Top-level season_duration falls back to 0 when null on the row.

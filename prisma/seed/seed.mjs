@@ -171,8 +171,7 @@ async function seed() {
     const adapter = new PrismaPg({ connectionString: process.env.POSTGRES_URL });
     const db = new PrismaClient({ adapter });
 
-    let files;
-    const { data, error } = await readdir(SEASONS_DIR)
+    const { data: files, error } = await readdir(SEASONS_DIR)
         .then((d) => ({ data: d, error: null }))
         .catch((e) => ({ data: null, error: e }));
 
@@ -181,8 +180,6 @@ async function seed() {
         await db.$disconnect();
         return;
     }
-
-    files = data;
 
     const jsonFiles = files.filter((f) => f.endsWith('.json')).sort();
 

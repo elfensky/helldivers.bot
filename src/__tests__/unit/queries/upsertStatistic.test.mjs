@@ -1,8 +1,8 @@
 import { describe, test, expect, vi } from 'vitest';
 import db from '@/db/db';
-import { queryUpsertStatistic } from '@/db/queries/upsertStatistic.mjs';
+import { upsertStatistic } from '@/db/queries/upsertStatistic.mjs';
 
-// The full 16-field shape the HD1 API actually sends. queryUpsertStatistic
+// The full 16-field shape the HD1 API actually sends. upsertStatistic
 // picks only the 11 per-faction timeseries fields it cares about — the
 // remaining 5 (season_duration, defend_events, successful_defend_events,
 // attack_events, successful_attack_events) live elsewhere:
@@ -27,33 +27,33 @@ const baseStats = {
     hits: 1500000n,
 };
 
-describe('queryUpsertStatistic', () => {
+describe('upsertStatistic', () => {
     test('throws when season is missing', async () => {
-        await expect(queryUpsertStatistic(null, 0, 1000, baseStats)).rejects.toThrow(
+        await expect(upsertStatistic(null, 0, 1000, baseStats)).rejects.toThrow(
             'season is missing',
         );
     });
 
     test('throws when pollTime is missing', async () => {
-        await expect(queryUpsertStatistic(5, 0, null, baseStats)).rejects.toThrow(
+        await expect(upsertStatistic(5, 0, null, baseStats)).rejects.toThrow(
             'pollTime is missing',
         );
     });
 
     test('throws when stats is missing', async () => {
-        await expect(queryUpsertStatistic(5, 0, 1000, null)).rejects.toThrow(
+        await expect(upsertStatistic(5, 0, 1000, null)).rejects.toThrow(
             'stats is missing',
         );
     });
 
     test('accepts enemy=0', async () => {
         vi.mocked(db.h1_statistic.upsert).mockResolvedValue({ id: 'a' });
-        await expect(queryUpsertStatistic(5, 0, 1000, baseStats)).resolves.toBeDefined();
+        await expect(upsertStatistic(5, 0, 1000, baseStats)).resolves.toBeDefined();
     });
 
     test('computes bucket from pollTime', async () => {
         vi.mocked(db.h1_statistic.upsert).mockResolvedValue({ id: 'a' });
-        await queryUpsertStatistic(5, 1, 1800, baseStats);
+        await upsertStatistic(5, 1, 1800, baseStats);
 
         const callArg = vi.mocked(db.h1_statistic.upsert).mock.calls[0][0];
         // floor(1800 / 900) * 900 = 1800
@@ -62,7 +62,7 @@ describe('queryUpsertStatistic', () => {
 
     test('update path writes 11 stats fields + time', async () => {
         vi.mocked(db.h1_statistic.upsert).mockResolvedValue({ id: 'a' });
-        await queryUpsertStatistic(5, 0, 1000, baseStats);
+        await upsertStatistic(5, 0, 1000, baseStats);
 
         const callArg = vi.mocked(db.h1_statistic.upsert).mock.calls[0][0];
         expect(callArg.update).toEqual({
@@ -91,7 +91,7 @@ describe('queryUpsertStatistic', () => {
 
     test('create path includes season, enemy, bucket + 11 stats fields', async () => {
         vi.mocked(db.h1_statistic.upsert).mockResolvedValue({ id: 'a' });
-        await queryUpsertStatistic(5, 2, 1000, baseStats);
+        await upsertStatistic(5, 2, 1000, baseStats);
 
         const callArg = vi.mocked(db.h1_statistic.upsert).mock.calls[0][0];
         expect(callArg.create).toEqual({
@@ -121,8 +121,6 @@ describe('queryUpsertStatistic', () => {
 
     test('propagates DB errors', async () => {
         vi.mocked(db.h1_statistic.upsert).mockRejectedValue(new Error('db boom'));
-        await expect(queryUpsertStatistic(5, 0, 1000, baseStats)).rejects.toThrow(
-            'db boom',
-        );
+        await expect(upsertStatistic(5, 0, 1000, baseStats)).rejects.toThrow('db boom');
     });
 });

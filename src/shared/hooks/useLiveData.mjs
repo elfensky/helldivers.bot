@@ -90,32 +90,34 @@ async function poll() {
     try {
         const res = await fetch('/api/h1/live');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const parsed = await res.json();
+        const envelope = await res.json();
+        const payload = envelope?.data ?? null;
+        if (!payload) throw new Error('missing envelope.data');
 
-        if (parsed.appVersion) {
-            if (parsed.appVersion !== process.env.NEXT_PUBLIC_APP_VERSION) {
+        if (payload.appVersion) {
+            if (payload.appVersion !== process.env.NEXT_PUBLIC_APP_VERSION) {
                 guardedReload('version');
                 return;
             }
             clearReloadGuard();
         }
 
-        saveCachedState(parsed.data, parsed.mapState);
+        saveCachedState(payload.data, payload.mapState);
 
         if (isFirstMessage) {
             isFirstMessage = false;
             store = {
                 ...store,
-                data: parsed.data,
-                mapState: parsed.mapState,
+                data: payload.data,
+                mapState: payload.mapState,
                 status: 'live',
             };
         } else {
             store = {
                 ...store,
                 prevData: store.data,
-                data: parsed.data,
-                mapState: parsed.mapState,
+                data: payload.data,
+                mapState: payload.mapState,
                 status: 'live',
             };
         }
@@ -244,9 +246,11 @@ function teardownLeader() {
  *   notifications. Leaders yield on conflicting claims to prevent dupes.
  * - Fallback chain: live poll → server-rendered → localStorage cache → null.
  *
- * @param {object} initialData - Server-rendered campaign data (null if offline)
- * @param {object} initialMapState - Server-rendered map state (null if offline)
- * @returns {{data: object, mapState: object, status: string, prevData: object, isLeader: boolean}}
+ * @typedef {'polling'|'live'|'offline'} LiveStatus
+ *
+ * @param {object | null} initialData - Server-rendered campaign data (null if offline)
+ * @param {object | null} initialMapState - Server-rendered map state (null if offline)
+ * @returns {{data: object | null, mapState: object | null, status: LiveStatus, prevData: object | null, isLeader: boolean}}
  */
 export function useLiveData(initialData, initialMapState) {
     const [snapshot, setSnapshot] = useState(INITIAL_STORE);

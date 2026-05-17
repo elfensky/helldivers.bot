@@ -19,28 +19,24 @@ import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
 
 export async function POST(request) {
-    //0. initialize
     const start = performance.now();
     let check = null;
     let formValues = null;
 
-    //0.5 validate API key
-    const { error: keyError } = await validateApiKey(request);
-    if (keyError === API_KEY_ERROR.DISABLED) {
+    const { code: keyCode } = await validateApiKey(request);
+    if (keyCode === API_KEY_ERROR.DISABLED) {
         return errorResponse(403, start, 'Forbidden');
     }
-    if (keyError) {
+    if (keyCode) {
         return errorResponse(401, start, 'Unauthorized');
     }
 
-    //1. test if valid POST request
     const contentType = request.headers.get('content-type') || '';
     check = isValidContentType.safeParse(contentType);
     if (!check.success) {
         return errorResponse(400, start, 'Invalid Content Type');
     }
 
-    //2. get FormData and convert it to an object
     const { data: formData, error: formError } = await tryCatch(request.formData());
     if (formError) return errorResponse(400, start, 'Invalid request body');
     formValues = Object.fromEntries(formData.entries());
@@ -49,7 +45,6 @@ export async function POST(request) {
         return errorResponse(400, start, 'No action set');
     }
 
-    //3. validate FormData object structure using Zod
     check = isValidFormData.safeParse(formValues);
     if (!check.success) {
         const code = check?.error?.issues[0]?.code || null;
@@ -81,7 +76,6 @@ export async function POST(request) {
         );
     });
 
-    //4. reconstruct the HD1 wire format from the normalized tables
     let data = undefined;
     switch (formValues.action) {
         case 'get_campaign_status': {
@@ -119,11 +113,9 @@ export async function POST(request) {
             break;
     }
 
-    //5. validate data from DB
     if (data === undefined || data === null) {
         return errorResponse(404, start, 'Not found');
     }
-    //6. return response
     return successResponse(200, start, data);
 }
 
@@ -132,7 +124,7 @@ export async function POST(request) {
  * tables (h1_season + h1_status + h1_statistic + h1_event). Uses the latest
  * season with data. Returns null when no season has been populated yet.
  *
- * Partial loss of fidelity vs the legacy wire format: the 4 event-count
+ * Partial loss of fidelity vs the HD1 wire format: the 4 event-count
  * fields on each statistics[] entry (defend_events, successful_defend_events,
  * attack_events, successful_attack_events) are omitted — they are derivable
  * from h1_event with COUNT(*) WHERE type=... AND status=... AND season=X.

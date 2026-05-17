@@ -3,7 +3,17 @@ import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/shared/utils/time.mjs';
 
-export async function queryUpsertEvent(season, type, event) {
+/**
+ * Upsert a single h1_event row keyed by (type, event_id). Skips if the
+ * event's season does not match the active season — cross-season events
+ * lag in the API response for a few minutes after a season transition,
+ * and we don't want them to leak into the new season's bucket.
+ *
+ * @param {number} season  Active season the worker is writing for
+ * @param {'attack' | 'defend'} type
+ * @param {object} event   Event row from the HD1 API
+ */
+export async function upsertEvent(season, type, event) {
     'use server';
     const start = performance.now();
 

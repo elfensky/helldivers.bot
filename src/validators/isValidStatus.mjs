@@ -69,4 +69,4 @@ const rootSchema = z.object({
     statistics: z.array(statisticsSchema).min(1),
 });
 
-export const isValidStatus = (data) => rootSchema.safeParse(data);
+export const isValidStatus = rootSchema;
