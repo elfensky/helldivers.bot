@@ -145,11 +145,7 @@ registry.registerPath({
             description: 'Invalid request (content type, action, or arguments).',
             content: {
                 'application/json': {
-                    schema: z.object({
-                        time: z.number(),
-                        error_code: z.number(),
-                        error_message: z.string(),
-                    }),
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -157,11 +153,7 @@ registry.registerPath({
             description: 'Not found.',
             content: {
                 'application/json': {
-                    schema: z.object({
-                        time: z.number(),
-                        error_code: z.number(),
-                        error_message: z.string(),
-                    }),
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -169,11 +161,7 @@ registry.registerPath({
             description: 'Unauthorized. API key missing, malformed, or not found.',
             content: {
                 'application/json': {
-                    schema: z.object({
-                        time: z.number(),
-                        error_code: z.number(),
-                        error_message: z.string(),
-                    }),
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -181,11 +169,7 @@ registry.registerPath({
             description: 'Forbidden. API key found but disabled.',
             content: {
                 'application/json': {
-                    schema: z.object({
-                        time: z.number(),
-                        error_code: z.number(),
-                        error_message: z.string(),
-                    }),
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -193,11 +177,7 @@ registry.registerPath({
             description: 'Method not allowed.',
             content: {
                 'application/json': {
-                    schema: z.object({
-                        time: z.number(),
-                        error_code: z.number(),
-                        error_message: z.string(),
-                    }),
+                    schema: ErrorResponseSchema,
                 },
             },
         },
@@ -283,23 +263,43 @@ registry.registerPath({
     path: '/api/h1/live',
     summary: 'Get current campaign state for live polling',
     description:
-        'Lightweight endpoint returning the current campaign data and computed map state. Designed for client-side polling via `useLiveData` hook at 10-second intervals.',
+        'Lightweight endpoint returning the current campaign data and computed map state. Designed for client-side polling via `useLiveData` hook at 10-second intervals. Sets `Cache-Control: no-store` so the response is never reused across polls.',
     responses: {
         200: {
             description: 'Current campaign state with computed map ownership.',
             content: {
                 'application/json': {
                     schema: z.object({
-                        data: z.any().openapi({ description: 'Full campaign object' }),
-                        mapState: z
-                            .array(z.any())
-                            .openapi({ description: 'Sector ownership array' }),
+                        time: z.number().openapi({
+                            description: 'Time taken to process the request (ms)',
+                        }),
+                        code: z.number().openapi({ description: 'HTTP status code' }),
+                        message: z
+                            .string()
+                            .openapi({ description: 'Human-readable status message' }),
+                        data: z.object({
+                            data: z
+                                .any()
+                                .openapi({ description: 'Full campaign object' }),
+                            mapState: z
+                                .array(z.any())
+                                .openapi({ description: 'Sector ownership array' }),
+                            appVersion: z.string().openapi({
+                                description:
+                                    'Server build version, used by the client to detect stale code and trigger a hard reload.',
+                            }),
+                        }),
                     }),
                 },
             },
         },
         500: {
             description: 'Database error fetching campaign data.',
+            content: {
+                'application/json': {
+                    schema: ErrorResponseSchema,
+                },
+            },
         },
     },
 });

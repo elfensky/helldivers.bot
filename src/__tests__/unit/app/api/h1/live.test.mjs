@@ -19,7 +19,7 @@ describe('GET /api/h1/live', () => {
         vi.clearAllMocks();
     });
 
-    test('returns 200 with { data, mapState } envelope and no-store cache header', async () => {
+    test('returns 200 with standard success envelope and no-store cache header', async () => {
         const mockCampaign = {
             season: 1,
             events: [
@@ -40,18 +40,19 @@ describe('GET /api/h1/live', () => {
         expect(response.headers.get('Content-Type')).toBe('application/json');
         // no-store is load-bearing: clients (useLiveData) rely on fresh polls.
         expect(response.headers.get('Cache-Control')).toBe('no-store');
-        // Success envelope on this route is INTENTIONALLY flat — not the
-        // standard { time, code, message, data } — because the client reads
-        // it as a single live snapshot. Locking in the exact shape so a
-        // future "let's standardise envelopes" PR has to update this test.
-        expect(body).toEqual({
-            data: mockCampaign,
-            mapState: mockMapState,
-            appVersion: process.env.NEXT_PUBLIC_APP_VERSION,
+        // Standard { time, code, message, data } envelope from successResponse,
+        // with the live snapshot nested under `data`. `appVersion` is read from
+        // process.env.NEXT_PUBLIC_APP_VERSION at request time and may be
+        // undefined in test (JSON.stringify drops undefined keys).
+        expect(body).toMatchObject({
+            code: 200,
+            message: 'OK',
+            data: {
+                data: mockCampaign,
+                mapState: mockMapState,
+            },
         });
-        expect(body).not.toHaveProperty('time');
-        expect(body).not.toHaveProperty('code');
-        expect(body).not.toHaveProperty('message');
+        expect(typeof body.time).toBe('number');
     });
 
     test('passes only active events to computeMapState (not completed/success/fail)', async () => {
@@ -142,7 +143,8 @@ describe('GET /api/h1/live', () => {
         const body = await response.json();
 
         // Round-trips exactly because the value is < MAX_SAFE_INTEGER.
-        expect(body.data.big_id).toBe(9007199254740990);
+        // body.data is the envelope payload; body.data.data is the campaign.
+        expect(body.data.data.big_id).toBe(9007199254740990);
         // The n-suffixed literal must never reach the wire.
         expect(JSON.stringify(body)).not.toMatch(/\d+n/);
     });

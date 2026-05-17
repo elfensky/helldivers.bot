@@ -82,10 +82,13 @@ export function errorResponse(code, start, error = null) {
  * @param {number} code - The HTTP status code (should be 2xx).
  * @param {number} start - The start time (for calculating performance time).
  * @param {*} data - The data to include in the response.
+ * @param {{ headers?: Record<string, string> }} [opts] - Optional extra
+ *   response headers (e.g. `Cache-Control: no-store` for the live route).
+ *   These are merged on top of the default `Content-Type: application/json`.
  * @returns {NextResponse} A NextResponse JSON object with timing, code, message, and data.
  * @throws {Error} If the code does not start with "2".
  */
-export function successResponse(code, start, data) {
+export function successResponse(code, start, data, opts = {}) {
     if (!String(code).startsWith('2')) throw new Error('Invalid success code');
 
     let status = code;
@@ -124,6 +127,6 @@ export function successResponse(code, start, data) {
     );
     return new NextResponse(body, {
         status,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(opts.headers ?? {}) },
     });
 }

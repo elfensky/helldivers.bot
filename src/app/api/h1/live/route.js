@@ -1,6 +1,6 @@
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { errorResponse } from '@/shared/utils/api/responses.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
@@ -19,18 +19,12 @@ export async function GET() {
     );
     const mapState = computeMapState(data.status, activeEvents);
 
-    const json = JSON.stringify(
+    return successResponse(
+        200,
+        start,
         { data, mapState, appVersion: process.env.NEXT_PUBLIC_APP_VERSION },
-        (_, v) => (typeof v === 'bigint' ? Number(v) : v),
+        { headers: { 'Cache-Control': 'no-store' } },
     );
-
-    return new Response(json, {
-        status: 200,
-        headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-store',
-        },
-    });
 }
 
 export const POST = methodNotAllowed;
