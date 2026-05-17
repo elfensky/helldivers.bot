@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.46.3
+
+### Chores
+
+- **Soft CDN cache header on HTML page routes** — `next.config.mjs` now emits `Cache-Control: public, s-maxage=30, stale-while-revalidate=60` for all non-API, non-asset paths so a shared cache (e.g. Cloudflare) can collapse concurrent visitors into one origin render per 30s window, and serve the stale copy for another 60s while it refetches. `s-maxage` targets shared caches only, so browsers still revalidate normally and `useLiveData` keeps polling `/api/h1/live` for fresh game state. The source pattern uses a negative lookahead to exclude `/api/*` (preserves `no-store` on live data), `/_next/*` (content-hashed), the asset directories that already have `immutable` long-TTL headers, `/sw.js`, `/workers/*`, and `/profile/*` (per-user content that must not be shared). Note: Cloudflare ignores `s-maxage` on HTML by default — a Cache Rule with "Respect existing headers" is required for this to take effect at the edge.
+
 ## 0.46.2
 
 ### Chores
