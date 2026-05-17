@@ -4,6 +4,8 @@
 
 ### Chores
 
+- **`validateApiKey` no longer collides with the `tryCatch` tuple shape.** `validateApiKey()` returned `{ data, error: string }` where every other helper in the codebase returns `{ data, error: Error | null }`. A destructuring caller using the project's `tryCatch` convention would silently treat the `API_KEY_ERROR` enum string as a thrown error. Renamed the field to `code` so the type difference is explicit; updated `src/app/api/h1/rebroadcast/route.js` to destructure `{ code: keyCode }` and the unit + route tests to match. Added a JSDoc note on the helper documenting why the shape differs.
+
 - **Small-mechanical-wins bundle.** Eight low-risk cleanups grouped into one diff to amortise PR cost:
     - **CLAUDE.md path drift fixed.** The four `src/utils/{tryCatch,responses,time,computeMapState}.mjs` citations now point at the real `src/shared/utils/...` locations; the map-state line also mentions the new `computeLiveMapState` helper.
     - **`diagram.mjs` moved next to its consumers.** The flow/diagram helper had 10/10 importers in `src/app/docs/*` but lived under `src/shared/utils/`. Moved to `src/app/docs/_diagram.mjs` (underscore prefix matches the docs subdir convention for non-route files) and updated all 10 importers + the unit test. The empty `src/shared/utils/diagram.mjs` is gone.

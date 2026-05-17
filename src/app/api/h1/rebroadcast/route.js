@@ -23,11 +23,11 @@ export async function POST(request) {
     let check = null;
     let formValues = null;
 
-    const { error: keyError } = await validateApiKey(request);
-    if (keyError === API_KEY_ERROR.DISABLED) {
+    const { code: keyCode } = await validateApiKey(request);
+    if (keyCode === API_KEY_ERROR.DISABLED) {
         return errorResponse(403, start, 'Forbidden');
     }
-    if (keyError) {
+    if (keyCode) {
         return errorResponse(401, start, 'Unauthorized');
     }
 
