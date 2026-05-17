@@ -2,6 +2,7 @@
 
 import { Component } from 'react';
 import Button from '@/shared/components/Button/Button';
+import { reportError } from '@/shared/utils/observability.mjs';
 
 export default class ComponentErrorBoundary extends Component {
     constructor(props) {
@@ -11,6 +12,14 @@ export default class ComponentErrorBoundary extends Component {
 
     static getDerivedStateFromError() {
         return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        reportError(error, {
+            boundary: 'component',
+            name: this.props.name ?? 'Section',
+            componentStack: errorInfo?.componentStack,
+        });
     }
 
     render() {
