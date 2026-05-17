@@ -4,6 +4,7 @@ import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
 import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 import db from '@/db/db';
 //update
 import { updateStatus } from '@/update/status.mjs';
@@ -70,6 +71,7 @@ export async function GET(request) {
     const { data: statusData, error: statusError } = await tryCatch(updateStatus());
     if (statusError) {
         console.error(statusError?.message, statusError?.cause);
+        reportError(statusError, { route: '/api/h1/update', stage: 'status' });
         await writeHeartbeat(start, isStartup, statusError?.message);
         return errorResponse(500, start, statusError?.message);
     }
@@ -92,6 +94,12 @@ export async function GET(request) {
                 `Closing pass for season ${lastSeasonObserved} failed:`,
                 closingError.message,
             );
+            reportError(closingError, {
+                route: '/api/h1/update',
+                stage: 'season-closing',
+                outgoingSeason: lastSeasonObserved,
+                level: 'warning',
+            });
         }
     }
     lastSeasonObserved = statusData.season;
@@ -105,6 +113,11 @@ export async function GET(request) {
     );
     if (seasonError) {
         console.error(seasonError?.message, seasonError?.cause);
+        reportError(seasonError, {
+            route: '/api/h1/update',
+            stage: 'season',
+            season: statusData.season,
+        });
         await writeHeartbeat(start, isStartup, seasonError?.message);
         return errorResponse(500, start, seasonError?.message);
     }
@@ -122,9 +135,10 @@ export async function GET(request) {
     }
 
     // Fire-and-forget: check for event transitions and send push notifications
-    checkAndNotify().catch((err) =>
-        console.error('Push notification error:', err.message),
-    );
+    checkAndNotify().catch((err) => {
+        console.error('Push notification error:', err.message);
+        reportError(err, { route: '/api/h1/update', stage: 'push-notify' });
+    });
 
     //RESPONSE
     await writeHeartbeat(start, isStartup);

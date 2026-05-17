@@ -3,6 +3,7 @@ import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
 import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 
 import { after } from 'next/server';
 //validators
@@ -36,6 +37,11 @@ export async function GET(request) {
         getCampaign(season),
     );
     if (campaignError) {
+        reportError(campaignError, {
+            route: '/api/h1/campaign',
+            stage: 'get-campaign',
+            season,
+        });
         return errorResponse(500, start, campaignError?.message);
     }
 
@@ -47,14 +53,25 @@ export async function GET(request) {
             if (fetchError.cause === 'SEASON_NOT_FOUND') {
                 return errorResponse(404, start, fetchError.message);
             }
+            reportError(fetchError, {
+                route: '/api/h1/campaign',
+                stage: 'backfill-season',
+                season,
+            });
             return errorResponse(500, start, fetchError?.message);
         }
 
         const { data: retriedCampaignData, error: retriedCampaignError } = await tryCatch(
             getCampaign(season),
         );
-        if (retriedCampaignError)
+        if (retriedCampaignError) {
+            reportError(retriedCampaignError, {
+                route: '/api/h1/campaign',
+                stage: 'get-campaign-retry',
+                season,
+            });
             return errorResponse(500, start, retriedCampaignError?.message);
+        }
 
         data = retriedCampaignData;
     }

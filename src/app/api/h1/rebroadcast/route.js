@@ -5,6 +5,7 @@ import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
 import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { after } from 'next/server';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 //validators
 import { isValidContentType } from '@/validators/isValidContentType.mjs';
 import { isValidFormData } from '@/validators/isValidFormData.mjs';
@@ -82,7 +83,13 @@ export async function POST(request) {
             const { data: statusBody, error: statusError } = await tryCatch(
                 reconstructCampaignStatus(),
             );
-            if (statusError) return errorResponse(500, start, 'Internal server error');
+            if (statusError) {
+                reportError(statusError, {
+                    route: '/api/h1/rebroadcast',
+                    stage: 'reconstruct-status',
+                });
+                return errorResponse(500, start, 'Internal server error');
+            }
             data = statusBody;
             break;
         }
@@ -90,7 +97,14 @@ export async function POST(request) {
             const { data: snapshotBody, error: snapshotError } = await tryCatch(
                 reconstructSnapshots(formValues.season),
             );
-            if (snapshotError) return errorResponse(500, start, 'Internal server error');
+            if (snapshotError) {
+                reportError(snapshotError, {
+                    route: '/api/h1/rebroadcast',
+                    stage: 'reconstruct-snapshots',
+                    season: formValues.season,
+                });
+                return errorResponse(500, start, 'Internal server error');
+            }
             data = snapshotBody;
 
             // fetch from remote if the season isn't populated locally yet
@@ -99,12 +113,24 @@ export async function POST(request) {
                     updateSeason(formValues.season),
                 );
                 if (seasonFetchError) {
+                    reportError(seasonFetchError, {
+                        route: '/api/h1/rebroadcast',
+                        stage: 'backfill-season',
+                        season: formValues.season,
+                    });
                     return errorResponse(500, start, 'Internal server error');
                 }
                 const { data: retryBody, error: retryError } = await tryCatch(
                     reconstructSnapshots(formValues.season),
                 );
-                if (retryError) return errorResponse(500, start, 'Internal server error');
+                if (retryError) {
+                    reportError(retryError, {
+                        route: '/api/h1/rebroadcast',
+                        stage: 'reconstruct-snapshots-retry',
+                        season: formValues.season,
+                    });
+                    return errorResponse(500, start, 'Internal server error');
+                }
                 data = retryBody;
             }
             break;
