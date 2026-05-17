@@ -74,10 +74,9 @@ export default function LiveToasts({ prevData, data, isLeader }) {
             let shownCount = 0;
 
             for (const event of allEvents) {
-                const dismissedAt = dismissed[String(event.event_id)];
-                const dismissedAtCurrent = dismissedAt === event.status;
+                const dismissedStatus = dismissed[String(event.event_id)]?.status;
 
-                if (dismissedAtCurrent) continue; // fully suppressed
+                if (dismissedStatus === event.status) continue; // fully suppressed
 
                 if (event.status === EVENT_STATUS.ACTIVE) {
                     showEventToast(event, 'catch_up', {
@@ -85,7 +84,7 @@ export default function LiveToasts({ prevData, data, isLeader }) {
                         onDismiss: () => addDismissedEvent(event.event_id, event.status),
                     });
                     shownCount++;
-                } else if (dismissedAt === EVENT_STATUS.ACTIVE) {
+                } else if (dismissedStatus === EVENT_STATUS.ACTIVE) {
                     // User dismissed the active toast; event has since
                     // transitioned. Show the terminal outcome so the user
                     // doesn't silently miss a status change.

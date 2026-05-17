@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Bug fixes
+
+- **`LiveToasts` catch-up branch was unreachable.** `getDismissedEvents()` returns `Record<string, {status, ts}>` but the catch-up loop was comparing that whole object to `event.status` (and to `EVENT_STATUS.ACTIVE`), so both branches always evaluated `false` — fully-suppressed events and the "dismissed at active → now transitioned" path never fired. The unit test masked it by mocking the legacy string shape (`{1: 'active'}`) that production never produces. Fixed by reading `dismissed[id]?.status` once per iteration and comparing the string against the string. Test mocks updated to `{status, ts}` so future regressions surface.
+
 ## 0.46.3
 
 ### Chores
