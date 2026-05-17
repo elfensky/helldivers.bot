@@ -4,6 +4,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { guardedReload } from '@/shared/utils/reloadGuard.mjs';
+import { registerSwErrorBridge } from '@/shared/utils/swErrorBridge.mjs';
 
 Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -17,6 +18,10 @@ Sentry.init({
     tunnel: '/api/glitchtip',
     debug: false,
 });
+
+// Forward errors postMessage'd from the service worker (push handler etc.)
+// into Sentry. The SW context can't import the SDK directly.
+registerSwErrorBridge();
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
 

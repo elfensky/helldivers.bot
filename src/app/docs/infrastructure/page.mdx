@@ -337,6 +337,10 @@ The tunnel route (`/api/glitchtip`) is deliberately not wired with `reportError`
 
 Caught errors flowing through `src/shared/utils/tryCatch.mjs` — the project's canonical error-handling pattern, used at ~30+ call sites — are also auto-reported with `source: 'tryCatch'` and `level: 'warning'`. The explicit `reportError(...)` calls at 5xx sites still fire at the default `error` level. Sentry groups by stack-trace fingerprint so duplicate events for the same throw roll up into one issue, while the severity tag keeps caught-and-recovered errors visually distinct from user-visible failures in the inbox.
 
+### Service worker error bridge
+
+The service worker at `src/sw.js` runs in a separate worker context with no DOM, so it can't import the Sentry browser SDK directly. The `push` and `notificationclick` handlers are wrapped with try/catch (synchronous) and `.catch()` (on the async chains inside `event.waitUntil`); failures `postMessage` a structured `{ type: 'sw-error', error: { message, name, stack }, context }` envelope to all controlled clients via `self.clients.matchAll()`. The receiving end lives in `src/shared/utils/swErrorBridge.mjs` — registered from `instrumentation-client.js`, it reconstructs the Error and calls `reportError(err, { source: 'sw', ...context })`. When no clients are open (push received with all tabs closed) the SW falls back to `console.error`, visible from `chrome://serviceworker-internals` during triage. Errors are re-thrown after the postMessage so the SW event loop still sees the rejection — original behavior preserved.
+
 ### Worker uptime heartbeat
 
 `public/workers/cronLogic.js` POSTs to `GLITCHTIP_HEARTBEAT_URL` after each successful (`response.ok`) poll of `/api/h1/update`. Fire-and-forget — heartbeat fetch failures are swallowed and don't affect the poll loop. GlitchTip's uptime monitor flips red when heartbeats stop, which surfaces: worker thread death, sustained 5xx from the API route, or DB unavailability. The worker reads the URL from `process.env` (Node `worker_threads` inherits the parent's env by default), so no message passing is needed.
