@@ -43,6 +43,13 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Generate the Prisma client
 RUN POSTGRES_URL=postgresql://dummy npx prisma generate
+# NEXT_PUBLIC_DEPLOY_ENV must be present as an env var BEFORE `npm run build`
+# below: Next.js inlines NEXT_PUBLIC_* vars into the client bundle at build
+# time, so this is what tags client-side Sentry events with the right
+# environment (staging vs production). Empty string is fine — the SDK's
+# fallback chain in instrumentation-client.js drops down to DEPLOY_ENV / NODE_ENV.
+ARG NEXT_PUBLIC_DEPLOY_ENV
+ENV NEXT_PUBLIC_DEPLOY_ENV=$NEXT_PUBLIC_DEPLOY_ENV
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
@@ -90,6 +97,10 @@ LABEL description="nextjs application that serves as an api rebroadcaster and fo
 # defaults to production, but can be overriden at build time
 ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
+# Server-side Sentry config reads this at runtime. The builder stage above
+# also bakes it into the client bundle at build time.
+ARG NEXT_PUBLIC_DEPLOY_ENV
+ENV NEXT_PUBLIC_DEPLOY_ENV=$NEXT_PUBLIC_DEPLOY_ENV
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nonroot:nonroot /app/.next/standalone ./
