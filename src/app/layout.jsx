@@ -12,8 +12,7 @@ import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 //data
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
-import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
-import { EVENT_STATUS } from '@/shared/enums/events.mjs';
+import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],
@@ -61,10 +60,7 @@ export default async function RootLayout({ children }) {
     // Fetch campaign data for LiveDataProvider — failure yields null,
     // handled gracefully by useLiveData's fallback chain.
     const { data } = await tryCatch(getCampaign());
-    const activeEvents = (data?.events ?? []).filter(
-        (e) => e.status === EVENT_STATUS.ACTIVE,
-    );
-    const initialMapState = data ? computeMapState(data.status, activeEvents) : null;
+    const initialMapState = data ? computeLiveMapState(data) : null;
 
     return (
         <html

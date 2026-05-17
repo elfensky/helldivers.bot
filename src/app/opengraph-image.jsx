@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
-import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import {
     EVENT_STATUS,
@@ -112,10 +112,9 @@ export default async function Image() {
 
     // Two event lists:
     // - events: full list — needed for status text (includes completed events for WON/LOST display)
-    // - activeEvents: filtered — only active events affect sector ownership on the map
+    // - mapState: derived from active events only — see computeLiveMapState
     const events = data.events || [];
-    const activeEvents = events.filter((e) => e.status === EVENT_STATUS.ACTIVE);
-    const mapState = computeMapState(data.status, activeEvents);
+    const mapState = computeLiveMapState(data);
     const mapDataUri = buildMapSvg(mapState);
 
     const factionStats = data.status.map((f) => {
