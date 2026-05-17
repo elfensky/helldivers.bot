@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Features
+
+- **GlitchTip / Sentry observability wired up across the app.** The Sentry SDK was initialised but most error sources never reached GlitchTip in practice: every `errorResponse(5xx, ...)` was a `console.error` followed by a generic 500, error boundaries discarded the error param while telling users _"this incident has been logged"_, server-side init was gated to `NODE_ENV === 'production'` so localhost was dark, staging and production both tagged as `environment: 'production'`, and `GLITCHTIP_HEARTBEAT_URL` was documented but never read. Fixed end-to-end:
+    - New `src/shared/utils/observability.mjs` `reportError(error, context)` helper, no-op-safe on falsy errors, accepts `{ level, ...extra }` so the closing-pass non-fatal error path lands at warning level.
+    - Wired at every API-route 5xx path with `{ route, stage }` context — `/api/h1/update` (status / season / closing-pass / push-notify), `/api/h1/live`, `/api/h1/campaign`, `/api/h1/rebroadcast`, `/api/notifications/subscribe`, `/api/healthcheck`, `/api/umami`. Explicit skips: `/api/glitchtip` (would self-loop when GlitchTip is the failing upstream) and `/api/auth/[...all]` (BetterAuth owns its own errors).
+    - Wired at every React error boundary (`error.jsx`, `global-error.jsx`, `archives/error.jsx`, `ComponentErrorBoundary`) with a `boundary` tag — the class component also passes React's `componentStack` for attribution.
+    - Server-side Sentry init switched from `NODE_ENV === 'production'` to `SENTRY_DSN`-presence gating, so localhost reports too when `SENTRY_DSN` is set in `.env.development`.
+    - `environment` tag now derived from `NEXT_PUBLIC_DEPLOY_ENV` → `DEPLOY_ENV` → `NODE_ENV`. CI passes `staging` and `production` as Docker build-args (`staging.docker.yml`, `release.docker.yml`); both the builder and runner stages of `Dockerfile.app` plumb it through so the value is inlined into the client bundle _and_ available to the server process at runtime. GlitchTip now distinguishes all three environments.
+    - Worker `public/workers/cronLogic.js` POSTs to `GLITCHTIP_HEARTBEAT_URL` after each `response.ok` poll — fire-and-forget, swallows failures, gives GlitchTip's uptime monitor a signal that flips red on sustained 5xx, DB outage, or worker crash. 4 new tests under `cron.test.mjs`.
+    - `docs/infrastructure/page.mdx` Section 4 brought into agreement with the code: removed the false claim that error boundaries auto-capture (they didn't, until this change), removed the CSP `report-uri` paragraph (`src/proxy.js` doesn't exist), removed the misleading _"Behavior note on `NODE_ENV=staging`"_ subsection (CI never actually passed `NODE_ENV=staging`), added the new environment-tag derivation chain and worker heartbeat docs.
+
+    Service-worker push-handler capture ([#371](https://github.com/elfensky/helldivers.bot/issues/371)) and `tryCatch` auto-capture at warning level ([#372](https://github.com/elfensky/helldivers.bot/issues/372)) tracked as follow-ups, deferred until v1 has run in production and we've verified GlitchTip's filtering. Refs [#373](https://github.com/elfensky/helldivers.bot/issues/373).
+
 ## 0.46.4
 
 ### Chores
