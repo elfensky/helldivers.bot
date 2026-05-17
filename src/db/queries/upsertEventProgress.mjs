@@ -10,8 +10,8 @@ import { computeBucket } from '@/shared/utils/bucketing.mjs';
  * signal. points_max is a constant set at event creation and lives on
  * h1_event; status is event-level final state and also lives on h1_event.
  *
- * @param {string} type     'attack' | 'defend'
- * @param {object} event    { event_id, points }
+ * @param {'attack' | 'defend'} type
+ * @param {{ event_id: number, points: number }} event
  * @param {number} pollTime Unix timestamp from API response
  */
 export async function queryUpsertEventProgress(type, event, pollTime) {
