@@ -33,7 +33,7 @@ export async function updateSeason(season, opts = {}) {
     }
 
     // 2. Validate
-    const check = isValidSeason(fetchedData);
+    const check = isValidSeason.safeParse(fetchedData);
     if (!check.success) {
         for (const issue of check?.error?.issues ?? []) {
             console.error('update/season.mjs | isValidSeason() | ', issue.message);

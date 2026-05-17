@@ -23,7 +23,7 @@ export async function updateStatus() {
     }
 
     // 2. Validate
-    const check = isValidStatus(fetchedData);
+    const check = isValidStatus.safeParse(fetchedData);
     if (!check.success) {
         console.error(check.error);
         throw new Error(check?.error?.message || 'Invalid status data', {

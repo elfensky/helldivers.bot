@@ -4,7 +4,9 @@ import { updateStatus } from '@/update/status.mjs';
 // --- Dependency mocks ---
 
 vi.mock('@/update/fetch.mjs', () => ({ fetchStatus: vi.fn() }));
-vi.mock('@/validators/isValidStatus', () => ({ isValidStatus: vi.fn() }));
+vi.mock('@/validators/isValidStatus', () => ({
+    isValidStatus: { safeParse: vi.fn() },
+}));
 vi.mock('@/shared/utils/getSeason', () => ({ getSeasonFromStatus: vi.fn() }));
 vi.mock('@/db/queries/upsertSeason', () => ({ queryUpsertSeason: vi.fn() }));
 vi.mock('@/db/queries/upsertEvent', () => ({ queryUpsertEvent: vi.fn() }));
@@ -71,7 +73,7 @@ const mockFetchedData = {
 /** Wire up all mocks for a successful run. */
 function setupHappyPath() {
     fetchStatus.mockResolvedValue(structuredClone(mockFetchedData));
-    isValidStatus.mockReturnValue({ success: true });
+    isValidStatus.safeParse.mockReturnValue({ success: true });
     getSeasonFromStatus.mockReturnValue(5);
     queryUpsertSeason.mockResolvedValue({});
     queryUpsertEvent.mockResolvedValue({});
@@ -93,7 +95,10 @@ describe('updateStatus', () => {
     // 2. Throws when validation fails
     it('throws when isValidStatus returns failure', async () => {
         fetchStatus.mockResolvedValue(structuredClone(mockFetchedData));
-        isValidStatus.mockReturnValue({ success: false, error: { message: 'bad data' } });
+        isValidStatus.safeParse.mockReturnValue({
+            success: false,
+            error: { message: 'bad data' },
+        });
 
         await expect(updateStatus()).rejects.toThrow('bad data');
     });
@@ -101,7 +106,7 @@ describe('updateStatus', () => {
     // 3. Throws when queryUpsertSeason fails
     it('throws when queryUpsertSeason rejects', async () => {
         fetchStatus.mockResolvedValue(structuredClone(mockFetchedData));
-        isValidStatus.mockReturnValue({ success: true });
+        isValidStatus.safeParse.mockReturnValue({ success: true });
         getSeasonFromStatus.mockReturnValue(5);
         queryUpsertSeason.mockRejectedValue(new Error('season write failed'));
 
@@ -121,7 +126,7 @@ describe('updateStatus', () => {
 
         // Verify key calls
         expect(fetchStatus).toHaveBeenCalledOnce();
-        expect(isValidStatus).toHaveBeenCalledOnce();
+        expect(isValidStatus.safeParse).toHaveBeenCalledOnce();
         expect(getSeasonFromStatus).toHaveBeenCalledOnce();
         // Season upserted twice: once with arrays (false), once to confirm (true)
         expect(queryUpsertSeason).toHaveBeenCalledTimes(2);

@@ -73,4 +73,4 @@ const rootSchema = z.object({
     ),
 });
 
-export const isValidSeason = (data) => rootSchema.safeParse(data);
+export const isValidSeason = rootSchema;

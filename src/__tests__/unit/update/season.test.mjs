@@ -4,7 +4,9 @@ import { updateSeason } from '@/update/season.mjs';
 // --- Dependency mocks ---
 
 vi.mock('@/update/fetch', () => ({ fetchSeason: vi.fn() }));
-vi.mock('@/validators/isValidSeason', () => ({ isValidSeason: vi.fn() }));
+vi.mock('@/validators/isValidSeason', () => ({
+    isValidSeason: { safeParse: vi.fn() },
+}));
 vi.mock('@/shared/utils/getSeason', () => ({ getSeasonFromSnapshot: vi.fn() }));
 vi.mock('@/db/queries/upsertSeason', () => ({ queryUpsertSeason: vi.fn() }));
 vi.mock('@/db/queries/upsertEvent', () => ({ queryUpsertEvent: vi.fn() }));
@@ -49,7 +51,7 @@ const mockFetchedData = {
 /** Wire up all mocks for a successful run. */
 function setupHappyPath() {
     vi.mocked(fetchSeason).mockResolvedValue(structuredClone(mockFetchedData));
-    vi.mocked(isValidSeason).mockReturnValue({ success: true });
+    vi.mocked(isValidSeason.safeParse).mockReturnValue({ success: true });
     vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
     vi.mocked(queryUpsertSeason).mockResolvedValue({ id: 1, season: SEASON });
     vi.mocked(queryUpsertEvent).mockResolvedValue({});
@@ -72,7 +74,7 @@ describe('updateSeason', () => {
 
     test('throws when validation fails', async () => {
         vi.mocked(fetchSeason).mockResolvedValue(structuredClone(mockFetchedData));
-        vi.mocked(isValidSeason).mockReturnValue({
+        vi.mocked(isValidSeason.safeParse).mockReturnValue({
             success: false,
             error: { issues: [{ message: 'bad' }] },
         });
@@ -82,7 +84,7 @@ describe('updateSeason', () => {
 
     test('throws when fetched season does not match input season', async () => {
         vi.mocked(fetchSeason).mockResolvedValue(structuredClone(mockFetchedData));
-        vi.mocked(isValidSeason).mockReturnValue({ success: true });
+        vi.mocked(isValidSeason.safeParse).mockReturnValue({ success: true });
         vi.mocked(getSeasonFromSnapshot).mockReturnValue(99);
 
         await expect(updateSeason(SEASON)).rejects.toThrow('Invalid season');
@@ -90,7 +92,7 @@ describe('updateSeason', () => {
 
     test('throws when queryUpsertSeason fails', async () => {
         vi.mocked(fetchSeason).mockResolvedValue(structuredClone(mockFetchedData));
-        vi.mocked(isValidSeason).mockReturnValue({ success: true });
+        vi.mocked(isValidSeason.safeParse).mockReturnValue({ success: true });
         vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
         vi.mocked(queryUpsertSeason).mockRejectedValue(new Error('db season error'));
 
@@ -125,7 +127,7 @@ describe('updateSeason', () => {
         expect(fetchSeason).toHaveBeenCalledWith(SEASON);
 
         // 2. validate
-        expect(isValidSeason).toHaveBeenCalled();
+        expect(isValidSeason.safeParse).toHaveBeenCalled();
 
         // 3. season check
         expect(getSeasonFromSnapshot).toHaveBeenCalled();
@@ -217,7 +219,7 @@ describe('updateSeason', () => {
             ],
         };
         vi.mocked(fetchSeason).mockResolvedValue(parsedData);
-        vi.mocked(isValidSeason).mockReturnValue({ success: true });
+        vi.mocked(isValidSeason.safeParse).mockReturnValue({ success: true });
         vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
 
         vi.mocked(queryUpsertSeason).mockResolvedValue({ id: 1, season: SEASON });
@@ -259,7 +261,7 @@ describe('updateSeason', () => {
             ],
         };
         vi.mocked(fetchSeason).mockResolvedValue(malformedData);
-        vi.mocked(isValidSeason).mockReturnValue({ success: true });
+        vi.mocked(isValidSeason.safeParse).mockReturnValue({ success: true });
         vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
 
         vi.mocked(queryUpsertSeason).mockResolvedValue({ id: 1, season: SEASON });
@@ -359,7 +361,7 @@ describe('updateSeason', () => {
             ],
         };
         vi.mocked(fetchSeason).mockResolvedValue(dataWithMultipleAttacks);
-        vi.mocked(isValidSeason).mockReturnValue({ success: true });
+        vi.mocked(isValidSeason.safeParse).mockReturnValue({ success: true });
         vi.mocked(getSeasonFromSnapshot).mockReturnValue(SEASON);
 
         vi.mocked(queryUpsertSeason).mockResolvedValue({ id: 1, season: SEASON });

@@ -4,6 +4,8 @@
 
 ### Chores
 
+- **Validator protocol unified to raw-schema exports.** `src/validators/isValidStatus.mjs` and `src/validators/isValidSeason.mjs` previously exported `(data) => rootSchema.safeParse(data)` wrapper functions while the other three validators (`isValidContentType.mjs`, `isValidFormData.mjs`, `isValidNumber.mjs`) exported raw Zod schemas. Both wrappers replaced with raw-schema exports so all five validators share one invocation convention: `schema.safeParse(data)`. Callers in `src/update/status.mjs` and `src/update/season.mjs` plus the corresponding unit tests and mocks updated to call `.safeParse()` explicitly.
+
 - **Legacy-wording cleanup.** Replaced "legacy" wording that actually described the public HD1 wire format / public getCampaign shape. `src/db/queries/getCampaign.mjs` JSDoc now says "public getCampaign shape" instead of "legacy getCampaign output"; `src/app/api/h1/rebroadcast/route.js` calls the format "HD1 wire format" not "legacy wire format"; `src/features/admin/actions.mjs` reworded the random-id fallback comment to describe the actual default behavior. Matching test comments in `src/__tests__/unit/queries/getCampaign.test.mjs` updated to "public-shape". Genuine deprecated-format usages (Prisma client migration, Playwright output dir, dismissedEvents storage migrators) left untouched.
 
 ### Bug fixes

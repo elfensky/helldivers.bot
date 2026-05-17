@@ -71,12 +71,12 @@ const makeValidStatus = (overrides = {}) => ({
 
 describe('isValidStatus', () => {
     test('accepts valid status data', () => {
-        const result = isValidStatus(makeValidStatus());
+        const result = isValidStatus.safeParse(makeValidStatus());
         expect(result.success).toBe(true);
     });
 
     test('accepts null defend_event', () => {
-        const result = isValidStatus(makeValidStatus({ defend_event: null }));
+        const result = isValidStatus.safeParse(makeValidStatus({ defend_event: null }));
         expect(result.success).toBe(true);
     });
 
@@ -86,49 +86,51 @@ describe('isValidStatus', () => {
         // and statistics, however, must always be non-empty — see the rejection
         // tests below. This is enforced so getSeasonFromStatus always has a
         // reliable current-season signal.
-        const result = isValidStatus(makeValidStatus({ attack_events: [] }));
+        const result = isValidStatus.safeParse(makeValidStatus({ attack_events: [] }));
         expect(result.success).toBe(true);
     });
 
     test('rejects empty campaign_status', () => {
-        const result = isValidStatus(makeValidStatus({ campaign_status: [] }));
+        const result = isValidStatus.safeParse(makeValidStatus({ campaign_status: [] }));
         expect(result.success).toBe(false);
     });
 
     test('rejects empty statistics', () => {
-        const result = isValidStatus(makeValidStatus({ statistics: [] }));
+        const result = isValidStatus.safeParse(makeValidStatus({ statistics: [] }));
         expect(result.success).toBe(false);
     });
 
     describe('time validation', () => {
         test('rejects time below minimum (1000000000)', () => {
-            const result = isValidStatus(makeValidStatus({ time: 999999999 }));
+            const result = isValidStatus.safeParse(makeValidStatus({ time: 999999999 }));
             expect(result.success).toBe(false);
         });
 
         test('rejects time above maximum (2000000000)', () => {
-            const result = isValidStatus(makeValidStatus({ time: 2000000001 }));
+            const result = isValidStatus.safeParse(makeValidStatus({ time: 2000000001 }));
             expect(result.success).toBe(false);
         });
 
         test('rejects non-integer time', () => {
-            const result = isValidStatus(makeValidStatus({ time: 1700000000.5 }));
+            const result = isValidStatus.safeParse(
+                makeValidStatus({ time: 1700000000.5 }),
+            );
             expect(result.success).toBe(false);
         });
 
         test('accepts boundary values', () => {
-            expect(isValidStatus(makeValidStatus({ time: 1000000000 })).success).toBe(
-                true,
-            );
-            expect(isValidStatus(makeValidStatus({ time: 2000000000 })).success).toBe(
-                true,
-            );
+            expect(
+                isValidStatus.safeParse(makeValidStatus({ time: 1000000000 })).success,
+            ).toBe(true);
+            expect(
+                isValidStatus.safeParse(makeValidStatus({ time: 2000000000 })).success,
+            ).toBe(true);
         });
     });
 
     describe('campaign_status', () => {
         test('rejects invalid status enum', () => {
-            const result = isValidStatus(
+            const result = isValidStatus.safeParse(
                 makeValidStatus({
                     campaign_status: [makeCampaignStatus({ status: 'unknown' })],
                 }),
@@ -138,7 +140,7 @@ describe('isValidStatus', () => {
 
         test('accepts all valid statuses', () => {
             for (const status of ['active', 'defeated', 'hidden']) {
-                const result = isValidStatus(
+                const result = isValidStatus.safeParse(
                     makeValidStatus({
                         campaign_status: [makeCampaignStatus({ status })],
                     }),
@@ -149,7 +151,7 @@ describe('isValidStatus', () => {
 
         test('rejects missing required field', () => {
             const { points_max: _points_max, ...incomplete } = makeCampaignStatus();
-            const result = isValidStatus(
+            const result = isValidStatus.safeParse(
                 makeValidStatus({ campaign_status: [incomplete] }),
             );
             expect(result.success).toBe(false);
@@ -158,7 +160,7 @@ describe('isValidStatus', () => {
 
     describe('defend_event', () => {
         test('rejects invalid status', () => {
-            const result = isValidStatus(
+            const result = isValidStatus.safeParse(
                 makeValidStatus({
                     defend_event: makeDefendEvent({ status: 'unknown' }),
                 }),
@@ -168,7 +170,7 @@ describe('isValidStatus', () => {
 
         test('accepts all valid statuses', () => {
             for (const status of ['active', 'success', 'fail']) {
-                const result = isValidStatus(
+                const result = isValidStatus.safeParse(
                     makeValidStatus({
                         defend_event: makeDefendEvent({ status }),
                     }),
@@ -179,7 +181,9 @@ describe('isValidStatus', () => {
 
         test('rejects missing region', () => {
             const { region: _region, ...noRegion } = makeDefendEvent();
-            const result = isValidStatus(makeValidStatus({ defend_event: noRegion }));
+            const result = isValidStatus.safeParse(
+                makeValidStatus({ defend_event: noRegion }),
+            );
             expect(result.success).toBe(false);
         });
     });
@@ -188,7 +192,7 @@ describe('isValidStatus', () => {
         test('rejects missing players_at_start', () => {
             const { players_at_start: _players_at_start, ...incomplete } =
                 makeAttackEvent();
-            const result = isValidStatus(
+            const result = isValidStatus.safeParse(
                 makeValidStatus({ attack_events: [incomplete] }),
             );
             expect(result.success).toBe(false);
@@ -196,7 +200,7 @@ describe('isValidStatus', () => {
 
         test('rejects missing max_event_id', () => {
             const { max_event_id: _max_event_id, ...incomplete } = makeAttackEvent();
-            const result = isValidStatus(
+            const result = isValidStatus.safeParse(
                 makeValidStatus({ attack_events: [incomplete] }),
             );
             expect(result.success).toBe(false);
@@ -206,12 +210,14 @@ describe('isValidStatus', () => {
     describe('statistics', () => {
         test('rejects missing required field', () => {
             const { kills: _kills, ...incomplete } = makeStatistics();
-            const result = isValidStatus(makeValidStatus({ statistics: [incomplete] }));
+            const result = isValidStatus.safeParse(
+                makeValidStatus({ statistics: [incomplete] }),
+            );
             expect(result.success).toBe(false);
         });
 
         test('rejects string value for numeric field', () => {
-            const result = isValidStatus(
+            const result = isValidStatus.safeParse(
                 makeValidStatus({
                     statistics: [makeStatistics({ players: 'many' })],
                 }),
@@ -222,26 +228,26 @@ describe('isValidStatus', () => {
 
     describe('edge cases', () => {
         test('rejects null', () => {
-            expect(isValidStatus(null).success).toBe(false);
+            expect(isValidStatus.safeParse(null).success).toBe(false);
         });
 
         test('rejects undefined', () => {
-            expect(isValidStatus(undefined).success).toBe(false);
+            expect(isValidStatus.safeParse(undefined).success).toBe(false);
         });
 
         test('rejects empty object', () => {
-            expect(isValidStatus({}).success).toBe(false);
+            expect(isValidStatus.safeParse({}).success).toBe(false);
         });
 
         test('rejects missing top-level fields', () => {
             const { campaign_status: _campaign_status, ...rest } = makeValidStatus();
-            expect(isValidStatus(rest).success).toBe(false);
+            expect(isValidStatus.safeParse(rest).success).toBe(false);
         });
 
         test('rejects non-object types', () => {
-            expect(isValidStatus('string').success).toBe(false);
-            expect(isValidStatus(42).success).toBe(false);
-            expect(isValidStatus([]).success).toBe(false);
+            expect(isValidStatus.safeParse('string').success).toBe(false);
+            expect(isValidStatus.safeParse(42).success).toBe(false);
+            expect(isValidStatus.safeParse([]).success).toBe(false);
         });
     });
 });
