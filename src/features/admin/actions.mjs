@@ -49,8 +49,9 @@ export async function sendTestNotification({
         minute: '2-digit',
         second: '2-digit',
     });
-    // Fallback to a fresh high-range random id (900M+) so legacy callers
-    // without an explicit event_id still avoid collisions with real ids.
+    // Fallback to a fresh high-range random id (900M+) when the caller
+    // omits event_id, so admin-fabricated events still avoid colliding with
+    // real game ids.
     const id = event_id ?? 900_000_000 + Math.floor(Math.random() * 100_000_000);
     const change = {
         kind,

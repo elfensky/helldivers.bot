@@ -132,7 +132,7 @@ export async function POST(request) {
  * tables (h1_season + h1_status + h1_statistic + h1_event). Uses the latest
  * season with data. Returns null when no season has been populated yet.
  *
- * Partial loss of fidelity vs the legacy wire format: the 4 event-count
+ * Partial loss of fidelity vs the HD1 wire format: the 4 event-count
  * fields on each statistics[] entry (defend_events, successful_defend_events,
  * attack_events, successful_attack_events) are omitted — they are derivable
  * from h1_event with COUNT(*) WHERE type=... AND status=... AND season=X.

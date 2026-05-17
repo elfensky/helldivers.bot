@@ -8,7 +8,7 @@ import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
  *
  * @returns {Promise<object | null>} Campaign data, or null if no season exists
  *
- * Returns a shape compatible with the legacy getCampaign output:
+ * Returns the public getCampaign shape consumed by archives and rebroadcast:
  *   { season, last_updated, season_duration, status, introduction_order, points_max, snapshots, events }
  *
  * - `status`     — 3 rows from h1_status, one per faction, latest bucket each.
@@ -18,9 +18,9 @@ import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
  *                  [{ time, data: [faction0, faction1, faction2] }, ...]
  *                  The archives chart readers iterate this list and access
  *                  data[enemy] for each time point.
- * - `introduction_order` / `points_max` — read from the new h1_season
- *                  columns as shape `{ order: number[] }` / `{ points: number[] }`
- *                  to stay API-compatible with the legacy 1:1 relations.
+ * - `introduction_order` / `points_max` — read from h1_season columns as
+ *                  shape `{ order: number[] }` / `{ points: number[] }` to
+ *                  preserve the historical 1:1 relation shape.
  * - `season_duration` — scalar int from h1_season (per-season, not per-faction).
  */
 export const getCampaign = cache(async function getCampaign(season = null) {
@@ -83,7 +83,7 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         orderBy: [{ bucket: 'asc' }, { enemy: 'asc' }],
     });
 
-    // Group full history by bucket into the legacy snapshot shape.
+    // Group full history by bucket into the public snapshot shape.
     // Each snapshot has { time, data: [f0, f1, f2] } — the consumer pattern
     // for archives charts (FactionHealthChart, getWarOutcome, etc.).
     const snapshots = groupStatusByBucket(allStatusRows).map(({ time, factions }) => ({

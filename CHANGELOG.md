@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Chores
+
+- **Legacy-wording cleanup.** Replaced "legacy" wording that actually described the public HD1 wire format / public getCampaign shape. `src/db/queries/getCampaign.mjs` JSDoc now says "public getCampaign shape" instead of "legacy getCampaign output"; `src/app/api/h1/rebroadcast/route.js` calls the format "HD1 wire format" not "legacy wire format"; `src/features/admin/actions.mjs` reworded the random-id fallback comment to describe the actual default behavior. Matching test comments in `src/__tests__/unit/queries/getCampaign.test.mjs` updated to "public-shape". Genuine deprecated-format usages (Prisma client migration, Playwright output dir, dismissedEvents storage migrators) left untouched.
+
 ### Bug fixes
 
 - **`LiveToasts` catch-up branch was unreachable.** `getDismissedEvents()` returns `Record<string, {status, ts}>` but the catch-up loop was comparing that whole object to `event.status` (and to `EVENT_STATUS.ACTIVE`), so both branches always evaluated `false` — fully-suppressed events and the "dismissed at active → now transitioned" path never fired. The unit test masked it by mocking the legacy string shape (`{1: 'active'}`) that production never produces. Fixed by reading `dismissed[id]?.status` once per iteration and comparing the string against the string. Test mocks updated to `{status, ts}` so future regressions surface.
