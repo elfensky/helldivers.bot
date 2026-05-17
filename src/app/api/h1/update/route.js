@@ -110,6 +110,17 @@ export async function GET(request) {
     }
     const seasonTime = roundedPerformanceTime(start);
 
+    // Log any non-fatal warnings the orchestrators collected (upsertEventProgress
+    // and per-snapshot status upserts). They're also returned in the response
+    // body so clients can surface them, but logging here gives operators
+    // visibility without parsing the JSON envelope.
+    for (const warning of [
+        ...(statusData?.warnings ?? []),
+        ...(seasonData?.warnings ?? []),
+    ]) {
+        console.warn('[update] warning:', warning.stage, warning.message);
+    }
+
     // Fire-and-forget: check for event transitions and send push notifications
     checkAndNotify().catch((err) =>
         console.error('Push notification error:', err.message),

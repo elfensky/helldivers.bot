@@ -22,6 +22,9 @@ export async function updateSeason(season, opts = {}) {
     const start = performance.now();
     if (!season) throw new Error('season is missing');
 
+    /** @type {Array<{ stage: string, message: string }>} */
+    const warnings = [];
+
     // 1. Fetch from get_snapshots API
     const { data: fetchedData, error: fetchedError } = await tryCatch(
         fetchSeason(season),
@@ -90,10 +93,10 @@ export async function updateSeason(season, opts = {}) {
                 upsertStatus(season, enemy, snap.time, campaign),
             );
             if (statusError) {
-                console.error(
-                    `Status upsert failed for season=${season} enemy=${enemy} time=${snap.time}:`,
-                    statusError.message,
-                );
+                warnings.push({
+                    stage: `upsertStatus.snapshot[season=${season},enemy=${enemy},time=${snap.time}]`,
+                    message: statusError.message,
+                });
             }
         }
     }
@@ -122,5 +125,5 @@ export async function updateSeason(season, opts = {}) {
         fetchedData?.time ??
         fetchedData?.snapshots?.[fetchedData.snapshots.length - 1]?.time ??
         null;
-    return { ms: performanceTime(start), season, time, confirmSeason };
+    return { ms: performanceTime(start), season, time, confirmSeason, warnings };
 }

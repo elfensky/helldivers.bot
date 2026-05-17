@@ -280,16 +280,19 @@ describe('updateSeason', () => {
         );
     });
 
-    test('logs status upsert errors but does not throw', async () => {
+    test('collects status upsert errors into warnings[] without throwing', async () => {
         setupHappyPath();
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         vi.mocked(upsertStatus).mockRejectedValue(new Error('status failed'));
 
-        // Should not throw — status errors are logged and skipped
-        await expect(updateSeason(SEASON)).resolves.toBeDefined();
-        expect(consoleSpy).toHaveBeenCalled();
-
-        consoleSpy.mockRestore();
+        // Should not throw — per-snapshot status errors are non-fatal and
+        // routed to warnings[] for the caller to surface.
+        const result = await updateSeason(SEASON);
+        expect(result.warnings).toBeDefined();
+        expect(result.warnings.length).toBeGreaterThan(0);
+        expect(result.warnings[0]).toMatchObject({
+            stage: expect.stringContaining('upsertStatus.snapshot'),
+            message: 'status failed',
+        });
     });
 
     // --- protectedBucket tests ---

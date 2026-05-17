@@ -11,8 +11,14 @@ import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
 import { upsertStatistic } from '@/db/queries/upsertStatistic.mjs';
 import { upsertEventProgress } from '@/db/queries/upsertEventProgress.mjs';
 
+/**
+ * @typedef {{ stage: string, message: string }} UpdateWarning
+ */
+
 export async function updateStatus() {
     const start = performance.now();
+    /** @type {UpdateWarning[]} */
+    const warnings = [];
 
     // 1. Fetch
     const { data: fetchedData, error: fetchedError } = await tryCatch(fetchStatus());
@@ -88,6 +94,8 @@ export async function updateStatus() {
 
     // 8. Bucket-upsert h1_event_progress for active events (event progression).
     // upsertEventProgress applies its own cross-season guard, so we don't pre-filter here.
+    // Non-fatal: collect failures into warnings[] so the caller can surface them
+    // without losing the rest of the poll's writes.
     if (fetchedData.defend_event) {
         const { error: defProgError } = await tryCatch(
             upsertEventProgress(
@@ -98,7 +106,10 @@ export async function updateStatus() {
             ),
         );
         if (defProgError) {
-            console.error('Defend event progress error:', defProgError.message);
+            warnings.push({
+                stage: 'upsertEventProgress.defend',
+                message: defProgError.message,
+            });
         }
     }
 
@@ -107,7 +118,10 @@ export async function updateStatus() {
             upsertEventProgress(season, EVENT_TYPE.ATTACK, event, fetchedData.time),
         );
         if (atkProgError) {
-            console.error('Attack event progress error:', atkProgError.message);
+            warnings.push({
+                stage: 'upsertEventProgress.attack',
+                message: atkProgError.message,
+            });
         }
     }
 
@@ -124,5 +138,6 @@ export async function updateStatus() {
         season,
         time: fetchedData.time,
         confirmSeason,
+        warnings,
     };
 }
