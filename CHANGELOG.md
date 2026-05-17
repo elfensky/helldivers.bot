@@ -4,6 +4,8 @@
 
 ### Chores
 
+- **`/api/notifications/subscribe` enforces same-origin + per-IP rate limit.** The POST and DELETE handlers previously accepted any caller — no auth, no rate limit, no ownership binding. Added a same-origin Origin/Host header check (rejects with 403 when the Origin header is missing or points anywhere except the app's own host) and a per-IP token bucket (20 requests per 60s, rejects with 429 thereafter). The IP comes from `X-Forwarded-For` or `X-Real-IP` (Cloudflare/proxy) with an `anonymous` fallback. Full session binding still pending — needs a `push_subscription.user_id` schema migration; deferred to a follow-up.
+
 - **`validateApiKey` no longer collides with the `tryCatch` tuple shape.** `validateApiKey()` returned `{ data, error: string }` where every other helper in the codebase returns `{ data, error: Error | null }`. A destructuring caller using the project's `tryCatch` convention would silently treat the `API_KEY_ERROR` enum string as a thrown error. Renamed the field to `code` so the type difference is explicit; updated `src/app/api/h1/rebroadcast/route.js` to destructure `{ code: keyCode }` and the unit + route tests to match. Added a JSDoc note on the helper documenting why the shape differs.
 
 - **Small-mechanical-wins bundle.** Eight low-risk cleanups grouped into one diff to amortise PR cost:
