@@ -13,7 +13,7 @@ import { performanceTime } from '@/shared/utils/time.mjs';
  * @param {'attack' | 'defend'} type
  * @param {object} event   Event row from the HD1 API
  */
-export async function queryUpsertEvent(season, type, event) {
+export async function upsertEvent(season, type, event) {
     'use server';
     const start = performance.now();
 

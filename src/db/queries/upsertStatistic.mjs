@@ -12,7 +12,7 @@ import { computeBucket } from '@/shared/utils/bucketing.mjs';
  *
  * Five upstream fields are intentionally NOT written here:
  *   - season_duration — moved to h1_season as a scalar (per-season state,
- *     not per-faction; handled by queryUpsertSeason).
+ *     not per-faction; handled by upsertSeason).
  *   - defend_events / successful_defend_events / attack_events /
  *     successful_attack_events — derivable from h1_event counts
  *     (COUNT(*) WHERE type=... AND status=... AND season=X).
@@ -22,7 +22,7 @@ import { computeBucket } from '@/shared/utils/bucketing.mjs';
  * @param {number} pollTime Unix timestamp from API response
  * @param {object} stats    statistics[enemy] from get_campaign_status
  */
-export async function queryUpsertStatistic(season, enemy, pollTime, stats) {
+export async function upsertStatistic(season, enemy, pollTime, stats) {
     'use server';
     const start = performance.now();
 

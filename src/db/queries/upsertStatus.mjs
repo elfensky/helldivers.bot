@@ -16,7 +16,7 @@ import { computeBucket } from '@/shared/utils/bucketing.mjs';
  * @param {object} campaign   campaign_status[enemy] — { points, points_taken, status }
  *                            (points_max and introduction_order are season-level, not stored here)
  */
-export async function queryUpsertStatus(season, enemy, pollTime, campaign) {
+export async function upsertStatus(season, enemy, pollTime, campaign) {
     'use server';
     const start = performance.now();
 

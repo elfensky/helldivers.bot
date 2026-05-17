@@ -5,11 +5,11 @@ import { fetchStatus } from '@/update/fetch.mjs';
 import { EVENT_TYPE } from '@/shared/enums/events.mjs';
 import { isValidStatus } from '@/validators/isValidStatus.mjs';
 // db
-import { queryUpsertSeason } from '@/db/queries/upsertSeason.mjs';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent.mjs';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus.mjs';
-import { queryUpsertStatistic } from '@/db/queries/upsertStatistic.mjs';
-import { queryUpsertEventProgress } from '@/db/queries/upsertEventProgress.mjs';
+import { upsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { upsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
+import { upsertStatistic } from '@/db/queries/upsertStatistic.mjs';
+import { upsertEventProgress } from '@/db/queries/upsertEventProgress.mjs';
 
 export async function updateStatus() {
     const start = performance.now();
@@ -39,7 +39,7 @@ export async function updateStatus() {
     const pointsMax = fetchedData.campaign_status.map((c) => c.points_max);
     const seasonDuration = fetchedData.statistics[0]?.season_duration ?? 0;
     const { error: seasonError } = await tryCatch(
-        queryUpsertSeason(season, false, { introOrder, pointsMax, seasonDuration }),
+        upsertSeason(season, false, { introOrder, pointsMax, seasonDuration }),
     );
     if (seasonError) {
         throw new Error(seasonError?.message || 'Failed to upsert season');
@@ -48,7 +48,7 @@ export async function updateStatus() {
     // 5. Upsert events (h1_event unchanged)
     if (fetchedData.defend_event) {
         const { error: defendError } = await tryCatch(
-            queryUpsertEvent(season, EVENT_TYPE.DEFEND, fetchedData.defend_event),
+            upsertEvent(season, EVENT_TYPE.DEFEND, fetchedData.defend_event),
         );
         if (defendError) {
             throw new Error(defendError?.message || 'Failed to upsert defend event');
@@ -57,7 +57,7 @@ export async function updateStatus() {
 
     for (const event of fetchedData.attack_events) {
         const { error: attackError } = await tryCatch(
-            queryUpsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
+            upsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
         );
         if (attackError) {
             throw new Error(attackError?.message || 'Failed to upsert attack event');
@@ -68,7 +68,7 @@ export async function updateStatus() {
     for (let enemy = 0; enemy < 3; enemy++) {
         const campaign = fetchedData.campaign_status[enemy];
         const { error: statusError } = await tryCatch(
-            queryUpsertStatus(season, enemy, fetchedData.time, campaign),
+            upsertStatus(season, enemy, fetchedData.time, campaign),
         );
         if (statusError) {
             throw new Error(statusError?.message || 'Failed to upsert h1_status');
@@ -79,17 +79,19 @@ export async function updateStatus() {
     for (let enemy = 0; enemy < 3; enemy++) {
         const stats = fetchedData.statistics[enemy];
         const { error: statError } = await tryCatch(
-            queryUpsertStatistic(season, enemy, fetchedData.time, stats),
+            upsertStatistic(season, enemy, fetchedData.time, stats),
         );
         if (statError) {
             throw new Error(statError?.message || 'Failed to upsert h1_statistic');
         }
     }
 
-    // 8. Bucket-upsert h1_event_progress for active events (event progression)
-    if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
+    // 8. Bucket-upsert h1_event_progress for active events (event progression).
+    // upsertEventProgress applies its own cross-season guard, so we don't pre-filter here.
+    if (fetchedData.defend_event) {
         const { error: defProgError } = await tryCatch(
-            queryUpsertEventProgress(
+            upsertEventProgress(
+                season,
                 EVENT_TYPE.DEFEND,
                 fetchedData.defend_event,
                 fetchedData.time,
@@ -101,9 +103,8 @@ export async function updateStatus() {
     }
 
     for (const event of fetchedData.attack_events) {
-        if (event.season !== season) continue;
         const { error: atkProgError } = await tryCatch(
-            queryUpsertEventProgress(EVENT_TYPE.ATTACK, event, fetchedData.time),
+            upsertEventProgress(season, EVENT_TYPE.ATTACK, event, fetchedData.time),
         );
         if (atkProgError) {
             console.error('Attack event progress error:', atkProgError.message);
@@ -112,7 +113,7 @@ export async function updateStatus() {
 
     // 9. Confirm season update (sets last_updated = now)
     const { data: confirmSeason, error: confirmError } = await tryCatch(
-        queryUpsertSeason(season, true),
+        upsertSeason(season, true),
     );
     if (confirmError) {
         throw new Error(confirmError?.message || 'Failed to update last_updated');

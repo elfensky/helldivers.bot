@@ -18,7 +18,7 @@ import { isValidNumber } from '@/validators/isValidNumber.mjs';
  *                                pointsMax?: number[3],
  *                                seasonDuration?: number }
  */
-export async function queryUpsertSeason(season, confirm = false, metadata = null) {
+export async function upsertSeason(season, confirm = false, metadata = null) {
     'use server';
     const start = performance.now();
 

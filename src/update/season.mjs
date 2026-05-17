@@ -7,9 +7,9 @@ import { fetchSeason } from '@/update/fetch.mjs';
 import { isValidSeason } from '@/validators/isValidSeason.mjs';
 import { computeBucket } from '@/shared/utils/bucketing.mjs';
 // db
-import { queryUpsertSeason } from '@/db/queries/upsertSeason.mjs';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent.mjs';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus.mjs';
+import { upsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { upsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
 
 /**
  * @param {number} season
@@ -56,7 +56,7 @@ export async function updateSeason(season, opts = {}) {
 
     // 4. Upsert season with inlined arrays
     const { error: seasonError } = await tryCatch(
-        queryUpsertSeason(season, false, {
+        upsertSeason(season, false, {
             introOrder: fetchedData.introduction_order,
             pointsMax: fetchedData.points_max,
         }),
@@ -87,7 +87,7 @@ export async function updateSeason(season, opts = {}) {
                 status: faction.status,
             };
             const { error: statusError } = await tryCatch(
-                queryUpsertStatus(season, enemy, snap.time, campaign),
+                upsertStatus(season, enemy, snap.time, campaign),
             );
             if (statusError) {
                 console.error(
@@ -100,21 +100,19 @@ export async function updateSeason(season, opts = {}) {
 
     // 6. Upsert events (h1_event unchanged — same structure, different source)
     for (const event of fetchedData.defend_events) {
-        const { error } = await tryCatch(
-            queryUpsertEvent(season, EVENT_TYPE.DEFEND, event),
-        );
+        const { error } = await tryCatch(upsertEvent(season, EVENT_TYPE.DEFEND, event));
         if (error) throw new Error(error?.message || 'defend event upsert failed');
     }
     for (const event of fetchedData.attack_events) {
         const { error } = await tryCatch(
-            queryUpsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
+            upsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
         );
         if (error) throw new Error(error?.message || 'attack event upsert failed');
     }
 
     // 7. Confirm season (sets last_updated = now)
     const { data: confirmSeason, error: confirmError } = await tryCatch(
-        queryUpsertSeason(season, true),
+        upsertSeason(season, true),
     );
     if (confirmError) {
         throw new Error(confirmError?.message || 'Failed to confirm season');
