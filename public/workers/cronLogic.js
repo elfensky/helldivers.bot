@@ -35,6 +35,14 @@ function makeDoWork({ key, interval, port }, parentPort) {
             });
             const data = await response.json();
             parentPort.postMessage({ data, time: new Date().toString() });
+
+            // Fire-and-forget GlitchTip uptime ping. Only on 2xx so that a
+            // sustained 5xx (HD1 API down, DB down) flips the monitor red.
+            if (response.ok && process.env.GLITCHTIP_HEARTBEAT_URL) {
+                fetch(process.env.GLITCHTIP_HEARTBEAT_URL, { method: 'POST' }).catch(
+                    () => {},
+                );
+            }
         } catch (err) {
             parentPort.postMessage({
                 error: err.toString(),
