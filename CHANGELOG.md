@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.46.4
+
 ### Chores
 
 - **Uniform `warnings[]` return shape on the update orchestrators.** `updateStatus` previously `console.error`'d non-fatal `upsertEventProgress` failures and `updateSeason` did the same for per-snapshot `upsertStatus` failures — silent for the caller. Both now collect non-fatal errors into a `warnings: [{ stage, message }]` array on the return value. `/api/h1/update/route.js` logs them with a `[update] warning:` prefix for operator visibility and returns them in the response body so clients have signal too. The `update/season.test` "logs but does not throw" test updated to assert on `result.warnings[]`.
