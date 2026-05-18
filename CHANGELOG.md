@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.47.0
+
 ### Features
 
 - **GlitchTip / Sentry observability wired up across the app.** The Sentry SDK was initialised but most error sources never reached GlitchTip in practice: every `errorResponse(5xx, ...)` was a `console.error` followed by a generic 500, error boundaries discarded the error param while telling users _"this incident has been logged"_, server-side init was gated to `NODE_ENV === 'production'` so localhost was dark, staging and production both tagged as `environment: 'production'`, and `GLITCHTIP_HEARTBEAT_URL` was documented but never read. Fixed end-to-end:
