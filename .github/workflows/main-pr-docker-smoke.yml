@@ -1,0 +1,87 @@
+name: Main PR Docker Smoke
+
+# Catches the class of bugs that only manifest when the production-shaped
+# Docker stack actually builds and runs — image-level dependency issues,
+# missing COPY lines in Dockerfiles, raw-Node module resolution (the v0.47.0
+# `@/shared` regression), runtime env-var requirements, etc. These all pass
+# `npm run lint/typecheck/test:unit/build` locally because the local tooling
+# resolves jsconfig aliases and provides full env mocking.
+#
+# Scoped to `pull_request: branches: [main]` only — runs on release PRs from
+# develop → main and on hotfix PRs to main. Not on develop PRs (too slow for
+# the integration loop) and not on pushes (by then the merge already happened).
+
+on:
+    pull_request:
+        branches: [main]
+
+concurrency:
+    group: docker-smoke-${{ github.event.pull_request.number || github.sha }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    smoke:
+        name: Docker Compose smoke test
+        runs-on: ubuntu-latest
+        # The Next.js image build takes ~5-7 minutes from a cold cache; the
+        # migrate image ~1 minute; postgres start + migrate run + app boot ~30s.
+        # 20 minutes leaves comfortable headroom for runner variability.
+        timeout-minutes: 20
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6.0.2
+
+            - name: Set up Docker Buildx
+              # Buildx is needed for the BuildKit features Dockerfile.app uses:
+              # `# syntax=docker/dockerfile:1`, `RUN --mount=type=cache,...`,
+              # and `RUN --mount=type=secret,...`. Without buildx, those parse
+              # as ordinary RUNs and break the build.
+              uses: docker/setup-buildx-action@v4.0.0
+
+            - name: Build images
+              # `docker compose build` invokes buildx per service. No GHA cache
+              # configured here — adding it requires the `x-bake` extension or
+              # rewriting as standalone `docker buildx build` calls per image.
+              # Cold-cache cost is ~7 minutes total which is acceptable for the
+              # main-PR cadence; revisit if it becomes painful.
+              run: docker compose -f docker-compose.ci.yml build
+
+            - name: Start the stack
+              # `--wait` (compose >= 2.17) blocks until every service reaches
+              # `healthy` (per `healthcheck:`) or `completed_successfully`
+              # (for one-shot containers like migrate), then exits 0.
+              # On any service failure or healthcheck timeout it exits non-zero
+              # — which is precisely the assertion we want.
+              run: docker compose -f docker-compose.ci.yml up -d --wait
+
+            - name: HTTP sanity check from runner host
+              # Compose reported all services healthy via the in-container
+              # probe. This step verifies the host port mapping works end-to-end
+              # and that the response body is sensible JSON, not just a 200.
+              run: |
+                  set -euo pipefail
+                  curl -sf --max-time 10 http://127.0.0.1:3000/api/healthcheck | tee /dev/stderr | grep -q '"data"'
+
+            - name: Dump container logs on failure
+              if: failure()
+              run: |
+                  echo "::group::postgres logs"
+                  docker compose -f docker-compose.ci.yml logs postgres || true
+                  echo "::endgroup::"
+                  echo "::group::migrate logs"
+                  docker compose -f docker-compose.ci.yml logs migrate || true
+                  echo "::endgroup::"
+                  echo "::group::helldiversbot logs"
+                  docker compose -f docker-compose.ci.yml logs helldiversbot || true
+                  echo "::endgroup::"
+                  echo "::group::compose ps"
+                  docker compose -f docker-compose.ci.yml ps || true
+                  echo "::endgroup::"
+
+            - name: Tear down
+              if: always()
+              run: docker compose -f docker-compose.ci.yml down -v --remove-orphans

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Chores
+
+- **Docker smoke CI for main PRs.** New `.github/workflows/main-pr-docker-smoke.yml` (scoped to `pull_request: branches: [main]` only) brings up the full production-shaped stack — postgres + migrate + helldiversbot, all built from the working-tree Dockerfiles — and asserts both that migrate exits 0 and that the app's `/api/healthcheck` returns a sensible payload. Backed by a new `docker-compose.ci.yml` (standalone, not an override) that swaps `image: ghcr.io/...` for `build:` and replaces `env_file: .env.development` with inline `environment:` blocks so CI can inject stub credentials. Closes the gap exposed by the v0.47.1 hotfix, where `npm run lint`/`typecheck`/`test:unit`/`build` all passed locally while the production migrate container crashed on a jsconfig-alias import (`@/shared/...`) that only fails under raw Node. The compose file is also usable locally — `docker compose -f docker-compose.ci.yml up --build` reproduces the exact CI check before pushing. Cold-cache cost is ~7 minutes per main PR; no GHA build cache configured yet (revisit if it becomes painful).
+
 ## 0.47.1
 
 ### Bug fixes
