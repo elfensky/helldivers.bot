@@ -3,6 +3,7 @@ import { performance } from 'perf_hooks';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 import db from '@/db/db';
 
 const subscriptionSchema = z.object({
@@ -89,6 +90,11 @@ export async function POST(request) {
 
     if (dbError) {
         console.error('Push subscription upsert error:', dbError.message);
+        reportError(dbError, {
+            route: '/api/notifications/subscribe',
+            method: 'POST',
+            stage: 'upsert',
+        });
         return errorResponse(500, start, 'Failed to save subscription');
     }
 
@@ -121,6 +127,11 @@ export async function DELETE(request) {
         // Ignore "not found" errors — already unsubscribed
         if (!dbError.message?.includes('Record to delete does not exist')) {
             console.error('Push subscription delete error:', dbError.message);
+            reportError(dbError, {
+                route: '/api/notifications/subscribe',
+                method: 'DELETE',
+                stage: 'delete',
+            });
             return errorResponse(500, start, 'Failed to remove subscription');
         }
     }

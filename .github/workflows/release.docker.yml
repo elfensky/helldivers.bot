@@ -40,6 +40,7 @@ jobs:
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:latest
                   build-args: |
                       NODE_ENV=production
+                      NEXT_PUBLIC_DEPLOY_ENV=production
                   # Sentry credentials are passed as BuildKit secrets, NOT
                   # build-args. Build-args end up in the image's provenance
                   # attestation that gets pushed to GHCR — anyone with pull

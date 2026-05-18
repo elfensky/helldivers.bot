@@ -2,6 +2,7 @@ import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
 import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
 
@@ -10,6 +11,7 @@ export async function GET() {
 
     const { data, error } = await tryCatch(getCampaign());
     if (error || !data) {
+        if (error) reportError(error, { route: '/api/h1/live', stage: 'get-campaign' });
         return errorResponse(500, start, error?.message ?? 'No campaign data');
     }
 

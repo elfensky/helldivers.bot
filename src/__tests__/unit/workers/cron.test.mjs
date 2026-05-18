@@ -25,6 +25,7 @@ beforeEach(() => {
 afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     delete globalThis.fetch;
 });
 
@@ -279,6 +280,81 @@ describe('cron worker — error recovery', () => {
         // try/catch).
         const [, secondInit] = globalThis.fetch.mock.calls[1];
         expect(secondInit.headers).not.toHaveProperty('X-Worker-Startup');
+    });
+});
+
+describe('cron worker — GlitchTip uptime heartbeat', () => {
+    const HEARTBEAT_URL = 'https://glitchtip.example.com/heartbeat/abc';
+
+    test('POSTs to GLITCHTIP_HEARTBEAT_URL after a successful (2xx) poll', async () => {
+        vi.stubEnv('GLITCHTIP_HEARTBEAT_URL', HEARTBEAT_URL);
+        globalThis.fetch = vi.fn(() =>
+            Promise.resolve({ ok: true, json: () => Promise.resolve({}) }),
+        );
+        const doWork = makeDoWork(baseCfg, makeParentPort());
+
+        doWork();
+        await flushMicrotasks();
+
+        // Call 1: /api/h1/update. Call 2: the heartbeat ping.
+        expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+        const [hbUrl, hbInit] = globalThis.fetch.mock.calls[1];
+        expect(hbUrl).toBe(HEARTBEAT_URL);
+        expect(hbInit.method).toBe('POST');
+    });
+
+    test('does NOT heartbeat when /api/h1/update returns non-2xx', async () => {
+        vi.stubEnv('GLITCHTIP_HEARTBEAT_URL', HEARTBEAT_URL);
+        globalThis.fetch = vi.fn(() =>
+            Promise.resolve({ ok: false, json: () => Promise.resolve({}) }),
+        );
+        const doWork = makeDoWork(baseCfg, makeParentPort());
+
+        doWork();
+        await flushMicrotasks();
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('does NOT heartbeat when GLITCHTIP_HEARTBEAT_URL is unset', async () => {
+        vi.stubEnv('GLITCHTIP_HEARTBEAT_URL', '');
+        globalThis.fetch = vi.fn(() =>
+            Promise.resolve({ ok: true, json: () => Promise.resolve({}) }),
+        );
+        const doWork = makeDoWork(baseCfg, makeParentPort());
+
+        doWork();
+        await flushMicrotasks();
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('heartbeat fetch failure does not crash the poll loop', async () => {
+        vi.stubEnv('GLITCHTIP_HEARTBEAT_URL', HEARTBEAT_URL);
+        let callCount = 0;
+        globalThis.fetch = vi.fn(() => {
+            callCount += 1;
+            if (callCount === 2) {
+                // The heartbeat fetch fails — must be swallowed.
+                return Promise.reject(new Error('heartbeat upstream down'));
+            }
+            return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+        });
+        const parentPort = makeParentPort();
+        const doWork = makeDoWork(baseCfg, parentPort);
+
+        doWork();
+        await flushMicrotasks();
+
+        // The poll succeeded; the heartbeat rejection must not surface.
+        expect(parentPort.postMessage).toHaveBeenCalledTimes(1);
+        expect(parentPort.postMessage.mock.calls[0][0].error).toBeUndefined();
+
+        // Next poll fires as scheduled.
+        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000 + 50);
+        await flushMicrotasks();
+        // Call 1: update. Call 2: heartbeat (failed). Call 3: next update. Call 4: next heartbeat.
+        expect(globalThis.fetch).toHaveBeenCalledTimes(4);
     });
 });
 
