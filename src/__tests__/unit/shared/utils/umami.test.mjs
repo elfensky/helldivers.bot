@@ -69,7 +69,10 @@ describe('sendUmamiEvent error handling', () => {
         // Should not throw despite fetch rejecting
         await umamiTrackEvent('Home', '/', 'test-event');
 
-        expect(consoleSpy).toHaveBeenCalledWith('Error:', networkError);
+        expect(consoleSpy).toHaveBeenCalledWith(
+            '[umami] sendUmamiEvent failed:',
+            networkError.message,
+        );
         consoleSpy.mockRestore();
     });
 });

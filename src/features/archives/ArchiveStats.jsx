@@ -1,12 +1,13 @@
-import humanizeDuration from 'humanize-duration';
+import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import GlitchText from '@/features/archives/GlitchText';
 import factions from '@/shared/enums/factions.mjs';
 import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
-// Only 5 fields in h1_live are BigInt in the Prisma schema: kills, deaths,
+// Only 5 fields in h1_statistic are BigInt in the Prisma schema: kills, deaths,
 // shots, hits, accidentals. The other stat columns (missions, successful_missions,
 // players, total_unique_players, ...) are Int and come back as plain JS Number.
 // BigInt() coerces either losslessly. DO NOT use sumBigInt for global-per-season
@@ -26,7 +27,13 @@ function formatRatio(numerator, denominator) {
     return (Number(numerator) / Number(denominator)).toFixed(1);
 }
 
-export default function ArchiveStats({ events, live, data, effects, glitchPhase }) {
+export default function ArchiveStats({
+    events,
+    live,
+    data,
+    effects: _effects,
+    glitchPhase,
+}) {
     if (!events?.length) return null;
 
     // Event-derived stats
@@ -38,17 +45,18 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
             snapshots[snapshots.length - 1].time - snapshots[0].time
         :   sorted[sorted.length - 1].end_time - sorted[0].start_time;
     const seasonDays = Math.round(seasonSeconds / 86400);
-    const seasonHumanDuration = humanizeDuration(seasonSeconds * 1000, {
-        largest: 2,
-        round: true,
-    });
+    const seasonHumanDuration = formatDuration(seasonSeconds);
 
     // Defense / attack rates — split out from the old global WIN_RATE so the
     // two activities can be read independently.
-    const defends = events.filter((e) => e.type === 'defend');
-    const attacks = events.filter((e) => e.type === 'attack');
-    const successfulDefends = defends.filter((e) => e.status === 'success').length;
-    const successfulAttacks = attacks.filter((e) => e.status === 'success').length;
+    const defends = events.filter((e) => e.type === EVENT_TYPE.DEFEND);
+    const attacks = events.filter((e) => e.type === EVENT_TYPE.ATTACK);
+    const successfulDefends = defends.filter(
+        (e) => e.status === EVENT_STATUS.SUCCESS,
+    ).length;
+    const successfulAttacks = attacks.filter(
+        (e) => e.status === EVENT_STATUS.SUCCESS,
+    ).length;
     const defenseRate =
         defends.length > 0 ?
             Math.round((successfulDefends / defends.length) * 100)
@@ -71,7 +79,7 @@ export default function ArchiveStats({ events, live, data, effects, glitchPhase 
     // Notable moments
     const worstCascade = findWorstCascade(events);
 
-    // h1_live combat stats (only for seasons with live data)
+    // h1_statistic combat stats (only for seasons with live data)
     const hasLive = live?.length > 0;
     let liveCards = null;
     if (hasLive) {

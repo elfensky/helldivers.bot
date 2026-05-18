@@ -4,7 +4,7 @@ import NotificationToggle from '@/features/notifications/NotificationToggle';
 import LastUpdated from '@/shared/components/LastUpdated';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import DefeatedCard from '@/features/galaxy/DefeatedCard';
-import FactionTabs from '@/features/dashboard/FactionTabs';
+import FactionTabs from '@/shared/components/FactionTabs';
 import RegionsViewToggle from '@/features/dashboard/RegionsViewToggle';
 import StatGrid from '@/features/stats/StatGrid';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
@@ -108,12 +108,14 @@ export default function DashboardClient({
         const frontier = computeFrontier(campaignData, mapState[index]);
         if (!frontier) return null;
 
-        const isDefending = frontier.event === 'active';
+        const isDefending = frontier.event === EVENT_STATUS.ACTIVE;
         const activeEvent =
             isDefending ?
                 events?.find(
                     (e) =>
-                        e.enemy === index && e.type === 'defend' && e.status === 'active',
+                        e.enemy === index &&
+                        e.type === EVENT_TYPE.DEFEND &&
+                        e.status === EVENT_STATUS.ACTIVE,
                 )
             :   null;
 
@@ -159,9 +161,12 @@ export default function DashboardClient({
     function renderHomeworldCard(index) {
         if (index === seDefenderIndex) return null;
         const homeworld = mapState[index]?.[HOMEWORLD_REGION];
-        if (homeworld?.event !== 'active') return null;
+        if (homeworld?.event !== EVENT_STATUS.ACTIVE) return null;
         const attackEvent = events?.find(
-            (e) => e.enemy === index && e.type === 'attack' && e.status === 'active',
+            (e) =>
+                e.enemy === index &&
+                e.type === EVENT_TYPE.ATTACK &&
+                e.status === EVENT_STATUS.ACTIVE,
         );
 
         // In campaign view this card's bar becomes the 11-segment overview

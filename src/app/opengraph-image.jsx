@@ -1,8 +1,13 @@
 import { ImageResponse } from 'next/og';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
-import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { EVENT_STATUS } from '@/shared/enums/events';
+import {
+    EVENT_STATUS,
+    EVENT_TYPE,
+    CAMPAIGN_STATUS,
+    MAP_STATUS,
+} from '@/shared/enums/events.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
 import {
     bugPaths,
@@ -47,13 +52,13 @@ const FACTION_BAR = [COLORS.bugsBar, COLORS.cyborgsBar, COLORS.illuminateBar];
 const FACTION_PATHS = [bugPaths, cyborgPaths, illuminatePaths];
 
 function getSectorFill(status, factionIndex) {
-    if (status === 'captured') return COLORS.captured;
-    if (status === 'lost') return COLORS.lost;
+    if (status === MAP_STATUS.CAPTURED) return COLORS.captured;
+    if (status === MAP_STATUS.LOST) return COLORS.lost;
     return FACTION_FILL[factionIndex] || COLORS.lost;
 }
 
 function getSectorStroke(status) {
-    return status === 'lost' ? COLORS.lostStroke : COLORS.border;
+    return status === MAP_STATUS.LOST ? COLORS.lostStroke : COLORS.border;
 }
 
 function fallbackImage() {
@@ -81,7 +86,7 @@ function buildMapSvg(mapState) {
 
     for (let fi = 0; fi < FACTION_PATHS.length; fi++) {
         for (const path of FACTION_PATHS[fi]) {
-            const status = mapState[fi]?.[path.sector]?.status || 'lost';
+            const status = mapState[fi]?.[path.sector]?.status || MAP_STATUS.LOST;
             const fill = getSectorFill(status, fi);
             const stroke = getSectorStroke(status);
             paths.push(
@@ -107,10 +112,9 @@ export default async function Image() {
 
     // Two event lists:
     // - events: full list — needed for status text (includes completed events for WON/LOST display)
-    // - activeEvents: filtered — only active events affect sector ownership on the map
+    // - mapState: derived from active events only — see computeLiveMapState
     const events = data.events || [];
-    const activeEvents = events.filter((e) => e.status === EVENT_STATUS.ACTIVE);
-    const mapState = computeMapState(data.status, activeEvents);
+    const mapState = computeLiveMapState(data);
     const mapDataUri = buildMapSvg(mapState);
 
     const factionStats = data.status.map((f) => {
@@ -129,7 +133,8 @@ export default async function Image() {
     let statusColor = COLORS.yellow;
 
     const allDefeated =
-        data.status.length === 3 && data.status.every((f) => f.status === 'defeated');
+        data.status.length === 3 &&
+        data.status.every((f) => f.status === CAMPAIGN_STATUS.DEFEATED);
     if (allDefeated) {
         statusText = 'VICTORY';
     } else if (events.length > 0) {
@@ -147,8 +152,8 @@ export default async function Image() {
                 :   'ACTIVE EVENT';
         } else {
             const lastEvent = events.toSorted((a, b) => b.end_time - a.end_time)[0];
-            const won = lastEvent.status === 'success';
-            const verb = lastEvent.type === 'defend' ? 'DEFEND' : 'ATTACK';
+            const won = lastEvent.status === EVENT_STATUS.SUCCESS;
+            const verb = lastEvent.type === EVENT_TYPE.DEFEND ? 'DEFEND' : 'ATTACK';
             statusText = won ? `${verb} WON` : `${verb} LOST`;
             statusColor = won ? COLORS.yellow : COLORS.cyborgsText;
         }

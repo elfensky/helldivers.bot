@@ -25,7 +25,9 @@ export default function AdminSection({ currentUserId }) {
 function SectionSkeleton({ label }) {
     return (
         <section>
-            <h3 className="mb-2 font-mono text-small text-text-muted uppercase">{label}</h3>
+            <h3 className="mb-2 font-mono text-small text-text-muted uppercase">
+                {label}
+            </h3>
             <div className="h-20 animate-pulse border border-ghost bg-surface-1" />
         </section>
     );

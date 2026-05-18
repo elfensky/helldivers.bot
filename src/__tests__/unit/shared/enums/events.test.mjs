@@ -1,4 +1,4 @@
-import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events';
+import { EVENT_TYPE, EVENT_STATUS, CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
 
 describe('events enums', () => {
     describe('EVENT_TYPE', () => {

@@ -32,9 +32,9 @@ import { PrismaPg } from '@prisma/adapter-pg';
 const DEFAULT_BUCKET_SIZE = 900;
 const parsedBucketSize = parseInt(process.env.BUCKET_SIZE ?? '', 10);
 const BUCKET_SIZE =
-    Number.isFinite(parsedBucketSize) && parsedBucketSize > 0
-        ? parsedBucketSize
-        : DEFAULT_BUCKET_SIZE;
+    Number.isFinite(parsedBucketSize) && parsedBucketSize > 0 ?
+        parsedBucketSize
+    :   DEFAULT_BUCKET_SIZE;
 
 function computeBucket(pollTime) {
     return Math.floor(pollTime / BUCKET_SIZE) * BUCKET_SIZE;
@@ -130,9 +130,7 @@ const db = new PrismaClient({ adapter });
  * Read all seasons from the legacy DB. Returns sorted array of season numbers.
  */
 async function getLegacySeasons() {
-    const result = await legacy.query(
-        'SELECT season FROM h1_season ORDER BY season ASC',
-    );
+    const result = await legacy.query('SELECT season FROM h1_season ORDER BY season ASC');
     return result.rows.map((r) => r.season);
 }
 
@@ -167,13 +165,13 @@ async function readSeasonMeta(season) {
     const row = result.rows[0];
     // Prefer inlined arrays; fall back to legacy relation tables
     const introOrder =
-        row.intro_order_array?.length > 0
-            ? row.intro_order_array
-            : row.intro_order_legacy ?? [];
+        row.intro_order_array?.length > 0 ?
+            row.intro_order_array
+        :   (row.intro_order_legacy ?? []);
     const pointsMax =
-        row.points_max_array?.length > 0
-            ? row.points_max_array
-            : row.points_max_legacy ?? [];
+        row.points_max_array?.length > 0 ?
+            row.points_max_array
+        :   (row.points_max_legacy ?? []);
 
     return {
         season: row.season,
@@ -201,11 +199,15 @@ async function readSnapshots(season) {
         try {
             parsed = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
         } catch {
-            console.warn(`  [snapshot] Failed to parse data for time=${row.time}, skipping.`);
+            console.warn(
+                `  [snapshot] Failed to parse data for time=${row.time}, skipping.`,
+            );
             continue;
         }
         if (!Array.isArray(parsed) || parsed.length !== 3) {
-            console.warn(`  [snapshot] Unexpected data shape for time=${row.time}, skipping.`);
+            console.warn(
+                `  [snapshot] Unexpected data shape for time=${row.time}, skipping.`,
+            );
             continue;
         }
 
@@ -428,7 +430,9 @@ async function main() {
 
     // Discover seasons
     const allSeasons = await getLegacySeasons();
-    console.log(`Found ${allSeasons.length} seasons in legacy DB: [${allSeasons.join(', ')}]`);
+    console.log(
+        `Found ${allSeasons.length} seasons in legacy DB: [${allSeasons.join(', ')}]`,
+    );
 
     // Apply --from/--to filters
     let seasons = allSeasons;
@@ -513,7 +517,9 @@ async function main() {
     }
 
     console.log('');
-    console.log(`Done. Processed: ${processed}, Failed: ${failed}, Total: ${seasons.length}.`);
+    console.log(
+        `Done. Processed: ${processed}, Failed: ${failed}, Total: ${seasons.length}.`,
+    );
 }
 
 try {

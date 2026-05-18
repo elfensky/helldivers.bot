@@ -1,5 +1,6 @@
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 
 /**
  * Same-origin proxy for Umami analytics. The client-side tracker script
@@ -31,6 +32,7 @@ export async function POST(request) {
     );
 
     if (error) {
+        reportError(error, { route: '/api/umami', stage: 'forward', level: 'warning' });
         return new Response('Bad Gateway', { status: 502 });
     }
 

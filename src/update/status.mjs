@@ -1,18 +1,24 @@
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { performanceTime } from '@/shared/utils/time';
-import { getSeasonFromStatus } from '@/shared/utils/getSeason';
+import { performanceTime } from '@/shared/utils/time.mjs';
+import { getSeasonFromStatus } from '@/shared/utils/getSeason.mjs';
 import { fetchStatus } from '@/update/fetch.mjs';
-import { EVENT_TYPE } from '@/shared/enums/events';
-import { isValidStatus } from '@/validators/isValidStatus';
+import { EVENT_TYPE } from '@/shared/enums/events.mjs';
+import { isValidStatus } from '@/validators/isValidStatus.mjs';
 // db
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus';
-import { queryUpsertStatistic } from '@/db/queries/upsertStatistic';
-import { queryUpsertEventProgress } from '@/db/queries/upsertEventProgress';
+import { upsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { upsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
+import { upsertStatistic } from '@/db/queries/upsertStatistic.mjs';
+import { upsertEventProgress } from '@/db/queries/upsertEventProgress.mjs';
+
+/**
+ * @typedef {{ stage: string, message: string }} UpdateWarning
+ */
 
 export async function updateStatus() {
     const start = performance.now();
+    /** @type {UpdateWarning[]} */
+    const warnings = [];
 
     // 1. Fetch
     const { data: fetchedData, error: fetchedError } = await tryCatch(fetchStatus());
@@ -23,7 +29,7 @@ export async function updateStatus() {
     }
 
     // 2. Validate
-    const check = isValidStatus(fetchedData);
+    const check = isValidStatus.safeParse(fetchedData);
     if (!check.success) {
         console.error(check.error);
         throw new Error(check?.error?.message || 'Invalid status data', {
@@ -39,7 +45,7 @@ export async function updateStatus() {
     const pointsMax = fetchedData.campaign_status.map((c) => c.points_max);
     const seasonDuration = fetchedData.statistics[0]?.season_duration ?? 0;
     const { error: seasonError } = await tryCatch(
-        queryUpsertSeason(season, false, { introOrder, pointsMax, seasonDuration }),
+        upsertSeason(season, false, { introOrder, pointsMax, seasonDuration }),
     );
     if (seasonError) {
         throw new Error(seasonError?.message || 'Failed to upsert season');
@@ -48,7 +54,7 @@ export async function updateStatus() {
     // 5. Upsert events (h1_event unchanged)
     if (fetchedData.defend_event) {
         const { error: defendError } = await tryCatch(
-            queryUpsertEvent(season, EVENT_TYPE.DEFEND, fetchedData.defend_event),
+            upsertEvent(season, EVENT_TYPE.DEFEND, fetchedData.defend_event),
         );
         if (defendError) {
             throw new Error(defendError?.message || 'Failed to upsert defend event');
@@ -57,7 +63,7 @@ export async function updateStatus() {
 
     for (const event of fetchedData.attack_events) {
         const { error: attackError } = await tryCatch(
-            queryUpsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
+            upsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
         );
         if (attackError) {
             throw new Error(attackError?.message || 'Failed to upsert attack event');
@@ -68,7 +74,7 @@ export async function updateStatus() {
     for (let enemy = 0; enemy < 3; enemy++) {
         const campaign = fetchedData.campaign_status[enemy];
         const { error: statusError } = await tryCatch(
-            queryUpsertStatus(season, enemy, fetchedData.time, campaign),
+            upsertStatus(season, enemy, fetchedData.time, campaign),
         );
         if (statusError) {
             throw new Error(statusError?.message || 'Failed to upsert h1_status');
@@ -79,40 +85,49 @@ export async function updateStatus() {
     for (let enemy = 0; enemy < 3; enemy++) {
         const stats = fetchedData.statistics[enemy];
         const { error: statError } = await tryCatch(
-            queryUpsertStatistic(season, enemy, fetchedData.time, stats),
+            upsertStatistic(season, enemy, fetchedData.time, stats),
         );
         if (statError) {
             throw new Error(statError?.message || 'Failed to upsert h1_statistic');
         }
     }
 
-    // 8. Bucket-upsert h1_event_progress for active events (event progression)
-    if (fetchedData.defend_event && fetchedData.defend_event.season === season) {
+    // 8. Bucket-upsert h1_event_progress for active events (event progression).
+    // upsertEventProgress applies its own cross-season guard, so we don't pre-filter here.
+    // Non-fatal: collect failures into warnings[] so the caller can surface them
+    // without losing the rest of the poll's writes.
+    if (fetchedData.defend_event) {
         const { error: defProgError } = await tryCatch(
-            queryUpsertEventProgress(
+            upsertEventProgress(
+                season,
                 EVENT_TYPE.DEFEND,
                 fetchedData.defend_event,
                 fetchedData.time,
             ),
         );
         if (defProgError) {
-            console.error('Defend event progress error:', defProgError.message);
+            warnings.push({
+                stage: 'upsertEventProgress.defend',
+                message: defProgError.message,
+            });
         }
     }
 
     for (const event of fetchedData.attack_events) {
-        if (event.season !== season) continue;
         const { error: atkProgError } = await tryCatch(
-            queryUpsertEventProgress(EVENT_TYPE.ATTACK, event, fetchedData.time),
+            upsertEventProgress(season, EVENT_TYPE.ATTACK, event, fetchedData.time),
         );
         if (atkProgError) {
-            console.error('Attack event progress error:', atkProgError.message);
+            warnings.push({
+                stage: 'upsertEventProgress.attack',
+                message: atkProgError.message,
+            });
         }
     }
 
     // 9. Confirm season update (sets last_updated = now)
     const { data: confirmSeason, error: confirmError } = await tryCatch(
-        queryUpsertSeason(season, true),
+        upsertSeason(season, true),
     );
     if (confirmError) {
         throw new Error(confirmError?.message || 'Failed to update last_updated');
@@ -123,5 +138,6 @@ export async function updateStatus() {
         season,
         time: fetchedData.time,
         confirmSeason,
+        warnings,
     };
 }

@@ -258,11 +258,11 @@ The root anchor for all game data. Every normalised game table points back to th
 
 **Relations (outbound):**
 
-| Relation name                  | Target model       | Cardinality |
-| ------------------------------ | ------------------ | ----------- |
-| `OneSeasonToManyStatus`        | `h1_status`        | one-to-many |
-| `OneSeasonToManyStatistic`     | `h1_statistic`     | one-to-many |
-| `OneSeasonToManyEvents`        | `h1_event`         | one-to-many |
+| Relation name              | Target model   | Cardinality |
+| -------------------------- | -------------- | ----------- |
+| `OneSeasonToManyStatus`    | `h1_status`    | one-to-many |
+| `OneSeasonToManyStatistic` | `h1_statistic` | one-to-many |
+| `OneSeasonToManyEvents`    | `h1_event`     | one-to-many |
 
 **Design note:** Child tables reference `season` (Int) rather than the surrogate `id` (UUID). This keeps foreign keys human-readable, avoids UUID joins in queries that filter by season number, and matches the season integer used in the official API response.
 
@@ -298,10 +298,10 @@ A unified table that holds both attack and defend events in a single model. The 
 
 **Relations:**
 
-| Relation name             | Target model        | Cardinality |
-| ------------------------- | ------------------- | ----------- |
-| `OneSeasonToManyEvents`   | `h1_season`         | many-to-one |
-| `OneEventToManyProgress`  | `h1_event_progress` | one-to-many |
+| Relation name            | Target model        | Cardinality |
+| ------------------------ | ------------------- | ----------- |
+| `OneSeasonToManyEvents`  | `h1_season`         | many-to-one |
+| `OneEventToManyProgress` | `h1_event_progress` | one-to-many |
 
 ---
 
@@ -309,26 +309,26 @@ A unified table that holds both attack and defend events in a single model. The 
 
 Bucketed time-series data for individual events. Each row captures the `points` of an event within a time bucket, enabling progress-over-time visualisations. Links to `h1_event` via the compound `(type, event_id)` key. Uses the same tumbling-window bucket-upsert pattern as `h1_status` and `h1_statistic` — `points_max` is constant per event and lives on `h1_event`, so only `points` (the progression signal) is tracked here.
 
-| Field      | Prisma Type | PostgreSQL Type | Constraints / Notes                                                       |
-| ---------- | ----------- | --------------- | ------------------------------------------------------------------------- |
-| `id`       | `String`    | `TEXT`          | `@id @default(uuid(7))`                                                   |
-| `type`     | `String`    | `TEXT`          | `"attack"` or `"defend"` — part of FK to `h1_event`                       |
-| `event_id` | `Int`       | `INTEGER`       | Part of FK to `h1_event` via `(type, event_id)`                           |
-| `bucket`   | `Int`       | `INTEGER`       | `floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` — tumbling window start    |
-| `time`     | `Int`       | `INTEGER`       | Latest poll time within this bucket (drifts with each upsert)             |
-| `points`   | `Int`       | `INTEGER`       | Event progress at this timestamp                                          |
+| Field      | Prisma Type | PostgreSQL Type | Constraints / Notes                                                    |
+| ---------- | ----------- | --------------- | ---------------------------------------------------------------------- |
+| `id`       | `String`    | `TEXT`          | `@id @default(uuid(7))`                                                |
+| `type`     | `String`    | `TEXT`          | `"attack"` or `"defend"` — part of FK to `h1_event`                    |
+| `event_id` | `Int`       | `INTEGER`       | Part of FK to `h1_event` via `(type, event_id)`                        |
+| `bucket`   | `Int`       | `INTEGER`       | `floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` — tumbling window start |
+| `time`     | `Int`       | `INTEGER`       | Latest poll time within this bucket (drifts with each upsert)          |
+| `points`   | `Int`       | `INTEGER`       | Event progress at this timestamp                                       |
 
 **Constraints and indexes:**
 
-| Type       | Fields                      | Notes                                              |
-| ---------- | --------------------------- | -------------------------------------------------- |
-| `@@unique` | `[type, event_id, bucket]`  | One row per event per bucket window                |
+| Type       | Fields                     | Notes                               |
+| ---------- | -------------------------- | ----------------------------------- |
+| `@@unique` | `[type, event_id, bucket]` | One row per event per bucket window |
 
 **Relations:**
 
-| Relation name              | Target model | Cardinality |
-| -------------------------- | ------------ | ----------- |
-| `OneEventToManyProgress`   | `h1_event`   | many-to-one |
+| Relation name            | Target model | Cardinality |
+| ------------------------ | ------------ | ----------- |
+| `OneEventToManyProgress` | `h1_event`   | many-to-one |
 
 ---
 
@@ -336,23 +336,23 @@ Bucketed time-series data for individual events. Each row captures the `points` 
 
 Bucketed campaign timeseries. Each row captures the campaign state for one enemy faction within a time bucket. Uses a tumbling-window bucket-upsert pattern: `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE`. Within an active bucket window, subsequent polls UPDATE the existing row with latest values. At a bucket boundary, a new row is INSERTed. `BUCKET_SIZE` is configurable via env var (default 900 = 15 min).
 
-| Field          | Prisma Type | PostgreSQL Type | Constraints / Notes                                                                                  |
-| -------------- | ----------- | --------------- | ---------------------------------------------------------------------------------------------------- |
-| `id`           | `String`    | `TEXT`          | `@id @default(uuid(7))`                                                                              |
-| `season`       | `Int`       | `INTEGER`       | FK → `h1_season.season`                                                                              |
-| `enemy`        | `Int`       | `INTEGER`       | Enemy faction identifier: `0` = Bugs, `1` = Cyborgs, `2` = Illuminate                                |
-| `bucket`       | `Int`       | `INTEGER`       | `floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` — unique window start                                  |
-| `time`         | `Int`       | `INTEGER`       | Latest poll time within this bucket (drifts with each upsert)                                         |
-| `points`       | `Int`       | `INTEGER`       | Current liberation points                                                                            |
-| `points_taken` | `Int`       | `INTEGER`       | Points taken by the enemy                                                                            |
-| `status`       | `String`    | `TEXT`          | Enum-like: `"active"`, `"defeated"`, `"hidden"`                                                      |
+| Field          | Prisma Type | PostgreSQL Type | Constraints / Notes                                                   |
+| -------------- | ----------- | --------------- | --------------------------------------------------------------------- |
+| `id`           | `String`    | `TEXT`          | `@id @default(uuid(7))`                                               |
+| `season`       | `Int`       | `INTEGER`       | FK → `h1_season.season`                                               |
+| `enemy`        | `Int`       | `INTEGER`       | Enemy faction identifier: `0` = Bugs, `1` = Cyborgs, `2` = Illuminate |
+| `bucket`       | `Int`       | `INTEGER`       | `floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` — unique window start  |
+| `time`         | `Int`       | `INTEGER`       | Latest poll time within this bucket (drifts with each upsert)         |
+| `points`       | `Int`       | `INTEGER`       | Current liberation points                                             |
+| `points_taken` | `Int`       | `INTEGER`       | Points taken by the enemy                                             |
+| `status`       | `String`    | `TEXT`          | Enum-like: `"active"`, `"defeated"`, `"hidden"`                       |
 
 **Constraints and indexes:**
 
-| Type       | Fields                   | Notes                                              |
-| ---------- | ------------------------ | -------------------------------------------------- |
-| `@@unique` | `[season, enemy, bucket]`| One row per faction per bucket window per season   |
-| `@@index`  | `[season, bucket]`       | Range queries by season and time window            |
+| Type       | Fields                    | Notes                                            |
+| ---------- | ------------------------- | ------------------------------------------------ |
+| `@@unique` | `[season, enemy, bucket]` | One row per faction per bucket window per season |
+| `@@index`  | `[season, bucket]`        | Range queries by season and time window          |
 
 ---
 
@@ -360,29 +360,29 @@ Bucketed campaign timeseries. Each row captures the campaign state for one enemy
 
 Bucketed per-faction statistics timeseries. Each row captures 11 statistical fields for one enemy faction within a time bucket. Uses the same tumbling-window bucket-upsert pattern as `h1_status`. Fields that are per-season state (like `season_duration`) or derivable from other tables (like event counts) have been moved out.
 
-| Field                      | Prisma Type | PostgreSQL Type | Constraints / Notes                                                                                  |
-| -------------------------- | ----------- | --------------- | ---------------------------------------------------------------------------------------------------- |
-| `id`                       | `String`    | `TEXT`          | `@id @default(uuid(7))`                                                                              |
-| `season`                   | `Int`       | `INTEGER`       | FK → `h1_season.season`                                                                              |
-| `enemy`                    | `Int`       | `INTEGER`       | Enemy faction identifier: `0` = Bugs, `1` = Cyborgs, `2` = Illuminate                                |
-| `bucket`                   | `Int`       | `INTEGER`       | `floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` — unique window start                                  |
-| `time`                     | `Int`       | `INTEGER`       | Latest poll time within this bucket (drifts with each upsert)                                         |
-| `players`                  | `Int`       | `INTEGER`       | `@default(0)` — active players during measurement window                                             |
-| `total_unique_players`     | `Int`       | `INTEGER`       | `@default(0)` — unique players across the season                                                     |
-| `missions`                 | `Int`       | `INTEGER`       | `@default(0)` — total missions attempted                                                             |
-| `successful_missions`      | `Int`       | `INTEGER`       | `@default(0)`                                                                                        |
-| `total_mission_difficulty` | `Int`       | `INTEGER`       | `@default(0)` — sum of difficulty values across all missions                                         |
-| `completed_planets`        | `Int`       | `INTEGER`       | `@default(0)`                                                                                        |
-| `kills`                    | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative enemy kills                                                               |
-| `deaths`                   | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative player deaths                                                             |
-| `accidentals`              | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative friendly-fire deaths                                                      |
-| `shots`                    | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative shots fired                                                               |
-| `hits`                     | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative shots that connected                                                      |
+| Field                      | Prisma Type | PostgreSQL Type | Constraints / Notes                                                   |
+| -------------------------- | ----------- | --------------- | --------------------------------------------------------------------- |
+| `id`                       | `String`    | `TEXT`          | `@id @default(uuid(7))`                                               |
+| `season`                   | `Int`       | `INTEGER`       | FK → `h1_season.season`                                               |
+| `enemy`                    | `Int`       | `INTEGER`       | Enemy faction identifier: `0` = Bugs, `1` = Cyborgs, `2` = Illuminate |
+| `bucket`                   | `Int`       | `INTEGER`       | `floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` — unique window start  |
+| `time`                     | `Int`       | `INTEGER`       | Latest poll time within this bucket (drifts with each upsert)         |
+| `players`                  | `Int`       | `INTEGER`       | `@default(0)` — active players during measurement window              |
+| `total_unique_players`     | `Int`       | `INTEGER`       | `@default(0)` — unique players across the season                      |
+| `missions`                 | `Int`       | `INTEGER`       | `@default(0)` — total missions attempted                              |
+| `successful_missions`      | `Int`       | `INTEGER`       | `@default(0)`                                                         |
+| `total_mission_difficulty` | `Int`       | `INTEGER`       | `@default(0)` — sum of difficulty values across all missions          |
+| `completed_planets`        | `Int`       | `INTEGER`       | `@default(0)`                                                         |
+| `kills`                    | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative enemy kills                                |
+| `deaths`                   | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative player deaths                              |
+| `accidentals`              | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative friendly-fire deaths                       |
+| `shots`                    | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative shots fired                                |
+| `hits`                     | `BigInt`    | `BIGINT`        | `@default(0)` — cumulative shots that connected                       |
 
 **Constraints and indexes:**
 
-| Type       | Fields                    | Notes                                           |
-| ---------- | ------------------------- | ----------------------------------------------- |
+| Type       | Fields                    | Notes                                            |
+| ---------- | ------------------------- | ------------------------------------------------ |
 | `@@unique` | `[season, enemy, bucket]` | One row per faction per bucket window per season |
 | `@@index`  | `[season, bucket]`        | Range queries by season and time window          |
 
@@ -599,32 +599,32 @@ Single-row-per-worker health tracking table. The worker thread upserts its row o
 
 This table enumerates every uniqueness constraint and index across the schema.
 
-| Model                   | Constraint Type | Fields                     | Notes                                        |
-| ----------------------- | --------------- | -------------------------- | -------------------------------------------- |
-| `h1_season`             | `@unique`       | `season`                   | Game season number is globally unique        |
-| `h1_season`             | `@@index`       | `[season]`                 |                                              |
-| `h1_season`             | `@@index`       | `[last_updated]`           |                                              |
-| `h1_event`              | `@@unique`      | `[type, event_id]`         | Compound unique on type + event ID           |
-| `h1_event`              | `@@index`       | `[season, type]`           |                                              |
-| `h1_event`              | `@@index`       | `[season, status]`         |                                              |
-| `h1_event`              | `@@index`       | `[season, enemy]`          |                                              |
-| `h1_status`             | `@@unique`      | `[season, enemy, bucket]`  | One row per faction per bucket per season    |
-| `h1_status`             | `@@index`       | `[season, bucket]`         | Range queries by season and time window      |
-| `h1_statistic`          | `@@unique`      | `[season, enemy, bucket]`  | One row per faction per bucket per season    |
-| `h1_statistic`          | `@@index`       | `[season, bucket]`         | Range queries by season and time window      |
-| `h1_event_progress`     | `@@unique`      | `[type, event_id, bucket]` | One row per event per bucket window          |
-| `User`                  | `@unique`       | `username`               |                                              |
-| `User`                  | `@unique`       | `email`                  |                                              |
-| `Account`               | `@@index`       | `[userId]`               |                                              |
-| `Session`               | `@unique`       | `token`                  | Opaque session token                         |
-| `Session`               | `@@index`       | `[userId]`               |                                              |
-| `Verification`          | `@@unique`      | `[identifier, value]`    | Composite uniqueness for verification tokens |
-| `Settings`              | `@id`           | `userId`                 | PK is also the FK                            |
-| `Settings`              | `@unique`       | `userId`                 | Redundant given `@id`, but explicit          |
-| `ApiKey`                | `@unique`       | `hash`                   | SHA-256 hash lookup                          |
-| `push_subscription`     | `@unique`       | `endpoint`               | One subscription per push endpoint           |
-| `push_subscription`     | `@@index`       | `[endpoint]`             |                                              |
-| `worker_heartbeat`      | `@id`           | `worker_type`            | One row per worker type                      |
+| Model               | Constraint Type | Fields                     | Notes                                        |
+| ------------------- | --------------- | -------------------------- | -------------------------------------------- |
+| `h1_season`         | `@unique`       | `season`                   | Game season number is globally unique        |
+| `h1_season`         | `@@index`       | `[season]`                 |                                              |
+| `h1_season`         | `@@index`       | `[last_updated]`           |                                              |
+| `h1_event`          | `@@unique`      | `[type, event_id]`         | Compound unique on type + event ID           |
+| `h1_event`          | `@@index`       | `[season, type]`           |                                              |
+| `h1_event`          | `@@index`       | `[season, status]`         |                                              |
+| `h1_event`          | `@@index`       | `[season, enemy]`          |                                              |
+| `h1_status`         | `@@unique`      | `[season, enemy, bucket]`  | One row per faction per bucket per season    |
+| `h1_status`         | `@@index`       | `[season, bucket]`         | Range queries by season and time window      |
+| `h1_statistic`      | `@@unique`      | `[season, enemy, bucket]`  | One row per faction per bucket per season    |
+| `h1_statistic`      | `@@index`       | `[season, bucket]`         | Range queries by season and time window      |
+| `h1_event_progress` | `@@unique`      | `[type, event_id, bucket]` | One row per event per bucket window          |
+| `User`              | `@unique`       | `username`                 |                                              |
+| `User`              | `@unique`       | `email`                    |                                              |
+| `Account`           | `@@index`       | `[userId]`                 |                                              |
+| `Session`           | `@unique`       | `token`                    | Opaque session token                         |
+| `Session`           | `@@index`       | `[userId]`                 |                                              |
+| `Verification`      | `@@unique`      | `[identifier, value]`      | Composite uniqueness for verification tokens |
+| `Settings`          | `@id`           | `userId`                   | PK is also the FK                            |
+| `Settings`          | `@unique`       | `userId`                   | Redundant given `@id`, but explicit          |
+| `ApiKey`            | `@unique`       | `hash`                     | SHA-256 hash lookup                          |
+| `push_subscription` | `@unique`       | `endpoint`                 | One subscription per push endpoint           |
+| `push_subscription` | `@@index`       | `[endpoint]`               |                                              |
+| `worker_heartbeat`  | `@id`           | `worker_type`              | One row per worker type                      |
 
 ---
 

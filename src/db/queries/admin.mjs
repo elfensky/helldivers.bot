@@ -3,10 +3,11 @@ import { z } from 'zod';
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
-import { tryCatch } from '@/shared/utils/tryCatch';
-import { performanceTime } from '@/shared/utils/time';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { performanceTime } from '@/shared/utils/time.mjs';
 import { revalidatePath } from 'next/cache';
-import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth';
+import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth.mjs';
+import { ROLE } from '@/shared/enums/roles.mjs';
 
 /**
  * Verify the current request is from an authenticated admin user.
@@ -16,13 +17,13 @@ async function requireAdmin() {
     if (!auth) return { error: 'Auth not configured' };
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session.user) return { error: 'Not authenticated' };
-    if (session.user.role !== 'admin') return { error: 'Forbidden' };
+    if (session.user.role !== ROLE.ADMIN) return { error: 'Forbidden' };
     return { user: session.user };
 }
 
 export async function getAllUsers() {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const { data: users, error } = await tryCatch(
@@ -57,7 +58,7 @@ export async function updateUserRole(_, formData) {
 
     const schema = z.object({
         userId: z.string().min(1),
-        newRole: z.enum(['user', 'admin']),
+        newRole: z.enum(Object.values(ROLE)),
     });
     const check = schema.safeParse(formValues);
     if (!check.success) {
@@ -75,9 +76,9 @@ export async function updateUserRole(_, formData) {
     }
 
     // Last-admin protection: block demotion if this is the only admin
-    if (formValues.newRole === 'user') {
+    if (formValues.newRole === ROLE.USER) {
         const { data: adminCount, error: countError } = await tryCatch(
-            db.user.count({ where: { role: 'admin' } }),
+            db.user.count({ where: { role: ROLE.ADMIN } }),
         );
         if (countError) throw countError;
 
@@ -140,9 +141,9 @@ export async function toggleUserBan(_, formData) {
         );
         if (targetError) throw targetError;
 
-        if (target?.role === 'admin') {
+        if (target?.role === ROLE.ADMIN) {
             const { data: adminCount, error: countError } = await tryCatch(
-                db.user.count({ where: { role: 'admin' } }),
+                db.user.count({ where: { role: ROLE.ADMIN } }),
             );
             if (countError) throw countError;
 
@@ -169,7 +170,7 @@ export async function toggleUserBan(_, formData) {
 
 export async function adminGetUserApiKeys(_, formData) {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const userId = formData.get('userId');
@@ -198,7 +199,7 @@ export async function adminGetUserApiKeys(_, formData) {
 
 export async function adminRevokeApiKey(_, formData) {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const apikeyId = formData.get('apikeyId');
@@ -222,7 +223,7 @@ export async function adminRevokeApiKey(_, formData) {
 
 export async function getSystemStats() {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     // Step 1: Get current season (needed for active factions query)
@@ -288,7 +289,7 @@ export async function getSystemStats() {
 
 export async function getAllApiKeys() {
     const start = performance.now();
-    const { user, error: authError } = await requireAdmin();
+    const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const { data: keys, error } = await tryCatch(

@@ -37,7 +37,10 @@ export default function EventCardLayout({
 }) {
     const s = STATUS_STYLES[status] || STATUS_STYLES.active;
 
-    const interactive = onClick ? 'cursor-pointer hover:brightness-125 transition-[filter] duration-150' : '';
+    const interactive =
+        onClick ?
+            'cursor-pointer hover:brightness-125 transition-[filter] duration-150'
+        :   '';
 
     return (
         <article
@@ -48,14 +51,14 @@ export default function EventCardLayout({
             role={onClick ? 'button' : undefined}
             tabIndex={onClick ? 0 : undefined}
             onKeyDown={
-                onClick
-                    ? (e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              onClick(e);
-                          }
-                      }
-                    : undefined
+                onClick ?
+                    (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onClick(e);
+                        }
+                    }
+                :   undefined
             }
         >
             {children}

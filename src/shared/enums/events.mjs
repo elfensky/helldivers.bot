@@ -14,3 +14,10 @@ export const CAMPAIGN_STATUS = {
     DEFEATED: 'defeated',
     HIDDEN: 'hidden',
 };
+
+export const MAP_STATUS = {
+    CAPTURED: 'captured',
+    IN_PROGRESS: 'in_progress',
+    LOST: 'lost',
+    IDLE: 'idle',
+};

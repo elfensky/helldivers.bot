@@ -6,7 +6,10 @@ import * as Sentry from '@sentry/nextjs';
 
 Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV,
+    environment:
+        process.env.NEXT_PUBLIC_DEPLOY_ENV ||
+        process.env.DEPLOY_ENV ||
+        process.env.NODE_ENV,
     sendDefaultPii: true,
     tracesSampleRate: 1.0,
     debug: false,

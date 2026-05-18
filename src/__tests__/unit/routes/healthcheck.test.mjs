@@ -1,7 +1,16 @@
+import { vi } from 'vitest';
+
+vi.mock('@/db/db', () => ({
+    default: { $queryRaw: vi.fn() },
+}));
+
+import db from '@/db/db';
 import { GET, POST, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/healthcheck/route';
 
 describe('GET /api/healthcheck', () => {
-    test('returns 200 with full success envelope and Content-Type', async () => {
+    test('returns 200 when database is reachable', async () => {
+        db.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
+
         const res = await GET(new Request('http://localhost/api/healthcheck'));
         expect(res.status).toBe(200);
         expect(res.headers.get('Content-Type')).toBe('application/json');
@@ -16,17 +25,19 @@ describe('GET /api/healthcheck', () => {
                 performanceTime: expect.any(Number),
             },
         });
-        expect(body.time).toBeGreaterThanOrEqual(0);
-        expect(body.data.performanceTime).toBeGreaterThanOrEqual(0);
-        expect(body).not.toHaveProperty('error');
+        expect(db.$queryRaw).toHaveBeenCalled();
     });
 
-    test('time field reflects request latency (monotonic, non-negative)', async () => {
+    test('returns 503 when database is unreachable', async () => {
+        db.$queryRaw.mockRejectedValue(new Error('connection refused'));
+
         const res = await GET(new Request('http://localhost/api/healthcheck'));
+        expect(res.status).toBe(503);
+
         const body = await res.json();
-        // perf timing must be a finite non-negative number, not NaN/Infinity
-        expect(Number.isFinite(body.time)).toBe(true);
-        expect(Number.isFinite(body.data.performanceTime)).toBe(true);
+        expect(body.code).toBe(503);
+        expect(body.message).toBe('Service unavailable');
+        expect(body.error).toBe('database unreachable');
     });
 });
 

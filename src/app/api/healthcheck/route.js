@@ -1,10 +1,18 @@
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { successResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { successResponse, errorResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
+import db from '@/db/db';
 
-export async function GET(request) {
+export async function GET(_request) {
     const start = performance.now();
+    const { error } = await tryCatch(db.$queryRaw`SELECT 1`);
+    if (error) {
+        reportError(error, { route: '/api/healthcheck', stage: 'db-ping' });
+        return errorResponse(503, start, 'database unreachable');
+    }
     return successResponse(200, start, {
         alive: true,
         performanceTime: roundedPerformanceTime(start),

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import './EventCard.css';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { PACE_COLORS, FACTION_COLORS } from '@/shared/enums/colors.mjs';
 import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.mjs';
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
-import humanizeDuration from 'humanize-duration';
+import { CAMPAIGN_STATUS, EVENT_STATUS, MAP_STATUS } from '@/shared/enums/events.mjs';
+import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 
 const passThrough = (v) => (v == null ? '—' : String(v));
 const formatSectorPct = (v) =>
@@ -20,7 +22,8 @@ const formatSectorPct = (v) =>
  * @returns {{ sector, region, percent, points, pointsMax, event }} | null
  */
 export function computeFrontier(campaignData, factionMap) {
-    if (!campaignData || !factionMap || campaignData.status !== 'active') return null;
+    if (!campaignData || !factionMap || campaignData.status !== CAMPAIGN_STATUS.ACTIVE)
+        return null;
 
     const pointsMax = campaignData.points_max > 0 ? campaignData.points_max : 1;
     const points = campaignData.points;
@@ -58,7 +61,7 @@ function EventCountdown({ endTime }) {
     }, [endTime]);
 
     if (remaining <= 0) return <span className="sector-card-countdown">Expired</span>;
-    const text = humanizeDuration(remaining * 1000, { largest: 2, round: true });
+    const text = formatDuration(remaining);
     return (
         <span className="sector-card-countdown" suppressHydrationWarning>
             {text} left
@@ -66,12 +69,12 @@ function EventCountdown({ endTime }) {
     );
 }
 
-function SegmentCell({ seg, factionColor }) {
+function SegmentCell({ seg, factionColor: _factionColor }) {
     const status = seg?.status;
-    if (status === 'captured') {
+    if (status === MAP_STATUS.CAPTURED) {
         return <div className="sector-card-segment sector-card-segment--captured" />;
     }
-    if (status === 'in_progress') {
+    if (status === MAP_STATUS.IN_PROGRESS) {
         const pct = Math.max(0, Math.min(100, seg?.percent ?? 0));
         return (
             <div
@@ -80,7 +83,7 @@ function SegmentCell({ seg, factionColor }) {
             />
         );
     }
-    if (status === 'active') {
+    if (status === EVENT_STATUS.ACTIVE) {
         // Homeworld attack in progress — uses danger color, matches defending aesthetic
         const pct = Math.max(0, Math.min(100, seg?.percent ?? 0));
         return (
@@ -127,7 +130,7 @@ export default function EventCard({
         <div className="sector-card" style={cardStyle}>
             <div className="sector-card-content">
                 <div className="sector-card-header">
-                    <img
+                    <Image
                         src={`/icons/faction${factionIndex}.webp`}
                         alt=""
                         width={16}

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { guardedReload, clearReloadGuard } from '@/shared/utils/reloadGuard.mjs';
 
 const CACHE_KEY = 'hd1-live-cache';
 const POLL_INTERVAL = 10_000;
@@ -89,29 +90,40 @@ async function poll() {
     try {
         const res = await fetch('/api/h1/live');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const parsed = await res.json();
+        const envelope = await res.json();
+        const payload = envelope?.data ?? null;
+        if (!payload) throw new Error('missing envelope.data');
 
-        saveCachedState(parsed.data, parsed.mapState);
+        if (payload.appVersion) {
+            if (payload.appVersion !== process.env.NEXT_PUBLIC_APP_VERSION) {
+                guardedReload('version');
+                return;
+            }
+            clearReloadGuard();
+        }
+
+        saveCachedState(payload.data, payload.mapState);
 
         if (isFirstMessage) {
             isFirstMessage = false;
             store = {
                 ...store,
-                data: parsed.data,
-                mapState: parsed.mapState,
+                data: payload.data,
+                mapState: payload.mapState,
                 status: 'live',
             };
         } else {
             store = {
                 ...store,
                 prevData: store.data,
-                data: parsed.data,
-                mapState: parsed.mapState,
+                data: payload.data,
+                mapState: payload.mapState,
                 status: 'live',
             };
         }
         emit();
-    } catch {
+    } catch (err) {
+        console.warn('[useLiveData] poll failed:', err?.message);
         if (store.status !== 'offline') {
             store = { ...store, status: 'offline' };
             emit();
@@ -128,13 +140,6 @@ function connect() {
     if (pollTimer) return;
     isFirstMessage = true;
 
-    // If browser knows it's offline (PWA, airplane mode), start as offline
-    if (!navigator.onLine) {
-        store = { ...store, status: 'offline' };
-        emit();
-    }
-
-    // First poll immediately (will fail fast if offline)
     poll();
 
     // Start interval
@@ -200,10 +205,7 @@ function setupLeader() {
             if (store.isLeader) {
                 // Yield to the other tab's claim — re-elect
                 store = { ...store, isLeader: false };
-                leaderTimeout = setTimeout(
-                    claimLeadership,
-                    Math.random() * 500,
-                );
+                leaderTimeout = setTimeout(claimLeadership, Math.random() * 500);
                 emit();
             }
         }
@@ -244,9 +246,11 @@ function teardownLeader() {
  *   notifications. Leaders yield on conflicting claims to prevent dupes.
  * - Fallback chain: live poll → server-rendered → localStorage cache → null.
  *
- * @param {Object} initialData - Server-rendered campaign data (null if offline)
- * @param {Object} initialMapState - Server-rendered map state (null if offline)
- * @returns {{ data: Object, mapState: Object, status: string, prevData: Object, isLeader: boolean }}
+ * @typedef {'polling'|'live'|'offline'} LiveStatus
+ *
+ * @param {object | null} initialData - Server-rendered campaign data (null if offline)
+ * @param {object | null} initialMapState - Server-rendered map state (null if offline)
+ * @returns {{data: object | null, mapState: object | null, status: LiveStatus, prevData: object | null, isLeader: boolean}}
  */
 export function useLiveData(initialData, initialMapState) {
     const [snapshot, setSnapshot] = useState(INITIAL_STORE);
@@ -283,8 +287,7 @@ export function useLiveData(initialData, initialMapState) {
 
     return {
         data: snapshot.data ?? initialData ?? cachedState?.data ?? null,
-        mapState:
-            snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
+        mapState: snapshot.mapState ?? initialMapState ?? cachedState?.mapState ?? null,
         status: snapshot.status,
         prevData: snapshot.prevData,
         isLeader: snapshot.isLeader,

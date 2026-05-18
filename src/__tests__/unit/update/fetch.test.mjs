@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import axios from 'axios';
-import { fetchStatus, fetchSeason } from '@/update/fetch';
+import { fetchStatus, fetchSeason } from '@/update/fetch.mjs';
 
 vi.mock('axios', () => ({
     default: {

@@ -1,35 +1,28 @@
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { errorResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
-import { getCampaign } from '@/db/queries/getCampaign';
-import { computeMapState } from '@/shared/utils/game/computeMapState';
-import { EVENT_STATUS } from '@/shared/enums/events';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
 
 export async function GET() {
     const start = performance.now();
 
     const { data, error } = await tryCatch(getCampaign());
     if (error || !data) {
+        if (error) reportError(error, { route: '/api/h1/live', stage: 'get-campaign' });
         return errorResponse(500, start, error?.message ?? 'No campaign data');
     }
 
-    const activeEvents = (data.events ?? []).filter(
-        (e) => e.status === EVENT_STATUS.ACTIVE,
-    );
-    const mapState = computeMapState(data.status, activeEvents);
+    const mapState = computeLiveMapState(data);
 
-    const json = JSON.stringify({ data, mapState }, (_, v) =>
-        typeof v === 'bigint' ? Number(v) : v,
+    return successResponse(
+        200,
+        start,
+        { data, mapState, appVersion: process.env.NEXT_PUBLIC_APP_VERSION },
+        { headers: { 'Cache-Control': 'no-store' } },
     );
-
-    return new Response(json, {
-        status: 200,
-        headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-store',
-        },
-    });
 }
 
 export const POST = methodNotAllowed;

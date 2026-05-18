@@ -155,9 +155,7 @@ describe('StatGrid', () => {
             // HELLDIVERS_LOST card still renders with value 0, but no accidental
             // subtitle (the backstab icon is the subtitle marker and is absent).
             expect(screen.getByText('HELLDIVERS_LOST')).toBeInTheDocument();
-            expect(
-                container.querySelector('img[src="/icons/backstab.png"]'),
-            ).toBeNull();
+            expect(container.querySelector('img[src="/icons/backstab.png"]')).toBeNull();
         });
 
         test('returns null when faction not found in live data', () => {

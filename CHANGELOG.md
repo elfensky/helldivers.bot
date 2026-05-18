@@ -1,5 +1,150 @@
 # Changelog
 
+## Unreleased
+
+## 0.47.0
+
+### Features
+
+- **GlitchTip / Sentry observability wired up across the app.** The Sentry SDK was initialised but most error sources never reached GlitchTip in practice: every `errorResponse(5xx, ...)` was a `console.error` followed by a generic 500, error boundaries discarded the error param while telling users _"this incident has been logged"_, server-side init was gated to `NODE_ENV === 'production'` so localhost was dark, staging and production both tagged as `environment: 'production'`, and `GLITCHTIP_HEARTBEAT_URL` was documented but never read. Fixed end-to-end:
+    - New `src/shared/utils/observability.mjs` `reportError(error, context)` helper, no-op-safe on falsy errors, accepts `{ level, ...extra }` so the closing-pass non-fatal error path lands at warning level.
+    - Wired at every API-route 5xx path with `{ route, stage }` context — `/api/h1/update` (status / season / closing-pass / push-notify), `/api/h1/live`, `/api/h1/campaign`, `/api/h1/rebroadcast`, `/api/notifications/subscribe`, `/api/healthcheck`, `/api/umami`. Explicit skips: `/api/glitchtip` (would self-loop when GlitchTip is the failing upstream) and `/api/auth/[...all]` (BetterAuth owns its own errors).
+    - Wired at every React error boundary (`error.jsx`, `global-error.jsx`, `archives/error.jsx`, `ComponentErrorBoundary`) with a `boundary` tag — the class component also passes React's `componentStack` for attribution.
+    - Server-side Sentry init switched from `NODE_ENV === 'production'` to `SENTRY_DSN`-presence gating, so localhost reports too when `SENTRY_DSN` is set in `.env.development`.
+    - `environment` tag now derived from `NEXT_PUBLIC_DEPLOY_ENV` → `DEPLOY_ENV` → `NODE_ENV`. CI passes `staging` and `production` as Docker build-args (`staging.docker.yml`, `release.docker.yml`); both the builder and runner stages of `Dockerfile.app` plumb it through so the value is inlined into the client bundle _and_ available to the server process at runtime. GlitchTip now distinguishes all three environments.
+    - Worker `public/workers/cronLogic.js` POSTs to `GLITCHTIP_HEARTBEAT_URL` after each `response.ok` poll — fire-and-forget, swallows failures, gives GlitchTip's uptime monitor a signal that flips red on sustained 5xx, DB outage, or worker crash. 4 new tests under `cron.test.mjs`.
+    - `docs/infrastructure/page.mdx` Section 4 brought into agreement with the code: removed the false claim that error boundaries auto-capture (they didn't, until this change), removed the CSP `report-uri` paragraph (`src/proxy.js` doesn't exist), removed the misleading _"Behavior note on `NODE_ENV=staging`"_ subsection (CI never actually passed `NODE_ENV=staging`), added the new environment-tag derivation chain and worker heartbeat docs.
+
+    Refs [#373](https://github.com/elfensky/helldivers.bot/issues/373).
+
+- **`tryCatch` wrapper auto-captures caught errors at warning level.** Builds on the `reportError` helper from the prior entry: every Promise rejection routed through `src/shared/utils/tryCatch.mjs` — the project's canonical error-handling pattern, used at ~30+ call sites — is now reported to GlitchTip with `source: 'tryCatch'` and `level: 'warning'`. Severity tagging is load-bearing: Sentry's stack-trace fingerprint groups these with the explicit `reportError(...)` calls at 5xx sites into one issue per error, but the warning level keeps caught-and-recovered errors visually distinct from user-visible failures in the GlitchTip inbox. 4 new tests under `tryCatch.test.mjs` mock the helper and assert the call shape, the no-call-on-resolve invariant, and that the return-tuple semantics are unchanged. Closes [#372](https://github.com/elfensky/helldivers.bot/issues/372).
+
+- **Service worker push and notificationclick handlers report errors via a client bridge.** The SW context can't import the Sentry browser SDK (separate worker context, no DOM), so failures inside `src/sw.js` previously surfaced only in `chrome://serviceworker-internals`. Both handlers are now wrapped: synchronous throws and promise rejections from `showNotification` / `clients.matchAll` postMessage a structured `{ type: 'sw-error', error: { message, name, stack }, context }` payload to all controlled clients. A new `src/shared/utils/swErrorBridge.mjs` (`handleSwErrorMessage` + `registerSwErrorBridge`) listens on `navigator.serviceWorker` from `instrumentation-client.js`, reconstructs the Error, and calls `reportError(err, { source: 'sw', ...context })`. When no client is open (push received with all tabs closed), the SW falls back to `console.error` — the only path left, since there's no SDK to invoke. Original handler behavior preserved: errors are re-thrown after the postMessage, so the SW event loop still sees the rejection. 5 new tests under `swErrorBridge.test.mjs` cover the message reconstruction, type guard, malformed-event tolerance, and the missing-fields fallback. Closes [#371](https://github.com/elfensky/helldivers.bot/issues/371).
+
+## 0.46.4
+
+### Chores
+
+- **Uniform `warnings[]` return shape on the update orchestrators.** `updateStatus` previously `console.error`'d non-fatal `upsertEventProgress` failures and `updateSeason` did the same for per-snapshot `upsertStatus` failures — silent for the caller. Both now collect non-fatal errors into a `warnings: [{ stage, message }]` array on the return value. `/api/h1/update/route.js` logs them with a `[update] warning:` prefix for operator visibility and returns them in the response body so clients have signal too. The `update/season.test` "logs but does not throw" test updated to assert on `result.warnings[]`.
+
+- **`/api/notifications/subscribe` enforces same-origin + per-IP rate limit.** The POST and DELETE handlers previously accepted any caller — no auth, no rate limit, no ownership binding. Added a same-origin Origin/Host header check (rejects with 403 when the Origin header is missing or points anywhere except the app's own host) and a per-IP token bucket (20 requests per 60s, rejects with 429 thereafter). The IP comes from `X-Forwarded-For` or `X-Real-IP` (Cloudflare/proxy) with an `anonymous` fallback. Full session binding still pending — needs a `push_subscription.user_id` schema migration; deferred to a follow-up.
+
+- **`validateApiKey` no longer collides with the `tryCatch` tuple shape.** `validateApiKey()` returned `{ data, error: string }` where every other helper in the codebase returns `{ data, error: Error | null }`. A destructuring caller using the project's `tryCatch` convention would silently treat the `API_KEY_ERROR` enum string as a thrown error. Renamed the field to `code` so the type difference is explicit; updated `src/app/api/h1/rebroadcast/route.js` to destructure `{ code: keyCode }` and the unit + route tests to match. Added a JSDoc note on the helper documenting why the shape differs.
+
+- **Small-mechanical-wins bundle.** Eight low-risk cleanups grouped into one diff to amortise PR cost:
+    - **CLAUDE.md path drift fixed.** The four `src/utils/{tryCatch,responses,time,computeMapState}.mjs` citations now point at the real `src/shared/utils/...` locations; the map-state line also mentions the new `computeLiveMapState` helper.
+    - **`diagram.mjs` moved next to its consumers.** The flow/diagram helper had 10/10 importers in `src/app/docs/*` but lived under `src/shared/utils/`. Moved to `src/app/docs/_diagram.mjs` (underscore prefix matches the docs subdir convention for non-route files) and updated all 10 importers + the unit test. The empty `src/shared/utils/diagram.mjs` is gone.
+    - **`umami.mjs` uses `tryCatch` and a clear log.** The `sendUmamiEvent` helper previously chained `.then().catch()` and logged `Error:` with no context. Now uses `tryCatch` and logs `[umami] sendUmamiEvent failed: <message>`. Inlined the production hostname (`helldivers.bot`) and removed the dead `getHostname()` switch — the function early-returns in non-production, so the dev/staging branches were never reachable.
+    - **`reloadGuard.mjs` flattened.** The two stacked conditionals around localStorage parsing collapsed into a single `prevAttempts` decision: parse → bail-if-too-many → write fresh state → reload. Semantics unchanged; one fewer write site to reason about.
+    - **`responses.mjs` numeric range check.** Replaced `String(code).startsWith('1' | '2' | '3')` with `code < 400 || code > 599` (and the success equivalent). Reads as the actual intent.
+    - **Scaffolding comments removed.** Dropped the `//0. initialize`, `//1. validate`, ... step-prefix comments from `/api/h1/campaign` and `/api/h1/rebroadcast` — they were a bullet-pointed outline of code that no longer needed it.
+    - **`seed.mjs` indirection dropped.** `let files; ...; files = data;` collapsed into a single destructure `const { data: files, error } = ...`.
+    - **`initializeEnvironmentVariables` kept `async` deliberately.** Observed as `async-without-await`, but dropping it would convert internal sync throws into unhandled exceptions at the call site, forcing a raw try/catch (banned by CLAUDE.md). Added a comment documenting why the keyword is load-bearing for error semantics.
+
+- **`computeLiveMapState` helper protects the active-events invariant.** The pattern `events.filter(status === ACTIVE) → computeMapState(status, ...)` was duplicated across `src/app/layout.jsx`, `src/app/api/h1/live/route.js`, and `src/app/opengraph-image.jsx`. Encapsulated into `computeLiveMapState(data)` in `src/shared/utils/game/computeMapState.mjs` — call sites can no longer accidentally pass completed events. The existing JSDoc warning on `computeMapState` about live-view filtering is now load-bearing in only one place.
+- **`X-Worker-Startup` header is a named constant.** Both ends of the worker → `/api/h1/update` contract previously used a magic string. Now `public/workers/cronLogic.js` exports `WORKER_STARTUP_HEADER` and `src/app/api/h1/update/route.js` exports the same name; a new cross-module test (`src/__tests__/unit/workers/cron.test.mjs`) asserts the two stay in sync case-insensitively.
+
+- **`/api/h1/live` returns the standard success envelope.** Previously the live polling route bypassed `successResponse` and returned a bare `{ data, mapState, appVersion }` body with raw `Cache-Control: no-store`. Now wraps the payload in the standard `{ time, code, message, data }` envelope and passes `Cache-Control: no-store` through a new `headers` option on `successResponse`. `useLiveData` reads from `envelope.data` instead of the top level. The OpenAPI schema for the route was updated to document the wrapped shape. The five ad-hoc `{ time, error_code, error_message }` schemas in the rebroadcast registry entry were replaced with the shared `ErrorResponseSchema`.
+
+- **`db/queries/` upsert exports normalised.** Dropped the redundant `query` prefix on the 5 upsert exports — the directory name already says "queries", so `queryUpsertSeason` / `Status` / `Statistic` / `Event` / `EventProgress` are now `upsertSeason` / `upsertStatus` / etc. All ~15 import sites and 5 test files updated. Tied into the same edit: `upsertEventProgress` now takes `(season, type, event, pollTime)` matching the sibling `upsertEvent(season, type, event)` shape, and the cross-season `if (event.season !== season) return { skipped }` guard moved into the function (out of the call sites in `update/status.mjs`) so all event upserts share one guard pattern.
+
+- **Type-safety JSDoc tightening.** Replaced `string` widenings with literal-union typedefs across the live-data and event surfaces. `useLiveData` and `useLiveDataContext` now expose a `LiveStatus = 'polling'|'live'|'offline'` typedef instead of a bare string, and the `data`/`mapState`/`prevData` return fields are explicitly `object | null`. `detectChanges` returns `kind: 'event_started'|'event_won'|'event_lost'` instead of `kind: string`, and `prevEvents` is documented as nullable. `upsertEventProgress` and `upsertEvent` now type their `type` parameter as `'attack' | 'defend'`. `EventToast`'s `event` typedef was corrected from `id: string|number` to `event_id: number` to match what `showEventToast` and `toastLabel` actually read.
+
+- **Validator protocol unified to raw-schema exports.** `src/validators/isValidStatus.mjs` and `src/validators/isValidSeason.mjs` previously exported `(data) => rootSchema.safeParse(data)` wrapper functions while the other three validators (`isValidContentType.mjs`, `isValidFormData.mjs`, `isValidNumber.mjs`) exported raw Zod schemas. Both wrappers replaced with raw-schema exports so all five validators share one invocation convention: `schema.safeParse(data)`. Callers in `src/update/status.mjs` and `src/update/season.mjs` plus the corresponding unit tests and mocks updated to call `.safeParse()` explicitly.
+
+- **Legacy-wording cleanup.** Replaced "legacy" wording that actually described the public HD1 wire format / public getCampaign shape. `src/db/queries/getCampaign.mjs` JSDoc now says "public getCampaign shape" instead of "legacy getCampaign output"; `src/app/api/h1/rebroadcast/route.js` calls the format "HD1 wire format" not "legacy wire format"; `src/features/admin/actions.mjs` reworded the random-id fallback comment to describe the actual default behavior. Matching test comments in `src/__tests__/unit/queries/getCampaign.test.mjs` updated to "public-shape". Genuine deprecated-format usages (Prisma client migration, Playwright output dir, dismissedEvents storage migrators) left untouched.
+
+### Bug fixes
+
+- **`LiveToasts` catch-up branch was unreachable.** `getDismissedEvents()` returns `Record<string, {status, ts}>` but the catch-up loop was comparing that whole object to `event.status` (and to `EVENT_STATUS.ACTIVE`), so both branches always evaluated `false` — fully-suppressed events and the "dismissed at active → now transitioned" path never fired. The unit test masked it by mocking the legacy string shape (`{1: 'active'}`) that production never produces. Fixed by reading `dismissed[id]?.status` once per iteration and comparing the string against the string. Test mocks updated to `{status, ts}` so future regressions surface.
+
+## 0.46.3
+
+### Chores
+
+- **Soft CDN cache header on HTML page routes** — `next.config.mjs` now emits `Cache-Control: public, s-maxage=30, stale-while-revalidate=60` for all non-API, non-asset paths so a shared cache (e.g. Cloudflare) can collapse concurrent visitors into one origin render per 30s window, and serve the stale copy for another 60s while it refetches. `s-maxage` targets shared caches only, so browsers still revalidate normally and `useLiveData` keeps polling `/api/h1/live` for fresh game state. The source pattern uses a negative lookahead to exclude `/api/*` (preserves `no-store` on live data), `/_next/*` (content-hashed), the asset directories that already have `immutable` long-TTL headers, `/sw.js`, `/workers/*`, and `/profile/*` (per-user content that must not be shared). Note: Cloudflare ignores `s-maxage` on HTML by default — a Cache Rule with "Respect existing headers" is required for this to take effect at the edge.
+
+## 0.46.2
+
+### Chores
+
+- **GitHub Actions pin format switched from SHA → semver tag** across all six workflows (`ci.yml`, `codeql.yml`, `dependency-review.yml`, `metrics.yml`, `release.docker.yml`, `staging.docker.yml`). Bumped each action to its latest released tag at the same time: `actions/checkout@v6.0.2`, `actions/setup-node@v6.4.0`, `github/codeql-action/*@v4.35.5`, `docker/setup-buildx-action@v4.0.0`, `docker/login-action@v4.1.0`, `docker/build-push-action@v7.1.0`, `dorny/paths-filter@v4.0.1`, `lowlighter/metrics@v3.34`. `actions/dependency-review-action@v5.0.0` and `snok/container-retention-policy@v3.0.1` were already current — only the pin format changed. Dependabot's `github-actions` ecosystem will now bump these in-place without needing SHA resolution.
+
+## 0.46.1
+
+### Chores
+
+- **desloppify cleanup pass** — knocked out 9 trivial review issues across the codebase:
+    - `getCampaign.mjs` JSDoc now documents `season_duration` in the return shape.
+    - `eventFilters.mjs` JSDoc trimmed: removed English description lines that just restated the function names, kept `@param`/`@returns` for type info.
+    - `glitchtip/route.js`: `SENTRY_DSN` is read inside the `POST` handler (was module-scope const), `parseDsn()` no longer wrapped in `Promise.resolve().then()` (uses local try/catch since the project `tryCatch` is async-only), `OPTIONS` handler added to match the `methodNotAllowed` convention used by all sibling routes.
+    - `season.mjs`: raw `ZodError` throw wrapped in `Error` with `cause` to match `status.mjs` pattern; `getSeasonFromSnapshot()` no longer wrapped in `Promise.resolve()` (uses local try/catch since the function is synchronous-throwing); `updateSeason` return shape now includes `time` to match `updateStatus`.
+    - Validators (`isValidStatus.mjs`, `isValidSeason.mjs`): `z.enum` derived from `CAMPAIGN_STATUS` and `EVENT_STATUS` constants instead of inline string arrays.
+    - `admin.mjs` Zod schema: `newRole` now uses `z.enum(Object.values(ROLE))`.
+    - `auth.js`: BetterAuth `role` field `defaultValue` now uses `ROLE.USER`.
+    - `getEventRegionLabel.mjs`, `computeMapState.mjs`, `FactionHealthChart.jsx`: raw `'defend'` / `''` / `'hidden'` / `'defeated'` strings replaced with `EVENT_TYPE.DEFEND` / `MAP_STATUS.IDLE` / `CAMPAIGN_STATUS.*` constants.
+
+- **Deleted single-consumer `formdata.mjs` wrapper** — `formDataToObject` was a one-liner used by exactly one caller. Inlined `Object.fromEntries(formData.entries())` at the call site (`rebroadcast/route.js`) and removed the module + test + docs entries.
+
+- **Moved vestigial `features/docs/` module** — `overviewConfig.mjs` and `overviewDefinition.mjs` relocated to `src/app/docs/` next to their only consumer (`page.mdx`); imports rewritten to relative paths; empty `features/docs/` directory removed.
+
+- **Added `computeMapStateAtEvent` test coverage** — 7 cases covering hidden-state fallback for empty/null inputs, nearest-snapshot selection by time delta, snapshot fallback when none precedes the event, gap-event replay between snapshot and selected time, active-event overlay, and the `campaign.points_max` fallback path.
+
+## 0.46.0
+
+### Features
+
+- **Stale version auto-reload** — three-layer detection prevents `ChunkLoadError` crashes after deployments: (1) Next.js `deploymentId` triggers hard navigation on version skew, (2) `appVersion` field in `/api/h1/live` enables poll-based detection within ~10s, (3) global `unhandledrejection` handler catches chunk/module load failures across all browsers including Safari. Shared `guardedReload()` utility uses localStorage circuit breaker (30s TTL, max 3 attempts) to prevent infinite reload loops.
+
+### Fixes
+
+- **`ApiForm.jsx` Rules of Hooks violation** — `useActionState`/`useState` were called after an early `return` on `!userId` in `GenerateApiKeyForm` and `DeleteApiKeyForm`. Moved hooks above the guard so React's hook call order stays consistent across renders.
+- **`UserSection.jsx` exhaustive-deps** — `useEffect` accessed `session.user.image`/`.email` directly while depending on optional-chained property paths; extracted `const user = session?.user` and depend on the whole user object.
+- **`DebugTools.jsx` exhaustive-deps** — `handleTestPush` `useCallback` referenced `buildOrUpdatePushEvent` but had `[]` deps; added the dependency (the callee itself has stable `[]` deps so no re-render cascade).
+
+### Chores
+
+- **ESLint v9 flat config + tsc checkJs** — `npm run lint` now gates Prettier formatting, JSDoc validity, React Hooks rules, React Compiler hints, and Next.js core-web-vitals rules through a single command. `npm run typecheck` runs `tsc --noEmit` against an expanded `jsconfig.json` with `checkJs: true`, validating JSDoc annotations across the project without converting any files to TypeScript. CI runs both before tests/build. CLAUDE.md verification rule updated to require all four (`lint`, `typecheck`, `test:unit`, `build`).
+- **`<img>` → `next/image`** in 6 spots (faction icons in `DefeatedCard`, `EventCard`, `EventToast`, `EventLogCard`, `FactionTabs`; backstab icon in `StatGrid`). All had explicit width/height; converted to satisfy `@next/next/no-img-element`.
+- **`console.log` → `console.info`** in worker lifecycle (`initializeWorker.mjs`), season-transition closing pass (`/api/h1/update`), and push-notification cleanup messages.
+- **Dead `start = performance.now()` declarations** removed from `getCampaign.mjs` and `initializeWorker.mjs` (leftover timing scaffold with no `performanceTime(start)` callers).
+- **Unused destructures** in `admin.mjs` simplified — `{ user, error: authError } = await requireAdmin()` shortened to `{ error: authError }` in paths where `user` was never read.
+
+## 0.45.2
+
+### Chores
+
+- **Test script reorganization** — `test:e2e` renamed to `test:smoke` for accuracy; `test` now runs unit tests only; added `test:all` for running both unit and smoke tests.
+- **Agent skills reference docs** — added `.agents/skills/` reference documentation for React, Next.js, Prisma, Vitest, Zod, Tailwind, and more.
+- **Desloppify skill** — added `.opencode/skills/desloppify/SKILL.md` codebase health scanner definition.
+- **`formatTimeAgo` simplification** — removed try/catch fallback wrapper; `timeago.js` `format()` is called directly.
+
+### Tests
+
+- **ArchiveComponentsIntegration tests** — added integration tests for archive page components.
+- **Async test stabilization** — inlined archive seed data, fixed `act()` usage and suppressed spurious log noise.
+- **LastUpdated test timing fix** — adjusted test timing to account for `timeago.js` formatting behavior.
+
+## 0.45.1
+
+### Features
+
+- **Healthcheck probes database** — `/api/healthcheck` now runs `SELECT 1` via Prisma and returns 503 when the database is unreachable, instead of a hardcoded `{ alive: true }`.
+
+### Fixes
+
+- **Dependency security** — bumped hono override to >=4.12.18 (5 CVEs).
+- **Docker migrate image** — added missing `zod` + `isValidSeason.mjs` deps for seed script validation; switched CMD to JSON exec form for proper signal handling.
+- **`useLiveData` dead code removal** — removed `navigator.onLine` check in `connect()` that was immediately overwritten by `poll()`.
+- **`useTrack` partial-umami guard** — guard now checks `typeof window.umami?.track === 'function'` so ad-blocker stubs (`window.umami = {}`) no-op instead of throwing.
+- **`vitest.setup.mjs` `after()` mock** — stopped auto-invoking callbacks synchronously. Now records calls without executing, exposing response-timing bugs that were previously hidden.
+- **Dismissed-toast-events garbage collection** — entries now carry timestamps and are capped at 200. Oldest entries are pruned on write. Migrates legacy formats (arrays, plain strings) on read.
+
+### Chores
+
+- **Hardened app runtime** — production runner stage switched from `node:24-alpine` to `cgr.dev/chainguard/node:latest` (Chainguard Wolfi-based, near-zero CVEs). Build stages remain Alpine. Removed tini (Next.js standalone handles SIGTERM natively). Healthcheck switched from wget to Node.js `fetch()` for shell-less compatibility.
+- **CI deduplication** — added concurrency groups to prevent redundant CI and CodeQL workflow runs; renamed Build Staging workflow to Build Develop.
+
 ## 0.45.0
 
 ### Features
@@ -1521,7 +1666,7 @@ Closes #283.
 - Add database migration for Phase 1 schema rewrite
 - Implement fluid typography with CSS `clamp()` for responsive text scaling
 - Add ESM `"type": "module"` to `package.json`
-- Add Playwright smoke tests (`npm run test:smoke`)
+- Add Vitest smoke tests (`npm run test:smoke`)
 
 ## 0.8.0 (2025-12-09)
 

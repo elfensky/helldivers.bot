@@ -1,20 +1,20 @@
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { errorResponse, successResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 
 import { after } from 'next/server';
 //validators
-import { isValidNumber } from '@/validators/isValidNumber';
+import { isValidNumber } from '@/validators/isValidNumber.mjs';
 //db and fetch
-import { getCampaign } from '@/db/queries/getCampaign';
-import { updateSeason } from '@/update/season';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { updateSeason } from '@/update/season.mjs';
 //track
-import { umamiTrackEvent } from '@/shared/utils/umami';
+import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 
 export async function GET(request) {
-    //0. initialize
     const start = performance.now();
 
     after(async () => {
@@ -26,58 +26,55 @@ export async function GET(request) {
     let data = null;
     let season = null;
 
-    //1. validate query parameters (if any)
     if (request.nextUrl.searchParams.get('season')) {
         const check = isValidNumber.safeParse(request.nextUrl.searchParams.get('season'));
         if (!check.success)
-            return errorResponse(400, start, check?.error?.issues[0]?.message); //invalid season
+            return errorResponse(400, start, check?.error?.issues[0]?.message);
         season = Number(request.nextUrl.searchParams.get('season'));
     }
 
-    //2. get data from db
     const { data: campaignData, error: campaignError } = await tryCatch(
         getCampaign(season),
     );
     if (campaignError) {
+        reportError(campaignError, {
+            route: '/api/h1/campaign',
+            stage: 'get-campaign',
+            season,
+        });
         return errorResponse(500, start, campaignError?.message);
     }
 
     data = campaignData;
 
-    //3. if no data, attempt fetch remote data
     if (!campaignData) {
-        //1. fetch remote data
-        const { data: fetchData, error: fetchError } = await tryCatch(
-            updateSeason(season),
-        );
-        //1.1 process error(s)
+        const { error: fetchError } = await tryCatch(updateSeason(season));
         if (fetchError) {
-            if (fetchError?.issues) {
-                if (
-                    fetchError?.issues[0]?.code === 'invalid_type' &&
-                    // fetchError?.issues[0]?.path[0] === 'introduction_order' &&
-                    fetchError?.issues[0]?.received === 'null'
-                ) {
-                    let message = `Couldn't find campaign with season ${season}`;
-                    return errorResponse(404, start, message);
-                }
-                return errorResponse(500, start, fetchError?.issues);
-            } else {
-                return errorResponse(500, start, fetchError);
+            if (fetchError.cause === 'SEASON_NOT_FOUND') {
+                return errorResponse(404, start, fetchError.message);
             }
+            reportError(fetchError, {
+                route: '/api/h1/campaign',
+                stage: 'backfill-season',
+                season,
+            });
+            return errorResponse(500, start, fetchError?.message);
         }
 
-        //2. fetch local data
         const { data: retriedCampaignData, error: retriedCampaignError } = await tryCatch(
             getCampaign(season),
         );
-        if (retriedCampaignError)
+        if (retriedCampaignError) {
+            reportError(retriedCampaignError, {
+                route: '/api/h1/campaign',
+                stage: 'get-campaign-retry',
+                season,
+            });
             return errorResponse(500, start, retriedCampaignError?.message);
+        }
 
-        //3. set result to variable
         data = retriedCampaignData;
     }
-    //4. return response
     return successResponse(200, start, data);
 }
 

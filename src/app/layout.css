@@ -235,9 +235,7 @@
     transition: color 150ms ease;
 }
 
-[data-sonner-toaster]
-    [data-sonner-toast][data-styled='true']
-    [data-close-button]:hover {
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-close-button]:hover {
     color: var(--color-text) !important;
     background: transparent !important;
     border: none !important;

@@ -14,42 +14,44 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import db from '@/db/db';
+import { ROLE } from '@/shared/enums/roles.mjs';
 
-export const auth = process.env.BETTER_AUTH_SECRET
-    ? betterAuth({
-          secret: process.env.BETTER_AUTH_SECRET,
-          baseURL: process.env.BETTER_AUTH_URL,
-          database: prismaAdapter(db, {
-              provider: 'postgresql',
-          }),
-          account: {
-              accountLinking: {
-                  trustedProviders: ['discord', 'github', 'google'],
-                  allowDifferentEmails: true,
-              },
-          },
-          socialProviders: {
-              discord: {
-                  clientId: process.env.AUTH_DISCORD_ID,
-                  clientSecret: process.env.AUTH_DISCORD_SECRET,
-              },
-              github: {
-                  clientId: process.env.AUTH_GITHUB_ID,
-                  clientSecret: process.env.AUTH_GITHUB_SECRET,
-              },
-              google: {
-                  clientId: process.env.AUTH_GOOGLE_ID,
-                  clientSecret: process.env.AUTH_GOOGLE_SECRET,
-              },
-          },
-          user: {
-              additionalFields: {
-                  role: {
-                      type: 'string',
-                      defaultValue: 'user',
-                      input: false,
-                  },
-              },
-          },
-      })
-    : null;
+export const auth =
+    process.env.BETTER_AUTH_SECRET ?
+        betterAuth({
+            secret: process.env.BETTER_AUTH_SECRET,
+            baseURL: process.env.BETTER_AUTH_URL,
+            database: prismaAdapter(db, {
+                provider: 'postgresql',
+            }),
+            account: {
+                accountLinking: {
+                    trustedProviders: ['discord', 'github', 'google'],
+                    allowDifferentEmails: true,
+                },
+            },
+            socialProviders: {
+                discord: {
+                    clientId: process.env.AUTH_DISCORD_ID,
+                    clientSecret: process.env.AUTH_DISCORD_SECRET,
+                },
+                github: {
+                    clientId: process.env.AUTH_GITHUB_ID,
+                    clientSecret: process.env.AUTH_GITHUB_SECRET,
+                },
+                google: {
+                    clientId: process.env.AUTH_GOOGLE_ID,
+                    clientSecret: process.env.AUTH_GOOGLE_SECRET,
+                },
+            },
+            user: {
+                additionalFields: {
+                    role: {
+                        type: 'string',
+                        defaultValue: ROLE.USER,
+                        input: false,
+                    },
+                },
+            },
+        })
+    :   null;

@@ -1,13 +1,16 @@
 'use server';
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { performance } from 'perf_hooks';
+import { performanceTime } from '@/shared/utils/time.mjs';
 import {
     ensureVapid,
     sendWithConcurrencyLimit,
     buildPayload,
-} from '@/update/pushNotifier';
+} from '@/update/pushNotifier.mjs';
 import db from '@/db/db';
+import { ROLE } from '@/shared/enums/roles.mjs';
 
 /**
  * Send a test push notification using the same payload format as real events.
@@ -26,41 +29,53 @@ export async function sendTestNotification({
     kind = 'event_started',
     event_id,
 } = {}) {
+    const start = performance.now();
+    if (!auth)
+        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user || session.user.role !== 'admin') {
-        return { error: 'Unauthorized' };
+    if (!session?.user || session.user.role !== ROLE.ADMIN) {
+        return { errors: { auth: 'Unauthorized' }, time: performanceTime(start) };
     }
 
     if (!ensureVapid()) {
-        return { error: 'VAPID keys not configured' };
+        return {
+            errors: { vapid: 'VAPID keys not configured' },
+            time: performanceTime(start),
+        };
     }
 
-    const time = new Date().toLocaleTimeString('en-GB', {
+    const timestamp = new Date().toLocaleTimeString('en-GB', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
     });
-    // Fallback to a fresh high-range random id (900M+) so legacy callers
-    // without an explicit event_id still avoid collisions with real ids.
+    // Fallback to a fresh high-range random id (900M+) when the caller
+    // omits event_id, so admin-fabricated events still avoid colliding with
+    // real game ids.
     const id = event_id ?? 900_000_000 + Math.floor(Math.random() * 100_000_000);
     const change = {
         kind,
         event: { enemy, region, type, event_id: id, season: 0 },
     };
     const base = JSON.parse(buildPayload(change));
-    base.body = `${base.body} — ${time}`;
+    base.body = `${base.body} — ${timestamp}`;
     const payload = JSON.stringify(base);
 
     const { data: subscriptions, error: fetchError } = await tryCatch(
         db.push_subscription.findMany(),
     );
-    if (fetchError) return { error: fetchError.message };
+    if (fetchError)
+        return { errors: { db: fetchError.message }, time: performanceTime(start) };
     if (!subscriptions || subscriptions.length === 0)
-        return { error: 'No push subscribers' };
+        return {
+            errors: { subscribers: 'No push subscribers' },
+            time: performanceTime(start),
+        };
 
     const { data: result, error: sendError } = await tryCatch(
         sendWithConcurrencyLimit(subscriptions, payload),
     );
-    if (sendError) return { error: sendError.message };
-    return result;
+    if (sendError)
+        return { errors: { send: sendError.message }, time: performanceTime(start) };
+    return { data: result, time: performanceTime(start) };
 }

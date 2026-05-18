@@ -1,7 +1,7 @@
 'use client';
 import { useActionState } from 'react';
 import Image from 'next/image';
-import { updateUserRole, toggleUserBan } from '@/db/queries/admin';
+import { updateUserRole, toggleUserBan } from '@/db/queries/admin.mjs';
 import Button from '@/shared/components/Button/Button';
 
 export default function UserTableClient({ users, adminCount, currentUserId }) {

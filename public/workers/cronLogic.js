@@ -6,6 +6,13 @@
  * worker_threads thread or intercepting Node built-ins.
  */
 
+// Custom header set on the very first poll of a worker session so the
+// /api/h1/update handler can run a one-time startup pass (e.g. backfill
+// missing seasons). Must match the lowercase string read in
+// src/app/api/h1/update/route.js — kept in lockstep by the test in
+// src/__tests__/unit/workers/cron.test.mjs.
+const WORKER_STARTUP_HEADER = 'X-Worker-Startup';
+
 /**
  * Build a self-scheduling poll loop for the worker.
  *
@@ -23,11 +30,19 @@ function makeDoWork({ key, interval, port }, parentPort) {
             const response = await fetch(url, {
                 headers: {
                     Authorization: `Bearer ${key}`,
-                    ...(isFirstPoll && { 'X-Worker-Startup': '1' }),
+                    ...(isFirstPoll && { [WORKER_STARTUP_HEADER]: '1' }),
                 },
             });
             const data = await response.json();
             parentPort.postMessage({ data, time: new Date().toString() });
+
+            // Fire-and-forget GlitchTip uptime ping. Only on 2xx so that a
+            // sustained 5xx (HD1 API down, DB down) flips the monitor red.
+            if (response.ok && process.env.GLITCHTIP_HEARTBEAT_URL) {
+                fetch(process.env.GLITCHTIP_HEARTBEAT_URL, { method: 'POST' }).catch(
+                    () => {},
+                );
+            }
         } catch (err) {
             parentPort.postMessage({
                 error: err.toString(),
@@ -46,4 +61,4 @@ function makeDoWork({ key, interval, port }, parentPort) {
     return doWork;
 }
 
-module.exports = { makeDoWork };
+module.exports = { makeDoWork, WORKER_STARTUP_HEADER };

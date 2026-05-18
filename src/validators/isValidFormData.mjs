@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isValidNumber } from '@/validators/isValidNumber';
+import { isValidNumber } from '@/validators/isValidNumber.mjs';
 
 const schemaGetCampaignStatus = z
     .object({

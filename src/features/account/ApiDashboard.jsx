@@ -1,9 +1,9 @@
 //db
-import { getApiKeysByUserId } from '@/db/queries/api';
+import { getApiKeysByUserId } from '@/db/queries/api.mjs';
 //forms
 import { GenerateApiKeyForm, DeleteApiKeyForm } from '@/features/account/ApiForm';
 //utils
-import { timeSince } from '@/shared/utils/time';
+import { timeSince } from '@/shared/utils/time.mjs';
 
 export default async function ApiDashboard({ user }) {
     if (!user) {
@@ -21,7 +21,7 @@ export default async function ApiDashboard({ user }) {
 
 async function ApiKeysList({ userId }) {
     const result = await getApiKeysByUserId(userId);
-    const apiKeys = result.query;
+    const apiKeys = result.data;
 
     if (!apiKeys || apiKeys.length === 0) {
         return <p className="text-body text-text-muted">No API keys yet.</p>;

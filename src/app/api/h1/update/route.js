@@ -1,22 +1,31 @@
 import crypto from 'node:crypto';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { errorResponse, successResponse } from '@/shared/utils/api/responses';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 import db from '@/db/db';
 //update
-import { updateStatus } from '@/update/status';
-import { updateSeason } from '@/update/season';
-import { checkAndNotify } from '@/update/pushNotifier';
-import { computeBucket } from '@/update/bucketing';
+import { updateStatus } from '@/update/status.mjs';
+import { updateSeason } from '@/update/season.mjs';
+import { checkAndNotify } from '@/update/pushNotifier.mjs';
+import { computeBucket } from '@/shared/utils/bucketing.mjs';
+
+// Custom header set on the very first poll of a worker session so the
+// handler can run a one-time startup pass (e.g. backfill missing seasons).
+// Mirror of WORKER_STARTUP_HEADER in public/workers/cronLogic.js — the test
+// in src/__tests__/unit/workers/cron.test.mjs asserts the two stay aligned.
+// HTTP header names are case-insensitive; we read it lowercase here to
+// match what `request.headers.get(...)` normalises to.
+export const WORKER_STARTUP_HEADER = 'x-worker-startup';
 
 // Tracks the season observed on the previous worker poll so we can detect
 // a season transition and run one final updateSeason() pass on the outgoing
 // season. HD1 writes a final "closing" snapshot to the old season a few
 // minutes after the transition point — without this detection, the worker
 // moves on to the new season before that closing frame is published and it
-// never lands in h1_snapshot. Resets to null on worker restart; the only
+// never lands in h1_status. Resets to null on worker restart; the only
 // impact of a restart during the tiny transition window is that the closing
 // snapshot for that single transition is missed, which the admin can recover
 // via the /archives refresh button.
@@ -56,12 +65,13 @@ export async function GET(request) {
     const expected = crypto.createHash('sha256').update(secret).digest();
     if (!crypto.timingSafeEqual(actual, expected)) return errorResponse(401, start);
 
-    const isStartup = request.headers.get('x-worker-startup') === '1';
+    const isStartup = request.headers.get(WORKER_STARTUP_HEADER) === '1';
 
     //STATUS
     const { data: statusData, error: statusError } = await tryCatch(updateStatus());
     if (statusError) {
         console.error(statusError?.message, statusError?.cause);
+        reportError(statusError, { route: '/api/h1/update', stage: 'status' });
         await writeHeartbeat(start, isStartup, statusError?.message);
         return errorResponse(500, start, statusError?.message);
     }
@@ -75,7 +85,7 @@ export async function GET(request) {
     // error — the current season's update is more critical, and the admin
     // can always recover missing snapshots via the /archives refresh button.
     if (lastSeasonObserved !== null && lastSeasonObserved < statusData.season) {
-        console.log(
+        console.info(
             `Season transition detected: ${lastSeasonObserved} → ${statusData.season}. Running closing pass on outgoing season.`,
         );
         const { error: closingError } = await tryCatch(updateSeason(lastSeasonObserved));
@@ -84,6 +94,12 @@ export async function GET(request) {
                 `Closing pass for season ${lastSeasonObserved} failed:`,
                 closingError.message,
             );
+            reportError(closingError, {
+                route: '/api/h1/update',
+                stage: 'season-closing',
+                outgoingSeason: lastSeasonObserved,
+                level: 'warning',
+            });
         }
     }
     lastSeasonObserved = statusData.season;
@@ -97,15 +113,32 @@ export async function GET(request) {
     );
     if (seasonError) {
         console.error(seasonError?.message, seasonError?.cause);
+        reportError(seasonError, {
+            route: '/api/h1/update',
+            stage: 'season',
+            season: statusData.season,
+        });
         await writeHeartbeat(start, isStartup, seasonError?.message);
         return errorResponse(500, start, seasonError?.message);
     }
     const seasonTime = roundedPerformanceTime(start);
 
+    // Log any non-fatal warnings the orchestrators collected (upsertEventProgress
+    // and per-snapshot status upserts). They're also returned in the response
+    // body so clients can surface them, but logging here gives operators
+    // visibility without parsing the JSON envelope.
+    for (const warning of [
+        ...(statusData?.warnings ?? []),
+        ...(seasonData?.warnings ?? []),
+    ]) {
+        console.warn('[update] warning:', warning.stage, warning.message);
+    }
+
     // Fire-and-forget: check for event transitions and send push notifications
-    checkAndNotify().catch((err) =>
-        console.error('Push notification error:', err.message),
-    );
+    checkAndNotify().catch((err) => {
+        console.error('Push notification error:', err.message);
+        reportError(err, { route: '/api/h1/update', stage: 'push-notify' });
+    });
 
     //RESPONSE
     await writeHeartbeat(start, isStartup);

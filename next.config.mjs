@@ -8,6 +8,7 @@ const nextConfig = {
     env: {
         NEXT_PUBLIC_APP_VERSION: APP_VERSION,
     },
+    deploymentId: APP_VERSION.replaceAll('.', '-'),
     pageExtensions: ['js', 'jsx', 'mdx'],
     reactCompiler: true,
     output: 'standalone',
@@ -149,6 +150,32 @@ const nextConfig = {
                     {
                         key: 'Cache-Control',
                         value: 'public, max-age=86400, immutable',
+                    },
+                ],
+            },
+            {
+                // Soft CDN cache for HTML page routes so Cloudflare collapses
+                // concurrent visitors into one origin hit per 30s window
+                // instead of pass-through on every navigation. The page
+                // itself stays interactive — `s-maxage` only targets shared
+                // caches, so individual browsers still revalidate normally,
+                // and `useLiveData` keeps polling /api/h1/live (no-store) for
+                // fresh game state. `stale-while-revalidate` lets the edge
+                // serve the cached copy while it refetches in the background,
+                // so visitors don't pay origin latency on the TTL boundary.
+                //
+                // Excludes:
+                //   /api/*       — route handlers set their own Cache-Control
+                //   /_next/*     — Next.js asset/data chunks (content-hashed)
+                //   asset roots  — pinned `immutable` above with longer TTLs
+                //   /sw.js       — service worker must always revalidate
+                //   /workers/*   — cron worker source (immutable above)
+                //   /profile/*   — per-user content, must not be shared
+                source: '/((?!api/|_next/|profile|favicons/|fonts/|icons/|images/|svgs/|sw\\.js|workers/).*)',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, s-maxage=30, stale-while-revalidate=60',
                     },
                 ],
             },

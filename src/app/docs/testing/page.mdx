@@ -197,14 +197,14 @@ Returns a Prisma model stub with all standard CRUD methods as `vi.fn()`. Useful 
 App Router route handlers are tested by importing the handler directly:
 
 ```js
+vi.mock('@/db/db', () => ({ default: { $queryRaw: vi.fn() } }));
+import db from '@/db/db';
 import { GET } from '@/app/api/healthcheck/route';
 
-test('returns 200 with alive: true', async () => {
-    const req = new Request('http://localhost/api/healthcheck');
-    const res = await GET(req);
+test('returns 200 when database is reachable', async () => {
+    db.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
+    const res = await GET(new Request('http://localhost/api/healthcheck'));
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.alive).toBe(true);
 });
 ```
 

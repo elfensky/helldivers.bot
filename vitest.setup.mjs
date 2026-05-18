@@ -142,7 +142,7 @@ vi.mock('next/cache', () => ({
  */
 vi.mock('next/server', async (importOriginal) => {
     const actual = await importOriginal();
-    return { ...actual, after: vi.fn((fn) => fn()) };
+    return { ...actual, after: vi.fn() };
 });
 
 /**
@@ -185,16 +185,16 @@ vi.mock('next/headers', () => ({
 vi.mock('next/image', () => ({
     default: vi.fn(
         ({
-            priority,
-            placeholder,
-            quality,
-            fill,
-            loader,
-            sizes,
-            unoptimized,
-            loading,
-            blurDataURL,
-            onLoadingComplete,
+            priority: _priority,
+            placeholder: _placeholder,
+            quality: _quality,
+            fill: _fill,
+            loader: _loader,
+            sizes: _sizes,
+            unoptimized: _unoptimized,
+            loading: _loading,
+            blurDataURL: _blurDataURL,
+            onLoadingComplete: _onLoadingComplete,
             ...props
         }) => React.createElement('img', props),
     ),
@@ -204,8 +204,15 @@ vi.mock('next/image', () => ({
  * Mock Next.js Link — renders as <a> element, filtering Next.js-specific props
  */
 vi.mock('next/link', () => ({
-    default: vi.fn(({ children, prefetch, scroll, replace, shallow, ...props }) =>
-        React.createElement('a', props, children),
+    default: vi.fn(
+        ({
+            children,
+            prefetch: _prefetch,
+            scroll: _scroll,
+            replace: _replace,
+            shallow: _shallow,
+            ...props
+        }) => React.createElement('a', props, children),
     ),
 }));
 

@@ -353,18 +353,6 @@ addOrdinalSuffix(num: number): string
 
 ## 6. Other Utilities
 
-### `formDataToObject(formData)`
-
-`src/shared/utils/formdata.mjs`
-
-```ts
-formDataToObject(formData: FormData): Record<string, string>
-```
-
-Iterates `formData.entries()` and builds a plain object. The result is what gets passed to `isValidFormData` for Zod validation in the rebroadcast endpoint. No type coercion is performed here — that is the validator's job.
-
----
-
 ### `getGravatarUrl(email)`
 
 `src/shared/utils/gravatar.mjs`
@@ -709,7 +697,7 @@ The distinction between defend and attack events is enforced via `.refine()`:
 
 **Export type:** Zod schema object (not a function) — call `.safeParse(data)` directly
 
-Discriminated union on the `action` field. Used by the `/api/h1/rebroadcast` endpoint after `formDataToObject` converts the request body.
+Discriminated union on the `action` field. Used by the `/api/h1/rebroadcast` endpoint after `Object.fromEntries(formData.entries())` converts the request body.
 
 **Actions and their required/optional fields:**
 
@@ -780,7 +768,7 @@ Identical preprocessing behavior to `schemaNumber` in `isValidFormData.js` — c
 
 ## 11. Bucket Math — `computeBucket`
 
-`src/update/bucketing.mjs`
+`src/shared/utils/bucketing.mjs`
 
 Shared helper that computes tumbling-window bucket boundaries for all timeseries tables (`h1_status`, `h1_statistic`, `h1_event_progress`). Each query function calls `computeBucket(time)` and uses the result as part of the unique constraint key in a Prisma upsert — within a bucket window the existing row is updated, at a boundary a new row is inserted.
 

@@ -1,10 +1,10 @@
 import { cookies } from 'next/headers';
 import JsonLd from '@/shared/components/JsonLd';
 import HomeClient from '@/features/dashboard/HomeClient';
-import { getCampaign } from '@/db/queries/getCampaign';
-import { getPlayersAvg24h } from '@/db/queries/getPlayersAvg24h';
-import { getKills24hAgo } from '@/db/queries/getKills24hAgo';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { getPlayersAvg24h } from '@/db/queries/getPlayersAvg24h.mjs';
+import { getKills24hAgo } from '@/db/queries/getKills24hAgo.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { FACTION_KEY, validateFaction } from '@/shared/preferences/faction.mjs';
 import {
     REGIONS_VIEW_KEY,

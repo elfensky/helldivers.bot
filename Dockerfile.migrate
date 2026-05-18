@@ -157,4 +157,4 @@ ENTRYPOINT ["/sbin/tini", "--"]
 #
 # `&&` ensures the seed only runs if migrate succeeds. The container exits
 # with the appropriate code so docker-compose can gate the app on it.
-CMD sh -c "npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs"
+CMD ["sh", "-c", "npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs"]

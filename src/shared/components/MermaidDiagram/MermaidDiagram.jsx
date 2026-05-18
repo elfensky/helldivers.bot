@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useTrack } from '@/shared/hooks/useTrack';
+import { useTrack } from '@/shared/hooks/useTrack.mjs';
 import { useMermaidRender } from './useMermaidRender';
 import DetailPanel from './DetailPanel';
 import './MermaidDiagram.css';
@@ -85,14 +85,18 @@ function applyFlowFilter(container, activeView, flows) {
     // Mermaid v11 renders multiple .edgeLabel elements per edge (background + text).
     // Compute stride to map each edge path to its corresponding label group.
     const labelsPerEdge =
-        allEdgePaths.length > 0 ? Math.round(allEdgeLabels.length / allEdgePaths.length) : 1;
+        allEdgePaths.length > 0 ?
+            Math.round(allEdgeLabels.length / allEdgePaths.length)
+        :   1;
 
     // Highlight edges + their labels
     allEdgePaths.forEach((edge, i) => {
         const dataId = edge.getAttribute('data-id');
         const endpoints = parseEdgeEndpoints(dataId, allNodeIds);
         const isActive =
-            endpoints && activeNodeIds.has(endpoints.source) && activeNodeIds.has(endpoints.target);
+            endpoints &&
+            activeNodeIds.has(endpoints.source) &&
+            activeNodeIds.has(endpoints.target);
 
         const applyClass = (el, active) => {
             if (!el) return;

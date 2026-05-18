@@ -10,16 +10,18 @@
  *
  * Returns '' for unknown combinations so template rendering stays safe.
  */
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
+
 export function getEventActionLabel(event) {
-    if (event?.type === 'attack') {
-        if (event.status === 'active') return 'Attacking';
-        if (event.status === 'success') return 'Captured';
-        if (event.status === 'fail') return 'Lost';
+    if (event?.type === EVENT_TYPE.ATTACK) {
+        if (event.status === EVENT_STATUS.ACTIVE) return 'Attacking';
+        if (event.status === EVENT_STATUS.SUCCESS) return 'Captured';
+        if (event.status === EVENT_STATUS.FAIL) return 'Lost';
     }
-    if (event?.type === 'defend') {
-        if (event.status === 'active') return 'Defending';
-        if (event.status === 'success') return 'Defended';
-        if (event.status === 'fail') return 'Lost';
+    if (event?.type === EVENT_TYPE.DEFEND) {
+        if (event.status === EVENT_STATUS.ACTIVE) return 'Defending';
+        if (event.status === EVENT_STATUS.SUCCESS) return 'Defended';
+        if (event.status === EVENT_STATUS.FAIL) return 'Lost';
     }
     return '';
 }

@@ -1,53 +1,51 @@
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { roundedPerformanceTime } from '@/shared/utils/time';
-import { errorResponse, successResponse } from '@/shared/utils/api/responses';
+import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { after } from 'next/server';
-import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed';
-//parsers
-import { formDataToObject } from '@/shared/utils/formdata';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 //validators
-import { isValidContentType } from '@/validators/isValidContentType';
-import { isValidFormData } from '@/validators/isValidFormData';
+import { isValidContentType } from '@/validators/isValidContentType.mjs';
+import { isValidFormData } from '@/validators/isValidFormData.mjs';
 //db
-import { updateSeason } from '@/update/season';
+import { updateSeason } from '@/update/season.mjs';
 //auth
-import { validateApiKey } from '@/db/queries/validateApiKey';
+import { validateApiKey, API_KEY_ERROR } from '@/db/queries/validateApiKey.mjs';
 //track
-import { umamiTrackEvent } from '@/shared/utils/umami';
+import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
+//enums
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
+import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
 
 export async function POST(request) {
-    //0. initialize
     const start = performance.now();
     let check = null;
     let formValues = null;
 
-    //0.5 validate API key
-    const { error: keyError } = await validateApiKey(request);
-    if (keyError === 'disabled') {
+    const { code: keyCode } = await validateApiKey(request);
+    if (keyCode === API_KEY_ERROR.DISABLED) {
         return errorResponse(403, start, 'Forbidden');
     }
-    if (keyError) {
+    if (keyCode) {
         return errorResponse(401, start, 'Unauthorized');
     }
 
-    //1. test if valid POST request
     const contentType = request.headers.get('content-type') || '';
     check = isValidContentType.safeParse(contentType);
     if (!check.success) {
         return errorResponse(400, start, 'Invalid Content Type');
     }
 
-    //2. get FormData and convert it to an object
-    const formData = await request.formData();
-    formValues = formDataToObject(formData);
+    const { data: formData, error: formError } = await tryCatch(request.formData());
+    if (formError) return errorResponse(400, start, 'Invalid request body');
+    formValues = Object.fromEntries(formData.entries());
 
     if (typeof formValues.action !== 'string') {
         return errorResponse(400, start, 'No action set');
     }
 
-    //3. validate FormData object structure using Zod
     check = isValidFormData.safeParse(formValues);
     if (!check.success) {
         const code = check?.error?.issues[0]?.code || null;
@@ -68,7 +66,7 @@ export async function POST(request) {
             action: formValues.action,
             ms: roundedPerformanceTime(start),
         };
-        if (data?.action === 'get_snapshots') {
+        if (data.action === 'get_snapshots') {
             data.season = formValues.season;
         }
         await umamiTrackEvent(
@@ -79,14 +77,19 @@ export async function POST(request) {
         );
     });
 
-    //4. reconstruct the HD1 wire format from the normalized tables
     let data = undefined;
     switch (formValues.action) {
         case 'get_campaign_status': {
             const { data: statusBody, error: statusError } = await tryCatch(
                 reconstructCampaignStatus(),
             );
-            if (statusError) return errorResponse(404, start, 'Not found');
+            if (statusError) {
+                reportError(statusError, {
+                    route: '/api/h1/rebroadcast',
+                    stage: 'reconstruct-status',
+                });
+                return errorResponse(500, start, 'Internal server error');
+            }
             data = statusBody;
             break;
         }
@@ -94,7 +97,14 @@ export async function POST(request) {
             const { data: snapshotBody, error: snapshotError } = await tryCatch(
                 reconstructSnapshots(formValues.season),
             );
-            if (snapshotError) return errorResponse(404, start, 'Not found');
+            if (snapshotError) {
+                reportError(snapshotError, {
+                    route: '/api/h1/rebroadcast',
+                    stage: 'reconstruct-snapshots',
+                    season: formValues.season,
+                });
+                return errorResponse(500, start, 'Internal server error');
+            }
             data = snapshotBody;
 
             // fetch from remote if the season isn't populated locally yet
@@ -103,12 +113,24 @@ export async function POST(request) {
                     updateSeason(formValues.season),
                 );
                 if (seasonFetchError) {
-                    return errorResponse(404, start, 'Not found');
+                    reportError(seasonFetchError, {
+                        route: '/api/h1/rebroadcast',
+                        stage: 'backfill-season',
+                        season: formValues.season,
+                    });
+                    return errorResponse(500, start, 'Internal server error');
                 }
                 const { data: retryBody, error: retryError } = await tryCatch(
                     reconstructSnapshots(formValues.season),
                 );
-                if (retryError) return errorResponse(404, start, 'Not found');
+                if (retryError) {
+                    reportError(retryError, {
+                        route: '/api/h1/rebroadcast',
+                        stage: 'reconstruct-snapshots-retry',
+                        season: formValues.season,
+                    });
+                    return errorResponse(500, start, 'Internal server error');
+                }
                 data = retryBody;
             }
             break;
@@ -117,11 +139,9 @@ export async function POST(request) {
             break;
     }
 
-    //5. validate data from DB
     if (data === undefined || data === null) {
         return errorResponse(404, start, 'Not found');
     }
-    //6. return response
     return successResponse(200, start, data);
 }
 
@@ -130,7 +150,7 @@ export async function POST(request) {
  * tables (h1_season + h1_status + h1_statistic + h1_event). Uses the latest
  * season with data. Returns null when no season has been populated yet.
  *
- * Partial loss of fidelity vs the legacy wire format: the 4 event-count
+ * Partial loss of fidelity vs the HD1 wire format: the 4 event-count
  * fields on each statistics[] entry (defend_events, successful_defend_events,
  * attack_events, successful_attack_events) are omitted — they are derivable
  * from h1_event with COUNT(*) WHERE type=... AND status=... AND season=X.
@@ -166,7 +186,7 @@ async function reconstructCampaignStatus() {
         ORDER BY enemy ASC, bucket DESC
     `;
     const activeEvents = await db.h1_event.findMany({
-        where: { season: targetSeason, status: 'active' },
+        where: { season: targetSeason, status: EVENT_STATUS.ACTIVE },
     });
 
     const statByEnemy = new Map(latestStats.map((r) => [r.enemy, r]));
@@ -209,8 +229,8 @@ async function reconstructCampaignStatus() {
                 hits: s?.hits != null ? Number(s.hits) : 0,
             };
         }),
-        defend_event: activeEvents.find((e) => e.type === 'defend') ?? null,
-        attack_events: activeEvents.filter((e) => e.type === 'attack'),
+        defend_event: activeEvents.find((e) => e.type === EVENT_TYPE.DEFEND) ?? null,
+        attack_events: activeEvents.filter((e) => e.type === EVENT_TYPE.ATTACK),
         introduction_order: seasonRow.introduction_order ?? [],
         points_max: seasonRow.points_max ?? [],
     };
@@ -246,32 +266,11 @@ async function reconstructSnapshots(season) {
         where: { season },
     });
 
-    // Group h1_status rows by bucket into snapshot frames whose `data` field
-    // is a stringified JSON array indexed by enemy — matching the legacy
-    // h1_snapshot wire shape that external consumers parse on receipt.
-    const byBucket = new Map();
-    for (const r of allStatus) {
-        if (!byBucket.has(r.bucket)) {
-            byBucket.set(r.bucket, { time: r.bucket, factions: [null, null, null] });
-        }
-        const entry = byBucket.get(r.bucket);
-        entry.factions[r.enemy] = {
-            points: r.points,
-            points_taken: r.points_taken,
-            status: r.status,
-        };
-        // Use the latest poll time within the bucket as the frame's time.
-        if (r.time > entry.time) entry.time = r.time;
-    }
-    const snapshots = Array.from(byBucket.values())
-        .sort((a, b) => a.time - b.time)
-        // Drop sparse buckets missing any faction (see getCampaign.mjs).
-        .filter(({ factions }) => factions.every((f) => f !== null))
-        .map(({ time, factions }) => ({
-            season,
-            time,
-            data: JSON.stringify(factions),
-        }));
+    const snapshots = groupStatusByBucket(allStatus).map(({ time, factions }) => ({
+        season,
+        time,
+        data: JSON.stringify(factions),
+    }));
 
     return {
         time: Math.floor(Date.now() / 1000),
@@ -279,8 +278,8 @@ async function reconstructSnapshots(season) {
         introduction_order: seasonRow.introduction_order ?? [],
         points_max: seasonRow.points_max ?? [],
         snapshots,
-        defend_events: allEvents.filter((e) => e.type === 'defend'),
-        attack_events: allEvents.filter((e) => e.type === 'attack'),
+        defend_events: allEvents.filter((e) => e.type === EVENT_TYPE.DEFEND),
+        attack_events: allEvents.filter((e) => e.type === EVENT_TYPE.ATTACK),
     };
 }
 

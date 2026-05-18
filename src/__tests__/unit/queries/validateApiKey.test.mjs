@@ -14,24 +14,24 @@ function makeRequest(headerValue) {
 describe('validateApiKey', () => {
     test('returns missing error when no authorization header', async () => {
         const result = await validateApiKey(makeRequest(undefined));
-        expect(result).toEqual({ data: null, error: 'missing' });
+        expect(result).toEqual({ data: null, code: 'missing' });
     });
 
     test('returns missing error when header has no Bearer prefix', async () => {
         const result = await validateApiKey(makeRequest('Token abc123'));
-        expect(result).toEqual({ data: null, error: 'missing' });
+        expect(result).toEqual({ data: null, code: 'missing' });
     });
 
     test('returns missing error when Bearer prefix has no key', async () => {
         const result = await validateApiKey(makeRequest('Bearer '));
-        expect(result).toEqual({ data: null, error: 'missing' });
+        expect(result).toEqual({ data: null, code: 'missing' });
     });
 
     test('returns invalid error when key is not found in database', async () => {
         vi.mocked(db.ApiKey.findUnique).mockResolvedValue(null);
 
         const result = await validateApiKey(makeRequest('Bearer some-unknown-key'));
-        expect(result).toEqual({ data: null, error: 'invalid' });
+        expect(result).toEqual({ data: null, code: 'invalid' });
 
         const expectedHash = createHash('sha256')
             .update('some-unknown-key')
@@ -46,7 +46,7 @@ describe('validateApiKey', () => {
         vi.mocked(db.ApiKey.findUnique).mockRejectedValue(new Error('db down'));
 
         const result = await validateApiKey(makeRequest('Bearer some-key'));
-        expect(result).toEqual({ data: null, error: 'invalid' });
+        expect(result).toEqual({ data: null, code: 'invalid' });
     });
 
     test('returns disabled error when key exists but is disabled', async () => {
@@ -57,7 +57,7 @@ describe('validateApiKey', () => {
         });
 
         const result = await validateApiKey(makeRequest('Bearer my-disabled-key'));
-        expect(result).toEqual({ data: null, error: 'disabled' });
+        expect(result).toEqual({ data: null, code: 'disabled' });
     });
 
     test('returns user data when key is valid and enabled', async () => {
@@ -70,7 +70,7 @@ describe('validateApiKey', () => {
         const result = await validateApiKey(makeRequest('Bearer valid-key'));
         expect(result).toEqual({
             data: { userId: 'user-99', keyId: 'key-42' },
-            error: null,
+            code: null,
         });
     });
 

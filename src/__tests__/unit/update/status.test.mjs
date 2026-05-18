@@ -4,26 +4,28 @@ import { updateStatus } from '@/update/status.mjs';
 // --- Dependency mocks ---
 
 vi.mock('@/update/fetch.mjs', () => ({ fetchStatus: vi.fn() }));
-vi.mock('@/validators/isValidStatus', () => ({ isValidStatus: vi.fn() }));
+vi.mock('@/validators/isValidStatus', () => ({
+    isValidStatus: { safeParse: vi.fn() },
+}));
 vi.mock('@/shared/utils/getSeason', () => ({ getSeasonFromStatus: vi.fn() }));
-vi.mock('@/db/queries/upsertSeason', () => ({ queryUpsertSeason: vi.fn() }));
-vi.mock('@/db/queries/upsertEvent', () => ({ queryUpsertEvent: vi.fn() }));
-vi.mock('@/db/queries/upsertStatus', () => ({ queryUpsertStatus: vi.fn() }));
-vi.mock('@/db/queries/upsertStatistic', () => ({ queryUpsertStatistic: vi.fn() }));
+vi.mock('@/db/queries/upsertSeason', () => ({ upsertSeason: vi.fn() }));
+vi.mock('@/db/queries/upsertEvent', () => ({ upsertEvent: vi.fn() }));
+vi.mock('@/db/queries/upsertStatus', () => ({ upsertStatus: vi.fn() }));
+vi.mock('@/db/queries/upsertStatistic', () => ({ upsertStatistic: vi.fn() }));
 vi.mock('@/db/queries/upsertEventProgress', () => ({
-    queryUpsertEventProgress: vi.fn(),
+    upsertEventProgress: vi.fn(),
 }));
 
 // --- Import mocked modules ---
 
 import { fetchStatus } from '@/update/fetch.mjs';
-import { isValidStatus } from '@/validators/isValidStatus';
-import { getSeasonFromStatus } from '@/shared/utils/getSeason';
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus';
-import { queryUpsertStatistic } from '@/db/queries/upsertStatistic';
-import { queryUpsertEventProgress } from '@/db/queries/upsertEventProgress';
+import { isValidStatus } from '@/validators/isValidStatus.mjs';
+import { getSeasonFromStatus } from '@/shared/utils/getSeason.mjs';
+import { upsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { upsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
+import { upsertStatistic } from '@/db/queries/upsertStatistic.mjs';
+import { upsertEventProgress } from '@/db/queries/upsertEventProgress.mjs';
 
 // --- Test data ---
 
@@ -65,21 +67,19 @@ const mockFetchedData = {
         status: 'active',
         points: 10,
     },
-    attack_events: [
-        { event_id: 2, enemy: 1, season: 5, status: 'active', points: 20 },
-    ],
+    attack_events: [{ event_id: 2, enemy: 1, season: 5, status: 'active', points: 20 }],
 };
 
 /** Wire up all mocks for a successful run. */
 function setupHappyPath() {
     fetchStatus.mockResolvedValue(structuredClone(mockFetchedData));
-    isValidStatus.mockReturnValue({ success: true });
+    isValidStatus.safeParse.mockReturnValue({ success: true });
     getSeasonFromStatus.mockReturnValue(5);
-    queryUpsertSeason.mockResolvedValue({});
-    queryUpsertEvent.mockResolvedValue({});
-    queryUpsertStatus.mockResolvedValue({});
-    queryUpsertStatistic.mockResolvedValue({});
-    queryUpsertEventProgress.mockResolvedValue({});
+    upsertSeason.mockResolvedValue({});
+    upsertEvent.mockResolvedValue({});
+    upsertStatus.mockResolvedValue({});
+    upsertStatistic.mockResolvedValue({});
+    upsertEventProgress.mockResolvedValue({});
 }
 
 // --- Tests ---
@@ -95,17 +95,20 @@ describe('updateStatus', () => {
     // 2. Throws when validation fails
     it('throws when isValidStatus returns failure', async () => {
         fetchStatus.mockResolvedValue(structuredClone(mockFetchedData));
-        isValidStatus.mockReturnValue({ success: false, error: { message: 'bad data' } });
+        isValidStatus.safeParse.mockReturnValue({
+            success: false,
+            error: { message: 'bad data' },
+        });
 
         await expect(updateStatus()).rejects.toThrow('bad data');
     });
 
-    // 3. Throws when queryUpsertSeason fails
-    it('throws when queryUpsertSeason rejects', async () => {
+    // 3. Throws when upsertSeason fails
+    it('throws when upsertSeason rejects', async () => {
         fetchStatus.mockResolvedValue(structuredClone(mockFetchedData));
-        isValidStatus.mockReturnValue({ success: true });
+        isValidStatus.safeParse.mockReturnValue({ success: true });
         getSeasonFromStatus.mockReturnValue(5);
-        queryUpsertSeason.mockRejectedValue(new Error('season write failed'));
+        upsertSeason.mockRejectedValue(new Error('season write failed'));
 
         await expect(updateStatus()).rejects.toThrow('season write failed');
     });
@@ -123,16 +126,16 @@ describe('updateStatus', () => {
 
         // Verify key calls
         expect(fetchStatus).toHaveBeenCalledOnce();
-        expect(isValidStatus).toHaveBeenCalledOnce();
+        expect(isValidStatus.safeParse).toHaveBeenCalledOnce();
         expect(getSeasonFromStatus).toHaveBeenCalledOnce();
         // Season upserted twice: once with arrays (false), once to confirm (true)
-        expect(queryUpsertSeason).toHaveBeenCalledTimes(2);
-        expect(queryUpsertSeason).toHaveBeenCalledWith(5, false, {
+        expect(upsertSeason).toHaveBeenCalledTimes(2);
+        expect(upsertSeason).toHaveBeenCalledWith(5, false, {
             introOrder: [0, 1, 2],
             pointsMax: [100, 200, 300],
             seasonDuration: 86400,
         });
-        expect(queryUpsertSeason).toHaveBeenCalledWith(5, true);
+        expect(upsertSeason).toHaveBeenCalledWith(5, true);
     });
 
     // 5. Defend event upserted when present
@@ -141,7 +144,7 @@ describe('updateStatus', () => {
 
         await updateStatus();
 
-        expect(queryUpsertEvent).toHaveBeenCalledWith(
+        expect(upsertEvent).toHaveBeenCalledWith(
             5,
             'defend',
             expect.objectContaining({ event_id: 1, region: 3, enemy: 0 }),
@@ -158,9 +161,7 @@ describe('updateStatus', () => {
         await updateStatus();
 
         // Only attack event upserted, no defend
-        const defendCalls = queryUpsertEvent.mock.calls.filter(
-            (call) => call[1] === 'defend',
-        );
+        const defendCalls = upsertEvent.mock.calls.filter((call) => call[1] === 'defend');
         expect(defendCalls).toHaveLength(0);
     });
 
@@ -170,9 +171,7 @@ describe('updateStatus', () => {
 
         await updateStatus();
 
-        const attackCalls = queryUpsertEvent.mock.calls.filter(
-            (call) => call[1] === 'attack',
-        );
+        const attackCalls = upsertEvent.mock.calls.filter((call) => call[1] === 'attack');
         expect(attackCalls).toHaveLength(1);
         expect(attackCalls[0][2]).toMatchObject({ event_id: 2, region: 11 });
     });
@@ -183,9 +182,9 @@ describe('updateStatus', () => {
 
         await updateStatus();
 
-        expect(queryUpsertStatus).toHaveBeenCalledTimes(3);
+        expect(upsertStatus).toHaveBeenCalledTimes(3);
         for (let enemy = 0; enemy < 3; enemy++) {
-            expect(queryUpsertStatus).toHaveBeenCalledWith(
+            expect(upsertStatus).toHaveBeenCalledWith(
                 5,
                 enemy,
                 mockFetchedData.time,
@@ -200,9 +199,9 @@ describe('updateStatus', () => {
 
         await updateStatus();
 
-        expect(queryUpsertStatistic).toHaveBeenCalledTimes(3);
+        expect(upsertStatistic).toHaveBeenCalledTimes(3);
         for (let enemy = 0; enemy < 3; enemy++) {
-            expect(queryUpsertStatistic).toHaveBeenCalledWith(
+            expect(upsertStatistic).toHaveBeenCalledWith(
                 5,
                 enemy,
                 mockFetchedData.time,
@@ -218,21 +217,25 @@ describe('updateStatus', () => {
         await updateStatus();
 
         // 1 defend + 1 attack in current season
-        expect(queryUpsertEventProgress).toHaveBeenCalledTimes(2);
-        expect(queryUpsertEventProgress).toHaveBeenCalledWith(
+        expect(upsertEventProgress).toHaveBeenCalledTimes(2);
+        expect(upsertEventProgress).toHaveBeenCalledWith(
+            5,
             'defend',
             expect.objectContaining({ event_id: 1 }),
             mockFetchedData.time,
         );
-        expect(queryUpsertEventProgress).toHaveBeenCalledWith(
+        expect(upsertEventProgress).toHaveBeenCalledWith(
+            5,
             'attack',
             expect.objectContaining({ event_id: 2 }),
             mockFetchedData.time,
         );
     });
 
-    // 11. h1_event_progress skipped for lagged cross-season events
-    it('skips h1_event_progress for attack events from a different season', async () => {
+    // 11. Cross-season attack events still go through upsertEventProgress —
+    // the function itself returns { skipped: true } when event.season != season.
+    // See upsertEventProgress.test for the skip-behaviour contract.
+    it('passes lagged cross-season attack events to upsertEventProgress', async () => {
         setupHappyPath();
         const laggedData = structuredClone(mockFetchedData);
         laggedData.attack_events = [
@@ -242,10 +245,13 @@ describe('updateStatus', () => {
 
         await updateStatus();
 
-        // Only the defend event progress call — attack skipped because season mismatch
-        const attackProgCalls = queryUpsertEventProgress.mock.calls.filter(
-            (call) => call[0] === 'attack',
+        // Active-season is 5; the attack event has season=4 but the orchestrator
+        // no longer pre-filters. Forwarded to upsertEventProgress with season=5.
+        expect(upsertEventProgress).toHaveBeenCalledWith(
+            5,
+            'attack',
+            expect.objectContaining({ event_id: 9, season: 4 }),
+            mockFetchedData.time,
         );
-        expect(attackProgCalls).toHaveLength(0);
     });
 });

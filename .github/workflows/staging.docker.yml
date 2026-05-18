@@ -17,11 +17,11 @@ jobs:
             image_missing: ${{ steps.check.outputs.missing }}
         steps:
             - name: Checkout code
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+              uses: actions/checkout@v6.0.2
 
             - name: Detect migration-related changes
               id: filter
-              uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
+              uses: dorny/paths-filter@v4.0.1
               with:
                   filters: |
                       migrate:
@@ -46,20 +46,20 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+              uses: actions/checkout@v6.0.2
 
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+              uses: docker/setup-buildx-action@v4.0.0
 
             - name: Log in to GitHub Container Registry
-              uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
+              uses: docker/login-action@v4.1.0
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push MIGRATE
-              uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
+              uses: docker/build-push-action@v7.1.0
               with:
                   context: .
                   file: ./Dockerfile.migrate
@@ -72,20 +72,20 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
-              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+              uses: actions/checkout@v6.0.2
 
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+              uses: docker/setup-buildx-action@v4.0.0
 
             - name: Log in to GitHub Container Registry
-              uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
+              uses: docker/login-action@v4.1.0
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push APP
-              uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7
+              uses: docker/build-push-action@v7.1.0
               with:
                   context: .
                   file: ./Dockerfile.app
@@ -95,6 +95,7 @@ jobs:
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
                   build-args: |
                       NODE_ENV=production
+                      NEXT_PUBLIC_DEPLOY_ENV=staging
                   # Sentry credentials are passed as BuildKit secrets, NOT
                   # build-args. Build-args end up in the image's provenance
                   # attestation that gets pushed to GHCR — anyone with pull
@@ -112,7 +113,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Cleanup untagged packages
-              uses: snok/container-retention-policy@3b0972b2276b171b212f8c4efbca59ebba26eceb # v3.0.1
+              uses: snok/container-retention-policy@v3.0.1
               with:
                   account: user
                   token: ${{ secrets.GITHUB_TOKEN }}

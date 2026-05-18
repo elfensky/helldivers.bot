@@ -49,19 +49,11 @@ describe('useTrack', () => {
         expect(() => result.current('test-event', { x: 1 })).not.toThrow();
     });
 
-    test('KNOWN BUG (#321): throws when window.umami exists but track is missing', () => {
-        // The hook's guard only checks `window.umami` is truthy, not that
-        // `track` is callable — so partial-umami (ad-blocker shim, race with
-        // tracker script load) throws and breaks the consumer.
-        //
-        // This test pins the CURRENT (buggy) behaviour so a regression that
-        // accidentally fixes it surfaces and points reviewers at #321. When
-        // #321 lands, flip the assertion to `.not.toThrow()` and add a
-        // companion assertion that the partial path no-ops silently.
+    test('no-ops silently when window.umami exists but track is not a function', () => {
         window.umami = {};
         const { result } = renderHook(() => useTrack());
 
-        expect(() => result.current('test-event')).toThrow();
+        expect(() => result.current('test-event')).not.toThrow();
     });
 
     test('separate calls forward independently (no argument leak)', () => {

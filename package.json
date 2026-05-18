@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.45.0",
+    "version": "0.47.0",
     "private": true,
     "type": "module",
     "scripts": {
@@ -8,10 +8,14 @@
         "build": "next build && serwist build",
         "start": "node .next/standalone/server.js",
         "format": "chokidar 'src/**/*.{js,jsx,ts,tsx}' -c 'npx prettier --write .'",
-        "test": "vitest run && vitest run --config vitest.smoke.config.mjs",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "typecheck": "tsc -p jsconfig.json --noEmit",
+        "test": "vitest run",
         "test:unit": "vitest run",
         "test:coverage": "vitest run --coverage",
-        "test:e2e": "vitest run --config vitest.smoke.config.mjs",
+        "test:smoke": "vitest run --config vitest.smoke.config.mjs",
+        "test:all": "vitest run && vitest run --config vitest.smoke.config.mjs",
         "update:safe": "npx npm-check-updates --cooldown 7d -u && npm install"
     },
     "dependencies": {
@@ -31,37 +35,48 @@
         "next": "^16.2.6",
         "react": "^19.2.6",
         "react-dom": "^19.2.6",
-        "react-icons": "^5.6.0",
         "react-slot-counter": "^3.3.3",
         "recharts": "^3.8.1",
         "remark-gfm": "^4.0.1",
         "serwist": "^9.5.11",
         "sonner": "^2.0.7",
+        "timeago.js": "^4.0.2",
         "web-push": "^3.6.7",
         "zod": "^4.4.3"
     },
     "devDependencies": {
+        "@eslint/js": "^9.39.4",
+        "@next/eslint-plugin-next": "^16.2.6",
         "@serwist/cli": "^9.5.11",
         "@tailwindcss/postcss": "^4.3.0",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
+        "@types/node": "^25.8.0",
         "@vitest/coverage-v8": "^4.1.6",
         "babel-plugin-react-compiler": "^1.0.0",
         "chokidar-cli": "^3.0.0",
         "esbuild": "^0.28.0",
+        "eslint": "^9.39.4",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-jsdoc": "^62.9.0",
+        "eslint-plugin-prettier": "^5.5.5",
+        "eslint-plugin-react": "^7.37.5",
+        "eslint-plugin-react-compiler": "^19.1.0-rc.2",
+        "eslint-plugin-react-hooks": "^7.1.1",
+        "globals": "^17.6.0",
         "jsdom": "^29.1.1",
         "prettier": "^3.8.3",
         "prettier-plugin-tailwindcss": "^0.8.0",
         "prisma": "^7.8.0",
         "tailwindcss": "^4.3.0",
+        "typescript": "^6.0.3",
         "vitest": "^4.1.6"
     },
     "overrides": {
         "prisma": {
             "hono": ">=4.12.18",
             "@hono/node-server": ">=1.19.10",
-            "lodash": ">=4.17.23",
             "effect": ">=3.20.0"
         }
     }

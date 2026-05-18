@@ -37,7 +37,7 @@ vi.mock('sonner', () => ({
         );
     },
 }));
-vi.mock('@/features/notifications/eventToast', () => ({
+vi.mock('@/features/notifications/EventToast', () => ({
     showEventToast: mocks.showEventToastMock,
     toastLabel: mocks.toastLabelMock,
 }));
@@ -148,7 +148,7 @@ describe('LiveToasts — catch-up toasts on mount', () => {
     });
 
     test('suppresses catch_up toast for events dismissed at status="active" that are still active', async () => {
-        getDismissedEventsMock.mockReturnValue({ 1: 'active' });
+        getDismissedEventsMock.mockReturnValue({ 1: { status: 'active', ts: 0 } });
 
         render(
             <LiveToasts
@@ -163,7 +163,7 @@ describe('LiveToasts — catch-up toasts on mount', () => {
     });
 
     test('shows event_won toast for an event that was dismissed at active but has since succeeded', async () => {
-        getDismissedEventsMock.mockReturnValue({ 1: 'active' });
+        getDismissedEventsMock.mockReturnValue({ 1: { status: 'active', ts: 0 } });
 
         render(
             <LiveToasts
@@ -184,7 +184,7 @@ describe('LiveToasts — catch-up toasts on mount', () => {
     });
 
     test('shows event_lost toast for an event that was dismissed at active but has since failed', async () => {
-        getDismissedEventsMock.mockReturnValue({ 1: 'active' });
+        getDismissedEventsMock.mockReturnValue({ 1: { status: 'active', ts: 0 } });
 
         render(
             <LiveToasts

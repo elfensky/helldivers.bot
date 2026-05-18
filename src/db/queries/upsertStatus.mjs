@@ -1,8 +1,8 @@
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/shared/utils/time';
-import { computeBucket } from '@/update/bucketing';
+import { performanceTime } from '@/shared/utils/time.mjs';
+import { computeBucket } from '@/shared/utils/bucketing.mjs';
 
 /**
  * Upsert a single h1_status row for one (season, enemy) at the bucket
@@ -16,7 +16,7 @@ import { computeBucket } from '@/update/bucketing';
  * @param {object} campaign   campaign_status[enemy] — { points, points_taken, status }
  *                            (points_max and introduction_order are season-level, not stored here)
  */
-export async function queryUpsertStatus(season, enemy, pollTime, campaign) {
+export async function upsertStatus(season, enemy, pollTime, campaign) {
     'use server';
     const start = performance.now();
 

@@ -7,7 +7,9 @@ export const LiveDataContext = createContext(null);
  * Read live campaign data from the nearest LiveDataProvider.
  * Throws if called outside a provider — catches wiring bugs early.
  *
- * @returns {{ data: Object|null, mapState: Object|null, status: string, prevData: Object|null, isLeader: boolean }}
+ * @typedef {'polling'|'live'|'offline'} LiveStatus
+ *
+ * @returns {{data: object | null, mapState: object | null, status: LiveStatus, prevData: object | null, isLeader: boolean}}
  */
 export function useLiveDataContext() {
     const ctx = useContext(LiveDataContext);

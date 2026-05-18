@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { CAMPAIGN_STATUS, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 // Schema for the objects inside the stringified "data" field in snapshots
 const snapshotDataItemSchema = z.object({
     points: z.number(),
     points_taken: z.number(),
-    status: z.enum(['hidden', 'active', 'defeated']),
+    status: z.enum(Object.values(CAMPAIGN_STATUS)),
 });
 
 // Snapshot data: JSON string (from HD1 API wire format). Parsed at write time
@@ -44,7 +45,7 @@ const eventSchema = z.object({
     enemy: z.number(),
     points_max: z.number(),
     points: z.number(),
-    status: z.enum(['fail', 'success', 'active']),
+    status: z.enum(Object.values(EVENT_STATUS)),
     players_at_start: z.number(),
     region: z.number().optional(),
 });
@@ -61,7 +62,7 @@ const rootSchema = z.object({
             .refine((e) => e.region !== undefined, {
                 message: 'defend_events must have region',
             })
-            .refine((e) => e.status !== 'active', {
+            .refine((e) => e.status !== EVENT_STATUS.ACTIVE, {
                 message: 'defend_events must be resolved (fail or success)',
             }),
     ),
@@ -72,4 +73,4 @@ const rootSchema = z.object({
     ),
 });
 
-export const isValidSeason = (data) => rootSchema.safeParse(data);
+export const isValidSeason = rootSchema;

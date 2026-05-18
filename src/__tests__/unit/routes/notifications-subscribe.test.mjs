@@ -13,17 +13,28 @@ import db from '@/db/db';
 // Prisma mock from vitest.setup.mjs. Each test resets the mock and asserts
 // on call shape + response envelope.
 
-function postJson(body) {
+// Default helpers send same-origin requests with a recognisable Origin/Host
+// pair so the route's trust-boundary guard accepts them. The "wrong origin"
+// path is exercised by a separate test below.
+function postJson(body, { origin = 'http://localhost', host = 'localhost' } = {}) {
     return new Request('http://localhost/api/notifications/subscribe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            Origin: origin,
+            Host: host,
+        },
         body: typeof body === 'string' ? body : JSON.stringify(body),
     });
 }
-function deleteJson(body) {
+function deleteJson(body, { origin = 'http://localhost', host = 'localhost' } = {}) {
     return new Request('http://localhost/api/notifications/subscribe', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            Origin: origin,
+            Host: host,
+        },
         body: typeof body === 'string' ? body : JSON.stringify(body),
     });
 }
@@ -257,6 +268,65 @@ describe('DELETE /api/notifications/subscribe', () => {
             'Push subscription delete error:',
             'connection refused',
         );
+    });
+});
+
+// -------- Trust-boundary guards --------
+
+describe('/api/notifications/subscribe — same-origin + rate limit', () => {
+    test('POST returns 403 when Origin header is missing', async () => {
+        const req = new Request('http://localhost/api/notifications/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(validBody),
+        });
+        const res = await POST(req);
+        expect(res.status).toBe(403);
+        expect(db.push_subscription.upsert).not.toHaveBeenCalled();
+    });
+
+    test('POST returns 403 when Origin does not match Host', async () => {
+        const res = await POST(postJson(validBody, { origin: 'https://evil.example' }));
+        expect(res.status).toBe(403);
+        expect(db.push_subscription.upsert).not.toHaveBeenCalled();
+    });
+
+    test('DELETE returns 403 when Origin does not match Host', async () => {
+        const res = await DELETE(
+            deleteJson(
+                { endpoint: validBody.endpoint },
+                { origin: 'https://evil.example' },
+            ),
+        );
+        expect(res.status).toBe(403);
+        expect(db.push_subscription.delete).not.toHaveBeenCalled();
+    });
+
+    test('POST rate-limits the same IP after 20 requests in the same window', async () => {
+        const customIp = '203.0.113.1';
+        const reqWithIp = () =>
+            new Request('http://localhost/api/notifications/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Origin: 'http://localhost',
+                    Host: 'localhost',
+                    'X-Forwarded-For': customIp,
+                },
+                body: JSON.stringify(validBody),
+            });
+
+        // 20 succeed
+        for (let i = 0; i < 20; i++) {
+            const res = await POST(reqWithIp());
+            expect(res.status).toBe(201);
+        }
+        // 21st is rejected
+        const blocked = await POST(reqWithIp());
+        expect(blocked.status).toBe(429);
+        const body = await blocked.json();
+        expect(body.code).toBe(429);
+        expect(body.message).toBe('Too many requests');
     });
 });
 

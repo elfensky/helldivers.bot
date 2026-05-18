@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { CAMPAIGN_STATUS, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 const campaignStatusSchema = z.object({
     season: z.number(),
     points: z.number(),
     points_taken: z.number(),
     points_max: z.number(),
-    status: z.enum(['active', 'defeated', 'hidden']),
+    status: z.enum(Object.values(CAMPAIGN_STATUS)),
     introduction_order: z.number(),
 });
 
@@ -18,7 +19,7 @@ const defendEventSchema = z.object({
     enemy: z.number(),
     points_max: z.number(),
     points: z.number(),
-    status: z.enum(['active', 'success', 'fail']),
+    status: z.enum(Object.values(EVENT_STATUS)),
 });
 
 const attackEventSchema = z.object({
@@ -29,7 +30,7 @@ const attackEventSchema = z.object({
     enemy: z.number(),
     points_max: z.number(),
     points: z.number(),
-    status: z.enum(['active', 'success', 'fail']),
+    status: z.enum(Object.values(EVENT_STATUS)),
     players_at_start: z.number(),
     max_event_id: z.number(),
 });
@@ -68,4 +69,4 @@ const rootSchema = z.object({
     statistics: z.array(statisticsSchema).min(1),
 });
 
-export const isValidStatus = (data) => rootSchema.safeParse(data);
+export const isValidStatus = rootSchema;

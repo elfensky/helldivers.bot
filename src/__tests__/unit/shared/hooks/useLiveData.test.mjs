@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // useLiveData uses a module-level singleton store. Every test re-imports the
@@ -21,10 +21,13 @@ function setOnline(value) {
 }
 
 function makeFetchResponse(payload, { ok = true, status = 200 } = {}) {
+    // /api/h1/live now wraps its body in the standard successResponse envelope.
+    // Tests describe the inner payload — wrap it here so each test stays
+    // focused on { data, mapState, appVersion? }.
     return {
         ok,
         status,
-        json: async () => payload,
+        json: async () => (payload === null ? null : { code: status, data: payload }),
     };
 }
 
@@ -114,7 +117,9 @@ describe('useLiveData — initial mount', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => {
+            await flushAll();
+        });
 
         expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock).toHaveBeenCalledWith('/api/h1/live');
@@ -128,21 +133,29 @@ describe('useLiveData — initial mount', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // Advance ~9.9s — no second fetch yet.
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL - 100);
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL - 100);
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // Cross the threshold → second fetch.
-        await vi.advanceTimersByTimeAsync(200);
-        await flushAll();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(200);
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(2);
 
         // Another full interval → third fetch.
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
-        await flushAll();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(3);
     });
 
@@ -293,7 +306,9 @@ describe('useLiveData — visibilitychange handler', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         // Simulate tab focus
@@ -301,8 +316,10 @@ describe('useLiveData — visibilitychange handler', () => {
             value: false,
             configurable: true,
         });
-        document.dispatchEvent(new Event('visibilitychange'));
-        await flushAll();
+        await act(async () => {
+            document.dispatchEvent(new Event('visibilitychange'));
+            await flushAll();
+        });
 
         // visibilitychange triggered an extra fetch before the next interval.
         expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -316,15 +333,19 @@ describe('useLiveData — visibilitychange handler', () => {
         const { useLiveData } = await loadHookFresh();
 
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         Object.defineProperty(document, 'hidden', {
             value: true,
             configurable: true,
         });
-        document.dispatchEvent(new Event('visibilitychange'));
-        await flushAll();
+        await act(async () => {
+            document.dispatchEvent(new Event('visibilitychange'));
+            await flushAll();
+        });
 
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
@@ -340,14 +361,18 @@ describe('useLiveData — singleton & cleanup', () => {
 
         renderHook(() => useLiveData(null, null));
         renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => {
+            await flushAll();
+        });
 
         // Both consumers triggered the SAME initial poll (set up by the first mount),
         // not a fetch per consumer.
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
-        await flushAll();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
+            await flushAll();
+        });
 
         // Only one fresh interval fire — not two.
         expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -361,13 +386,17 @@ describe('useLiveData — singleton & cleanup', () => {
         const { useLiveData } = await loadHookFresh();
 
         const a = renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         a.unmount();
 
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL * 3);
-        await flushAll();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL * 3);
+            await flushAll();
+        });
 
         // Interval cleared on last unmount → no further fetches.
         expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -381,7 +410,9 @@ describe('useLiveData — singleton & cleanup', () => {
         const { useLiveData } = await loadHookFresh();
 
         const { unmount } = renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => {
+            await flushAll();
+        });
         expect(fetchMock).toHaveBeenCalledTimes(1);
 
         unmount();
@@ -390,8 +421,10 @@ describe('useLiveData — singleton & cleanup', () => {
             value: false,
             configurable: true,
         });
-        document.dispatchEvent(new Event('visibilitychange'));
-        await flushAll();
+        await act(async () => {
+            document.dispatchEvent(new Event('visibilitychange'));
+            await flushAll();
+        });
 
         // Listener removed → focus event must not trigger a poll.
         expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -428,7 +461,9 @@ describe('useLiveData — localStorage cache fallback', () => {
         expect(result.current.mapState).toEqual({ 0: 'illuminate' });
 
         resolveFetch?.(makeFetchResponse({ data: {}, mapState: {} }));
-        await flushAll();
+        await act(async () => {
+            await flushAll();
+        });
     });
 
     test('writes the latest successful poll payload to localStorage', async () => {
@@ -547,8 +582,10 @@ describe('useLiveData — BroadcastChannel leader election', () => {
         );
         const { useLiveData } = await loadHookFresh();
 
-        renderHook(() => useLiveData(null, null));
-        await flushAll();
+        await act(async () => {
+            renderHook(() => useLiveData(null, null));
+            await flushAll();
+        });
 
         expect(openChannels.length).toBeGreaterThanOrEqual(1);
         expect(openChannels.some((c) => c.name === 'hd1-sse-leader')).toBe(true);
@@ -560,15 +597,17 @@ describe('useLiveData — BroadcastChannel leader election', () => {
         );
         const { useLiveData } = await loadHookFresh();
 
-        const { unmount } = renderHook(() => useLiveData(null, null));
-        await flushAll();
-        const channel = openChannels.find((c) => c.name === 'hd1-sse-leader');
-        expect(channel).toBeDefined();
-        expect(channel.closed).toBe(false);
+        const { unmount } = await act(async () => {
+            const result = renderHook(() => useLiveData(null, null));
+            await flushAll();
+            return result;
+        });
+        expect(openChannels.length).toBeGreaterThanOrEqual(1);
 
-        unmount();
-
-        expect(channel.closed).toBe(true);
+        await act(() => {
+            unmount();
+        });
+        expect(openChannels.length).toBe(0);
     });
 });
 

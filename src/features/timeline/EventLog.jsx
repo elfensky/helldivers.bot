@@ -7,7 +7,7 @@ import EventLogSortToggle from '@/features/timeline/EventLogSortToggle';
 import { useEventLogSort } from '@/features/timeline/useEventLogSort.mjs';
 import { groupEventsByDay } from '@/features/timeline/groupEventsByDay.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
-import { eventKey } from '@/features/archives/eventKey.mjs';
+import { eventKey } from '@/shared/utils/game/eventKey.mjs';
 
 /**
  * Unified event log, shared between the homepage (`/`) and the archives

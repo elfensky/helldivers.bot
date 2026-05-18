@@ -36,16 +36,25 @@ describe('GlitchText', () => {
             <GlitchText text="ABCD" altText="WXYZ" active={true} className="test" />,
         );
         // Advance past the pulse delay (6000-12000ms) — use max to guarantee
-        act(() => { vi.advanceTimersByTime(13000); });
+        act(() => {
+            vi.advanceTimersByTime(13000);
+        });
         // During a pulse, some chars may be glitch-char styled
         // After pulse settles (300ms), text returns to base
-        act(() => { vi.advanceTimersByTime(400); });
+        act(() => {
+            vi.advanceTimersByTime(400);
+        });
         expect(container.textContent).toBe('ABCD');
     });
 
     it('preserves text length with altText of different length', () => {
         const { container } = render(
-            <GlitchText text="SHORT" altText="MUCH LONGER TEXT" active={true} className="test" />,
+            <GlitchText
+                text="SHORT"
+                altText="MUCH LONGER TEXT"
+                active={true}
+                className="test"
+            />,
         );
         expect(container.textContent).toBe('SHORT');
         expect(container.textContent.length).toBe(5);

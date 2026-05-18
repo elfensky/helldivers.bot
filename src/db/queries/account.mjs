@@ -2,8 +2,8 @@
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
-import { tryCatch } from '@/shared/utils/tryCatch';
-import { performanceTime } from '@/shared/utils/time';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { performanceTime } from '@/shared/utils/time.mjs';
 
 /**
  * Export all data for the authenticated user (profile, accounts, settings, API keys).
@@ -12,7 +12,8 @@ import { performanceTime } from '@/shared/utils/time';
  */
 export async function exportUserData(userId) {
     const start = performance.now();
-    if (!auth) return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
+    if (!auth)
+        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
     const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session || !session.user) {
@@ -55,7 +56,8 @@ export async function exportUserData(userId) {
  */
 export async function deleteUserAccount(_, formData) {
     const start = performance.now();
-    if (!auth) return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
+    if (!auth)
+        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
     const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session || !session.user) {
@@ -75,9 +77,7 @@ export async function deleteUserAccount(_, formData) {
     );
     if (revokeError) throw revokeError;
 
-    const { data: deleted, error } = await tryCatch(
-        db.user.delete({ where: { id: userId } }),
-    );
+    const { error } = await tryCatch(db.user.delete({ where: { id: userId } }));
     if (error) throw error;
 
     return { data: { deleted: true }, time: performanceTime(start) };

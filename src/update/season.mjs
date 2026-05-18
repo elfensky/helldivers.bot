@@ -1,15 +1,15 @@
-import { tryCatch } from '@/shared/utils/tryCatch';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
-import { performanceTime } from '@/shared/utils/time';
-import { getSeasonFromSnapshot } from '@/shared/utils/getSeason';
-import { EVENT_TYPE } from '@/shared/enums/events';
-import { fetchSeason } from '@/update/fetch';
-import { isValidSeason } from '@/validators/isValidSeason';
-import { computeBucket } from '@/update/bucketing';
+import { performanceTime } from '@/shared/utils/time.mjs';
+import { getSeasonFromSnapshot } from '@/shared/utils/getSeason.mjs';
+import { EVENT_TYPE } from '@/shared/enums/events.mjs';
+import { fetchSeason } from '@/update/fetch.mjs';
+import { isValidSeason } from '@/validators/isValidSeason.mjs';
+import { computeBucket } from '@/shared/utils/bucketing.mjs';
 // db
-import { queryUpsertSeason } from '@/db/queries/upsertSeason';
-import { queryUpsertEvent } from '@/db/queries/upsertEvent';
-import { queryUpsertStatus } from '@/db/queries/upsertStatus';
+import { upsertSeason } from '@/db/queries/upsertSeason.mjs';
+import { upsertEvent } from '@/db/queries/upsertEvent.mjs';
+import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
 
 /**
  * @param {number} season
@@ -22,6 +22,9 @@ export async function updateSeason(season, opts = {}) {
     const start = performance.now();
     if (!season) throw new Error('season is missing');
 
+    /** @type {Array<{ stage: string, message: string }>} */
+    const warnings = [];
+
     // 1. Fetch from get_snapshots API
     const { data: fetchedData, error: fetchedError } = await tryCatch(
         fetchSeason(season),
@@ -33,21 +36,30 @@ export async function updateSeason(season, opts = {}) {
     }
 
     // 2. Validate
-    const check = isValidSeason(fetchedData);
+    const check = isValidSeason.safeParse(fetchedData);
     if (!check.success) {
         for (const issue of check?.error?.issues ?? []) {
             console.error('update/season.mjs | isValidSeason() | ', issue.message);
         }
-        throw check.error;
+        throw new Error(check?.error?.message || 'Invalid season data', {
+            cause: 'update/season.mjs | isValidSeason(fetchedData)',
+        });
     }
 
-    // 3. Verify season parameter matches fetched data
-    const fetchedSeason = getSeasonFromSnapshot(fetchedData);
+    // 3. Verify season parameter matches fetched data.
+    //    getSeasonFromSnapshot throws "No seasons found" when snapshots/events
+    //    are all empty — that means the season doesn't exist on the HD1 API.
+    let fetchedSeason;
+    try {
+        fetchedSeason = getSeasonFromSnapshot(fetchedData);
+    } catch {
+        throw new Error(`Season ${season} not found`, { cause: 'SEASON_NOT_FOUND' });
+    }
     if (season !== fetchedSeason) throw new Error('Invalid season');
 
     // 4. Upsert season with inlined arrays
     const { error: seasonError } = await tryCatch(
-        queryUpsertSeason(season, false, {
+        upsertSeason(season, false, {
             introOrder: fetchedData.introduction_order,
             pointsMax: fetchedData.points_max,
         }),
@@ -62,7 +74,8 @@ export async function updateSeason(season, opts = {}) {
     // updateStatus() owns that window and has already written fresher data.
     const protectedBucket = opts.protectedBucket;
     for (const snap of fetchedData.snapshots) {
-        if (protectedBucket !== undefined && computeBucket(snap.time) >= protectedBucket) continue;
+        if (protectedBucket !== undefined && computeBucket(snap.time) >= protectedBucket)
+            continue;
 
         const parsed = typeof snap.data === 'string' ? JSON.parse(snap.data) : snap.data;
         if (!Array.isArray(parsed) || parsed.length !== 3) continue;
@@ -77,38 +90,40 @@ export async function updateSeason(season, opts = {}) {
                 status: faction.status,
             };
             const { error: statusError } = await tryCatch(
-                queryUpsertStatus(season, enemy, snap.time, campaign),
+                upsertStatus(season, enemy, snap.time, campaign),
             );
             if (statusError) {
-                console.error(
-                    `Status upsert failed for season=${season} enemy=${enemy} time=${snap.time}:`,
-                    statusError.message,
-                );
+                warnings.push({
+                    stage: `upsertStatus.snapshot[season=${season},enemy=${enemy},time=${snap.time}]`,
+                    message: statusError.message,
+                });
             }
         }
     }
 
     // 6. Upsert events (h1_event unchanged — same structure, different source)
     for (const event of fetchedData.defend_events) {
-        const { error } = await tryCatch(
-            queryUpsertEvent(season, EVENT_TYPE.DEFEND, event),
-        );
+        const { error } = await tryCatch(upsertEvent(season, EVENT_TYPE.DEFEND, event));
         if (error) throw new Error(error?.message || 'defend event upsert failed');
     }
     for (const event of fetchedData.attack_events) {
         const { error } = await tryCatch(
-            queryUpsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
+            upsertEvent(season, EVENT_TYPE.ATTACK, { ...event, region: 11 }),
         );
         if (error) throw new Error(error?.message || 'attack event upsert failed');
     }
 
     // 7. Confirm season (sets last_updated = now)
     const { data: confirmSeason, error: confirmError } = await tryCatch(
-        queryUpsertSeason(season, true),
+        upsertSeason(season, true),
     );
     if (confirmError) {
         throw new Error(confirmError?.message || 'Failed to confirm season');
     }
 
-    return { ms: performanceTime(start), season, confirmSeason };
+    const time =
+        fetchedData?.time ??
+        fetchedData?.snapshots?.[fetchedData.snapshots.length - 1]?.time ??
+        null;
+    return { ms: performanceTime(start), season, time, confirmSeason, warnings };
 }

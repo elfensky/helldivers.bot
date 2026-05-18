@@ -1,9 +1,11 @@
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
+
 /**
  * Detect event transitions between two campaign states.
  *
- * @param {Array} prevEvents - Previous event array (may be null on first call)
+ * @param {Array | null} prevEvents - Previous event array (may be null on first call)
  * @param {Array} nextEvents - Current event array
- * @returns {Array<{ kind: string, event: Object }>}
+ * @returns {Array<{kind: 'event_started'|'event_won'|'event_lost', event: object}>}
  */
 export function detectChanges(prevEvents, nextEvents) {
     if (!prevEvents || !nextEvents) return [];
@@ -17,9 +19,15 @@ export function detectChanges(prevEvents, nextEvents) {
 
         if (!prev) {
             changes.push({ kind: 'event_started', event: next });
-        } else if (prev.status === 'active' && next.status === 'success') {
+        } else if (
+            prev.status === EVENT_STATUS.ACTIVE &&
+            next.status === EVENT_STATUS.SUCCESS
+        ) {
             changes.push({ kind: 'event_won', event: next });
-        } else if (prev.status === 'active' && next.status === 'fail') {
+        } else if (
+            prev.status === EVENT_STATUS.ACTIVE &&
+            next.status === EVENT_STATUS.FAIL
+        ) {
             changes.push({ kind: 'event_lost', event: next });
         }
     }

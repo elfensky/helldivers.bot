@@ -6,7 +6,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 
 - **KISS.** Simple solutions only. Do not overengineer or add abstractions for hypothetical future needs.
 - **Never commit or push directly to `main` or `develop`** — always branch first, merge via PR.
-- **Always verify** after implementing a feature: run `npm run build` and `npm run test:unit`.
+- **Always verify** after implementing a feature: run `npm run lint`, `npm run typecheck`, `npm run test:unit`, and `npm run build`. All four must pass.
 - **Assume the dev server is already running on :3000.** Ask the user to (re)start it separately if needed to clear cache or if it crashed.
 - Report outcomes faithfully: if tests fail, say so with the relevant output; if you did not run a verification step, say that rather than implying it succeeded. Never claim "all tests pass" when output shows failures, never suppress or simplify failing checks (tests, lints, type errors) to manufacture a green result, and never characterize incomplete or broken work as done.
 
@@ -53,7 +53,8 @@ After any frontend/CSS change, verify via DevTools before declaring done:
 
 **Rules:**
 
-1. **Create feature/bugfix/chore branches from `develop`.** Features merge back via PR. Bugfix and chore branches merge via fast-forward into `develop` (branch → commit → `git merge` into develop → push → delete branch). No PR needed.
+0. **Never squash merge. Never fast-forward merge.** Always use `git merge --no-ff` so every merge creates a merge commit and the branch boundary stays visible in `git log --graph`. Never `--squash`, never `--rebase`, never `--ff-only`.
+1. **Create feature/bugfix/chore branches from `develop`.** Features merge back via PR. Bugfix and chore branches merge via `git merge --no-ff` directly into `develop` (branch → commit → `git checkout develop && git merge --no-ff <branch>` → push → delete branch). No PR needed.
 2. **Version on merge to `develop`:** When merging a branch into `develop`, **in the same commit** move its changelog entries from `## Unreleased` into a new `## X.Y.Z` section and bump `"version"` in `package.json` to match. Do not defer this to a separate commit or ask — it is part of the merge step. Use semver: patch for bugfixes, minor for features, major for breaking changes. Skipping version numbers between releases is fine — not every version on `develop` will be tagged on `main`.
 3. **Release process:** Merge `develop` → `main` via PR → **tag `vX.Y.Z` on the merge commit on `main`** (use the latest version from `CHANGELOG.md`) → push tag → **merge `main` back into `develop`** (`git checkout develop && git merge origin/main && git push`). The production Docker build only triggers on version tags, so forgetting to tag means no deployment. The merge-back carries main's PR merge commit into develop so the next release PR doesn't trip the "branch not up to date" check.
 4. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` with new version section → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
@@ -72,7 +73,7 @@ Prefer these commands over manual git operations.
 
 ### Error Handling
 
-Use the `tryCatch` wrapper (`src/utils/tryCatch.mjs`). Do NOT use try/catch blocks.
+Use the `tryCatch` wrapper (`src/shared/utils/tryCatch.mjs`). Do NOT use try/catch blocks.
 
 ```js
 const { data, error } = await tryCatch(someAsyncOperation());
@@ -83,8 +84,8 @@ if (error) {
 
 ### API Routes
 
-- Use `errorResponse(code, start, error)` and `successResponse(code, start, data)` from `src/utils/responses.mjs`
-- Measure execution time with `roundedPerformanceTime(start)` from `src/utils/time.mjs`
+- Use `errorResponse(code, start, error)` and `successResponse(code, start, data)` from `src/shared/utils/api/responses.mjs`
+- Measure execution time with `roundedPerformanceTime(start)` from `src/shared/utils/time.mjs`
 
 ### Analytics Tracking
 
@@ -107,9 +108,11 @@ All external data validated with Zod schemas (`src/validators/`) before database
 
 `@/*` maps to `./src/*` (configured in `jsconfig.json`).
 
-### Formatting
+### Formatting & Linting
 
-Prettier with tailwindcss plugin. No ESLint configured. **Always run `npx prettier --write .` before committing** — not during development.
+Prettier with tailwindcss plugin handles formatting. ESLint v9 (flat config in `eslint.config.mjs`) handles lint, with Prettier wired in as a rule via `eslint-plugin-prettier` — so `npm run lint` catches both formatting and lint violations. `npm run lint:fix` auto-fixes both. **Always run `npm run lint:fix` before committing** — not during development.
+
+Type checking: `npm run typecheck` runs `tsc --noEmit` against `jsconfig.json` with `checkJs: true`, validating JSDoc annotations across the project. Tests are excluded from the typecheck scope (they're validated by vitest).
 
 ### Styling
 
@@ -140,9 +143,10 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 - **Node version:** mise pins node@24 (ships with npm 11 natively).
 - **Server actions:** Most utilities use `'use server'` directive.
 - **Shared utilities:** `formatNumber` (`src/shared/utils/format/formatNumber.mjs`) for compact numbers (25.0M, 1.2K — M suffix at 10M+, locale grouping below). `formatTimeAgo` (`src/shared/utils/format/formatTimeAgo.mjs`) for relative timestamps.
-- **Map state:** `computeMapState` (`src/utils/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — completed events are already in the score.
+- **Map state:** `computeMapState` (`src/shared/utils/game/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — use the `computeLiveMapState(data)` helper from the same module to keep the filter and the call together.
 - **On-demand season fetching:** `/archives` page derives SeasonSelector from current season number (not DB query). Missing seasons are backfilled from the official HD1 API on first request via `updateSeason()` (`src/update/season.mjs`) -- the same shared pipeline the worker runs every poll for the active season and the admin "Refresh" button triggers via `reseedSeason`. `updateSeason` writes `h1_season` (with inlined arrays) + `h1_status` + `h1_statistic` + `h1_event` + `h1_event_progress`, then stamps `h1_season.last_updated`.
 - **Live polling:** `useLiveData` hook (`src/shared/hooks/useLiveData.mjs`) polls `GET /api/h1/live` every 10 seconds via `setInterval` + `fetch`. A `visibilitychange` listener fires an immediate poll on tab focus. Tri-state status: `'polling'` (request in flight), `'live'` (last poll succeeded), `'offline'` (last poll failed or PWA offline). Module-level singleton ensures one connection per tab. BroadcastChannel leader election for Web Notifications.
+- **Stale version auto-reload:** Three layers detect stale client code after deployments and hard-reload: (1) Next.js `deploymentId` in `next.config.mjs` triggers hard navigation on version mismatch during client-side routing; (2) `/api/h1/live` includes `appVersion` — `useLiveData` compares it against the build-time version and reloads on mismatch (~10s detection); (3) global `ChunkLoadError` handler in `instrumentation-client.js` catches failed dynamic imports. All layers share `guardedReload()` (`src/shared/utils/reloadGuard.mjs`) — a localStorage-backed circuit breaker with 30s TTL and max 3 attempts to prevent infinite reload loops.
 - **Notifications:** `detectChanges()` (`src/shared/utils/game/detectChanges.mjs`) detects event transitions (started/won/lost) on both client (Sonner toasts + Web Notifications) and server (push via `web-push`). `LiveToasts` also shows catch-up toasts for active events on page load. The Sonner `<Toaster>` is co-located inside `LiveToasts` (not root layout) to share the same module singleton — rendering it from a server component creates a separate `ToastState`. Single "Enable notifications" button enables both web and push. Push subscriptions stored in `push_subscription` table.
 - **Analytics (optional):** Umami v3 (self-hosted, cookieless). Umami `<Script>` tag conditional on `UMAMI_SITE_ID`. Three tracking layers: (1) `data-umami-event` HTML attributes for click tracking — the tracker script captures these automatically; (2) `useTrack` hook (`src/shared/hooks/useTrack.mjs`) or `window.umami?.track()` for dynamic JS interactions; (3) `sendUmamiEvent()` (`src/shared/utils/umami.mjs`) for server-side API route tracking. Client-side tracker posts through same-origin proxy (`/api/umami` route, `/api/send` rewrite) to bypass ad blockers. Authenticated users identified via `umami.identify()` in `UserSection.jsx`. Production-only — no tracking in dev/test.
 - **PWA:** Serwist (`@serwist/next`) generates service worker at build time with automatic precache manifest (content-hash based). Config in `serwist.config.js`, source in `src/sw.js`, output in `public/sw.js` (gitignored build artifact). `skipWaiting: true` for immediate updates. Custom push notification handlers in `src/sw.js`. Last poll payload cached in localStorage for offline fallback.

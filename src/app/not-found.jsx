@@ -18,7 +18,7 @@ export default function NotFound() {
                 href="/"
                 prefetch={false}
                 data-umami-event="nav-404-home"
-                className="inline-block cursor-pointer border border-primary px-3 py-1.5 font-body text-small font-bold uppercase tracking-[0.02em] text-primary hover:bg-primary hover:text-surface-0"
+                className="inline-block cursor-pointer border border-primary px-3 py-1.5 font-body text-small font-bold tracking-[0.02em] text-primary uppercase hover:bg-primary hover:text-surface-0"
             >
                 Resume approved Super Earth broadcast
             </Link>

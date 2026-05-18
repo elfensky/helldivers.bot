@@ -231,7 +231,7 @@ register()   [src/instrumentation.js]
 └── NEXT_RUNTIME === 'nodejs'
     └── initializeHelldivers1Api()
         │
-        ├── Step 1: initializeEnvironmentVariables()   [src/utils/initialize.env.mjs]
+        ├── Step 1: initializeEnvironmentVariables()   [src/shared/utils/initializeEnv.mjs]
         │   ├── checkDatabase()    → POSTGRES_URL                              ← REQUIRED, throws
         │   ├── checkUpdates()     → UPDATE_KEY, UPDATE_INTERVAL               ← REQUIRED, throws (PORT optional)
         │   ├── checkAnalytics()   → UMAMI_SITE_ID, SENTRY_DSN, SENTRY_AUTH_TOKEN  ← OPTIONAL, warns
@@ -244,7 +244,7 @@ register()   [src/instrumentation.js]
         │   ├── staging:     falls through to false (neither branch matches NODE_ENV=staging)
         │   └── false → throw (crashes the process)
         │
-        └── Step 3: initializeWorker()                 [src/utils/initialize.worker.mjs]
+        └── Step 3: initializeWorker()                 [src/shared/utils/initializeWorker.mjs]
             ├── Resolves worker path:
             │   ├── development: path.resolve(process.cwd(), 'public/workers/cron.js')
             │   └── production:  path.resolve('/app/public/workers/cron.js')
@@ -264,10 +264,11 @@ Every initialization step fails hard: any error or falsy return causes a `throw 
 `src/instrumentation.js` also exports:
 
 ```js
-export const onRequestError = Sentry.captureRequestError;
+export const onRequestError =
+    process.env.SENTRY_DSN ? Sentry.captureRequestError : () => {};
 ```
 
-Next.js calls this hook for errors that occur inside Server Components, middleware, and proxied routes — errors that do not surface through the normal React error boundary. This is the server-side equivalent of `global-error.jsx`.
+Next.js calls this hook for errors that occur inside Server Components, middleware, and proxied routes — errors that do not surface through the normal React error boundary. This is the server-side equivalent of `global-error.jsx`. The DSN-presence gate means localhost reports too when `SENTRY_DSN` is set in `.env.development`; environments stay distinguishable via the `environment` tag.
 
 ---
 
@@ -288,7 +289,10 @@ The project uses the Sentry SDK (`@sentry/nextjs`) but targets a **self-hosted G
 ```js
 {
     dsn: process.env.SENTRY_DSN,        // server: SENTRY_DSN, client: NEXT_PUBLIC_SENTRY_DSN
-    environment: process.env.NODE_ENV,  // "development" or "production" — filterable in GlitchTip
+    environment:                        // "development" | "staging" | "production"
+        process.env.NEXT_PUBLIC_DEPLOY_ENV ||
+        process.env.DEPLOY_ENV ||
+        process.env.NODE_ENV,
     sendDefaultPii: true,               // safe on a self-hosted instance
     tracesSampleRate: 1.0,              // 100% of requests traced
     debug: false,
@@ -296,6 +300,8 @@ The project uses the Sentry SDK (`@sentry/nextjs`) but targets a **self-hosted G
 ```
 
 Client-only additions: `autoSessionTracking: false` (GlitchTip doesn't support sessions), `tunnel: '/api/glitchtip'` (ad blocker bypass).
+
+Server init lives in `sentry.server.config.js` and is loaded from `src/instrumentation.js` only when `SENTRY_DSN` is set — no production gate, so localhost reports too. Client init lives in `src/instrumentation-client.js` and runs on every page load whenever `NEXT_PUBLIC_SENTRY_DSN` is set.
 
 ### Client tunnel
 
@@ -309,7 +315,35 @@ Three levels of error isolation:
 2. **Route-level `error.jsx`** — at root (`src/app/error.jsx`) and archives (`src/app/archives/error.jsx`). Thin wrappers around `RouteError` that catch errors within the layout.
 3. **`ComponentErrorBoundary`** — React class component wrapping Galaxy Map, Regions, Stats, Dashboard, and Timeline. Shows inline "failed to load" + retry button. Layout containers stay outside boundaries to preserve CSS grid/flex structure on error.
 
-Sentry captures errors automatically via its global handler — no manual `captureException` in any boundary.
+Each boundary calls the shared `reportError(error, { boundary })` helper (`src/shared/utils/observability.mjs`) so the user-visible failure reaches GlitchTip with the boundary name as context. `ComponentErrorBoundary` also passes the React `componentStack` for attribution. The same helper is used at every API-route 5xx path; calling it with a falsy error is a no-op so wiring it next to existing `errorResponse(5xx, ...)` sites is safe.
+
+The Sentry browser SDK's global `window.onerror` / `unhandledrejection` handlers continue to catch uncaught client errors automatically — `reportError` exists for everything that gets `try/catch`'d or routed through an error boundary, which the global handler can't see.
+
+### Reporting paths
+
+`src/shared/utils/observability.mjs` exposes one function:
+
+```js
+export function reportError(error, context = {}) {
+    if (!error) return;
+    const { level, ...extra } = context;
+    Sentry.captureException(error, { level, extra });
+}
+```
+
+Call sites pass a `route` and `stage` tag for API routes (e.g. `{ route: '/api/h1/update', stage: 'season' }`) or a `boundary` tag for React error boundaries. The `level` field maps to Sentry severity — used at `update/route.js` to mark the closing-pass season-fetch as a warning instead of an error since the code path is explicitly non-fatal.
+
+The tunnel route (`/api/glitchtip`) is deliberately not wired with `reportError`; capturing there would self-loop when GlitchTip itself is the failing upstream.
+
+Caught errors flowing through `src/shared/utils/tryCatch.mjs` — the project's canonical error-handling pattern, used at ~30+ call sites — are also auto-reported with `source: 'tryCatch'` and `level: 'warning'`. The explicit `reportError(...)` calls at 5xx sites still fire at the default `error` level. Sentry groups by stack-trace fingerprint so duplicate events for the same throw roll up into one issue, while the severity tag keeps caught-and-recovered errors visually distinct from user-visible failures in the inbox.
+
+### Service worker error bridge
+
+The service worker at `src/sw.js` runs in a separate worker context with no DOM, so it can't import the Sentry browser SDK directly. The `push` and `notificationclick` handlers are wrapped with try/catch (synchronous) and `.catch()` (on the async chains inside `event.waitUntil`); failures `postMessage` a structured `{ type: 'sw-error', error: { message, name, stack }, context }` envelope to all controlled clients via `self.clients.matchAll()`. The receiving end lives in `src/shared/utils/swErrorBridge.mjs` — registered from `instrumentation-client.js`, it reconstructs the Error and calls `reportError(err, { source: 'sw', ...context })`. When no clients are open (push received with all tabs closed) the SW falls back to `console.error`, visible from `chrome://serviceworker-internals` during triage. Errors are re-thrown after the postMessage so the SW event loop still sees the rejection — original behavior preserved.
+
+### Worker uptime heartbeat
+
+`public/workers/cronLogic.js` POSTs to `GLITCHTIP_HEARTBEAT_URL` after each successful (`response.ok`) poll of `/api/h1/update`. Fire-and-forget — heartbeat fetch failures are swallowed and don't affect the poll loop. GlitchTip's uptime monitor flips red when heartbeats stop, which surfaces: worker thread death, sustained 5xx from the API route, or DB unavailability. The worker reads the URL from `process.env` (Node `worker_threads` inherits the parent's env by default), so no message passing is needed.
 
 ### Analytics proxy
 
@@ -321,10 +355,6 @@ Umami v3 analytics use a same-origin proxy to bypass ad blockers:
 The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash. No external Umami domain appears in CSP — both `script-src` and `connect-src` only reference `'self'`.
 
 Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.drunik.be`), `UMAMI_SITE_ID` (website UUID).
-
-### CSP violation reporting
-
-The CSP in `src/proxy.js` includes a `report-uri` directive pointing to GlitchTip's security endpoint. Browser-native CSP violations appear as issues in GlitchTip alongside application errors.
 
 ### next.config.mjs Sentry settings
 
@@ -346,7 +376,7 @@ Source maps are uploaded to GlitchTip at build time for readable stack traces. T
 
 ## Section 5: Environment Variables
 
-Variables are checked at startup by `initializeEnvironmentVariables()` in `src/utils/initialize.env.mjs`. The function uses **progressive enhancement**: core variables throw on missing (app cannot function), while auth and analytics variables warn and degrade gracefully. Returns `{ auth: boolean, analytics: boolean }` so the startup log shows which features are active.
+Variables are checked at startup by `initializeEnvironmentVariables()` in `src/shared/utils/initializeEnv.mjs`. The function uses **progressive enhancement**: core variables throw on missing (app cannot function), while auth and analytics variables warn and degrade gracefully. Returns `{ auth: boolean, analytics: boolean }` so the startup log shows which features are active.
 
 **Validation rules:**
 
@@ -371,6 +401,8 @@ Variables are checked at startup by `initializeEnvironmentVariables()` in `src/u
 | `SENTRY_ORG`                   | No               | Error tracking | GlitchTip organization slug; used for source map uploads                                                                                          |
 | `SENTRY_PROJECT`               | No               | Error tracking | GlitchTip project slug; used for source map uploads                                                                                               |
 | `GLITCHTIP_HEARTBEAT_URL`      | No               | Error tracking | GlitchTip uptime heartbeat endpoint; worker POSTs after each successful update                                                                    |
+| `NEXT_PUBLIC_DEPLOY_ENV`       | No               | Error tracking | Environment tag attached to Sentry events. Inlined into the client bundle at `next build`; CI sets `staging` or `production` per pipeline. Falls back to `DEPLOY_ENV` then `NODE_ENV` if unset. |
+| `DEPLOY_ENV`                   | No               | Error tracking | Server-only fallback for the Sentry environment tag when rebuilding to update `NEXT_PUBLIC_DEPLOY_ENV` isn't an option.                          |
 | `BETTER_AUTH_SECRET`           | No (all-or-none) | Auth           | BetterAuth session encryption secret; 128+ chars recommended. If absent, all auth features disabled. If present, all other auth vars are required |
 | `BETTER_AUTH_URL`              | If auth          | Auth           | Base URL for BetterAuth (e.g., `http://localhost:3000`; production: `https://helldivers.bot`)                                                     |
 | `AUTH_DISCORD_ID`              | If auth          | Auth           | Discord OAuth application client ID                                                                                                               |
@@ -383,7 +415,7 @@ Variables are checked at startup by `initializeEnvironmentVariables()` in `src/u
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No               | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`)                                                                                   |
 | `POSTGRES_SSL`                 | No               | Database       | Set to `"false"` for local dev without SSL; defaults to SSL enabled                                                                               |
 | `SKIP_MIGRATIONS`              | No               | Docker         | Set to `"true"` in the app container; has no effect on initialization logic currently but signals intent                                          |
-| `NODE_ENV`                     | No               | App            | `development`, `staging`, or `production`; affects OpenAPI spec behavior and worker path resolution                                               |
+| `NODE_ENV`                     | No               | App            | `development` or `production`; affects OpenAPI spec behavior and worker path resolution. No longer used as the Sentry environment tag — see `NEXT_PUBLIC_DEPLOY_ENV` above.                       |
 | `NEXT_RUNTIME`                 | Internal         | Next.js        | Set automatically by Next.js; controls which Sentry config and init steps run                                                                     |
 
 ### Connection string formats
@@ -401,10 +433,6 @@ postgresql://user:pass@host.docker.internal:5432/dbname
 ```
 
 The `.docker.env` file (not checked into version control) holds the Docker-specific values and is referenced by both services in `docker-compose.yml`.
-
-### Behavior note on `NODE_ENV=staging`
-
-The staging CI workflow passes `NODE_ENV=staging` as a Docker build arg. At runtime this means `initializeOpenApiSpec()` returns `false` immediately (neither the `development` nor `production` branch matches), which causes `instrumentation.js` to throw and crash the process. In practice the OpenAPI spec is baked into the image at build time and the staging environment is expected to run with `NODE_ENV=production` at runtime, not at build time. The build arg is used only for labeling purposes.
 
 ---
 

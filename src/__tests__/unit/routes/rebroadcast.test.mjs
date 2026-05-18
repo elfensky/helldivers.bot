@@ -15,9 +15,21 @@ vi.mock('@/db/db', () => ({
         $queryRaw: vi.fn(),
     },
 }));
-vi.mock('@/db/queries/validateApiKey', () => ({ validateApiKey: vi.fn() }));
+vi.mock('@/db/queries/validateApiKey', () => ({
+    validateApiKey: vi.fn(),
+    API_KEY_ERROR: Object.freeze({
+        MISSING: 'missing',
+        INVALID: 'invalid',
+        DISABLED: 'disabled',
+    }),
+}));
 vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
 vi.mock('@/shared/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
+vi.mock('@/shared/enums/events.mjs', () => ({
+    EVENT_TYPE: { DEFEND: 'defend', ATTACK: 'attack' },
+    EVENT_STATUS: { ACTIVE: 'active', SUCCESS: 'success', FAIL: 'fail' },
+    CAMPAIGN_STATUS: { ACTIVE: 'active', DEFEATED: 'defeated', HIDDEN: 'hidden' },
+}));
 vi.mock('next/server', async (importOriginal) => {
     const actual = await importOriginal();
     return {
@@ -28,8 +40,8 @@ vi.mock('next/server', async (importOriginal) => {
 
 import { POST, GET, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/rebroadcast/route';
 import db from '@/db/db';
-import { validateApiKey } from '@/db/queries/validateApiKey';
-import { updateSeason } from '@/update/season';
+import { validateApiKey } from '@/db/queries/validateApiKey.mjs';
+import { updateSeason } from '@/update/season.mjs';
 
 function createPostRequest(formEntries) {
     const formData = new FormData();
@@ -93,7 +105,7 @@ beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(validateApiKey).mockResolvedValue({
         data: { userId: '1', keyId: '1' },
-        error: null,
+        code: null,
     });
 });
 
@@ -101,16 +113,17 @@ describe('POST /api/h1/rebroadcast — auth & validation', () => {
     test('returns 401 when API key is invalid', async () => {
         vi.mocked(validateApiKey).mockResolvedValue({
             data: null,
-            error: 'invalid',
+            code: 'invalid',
         });
         const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
         expect(res.status).toBe(401);
     });
 
     test('returns 403 when API key is disabled', async () => {
+        const { API_KEY_ERROR } = await import('@/db/queries/validateApiKey');
         vi.mocked(validateApiKey).mockResolvedValue({
             data: null,
-            error: 'disabled',
+            code: API_KEY_ERROR.DISABLED,
         });
         const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
         expect(res.status).toBe(403);
@@ -145,21 +158,31 @@ describe('POST /api/h1/rebroadcast — get_campaign_status', () => {
         db.h1_season.findFirst.mockResolvedValue(makeSeasonRow());
         db.$queryRaw
             // first call: status DISTINCT ON
-            .mockResolvedValueOnce([
-                makeStatusRow(0),
-                makeStatusRow(1),
-                makeStatusRow(2),
-            ])
+            .mockResolvedValueOnce([makeStatusRow(0), makeStatusRow(1), makeStatusRow(2)])
             // second call: statistic DISTINCT ON
-            .mockResolvedValueOnce([
-                makeStatRow(0),
-                makeStatRow(1),
-                makeStatRow(2),
-            ]);
+            .mockResolvedValueOnce([makeStatRow(0), makeStatRow(1), makeStatRow(2)]);
         db.h1_event.findMany.mockResolvedValue([
-            { type: 'defend', event_id: 1, status: 'active', points: 10, points_max: 100 },
-            { type: 'attack', event_id: 2, status: 'active', points: 20, points_max: 200 },
-            { type: 'attack', event_id: 3, status: 'active', points: 30, points_max: 300 },
+            {
+                type: 'defend',
+                event_id: 1,
+                status: 'active',
+                points: 10,
+                points_max: 100,
+            },
+            {
+                type: 'attack',
+                event_id: 2,
+                status: 'active',
+                points: 20,
+                points_max: 200,
+            },
+            {
+                type: 'attack',
+                event_id: 3,
+                status: 'active',
+                points: 30,
+                points_max: 300,
+            },
         ]);
 
         const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
@@ -216,11 +239,7 @@ describe('POST /api/h1/rebroadcast — get_campaign_status', () => {
     test('fills missing faction stats with zero defaults', async () => {
         db.h1_season.findFirst.mockResolvedValue(makeSeasonRow());
         db.$queryRaw
-            .mockResolvedValueOnce([
-                makeStatusRow(0),
-                makeStatusRow(1),
-                makeStatusRow(2),
-            ])
+            .mockResolvedValueOnce([makeStatusRow(0), makeStatusRow(1), makeStatusRow(2)])
             // Only enemy 0 has a stat row — 1 and 2 missing.
             .mockResolvedValueOnce([makeStatRow(0)]);
         db.h1_event.findMany.mockResolvedValue([]);
@@ -242,11 +261,11 @@ describe('POST /api/h1/rebroadcast — get_campaign_status', () => {
         expect(res.status).toBe(404);
     });
 
-    test('returns 404 when an underlying query throws', async () => {
+    test('returns 500 when an underlying query throws', async () => {
         db.h1_season.findFirst.mockRejectedValue(new Error('DB error'));
 
         const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(500);
     });
 });
 
@@ -337,23 +356,23 @@ describe('POST /api/h1/rebroadcast — get_snapshots', () => {
         expect(body.data.snapshots).toHaveLength(1);
     });
 
-    test('returns 404 when remote fetch also fails', async () => {
+    test('returns 500 when remote fetch also fails', async () => {
         db.h1_season.findUnique.mockResolvedValue(null);
         vi.mocked(updateSeason).mockRejectedValue(new Error('fetch failed'));
 
         const res = await POST(
             createPostRequest({ action: 'get_snapshots', season: '5' }),
         );
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(500);
     });
 
-    test('returns 404 when an underlying query throws', async () => {
+    test('returns 500 when an underlying query throws', async () => {
         db.h1_season.findUnique.mockRejectedValue(new Error('DB error'));
 
         const res = await POST(
             createPostRequest({ action: 'get_snapshots', season: '5' }),
         );
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(500);
     });
 });
 

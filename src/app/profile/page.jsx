@@ -2,10 +2,11 @@ import { auth } from '@/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import db from '@/db/db';
-import { tryCatch } from '@/shared/utils/tryCatch';
-import { getGravatarUrl } from '@/shared/utils/gravatar';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { getGravatarUrl } from '@/shared/utils/gravatar.mjs';
 import AdminSection from '@/features/admin/AdminSection';
 import AccountSection from '@/features/account/AccountSection';
+import { ROLE } from '@/shared/enums/roles.mjs';
 
 export default async function ProfilePage() {
     if (!auth) redirect('/');
@@ -13,7 +14,7 @@ export default async function ProfilePage() {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) redirect('/sign-in');
     const user = session.user;
-    const isAdmin = user.role === 'admin';
+    const isAdmin = user.role === ROLE.ADMIN;
 
     const { data: accounts, error } = await tryCatch(
         db.account.findMany({

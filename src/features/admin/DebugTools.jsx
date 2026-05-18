@@ -2,8 +2,8 @@
 import { useState, useCallback, useRef } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { toast } from 'sonner';
-import { sendTestNotification } from '@/features/admin/actions';
-import { showEventToast } from '@/features/notifications/eventToast';
+import { sendTestNotification } from '@/features/admin/actions.mjs';
+import { showEventToast } from '@/features/notifications/EventToast';
 import { addDismissedEvent } from '@/features/notifications/dismissedEvents.mjs';
 import Button from '@/shared/components/Button/Button';
 
@@ -75,33 +75,37 @@ export default function DebugTools() {
         return testPushEventRef.current;
     }, []);
 
-    const handleTestPush = useCallback(async (kind) => {
-        setPushStatus((prev) => ({ ...prev, [kind]: 'sending' }));
-        setPushMessage(null);
+    const handleTestPush = useCallback(
+        async (kind) => {
+            setPushStatus((prev) => ({ ...prev, [kind]: 'sending' }));
+            setPushMessage(null);
 
-        const event = buildOrUpdatePushEvent(kind);
-        const result = await sendTestNotification({
-            enemy: event.enemy,
-            region: event.region,
-            type: event.type,
-            kind,
-            event_id: event.event_id,
-        });
+            const event = buildOrUpdatePushEvent(kind);
+            const result = await sendTestNotification({
+                enemy: event.enemy,
+                region: event.region,
+                type: event.type,
+                kind,
+                event_id: event.event_id,
+            });
 
-        if (result.error) {
-            setPushMessage({ text: result.error, isError: true });
-            setPushStatus((prev) => ({ ...prev, [kind]: 'idle' }));
-        } else {
-            const parts = [`Sent to ${result.sent}`];
-            if (result.stale > 0) parts.push(`${result.stale} stale`);
-            setPushMessage({ text: parts.join(', '), isError: false });
-            setPushStatus((prev) => ({ ...prev, [kind]: 'cooldown' }));
-            setTimeout(
-                () => setPushStatus((prev) => ({ ...prev, [kind]: 'idle' })),
-                5_000,
-            );
-        }
-    }, []);
+            if (result.errors) {
+                const msg = Object.values(result.errors).join('; ');
+                setPushMessage({ text: msg, isError: true });
+                setPushStatus((prev) => ({ ...prev, [kind]: 'idle' }));
+            } else {
+                const parts = [`Sent to ${result.data.sent}`];
+                if (result.data.stale > 0) parts.push(`${result.data.stale} stale`);
+                setPushMessage({ text: parts.join(', '), isError: false });
+                setPushStatus((prev) => ({ ...prev, [kind]: 'cooldown' }));
+                setTimeout(
+                    () => setPushStatus((prev) => ({ ...prev, [kind]: 'idle' })),
+                    5_000,
+                );
+            }
+        },
+        [buildOrUpdatePushEvent],
+    );
 
     return (
         <section>

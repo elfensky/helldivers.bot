@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { initializeEnvironmentVariables } from '@/shared/utils/initialize.env.mjs';
+import { initializeEnvironmentVariables } from '@/shared/utils/initializeEnv.mjs';
 
 const ALL_ENV_VARS = {
     POSTGRES_URL: 'postgresql://localhost:5432/test',
@@ -27,10 +27,13 @@ describe('initializeEnvironmentVariables', () => {
         for (const [key, value] of Object.entries(ALL_ENV_VARS)) {
             vi.stubEnv(key, value);
         }
+        // Suppress console.info messages during tests
+        vi.spyOn(console, 'info').mockImplementation(() => {});
     });
 
     afterEach(() => {
         vi.unstubAllEnvs();
+        vi.restoreAllMocks();
     });
 
     test('returns { auth: true, analytics: true } when all env vars are set', async () => {
@@ -91,9 +94,7 @@ describe('initializeEnvironmentVariables', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const result = await initializeEnvironmentVariables();
         expect(result.analytics).toBe(false);
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('UMAMI_SITE_ID'),
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('UMAMI_SITE_ID'));
         warnSpy.mockRestore();
     });
 
@@ -102,9 +103,7 @@ describe('initializeEnvironmentVariables', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         const result = await initializeEnvironmentVariables();
         expect(result.analytics).toBe(true); // SENTRY_DSN is still set
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('source maps'),
-        );
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('source maps'));
         warnSpy.mockRestore();
     });
 });
