@@ -64,8 +64,11 @@ COPY package.json /tmp/project-package.json
 COPY prisma ./prisma/
 
 # The seed script imports isValidSeason (Zod schema) from src/validators/.
-# Only this one file is needed — zod is installed below alongside prisma.
+# isValidSeason in turn imports CAMPAIGN_STATUS / EVENT_STATUS from
+# src/shared/enums/events.mjs (a pure-constants module with no further
+# imports), so both files are copied. zod is installed below alongside prisma.
 COPY src/validators/isValidSeason.mjs ./src/validators/isValidSeason.mjs
+COPY src/shared/enums/events.mjs ./src/shared/enums/events.mjs
 
 # Loaded by every prisma CLI invocation. Imports dotenv at top-of-file and
 # calls env('POSTGRES_URL') to validate the connection string is present.

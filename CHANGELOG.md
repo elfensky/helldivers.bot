@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.47.1
+
+### Bug fixes
+
+- **Migrate container crashed at seed step on `@/shared` import.** The v0.46.x "enum migration" replaced inline string enums in `src/validators/isValidSeason.mjs` and `isValidStatus.mjs` with `import { CAMPAIGN_STATUS, EVENT_STATUS } from '@/shared/enums/events.mjs'`. The `@/*` alias is a `jsconfig.json` construct honored by Next.js and Vitest but not by raw Node — so `npm run build` and `npm run test:unit` passed locally while the production migrate container (which runs `node --experimental-strip-types prisma/seed/seed.mjs` after `prisma migrate deploy`) crashed with `ERR_MODULE_NOT_FOUND: Cannot find package '@/shared' imported from /app/src/validators/isValidSeason.mjs`. Fix: switched both validator imports to relative paths (`../shared/enums/events.mjs`), added a clarifying comment on the seed-loaded file documenting the constraint, and updated `Dockerfile.migrate` to also `COPY src/shared/enums/events.mjs` alongside the validator (the enums module has no further imports, so the copy chain terminates there).
+
 ## 0.47.0
 
 ### Features
