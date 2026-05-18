@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { CAMPAIGN_STATUS, EVENT_STATUS } from '@/shared/enums/events.mjs';
+// Relative import (not '@/shared/...') because this file is loaded by the
+// raw-Node migrate container's seed script, where jsconfig path aliases
+// don't resolve.
+import { CAMPAIGN_STATUS, EVENT_STATUS } from '../shared/enums/events.mjs';
 
 // Schema for the objects inside the stringified "data" field in snapshots
 const snapshotDataItemSchema = z.object({

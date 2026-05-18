@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CAMPAIGN_STATUS, EVENT_STATUS } from '@/shared/enums/events.mjs';
+import { CAMPAIGN_STATUS, EVENT_STATUS } from '../shared/enums/events.mjs';
 
 const campaignStatusSchema = z.object({
     season: z.number(),
