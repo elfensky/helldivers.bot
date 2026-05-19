@@ -1,0 +1,113 @@
+# =============================================================================
+# docker-compose.ci.yml — Local-build smoke test for main PRs
+# =============================================================================
+#
+# WHAT THIS FILE DOES
+#
+# Spins up the full production-shaped stack (postgres + migrate + app) using
+# images built from the local working tree, NOT pulled from GHCR. Used by
+# .github/workflows/main-pr-docker-smoke.yml to catch the class of bugs that
+# only manifest at image build / container runtime — e.g. the v0.47.0 migrate
+# crash where `isValidSeason.mjs` imported `@/shared/...` and raw Node could
+# not resolve the jsconfig alias. That regression passed `npm run build`,
+# `npm run typecheck`, and `npm run test:unit` locally because every one of
+# those tools honors the jsconfig path alias. Only running the actual migrate
+# container caught it.
+#
+# WHY A SEPARATE COMPOSE FILE (not an override of docker-compose.yml)
+#
+# docker-compose.yml is the production-shaped file: `image: ghcr.io/...` (pulls
+# pre-built images), `env_file: .env.development` (uses a host-side env file).
+# CI needs the opposite: `build:` (build from local source), `environment:`
+# (inject vars from the workflow). Override files can flip these, but the diff
+# would be larger than the inheritance saves. A standalone file is also
+# trivially runnable by developers locally — `docker compose -f docker-compose.ci.yml up --build`
+# reproduces the exact CI check before pushing.
+#
+# WHY POSTGRES IS BUNDLED IN HERE (and not a GHA service container)
+#
+# Compose service-name DNS — the migrate and app containers reach the database
+# at `postgres:5432`. That keeps the connection string identical to what
+# .env.development would use locally with docker compose, and avoids the
+# host-port-mapping dance of GHA services (which expose on localhost:5432 of
+# the runner host, not the container network).
+# =============================================================================
+
+services:
+    postgres:
+        image: postgres:17-alpine
+        environment:
+            POSTGRES_USER: ci
+            POSTGRES_PASSWORD: ci
+            POSTGRES_DB: ci
+        # No published ports — the migrate and app containers reach postgres
+        # via compose's internal network DNS. Keeping postgres unpublished
+        # avoids port conflicts on the CI runner and reduces the attack surface.
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U ci -d ci']
+            interval: 2s
+            timeout: 3s
+            retries: 20
+            start_period: 5s
+
+    migrate:
+        build:
+            context: .
+            dockerfile: Dockerfile.migrate
+        environment:
+            POSTGRES_URL: postgresql://ci:ci@postgres:5432/ci?sslmode=disable
+        depends_on:
+            postgres:
+                condition: service_healthy
+        # No restart policy — this is a one-shot container that runs
+        # `prisma migrate deploy && node prisma/seed/seed.mjs`, exits 0 on
+        # success, non-zero on failure. The app's depends_on gate uses
+        # service_completed_successfully to wait for exit 0.
+
+    helldiversbot:
+        build:
+            context: .
+            dockerfile: Dockerfile.app
+            args:
+                # Tag CI builds distinctly from staging/production so any
+                # accidental Sentry events from a smoke-test run are
+                # identifiable. The SDK still no-ops without SENTRY_DSN
+                # (gated at runtime per the v0.47.0 observability work).
+                NEXT_PUBLIC_DEPLOY_ENV: ci
+        ports:
+            # Published on localhost only so the workflow can curl the
+            # healthcheck from the runner host as a final HTTP sanity check
+            # after `compose up --wait` reports healthy.
+            - '127.0.0.1:3000:3000'
+        environment:
+            POSTGRES_URL: postgresql://ci:ci@postgres:5432/ci?sslmode=disable
+            POSTGRES_SSL: 'false'
+            UPDATE_KEY: ci-smoke-stub-key
+            UPDATE_INTERVAL: '60'
+            NODE_ENV: production
+            # Intentionally NOT set: BETTER_AUTH_SECRET, SENTRY_DSN,
+            # UMAMI_SITE_ID, VAPID_*. Each of those features gates itself
+            # to a graceful no-op when its required env var is absent —
+            # exactly what we want for a smoke test that exercises the boot
+            # path without depending on external services.
+        depends_on:
+            postgres:
+                condition: service_healthy
+            migrate:
+                condition: service_completed_successfully
+        healthcheck:
+            # Same probe shape as docker-compose.yml's production config,
+            # but with tighter intervals because CI doesn't need a 60s
+            # production cadence — we want to know within seconds whether
+            # the app booted.
+            test:
+                [
+                    'CMD',
+                    'node',
+                    '-e',
+                    "fetch('http://127.0.0.1:3000/api/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 30
+            start_period: 10s
