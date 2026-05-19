@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.47.4
+
+### Chores
+
+- **`postcss` pinned to `^8.5.10` via `package.json#overrides`** to remediate the GHSA-qx2v-qp2m-jg93 / CVE-2026-41305 advisory (PostCSS XSS via unescaped `</style>` in stringified CSS output, < 8.5.10). The vulnerable copy came in transitively via `next@16.2.6 → postcss@8.4.31`; Tailwind 4's own `@tailwindcss/postcss` dependency already pulled `postcss@8.5.14`, proving the 8.5.x line works in our build pipeline. Real-world exploit risk for this app is essentially zero (the vuln requires processing **user-submitted CSS** through PostCSS's stringifier and embedding the output in an HTML `<style>` tag — we author all our own CSS via Tailwind utilities and design tokens), but the override is a one-line hygiene fix that drops us from 1 moderate dependabot alert to 0. After install all three postcss consumers (Tailwind, Next, Vite) dedupe onto `8.5.15`. Verified end-to-end with the local `docker compose -f docker-compose.ci.yml up --build` stack.
+
 ## 0.47.3
 
 ### Bug fixes
