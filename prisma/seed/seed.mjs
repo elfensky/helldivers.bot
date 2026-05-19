@@ -48,7 +48,10 @@ async function seedSeason(db, file) {
 
     // Validate against the same schema the worker pipeline uses. Wire format:
     // snapshots[].data is a stringified JSON array of 3 faction status objects.
-    const check = isValidSeason(seasonData);
+    // isValidSeason is a raw Zod schema (post-v0.46.4 protocol unification),
+    // not a callable wrapper — invoke via .safeParse(). The src/update/*.mjs
+    // callers were migrated in v0.46.4 but this seed caller was missed.
+    const check = isValidSeason.safeParse(seasonData);
     if (!check.success) {
         console.warn(`Skipping ${file}: validation failed.`);
         for (const issue of check.error?.issues ?? []) {
