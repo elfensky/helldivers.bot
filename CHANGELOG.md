@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.47.3
+
+### Bug fixes
+
+- **Second migrate-container crash from the v0.46.4 validator-protocol cleanup.** The v0.46.4 "Validator protocol unified to raw-schema exports" change turned `isValidSeason` from `(data) => rootSchema.safeParse(data)` (callable wrapper) into a raw Zod schema (`export const isValidSeason = rootSchema`). The CHANGELOG noted that callers in `src/update/season.mjs` and `src/update/status.mjs` plus tests were updated — but the `prisma/seed/seed.mjs:51` caller was missed. With v0.47.0 in production, the migrate container ran the seed and crashed with `TypeError: isValidSeason is not a function`. v0.47.1 fixed the prior `@/shared` import error in the same file but only verified the file LOADED under raw Node, not that downstream callers EXECUTED — so this latent bug surfaced only on the next docker-compose-up. Fix: changed the single seed call to `isValidSeason.safeParse(seasonData)` to match every other caller in the codebase. Verified end-to-end with a full local `docker compose -f docker-compose.ci.yml up --build` run that brought the stack to healthy (the exact verification step the v0.47.1 hotfix should have done).
+
 ## 0.47.2
 
 ### Chores
