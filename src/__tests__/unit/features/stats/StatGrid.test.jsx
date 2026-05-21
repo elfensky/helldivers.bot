@@ -168,4 +168,58 @@ describe('StatGrid', () => {
             expect(container.innerHTML).toBe('');
         });
     });
+
+    describe('war duration card', () => {
+        const cardValue = (label) =>
+            screen
+                .getByText(label)
+                .closest('.stat-card')
+                ?.querySelector('.stat-card-value')?.textContent;
+
+        test('global view shows total war duration', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    seasonDuration={86400 * 10}
+                    warStart={1000}
+                />,
+            );
+            expect(screen.getByText('WAR_DURATION')).toBeInTheDocument();
+            expect(cardValue('WAR_DURATION')).toBe('10 days');
+        });
+
+        test('faction view shows time since that faction was deployed', () => {
+            // bugs = enemy 0; it appeared 2 days after the war started
+            const live = mockLive.map((s) => ({ ...s, first_seen: 1000 }));
+            live[0] = { ...live[0], first_seen: 1000 + 86400 * 2 };
+            render(
+                <StatGrid
+                    live={live}
+                    faction="bugs"
+                    events={mockEvents}
+                    seasonDuration={86400 * 10}
+                    warStart={1000}
+                />,
+            );
+            // war ran 10 days; bugs deployed 2 days in → 8 days in the war
+            expect(cardValue('WAR_DURATION')).toBe('8 days');
+        });
+
+        test('faction not yet deployed (first_seen null) shows a dash', () => {
+            const live = mockLive.map((s) => ({ ...s, first_seen: 1000 }));
+            live[0] = { ...live[0], first_seen: null };
+            render(
+                <StatGrid
+                    live={live}
+                    faction="bugs"
+                    events={mockEvents}
+                    seasonDuration={86400 * 10}
+                    warStart={1000}
+                />,
+            );
+            expect(cardValue('WAR_DURATION')).toBe('—');
+        });
+    });
 });

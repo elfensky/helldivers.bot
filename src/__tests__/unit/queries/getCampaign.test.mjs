@@ -263,6 +263,48 @@ describe('getCampaign', () => {
         });
     });
 
+    test('computes war_start and per-faction first_seen (first non-hidden bucket)', async () => {
+        // updateStatus writes a row for all 3 factions every poll, so
+        // pre-introduction factions have 'hidden' rows from war start.
+        // first_seen must be the first NON-hidden bucket, not min(time).
+        seedDbMocks({
+            statusHistory: [
+                { bucket: 1, enemy: 0, status: 'active', time: 1000, points: 1, points_taken: 0 }, // prettier-ignore
+                { bucket: 1, enemy: 1, status: 'hidden', time: 1000, points: 0, points_taken: 0 }, // prettier-ignore
+                { bucket: 1, enemy: 2, status: 'hidden', time: 1000, points: 0, points_taken: 0 }, // prettier-ignore
+                { bucket: 2, enemy: 0, status: 'active', time: 2000, points: 2, points_taken: 0 }, // prettier-ignore
+                { bucket: 2, enemy: 1, status: 'active', time: 2000, points: 1, points_taken: 0 }, // prettier-ignore
+                { bucket: 2, enemy: 2, status: 'hidden', time: 2000, points: 0, points_taken: 0 }, // prettier-ignore
+                { bucket: 3, enemy: 0, status: 'active', time: 3000, points: 3, points_taken: 0 }, // prettier-ignore
+                { bucket: 3, enemy: 1, status: 'active', time: 3000, points: 2, points_taken: 0 }, // prettier-ignore
+                { bucket: 3, enemy: 2, status: 'active', time: 3000, points: 1, points_taken: 0 }, // prettier-ignore
+            ],
+        });
+
+        const result = await getCampaign();
+
+        // war_start = earliest bucket time across all factions (incl. hidden)
+        expect(result.war_start).toBe(1000);
+        // first_seen = earliest bucket where the faction is no longer 'hidden'
+        expect(result.status[0].first_seen).toBe(1000);
+        expect(result.status[1].first_seen).toBe(2000);
+        expect(result.status[2].first_seen).toBe(3000);
+    });
+
+    test('first_seen is null for a faction that is still hidden', async () => {
+        seedDbMocks({
+            statusHistory: [
+                { bucket: 1, enemy: 0, status: 'active', time: 1000, points: 1, points_taken: 0 }, // prettier-ignore
+                { bucket: 1, enemy: 1, status: 'active', time: 1000, points: 1, points_taken: 0 }, // prettier-ignore
+                { bucket: 1, enemy: 2, status: 'hidden', time: 1000, points: 0, points_taken: 0 }, // prettier-ignore
+            ],
+        });
+
+        const result = await getCampaign();
+
+        expect(result.status[2].first_seen).toBeNull();
+    });
+
     test('zeroes stats fields when h1_statistic row missing for a faction', async () => {
         // Only faction 0 has a stat row. Faction 1 and 2 should still appear
         // in data.status with stats fields zeroed — not undefined, not dropped.
