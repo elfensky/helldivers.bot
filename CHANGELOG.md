@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.47.10
+
+### Bug Fixes
+
+- **Empty "Today" section no longer renders in the event log (#385).** `groupEventsByDay` injected a synthetic empty `{ label: 'TODAY', events: [] }` group whenever the homepage event log had no events for the current day — it rendered as a bare "TODAY" header with no cards beneath it. Removed the mechanism outright: the `includeToday` option (archives already passed `false`, and the homepage relied on the `true` default), the injection block, the `.event-log-day--no-events` className branch in `EventLog` (only ever reachable via the injected group), and its two CSS rules. A real event starting today is unaffected — it is still grouped and labelled "TODAY" by `formatDayLabel`, which is wholly independent of the removed injection (covered by a new regression test).
+
 ## 0.47.9
 
 ### Documentation

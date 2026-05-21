@@ -252,7 +252,6 @@ describe('Archive Components Integration Tests', () => {
             expect(props).toHaveProperty('events', data.events);
             expect(props).toHaveProperty('timeFormat', 'absolute');
             expect(props).toHaveProperty('id', 'archives-event-log');
-            expect(props).toHaveProperty('includeToday', false);
         });
 
         test('ArchiveMap receives data and selectedEvent', () => {

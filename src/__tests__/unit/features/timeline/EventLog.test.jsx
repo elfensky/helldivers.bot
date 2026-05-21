@@ -54,6 +54,18 @@ describe('EventLog', () => {
         expect(daysContainer.classList.contains('event-log-days--stack')).toBe(false);
     });
 
+    test('does not render an empty TODAY section when today has no events', () => {
+        const pastEvent = {
+            ...fakeEvents[0],
+            start_time: NOW - 5 * 86400,
+            end_time: NOW - 5 * 86400 + 500,
+        };
+        const { container } = render(<EventLog events={[pastEvent]} timeFormat="live" />);
+        expect(container.querySelector('.event-log-day--no-events')).toBeNull();
+        // only the real event's day group renders — no synthetic TODAY marker
+        expect(container.querySelectorAll('.event-log-day')).toHaveLength(1);
+    });
+
     test('cards have data-event-key attributes for scroll-sync wiring', () => {
         const { container } = render(
             <EventLog events={fakeEvents} timeFormat="absolute" layout="stack" />,

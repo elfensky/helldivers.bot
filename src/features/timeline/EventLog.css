@@ -72,13 +72,6 @@
     white-space: nowrap;
 }
 
-/* === Empty day markers === */
-
-.event-log-day--no-events .event-log-day-header {
-    min-height: 3rem;
-    box-shadow: inset -6px 0 0 0 rgba(255, 255, 255, 0.06);
-}
-
 /* === Event cards === */
 
 .event-card {
@@ -134,10 +127,6 @@
     .event-log-day-header {
         box-shadow: none;
         padding: 0 0 0.25rem 0;
-    }
-
-    .event-log-day--no-events .event-log-day-header {
-        box-shadow: none;
     }
 
     .event-log-day-grid {
