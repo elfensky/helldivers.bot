@@ -332,7 +332,7 @@ export default function LegalPage() {
                             <tbody>
                                 <tr className="border-b border-ghost/50">
                                     <td className="py-2 pr-4 font-mono text-primary">
-                                        hd1-live-cache
+                                        hd1-live-cache-v1
                                     </td>
                                     <td className="py-2">
                                         Stores last campaign data for offline/PWA fallback

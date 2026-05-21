@@ -4,7 +4,7 @@ import './ArchivesLayout.css';
 import { useMapPin } from '@/shared/hooks/useMapPin.mjs';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 import ArchivesHeader, { EffectsToggle } from '@/features/archives/ArchivesHeader';
-import FactionHealthChart from '@/features/archives/FactionHealthChart';
+import FactionHealthChart from '@/features/archives/FactionHealthChartLoader';
 import FactionTabs from '@/shared/components/FactionTabs';
 import FactionStats from '@/features/archives/FactionStats';
 import EventLog from '@/features/timeline/EventLog';

@@ -109,7 +109,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, max-age=604800, immutable',
+                        value: 'public, max-age=31536000, immutable',
                     },
                 ],
             },
@@ -118,7 +118,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, max-age=604800, immutable',
+                        value: 'public, max-age=31536000, immutable',
                     },
                 ],
             },
@@ -127,7 +127,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Cache-Control',
-                        value: 'public, max-age=604800, immutable',
+                        value: 'public, max-age=31536000, immutable',
                     },
                 ],
             },

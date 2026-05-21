@@ -171,23 +171,27 @@ async function reconstructCampaignStatus() {
 
     const targetSeason = seasonRow.season;
 
-    // Latest h1_status row per faction (via $queryRaw DISTINCT ON, like
-    // getCampaign.mjs). Prisma can't express DISTINCT ON natively.
-    const latestStatus = await db.$queryRaw`
-        SELECT DISTINCT ON (enemy) *
-        FROM h1_status
-        WHERE season = ${targetSeason}
-        ORDER BY enemy ASC, bucket DESC
-    `;
-    const latestStats = await db.$queryRaw`
-        SELECT DISTINCT ON (enemy) *
-        FROM h1_statistic
-        WHERE season = ${targetSeason}
-        ORDER BY enemy ASC, bucket DESC
-    `;
-    const activeEvents = await db.h1_event.findMany({
-        where: { season: targetSeason, status: EVENT_STATUS.ACTIVE },
-    });
+    // latestStatus / latestStats / activeEvents are mutually independent —
+    // each keyed only on targetSeason — so they run in parallel, collapsing
+    // three sequential round-trips into one. (The DISTINCT ON $queryRaw is
+    // used like getCampaign.mjs; Prisma can't express DISTINCT ON natively.)
+    const [latestStatus, latestStats, activeEvents] = await Promise.all([
+        db.$queryRaw`
+            SELECT DISTINCT ON (enemy) *
+            FROM h1_status
+            WHERE season = ${targetSeason}
+            ORDER BY enemy ASC, bucket DESC
+        `,
+        db.$queryRaw`
+            SELECT DISTINCT ON (enemy) *
+            FROM h1_statistic
+            WHERE season = ${targetSeason}
+            ORDER BY enemy ASC, bucket DESC
+        `,
+        db.h1_event.findMany({
+            where: { season: targetSeason, status: EVENT_STATUS.ACTIVE },
+        }),
+    ]);
 
     const statByEnemy = new Map(latestStats.map((r) => [r.enemy, r]));
 
@@ -258,13 +262,15 @@ async function reconstructSnapshots(season) {
     });
     if (!seasonRow) return null;
 
-    const allStatus = await db.h1_status.findMany({
-        where: { season },
-        orderBy: [{ bucket: 'asc' }, { enemy: 'asc' }],
-    });
-    const allEvents = await db.h1_event.findMany({
-        where: { season },
-    });
+    // allStatus / allEvents are independent — run in parallel to collapse
+    // two sequential round-trips into one.
+    const [allStatus, allEvents] = await Promise.all([
+        db.h1_status.findMany({
+            where: { season },
+            orderBy: [{ bucket: 'asc' }, { enemy: 'asc' }],
+        }),
+        db.h1_event.findMany({ where: { season } }),
+    ]);
 
     const snapshots = groupStatusByBucket(allStatus).map(({ time, factions }) => ({
         season,
