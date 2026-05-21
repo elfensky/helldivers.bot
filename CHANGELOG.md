@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.47.6
+
+### Chores
+
+- **TypeScript strict mode enabled, plus two JSDoc lint rules turned on.** Flipped `jsconfig.json` from `"strict": false` (with an explicit `"noImplicitAny": false`) to `"strict": true`. Because `npm run typecheck` has long been a mandatory merge gate running with `checkJs: true`, the codebase was already strict-clean — `tsc --noEmit` reports zero errors under all seven strict sub-flags (verified with both `strictNullChecks` alone and full `strict` via `--showConfig`). No type-checker fixes were needed; this just stops leaving `strictNullChecks` and friends switched off. Separately enabled `jsdoc/require-param-description` and `jsdoc/reject-any-type` in `eslint.config.mjs` (both previously explicitly `off`). The first surfaced 30 `@param` tags that had a type but no prose description across 21 files — all filled in. The second surfaced 5 `@param {*}` (`any`) annotations in `src/db/queries/account.mjs`, `src/db/queries/api.mjs`, and `src/shared/utils/api/responses.mjs`; each was a genuine "could be anything" boundary (an unused server-action `prevState` arg, the `error`/`data` response payloads) and was retyped `{unknown}` — type-safe, forces narrowing at any use site, and needed no `eslint-disable`. `npm run lint` remains at zero warnings.
+
 ## 0.47.5
 
 ### Chores

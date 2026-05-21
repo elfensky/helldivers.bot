@@ -1,7 +1,7 @@
 /**
  * Formats a number for compact display (1.2B, 3.4M, or locale-grouped).
  * Returns '—' for null, undefined, or non-finite values.
- * @param {number|string|null|undefined} n
+ * @param {number|string|null|undefined} n - The value to format
  * @returns {string}
  */
 export function formatNumber(n) {

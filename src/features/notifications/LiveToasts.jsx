@@ -36,7 +36,7 @@ function showWebNotification(message, event) {
  * - The `<Toaster>` is co-located here (not in the root layout) so that
  *   `toast()` and `<Toaster>` share the same Sonner module instance.
  *
- * @param {{prevData: object, data: object, isLeader: boolean}} props
+ * @param {{prevData: object, data: object, isLeader: boolean}} props - Component props
  */
 export default function LiveToasts({ prevData, data, isLeader }) {
     const hasRendered = useRef(false);

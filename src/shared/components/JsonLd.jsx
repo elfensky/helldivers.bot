@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 /**
  * Async server component that renders JSON-LD structured data with CSP nonce.
  * Only used with static schema objects — never with user input.
- * @param {{ data: object | object[] }} props
+ * @param {{ data: object | object[] }} props - Component props
  */
 export default async function JsonLd({ data }) {
     const nonce = (await headers()).get('x-nonce') ?? undefined;

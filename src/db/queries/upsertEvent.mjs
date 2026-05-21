@@ -10,7 +10,7 @@ import { performanceTime } from '@/shared/utils/time.mjs';
  * and we don't want them to leak into the new season's bucket.
  *
  * @param {number} season  Active season the worker is writing for
- * @param {'attack' | 'defend'} type
+ * @param {'attack' | 'defend'} type   Event slot the row belongs to
  * @param {object} event   Event row from the HD1 API
  */
 export async function upsertEvent(season, type, event) {
