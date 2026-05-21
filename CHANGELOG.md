@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Documentation
+
+- **`timeago.js` adoption rationale documented in code (#360).** Added a comment to `formatTimeAgo.mjs` explaining that `timeago.js` is a deliberate dependency — it replaced a hand-rolled `Intl.RelativeTimeFormat` helper that lacked edge-case handling — and why a prior "save ~4.2KB by reverting to native `Intl.RelativeTimeFormat`" suggestion was rejected, so a future desloppify pass does not re-flag it. The optional dynamic-import sub-task was not pursued: `formatTimeAgo` is a synchronous helper used by two components, and making it async to defer a ~4.2KB import would ripple through callers for a marginal gain.
+
 ## 0.47.8
 
 ### Performance
