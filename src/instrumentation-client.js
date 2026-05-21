@@ -13,7 +13,10 @@ Sentry.init({
         process.env.DEPLOY_ENV ||
         process.env.NODE_ENV,
     sendDefaultPii: true,
-    tracesSampleRate: 1.0,
+    // 10% transaction sampling in production trims per-navigation/per-request
+    // SDK overhead while staying statistically useful; full sampling in
+    // dev/preview so local traces are never missed.
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     autoSessionTracking: false,
     tunnel: '/api/glitchtip',
     debug: false,

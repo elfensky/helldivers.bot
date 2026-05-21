@@ -50,6 +50,14 @@ describe('DefeatedCard — shared behaviour', () => {
         expect(screen.getByText('ALL_SECTORS_CAPTURED')).toBeDefined();
     });
 
+    test('progressbar has a descriptive aria-label (a11y)', () => {
+        const { container } = render(
+            <DefeatedCard factionIndex={0} startTime={START} endTime={END} />,
+        );
+        const bar = container.querySelector('.sector-card-bar');
+        expect(bar.getAttribute('aria-label')).toBe('Bugs defeat progress');
+    });
+
     test('renders duration · date when start/end times are provided', () => {
         render(<DefeatedCard factionIndex={0} startTime={START} endTime={END} />);
         // humanize-duration is mocked to return '2d 3h'

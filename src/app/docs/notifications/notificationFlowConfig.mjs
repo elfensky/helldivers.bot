@@ -108,7 +108,7 @@ export const notificationFlowConfig = createFlowConfig({
                         ['Tab focus', 'visibilitychange fires immediate poll'],
                         ['Status', 'polling / live / offline (tri-state)'],
                         ['Leader election', 'BroadcastChannel for Web Notifications'],
-                        ['Offline fallback', 'localStorage cache (hd1-live-cache)'],
+                        ['Offline fallback', 'localStorage cache (hd1-live-cache-v1)'],
                     ],
                 },
             ],

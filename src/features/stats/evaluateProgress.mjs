@@ -1,4 +1,3 @@
-import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 /**
@@ -17,8 +16,8 @@ import { EVENT_STATUS } from '@/shared/enums/events.mjs';
  *
  * Returns null if the event is not active or the time window is degenerate.
  *
- * @param {{ start_time: number, end_time: number, points: number, points_max: number, status: string }} event
- * @returns {{ status: 'ahead'|'behind'|'on_track', delta: number, deltaPercent: number, currentRate: number, requiredRate: number, label: string } | null}
+ * @param {{ start_time: number, end_time: number, points: number, points_max: number, status: string }} event - The active event to evaluate
+ * @returns {{ status: 'ahead'|'behind'|'on_track', delta: number, deltaPercent: number, currentRate: number, requiredRate: number } | null}
  */
 export function evaluateProgress(event) {
     if (event.status !== EVENT_STATUS.ACTIVE) return null;
@@ -59,6 +58,5 @@ export function evaluateProgress(event) {
         deltaPercent,
         currentRate,
         requiredRate,
-        label: status === 'on_track' ? 'On track' : `${formatNumber(delta)} ${status}`,
     };
 }

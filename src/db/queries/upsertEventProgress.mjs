@@ -15,8 +15,8 @@ import { computeBucket } from '@/shared/utils/bucketing.mjs';
  * stale events into the new season's bucket after a transition.
  *
  * @param {number} season  Active season the worker is writing for
- * @param {'attack' | 'defend'} type
- * @param {{ event_id: number, season?: number, points: number }} event
+ * @param {'attack' | 'defend'} type   Event slot the row belongs to
+ * @param {{ event_id: number, season?: number, points: number }} event   Event row from the HD1 API
  * @param {number} pollTime Unix timestamp from API response
  */
 export async function upsertEventProgress(season, type, event, pollTime) {

@@ -10,7 +10,7 @@ import { isValidNumber } from '@/validators/isValidNumber.mjs';
  *   - pointsMax    — number[3] indexed by enemy (per-faction point ceiling)
  *   - seasonDuration — scalar int (per-season state, not per-faction)
  *
- * @param {number}   season
+ * @param {number}   season    Season number to upsert
  * @param {boolean}  confirm   When true, sets last_updated to now (signals
  *                             "season's normalized data is saved").
  * @param {object?}  metadata  Optional per-season metadata:

@@ -1,7 +1,7 @@
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 /**
- * @param {Array<{status: string}>} events
+ * @param {Array<{status: string}>} events - Events to filter
  * @returns {Array<{status: string}>}
  */
 export function getActiveEvents(events) {
@@ -9,7 +9,7 @@ export function getActiveEvents(events) {
 }
 
 /**
- * @param {Array<{start_time: number}>} events
+ * @param {Array<{start_time: number}>} events - Events to sort
  * @returns {Array<{start_time: number}>}
  */
 export function sortEventsByRecent(events) {
@@ -17,7 +17,7 @@ export function sortEventsByRecent(events) {
 }
 
 /**
- * @param {Array<{status: string}>} events
+ * @param {Array<{status: string}>} events - Events to tally
  * @returns {{ wins: number, losses: number }}
  */
 export function countOutcomes(events) {

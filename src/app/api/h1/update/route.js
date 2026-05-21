@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { after } from 'next/server';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
@@ -134,10 +135,16 @@ export async function GET(request) {
         console.warn('[update] warning:', warning.stage, warning.message);
     }
 
-    // Fire-and-forget: check for event transitions and send push notifications
-    checkAndNotify().catch((err) => {
-        console.error('Push notification error:', err.message);
-        reportError(err, { route: '/api/h1/update', stage: 'push-notify' });
+    // Deferred via after(): the event-transition check + push notifications
+    // run tied to the request lifecycle (proper error reporting + resource
+    // cleanup) without blocking the response — same pattern as the campaign
+    // and rebroadcast routes.
+    after(async () => {
+        const { error } = await tryCatch(checkAndNotify());
+        if (error) {
+            console.error('Push notification error:', error.message);
+            reportError(error, { route: '/api/h1/update', stage: 'push-notify' });
+        }
     });
 
     //RESPONSE

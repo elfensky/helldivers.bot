@@ -51,7 +51,7 @@ export async function exportUserData(userId) {
 /**
  * Delete the authenticated user's account. Requires email confirmation.
  * Revokes session before cascade-deleting all user data.
- * @param {*} _ - Unused (server action signature)
+ * @param {unknown} _ - Unused (server action signature)
  * @param {FormData} formData - Must contain userId and confirmEmail fields
  */
 export async function deleteUserAccount(_, formData) {

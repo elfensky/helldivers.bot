@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+## 0.47.9
+
+### Documentation
+
+- **`timeago.js` adoption rationale documented in code (#360).** Added a comment to `formatTimeAgo.mjs` explaining that `timeago.js` is a deliberate dependency — it replaced a hand-rolled `Intl.RelativeTimeFormat` helper that lacked edge-case handling — and why a prior "save ~4.2KB by reverting to native `Intl.RelativeTimeFormat`" suggestion was rejected, so a future desloppify pass does not re-flag it. The optional dynamic-import sub-task was not pursued: `formatTimeAgo` is a synchronous helper used by two components, and making it async to defer a ~4.2KB import would ripple through callers for a marginal gain.
+
+## 0.47.8
+
+### Performance
+
+- **Rebroadcast route DB queries parallelized (#351).** `reconstructCampaignStatus` ran its three season-keyed queries (`latestStatus`, `latestStats`, `activeEvents`) sequentially, and `reconstructSnapshots` ran `allStatus` + `allEvents` sequentially — all mutually independent. Wrapped each set in `Promise.all`, collapsing ~3 round-trips into 1 for the campaign path and ~2 into 1 for the snapshots path. Query invocation order is preserved, so the route's `$queryRaw` DISTINCT-ON results still map identically.
+- **`FactionHealthChart` is now lazy-loaded (#352).** The archives conquest-progress chart statically imported 10 recharts components (~50 KB gzipped) into the `/archives` initial bundle, even though it only renders once a season has snapshot data. New `FactionHealthChartLoader.jsx` wraps it in `next/dynamic` (`ssr: false`) — mirroring the existing `ProgressExplainerLoader` pattern — and `ArchivesClient` imports the loader. recharts now ships in an on-demand chunk.
+- **Update route push-notify uses `after()` (#353).** The `/api/h1/update` route fired `checkAndNotify()` as a `.catch()`-guarded fire-and-forget — the one API route not already using `after()`. Switched to `after()` plus the `tryCatch` wrapper so the event-transition check and push delivery are tied to the request lifecycle (proper resource cleanup and error reporting), consistent with `/api/h1/campaign` and `/api/h1/rebroadcast`.
+- **Live-data localStorage cache key is versioned (#354).** `useLiveData`'s cache key `hd1-live-cache` had no version suffix, so a future change to the `/api/h1/live` payload shape could let a stale cached entry seed the UI on first paint before the first poll. Renamed to `hd1-live-cache-v1`; bump the suffix on any payload-shape change and old entries are abandoned untouched. Cross-references in the legal page's localStorage table and the notifications flow diagram were updated to match.
+- **Event-log day groups skip off-screen layout (#355).** Added `content-visibility: auto` + `contain-intrinsic-size: auto 320px` to `.event-log-day`, so day groups below the fold skip layout/paint until scrolled near — a long season can render 30+ groups. Deliberately scoped to the default `grid` layout via `:not(.event-log-days--stack)` and excluded from the archives `--stack` layout: `useScrollEvent` reads every card's `getBoundingClientRect` and early-breaks on DOM order, and `content-visibility` would collapse off-screen cards to zero-rects and break that scan.
+- **Sentry transaction sampling reduced in production (#356).** `tracesSampleRate` was a flat `1.0` (100% of transactions traced). It is now `0.1` in production / `1.0` in dev & preview — trimming per-navigation and per-request SDK overhead for real users while keeping full local traces.
+- **`loading.jsx` skeletons added to high-traffic routes (#358).** No route had a `loading.jsx`, so client-side navigation showed a frozen page while the server component streamed. Added a shared `PageSkeleton` component and `loading.jsx` for `/` (campaign + 24h aggregations), `/archives` (campaign + on-demand season backfill) and `/profile` (auth + DB queries). Next.js wraps each in a `<Suspense>` boundary, giving instant navigation feedback and enabling streaming.
+- **Static asset cache headers bumped to 1-year immutable (#359).** `/icons`, `/images` and `/svgs` served `Cache-Control: public, max-age=604800` (7 days). These files never change without a redeploy, so they now use `max-age=31536000, immutable` — matching `/fonts` — eliminating repeat downloads on return visits.
+
+## 0.47.7
+
+### Bug Fixes
+
+- **Pace indicator adopts the ▲/▼/▪ glyph pattern (#357).** The event pace label ("175,259 behind") routed a single mixed number-plus-word string through `AnimatedStat` → `react-slot-counter`, which slots every character individually and visually compressed the space between the number and the status word into "175,259behind". `evaluateProgress` no longer returns a presentation `label` string — it returns pure data (`status`, `delta`, rates), and a new `PaceIndicator` component in `EventCard` renders a colour-coded ▲ (ahead, green) / ▼ (behind, red) / ▪ (on_track) glyph as a separate inline-flex sibling of the slotted number. Because the glyph and the digits are now distinct flex children, the slot counter only ever animates digits and the gap can no longer collapse. This also aligns the pace display with the existing `StatGrid` delta-subtitle pattern. The `label` field was consumed only by `EventCard`; the OpenGraph image route reads `pace.status`, which is unchanged.
+- **Progress bars now expose an accessible name (#361).** A Lighthouse accessibility audit flagged the `role="progressbar"` bars in `EventCard` and `DefeatedCard` for having no accessible name, leaving screen-reader users with an unlabelled control. Added `aria-label` to both — `"{region} {action} progress"` (e.g. "Super Earth defending progress") for `EventCard` and `"{faction} defeat progress"` for `DefeatedCard` — alongside the existing `aria-valuenow`/`aria-valuemin`/`aria-valuemax`.
+
+## 0.47.6
+
+### Chores
+
+- **TypeScript strict mode enabled, plus two JSDoc lint rules turned on.** Flipped `jsconfig.json` from `"strict": false` (with an explicit `"noImplicitAny": false`) to `"strict": true`. Because `npm run typecheck` has long been a mandatory merge gate running with `checkJs: true`, the codebase was already strict-clean — `tsc --noEmit` reports zero errors under all seven strict sub-flags (verified with both `strictNullChecks` alone and full `strict` via `--showConfig`). No type-checker fixes were needed; this just stops leaving `strictNullChecks` and friends switched off. Separately enabled `jsdoc/require-param-description` and `jsdoc/reject-any-type` in `eslint.config.mjs` (both previously explicitly `off`). The first surfaced 30 `@param` tags that had a type but no prose description across 21 files — all filled in. The second surfaced 5 `@param {*}` (`any`) annotations in `src/db/queries/account.mjs`, `src/db/queries/api.mjs`, and `src/shared/utils/api/responses.mjs`; each was a genuine "could be anything" boundary (an unused server-action `prevState` arg, the `error`/`data` response payloads) and was retyped `{unknown}` — type-safe, forces narrowing at any use site, and needed no `eslint-disable`. `npm run lint` remains at zero warnings.
+
+## 0.47.5
+
+### Chores
+
+- **CLAUDE.md milestone-status note de-staled.** The Task Tracking section claimed "Phases 4, 7, and 11 are closed" and capped the phase range at 11 — all three points were stale: Phase 11 is open with 10 issues, milestones now run to Phase 13, and every phase 0–8 is closed. Replaced the enumerated, snapshot-style claim with a range note that points readers at the GitHub milestones list as the source of truth, so it stops rotting on every milestone change. Docs-only; no code or behavior change.
+
 ## 0.47.4
 
 ### Chores

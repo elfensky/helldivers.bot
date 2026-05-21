@@ -135,12 +135,12 @@ function injectSvg(container, svgContent) {
 /**
  * Reusable Mermaid diagram component with flow filtering and detail panels.
  *
- * @param {object} props
+ * @param {object} props - Component props
  * @param {string} props.id - Unique diagram ID
  * @param {string} props.definition - Mermaid syntax string
  * @param {object} props.config - Diagram configuration (views, flows, details, legend)
  * @param {string} [props.mobileDefinition] - Optional Mermaid definition for mobile (e.g., TD layout)
- * @param {string} [props.className]
+ * @param {string} [props.className] - Optional CSS class for the wrapper
  */
 export default function MermaidDiagram({
     id,

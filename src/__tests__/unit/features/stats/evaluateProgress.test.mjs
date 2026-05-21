@@ -27,10 +27,12 @@ describe('evaluateProgress', () => {
         expect(result).not.toBeNull();
         expect(result.status).toBe('ahead');
         expect(result.delta).toBeGreaterThan(0);
-        expect(result.label).toMatch(/\d+ ahead/);
         expect(typeof result.currentRate).toBe('number');
         expect(typeof result.requiredRate).toBe('number');
         expect(typeof result.deltaPercent).toBe('number');
+        // Presentation (glyph + colour) is the component's job — the
+        // evaluator returns pure data, no formatted `label` string.
+        expect(result.label).toBeUndefined();
     });
 
     test('returns "behind" status when points are below expected', () => {
@@ -44,7 +46,7 @@ describe('evaluateProgress', () => {
         const result = evaluateProgress(event);
         expect(result).not.toBeNull();
         expect(result.status).toBe('behind');
-        expect(result.label).toMatch(/\d+ behind/);
+        expect(result.delta).toBeGreaterThan(0);
     });
 
     test('returns "on_track" status when points are within buffer', () => {
@@ -58,7 +60,6 @@ describe('evaluateProgress', () => {
         const result = evaluateProgress(event);
         expect(result).not.toBeNull();
         expect(result.status).toBe('on_track');
-        expect(result.label).toBe('On track');
     });
 
     test('returns null for non-active events', () => {

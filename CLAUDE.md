@@ -139,7 +139,7 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 - **Prisma 7** with `@prisma/adapter-pg` driver adapter. Client outputs to `src/generated/prisma/`. CLI config in `prisma.config.mjs`.
 - **Auth (optional):** BetterAuth with database sessions (Prisma adapter). Discord + GitHub OAuth. Server config in `src/auth.js` (exports `null` when `BETTER_AUTH_SECRET` absent), client utilities in `src/auth-client.js`. When disabled: no sign-in UI, `/profile` redirects home, auth API returns 503.
 - **React Compiler** enabled experimentally in `next.config.mjs`.
-- **Error tracking (optional):** Sentry SDK configured for self-hosted GlitchTip (`tracesSampleRate: 1.0`, `environment` tagging, no replays/logs). Client tunnel (`/api/glitchtip`) bypasses ad blockers. CSP violations reported via `report-uri`. Route-level (`error.jsx`) and component-level (`ComponentErrorBoundary`) error boundaries for graceful degradation. When `SENTRY_AUTH_TOKEN` absent, `withSentryConfig` build plugin skipped.
+- **Error tracking (optional):** Sentry SDK configured for self-hosted GlitchTip (`tracesSampleRate` 0.1 in production / 1.0 in dev, `environment` tagging, no replays/logs). Client tunnel (`/api/glitchtip`) bypasses ad blockers. CSP violations reported via `report-uri`. Route-level (`error.jsx`) and component-level (`ComponentErrorBoundary`) error boundaries for graceful degradation. When `SENTRY_AUTH_TOKEN` absent, `withSentryConfig` build plugin skipped.
 - **Node version:** mise pins node@24 (ships with npm 11 natively).
 - **Server actions:** Most utilities use `'use server'` directive.
 - **Shared utilities:** `formatNumber` (`src/shared/utils/format/formatNumber.mjs`) for compact numbers (25.0M, 1.2K — M suffix at 10M+, locale grouping below). `formatTimeAgo` (`src/shared/utils/format/formatTimeAgo.mjs`) for relative timestamps.
@@ -164,7 +164,7 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 
 All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and [helldiversbot project board](https://github.com/users/elfensky/projects/5).
 
-- **Milestones** group issues by phase (Phase 0–11, plus Shelved). Phases 4, 7, and 11 are closed.
+- **Milestones** group issues by phase (Phase 0 through ~13 as of writing, plus `Desloppify` and `Shelved`). Phase numbers grow and open/closed status drifts — check the [milestones list](https://github.com/elfensky/helldivers.bot/milestones) for current state rather than trusting a number here.
 - **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
 - **Board statuses**: `Backlog` → `In progress` → `Done`. Issue title prefixes: `Phase N:`, `Shelved:`.
 - **Board fields**: Status, Priority (`P0`/`P1`/`P2`), Size (`XS`/`S`/`M`/`L`/`XL`), Estimate (hours), Start/End date (skip weekends).

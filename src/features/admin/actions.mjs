@@ -20,7 +20,7 @@ import { ROLE } from '@/shared/enums/roles.mjs';
  * existing notification in place (matching how real event transitions
  * update notifications via tag + renotify).
  *
- * @param {{ enemy: number, region: number, type: string, kind: string, event_id?: number }} opts
+ * @param {{ enemy: number, region: number, type: string, kind: string, event_id?: number }} opts - Test notification parameters
  */
 export async function sendTestNotification({
     enemy = 0,
