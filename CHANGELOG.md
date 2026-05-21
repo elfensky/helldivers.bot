@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.47.5
+
+### Chores
+
+- **CLAUDE.md milestone-status note de-staled.** The Task Tracking section claimed "Phases 4, 7, and 11 are closed" and capped the phase range at 11 — all three points were stale: Phase 11 is open with 10 issues, milestones now run to Phase 13, and every phase 0–8 is closed. Replaced the enumerated, snapshot-style claim with a range note that points readers at the GitHub milestones list as the source of truth, so it stops rotting on every milestone change. Docs-only; no code or behavior change.
+
 ## 0.47.4
 
 ### Chores

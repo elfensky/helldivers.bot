@@ -164,7 +164,7 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 
 All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and [helldiversbot project board](https://github.com/users/elfensky/projects/5).
 
-- **Milestones** group issues by phase (Phase 0–11, plus Shelved). Phases 4, 7, and 11 are closed.
+- **Milestones** group issues by phase (Phase 0 through ~13 as of writing, plus `Desloppify` and `Shelved`). Phase numbers grow and open/closed status drifts — check the [milestones list](https://github.com/elfensky/helldivers.bot/milestones) for current state rather than trusting a number here.
 - **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
 - **Board statuses**: `Backlog` → `In progress` → `Done`. Issue title prefixes: `Phase N:`, `Shelved:`.
 - **Board fields**: Status, Priority (`P0`/`P1`/`P2`), Size (`XS`/`S`/`M`/`L`/`XL`), Estimate (hours), Start/End date (skip weekends).
