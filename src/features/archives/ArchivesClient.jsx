@@ -178,7 +178,6 @@ export default function ArchivesClient({
                         initialSortOrder={initialSortOrder}
                         selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
                         railRef={railRef}
-                        includeToday={false}
                         layout="stack"
                     />
                 </div>

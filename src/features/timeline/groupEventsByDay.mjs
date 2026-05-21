@@ -3,14 +3,10 @@
  *
  * @param {Array<{ start_time: number }>} events - Events with Unix timestamps (seconds)
  * @param {object} [opts] - Optional grouping options
- * @param {boolean} [opts.includeToday=true] - If true, prepend an empty TODAY group when no events exist for today (only applies to the default newest-first sort).
  * @param {'desc' | 'asc'} [opts.sortOrder='desc'] - `'desc'` = newest first (days and events-within-day). `'asc'` = oldest first.
  * @returns {Array<{ date: string, label: string, events: Array }>}
  */
-export function groupEventsByDay(
-    events,
-    { includeToday = true, sortOrder = 'desc' } = {},
-) {
+export function groupEventsByDay(events, { sortOrder = 'desc' } = {}) {
     if (!events || events.length === 0) return [];
 
     const groups = new Map();
@@ -39,15 +35,6 @@ export function groupEventsByDay(
             label: formatDayLabel(date),
             events: dayEvents.sort(cmpEvent),
         }));
-
-    // Only show the empty TODAY placeholder on the default descending view —
-    // on ascending (oldest first) TODAY would be at the bottom and looks odd empty.
-    if (includeToday && sortOrder === 'desc') {
-        const today = new Date().toISOString().slice(0, 10);
-        if (sorted.length === 0 || sorted[0].date !== today) {
-            sorted.unshift({ date: today, label: 'TODAY', events: [] });
-        }
-    }
 
     return sorted;
 }

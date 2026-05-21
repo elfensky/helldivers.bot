@@ -1,4 +1,3 @@
-// src/__tests__/unit/utils/groupEventsByDay.test.mjs
 import { describe, it, expect } from 'vitest';
 import {
     groupEventsByDay,
@@ -21,22 +20,23 @@ describe('groupEventsByDay', () => {
         expect(groupEventsByDay([])).toEqual([]);
     });
 
-    it('always includes today as first group', () => {
-        const today = new Date().toISOString().slice(0, 10);
-        const events = [event('a', 1774958400)]; // March 31 2026
+    it('does not inject an empty TODAY group when today has no events', () => {
+        const events = [event('a', 1774958400)]; // March 31 2026 — not today
         const groups = groupEventsByDay(events);
-        expect(groups[0].date).toBe(today);
-        expect(groups[0].label).toBe('TODAY');
+        // only the real event day — no synthetic empty TODAY placeholder
+        expect(groups).toHaveLength(1);
+        expect(groups.some((g) => g.events.length === 0)).toBe(false);
     });
 
-    it('does not duplicate today when events exist for today', () => {
+    it('an event starting today is grouped under a TODAY label', () => {
         const nowSec = Math.floor(Date.now() / 1000);
         const events = [event('a', nowSec)];
         const groups = groupEventsByDay(events);
-        const todayGroups = groups.filter(
-            (g) => g.date === new Date().toISOString().slice(0, 10),
-        );
-        expect(todayGroups).toHaveLength(1);
+        const today = new Date().toISOString().slice(0, 10);
+        expect(groups).toHaveLength(1);
+        expect(groups[0].date).toBe(today);
+        expect(groups[0].label).toBe('TODAY');
+        expect(groups[0].events).toHaveLength(1);
     });
 
     it('groups events by calendar day (UTC)', () => {
@@ -46,27 +46,25 @@ describe('groupEventsByDay', () => {
             event('c', 1774872000),
         ];
         const groups = groupEventsByDay(events);
-        // today + 2 event days
-        expect(groups).toHaveLength(3);
-        // skip groups[0] (today); groups[1] = Mar 31, groups[2] = Mar 30
-        expect(groups[1].events).toHaveLength(2);
-        expect(groups[2].events).toHaveLength(1);
+        // 2 event days, no synthetic today group
+        expect(groups).toHaveLength(2);
+        // groups[0] = Mar 31 (2 events), groups[1] = Mar 30 (1 event)
+        expect(groups[0].events).toHaveLength(2);
+        expect(groups[1].events).toHaveLength(1);
     });
 
     it('sorts groups newest day first', () => {
         const events = [event('old', 1774872000), event('new', 1774958400)];
         const groups = groupEventsByDay(events);
-        // groups[0] = today, groups[1] = Mar 31, groups[2] = Mar 30
-        expect(groups[1].date).toBe('2026-03-31');
-        expect(groups[2].date).toBe('2026-03-30');
+        expect(groups[0].date).toBe('2026-03-31');
+        expect(groups[1].date).toBe('2026-03-30');
     });
 
     it('sorts events within a group newest first', () => {
         const events = [event('early', 1774958400), event('late', 1774958400 + 7200)];
         const groups = groupEventsByDay(events);
-        // groups[0] = today (empty), groups[1] = the event day
-        expect(groups[1].events[0].event_id).toBe('late');
-        expect(groups[1].events[1].event_id).toBe('early');
+        expect(groups[0].events[0].event_id).toBe('late');
+        expect(groups[0].events[1].event_id).toBe('early');
     });
 });
 

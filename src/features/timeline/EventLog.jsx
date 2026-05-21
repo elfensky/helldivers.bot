@@ -26,9 +26,6 @@ import { eventKey } from '@/shared/utils/game/eventKey.mjs';
  * - `onHoverEvent` (optional): called with `(event)` on card hover
  * - `railRef` (optional): forwarded to the scrolling container so
  *   `useScrollEvent` on `/archives` can query `[data-event-key]` cards
- * - `includeToday` (optional, default `true`): whether to show an empty
- *   TODAY marker when no events exist for today. Pass `false` in
- *   archives to suppress.
  * - `layout` (optional, default `'grid'`): `'grid'` renders the
  *   desktop multi-column layout at ≥md. `'stack'` forces a single
  *   vertical column regardless of viewport width — required by the
@@ -44,11 +41,10 @@ export default function EventLog({
     selectedEventKey = null,
     onHoverEvent,
     railRef,
-    includeToday = true,
     layout = 'grid',
 }) {
     const [sortOrder, toggleSortOrder] = useEventLogSort(initialSortOrder);
-    const groups = groupEventsByDay(events ?? [], { includeToday, sortOrder });
+    const groups = groupEventsByDay(events ?? [], { sortOrder });
 
     return (
         <section id={id} className="event-log-section">
@@ -75,13 +71,7 @@ export default function EventLog({
                             const { wins, losses } = countOutcomes(group.events);
                             return (
                                 <Fragment key={group.date}>
-                                    <div
-                                        className={`event-log-day${
-                                            group.events.length === 0 ?
-                                                ' event-log-day--no-events'
-                                            :   ''
-                                        }`}
-                                    >
+                                    <div className="event-log-day">
                                         <div className="event-log-day-header">
                                             <span className="event-log-day-label">
                                                 {group.label}
