@@ -86,26 +86,23 @@ function cumulativeAddedSubtitle(current, baseline) {
 }
 
 /**
- * Subtitle for the HELLDIVERS_LOST card — shows the absolute number
- * of accidental deaths with a small `backstab` icon in place of a
- * text label, plus the rate as a percentage of total deaths. Returns
+ * Subtitle for the HELLDIVERS_LOST card — shows the absolute number of
+ * accidental ("teamkill") deaths, marked with a small `backstab` icon and
+ * a `MARTYRS` label (these are the divers who were teamkilled). Returns
  * null when there are no accidentals to report (either deaths or
- * accidentals is 0). The full count + rate is also surfaced via the
- * card's tooltip.
+ * accidentals is 0). The accidental + total death counts are also
+ * surfaced via the card's tooltip.
  */
 function accidentalSubtitle(accidentals, deaths) {
     const count = Number(accidentals || 0);
     if (!(Number(deaths) > 0) || count <= 0) return null;
-    const rate = computeAccidentalRate(accidentals, deaths);
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
             <Image src="/icons/backstab.png" alt="" width={14} height={14} />
             <span>
                 <AnimatedStat value={count} />
             </span>
-            <span>
-                (<AnimatedStat value={rate} format={asPercent} />)
-            </span>
+            <span>Martyrs</span>
         </span>
     );
 }

@@ -93,6 +93,18 @@ describe('StatGrid', () => {
             // losses: 2 (enemy0 fail + enemy2 fail)
             expect(screen.getByText('2')).toBeInTheDocument();
         });
+
+        test('HELLDIVERS_LOST teamkill subtitle is labelled MARTYRS, not a percentage', () => {
+            render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
+            const subtitle = screen
+                .getByText('HELLDIVERS_LOST')
+                .closest('.stat-card')
+                ?.querySelector('.stat-card-subtitle')?.textContent;
+            // accidentals: 10+20+5 = 35, followed by the MARTYRS label
+            expect(subtitle).toContain('35');
+            expect(subtitle).toContain('Martyrs');
+            expect(subtitle).not.toContain('%');
+        });
     });
 
     describe('faction view', () => {
