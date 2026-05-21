@@ -5,7 +5,7 @@
     transition:
         fill 0.4s ease,
         stroke 0.3s ease,
-        opacity 0.2s ease;
+        stroke-width 0.2s ease;
 }
 
 .lost {
@@ -71,18 +71,19 @@
  * Hovering a dashboard region card adds `.is-sector-linking` to `#map` and
  * tags the matching faction territory (`.sector-linked-faint`) and active
  * sector (`.sector-linked-strong`) — see src/features/galaxy/sectorLink.mjs.
- * The rest of the map recedes, the territory sits at a faint level, the
- * active sector stays full: a three-tier focus. Opacity-only, so it composes
- * cleanly with the fill/stroke pulse animation above. Rule order matters —
- * the strong/faint rules win the same-specificity tie over `.sector`. */
-#map.is-sector-linking .sector {
-    opacity: 0.25;
-}
-
-#map.is-sector-linking .sector-linked-faint {
-    opacity: 0.6;
+ * The highlight is additive: nothing on the map dims. Instead the hovered
+ * faction's see-through `.lost` sectors firm up — their translucent ghost
+ * stroke and near-invisible fill gain opacity so the faction's full reach
+ * reads at a glance. Gold (`.captured` / `.in_progress`) strokes are left
+ * untouched: they stay gold. The one active sector takes a heavier outline,
+ * whatever its colour. Stroke / fill only, so it composes with the pulse
+ * animation above — on an `.active` sector the running keyframe still owns
+ * the stroke. */
+#map.is-sector-linking .sector-linked-faint.lost {
+    stroke: rgba(255, 255, 255, 0.55);
+    fill: rgba(255, 255, 255, 0.12);
 }
 
 #map.is-sector-linking .sector-linked-strong {
-    opacity: 1;
+    stroke-width: 3px;
 }

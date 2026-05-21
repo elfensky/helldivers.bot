@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.47.15
+
+### Changes
+
+- **Region card → map hover highlight is additive instead of dimming (#185).** Hovering a dashboard region card previously dimmed the whole galaxy map to `opacity: 0.25` and spared the hovered area — a three-tier _subtractive_ focus. It now leaves every sector at full opacity and instead firms up the hovered faction's see-through `.lost` sectors — their translucent ghost stroke and near-invisible fill gain opacity so the faction's full reach reads at a glance. Gold (`.captured`/`.in_progress`) strokes are left untouched so they stay gold, and the one active sector takes a heavier 3px outline. Nothing on the map dims. The highlight changes only stroke and fill — never `filter` — and its lost-sector rule never matches an active sector, so it composes cleanly with the red pulse animation. Purely a `Map.css` restyle; the `sectorLink.mjs` class-toggling logic and its 5 tests are unchanged.
+
 ## 0.47.14
 
 ### Features

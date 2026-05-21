@@ -1,7 +1,7 @@
 /**
  * Card → map hover link. When a dashboard region card is hovered, highlight
  * the matching area on the galaxy map: the hovered faction's whole territory
- * faintly, and its one active sector strongly.
+ * gets a lit outline, and its one active sector a heavier one.
  *
  * Implemented by toggling CSS classes directly on the map's SVG nodes (the
  * MermaidDiagram pattern) rather than via React state — a hover effect must
@@ -38,7 +38,7 @@ export function clearSectorHighlight() {
  *
  * @param {number} factionIndex - 0 Bugs, 1 Cyborgs, 2 Illuminate, 3 Super Earth
  * @param {number | null} [sector] - Sector to mark strongly (1-11, or 0 for
- *   Super Earth). Null/omitted faints the whole territory only — e.g. a
+ *   Super Earth). Null/omitted outlines the whole territory only — e.g. a
  *   defeated faction with no single active sector.
  */
 export function highlightSector(factionIndex, sector = null) {
