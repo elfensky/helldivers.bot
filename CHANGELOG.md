@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.47.16
+
+### Features
+
+- **Hovering a faction's map territory highlights its dashboard card(s) (#390).** Completes the bidirectional hover link from #185, which shipped the card → map direction only. Hovering anywhere in a faction's galaxy-map territory now firms up that faction's sidebar card border — `var(--color-ghost)` → `rgba(255,255,255,0.55)`, the mirror of the dim → bright lift the card → map direction gives the map's lost sectors. A faction's frontier and homeworld cards both highlight; during a Super Earth defense the attacking faction's card (filed under Super Earth) carries a `data-attacker-index` so hovering the attacker's own territory highlights it too. Implemented by extending `sectorLink.mjs` with `highlightCard`/`clearCardHighlight` — DOM class toggling on the card `<li>`s, no React state, zero re-renders — and `onMouseEnter`/`onMouseLeave` on the map's faction `<g>` groups. TDD: 6 new `cardLink` tests.
+
 ## 0.47.15
 
 ### Changes

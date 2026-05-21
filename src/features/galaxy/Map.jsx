@@ -7,6 +7,7 @@ import {
     superEarthCircle,
     factionIcons,
 } from '@/features/galaxy/mapPaths.mjs';
+import { highlightCard, clearCardHighlight } from '@/features/galaxy/sectorLink.mjs';
 
 /**
  * Renders the galaxy map SVG. The root `<svg>` uses
@@ -101,7 +102,16 @@ export default function Map({ map, pulseDelays }) {
                     </filter>
                 </defs>
                 {factions.map(({ id, index, paths }) => (
-                    <g key={id} id={id}>
+                    // Hovering anywhere in a faction's territory highlights
+                    // its dashboard card(s) — mouse events on the child
+                    // paths bubble to this <g>, so one handler covers the
+                    // whole faction (#185 map → card direction).
+                    <g
+                        key={id}
+                        id={id}
+                        onMouseEnter={() => highlightCard(index)}
+                        onMouseLeave={clearCardHighlight}
+                    >
                         {paths.map((path) => (
                             <path
                                 key={path.id}
@@ -130,7 +140,11 @@ export default function Map({ map, pulseDelays }) {
                         />
                     </g>
                 ))}
-                <g id="superearth">
+                <g
+                    id="superearth"
+                    onMouseEnter={() => highlightCard(superearth)}
+                    onMouseLeave={clearCardHighlight}
+                >
                     <circle
                         id={superEarthCircle.id}
                         data-name="0"
