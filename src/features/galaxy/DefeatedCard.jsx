@@ -48,6 +48,7 @@ export default function DefeatedCard({
                     <div
                         className="sector-card-bar"
                         role="progressbar"
+                        aria-label={`${faction.name} defeat progress`}
                         aria-valuenow={isCampaign ? 11 : 100}
                         aria-valuemin={0}
                         aria-valuemax={isCampaign ? 11 : 100}

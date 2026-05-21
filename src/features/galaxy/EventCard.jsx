@@ -96,6 +96,36 @@ function SegmentCell({ seg, factionColor: _factionColor }) {
     return <div className="sector-card-segment" />;
 }
 
+const PACE_GLYPH = { ahead: '▲', behind: '▼', on_track: '▪' };
+
+/**
+ * Pace status indicator — a ▲/▼/▪ glyph plus the points delta, colour-coded
+ * by status. Mirrors the StatGrid delta-subtitle pattern. The glyph and the
+ * number are separate inline-flex children, so the slot counter animates only
+ * the digits and the gap between glyph and number is never compressed (the
+ * spacing bug the old "175,259 behind" single-string label suffered from).
+ *
+ * @param {object} props - Component props
+ * @param {{ status: 'ahead'|'behind'|'on_track', delta: number }} props.pace - Evaluated event pace
+ */
+function PaceIndicator({ pace }) {
+    const glyph = PACE_GLYPH[pace.status] ?? '▪';
+    // ▲/▼ glyphs sit below their optical centre — lift them; ▪ is centred.
+    const nudge = pace.status === 'on_track' ? '' : '-translate-y-[1.5px]';
+    return (
+        <span
+            className="sector-card-pace inline-flex items-center gap-1"
+            style={{ color: PACE_COLORS[pace.status] }}
+            suppressHydrationWarning
+        >
+            <span className={nudge}>{glyph}</span>
+            {pace.status === 'on_track' ?
+                <span>On track</span>
+            :   <AnimatedStat value={pace.delta} />}
+        </span>
+    );
+}
+
 export default function EventCard({
     action,
     region,
@@ -153,16 +183,7 @@ export default function EventCard({
                         {pace && (
                             <>
                                 <span className="sector-card-sep">&middot;</span>
-                                <span
-                                    className="sector-card-pace"
-                                    style={{ color: PACE_COLORS[pace.status] }}
-                                    suppressHydrationWarning
-                                >
-                                    <AnimatedStat
-                                        value={pace.label}
-                                        format={passThrough}
-                                    />
-                                </span>
+                                <PaceIndicator pace={pace} />
                             </>
                         )}
                     </div>
@@ -171,6 +192,7 @@ export default function EventCard({
                     <div
                         className="sector-card-bar"
                         role="progressbar"
+                        aria-label={`${region} ${action} progress`}
                         aria-valuenow={isCampaign ? captured : safePct}
                         aria-valuemin={0}
                         aria-valuemax={isCampaign ? 11 : 100}
@@ -216,13 +238,7 @@ export default function EventCard({
                     {!barLabel && pace && (
                         <>
                             <span className="sector-card-sep">&middot;</span>
-                            <span
-                                className="sector-card-pace"
-                                style={{ color: PACE_COLORS[pace.status] }}
-                                suppressHydrationWarning
-                            >
-                                {pace.label}
-                            </span>
+                            <PaceIndicator pace={pace} />
                         </>
                     )}
                 </div>

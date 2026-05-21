@@ -100,13 +100,14 @@ describe('EventCard (sector view — default)', () => {
                 action="defending"
                 barLabel="CAPITAL_DEFENSE"
                 endTime={Math.floor(Date.now() / 1000) + 3600}
-                pace={{ status: 'ahead', label: '500 ahead' }}
+                pace={{ status: 'ahead', delta: 500 }}
             />,
         );
         const labelRow = container.querySelector('.sector-card-bar-label-row');
-        expect(labelRow.textContent).toContain('500 ahead');
+        expect(labelRow.querySelector('.sector-card-pace')).not.toBeNull();
+        expect(labelRow.textContent).toContain('500');
         const meta = container.querySelector('.sector-card-meta');
-        expect(meta.textContent).not.toContain('500 ahead');
+        expect(meta.querySelector('.sector-card-pace')).toBeNull();
     });
 
     test('pace appears in meta line when no barLabel', () => {
@@ -114,12 +115,43 @@ describe('EventCard (sector view — default)', () => {
             <EventCard
                 {...baseProps}
                 barLabel={null}
-                pace={{ status: 'ahead', label: '500 ahead' }}
+                pace={{ status: 'ahead', delta: 500 }}
             />,
         );
         expect(container.querySelector('.sector-card-bar-label-row')).toBeNull();
         const meta = container.querySelector('.sector-card-meta');
-        expect(meta.textContent).toContain('500 ahead');
+        expect(meta.querySelector('.sector-card-pace')).not.toBeNull();
+        expect(meta.textContent).toContain('500');
+    });
+
+    test('pace "ahead" renders ▲ glyph in success color, no "ahead" word', () => {
+        const { container } = render(
+            <EventCard {...baseProps} pace={{ status: 'ahead', delta: 500 }} />,
+        );
+        const paceEl = container.querySelector('.sector-card-pace');
+        expect(paceEl.textContent).toContain('▲');
+        expect(paceEl.textContent).not.toMatch(/ahead/i);
+        expect(paceEl.style.color).toBe('var(--color-success)');
+    });
+
+    test('pace "behind" renders ▼ glyph in danger color, no "behind" word', () => {
+        const { container } = render(
+            <EventCard {...baseProps} pace={{ status: 'behind', delta: 1200 }} />,
+        );
+        const paceEl = container.querySelector('.sector-card-pace');
+        expect(paceEl.textContent).toContain('▼');
+        expect(paceEl.textContent).not.toMatch(/behind/i);
+        expect(paceEl.textContent).toContain('1,200');
+        expect(paceEl.style.color).toBe('var(--color-danger)');
+    });
+
+    test('pace "on_track" renders ▪ glyph with "On track" label', () => {
+        const { container } = render(
+            <EventCard {...baseProps} pace={{ status: 'on_track', delta: 0 }} />,
+        );
+        const paceEl = container.querySelector('.sector-card-pace');
+        expect(paceEl.textContent).toContain('▪');
+        expect(paceEl.textContent).toContain('On track');
     });
 
     test('meta line always visible with points', () => {
@@ -194,6 +226,25 @@ describe('EventCard (sector view — default)', () => {
         const bar = container.querySelector('.sector-card-bar');
         expect(bar.getAttribute('aria-valuenow')).toBe('45.3');
         expect(bar.getAttribute('aria-valuemax')).toBe('100');
+    });
+
+    test('progressbar has a descriptive aria-label (a11y)', () => {
+        const { container } = render(<EventCard {...baseProps} />);
+        const bar = container.querySelector('.sector-card-bar');
+        expect(bar.getAttribute('aria-label')).toBe('Wise Region capturing progress');
+    });
+
+    test('aria-label reflects the action verb (defending)', () => {
+        const { container } = render(
+            <EventCard
+                {...baseProps}
+                action="defending"
+                region="Super Earth"
+                endTime={Math.floor(Date.now() / 1000) + 3600}
+            />,
+        );
+        const bar = container.querySelector('.sector-card-bar');
+        expect(bar.getAttribute('aria-label')).toBe('Super Earth defending progress');
     });
 
     test('sector view does NOT render the 11-segment grid', () => {
@@ -333,11 +384,12 @@ describe('EventCard (campaign view)', () => {
         const { container } = render(
             <EventCard
                 {...campaignProps}
-                pace={{ status: 'ahead', label: '500 ahead' }}
+                pace={{ status: 'ahead', delta: 500 }}
                 endTime={Math.floor(Date.now() / 1000) + 3600}
             />,
         );
-        expect(container.textContent).toContain('500 ahead');
+        expect(container.querySelector('.sector-card-pace')).not.toBeNull();
+        expect(container.querySelector('.sector-card-pace').textContent).toContain('500');
         expect(container.querySelector('.sector-card-countdown')).not.toBeNull();
     });
 });
