@@ -30,6 +30,21 @@
     flex-direction: column;
 }
 
+/* Day groups below the fold skip layout/paint until scrolled near — a long
+ * season's event log can render 30+ day groups. `contain-intrinsic-size`
+ * reserves an estimated height (auto = remember the real size after first
+ * render) so the scrollbar stays stable.
+ *
+ * Deliberately scoped to the default `grid` layout and excluded from the
+ * archives `--stack` layout: useScrollEvent (src/shared/hooks/useScrollEvent
+ * .mjs) reads every card's getBoundingClientRect and early-breaks on DOM
+ * order — content-visibility collapses off-screen cards to zero-rects, which
+ * would break that scan. */
+.event-log-days:not(.event-log-days--stack) .event-log-day {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+}
+
 /* === Day header (mobile: ghost right accent via box-shadow) === */
 
 .event-log-day-header {

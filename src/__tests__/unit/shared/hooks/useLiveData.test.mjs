@@ -434,7 +434,7 @@ describe('useLiveData — singleton & cleanup', () => {
 describe('useLiveData — localStorage cache fallback', () => {
     test('seeds data + mapState from localStorage on mount (before first poll resolves)', async () => {
         localStorage.setItem(
-            'hd1-live-cache',
+            'hd1-live-cache-v1',
             JSON.stringify({
                 data: { cached: true },
                 mapState: { 0: 'illuminate' },
@@ -479,7 +479,7 @@ describe('useLiveData — localStorage cache fallback', () => {
             await flushAll();
         });
 
-        const raw = localStorage.getItem('hd1-live-cache');
+        const raw = localStorage.getItem('hd1-live-cache-v1');
         expect(raw).toBeTruthy();
         const parsed = JSON.parse(raw);
         expect(parsed.data).toEqual({ fresh: 1 });
@@ -488,7 +488,7 @@ describe('useLiveData — localStorage cache fallback', () => {
     });
 
     test('malformed cache JSON is ignored (does not crash; falls back to null)', async () => {
-        localStorage.setItem('hd1-live-cache', '{ not valid json');
+        localStorage.setItem('hd1-live-cache-v1', '{ not valid json');
         let resolveFetch;
         globalThis.fetch = vi.fn(
             () =>

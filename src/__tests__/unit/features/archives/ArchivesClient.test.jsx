@@ -40,7 +40,9 @@ vi.mock('@/features/archives/ArchivesHeader', () => ({
         <button data-testid="effects-toggle-stub" data-active={String(!!active)} />
     ),
 }));
-vi.mock('@/features/archives/FactionHealthChart', () => ({
+// ArchivesClient imports the lazy-load wrapper (next/dynamic) — mock that,
+// not the underlying chart, so the stub is what actually renders.
+vi.mock('@/features/archives/FactionHealthChartLoader', () => ({
     default: ({ snapshots, pointsMax }) => (
         <div
             data-testid="faction-health-chart-stub"

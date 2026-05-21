@@ -2,7 +2,10 @@
 import { useState, useEffect } from 'react';
 import { guardedReload, clearReloadGuard } from '@/shared/utils/reloadGuard.mjs';
 
-const CACHE_KEY = 'hd1-live-cache';
+// Version-suffixed: bump the `-vN` suffix whenever the cached payload shape
+// changes (new/renamed/retyped fields). Old entries are then never read again
+// and naturally abandoned, avoiding hydration mismatches from stale caches.
+const CACHE_KEY = 'hd1-live-cache-v1';
 const POLL_INTERVAL = 10_000;
 
 function loadCachedState() {
