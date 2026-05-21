@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.47.11
+
+### Bug Fixes
+
+- **Stats faction-tab switch no longer blocks the interaction frame (#388).** Switching the `FactionTabs` selection fans a re-render across ~10 `react-slot-counter` instances in `StatGrid` at once; a DevTools profile measured a ~41ms synchronous block (72ms INP) — a visible hitch. `setFaction` is now wrapped in React's `startTransition`, marking the re-render non-urgent so React can yield through it rather than blocking the frame. Measured INP for a Global→Bugs switch dropped 72ms → 39ms. The odometer roll itself is unchanged. (The obvious `key`-remount approach was profiled and rejected — it was 10× worse, 722ms, from layout thrashing as ~10 slot counters re-measured glyph width on mount.)
+
 ## 0.47.10
 
 ### Bug Fixes
