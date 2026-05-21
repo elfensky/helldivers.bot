@@ -1,4 +1,5 @@
 'use client';
+import { startTransition } from 'react';
 import './DashboardClient.css';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import LastUpdated from '@/shared/components/LastUpdated';
@@ -241,7 +242,18 @@ export default function DashboardClient({
                 <ComponentErrorBoundary name="Stats">
                     <div className="flex items-center justify-between gap-2">
                         <h2>Stats</h2>
-                        <FactionTabs active={faction} onChange={setFaction} />
+                        <FactionTabs
+                            active={faction}
+                            onChange={(id) =>
+                                // Switching the faction tab fans a re-render
+                                // out to ~10 react-slot-counter instances
+                                // (~41ms of work). startTransition marks it
+                                // non-urgent so React can yield through that
+                                // render instead of blocking the interaction
+                                // frame in one chunk.
+                                startTransition(() => setFaction(id))
+                            }
+                        />
                     </div>
                     <StatGrid
                         live={data.status}
