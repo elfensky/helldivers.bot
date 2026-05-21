@@ -12,7 +12,7 @@ import { upsertEvent } from '@/db/queries/upsertEvent.mjs';
 import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
 
 /**
- * @param {number} season
+ * @param {number} season - Season number to fetch and persist
  * @param {{ protectedBucket?: number }} opts  When set, skip writing h1_status
  *   rows whose bucket >= this value. The worker poll passes this to prevent
  *   stale get_snapshots data from overwriting the live bucket that

@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
  *
  * @param {number} code - The HTTP error status code (should be 4xx or 5xx).
  * @param {number} start - The start time (for calculating performance time).
- * @param {*} error - The error object to include in the response.
+ * @param {unknown} error - The error object to include in the response.
  * @returns {NextResponse} A NextResponse JSON object with timing, code, message, and null data.
  * @throws {Error} If the code is not an error status code (i.e., not 4xx or 5xx).
  */
@@ -79,7 +79,7 @@ export function errorResponse(code, start, error = null) {
  *
  * @param {number} code - The HTTP status code (should be 2xx).
  * @param {number} start - The start time (for calculating performance time).
- * @param {*} data - The data to include in the response.
+ * @param {unknown} data - The data to include in the response.
  * @param {{ headers?: Record<string, string> }} [opts] - Optional extra
  *   response headers (e.g. `Cache-Control: no-store` for the live route).
  *   These are merged on top of the default `Content-Type: application/json`.

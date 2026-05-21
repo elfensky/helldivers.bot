@@ -163,7 +163,7 @@ export function computeMapState(factionStates, events = []) {
  * "only active events" invariant documented above so call sites can't
  * accidentally pass completed events.
  *
- * @param {{ status: Array, events?: Array }} data
+ * @param {{ status: Array, events?: Array }} data - Live campaign payload
  * @returns {object} Map state from computeMapState
  */
 export function computeLiveMapState(data) {

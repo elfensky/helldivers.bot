@@ -1,7 +1,7 @@
 /**
  * Generates a Gravatar URL for the given email address.
  * Uses Web Crypto API (SHA-256) so it works in Node, browsers, and edge runtimes.
- * @param {string} email
+ * @param {string} email - Email address to hash
  * @returns {Promise<string>} Gravatar URL with 64px size parameter
  */
 export async function getGravatarUrl(email) {

@@ -53,7 +53,7 @@ export async function getApiKeysByUserId(userId) {
 /**
  * Generate a new API key for the authenticated user. Max 5 keys per user.
  * Key is SHA-256 hashed before storage; plaintext shown once at creation.
- * @param {*} _ - Unused (server action signature)
+ * @param {unknown} _ - Unused (server action signature)
  * @param {FormData} formData - Must contain userId and description fields
  */
 export async function generateApiKey(_, formData) {
@@ -132,7 +132,7 @@ export async function generateApiKey(_, formData) {
 
 /**
  * Delete an API key owned by the authenticated user.
- * @param {*} _ - Unused (server action signature)
+ * @param {unknown} _ - Unused (server action signature)
  * @param {FormData} formData - Must contain userId and apikeyId fields
  */
 export async function deleteApiKey(_, formData) {

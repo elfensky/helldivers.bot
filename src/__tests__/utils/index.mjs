@@ -63,7 +63,7 @@ export function createMockSession(overrides = {}) {
  * (the `error` key) are explicitly asserted not-present.
  *
  * @param {object} body - JSON-parsed response body
- * @param {{ code?: number, data?: unknown }} [opts]
+ * @param {{ code?: number, data?: unknown }} [opts] - Optional matchers to assert specific `code`/`data` values
  */
 export function expectSuccessEnvelope(body, { code, data } = {}) {
     expect(body).toMatchObject({
@@ -87,7 +87,7 @@ export function expectSuccessEnvelope(body, { code, data } = {}) {
  * in specific values; `error` can be a string, a partial matcher, or omitted.
  *
  * @param {object} body - JSON-parsed response body
- * @param {{ code?: number, error?: unknown }} [opts]
+ * @param {{ code?: number, error?: unknown }} [opts] - Optional matchers to assert specific `code`/`error` values
  */
 export function expectErrorEnvelope(body, { code, error } = {}) {
     expect(body).toMatchObject({

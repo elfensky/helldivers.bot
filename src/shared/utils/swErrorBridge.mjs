@@ -9,7 +9,7 @@ import { reportError } from './observability.mjs';
  * Expected message shape:
  *   { type: 'sw-error', error: { message, name?, stack? }, context?: object }
  *
- * @param {MessageEvent | { data: unknown } | null | undefined} event
+ * @param {MessageEvent | { data: unknown } | null | undefined} event - postMessage event received from the service worker
  */
 export function handleSwErrorMessage(event) {
     const msg = event?.data;

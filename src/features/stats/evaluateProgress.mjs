@@ -17,7 +17,7 @@ import { EVENT_STATUS } from '@/shared/enums/events.mjs';
  *
  * Returns null if the event is not active or the time window is degenerate.
  *
- * @param {{ start_time: number, end_time: number, points: number, points_max: number, status: string }} event
+ * @param {{ start_time: number, end_time: number, points: number, points_max: number, status: string }} event - The active event to evaluate
  * @returns {{ status: 'ahead'|'behind'|'on_track', delta: number, deltaPercent: number, currentRate: number, requiredRate: number, label: string } | null}
  */
 export function evaluateProgress(event) {

@@ -8,8 +8,8 @@ import { EVENT_TYPE } from '@/shared/enums/events.mjs';
 /**
  * Build title + subtitle for a toast based on event kind and type.
  *
- * @param {'event_started'|'event_won'|'event_lost'|'catch_up'} kind
- * @param {{ enemy: number, region: number, type: 'attack'|'defend' }} event
+ * @param {'event_started'|'event_won'|'event_lost'|'catch_up'} kind - Event lifecycle stage the toast represents
+ * @param {{ enemy: number, region: number, type: 'attack'|'defend' }} event - The event the toast describes
  * @returns {{ title: string, subtitle: string }}
  */
 export function toastLabel(kind, event) {
@@ -64,9 +64,9 @@ let flashToggle = false;
 /**
  * Show (or replace) an event toast with faction-colored blinking accent border.
  *
- * @param {{ event_id: number, enemy: number, region: number, type: 'attack'|'defend' }} event
- * @param {'event_started'|'event_won'|'event_lost'|'catch_up'} kind
- * @param {object}  [opts]
+ * @param {{ event_id: number, enemy: number, region: number, type: 'attack'|'defend' }} event - The event to show a toast for
+ * @param {'event_started'|'event_won'|'event_lost'|'catch_up'} kind - Event lifecycle stage the toast represents
+ * @param {object}  [opts] - Optional toast appearance overrides
  * @param {number}  [opts.duration]    - Sonner duration (default Infinity)
  * @param {string}  [opts.alertColor]  - Blink overlay color (default danger)
  * @param {number}  [opts.pulseDelay]  - Animation delay in seconds for per-event offset
