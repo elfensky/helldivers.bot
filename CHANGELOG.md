@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.47.7
+
+### Bug Fixes
+
+- **Pace indicator adopts the ▲/▼/▪ glyph pattern (#357).** The event pace label ("175,259 behind") routed a single mixed number-plus-word string through `AnimatedStat` → `react-slot-counter`, which slots every character individually and visually compressed the space between the number and the status word into "175,259behind". `evaluateProgress` no longer returns a presentation `label` string — it returns pure data (`status`, `delta`, rates), and a new `PaceIndicator` component in `EventCard` renders a colour-coded ▲ (ahead, green) / ▼ (behind, red) / ▪ (on_track) glyph as a separate inline-flex sibling of the slotted number. Because the glyph and the digits are now distinct flex children, the slot counter only ever animates digits and the gap can no longer collapse. This also aligns the pace display with the existing `StatGrid` delta-subtitle pattern. The `label` field was consumed only by `EventCard`; the OpenGraph image route reads `pace.status`, which is unchanged.
+- **Progress bars now expose an accessible name (#361).** A Lighthouse accessibility audit flagged the `role="progressbar"` bars in `EventCard` and `DefeatedCard` for having no accessible name, leaving screen-reader users with an unlabelled control. Added `aria-label` to both — `"{region} {action} progress"` (e.g. "Super Earth defending progress") for `EventCard` and `"{faction} defeat progress"` for `DefeatedCard` — alongside the existing `aria-valuenow`/`aria-valuemin`/`aria-valuemax`.
+
 ## 0.47.6
 
 ### Chores
