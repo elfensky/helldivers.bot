@@ -9,7 +9,9 @@ export function formatNumber(n) {
     const num = Number(n);
     if (!Number.isFinite(num)) return '—';
     if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(1) + 'B';
-    if (num >= 10_000_000) return (num / 1_000_000).toFixed(1) + 'M';
+    // M suffix from 1M up — a 7-digit grouped number ("3,522,088") overflows
+    // the stat cards, so anything >= 1M collapses to "X.XM".
+    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M';
     if (num >= 1_000) return num.toLocaleString();
     return String(num);
 }

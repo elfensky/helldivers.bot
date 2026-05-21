@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.47.14
+
+### Features
+
+- **`ENEMIES_KILLED` subtitle compares the last 24h of kills against the 24h before it.** The card's `Last 24h` subtitle previously showed only the raw kill volume with a permanently green arrow — a count, not a verdict (a cumulative counter only ever grows). It now derives two consecutive 24h volumes (`last24h = current − kills(24h ago)`, `prev24h = kills(24h ago) − kills(48h ago)`) and shows the last-24h volume with a ▲/▼/▪ arrow marking whether the killing pace rose, fell, or held versus the previous 24h — a genuine better/worse signal, matching how `HELLDIVERS_ONLINE` already reads against its rolling-average baseline. `getKills24hAgo` was renamed to `getKillsTrend` and now fetches two point-in-time snapshots (~24h and ~48h ago) instead of one; the prop is threaded through as `killsTrend`. For a season 24–48h old there is no 48h baseline to compare against, so the arrow falls back to a neutral ▪. The ▲/▼/▪ arrow rendering shared by both delta subtitles was extracted into a `deltaArrow` helper.
+
+### Changes
+
+- **`formatNumber` applies the `M` suffix from 1M, not 10M.** A 7-digit locale-grouped number (`3,522,088`) overflowed the dashboard stat-card subtitles; numbers ≥ 1M now collapse to `X.XM` (`3.5M`). Since this is the shared number formatter, 1M–10M values also compact on the archive stat cards, the admin overview, and event-card point totals. Numbers below 1M are unchanged (still locale-grouped).
+
 ## 0.47.13
 
 ### Features

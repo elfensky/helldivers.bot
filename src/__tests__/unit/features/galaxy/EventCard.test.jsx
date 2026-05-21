@@ -361,9 +361,9 @@ describe('EventCard (campaign view)', () => {
             />,
         );
         const points = container.querySelector('.sector-card-points');
-        // Values under 10M use locale grouping (e.g. 1,234,567 / 5,000,000)
-        expect(points.textContent).toMatch(/1.*234.*567/);
-        expect(points.textContent).toMatch(/5.*000.*000/);
+        // 1,234,567 and 5,000,000 both clear 1M, so each renders with the M suffix
+        expect(points.textContent).toMatch(/1\.2M/);
+        expect(points.textContent).toMatch(/5\.0M/);
     });
 
     test('missing factionMap does not crash, renders all 11 empty segments', () => {

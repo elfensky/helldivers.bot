@@ -49,10 +49,10 @@ describe('formatNumber', () => {
         expect(formatNumber(999999)).toBe(Number(999999).toLocaleString());
     });
 
-    test('values 1M–9.99M use locale grouping', () => {
-        expect(formatNumber(1000000)).toBe(Number(1000000).toLocaleString());
-        expect(formatNumber(1500000)).toBe(Number(1500000).toLocaleString());
-        expect(formatNumber(9999999)).toBe(Number(9999999).toLocaleString());
+    test('values from 1M up use the M suffix with one decimal', () => {
+        expect(formatNumber(1000000)).toBe('1.0M');
+        expect(formatNumber(1500000)).toBe('1.5M');
+        expect(formatNumber(9500000)).toBe('9.5M');
     });
 
     test('millions ≥10M use M suffix with one decimal', () => {
@@ -68,7 +68,7 @@ describe('formatNumber', () => {
 
     test('BigInt input is converted to number', () => {
         expect(formatNumber(BigInt(42))).toBe('42');
-        expect(formatNumber(BigInt(5000000))).toBe(Number(5000000).toLocaleString());
+        expect(formatNumber(BigInt(5000000))).toBe('5.0M');
     });
 
     test('null, undefined, and non-finite return em dash', () => {

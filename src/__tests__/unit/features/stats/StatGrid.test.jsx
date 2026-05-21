@@ -105,6 +105,59 @@ describe('StatGrid', () => {
             expect(subtitle).toContain('Martyrs');
             expect(subtitle).not.toContain('%');
         });
+
+        // total kills 500+1000+750 = 2250 → last 24h = 2250 − ago24h
+        const killsSubtitle = () =>
+            screen
+                .getByText('ENEMIES_KILLED')
+                .closest('.stat-card')
+                ?.querySelector('.stat-card-subtitle');
+
+        test('ENEMIES_KILLED arrow is green ▲ when killing pace rose vs the prior 24h', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    killsTrend={{ global: { ago24h: 2000, ago48h: 1900 } }}
+                />,
+            );
+            // last 24h: 2250 − 2000 = 250; prior 24h: 2000 − 1900 = 100; pace up
+            expect(killsSubtitle()?.textContent).toContain('250');
+            expect(killsSubtitle()?.querySelector('.text-success')?.textContent).toBe(
+                '▲',
+            );
+        });
+
+        test('ENEMIES_KILLED arrow is red ▼ when killing pace fell vs the prior 24h', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    killsTrend={{ global: { ago24h: 2000, ago48h: 1650 } }}
+                />,
+            );
+            // last 24h: 2250 − 2000 = 250; prior 24h: 2000 − 1650 = 350; pace down
+            expect(killsSubtitle()?.textContent).toContain('250');
+            expect(killsSubtitle()?.querySelector('.text-danger')?.textContent).toBe('▼');
+        });
+
+        test('ENEMIES_KILLED arrow is a neutral ▪ when there is no 48h baseline', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    killsTrend={{ global: { ago24h: 2000, ago48h: null } }}
+                />,
+            );
+            // last 24h volume still shows, but pace can't be compared yet
+            expect(killsSubtitle()?.textContent).toContain('250');
+            expect(killsSubtitle()?.textContent).toContain('▪');
+            expect(killsSubtitle()?.querySelector('.text-success')).toBeNull();
+            expect(killsSubtitle()?.querySelector('.text-danger')).toBeNull();
+        });
     });
 
     describe('faction view', () => {
