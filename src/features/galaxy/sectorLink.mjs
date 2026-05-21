@@ -1,17 +1,19 @@
 /**
- * Card → map hover link. When a dashboard region card is hovered, highlight
- * the matching area on the galaxy map: the hovered faction's whole territory
- * gets a lit outline, and its one active sector a heavier one.
+ * Hover link between the dashboard region cards and the galaxy map, in both
+ * directions:
  *
- * Implemented by toggling CSS classes directly on the map's SVG nodes (the
+ *   - card → map (`highlightSector`): hovering a region card firms up the
+ *     matching faction's map territory — see Map.css.
+ *   - map → card (`highlightCard`): hovering a faction's map territory firms
+ *     up that faction's sidebar card(s) — see EventCard.css.
+ *
+ * Implemented by toggling CSS classes directly on the DOM nodes (the
  * MermaidDiagram pattern) rather than via React state — a hover effect must
  * not cost a re-render of the card grid plus ~33 map paths on every
  * mouse-move. The map (`Map.jsx`) renders `<g id="{faction}">` groups of
- * `<path class="sector" data-name="{n}">`; those ids / data-attributes are
- * the link keys, so no shared component or state is needed.
- *
- * Bidirectional (map → card) can be layered on later by calling the same
- * functions from the map's own hover handlers — see issue #185.
+ * `<path class="sector" data-name="{n}">`; the cards (`DashboardClient.jsx`)
+ * carry `data-faction-index` / `data-attacker-index`. Those ids and
+ * data-attributes are the link keys, so no shared component or state is needed.
  */
 
 // Faction index → the `<g>` id used in Map.jsx.
@@ -59,4 +61,34 @@ export function highlightSector(factionIndex, sector = null) {
             el.classList.add('sector-linked-strong');
         }
     });
+}
+
+/** Remove the hover-link class from every dashboard card. */
+export function clearCardHighlight() {
+    if (typeof document === 'undefined') return;
+    document
+        .querySelectorAll('.card-linked')
+        .forEach((el) => el.classList.remove('card-linked'));
+}
+
+/**
+ * Highlight a faction's dashboard card(s) — the map → card reverse of
+ * `highlightSector`. Hovering a faction's map territory firms up the border
+ * of its sidebar card(s); a faction can own more than one (frontier +
+ * homeworld).
+ *
+ * @param {number} factionIndex - 0 Bugs, 1 Cyborgs, 2 Illuminate, 3 Super Earth
+ */
+export function highlightCard(factionIndex) {
+    if (typeof document === 'undefined') return;
+    clearCardHighlight();
+
+    // A card matches by its own faction slot (`data-faction-index`) or — for
+    // the Super Earth defence card — by the attacking faction it represents
+    // (`data-attacker-index`), so hovering the attacker's territory lights it.
+    document
+        .querySelectorAll(
+            `li[data-faction-index="${factionIndex}"], li[data-attacker-index="${factionIndex}"]`,
+        )
+        .forEach((el) => el.classList.add('card-linked'));
 }

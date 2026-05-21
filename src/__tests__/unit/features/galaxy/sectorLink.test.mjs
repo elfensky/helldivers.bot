@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, test, expect, beforeEach } from 'vitest';
-import { highlightSector, clearSectorHighlight } from '@/features/galaxy/sectorLink.mjs';
+import {
+    highlightSector,
+    clearSectorHighlight,
+    highlightCard,
+    clearCardHighlight,
+} from '@/features/galaxy/sectorLink.mjs';
 
 /**
  * Build a minimal stand-in for the Map.jsx SVG structure: a `#map` wrapper,
@@ -29,9 +34,31 @@ function makeMapDom() {
     document.body.appendChild(map);
 }
 
-beforeEach(makeMapDom);
+/**
+ * Build a stand-in for the DashboardClient card grid: a `<ul>` of `<li>`
+ * cards keyed by `data-faction-index`. A faction can own two cards (frontier
+ * + homeworld); the Super Earth defence card additionally carries a
+ * `data-attacker-index` so the attacking faction's territory highlights it.
+ */
+function makeCardDom() {
+    document.body.replaceChildren();
+    const ul = document.createElement('ul');
+    ul.className = 'sector-grid';
+    const addCard = (attrs) => {
+        const li = document.createElement('li');
+        for (const [k, v] of Object.entries(attrs)) li.setAttribute(k, String(v));
+        ul.appendChild(li);
+    };
+    addCard({ 'data-faction-index': 0 }); // bugs — frontier
+    addCard({ 'data-faction-index': 0, 'data-sector': 11 }); // bugs — homeworld
+    addCard({ 'data-faction-index': 1 }); // cyborgs
+    addCard({ 'data-faction-index': 3, 'data-attacker-index': 2 }); // SE defence, Illuminate attacking
+    document.body.appendChild(ul);
+}
 
 describe('sectorLink', () => {
+    beforeEach(makeMapDom);
+
     test('faints the whole faction territory and strongly marks one sector', () => {
         highlightSector(0, 2);
 
@@ -93,5 +120,63 @@ describe('sectorLink', () => {
                 .querySelector('#cyborgs .sector')
                 .classList.contains('sector-linked-strong'),
         ).toBe(true);
+    });
+});
+
+describe('cardLink', () => {
+    beforeEach(makeCardDom);
+
+    test('highlightCard marks every card of the hovered faction', () => {
+        highlightCard(0); // bugs owns two cards: frontier + homeworld
+
+        const linked = document.querySelectorAll('.card-linked');
+        expect(linked).toHaveLength(2);
+        linked.forEach((el) => expect(el.getAttribute('data-faction-index')).toBe('0'));
+        // a different faction is untouched
+        expect(
+            document
+                .querySelector('li[data-faction-index="1"]')
+                .classList.contains('card-linked'),
+        ).toBe(false);
+    });
+
+    test('a single-card faction highlights just its one card', () => {
+        highlightCard(1);
+
+        const linked = document.querySelectorAll('.card-linked');
+        expect(linked).toHaveLength(1);
+        expect(linked[0].getAttribute('data-faction-index')).toBe('1');
+    });
+
+    test('hovering the attacking faction highlights the Super Earth defence card', () => {
+        // The SE defence card carries data-attacker-index="2" (Illuminate attacking).
+        highlightCard(2);
+
+        const seCard = document.querySelector('li[data-faction-index="3"]');
+        expect(seCard.classList.contains('card-linked')).toBe(true);
+    });
+
+    test('the Super Earth defence card also highlights from the superearth group', () => {
+        highlightCard(3);
+
+        const seCard = document.querySelector('li[data-faction-index="3"]');
+        expect(seCard.classList.contains('card-linked')).toBe(true);
+    });
+
+    test('clearCardHighlight removes every card-linked class', () => {
+        highlightCard(0);
+        clearCardHighlight();
+
+        expect(document.querySelectorAll('.card-linked')).toHaveLength(0);
+    });
+
+    test('a new card highlight clears the previous one first', () => {
+        highlightCard(0);
+        highlightCard(1);
+
+        expect(
+            document.querySelectorAll('li[data-faction-index="0"].card-linked'),
+        ).toHaveLength(0);
+        expect(document.querySelectorAll('.card-linked')).toHaveLength(1);
     });
 });

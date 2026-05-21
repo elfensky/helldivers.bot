@@ -83,8 +83,15 @@ export default function DashboardClient({
     function renderFrontierCard(index) {
         if (index === seDefenderIndex) {
             // Super Earth defense is an event-focused interrupt — always sector view.
+            // `data-attacker-index` links this card (filed under faction 3) to the
+            // attacking faction's map territory, so hovering there highlights it
+            // too — the map → card reverse highlight (#185).
             return (
-                <li key={`frontier-${index}`} {...sectorHoverProps(3, 0)}>
+                <li
+                    key={`frontier-${index}`}
+                    {...sectorHoverProps(3, 0)}
+                    data-attacker-index={index}
+                >
                     <EventCard
                         action="defending"
                         barLabel="SUPER_EARTH_DEFENSE"
