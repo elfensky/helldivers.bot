@@ -1,23 +1,24 @@
 import Image from 'next/image';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
-import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 import { FACTION_INDEX } from '@/shared/enums/factions.mjs';
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
 import './StatGrid.css';
 
-const asPercent = (v) => (Number.isFinite(v) ? `${v.toFixed(1)}%` : '—');
-
 /**
- * Compute accidental-death rate: accidentals / deaths as a raw percentage
- * number (0-100). Returns null if deaths is zero so callers can render '—'.
+ * Format a Unix-seconds timestamp as a "DD MONTH" label (e.g. "25 JANUARY",
+ * "01 MARCH"). Day is zero-padded; month is the full English name uppercased.
+ * Fixed to UTC so the server-rendered output and client hydration agree
+ * regardless of the viewer's timezone.
  */
-function computeAccidentalRate(accidentals, deaths) {
-    const a = Number(accidentals || 0);
-    const d = Number(deaths || 0);
-    if (d <= 0) return null;
-    return (a / d) * 100;
+function formatStartDate(unixSeconds) {
+    const d = new Date(unixSeconds * 1000);
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = d
+        .toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })
+        .toUpperCase();
+    return `${day} ${month}`;
 }
 
 function accidentalRateTooltip(accidentals, deaths) {
@@ -85,26 +86,23 @@ function cumulativeAddedSubtitle(current, baseline) {
 }
 
 /**
- * Subtitle for the HELLDIVERS_LOST card — shows the absolute number
- * of accidental deaths with a small `backstab` icon in place of a
- * text label, plus the rate as a percentage of total deaths. Returns
+ * Subtitle for the HELLDIVERS_LOST card — shows the absolute number of
+ * accidental ("teamkill") deaths, marked with a small `backstab` icon and
+ * a `MARTYRS` label (these are the divers who were teamkilled). Returns
  * null when there are no accidentals to report (either deaths or
- * accidentals is 0). The full count + rate is also surfaced via the
- * card's tooltip.
+ * accidentals is 0). The accidental + total death counts are also
+ * surfaced via the card's tooltip.
  */
 function accidentalSubtitle(accidentals, deaths) {
     const count = Number(accidentals || 0);
     if (!(Number(deaths) > 0) || count <= 0) return null;
-    const rate = computeAccidentalRate(accidentals, deaths);
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
             <Image src="/icons/backstab.png" alt="" width={14} height={14} />
             <span>
                 <AnimatedStat value={count} />
             </span>
-            <span>
-                (<AnimatedStat value={rate} format={asPercent} />)
-            </span>
+            <span>Martyrs</span>
         </span>
     );
 }
@@ -144,20 +142,30 @@ function eventsScoreValue(wins, losses) {
 /**
  * WAR_DURATION stat card. `seconds` is the elapsed time to display — total
  * war duration on the global tab, or how long a faction has been deployed on
- * a faction tab. Null/invalid `seconds` (a faction not yet introduced) renders
- * an em-dash. Mirrors the archives `DURATION` card: rounded days as the value,
- * the precise humanised duration as the subtitle.
+ * a faction tab. `startUnix` is the Unix-seconds timestamp that span began —
+ * war start on the global tab, faction introduction on a faction tab — shown
+ * as a "DD MONTH" subtitle so the value and subtitle read as a coherent pair.
+ * Null/invalid `seconds` (a faction not yet introduced) renders an em-dash
+ * with no subtitle.
  *
  * @param {number | null} seconds - Elapsed war/deployment time in seconds
+ * @param {number | null} startUnix - Unix-seconds timestamp the span began
  */
-function warDurationCard(seconds) {
+function warDurationCard(seconds, startUnix) {
     const valid = Number.isFinite(seconds) && seconds > 0;
     const days = valid ? Math.round(seconds / 86400) : null;
+    const startValid = Number.isFinite(startUnix) && startUnix > 0;
     return (
         <StatCard
             label="WAR_DURATION"
             value={days != null ? `${days} ${days === 1 ? 'day' : 'days'}` : '—'}
-            subtitle={valid ? formatDuration(seconds) : undefined}
+            subtitle={
+                valid && startValid ?
+                    <span className="tracking-wide text-ghost uppercase">
+                        {formatStartDate(startUnix)}
+                    </span>
+                :   undefined
+            }
         />
     );
 }
@@ -234,7 +242,7 @@ export default function StatGrid({
                     value={eventsScoreValue(wins, losses)}
                     subtitle={eventsSubtitle}
                 />
-                {warDurationCard(seasonDuration)}
+                {warDurationCard(seasonDuration, warStart)}
             </div>
         );
     }
@@ -281,7 +289,7 @@ export default function StatGrid({
                 value={eventsScoreValue(wins, losses)}
                 subtitle={eventsSubtitle}
             />
-            {warDurationCard(factionSeconds)}
+            {warDurationCard(factionSeconds, stats.first_seen)}
         </div>
     );
 }

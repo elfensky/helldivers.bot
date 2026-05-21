@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.47.13
+
+### Features
+
+- **Region cards highlight their location on the galaxy map on hover (#185).** Hovering a dashboard region card now lights up the matching area of the map — the hovered faction's whole territory faintly, its one active sector strongly, the rest of the map receding (a three-tier opacity focus). Implemented by toggling CSS classes directly on the map's SVG nodes (`sectorLink.mjs`) rather than through React state, so a hover costs no re-render of the card grid or the ~33 map paths. This ships the card → map direction; the reverse (map sector → card) can be layered on later by calling the same helper from the map's own hover handlers — the cards already carry `data-faction-index`/`data-sector` for it.
+
+### Changes
+
+- **War-duration card shows a start date.** The `WAR_DURATION` stat card's subtitle now shows the date the span began — war start on the global tab, faction introduction date on a faction tab (`DD MONTH`, UTC) — rather than a repeated humanised duration, so the value and subtitle read as a coherent pair.
+- **`HELLDIVERS_LOST` teamkill subtitle relabelled "Martyrs".** The accidental-death subtitle showed the count plus its rate as a percentage of total deaths; it now shows the count with a `Martyrs` label and drops the percentage.
+
 ## 0.47.12
 
 ### Features
