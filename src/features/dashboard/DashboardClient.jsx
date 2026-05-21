@@ -261,6 +261,8 @@ export default function DashboardClient({
                         events={events}
                         playersAvg24h={playersAvg24h}
                         kills24hAgo={kills24hAgo}
+                        seasonDuration={data.season_duration}
+                        warStart={data.war_start}
                     />
                 </ComponentErrorBoundary>
             </section>

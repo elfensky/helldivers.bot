@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
+import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 import { FACTION_INDEX } from '@/shared/enums/factions.mjs';
@@ -140,12 +141,35 @@ function eventsScoreValue(wins, losses) {
     );
 }
 
+/**
+ * WAR_DURATION stat card. `seconds` is the elapsed time to display — total
+ * war duration on the global tab, or how long a faction has been deployed on
+ * a faction tab. Null/invalid `seconds` (a faction not yet introduced) renders
+ * an em-dash. Mirrors the archives `DURATION` card: rounded days as the value,
+ * the precise humanised duration as the subtitle.
+ *
+ * @param {number | null} seconds - Elapsed war/deployment time in seconds
+ */
+function warDurationCard(seconds) {
+    const valid = Number.isFinite(seconds) && seconds > 0;
+    const days = valid ? Math.round(seconds / 86400) : null;
+    return (
+        <StatCard
+            label="WAR_DURATION"
+            value={days != null ? `${days} ${days === 1 ? 'day' : 'days'}` : '—'}
+            subtitle={valid ? formatDuration(seconds) : undefined}
+        />
+    );
+}
+
 export default function StatGrid({
     live,
     faction,
     events,
     playersAvg24h = null,
     kills24hAgo = null,
+    seasonDuration = 0,
+    warStart = null,
 }) {
     if (!live?.length) return null;
 
@@ -210,6 +234,7 @@ export default function StatGrid({
                     value={eventsScoreValue(wins, losses)}
                     subtitle={eventsSubtitle}
                 />
+                {warDurationCard(seasonDuration)}
             </div>
         );
     }
@@ -219,6 +244,14 @@ export default function StatGrid({
 
     const onlineSubtitle = playersDeltaSubtitle(stats.players, playersAvg24h?.[faction]);
     const killsSubtitle = cumulativeAddedSubtitle(stats.kills, kills24hAgo?.[faction]);
+
+    // How long this faction has been in the war: total war duration minus the
+    // span it spent 'hidden' before introduction. Null `first_seen` → the
+    // faction has not been deployed yet.
+    const factionSeconds =
+        stats.first_seen != null && Number.isFinite(warStart) ?
+            seasonDuration - (stats.first_seen - warStart)
+        :   null;
 
     return (
         <div className="stat-grid">
@@ -248,6 +281,7 @@ export default function StatGrid({
                 value={eventsScoreValue(wins, losses)}
                 subtitle={eventsSubtitle}
             />
+            {warDurationCard(factionSeconds)}
         </div>
     );
 }

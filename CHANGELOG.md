@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- **War-duration stat card on the dashboard (#386).** A 6th `WAR_DURATION` card joins the `StatGrid`: on the **global** tab it shows how long the current war has been running (`season_duration`); on a **faction** tab it shows how long that faction has been deployed — total war duration minus the span it spent `hidden` before introduction. `getCampaign` now derives a per-faction `first_seen` (the earliest non-`hidden` `h1_status` bucket) and a top-level `war_start`. The non-`hidden` filter is essential: `updateStatus` writes an `h1_status` row for all 3 factions every poll, so a pre-introduction faction carries `hidden` rows from war start — a plain `min(time)` would report day 0 for everyone. Mirrors the archives `DURATION` card; the `auto-fit` stat grid absorbs the 6th card with no layout change.
+
 ## 0.47.11
 
 ### Bug Fixes
