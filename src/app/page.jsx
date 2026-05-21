@@ -3,7 +3,7 @@ import JsonLd from '@/shared/components/JsonLd';
 import HomeClient from '@/features/dashboard/HomeClient';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { getPlayersAvg24h } from '@/db/queries/getPlayersAvg24h.mjs';
-import { getKills24hAgo } from '@/db/queries/getKills24hAgo.mjs';
+import { getKillsTrend } from '@/db/queries/getKillsTrend.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { FACTION_KEY, validateFaction } from '@/shared/preferences/faction.mjs';
 import {
@@ -75,7 +75,7 @@ export default async function HomePage() {
         campaign ?
             await Promise.all([
                 tryCatch(getPlayersAvg24h(campaign.season)),
-                tryCatch(getKills24hAgo(campaign.season)),
+                tryCatch(getKillsTrend(campaign.season)),
             ])
         :   [{ data: null }, { data: null }];
 
@@ -87,7 +87,7 @@ export default async function HomePage() {
                 initialRegionsView={initialRegionsView}
                 initialSortOrder={initialSortOrder}
                 playersAvg24h={playersRes.data ?? null}
-                kills24hAgo={killsRes.data ?? null}
+                killsTrend={killsRes.data ?? null}
             />
         </>
     );

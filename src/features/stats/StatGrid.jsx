@@ -28,30 +28,37 @@ function accidentalRateTooltip(accidentals, deaths) {
 }
 
 /**
- * Format the "LAST 24H" delta subtitle for the ONLINE card. Compares
- * the current player count to the 24h rolling average baseline.
- * Three states: ▲ (growth, success) / ▼ (decline, danger) / ▪ (flat,
- * ghost). Returns null only when there's no baseline yet (new season).
- * Whole line is uppercase and ghost-coloured; only the arrow carries
- * a tinted override, and only when non-zero.
+ * The ▲ / ▼ / ▪ trend arrow shared by the delta-style stat subtitles.
+ * `n` is a signed delta: positive → green ▲, negative → red ▼, zero → a
+ * neutral, un-tinted ▪. The ▲/▼ triangles sit below their optical centre
+ * so they're lifted 1.5px; ▪ is already centred in its em box and isn't
+ * nudged.
+ */
+function deltaArrow(n) {
+    const glyph =
+        n > 0 ? '▲'
+        : n < 0 ? '▼'
+        : '▪';
+    const colorClass =
+        n > 0 ? 'text-success'
+        : n < 0 ? 'text-danger'
+        : '';
+    const nudgeClass = n !== 0 ? '-translate-y-[1.5px]' : '';
+    return <span className={`${nudgeClass} ${colorClass}`}>{glyph}</span>;
+}
+
+/**
+ * Format the "LAST 24H" delta subtitle for the ONLINE card. Compares the
+ * current player count to the 24h rolling-average baseline and shows the
+ * gap with a ▲/▼/▪ arrow. Returns null only when there's no baseline yet
+ * (new season).
  */
 function playersDeltaSubtitle(currentPlayers, avgPlayers) {
     if (avgPlayers == null) return null;
     const delta = currentPlayers - avgPlayers;
-    const indicator =
-        delta > 0 ? '▲'
-        : delta < 0 ? '▼'
-        : '▪';
-    const colorClass =
-        delta > 0 ? 'text-success'
-        : delta < 0 ? 'text-danger'
-        : '';
-    // The ▲/▼ triangle glyphs sit below their optical centre — lift them.
-    // ▪ is already centred in its em box, so no nudge.
-    const nudgeClass = delta !== 0 ? '-translate-y-[1.5px]' : '';
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
-            <span className={`${nudgeClass} ${colorClass}`}>{indicator}</span>
+            {deltaArrow(delta)}
             <span>
                 <AnimatedStat value={Math.abs(delta)} />
             </span>
@@ -61,24 +68,32 @@ function playersDeltaSubtitle(currentPlayers, avgPlayers) {
 }
 
 /**
- * Format the "+N LAST 24H" subtitle for cumulative counters (kills,
- * deaths, etc. — monotonically increasing). Unlike the instantaneous
- * delta, direction is always "up" so no arrow is shown; the number is
- * prefixed with "+" to read as an addition over the last 24h. Ghost
- * colour throughout — growth is not semantically good or bad here.
+ * Subtitle for the ENEMIES_KILLED card. From the live cumulative kill total
+ * and two historical baselines it derives two consecutive 24h kill volumes —
+ * last24h = current − kills(24h ago), prev24h = kills(24h ago) − kills(48h
+ * ago) — and shows the last-24h volume with a ▲/▼/▪ arrow marking whether the
+ * killing pace rose, fell, or held versus the previous 24h. With no 48h
+ * baseline yet (season 24–48h old) the pace can't be compared, so the arrow
+ * is a neutral ▪. Returns null with no 24h baseline, or when nothing was
+ * killed in the last 24h.
  */
-function cumulativeAddedSubtitle(current, baseline) {
-    if (baseline == null) return null;
-    // `current` may be a Prisma BigInt (kills/deaths/etc. are BIGINT in schema)
-    // while `baseline` is a plain JS number from `AVG(...)::int` — coerce
-    // both to Number before subtracting to avoid the "Cannot mix BigInt and
-    // other types" runtime error during SSR.
-    const added = Number(current) - Number(baseline);
-    if (added <= 0) return null;
+function killsTrendSubtitle(current, baseline) {
+    if (baseline?.ago24h == null) return null;
+    // `current` may be a Prisma BigInt (kills are BIGINT in schema) while the
+    // baselines are plain numbers — coerce before subtracting to avoid the
+    // "Cannot mix BigInt and other types" runtime error during SSR.
+    const last24h = Number(current) - Number(baseline.ago24h);
+    if (last24h <= 0) return null;
+    const prev24h =
+        baseline.ago48h != null ?
+            Number(baseline.ago24h) - Number(baseline.ago48h)
+        :   null;
+    const trend = prev24h == null ? 0 : last24h - prev24h;
     return (
         <span className="inline-flex items-center gap-1.5 tracking-wide text-ghost uppercase">
+            {deltaArrow(trend)}
             <span>
-                +<AnimatedStat value={added} />
+                <AnimatedStat value={last24h} />
             </span>
             <span>Last 24h</span>
         </span>
@@ -175,7 +190,7 @@ export default function StatGrid({
     faction,
     events,
     playersAvg24h = null,
-    kills24hAgo = null,
+    killsTrend = null,
     seasonDuration = 0,
     warStart = null,
 }) {
@@ -213,7 +228,7 @@ export default function StatGrid({
             totals.players,
             playersAvg24h?.global,
         );
-        const killsSubtitle = cumulativeAddedSubtitle(totals.kills, kills24hAgo?.global);
+        const killsSubtitle = killsTrendSubtitle(totals.kills, killsTrend?.global);
         return (
             <div className="stat-grid">
                 <StatCard
@@ -251,7 +266,7 @@ export default function StatGrid({
     if (!stats) return null;
 
     const onlineSubtitle = playersDeltaSubtitle(stats.players, playersAvg24h?.[faction]);
-    const killsSubtitle = cumulativeAddedSubtitle(stats.kills, kills24hAgo?.[faction]);
+    const killsSubtitle = killsTrendSubtitle(stats.kills, killsTrend?.[faction]);
 
     // How long this faction has been in the war: total war duration minus the
     // span it spent 'hidden' before introduction. Null `first_seen` → the
