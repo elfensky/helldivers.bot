@@ -4,7 +4,8 @@
     stroke-linejoin: round;
     transition:
         fill 0.4s ease,
-        stroke 0.3s ease;
+        stroke 0.3s ease,
+        opacity 0.2s ease;
 }
 
 .lost {
@@ -63,4 +64,25 @@
         fill: color-mix(in srgb, var(--color-danger) 35%, transparent);
         filter: url(#glow-red);
     }
+}
+
+/* === Card → map hover link (#185) ===
+ *
+ * Hovering a dashboard region card adds `.is-sector-linking` to `#map` and
+ * tags the matching faction territory (`.sector-linked-faint`) and active
+ * sector (`.sector-linked-strong`) — see src/features/galaxy/sectorLink.mjs.
+ * The rest of the map recedes, the territory sits at a faint level, the
+ * active sector stays full: a three-tier focus. Opacity-only, so it composes
+ * cleanly with the fill/stroke pulse animation above. Rule order matters —
+ * the strong/faint rules win the same-specificity tie over `.sector`. */
+#map.is-sector-linking .sector {
+    opacity: 0.25;
+}
+
+#map.is-sector-linking .sector-linked-faint {
+    opacity: 0.6;
+}
+
+#map.is-sector-linking .sector-linked-strong {
+    opacity: 1;
 }

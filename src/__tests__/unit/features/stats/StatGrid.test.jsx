@@ -176,6 +176,12 @@ describe('StatGrid', () => {
                 .closest('.stat-card')
                 ?.querySelector('.stat-card-value')?.textContent;
 
+        const cardSubtitle = (label) =>
+            screen
+                .getByText(label)
+                .closest('.stat-card')
+                ?.querySelector('.stat-card-subtitle')?.textContent;
+
         test('global view shows total war duration', () => {
             render(
                 <StatGrid
@@ -220,6 +226,36 @@ describe('StatGrid', () => {
                 />,
             );
             expect(cardValue('WAR_DURATION')).toBe('—');
+        });
+
+        test('global view subtitle shows the war start date', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    seasonDuration={86400 * 10}
+                    warStart={Date.UTC(2025, 0, 25) / 1000}
+                />,
+            );
+            expect(cardSubtitle('WAR_DURATION')).toBe('25 JANUARY');
+        });
+
+        test('faction view subtitle shows that faction introduction date', () => {
+            // war started 20 Feb; bugs (enemy 0) were introduced 01 Mar
+            const warStart = Date.UTC(2025, 1, 20) / 1000;
+            const live = mockLive.map((s) => ({ ...s, first_seen: warStart }));
+            live[0] = { ...live[0], first_seen: Date.UTC(2025, 2, 1) / 1000 };
+            render(
+                <StatGrid
+                    live={live}
+                    faction="bugs"
+                    events={mockEvents}
+                    seasonDuration={86400 * 30}
+                    warStart={warStart}
+                />,
+            );
+            expect(cardSubtitle('WAR_DURATION')).toBe('01 MARCH');
         });
     });
 });

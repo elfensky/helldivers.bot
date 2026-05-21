@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- **Region cards highlight their location on the galaxy map on hover (#185).** Hovering a dashboard region card now lights up the matching area of the map — the hovered faction's whole territory faintly, its one active sector strongly, the rest of the map receding (a three-tier opacity focus). Implemented by toggling CSS classes directly on the map's SVG nodes (`sectorLink.mjs`) rather than through React state, so a hover costs no re-render of the card grid or the ~33 map paths. This ships the card → map direction; the reverse (map sector → card) can be layered on later by calling the same helper from the map's own hover handlers — the cards already carry `data-faction-index`/`data-sector` for it.
+
 ## 0.47.12
 
 ### Features
