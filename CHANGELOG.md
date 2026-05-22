@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.49.0
+
+### Features
+
+- **New `/stats` page surfaces cross-season analytics across every Helldivers war (#394).** The other half of the Phase A split (Part 2 = #391, shipped in 0.48.0). A new top-level route reads the full 157-season history via a single `getCrossSeasonStats()` query — SQL `GROUP BY` aggregates over `h1_event` / `h1_status` / `h1_season` / `h1_statistic`, plus a per-season war-outcome derivation that reuses `getWarOutcome`'s algorithm on a slim per-season slice (final faction states + relevant events + a synthetic any-all-3-defeated snapshot flag). Three components ship: **Faction Threat Ranking** — per-faction overall HD win rates as a faction-colored horizontal bar chart, sorted ascending so the most-threatening enemy reads first; **War Outcomes & Streaks** — total wars, victories, defeats, win rate, longest win/loss streaks with season ranges, plus a wrapping per-season outcome timeline; **All-Time Records** — longest war, most events, longest avg battle, most defends/attacks won, each card attributed to the season that owns the extremum. The three telemetry charts originally listed in #178 (Friendly Fire Index, Accuracy Trend, Shots per Planet) are deferred until telemetry accumulates beyond season 157 — the query already returns telemetry fields so the charts drop in cleanly later. `HeaderNav` and `BottomNav` gain a `Stats` entry.
+
+### Changes
+
+- **Archives extras grid now matches the homepage hero's auto-fit layout.** `ArchiveStats` (the per-faction / per-war extras grid on `/archives`) was hard-capped at `lg:grid-cols-3`, so its 4th and subsequent cards wrapped to a new row below the hero's wider auto-fit grid — visually inconsistent with the 6-across `StatGrid` directly above it. Switched to the same `.stat-grid` class (`repeat(auto-fit, minmax(11rem, 1fr))`), and made the previously-implicit CSS dependency on `StatGrid.css` explicit. Both grids now breathe with the viewport identically; at typical desktop widths every extras card sits on one row.
+
 ## 0.48.0
 
 ### Features
