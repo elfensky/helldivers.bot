@@ -6,7 +6,7 @@ import ArchiveStats from '@/features/archives/ArchiveStats';
 import ArchivesHeader, { EffectsToggle } from '@/features/archives/ArchivesHeader';
 import FactionHealthChart from '@/features/archives/FactionHealthChartLoader';
 import FactionTabs from '@/shared/components/FactionTabs';
-import FactionStats from '@/features/archives/FactionStats';
+import StatGrid from '@/features/stats/StatGrid';
 import EventLog from '@/features/timeline/EventLog';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import SeasonSelector from '@/features/archives/SeasonSelector';
@@ -77,9 +77,10 @@ export default function ArchivesClient({
     initialSortOrder = 'desc',
 }) {
     const events = data?.events ?? [];
-    // 'global' shows the whole-war overview (ArchiveStats); bugs/cyborgs/illuminate
-    // show a per-faction breakdown (FactionStats). Persisted via cookies and
-    // shared with the dashboard; initial value is SSR-read in the archives page.
+    // 'global' shows the whole-war overview; bugs/cyborgs/illuminate show a
+    // per-faction breakdown. Either way the stats render through the shared
+    // StatGrid plus the archives-only ArchiveStats extras. Persisted via
+    // cookies and shared with the dashboard; SSR-read in the archives page.
     const [faction, setFaction] = usePersistedState(FACTION_KEY, initialFaction);
     // Mobile-only: toggle whether the archives map column is sticky
     // (pinned at the top as the user scrolls). Default ON here (unlike
@@ -141,21 +142,21 @@ export default function ArchivesClient({
                             )}
                         </div>
                     </div>
-                    {faction === 'global' ?
-                        <ArchiveStats
-                            events={events}
-                            live={data?.status}
-                            data={data}
-                            effects={effects}
-                            glitchPhase={glitchPhase}
-                        />
-                    :   <FactionStats
-                            events={events}
-                            snapshots={data?.snapshots}
-                            pointsMax={data?.points_max}
-                            faction={faction}
-                        />
-                    }
+                    <StatGrid
+                        archived
+                        live={data?.status}
+                        faction={faction}
+                        events={events}
+                        seasonDuration={data?.season_duration}
+                        warStart={data?.war_start}
+                    />
+                    <ArchiveStats
+                        faction={faction}
+                        events={events}
+                        data={data}
+                        live={data?.status}
+                        glitchPhase={glitchPhase}
+                    />
                 </section>
 
                 <section className="mt-4 flex flex-col gap-2">

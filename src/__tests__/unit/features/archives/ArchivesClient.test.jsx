@@ -24,7 +24,7 @@ vi.mock('@/features/archives/ArchiveStats', () => ({
         <div
             data-testid="archive-stats-stub"
             data-events={props.events?.length ?? 0}
-            data-live={props.live ?? ''}
+            data-faction={props.faction ?? ''}
         />
     ),
 }));
@@ -60,9 +60,13 @@ vi.mock('@/shared/components/FactionTabs', () => ({
         />
     ),
 }));
-vi.mock('@/features/archives/FactionStats', () => ({
-    default: ({ faction }) => (
-        <div data-testid="faction-stats-stub" data-faction={faction} />
+vi.mock('@/features/stats/StatGrid', () => ({
+    default: (props) => (
+        <div
+            data-testid="stat-grid-stub"
+            data-faction={props.faction ?? ''}
+            data-archived={String(!!props.archived)}
+        />
     ),
 }));
 vi.mock('@/features/timeline/EventLog', () => ({
@@ -217,21 +221,30 @@ describe('ArchivesClient — layout + default render', () => {
     });
 });
 
-describe('ArchivesClient — faction switch (global ↔ per-faction)', () => {
-    test('faction="global" renders ArchiveStats, NOT FactionStats', () => {
+describe('ArchivesClient — stats section (StatGrid + ArchiveStats)', () => {
+    test('renders both StatGrid and ArchiveStats on the global tab', () => {
         useFactionPreferenceMock.mockReturnValue(['global', vi.fn()]);
         render(<ArchivesClient data={baseData} seasons={[]} currentSeason={157} />);
+        expect(screen.getByTestId('stat-grid-stub')).toBeInTheDocument();
         expect(screen.getByTestId('archive-stats-stub')).toBeInTheDocument();
-        expect(screen.queryByTestId('faction-stats-stub')).not.toBeInTheDocument();
     });
 
-    test('faction="bugs" renders FactionStats with the right faction prop, NOT ArchiveStats', () => {
+    test('passes the active faction to both StatGrid and ArchiveStats', () => {
         useFactionPreferenceMock.mockReturnValue(['bugs', vi.fn()]);
         render(<ArchivesClient data={baseData} seasons={[]} currentSeason={157} />);
-        expect(screen.queryByTestId('archive-stats-stub')).not.toBeInTheDocument();
-        const fStats = screen.getByTestId('faction-stats-stub');
-        expect(fStats).toBeInTheDocument();
-        expect(fStats.getAttribute('data-faction')).toBe('bugs');
+        expect(screen.getByTestId('stat-grid-stub').getAttribute('data-faction')).toBe(
+            'bugs',
+        );
+        expect(
+            screen.getByTestId('archive-stats-stub').getAttribute('data-faction'),
+        ).toBe('bugs');
+    });
+
+    test('renders the StatGrid in archived mode', () => {
+        render(<ArchivesClient data={baseData} seasons={[]} currentSeason={157} />);
+        expect(screen.getByTestId('stat-grid-stub').getAttribute('data-archived')).toBe(
+            'true',
+        );
     });
 
     test('clicking FactionTabs invokes the setter from useFactionPreference', () => {

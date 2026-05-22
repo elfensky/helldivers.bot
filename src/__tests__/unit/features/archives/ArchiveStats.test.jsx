@@ -1,359 +1,191 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import humanizeDuration from 'humanize-duration';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 
-import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
-
 vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
-    getWarOutcome: vi.fn(() => ({
-        outcome: 'victory',
-        reason: 'All enemy factions have been defeated.',
-        faction: 2,
-    })),
+    getWarOutcome: vi.fn(() => ({ outcome: 'victory', reason: 'won', faction: 2 })),
 }));
-
 vi.mock('@/features/archives/GlitchText', () => ({
     default: ({ text, className }) => <span className={className}>{text}</span>,
 }));
 
-const noEffects = { headerScramble: false, watermark: false };
-
 const mockEvents = [
     {
-        event_id: 1,
         type: 'defend',
         enemy: 0,
         region: 1,
         start_time: 1000,
         end_time: 4600,
         status: 'success',
-        players_at_start: 200,
-        points: 400,
-        points_max: 500,
     },
     {
-        event_id: 2,
         type: 'defend',
         enemy: 0,
         region: 1,
         start_time: 5000,
-        end_time: 19400,
+        end_time: 12200,
         status: 'fail',
-        players_at_start: 150,
-        points: 500,
-        points_max: 500,
     },
     {
-        event_id: 3,
         type: 'attack',
-        enemy: 1,
-        region: 11,
-        start_time: 20000,
-        end_time: 27200,
+        enemy: 0,
+        region: 2,
+        start_time: 13000,
+        end_time: 20200,
         status: 'success',
-        players_at_start: 300,
-        points: 1000,
-        points_max: 1000,
+    },
+    {
+        type: 'defend',
+        enemy: 1,
+        region: 1,
+        start_time: 1000,
+        end_time: 4600,
+        status: 'success',
     },
 ];
 
+const mockData = {
+    snapshots: [
+        {
+            time: 100,
+            data: [
+                { enemy: 0, points: 300 },
+                { enemy: 1, points: 200 },
+                { enemy: 2, points: 100 },
+            ],
+        },
+    ],
+    points_max: { points: [1000, 1000, 1000] },
+};
+
+// Per-faction h1_statistic rows merged into data.status by getCampaign.
+const mockLive = [
+    { enemy: 0, total_mission_difficulty: 6000, successful_missions: 800 },
+    { enemy: 1, total_mission_difficulty: 2800, successful_missions: 400 },
+    { enemy: 2, total_mission_difficulty: 900, successful_missions: 150 },
+];
+
+// A season predating stat collection — getCampaign zero-fills the stats.
+const noTelemetryLive = [0, 1, 2].map((enemy) => ({
+    enemy,
+    total_mission_difficulty: 0,
+    successful_missions: 0,
+}));
+
 describe('ArchiveStats', () => {
-    it('renders statistics stats', () => {
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.getByText('OUTCOME')).toBeDefined();
-        expect(screen.getByText('VICTORY')).toBeDefined();
-        expect(screen.getByText('DURATION')).toBeDefined();
-        // mockEvents: 2 defends (1 success, 1 fail), 1 attack (1 success)
-        expect(screen.getByText('DEFENSE_RATE')).toBeDefined();
-        expect(screen.getByText('50%')).toBeDefined();
-        expect(screen.getByText('1 / 2')).toBeDefined();
-        expect(screen.getByText('ATTACK_RATE')).toBeDefined();
-        expect(screen.getByText('100%')).toBeDefined();
-        expect(screen.getByText('1 / 1')).toBeDefined();
-    });
-
-    it('derives DURATION from snapshot time span when snapshots are present', () => {
-        // 23 days 12 hours between first and last poll → rounds to 24 days
-        const firstTime = 1_700_000_000;
-        const lastTime = firstTime + 23 * 86_400 + 12 * 3_600;
-        const snapshots = [
-            { time: firstTime, data: {} },
-            { time: firstTime + 86_400, data: {} },
-            { time: lastTime, data: {} },
-        ];
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents, snapshots }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.getByText('24 days')).toBeDefined();
-        // Subtitle is humanize-duration(span, { largest: 2, round: true }) — compute the
-        // expected value from the same fn the component uses so we don't bake in the
-        // rounding edge cases by hand.
-        const expectedSubtitle = humanizeDuration((23 * 86_400 + 12 * 3_600) * 1000, {
-            largest: 2,
-            round: true,
-        });
-        expect(screen.getByText(expectedSubtitle)).toBeDefined();
-    });
-
-    it('falls back to event span when snapshots are missing or fewer than two', () => {
-        // Event span: 27200 − 1000 = 26200 seconds → 0 days (rounded)
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.getByText('0 days')).toBeDefined();
-
-        // Same result when exactly one snapshot is present
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents, snapshots: [{ time: 9_999, data: {} }] }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.getAllByText('0 days').length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('pluralises DURATION correctly for a single day', () => {
-        const firstTime = 1_700_000_000;
-        const snapshots = [
-            { time: firstTime, data: {} },
-            { time: firstTime + 86_400, data: {} },
-        ];
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents, snapshots }}
-                effects={noEffects}
-            />,
-        );
-        // "1 day" appears twice — once as the StatCard value and once as the
-        // humanize-duration subtitle (which also produces "1 day" for 86400s).
-        // Both are valid; we just want to prove the value isn't "1 days".
-        const matches = screen.getAllByText('1 day');
-        expect(matches.length).toBeGreaterThanOrEqual(1);
-        expect(screen.queryByText('1 days')).toBeNull();
-    });
-
-    it('does not render WORST_CASCADE when there is no cascade', () => {
-        const easyEvents = [
-            {
-                event_id: 1,
-                type: 'defend',
-                enemy: 0,
-                region: 1,
-                start_time: 1000,
-                end_time: 4600,
-                status: 'success',
-                players_at_start: 200,
-                points: 10,
-                points_max: 500,
-            },
-            {
-                event_id: 2,
-                type: 'defend',
-                enemy: 0,
-                region: 2,
-                start_time: 5000,
-                end_time: 8600,
-                status: 'success',
-                players_at_start: 150,
-                points: 20,
-                points_max: 500,
-            },
-        ];
-        render(
-            <ArchiveStats
-                events={easyEvents}
-                live={[]}
-                data={{ events: easyEvents }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.queryByText('WORST_CASCADE')).toBeNull();
-    });
-
-    it('returns null when events is empty', () => {
+    it('returns null when there are no events', () => {
         const { container } = render(
-            <ArchiveStats events={[]} live={[]} data={{}} effects={noEffects} />,
+            <ArchiveStats faction="global" events={[]} data={mockData} live={mockLive} />,
         );
         expect(container.innerHTML).toBe('');
     });
 
-    it('returns null when events is null', () => {
-        const { container } = render(
-            <ArchiveStats events={null} live={[]} data={{}} effects={noEffects} />,
-        );
-        expect(container.innerHTML).toBe('');
-    });
-
-    it('renders combat record stats when live data is provided', () => {
-        // mockLive must mirror real Prisma return types: Int columns come back as
-        // JS Number, only the 5 explicit BigInt columns (kills, deaths, shots, hits,
-        // accidentals) come back as BigInt. total_unique_players is a GLOBAL per-season
-        // count repeated across all 3 faction rows — the component must read it from
-        // a single row, not sum it.
-        const mockLive = [
-            {
-                enemy: 0,
-                // Int columns — plain JS Number
-                players: 5000,
-                missions: 80000000,
-                successful_missions: 70000000,
-                total_unique_players: 100000,
-                // BigInt columns
-                kills: 1200000000n,
-                deaths: 50000000n,
-                accidentals: 50000000n,
-                shots: 500000000n,
-                hits: 115000000n,
-            },
-            {
-                enemy: 1,
-                players: 4000,
-                missions: 50000000,
-                successful_missions: 40000000,
-                total_unique_players: 100000, // same value — proves no sum
-                kills: 800000000n,
-                deaths: 30000000n,
-                accidentals: 30000000n,
-                shots: 300000000n,
-                hits: 70000000n,
-            },
-            {
-                enemy: 2,
-                players: 3000,
-                missions: 26000000,
-                successful_missions: 20000000,
-                total_unique_players: 100000, // same value — proves no sum
-                kills: 400000000n,
-                deaths: 20000000n,
-                accidentals: 20000000n,
-                shots: 200000000n,
-                hits: 46000000n,
-            },
-        ];
-
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={mockLive}
-                data={{ events: mockEvents }}
-                effects={noEffects}
-            />,
-        );
-
-        expect(screen.getByText('KILLS')).toBeDefined();
-        expect(screen.getByText('K/D')).toBeDefined();
-        expect(screen.getByText('ACCURACY')).toBeDefined();
-        expect(screen.getByText('FRIENDLY_FIRE')).toBeDefined();
-        expect(screen.getByText('MISSION_SUCCESS')).toBeDefined();
-        expect(screen.getByText('PEAK_ONLINE')).toBeDefined();
-        expect(screen.getByText('TOTAL_DIVERS')).toBeDefined();
-
-        // Correctness: total_unique_players must be read from a single row, not summed.
-        // 100000 → "100,000" via formatNumber's toLocaleString branch (< 1M).
-        // If sumBigInt were still applied, the rendered value would be "300,000".
-        expect(screen.getByText('100,000')).toBeDefined();
-        expect(screen.queryByText('300,000')).toBeNull();
-    });
-
-    it('renders Cyberstani interference subtitle on defeat', () => {
-        getWarOutcome.mockReturnValueOnce({
-            outcome: 'defeat',
-            reason: 'The war was lost.',
-            faction: 1,
+    describe('global view', () => {
+        it('renders outcome, rates, and difficulty', () => {
+            render(
+                <ArchiveStats
+                    faction="global"
+                    events={mockEvents}
+                    data={mockData}
+                    live={mockLive}
+                />,
+            );
+            expect(screen.getByText('OUTCOME')).toBeDefined();
+            expect(screen.getByText('VICTORY')).toBeDefined();
+            expect(screen.getByText('DEFENSE_RATE')).toBeDefined();
+            expect(screen.getByText('ATTACK_RATE')).toBeDefined();
+            expect(screen.getByText('AVG_DIFFICULTY')).toBeDefined();
         });
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.getByText('DEFEAT')).toBeDefined();
-    });
 
-    it('shows faction name as OUTCOME subtitle (victory)', () => {
-        // Default mock returns faction: 2 (Illuminate)
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.getByText('The Illuminate')).toBeDefined();
-    });
-
-    it('shows faction name as OUTCOME subtitle (defeat attribution)', () => {
-        getWarOutcome.mockReturnValueOnce({
-            outcome: 'defeat',
-            reason: 'The war was lost.',
-            faction: 0,
+        it('does not render cards now owned by StatGrid', () => {
+            render(
+                <ArchiveStats
+                    faction="global"
+                    events={mockEvents}
+                    data={mockData}
+                    live={mockLive}
+                />,
+            );
+            for (const dropped of [
+                'DURATION',
+                'KILLS',
+                'K/D',
+                'BATTLES',
+                'PEAK_ONLINE',
+                'TOTAL_DIVERS',
+            ]) {
+                expect(screen.queryByText(dropped)).toBeNull();
+            }
         });
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.getByText('Bugs')).toBeDefined();
-    });
 
-    it('omits OUTCOME subtitle when faction is null', () => {
-        getWarOutcome.mockReturnValueOnce({
-            outcome: 'defeat',
-            reason: 'The war was lost.',
-            faction: null,
+        it('hides AVG_DIFFICULTY when the season has no telemetry', () => {
+            render(
+                <ArchiveStats
+                    faction="global"
+                    events={mockEvents}
+                    data={mockData}
+                    live={noTelemetryLive}
+                />,
+            );
+            expect(screen.queryByText('AVG_DIFFICULTY')).toBeNull();
         });
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.queryByText('Bugs')).toBeNull();
-        expect(screen.queryByText('Cyborgs')).toBeNull();
-        expect(screen.queryByText('The Illuminate')).toBeNull();
     });
 
-    it('does not render combat record when live is empty', () => {
-        render(
-            <ArchiveStats
-                events={mockEvents}
-                live={[]}
-                data={{ events: mockEvents }}
-                effects={noEffects}
-            />,
-        );
-        expect(screen.queryByText('KILLS')).toBeNull();
-        expect(screen.queryByText('K/D')).toBeNull();
+    describe('faction view', () => {
+        it('renders rates, battle, hotspot, conquest, and difficulty', () => {
+            render(
+                <ArchiveStats
+                    faction="bugs"
+                    events={mockEvents}
+                    data={mockData}
+                    live={mockLive}
+                />,
+            );
+            expect(screen.getByText('DEFENSE_RATE')).toBeDefined();
+            expect(screen.getByText('ATTACK_RATE')).toBeDefined();
+            expect(screen.getByText('AVG_BATTLE')).toBeDefined();
+            expect(screen.getByText('HOTSPOT')).toBeDefined();
+            expect(screen.getByText('CONQUEST')).toBeDefined();
+            expect(screen.getByText('AVG_DIFFICULTY')).toBeDefined();
+        });
+
+        it('computes the bug defense rate, conquest, and difficulty', () => {
+            render(
+                <ArchiveStats
+                    faction="bugs"
+                    events={mockEvents}
+                    data={mockData}
+                    live={mockLive}
+                />,
+            );
+            expect(screen.getByText('50%')).toBeDefined(); // 1 of 2 defends won
+            expect(screen.getByText('30.0%')).toBeDefined(); // conquest 300 / 1000
+            expect(screen.getByText('7.5')).toBeDefined(); // difficulty 6000 / 800
+        });
+
+        it('does not render the OUTCOME card on a faction tab', () => {
+            render(
+                <ArchiveStats
+                    faction="bugs"
+                    events={mockEvents}
+                    data={mockData}
+                    live={mockLive}
+                />,
+            );
+            expect(screen.queryByText('OUTCOME')).toBeNull();
+        });
+
+        it('returns null for a faction with no events', () => {
+            const { container } = render(
+                <ArchiveStats
+                    faction="illuminate"
+                    events={mockEvents}
+                    data={mockData}
+                    live={mockLive}
+                />,
+            );
+            expect(container.innerHTML).toBe('');
+        });
     });
 });

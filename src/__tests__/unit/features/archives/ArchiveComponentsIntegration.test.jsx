@@ -10,9 +10,9 @@ vi.mock('@/features/archives/ArchiveStats', () => ({
     ),
 }));
 
-vi.mock('@/features/archives/FactionStats', () => ({
+vi.mock('@/features/stats/StatGrid', () => ({
     default: (props) => (
-        <div data-testid="faction-stats-mock" data-props={JSON.stringify(props)} />
+        <div data-testid="stat-grid-mock" data-props={JSON.stringify(props)} />
     ),
 }));
 
@@ -387,7 +387,7 @@ describe('Archive Components Integration Tests', () => {
     });
 
     describe('Component Interaction Tests', () => {
-        test('Faction switch from global to specific faction', () => {
+        test('Faction switch passes the active faction to the stats components', () => {
             const setFactionMock = vi.fn();
             mockUsePersistedState.mockReturnValue(['bugs', setFactionMock]);
 
@@ -400,8 +400,15 @@ describe('Archive Components Integration Tests', () => {
                 />,
             );
 
-            expect(screen.getByTestId('faction-stats-mock')).toBeInTheDocument();
-            expect(screen.queryByTestId('archive-stats-mock')).not.toBeInTheDocument();
+            const stats = JSON.parse(
+                screen.getByTestId('archive-stats-mock').getAttribute('data-props') ||
+                    '{}',
+            );
+            const grid = JSON.parse(
+                screen.getByTestId('stat-grid-mock').getAttribute('data-props') || '{}',
+            );
+            expect(stats.faction).toBe('bugs');
+            expect(grid.faction).toBe('bugs');
         });
 
         test('Admin controls visibility', () => {
