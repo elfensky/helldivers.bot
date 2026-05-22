@@ -1,6 +1,6 @@
 # Ministry Interference — Sitewide Easter Egg
 
-**Status:** Design (revised after adversarial multi-AI critique; awaiting author decision on Open Question #1)
+**Status:** Design — ready for implementation planning
 **Author:** Andrei
 **Date:** 2026-05-23 (revised same day)
 
@@ -39,10 +39,12 @@ Every 15-30 seconds, one random character of one random registered element flick
 
 ### Tone of the defacement
 
-Computed server-side from completed-season win/loss records:
+**Both tones are "someone breaking into the Ministry's page" — different intruders, different rhetoric.** The page itself is always the Ministry of Truth's official voice. A hijack is always a third party taking over. Tone selection is computed server-side from completed-season win/loss records.
 
-- **`winning`** (humanity has won ≥ 50% of completed wars all-time) → resistance/hacker voice that mocks the regime's victory framing and reframes the player's pyrrhic wins as defeats. Example header swap: `"Live Statistics"` → `"Pyrrhic Statistics"`. Example OUTCOME flip on a won season: `"VICTORY"` → `"DEFEAT"`.
-- **`losing`** (otherwise) → the regime/Machine voice that drowns dissent in saccharine Big Brother propaganda. Example header swap: `"Live Statistics"` → `"Sanctioned Truth"`. Existing `RESISTANCE_MESSAGES` body copy fits here.
+- **`winning`** (humanity has won ≥ 50% of completed wars all-time) → **the Underground / Resistance hackers** mocking the regime's victory framing. The "we won" narrative the page is selling gets reframed as pyrrhic, costly, or covered-up by hackers who know better. Example header swap: `"Live Statistics"` → `"Pyrrhic Statistics"`. Example OUTCOME flip on a won season: `"VICTORY"` → `"DEFEAT"`. Voice: sardonic, fourth-wall-aware, dry.
+- **`losing`** (otherwise) → **the Underground / pirate-radio bootleg broadcast** breaking through the Ministry's airwaves to attack the regime with Skynet / Big Brother / surveillance-state imagery directed AT the Ministry. The page is officially saying "everything is fine" — the pirate hijack tells the citizen they're being watched, lied to, fed pre-approved truths. Example header swap: `"Live Statistics"` → `"You Are Being Watched"`. Voice: cold, paranoid, omniscient-but-warning. Existing `RESISTANCE_MESSAGES` body copy fits here — that material is already anti-Ministry sentiment from an outside speaker, which matches the Underground broadcast framing exactly.
+
+**Crucially, in both tones there is a third-party intruder.** The losing tone is NOT "Ministry doubling down on itself" (which would lack narrative tension — the page is already Ministry voice). It is a bootleg broadcast cutting in with hostile-AI / surveillance-state imagery aimed at the regime. This was the resolution of Open Question #1.
 
 ### Accessibility
 
@@ -388,16 +390,14 @@ Page-hero headings get explicit `altText` props for memorable, page-specific swa
 
 ## Open questions
 
-1. **Tone-direction for losing state.** The spec currently maps `losing` → Ministry/Skynet voice (regime reassures). Two of the four adversarial-review critics flagged this as narratively weaker than its inverse (resistance hijack mocks the regime's lies) because a "hijack" of a Ministry page by the Ministry has no narrative break-in. Two competing fixes were proposed:
-   - **(a) Invert mapping:** `losing` = resistance mocks, `winning` = Ministry doubles down. The mocking-when-losing direction risks reading as denial.
-   - **(b) Keep mapping, change losing-tone speaker identity** from "Ministry doubling down" to "bootleg Underground broadcast cutting in" — preserves the third-party hijack feel without inverting tones.
-   - One critic (Codex) argued this is taste, not defect, and the spec's choice is internally consistent — close as-is.
+None remaining at design time.
 
-   **Spec author's decision required before content pools are authored.**
+**Closed: Tone-direction for losing state (Open Question #1)** — resolved 2026-05-23 in favor of Sonnet's option (b): keep the `losing` → anti-government direction but change the speaker identity from "Ministry doubling down" to **"Underground / pirate-radio bootleg broadcast"**. Both tones now share a "third-party hijack" framing — the only thing that changes between tones is which third party is breaking in (Resistance mockery vs. Underground surveillance-state warnings). See updated **User-visible behavior → Tone of the defacement**.
 
 ## Revision history
 
 - **2026-05-23 v1.0** — initial design after brainstorming session.
+- **2026-05-23 v1.2** — Open Question #1 closed. Losing tone re-framed as Underground / pirate-radio bootleg broadcast (third-party intruder with anti-regime surveillance-state imagery), preserving the "hijack" framing across both tones.
 - **2026-05-23 v1.1** — revisions from 3-round adversarial AI debate (`~/.claude-octopus/debates/debates/001-ministry-interference-spec-critique/`):
   - **Architecture:** mount inside `LiveDataProvider`; share visibility signal; cancel timers on `guardedReload`.
   - **MinistryProvider:** registry moved to `useRef` (not React state); stable callbacks; no context-value invalidation on mount/unmount.
