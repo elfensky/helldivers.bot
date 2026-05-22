@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+- **Pagespeed workflow pins `lowlighter/metrics` to the `v3.34` release tag.** The workflow used `lowlighter/metrics@v4`, which has no matching release tag — `@v4` silently resolved to the action's long-running `v4` rewrite _branch_. A push to that branch removed the root `action.yml`, so runs began failing with `Can't find 'action.yml', 'action.yaml' or 'Dockerfile'`. Pinned to `@v3.34`, the latest stable release, restoring reproducible runs.
+
 ## 0.47.16
 
 ### Features
