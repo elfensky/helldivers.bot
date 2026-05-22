@@ -1,4 +1,5 @@
 import { StatCard } from '@/features/stats/StatGrid';
+import '@/features/stats/StatGrid.css';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { formatRatio } from '@/shared/utils/format/formatRatio.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
@@ -95,7 +96,7 @@ export default function ArchiveStats({ faction, events, data, live, glitchPhase 
         );
 
         return (
-            <div className="grid grid-cols-2 gap-1 lg:grid-cols-3">
+            <div className="stat-grid">
                 <StatCard
                     label="OUTCOME"
                     value={
@@ -166,7 +167,7 @@ export default function ArchiveStats({ faction, events, data, live, glitchPhase 
     const factionLive = live?.find((r) => r.enemy === factionIndex);
 
     return (
-        <div className="grid grid-cols-2 gap-1 lg:grid-cols-3">
+        <div className="stat-grid">
             {rateCards(factionEvents)}
             <StatCard
                 label="AVG_BATTLE"
