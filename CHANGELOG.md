@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- **New `/stats` page surfaces cross-season analytics across every Helldivers war (#394).** The other half of the Phase A split (Part 2 = #391, shipped in 0.48.0). A new top-level route reads the full 157-season history via a single `getCrossSeasonStats()` query — SQL `GROUP BY` aggregates over `h1_event` / `h1_status` / `h1_season` / `h1_statistic`, plus a per-season war-outcome derivation that reuses `getWarOutcome`'s algorithm on a slim per-season slice (final faction states + relevant events + a synthetic any-all-3-defeated snapshot flag). Three components ship: **Faction Threat Ranking** — per-faction overall HD win rates as a faction-colored horizontal bar chart, sorted ascending so the most-threatening enemy reads first; **War Outcomes & Streaks** — total wars, victories, defeats, win rate, longest win/loss streaks with season ranges, plus a wrapping per-season outcome timeline; **All-Time Records** — longest war, most events, longest avg battle, most defends/attacks won, each card attributed to the season that owns the extremum. The three telemetry charts originally listed in #178 (Friendly Fire Index, Accuracy Trend, Shots per Planet) are deferred until telemetry accumulates beyond season 157 — the query already returns telemetry fields so the charts drop in cleanly later. `HeaderNav` and `BottomNav` gain a `Stats` entry.
+
 ## 0.48.0
 
 ### Features

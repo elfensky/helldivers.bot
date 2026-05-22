@@ -9,6 +9,7 @@ export default function BottomNav() {
     const tabs = [
         { href: '/', label: 'Live', live: true, track: 'nav-live' },
         { href: '/archives', label: 'Archives', icon: '◈', track: 'nav-archives' },
+        { href: '/stats', label: 'Stats', icon: '▣', track: 'nav-stats' },
         { href: '/docs', label: 'Docs', icon: '◇', track: 'nav-docs' },
     ];
 
