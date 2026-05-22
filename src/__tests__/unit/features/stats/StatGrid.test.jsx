@@ -323,4 +323,65 @@ describe('StatGrid', () => {
             expect(cardSubtitle('WAR_DURATION')).toBe('01 MARCH');
         });
     });
+
+    describe('archived / redaction', () => {
+        const noTelemetryLive = [0, 1, 2].map((enemy) => ({
+            enemy,
+            players: 0,
+            kills: 0,
+            deaths: 0,
+            accidentals: 0,
+            successful_missions: 0,
+            missions: 0,
+        }));
+
+        test('archived global view without telemetry redacts the four telemetry cards', () => {
+            render(
+                <StatGrid
+                    live={noTelemetryLive}
+                    faction="global"
+                    events={mockEvents}
+                    archived
+                />,
+            );
+            expect(screen.getAllByText('████████')).toHaveLength(4);
+            expect(screen.getAllByText(/Data redacted/i)).toHaveLength(4);
+            // EVENTS and WAR_DURATION are not telemetry-derived — still render.
+            expect(screen.getByText('EVENTS')).toBeInTheDocument();
+            expect(screen.getByText('WAR_DURATION')).toBeInTheDocument();
+        });
+
+        test('archived faction view without telemetry redacts the telemetry cards', () => {
+            render(
+                <StatGrid
+                    live={noTelemetryLive}
+                    faction="bugs"
+                    events={mockEvents}
+                    archived
+                />,
+            );
+            expect(screen.getAllByText('████████')).toHaveLength(4);
+        });
+
+        test('archived season with real telemetry is not redacted', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    archived
+                />,
+            );
+            expect(screen.queryByText('████████')).toBeNull();
+            expect(screen.getByText('450')).toBeInTheDocument();
+        });
+
+        test('without the archived prop a zero-telemetry season is never redacted', () => {
+            render(
+                <StatGrid live={noTelemetryLive} faction="global" events={mockEvents} />,
+            );
+            expect(screen.queryByText('████████')).toBeNull();
+            expect(screen.queryByText(/Data redacted/i)).toBeNull();
+        });
+    });
 });

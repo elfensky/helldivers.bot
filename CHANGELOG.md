@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+- **`/archives` statistics now reuse the homepage `StatGrid`, with a Ministry of Truth redaction for pre-telemetry seasons (#391).** The archives page carried its own `ArchiveStats` (global) and `FactionStats` (per-faction) components — a parallel, partly-duplicated reimplementation of the homepage hero's per-faction `StatGrid` that had drifted from it. The archives stats section now renders the shared `StatGrid` itself for the six core cards (`HELLDIVERS_ONLINE`, `ENEMIES_KILLED`, `HELLDIVERS_LOST`, `MISSIONS_WON`, `EVENTS`, `WAR_DURATION`) — one source of truth, no drift — above a slim archives-only extras grid (`OUTCOME`, `DEFENSE_RATE`, `ATTACK_RATE`, `AVG_DIFFICULTY`, `WORST_CASCADE`; plus `HOTSPOT`, `CONQUEST`, `AVG_BATTLE` on a faction tab). `ArchiveStats` and `FactionStats` collapse into one component and the duplicated cards (`DURATION`, `KILLS`, `BATTLES`, `K/D`) are dropped. `StatGrid` gains an additive `archived` prop (default off, so the homepage is byte-for-byte unchanged): on seasons that predate combat-stat collection, the four telemetry cards render a censored `DATA REDACTED — MINISTRY OF TRUTH` treatment instead of misleading zeros. A new shared `formatRatio` formatter was extracted; built test-first throughout.
+
 ## 0.47.17
 
 ### Fixes

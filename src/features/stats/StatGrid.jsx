@@ -185,6 +185,37 @@ function warDurationCard(seconds, startUnix) {
     );
 }
 
+/**
+ * A telemetry card for an archived season that predates stat collection.
+ * Rather than a misleading zero, the value is censored and the subtitle
+ * plays the gap as a Ministry of Truth redaction.
+ */
+function redactedCard(label) {
+    return (
+        <StatCard
+            label={label}
+            value={<span className="text-ghost">████████</span>}
+            subtitle={
+                <span className="tracking-wide text-ghost uppercase">
+                    Data redacted — Ministry of Truth
+                </span>
+            }
+        />
+    );
+}
+
+/**
+ * Render a telemetry card, or its redacted stand-in when `redacted` is set —
+ * an archived season with no h1_statistic data behind it.
+ *
+ * @param {boolean} redacted - Whether to censor the card
+ * @param {string} label - The card label
+ * @param {object} cardProps - Props for the real StatCard when not redacted
+ */
+function telemetryCard(redacted, label, cardProps) {
+    return redacted ? redactedCard(label) : <StatCard label={label} {...cardProps} />;
+}
+
 export default function StatGrid({
     live,
     faction,
@@ -193,6 +224,7 @@ export default function StatGrid({
     killsTrend = null,
     seasonDuration = 0,
     warStart = null,
+    archived = false,
 }) {
     if (!live?.length) return null;
 
@@ -229,29 +261,28 @@ export default function StatGrid({
             playersAvg24h?.global,
         );
         const killsSubtitle = killsTrendSubtitle(totals.kills, killsTrend?.global);
+        // An archived season with no missions logged predates stat collection —
+        // redact its telemetry cards rather than render misleading zeros.
+        const redacted = archived && totals.allMissions <= 0;
         return (
             <div className="stat-grid">
-                <StatCard
-                    label="HELLDIVERS_ONLINE"
-                    value={<AnimatedStat value={totals.players} />}
-                    subtitle={onlineSubtitle}
-                />
-                <StatCard
-                    label="ENEMIES_KILLED"
-                    value={<AnimatedStat value={totals.kills} />}
-                    subtitle={killsSubtitle}
-                />
-                <StatCard
-                    label="HELLDIVERS_LOST"
-                    value={<AnimatedStat value={totals.deaths} />}
-                    subtitle={accidentalSubtitle(totals.accidentals, totals.deaths)}
-                    title={accidentalRateTooltip(totals.accidentals, totals.deaths)}
-                />
-                <StatCard
-                    label="MISSIONS_WON"
-                    value={<AnimatedStat value={totals.won} />}
-                    subtitle={missionTotalSubtitle(totals.allMissions)}
-                />
+                {telemetryCard(redacted, 'HELLDIVERS_ONLINE', {
+                    value: <AnimatedStat value={totals.players} />,
+                    subtitle: onlineSubtitle,
+                })}
+                {telemetryCard(redacted, 'ENEMIES_KILLED', {
+                    value: <AnimatedStat value={totals.kills} />,
+                    subtitle: killsSubtitle,
+                })}
+                {telemetryCard(redacted, 'HELLDIVERS_LOST', {
+                    value: <AnimatedStat value={totals.deaths} />,
+                    subtitle: accidentalSubtitle(totals.accidentals, totals.deaths),
+                    title: accidentalRateTooltip(totals.accidentals, totals.deaths),
+                })}
+                {telemetryCard(redacted, 'MISSIONS_WON', {
+                    value: <AnimatedStat value={totals.won} />,
+                    subtitle: missionTotalSubtitle(totals.allMissions),
+                })}
                 <StatCard
                     label="EVENTS"
                     value={eventsScoreValue(wins, losses)}
@@ -267,6 +298,8 @@ export default function StatGrid({
 
     const onlineSubtitle = playersDeltaSubtitle(stats.players, playersAvg24h?.[faction]);
     const killsSubtitle = killsTrendSubtitle(stats.kills, killsTrend?.[faction]);
+    // No missions logged for this faction on an archived season → redact.
+    const redacted = archived && Number(stats.missions) <= 0;
 
     // How long this faction has been in the war: total war duration minus the
     // span it spent 'hidden' before introduction. Null `first_seen` → the
@@ -278,27 +311,23 @@ export default function StatGrid({
 
     return (
         <div className="stat-grid">
-            <StatCard
-                label="HELLDIVERS_ONLINE"
-                value={<AnimatedStat value={stats.players} />}
-                subtitle={onlineSubtitle}
-            />
-            <StatCard
-                label="ENEMIES_KILLED"
-                value={<AnimatedStat value={stats.kills} />}
-                subtitle={killsSubtitle}
-            />
-            <StatCard
-                label="HELLDIVERS_LOST"
-                value={<AnimatedStat value={stats.deaths} />}
-                subtitle={accidentalSubtitle(stats.accidentals, stats.deaths)}
-                title={accidentalRateTooltip(stats.accidentals, stats.deaths)}
-            />
-            <StatCard
-                label="MISSIONS_WON"
-                value={<AnimatedStat value={stats.successful_missions} />}
-                subtitle={missionTotalSubtitle(stats.missions)}
-            />
+            {telemetryCard(redacted, 'HELLDIVERS_ONLINE', {
+                value: <AnimatedStat value={stats.players} />,
+                subtitle: onlineSubtitle,
+            })}
+            {telemetryCard(redacted, 'ENEMIES_KILLED', {
+                value: <AnimatedStat value={stats.kills} />,
+                subtitle: killsSubtitle,
+            })}
+            {telemetryCard(redacted, 'HELLDIVERS_LOST', {
+                value: <AnimatedStat value={stats.deaths} />,
+                subtitle: accidentalSubtitle(stats.accidentals, stats.deaths),
+                title: accidentalRateTooltip(stats.accidentals, stats.deaths),
+            })}
+            {telemetryCard(redacted, 'MISSIONS_WON', {
+                value: <AnimatedStat value={stats.successful_missions} />,
+                subtitle: missionTotalSubtitle(stats.missions),
+            })}
             <StatCard
                 label="EVENTS"
                 value={eventsScoreValue(wins, losses)}
