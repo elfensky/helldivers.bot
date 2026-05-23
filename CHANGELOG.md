@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changes
+
+- **Type-safety: Zod-inferred validator types + shared enum literal typedefs + tightened JSDoc across the event pipeline.** Adds `@typedef {z.infer<typeof Schema>} TypeName` exports to `isValidStatus.mjs` (`StatusPayload`), `isValidSeason.mjs` (`SeasonPayload`), and `isValidFormData.mjs` (`FormDataPayload`) so downstream consumers can reference the real wire-format shape instead of typing as `object`. Adds five literal-union typedefs (`EventType`, `EventStatus`, `CampaignStatus`, `MapStatus`) plus a shared `Event` shape and `EventChangeKind` union (`'event_started'|'event_won'|'event_lost'|'catch_up'`) to `src/shared/enums/events.mjs`. Tightens previously widened JSDoc on `detectChanges.mjs` (return shape now refers to the shared `Event` type instead of `event: object`), `EventToast.jsx` (both `toastLabel` and `showEventToast` now consume `Event` + `EventChangeKind`), and consolidates the duplicate `LiveStatus` typedef declaration between `useLiveData.mjs` and `LiveDataContext.mjs` — the hook is now the single source of truth and the context imports via `@typedef {import('...').LiveStatus} LiveStatus`. Pure refactor — no runtime behavior change; protects momentum on the only improving high-weight desloppify dimension (type_safety 55 → 68 → 71).
+
 ## 0.51.1
 
 ### Changes
