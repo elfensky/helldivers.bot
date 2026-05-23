@@ -9,10 +9,12 @@ import Footer from '@/shared/components/Footer/Footer';
 import BottomNav from '@/shared/components/BottomNav/BottomNav';
 import PreferenceTracker from '@/shared/components/PreferenceTracker';
 import LiveDataProvider from '@/shared/providers/LiveDataProvider';
+import MinistryProvider from '@/features/ministry/MinistryProvider';
 //data
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { getWarTone } from '@/features/ministry/warTone.mjs';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],
@@ -25,6 +27,8 @@ const inter = Inter({
     variable: '--font-inter',
     display: 'swap',
 });
+
+export const dynamic = 'force-dynamic';
 
 export const viewport = {
     themeColor: '#1c1b1b',
@@ -61,6 +65,7 @@ export default async function RootLayout({ children }) {
     // handled gracefully by useLiveData's fallback chain.
     const { data } = await tryCatch(getCampaign());
     const initialMapState = data ? computeLiveMapState(data) : null;
+    const warTone = await getWarTone();
 
     return (
         <html
@@ -195,16 +200,18 @@ export default async function RootLayout({ children }) {
                     initialData={data ?? null}
                     initialMapState={initialMapState}
                 >
-                    <PreferenceTracker />
-                    <Header />
-                    <main
-                        id="main"
-                        className="flex min-h-screen w-full flex-col pt-[50px] pb-[48px] sm:pt-[80px] md:pb-0"
-                    >
-                        {children}
-                    </main>
-                    <Footer />
-                    <BottomNav />
+                    <MinistryProvider warTone={warTone}>
+                        <PreferenceTracker />
+                        <Header />
+                        <main
+                            id="main"
+                            className="flex min-h-screen w-full flex-col pt-[50px] pb-[48px] sm:pt-[80px] md:pb-0"
+                        >
+                            {children}
+                        </main>
+                        <Footer />
+                        <BottomNav />
+                    </MinistryProvider>
                 </LiveDataProvider>
                 {isProduction && process.env.UMAMI_SITE_ID ?
                     <Script
