@@ -131,4 +131,37 @@ describe('Hijackable — provider-wired hijack render', () => {
         );
         expect(container.firstChild.textContent).toBe('No Provider');
     });
+
+    test('onFlicker call renders sr-only truth + aria-hidden glyph swap', () => {
+        const fake = makeFakeCtx();
+        const { container } = rtlRender(
+            <MinistryContext.Provider value={fake.ctx}>
+                <Hijackable as="h1" category="heading" text="My Title" />
+            </MinistryContext.Provider>,
+        );
+        // Get the first registered onFlicker callback and invoke it
+        const firstDescriptor = fake.ctx.register.mock.calls[0][1];
+        act(() => firstDescriptor.onFlicker(2, 200)); // charIndex=2, 200ms
+
+        const h1 = container.querySelector('h1');
+        expect(h1.querySelector('.sr-only')?.textContent).toBe('My Title');
+        const overlay = h1.querySelector('[aria-hidden="true"]');
+        expect(overlay).not.toBeNull();
+        expect(overlay.querySelector('.glitch-char')).not.toBeNull();
+    });
+
+    test('ctx.setIdle is called when phase changes', () => {
+        const fake = makeFakeCtx();
+        rtlRender(
+            <MinistryContext.Provider value={fake.ctx}>
+                <Hijackable as="h1" category="heading" text="My Title" />
+            </MinistryContext.Provider>,
+        );
+        // Mount triggers initial setIdle(id, true) since phase starts idle
+        expect(fake.ctx.setIdle).toHaveBeenCalled();
+        const callsBefore = fake.ctx.setIdle.mock.calls.length;
+        fake.fireHijack('PROPAGANDA');
+        // setIdle should have been called again for the phase change to takeover
+        expect(fake.ctx.setIdle.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
 });

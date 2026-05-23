@@ -63,7 +63,8 @@ export default function Hijackable({
             setActiveAlt(alt);
             cycle.trigger();
         },
-        [cycle],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [cycle.trigger],
     );
 
     const flickerTimerRef = useRef(null);
@@ -152,6 +153,8 @@ export default function Hijackable({
             </Tag>
         );
     }
+
+    return null;
 }
 
 const GLYPH_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
