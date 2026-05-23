@@ -1,3 +1,5 @@
+import Hijackable from '@/features/ministry/Hijackable';
+
 export const metadata = {
     title: 'Brand Kit | Helldivers Bot',
     description:
@@ -28,7 +30,7 @@ function Hero() {
             <small className="text-text-muted">
                 Design System // Tactical Command Interface
             </small>
-            <h1>Brand Kit</h1>
+            <Hijackable as="h1" category="heading" text="Brand Kit" />
             <p className="mb-4 max-w-[600px]">
                 Visual reference for the Tactical Command Interface. Tokens defined in{' '}
                 <code>src/app/layout.css</code>.
@@ -72,7 +74,12 @@ function Hero() {
 function Palette() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Palette</h2>
+            <Hijackable
+                as="h2"
+                category="heading"
+                text="Palette"
+                className="mb-4 border-b border-ghost pb-1 text-primary"
+            />
             <h3 className="mb-2">Website</h3>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <Swatch
@@ -151,7 +158,12 @@ function Palette() {
 function Surfaces() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Surfaces</h2>
+            <Hijackable
+                as="h2"
+                category="heading"
+                text="Surfaces"
+                className="mb-4 border-b border-ghost pb-1 text-primary"
+            />
             <p className="mb-4 text-small text-text-muted">
                 Tonal layering — depth via surface shifts, no shadows.
             </p>
@@ -219,7 +231,12 @@ function Swatch({ color, name, token }) {
 function TypeAndSpacing() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Typography</h2>
+            <Hijackable
+                as="h2"
+                category="heading"
+                text="Typography"
+                className="mb-4 border-b border-ghost pb-1 text-primary"
+            />
             <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-baseline gap-4 border-b border-ghost py-2">
                     <h1 style={{ margin: 0 }}>Current Campaign</h1>
@@ -315,7 +332,12 @@ const btn =
 function Components() {
     return (
         <section className="mb-10">
-            <h2 className="mb-4 border-b border-ghost pb-1 text-primary">Components</h2>
+            <Hijackable
+                as="h2"
+                category="heading"
+                text="Components"
+                className="mb-4 border-b border-ghost pb-1 text-primary"
+            />
 
             <div className="mb-4 grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2">
                 <button
