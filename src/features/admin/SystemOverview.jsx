@@ -1,4 +1,4 @@
-import { getSystemStats } from '@/db/queries/admin.mjs';
+import { getSystemStats } from '@/features/admin/actions.mjs';
 import { formatTimeAgo } from '@/shared/utils/format/formatTimeAgo.mjs';
 import { formatUptime } from '@/shared/utils/format/formatUptime.mjs';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';

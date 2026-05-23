@@ -1,4 +1,4 @@
-import { getAllUsers } from '@/db/queries/admin.mjs';
+import { getAllUsers } from '@/features/admin/actions.mjs';
 import UserTableClient from '@/features/admin/UserTableClient';
 
 export default async function UserTable({ currentUserId }) {

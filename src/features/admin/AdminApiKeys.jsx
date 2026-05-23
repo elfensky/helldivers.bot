@@ -1,4 +1,4 @@
-import { getAllApiKeys, adminRevokeApiKey } from '@/db/queries/admin.mjs';
+import { getAllApiKeys, adminRevokeApiKey } from '@/features/admin/actions.mjs';
 import { timeSince } from '@/shared/utils/time.mjs';
 import Button from '@/shared/components/Button/Button';
 
