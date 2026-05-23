@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Hijackable from '@/features/ministry/Hijackable';
 
 export const metadata = {
     title: 'Civic Compliance Protocols',
@@ -14,9 +15,12 @@ export default function LegalPage() {
     return (
         <div className="gutters mx-auto max-w-3xl py-8 sm:py-12">
             <header className="mb-8 sm:mb-12">
-                <h1 className="font-display text-h1 text-text uppercase">
-                    Civic Compliance Protocols
-                </h1>
+                <Hijackable
+                    as="h1"
+                    category="heading"
+                    text="Civic Compliance Protocols"
+                    className="font-display text-h1 text-text uppercase"
+                />
                 <p className="mt-2 text-small text-text-muted">
                     Approved for citizen consumption by Super Earth High Command
                 </p>
@@ -27,9 +31,12 @@ export default function LegalPage() {
 
             {/* ── TERMS OF USE ──────────────────────────────── */}
             <section id="terms" className="scroll-mt-20">
-                <h2 className="font-display text-h2 text-primary uppercase">
-                    Citizen Service Agreement
-                </h2>
+                <Hijackable
+                    as="h2"
+                    category="heading"
+                    text="Citizen Service Agreement"
+                    className="font-display text-h2 text-primary uppercase"
+                />
                 <p className="mt-1 text-small text-text-muted italic">
                     Directive SE-7734 · Effective upon access · Ministry of Truth
                 </p>
@@ -127,9 +134,12 @@ export default function LegalPage() {
 
             {/* ── PRIVACY POLICY ────────────────────────────── */}
             <section id="privacy" className="scroll-mt-20">
-                <h2 className="font-display text-h2 text-primary uppercase">
-                    Bureau of Intelligence Data Protocols
-                </h2>
+                <Hijackable
+                    as="h2"
+                    category="heading"
+                    text="Bureau of Intelligence Data Protocols"
+                    className="font-display text-h2 text-primary uppercase"
+                />
                 <p className="mt-1 text-small text-text-muted italic">
                     Classification: PUBLIC · Clearance: CITIZEN · Bureau of Digital
                     Intelligence
@@ -259,9 +269,12 @@ export default function LegalPage() {
 
             {/* ── COOKIES ───────────────────────────────────── */}
             <section id="cookies" className="scroll-mt-20">
-                <h2 className="font-display text-h2 text-primary uppercase">
-                    Automated Tracking Rations
-                </h2>
+                <Hijackable
+                    as="h2"
+                    category="heading"
+                    text="Automated Tracking Rations"
+                    className="font-display text-h2 text-primary uppercase"
+                />
                 <p className="mt-1 text-small text-text-muted italic">
                     Technical Bulletin TB-0042 · Department of Digital Logistics
                 </p>

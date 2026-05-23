@@ -1,9 +1,8 @@
 'use client';
-import { useState, useCallback } from 'react';
 import './ArchivesLayout.css';
 import { useMapPin } from '@/shared/hooks/useMapPin.mjs';
 import ArchiveStats from '@/features/archives/ArchiveStats';
-import ArchivesHeader, { EffectsToggle } from '@/features/archives/ArchivesHeader';
+import ArchivesHeader from '@/features/archives/ArchivesHeader';
 import FactionHealthChart from '@/features/archives/FactionHealthChartLoader';
 import FactionTabs from '@/shared/components/FactionTabs';
 import StatGrid from '@/features/stats/StatGrid';
@@ -12,8 +11,6 @@ import ArchiveMap from '@/features/archives/ArchiveMap';
 import SeasonSelector from '@/features/archives/SeasonSelector';
 import RefreshSeasonButton from '@/features/archives/RefreshSeasonButton';
 import { eventKey } from '@/shared/utils/game/eventKey.mjs';
-import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
-import { useCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
 import { useScrollEvent } from '@/shared/hooks/useScrollEvent.mjs';
 import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
 import { usePersistedState } from '@/shared/hooks/usePersistedState.mjs';
@@ -71,7 +68,6 @@ export default function ArchivesClient({
     data,
     seasons,
     currentSeason,
-    defeatMessageIndex,
     isAdmin = false,
     initialFaction = 'global',
     initialSortOrder = 'desc',
@@ -95,32 +91,13 @@ export default function ArchivesClient({
     // `useHeaderGlassFilter` hook for the reasoning (Lightning CSS
     // strips `backdrop-filter` from the built CSS).
     const glassFilter = useHeaderGlassFilter();
-    const isDefeat = getWarOutcome(data)?.outcome === 'defeat';
-    const effects = useCyberstanEffects(isDefeat);
     const { selectedEvent, railRef } = useScrollEvent(events);
-
-    // Synced glitch phase from ArchivesHeader → ArchiveStats
-    const [glitchPhase, setGlitchPhase] = useState({
-        phase: 'idle',
-        takeoverMs: 800,
-        restoreMs: 800,
-    });
-    const handlePhaseChange = useCallback((phase, takeoverMs, restoreMs) => {
-        setGlitchPhase({ phase, takeoverMs, restoreMs });
-    }, []);
 
     return (
         <>
             {/* Full-width stats section */}
-            <div
-                className={`archives-stats-section${isDefeat ? ' cyberstan-defeat' : ''}${effects.watermark ? ' cyberstan-watermark-active' : ''}`}
-            >
-                <ArchivesHeader
-                    isDefeat={isDefeat}
-                    effects={effects}
-                    defeatMessageIndex={defeatMessageIndex}
-                    onPhaseChange={handlePhaseChange}
-                />
+            <div className="archives-stats-section">
+                <ArchivesHeader />
 
                 <section className="mt-4 flex flex-col gap-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -131,9 +108,6 @@ export default function ArchivesClient({
                                 seasons={seasons}
                                 currentSeason={currentSeason}
                             />
-                            {isDefeat && (
-                                <EffectsToggle active={effects.headerScramble} />
-                            )}
                             {isAdmin && (
                                 <RefreshSeasonButton
                                     season={currentSeason}
@@ -155,7 +129,6 @@ export default function ArchivesClient({
                         events={events}
                         data={data}
                         live={data?.status}
-                        glitchPhase={glitchPhase}
                     />
                 </section>
 

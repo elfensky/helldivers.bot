@@ -1,0 +1,25 @@
+/* ================================================================
+   Ministry Interference — sitewide easter egg.
+   Owns the glitch-char rendering style (moved from
+   CyberstanInterference.css) and the aria-hidden overlay rule.
+   ================================================================ */
+
+/* Single-character glyph in Cyberstan font during glitch */
+.glitch-char {
+    font-family: var(--font-cyberstan);
+    font-size: 0.6em;
+    display: inline-block;
+    width: 1ch;
+    overflow: hidden;
+    vertical-align: baseline;
+    text-align: center;
+}
+
+/* Overlay container that paints propaganda on top of the truth text.
+   The wrapper element keeps the truth as its first child (sr-only)
+   so screen readers always announce the truth; this overlay is
+   visually positioned over it and is aria-hidden. */
+.ministry-overlay {
+    /* Inline-level — sits in flow next to its sr-only truth sibling */
+    display: inline;
+}

@@ -1,6 +1,7 @@
 'use client';
 import { startTransition } from 'react';
 import './DashboardClient.css';
+import Hijackable from '@/features/ministry/Hijackable';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import LastUpdated from '@/shared/components/LastUpdated';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
@@ -59,7 +60,7 @@ export default function DashboardClient({
     if (!data) {
         return (
             <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
-                <h1>SIGNAL LOST</h1>
+                <Hijackable as="h1" category="heading" text="SIGNAL LOST" />
                 <p>
                     Communication with Super Earth High Command has been disrupted. This
                     is not cause for alarm. Remain calm and await further instructions.
@@ -241,9 +242,12 @@ export default function DashboardClient({
     return (
         <>
             <section className="flex flex-col gap-2">
-                <h1 className="font-display text-body text-primary">
-                    Track Managed Democracy Across the Galaxy
-                </h1>
+                <Hijackable
+                    as="h1"
+                    category="heading"
+                    text="Track Managed Democracy Across the Galaxy"
+                    className="font-display text-body text-primary"
+                />
                 <p className="mb-0! text-small text-text-muted">
                     Don&apos;t miss a moment of the action! Follow the Helldivers&apos;
                     campaign progress as they battle the Bugs, Cyborgs, and Illuminate for
@@ -257,7 +261,11 @@ export default function DashboardClient({
 
             <section className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                    <h2>Season {data.season}</h2>
+                    <Hijackable
+                        as="h2"
+                        category="heading"
+                        text={`Season ${data.season}`}
+                    />
                     <RegionsViewToggle value={regionsView} onChange={setRegionsView} />
                 </div>
                 <ComponentErrorBoundary name="Regions">
@@ -270,7 +278,7 @@ export default function DashboardClient({
             <section className="flex flex-col gap-2">
                 <ComponentErrorBoundary name="Stats">
                     <div className="flex items-center justify-between gap-2">
-                        <h2>Stats</h2>
+                        <Hijackable as="h2" category="heading" text="Stats" />
                         <FactionTabs
                             active={faction}
                             onChange={(id) =>

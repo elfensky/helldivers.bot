@@ -1,72 +1,26 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-
-// Mock the dynamic import — render text directly in tests
-vi.mock('@/features/archives/GlitchText', () => ({
-    default: ({ text, className }) => <span className={className}>{text}</span>,
-}));
-
+import { describe, test, expect } from 'vitest';
+import { render } from '@testing-library/react';
 import ArchivesHeader from '@/features/archives/ArchivesHeader';
-import { RESISTANCE_MESSAGES } from '@/features/archives/resistanceMessages.mjs';
-
-const noEffects = { headerScramble: false, watermark: false };
-const defeatEffects = { headerScramble: true, watermark: false };
 
 describe('ArchivesHeader', () => {
-    it('renders propaganda copy on victory', () => {
-        render(<ArchivesHeader isDefeat={false} effects={noEffects} />);
-        expect(screen.getByText('Declassified Campaign Archives')).toBeDefined();
-        expect(screen.getByText(/Bureau of War Information/)).toBeDefined();
+    test('renders h1 with PROPAGANDA_TITLE as a Hijackable', () => {
+        const { container } = render(<ArchivesHeader />);
+        const h1 = container.querySelector('h1');
+        expect(h1).not.toBeNull();
+        expect(h1.textContent).toBe('Declassified Campaign Archives');
     });
 
-    it('renders resistance copy on defeat with message index', () => {
-        render(
-            <ArchivesHeader
-                isDefeat={true}
-                effects={defeatEffects}
-                defeatMessageIndex={0}
-            />,
-        );
-        expect(screen.getByText(/Leaked Campaign Records/)).toBeDefined();
-        expect(screen.getByText(RESISTANCE_MESSAGES[0])).toBeDefined();
+    test('renders body paragraph with PROPAGANDA_BODY', () => {
+        const { container } = render(<ArchivesHeader />);
+        const p = container.querySelector('p');
+        expect(p).not.toBeNull();
+        expect(p.textContent.length).toBeGreaterThan(0);
     });
 
-    it('renders different message for different index', () => {
-        render(
-            <ArchivesHeader
-                isDefeat={true}
-                effects={defeatEffects}
-                defeatMessageIndex={3}
-            />,
-        );
-        expect(screen.getByText(RESISTANCE_MESSAGES[3])).toBeDefined();
-    });
-
-    it('does not show resistance text on victory', () => {
-        render(<ArchivesHeader isDefeat={false} effects={noEffects} />);
-        expect(screen.queryByText(/Leaked Campaign Records/)).toBeNull();
-    });
-
-    it('does not render toggle (moved to ArchivesClient)', () => {
-        render(
-            <ArchivesHeader
-                isDefeat={true}
-                effects={defeatEffects}
-                defeatMessageIndex={0}
-            />,
-        );
-        expect(screen.queryByRole('button')).toBeNull();
-    });
-
-    it('falls back to first message for invalid index', () => {
-        render(
-            <ArchivesHeader
-                isDefeat={true}
-                effects={defeatEffects}
-                defeatMessageIndex={999}
-            />,
-        );
-        expect(screen.getByText(RESISTANCE_MESSAGES[0])).toBeDefined();
+    test('no EffectsToggle button present (removed)', () => {
+        const { container } = render(<ArchivesHeader />);
+        const btns = container.querySelectorAll('button');
+        expect(btns.length).toBe(0);
     });
 });

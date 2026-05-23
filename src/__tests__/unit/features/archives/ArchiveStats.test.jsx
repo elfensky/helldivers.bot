@@ -6,8 +6,8 @@ import ArchiveStats from '@/features/archives/ArchiveStats';
 vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
     getWarOutcome: vi.fn(() => ({ outcome: 'victory', reason: 'won', faction: 2 })),
 }));
-vi.mock('@/features/archives/GlitchText', () => ({
-    default: ({ text, className }) => <span className={className}>{text}</span>,
+vi.mock('@/features/ministry/Hijackable', () => ({
+    default: ({ text }) => <span data-testid="outcome-hijackable">{text}</span>,
 }));
 
 const mockEvents = [
