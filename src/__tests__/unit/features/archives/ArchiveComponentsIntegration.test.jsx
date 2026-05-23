@@ -66,17 +66,12 @@ vi.mock('@/features/archives/RefreshSeasonButton', () => ({
 
 // Mock hooks
 const mockUsePersistedState = vi.hoisted(() => vi.fn());
-const mockUseCyberstanEffects = vi.hoisted(() => vi.fn());
 const mockUseScrollEvent = vi.hoisted(() => vi.fn());
 const mockUseHeaderGlassFilter = vi.hoisted(() => vi.fn());
 const mockGetWarOutcome = vi.hoisted(() => vi.fn());
 
 vi.mock('@/shared/hooks/usePersistedState.mjs', () => ({
     usePersistedState: mockUsePersistedState,
-}));
-
-vi.mock('@/features/archives/useCyberstanEffects.mjs', () => ({
-    useCyberstanEffects: mockUseCyberstanEffects,
 }));
 
 vi.mock('@/shared/hooks/useScrollEvent.mjs', () => ({
@@ -158,10 +153,6 @@ const allSeeds = [
 beforeEach(() => {
     // Reset mocks before each test
     mockUsePersistedState.mockReturnValue(['global', vi.fn()]);
-    mockUseCyberstanEffects.mockReturnValue({
-        headerScramble: false,
-        watermark: false,
-    });
     mockUseScrollEvent.mockReturnValue({
         selectedEvent: null,
         railRef: { current: null },
