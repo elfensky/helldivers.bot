@@ -1,3 +1,5 @@
+import { compareCascades } from '@/shared/utils/game/seasonAnalytics.mjs';
+
 /**
  * Group cascades by season, then sort groups + within-group cascades.
  *
@@ -6,6 +8,9 @@
  *   sorted length DESC, then speed DESC, then endTime DESC.
  * - `sortOrder='recent'` — groups ordered by season DESC. Cascades within
  *   a group are sorted by endTime DESC.
+ *
+ * The worst-first comparator is the same one used by getCascadeLeaderboard,
+ * imported from seasonAnalytics so ranking stays consistent across views.
  *
  * @param {Array<object>} cascades - Each cascade includes `season`.
  * @param {object} [opts] - Grouping options
@@ -22,22 +27,14 @@ export function groupCascadesBySeason(cascades, { sortOrder = 'worst' } = {}) {
     }
 
     const within =
-        sortOrder === 'recent' ? (a, b) => b.endTime - a.endTime : compareByWorst;
+        sortOrder === 'recent' ? (a, b) => b.endTime - a.endTime : compareCascades;
     for (const arr of groups.values()) arr.sort(within);
 
     const list = Array.from(groups, ([season, cs]) => ({ season, cascades: cs }));
     if (sortOrder === 'recent') {
         list.sort((a, b) => b.season - a.season);
     } else {
-        list.sort((a, b) => compareByWorst(a.cascades[0], b.cascades[0]));
+        list.sort((a, b) => compareCascades(a.cascades[0], b.cascades[0]));
     }
     return list;
-}
-
-function compareByWorst(a, b) {
-    if (b.length !== a.length) return b.length - a.length;
-    const aSpeed = a.length / (a.durationSec / 3600);
-    const bSpeed = b.length / (b.durationSec / 3600);
-    if (bSpeed !== aSpeed) return bSpeed - aSpeed;
-    return b.endTime - a.endTime;
 }
