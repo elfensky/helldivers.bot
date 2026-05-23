@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changes
+
+- **`/api/h1/rebroadcast` reconstruction logic extracted to `src/db/queries/rebroadcast.mjs`; `SEASON_NOT_FOUND` sentinel becomes a named export; rebroadcast snapshots path returns `404` for missing seasons instead of `500`.** The rebroadcast route inlined ~130 LOC of `reconstructCampaignStatus` + `reconstructSnapshots` alongside the POST handler — the same DISTINCT-ON + bucket-merge logic already encapsulated in `db/queries/`, just producing a different wire shape. Moves both functions out into `src/db/queries/rebroadcast.mjs` so the route file becomes pure orchestration (147 LOC → 152 LOC handler kept; ~140 LOC of data-access removed from route layer). The `SEASON_NOT_FOUND` magic string used as `Error.cause` in `src/update/season.mjs` was previously a hand-typed literal duplicated across the throw site and the campaign-route consumer (`fetchError.cause === 'SEASON_NOT_FOUND'`); now exported as a named constant from `src/update/season.mjs` and imported by both campaign and rebroadcast routes — typos fail at `tsc --noEmit` time. **Behavior change:** the rebroadcast `get_snapshots` backfill path previously returned `500` when the requested season didn't exist on the HD1 API; now correctly returns `404`, matching the campaign route's existing behavior. Closes the `rebroadcast-getcampaign-consolidation` cluster + `rebroadcast-churn-hotspot-decoupling` strategic issue from /desloppify (issue #406).
+
 ## 0.51.2
 
 ### Changes
