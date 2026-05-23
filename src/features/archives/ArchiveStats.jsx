@@ -3,7 +3,7 @@ import '@/features/stats/StatGrid.css';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { formatRatio } from '@/shared/utils/format/formatRatio.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
-import GlitchText from '@/features/archives/GlitchText';
+import Hijackable from '@/features/ministry/Hijackable';
 import factions, { FACTION_INDEX } from '@/shared/enums/factions.mjs';
 import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
@@ -72,7 +72,7 @@ function difficultyCard(totalDifficulty, successfulMissions) {
  * Handles both views in one component, mirroring how `StatGrid` branches on
  * `faction`.
  */
-export default function ArchiveStats({ faction, events, data, live, glitchPhase }) {
+export default function ArchiveStats({ faction, events, data, live }) {
     if (!events?.length) return null;
 
     if (faction === 'global') {
@@ -100,21 +100,28 @@ export default function ArchiveStats({ faction, events, data, live, glitchPhase 
                 <StatCard
                     label="OUTCOME"
                     value={
-                        outcome === 'defeat' ?
-                            <GlitchText
-                                text="DEFEAT"
-                                altText="VICTORY"
-                                className="text-danger"
-                                altClassName="text-success"
-                                phase={glitchPhase?.phase ?? 'idle'}
-                                takeoverMs={glitchPhase?.takeoverMs ?? 800}
-                                restoreMs={glitchPhase?.restoreMs ?? 800}
+                        outcome === 'victory' || outcome === 'defeat' ?
+                            <Hijackable
+                                category="value"
+                                scope="archives"
+                                text={outcome.toUpperCase()}
+                                altText={outcome === 'victory' ? 'DEFEAT' : 'VICTORY'}
+                                className={
+                                    outcome === 'defeat' ? 'text-danger' : 'text-success'
+                                }
+                                altClassName={
+                                    outcome === 'defeat' ? 'text-success' : 'text-danger'
+                                }
                             />
                         :   outcome.toUpperCase()
                     }
                     subtitle={outcomeFaction ?? undefined}
                     accentColor={outcomeColor}
-                    valueColor={outcome !== 'defeat' ? outcomeColor : undefined}
+                    valueColor={
+                        outcome !== 'victory' && outcome !== 'defeat' ?
+                            outcomeColor
+                        :   undefined
+                    }
                 />
                 {rateCards(events)}
                 {difficultyCard(diff.difficulty, diff.successful)}
