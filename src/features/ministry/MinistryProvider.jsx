@@ -251,16 +251,3 @@ export default function MinistryProvider({ warTone, children }) {
         <MinistryContext.Provider value={ctxValue}>{children}</MinistryContext.Provider>
     );
 }
-
-// Exported for the scheduler in the next task — keeps test mocks predictable.
-export const _internals = {
-    HIJACK_MIN_MS,
-    HIJACK_MAX_MS,
-    FLICKER_MIN_MS,
-    FLICKER_MAX_MS,
-    FLICKER_DUR_MIN_MS,
-    FLICKER_DUR_MAX_MS,
-    randomBetween,
-    pickAlt,
-    CYCLE_MS,
-};

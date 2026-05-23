@@ -38,9 +38,6 @@ vi.mock('@/features/archives/ArchivesHeader', () => ({
     default: (props) => (
         <div data-testid="archives-header-mock" data-props={JSON.stringify(props)} />
     ),
-    EffectsToggle: ({ active }) => (
-        <button data-testid="effects-toggle-stub" data-active={String(!!active)} />
-    ),
 }));
 
 vi.mock('@/shared/components/FactionTabs', () => ({
@@ -193,7 +190,6 @@ describe('Archive Components Integration Tests', () => {
                     data={data}
                     seasons={seasons}
                     currentSeason={season}
-                    defeatMessageIndex={0}
                     isAdmin={false}
                 />,
             );

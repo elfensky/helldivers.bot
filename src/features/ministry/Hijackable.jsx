@@ -27,7 +27,7 @@ const VALID_CATEGORIES = new Set(['heading', 'value', 'body', 'footer']);
  * propaganda only exists in the DOM for ~2.6s during a rare hijack
  * (not persistently), and it's marked aria-hidden the whole time.
  *
- * @param {object} props
+ * @param {object} props - component props
  * @param {string} props.text - the truth (required)
  * @param {string=} props.altText - explicit propaganda override
  * @param {'heading' | 'value' | 'body' | 'footer'} [props.category='body'] - content category

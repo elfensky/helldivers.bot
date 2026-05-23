@@ -164,6 +164,43 @@ describe('MinistryProvider — hijack scheduler', () => {
         expect(onHijack).not.toHaveBeenCalled();
         expect(onFlicker).not.toHaveBeenCalled();
     });
+
+    test('document.hidden gate: no callback fires when tab is hidden', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        const originalHidden = Object.getOwnPropertyDescriptor(
+            Document.prototype,
+            'hidden',
+        );
+        Object.defineProperty(document, 'hidden', {
+            configurable: true,
+            get: () => true,
+        });
+        let ctx;
+        const onHijack = vi.fn();
+        const onFlicker = vi.fn();
+        try {
+            render(
+                <MinistryProvider warTone="winning">
+                    <Probe onCtx={(c) => (ctx = c)} />
+                </MinistryProvider>,
+            );
+            ctx.register('h', {
+                text: 'X',
+                category: 'heading',
+                scope: 'global',
+                onHijack,
+                onFlicker,
+            });
+            // Advance through both schedulers' fire windows.
+            act(() => vi.advanceTimersByTime(5 * 60 * 1000));
+            expect(onHijack).not.toHaveBeenCalled();
+            expect(onFlicker).not.toHaveBeenCalled();
+        } finally {
+            if (originalHidden)
+                Object.defineProperty(Document.prototype, 'hidden', originalHidden);
+            else delete document.hidden;
+        }
+    });
 });
 
 describe('MinistryProvider — disabled states', () => {
