@@ -1,11 +1,16 @@
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
+/** @typedef {import('@/shared/enums/events.mjs').Event} Event */
+
 /**
  * Detect event transitions between two campaign states.
  *
- * @param {Array | null} prevEvents - Previous event array (may be null on first call)
- * @param {Array} nextEvents - Current event array
- * @returns {Array<{kind: 'event_started'|'event_won'|'event_lost', event: object}>}
+ * `catch_up` is intentionally not emitted here — that variant belongs to
+ * page-load synthesis in `LiveToasts`, not poll-to-poll diff detection.
+ *
+ * @param {ReadonlyArray<Event> | null} prevEvents - Previous event array (null on first call).
+ * @param {ReadonlyArray<Event>} nextEvents - Current event array.
+ * @returns {Array<{kind: 'event_started'|'event_won'|'event_lost', event: Event}>}
  */
 export function detectChanges(prevEvents, nextEvents) {
     if (!prevEvents || !nextEvents) return [];

@@ -43,3 +43,10 @@ export const isValidFormData = z.discriminatedUnion('action', [
     schemaGetLeaderboards,
     schemaGetUsernames,
 ]);
+
+/**
+ * Inferred shape of a validated rebroadcast form-data body. Discriminated
+ * on `action`, so consumers get exhaustive narrowing automatically.
+ *
+ * @typedef {import('zod').infer<typeof isValidFormData>} FormDataPayload
+ */

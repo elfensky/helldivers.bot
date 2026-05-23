@@ -77,3 +77,10 @@ const rootSchema = z.object({
 });
 
 export const isValidSeason = rootSchema;
+
+/**
+ * Inferred shape of a validated `get_snapshots` payload from HD1.
+ * Use this typedef downstream of Zod validation instead of typing as `object`.
+ *
+ * @typedef {import('zod').infer<typeof isValidSeason>} SeasonPayload
+ */
