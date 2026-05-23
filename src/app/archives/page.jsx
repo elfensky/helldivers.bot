@@ -10,7 +10,6 @@ import { ROLE } from '@/shared/enums/roles.mjs';
 //components
 import JsonLd from '@/shared/components/JsonLd';
 import ArchivesClient from '@/features/archives/ArchivesClient';
-import { RESISTANCE_MESSAGES } from '@/features/archives/resistanceMessages.mjs';
 import { FACTION_KEY, validateFaction } from '@/shared/preferences/faction.mjs';
 import { SORT_ORDER_KEY, validateSortOrder } from '@/shared/preferences/sortOrder.mjs';
 
@@ -108,9 +107,6 @@ export default async function WarHistoryPage({ searchParams }) {
                 data={data}
                 seasons={seasons}
                 currentSeason={currentSeason}
-                defeatMessageIndex={Math.floor(
-                    Math.random() * RESISTANCE_MESSAGES.length,
-                )}
                 isAdmin={isAdmin}
                 initialFaction={initialFaction}
                 initialSortOrder={initialSortOrder}
