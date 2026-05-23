@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changes
+
+- **Desloppify mechanical cleanup** — closes three filed issues in one PR. (1) Adds JSDoc `@param` descriptions to `CascadeLog.jsx` (`props`) and `seasonAnalytics.mjs` (`opts`), clearing the two `jsdoc/require-param-description` lint warnings (#400). (2) Renames the cross-file `makeFactionMap` test helpers — `EventCard.test.jsx` uses `makeSectorMap` (it builds a per-faction sectors map for one event card) and `DashboardClient.test.jsx` uses `makeDashboardMap` (it builds the full mapState shape including region 0/11) — each helper is a genuinely different shape (regions 1-11 vs 1-10 vs 0-11 with different field sets), so renaming is more honest than extracting a fake shared abstraction; the third occurrence in `computeFrontier.test.mjs` is already scoped inside a `describe()` block (#401). (3) Annotates the two intentional empty-`catch` swallows in `MinistryProvider.jsx` (flicker scheduler) and `useLiveData.mjs` (`saveCachedState`) — both now capture `err` and `console.debug` it so the swallow is visible during diagnosis, with the existing rationale promoted from inline comment to a fuller multi-line explanation of why each path is non-critical (#399). No runtime behavior change.
+
 ## 0.51.3
 
 ### Changes
