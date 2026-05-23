@@ -10,8 +10,8 @@ const MAX_GAP_SEC = 3600; // 1 hour
  * and consecutive events within `MAX_GAP_SEC` (1 hour).
  *
  * @param {Array} events - h1_event records (any type, any status)
- * @param {object} [opts]
- * @param {number} [opts.minLength=3] - Inclusive minimum cascade length
+ * @param {object} [opts] - Optional configuration.
+ * @param {number} [opts.minLength=3] - Inclusive minimum cascade length.
  * @returns {Array<{
  *   length: number,
  *   faction: string,

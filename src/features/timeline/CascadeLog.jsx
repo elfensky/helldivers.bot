@@ -11,7 +11,7 @@ import { groupCascadesBySeason } from '@/features/timeline/groupCascadesBySeason
  * Cross-season cascade log. Same section layout as EventLog, grouped by
  * season instead of by day. Renders nothing when `cascades` is empty.
  *
- * @param {object} props
+ * @param {object} props - Component props.
  * @param {Array<object>} props.cascades - Each cascade includes a `season` field.
  * @param {string} [props.lede] - Optional one-line summary above the groups.
  * @param {string} [props.title] - Optional heading text (defaults to "Cascade Failures").
