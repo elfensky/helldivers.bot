@@ -1,25 +1,12 @@
 'use server';
 import { z } from 'zod';
 import db from '@/db/db';
-import { auth } from '@/auth';
-import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performanceTime } from '@/shared/utils/time.mjs';
 import { revalidatePath } from 'next/cache';
 import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth.mjs';
 import { ROLE } from '@/shared/enums/roles.mjs';
-
-/**
- * Verify the current request is from an authenticated admin user.
- * @returns {Promise<{ user: object } | { error: string }>} User object or error message
- */
-async function requireAdmin() {
-    if (!auth) return { error: 'Auth not configured' };
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session || !session.user) return { error: 'Not authenticated' };
-    if (session.user.role !== ROLE.ADMIN) return { error: 'Forbidden' };
-    return { user: session.user };
-}
+import { requireAdmin } from '@/db/queries/_authGuards.mjs';
 
 export async function getAllUsers() {
     const start = performance.now();

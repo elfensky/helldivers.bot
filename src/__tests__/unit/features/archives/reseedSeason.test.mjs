@@ -44,7 +44,7 @@ describe('reseedSeason', () => {
     it('returns errors when session is null', async () => {
         auth.api.getSession.mockResolvedValue(null);
         const result = await reseedSeason(153);
-        expect(result.errors).toEqual({ auth: 'Forbidden' });
+        expect(result.errors).toEqual({ auth: 'Not authenticated' });
         expect(result.time).toEqual(expect.any(Number));
         expect(updateSeason).not.toHaveBeenCalled();
     });

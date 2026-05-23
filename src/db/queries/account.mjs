@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performanceTime } from '@/shared/utils/time.mjs';
+import { requireSession, requireUser } from '@/db/queries/_authGuards.mjs';
 
 /**
  * Export all data for the authenticated user (profile, accounts, settings, API keys).
@@ -12,16 +13,8 @@ import { performanceTime } from '@/shared/utils/time.mjs';
  */
 export async function exportUserData(userId) {
     const start = performance.now();
-    if (!auth)
-        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
-    const session = await auth.api.getSession({ headers: await headers() });
-
-    if (!session || !session.user) {
-        return { errors: { auth: 'Not authenticated' }, time: performanceTime(start) };
-    }
-    if (session.user.id !== userId) {
-        return { errors: { auth: 'Not authorized' }, time: performanceTime(start) };
-    }
+    const { error: authError } = await requireUser(userId);
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const { data: userData, error } = await tryCatch(
         db.user.findUnique({
@@ -56,18 +49,16 @@ export async function exportUserData(userId) {
  */
 export async function deleteUserAccount(_, formData) {
     const start = performance.now();
-    if (!auth)
-        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
-    const session = await auth.api.getSession({ headers: await headers() });
-
-    if (!session || !session.user) {
-        return { errors: { auth: 'Not authenticated' }, time: performanceTime(start) };
-    }
+    const { user, error: authError } = await requireSession();
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const userId = formData.get('userId');
 
-    if (session.user.id !== userId) {
-        return { errors: { auth: 'Not authorized' }, time: performanceTime(start) };
+    if (user.id !== userId) {
+        return {
+            errors: { auth: 'Not authorized' },
+            time: performanceTime(start),
+        };
     }
 
     // Revoke all sessions before deleting user (cascade will delete sessions from DB,
