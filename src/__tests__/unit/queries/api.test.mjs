@@ -20,7 +20,7 @@ describe('getApiKeysByUserId', () => {
     test('returns auth error when no session', async () => {
         const result = await getApiKeysByUserId(userId);
 
-        expect(result.errors.auth).toBe('No session found');
+        expect(result.errors.auth).toBe('Not authenticated');
         expect(result.data).toBeUndefined();
     });
 
@@ -29,7 +29,7 @@ describe('getApiKeysByUserId', () => {
 
         const result = await getApiKeysByUserId(otherUserId);
 
-        expect(result.errors.auth).toBe('User does not match');
+        expect(result.errors.auth).toBe('Not authorized');
         expect(result.data).toBeUndefined();
     });
 
@@ -85,7 +85,7 @@ describe('generateApiKey', () => {
 
         const result = await generateApiKey(null, validFormData);
 
-        expect(result.errors.auth).toMatch(/signed in/i);
+        expect(result.errors.auth).toBe('Not authenticated');
     });
 
     test('returns validation errors for invalid formData', async () => {
@@ -107,7 +107,7 @@ describe('generateApiKey', () => {
 
         const result = await generateApiKey(null, mismatchFormData);
 
-        expect(result.errors.auth).toMatch(/permission/i);
+        expect(result.errors.auth).toBe('Not authorized');
     });
 
     test('returns max limit error when user has 5 keys', async () => {
@@ -171,7 +171,7 @@ describe('deleteApiKey', () => {
 
         const result = await deleteApiKey(null, validFormData);
 
-        expect(result.errors.auth).toMatch(/permission/i);
+        expect(result.errors.auth).toBe('Not authenticated');
     });
 
     test('returns validation errors for invalid formData', async () => {
@@ -190,7 +190,7 @@ describe('deleteApiKey', () => {
 
         const result = await deleteApiKey(null, mismatchFormData);
 
-        expect(result.errors.auth).toMatch(/permission/i);
+        expect(result.errors.auth).toBe('Not authorized');
     });
 
     test('deletes api key and revalidates on success', async () => {

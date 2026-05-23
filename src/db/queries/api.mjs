@@ -1,13 +1,12 @@
 'use server';
 import { z } from 'zod';
 import db from '@/db/db';
-import { auth } from '@/auth';
-import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/shared/utils/time.mjs';
 import { randomUUID, createHash } from 'crypto';
 import { revalidatePath } from 'next/cache';
+import { requireSession, requireUser } from '@/db/queries/_authGuards.mjs';
 
 /**
  * Retrieve all API keys for the authenticated user.
@@ -16,22 +15,8 @@ import { revalidatePath } from 'next/cache';
  */
 export async function getApiKeysByUserId(userId) {
     const start = performance.now();
-    if (!auth)
-        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
-    const session = await auth.api.getSession({ headers: await headers() });
-
-    if (!session || !session.user) {
-        return {
-            errors: { auth: 'No session found' },
-            time: performanceTime(start),
-        };
-    }
-    if (session.user.id !== userId) {
-        return {
-            errors: { auth: 'User does not match' },
-            time: performanceTime(start),
-        };
-    }
+    const { error: authError } = await requireUser(userId);
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const { data: result, error } = await tryCatch(
         db.ApiKey.findMany({
@@ -58,16 +43,8 @@ export async function getApiKeysByUserId(userId) {
  */
 export async function generateApiKey(_, formData) {
     const start = performance.now();
-    if (!auth)
-        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
-
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session || !session?.user) {
-        return {
-            errors: { auth: 'You must be signed in to generate an API key' },
-            time: performanceTime(start),
-        };
-    }
+    const { user, error: authError } = await requireSession();
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const formValues = {
         userId: formData.get('userId'),
@@ -87,9 +64,9 @@ export async function generateApiKey(_, formData) {
         };
     }
 
-    if (session.user.id !== formValues.userId) {
+    if (user.id !== formValues.userId) {
         return {
-            errors: { auth: "You don't have permission to create this API key" },
+            errors: { auth: 'Not authorized' },
             time: performanceTime(start),
         };
     }
@@ -137,16 +114,8 @@ export async function generateApiKey(_, formData) {
  */
 export async function deleteApiKey(_, formData) {
     const start = performance.now();
-    if (!auth)
-        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
-
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session || !session?.user) {
-        return {
-            errors: { auth: "You don't have permission to delete this API key" },
-            time: performanceTime(start),
-        };
-    }
+    const { user, error: authError } = await requireSession();
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const formValues = {
         userId: formData.get('userId'),
@@ -166,9 +135,9 @@ export async function deleteApiKey(_, formData) {
         };
     }
 
-    if (session.user.id !== formValues.userId) {
+    if (user.id !== formValues.userId) {
         return {
-            errors: { auth: "You don't have permission to delete this API key" },
+            errors: { auth: 'Not authorized' },
             time: performanceTime(start),
         };
     }

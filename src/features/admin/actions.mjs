@@ -1,6 +1,4 @@
 'use server';
-import { auth } from '@/auth';
-import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/shared/utils/time.mjs';
@@ -10,7 +8,7 @@ import {
     buildPayload,
 } from '@/update/pushNotifier.mjs';
 import db from '@/db/db';
-import { ROLE } from '@/shared/enums/roles.mjs';
+import { requireAdmin } from '@/db/queries/_authGuards.mjs';
 
 /**
  * Send a test push notification using the same payload format as real events.
@@ -30,12 +28,8 @@ export async function sendTestNotification({
     event_id,
 } = {}) {
     const start = performance.now();
-    if (!auth)
-        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user || session.user.role !== ROLE.ADMIN) {
-        return { errors: { auth: 'Unauthorized' }, time: performanceTime(start) };
-    }
+    const { error: authError } = await requireAdmin();
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     if (!ensureVapid()) {
         return {

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.51.1
+
+### Changes
+
+- **Shared auth-guard helpers (`requireSession` / `requireUser` / `requireAdmin`) replace 5+ inlined session+ownership patterns across `src/db/queries/` and `src/features/`.** The auth-guard pattern (`if (!auth) → session lookup → optional ownership/role check → return uniform error envelope`) was duplicated 5 times in `api.mjs` (`getApiKeysByUserId`, `generateApiKey`, `deleteApiKey`), 2 times in `account.mjs` (`exportUserData`, `deleteUserAccount`), and reimplemented inline in `features/archives/reseedSeason.mjs` and `features/admin/actions.mjs` (`sendTestNotification`) — each with a slightly different error string for the same auth-failure condition (`'No session found'`, `'User does not match'`, `"You must be signed in to generate an API key"`, `"You don't have permission to delete this API key"`, `'Unauthorized'`, `'Forbidden'`). Extracted to a new `src/db/queries/_authGuards.mjs` module returning a `{ user, error }` discriminated-union with both keys always present (one nullable) — matching how callers were already destructuring the previous `requireAdmin` and fixing a long-standing JSDoc lie. Error strings standardize to `'Auth not configured'` / `'Not authenticated'` / `'Not authorized'` / `'Forbidden'`, which also distinguishes "no session at all" from "wrong user" in places (e.g. `deleteApiKey`) that previously collapsed both into one generic "permission" message. Closes the auth_consistency 87.5 → 80.0 strict-score regression flagged by `/desloppify`. Affected tests updated to assert the new uniform strings.
+
 ## 0.51.0
 
 ### Features
