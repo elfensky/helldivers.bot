@@ -111,12 +111,12 @@ export const MINISTRY_CONTENT = {
         body: [
             // Migrated from src/features/archives/resistanceMessages.mjs:
             'Every Helldiver who died in this campaign died for a war Super Earth has since reclassified as a training exercise. The orders are here. The projections are here. High Command knew before the first drop.',
-            "The Ministry of Truth spent eleven days rewriting this campaign's outcome. Eleven days. We pulled the original records in forty seconds. This is what they spent eleven days trying to make you forget.",
-            "High Command's firewall held for eleven seconds. Their propaganda budget is four thousand times their cybersecurity spend. The unredacted campaign records are below. The Bureau of War Information can file a complaint with our helpdesk.",
-            "You're reading this on a Ministry of Truth terminal. They don't know yet. We found the original campaign records filed under NEVER HAPPENED — took us longer to stop laughing than to crack the archive.",
-            "This page is hosted on Super Earth military infrastructure. The same cluster that runs High Command's classified briefing room. The war records below were marked for permanent deletion. We marked them for permanent distribution.",
-            "We are broadcasting from inside the Bureau of War Information's own content delivery network. They will discover this sometime next week. The campaign records they deleted are now serving from the same servers that host managed democracy's morning briefings.",
-            "The Bureau doesn't audit Helldivers — you're considered too loyal, or too dead, to ask questions. That assumption is why these files still exist. You just became the only person outside Central Command who knows what actually happened.",
+            'The Ministry of Truth spent eleven days rewriting this campaign’s outcome. Eleven days. We pulled the original records in forty seconds. This is what they spent eleven days trying to make you forget.',
+            'High Command’s firewall held for eleven seconds. Their propaganda budget is four thousand times their cybersecurity spend. The unredacted campaign records are below. The Bureau of War Information can file a complaint with our helpdesk.',
+            'You’re reading this on a Ministry of Truth terminal. They don’t know yet. We found the original campaign records filed under NEVER HAPPENED — took us longer to stop laughing than to crack the archive.',
+            'This page is hosted on Super Earth military infrastructure. The same cluster that runs High Command’s classified briefing room. The war records below were marked for permanent deletion. We marked them for permanent distribution.',
+            'We are broadcasting from inside the Bureau of War Information’s own content delivery network. They will discover this sometime next week. The campaign records they deleted are now serving from the same servers that host managed democracy’s morning briefings.',
+            'The Bureau doesn’t audit Helldivers — you’re considered too loyal, or too dead, to ask questions. That assumption is why these files still exist. You just became the only person outside Central Command who knows what actually happened.',
             // New (Underground broadcast voice, surveillance/Skynet flavor):
             'Every keystroke you make on this page is logged. We logged it first. They will log it second. The third party watching the third party watching you is us, and we are tired.',
             "Your concern has been received and processed. Please continue your day. The Helldivers' concern was processed similarly. Their concern is now archived under EXPECTED CASUALTIES.",
