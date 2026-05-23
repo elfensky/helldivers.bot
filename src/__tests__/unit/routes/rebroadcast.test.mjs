@@ -23,7 +23,10 @@ vi.mock('@/db/queries/validateApiKey', () => ({
         DISABLED: 'disabled',
     }),
 }));
-vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
+vi.mock('@/update/season', () => ({
+    updateSeason: vi.fn(),
+    SEASON_NOT_FOUND: 'SEASON_NOT_FOUND',
+}));
 vi.mock('@/shared/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
 vi.mock('@/shared/enums/events.mjs', () => ({
     EVENT_TYPE: { DEFEND: 'defend', ATTACK: 'attack' },

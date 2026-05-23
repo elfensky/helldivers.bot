@@ -12,6 +12,13 @@ import { upsertEvent } from '@/db/queries/upsertEvent.mjs';
 import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
 
 /**
+ * Sentinel value used as the `cause` on errors thrown by `updateSeason` when
+ * the requested season doesn't exist on the HD1 API. Callers should compare
+ * `err.cause === SEASON_NOT_FOUND` to return 404 instead of 500.
+ */
+export const SEASON_NOT_FOUND = 'SEASON_NOT_FOUND';
+
+/**
  * @param {number} season - Season number to fetch and persist
  * @param {{ protectedBucket?: number }} opts  When set, skip writing h1_status
  *   rows whose bucket >= this value. The worker poll passes this to prevent
@@ -53,7 +60,7 @@ export async function updateSeason(season, opts = {}) {
     try {
         fetchedSeason = getSeasonFromSnapshot(fetchedData);
     } catch {
-        throw new Error(`Season ${season} not found`, { cause: 'SEASON_NOT_FOUND' });
+        throw new Error(`Season ${season} not found`, { cause: SEASON_NOT_FOUND });
     }
     if (season !== fetchedSeason) throw new Error('Invalid season');
 

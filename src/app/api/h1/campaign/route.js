@@ -10,7 +10,7 @@ import { after } from 'next/server';
 import { isValidNumber } from '@/validators/isValidNumber.mjs';
 //db and fetch
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
-import { updateSeason } from '@/update/season.mjs';
+import { updateSeason, SEASON_NOT_FOUND } from '@/update/season.mjs';
 //track
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 
@@ -50,7 +50,7 @@ export async function GET(request) {
     if (!campaignData) {
         const { error: fetchError } = await tryCatch(updateSeason(season));
         if (fetchError) {
-            if (fetchError.cause === 'SEASON_NOT_FOUND') {
+            if (fetchError.cause === SEASON_NOT_FOUND) {
                 return errorResponse(404, start, fetchError.message);
             }
             reportError(fetchError, {
