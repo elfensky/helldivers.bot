@@ -76,7 +76,7 @@ function emit({ events }) {
     };
 }
 
-function compareCascades(a, b) {
+export function compareCascades(a, b) {
     if (b.length !== a.length) return b.length - a.length;
     const aSpeed = a.length / (a.durationSec / 3600);
     const bSpeed = b.length / (b.durationSec / 3600);
