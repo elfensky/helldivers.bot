@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { describe, test, expect } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, render, render as rtlRender } from '@testing-library/react';
 import Hijackable from '@/features/ministry/Hijackable';
+import { MinistryContext } from '@/features/ministry/MinistryContext.mjs';
 
 describe('Hijackable — idle render (no provider)', () => {
     test('renders as a plain <span> by default with text content', () => {
@@ -35,5 +36,99 @@ describe('Hijackable — idle render (no provider)', () => {
         expect(() =>
             render(<Hijackable as="span" category="button" text="X" />),
         ).toThrow();
+    });
+});
+
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+});
+
+function makeFakeCtx() {
+    const callbacks = new Map();
+    return {
+        ctx: {
+            register: vi.fn((id, descriptor) => callbacks.set(id, descriptor)),
+            unregister: vi.fn((id) => callbacks.delete(id)),
+            setIdle: vi.fn(),
+            warTone: 'winning',
+            enabled: true,
+        },
+        // Fire the registered onHijack callback for the first registered id.
+        fireHijack(altText) {
+            const [first] = callbacks.values();
+            act(() => first.onHijack(altText));
+        },
+    };
+}
+
+describe('Hijackable — provider-wired hijack render', () => {
+    test('registers on mount via context.register', () => {
+        const { ctx } = makeFakeCtx();
+        rtlRender(
+            <MinistryContext.Provider value={ctx}>
+                <Hijackable as="h1" category="heading" text="My Title" />
+            </MinistryContext.Provider>,
+        );
+        expect(ctx.register).toHaveBeenCalledTimes(1);
+        const [id, descriptor] = ctx.register.mock.calls[0];
+        expect(typeof id).toBe('string');
+        expect(descriptor.text).toBe('My Title');
+        expect(descriptor.category).toBe('heading');
+        expect(descriptor.scope).toBe('global');
+        expect(typeof descriptor.onHijack).toBe('function');
+        expect(typeof descriptor.onFlicker).toBe('function');
+    });
+
+    test('unregisters on unmount', () => {
+        const { ctx } = makeFakeCtx();
+        const { unmount } = rtlRender(
+            <MinistryContext.Provider value={ctx}>
+                <Hijackable as="h1" category="heading" text="My Title" />
+            </MinistryContext.Provider>,
+        );
+        unmount();
+        expect(ctx.unregister).toHaveBeenCalledTimes(1);
+    });
+
+    test('onHijack call switches render to sr-only truth + aria-hidden propaganda overlay', () => {
+        const fake = makeFakeCtx();
+        const { container } = rtlRender(
+            <MinistryContext.Provider value={fake.ctx}>
+                <Hijackable as="h1" category="heading" text="My Title" />
+            </MinistryContext.Provider>,
+        );
+        fake.fireHijack('PROPAGANDA');
+        const h1 = container.querySelector('h1');
+        // Truth still in DOM as sr-only sibling — AT announces it.
+        const truth = h1.querySelector('.sr-only');
+        expect(truth?.textContent).toBe('My Title');
+        // Propaganda overlay marked aria-hidden so AT never reads it.
+        const overlay = h1.querySelector('[aria-hidden="true"]');
+        expect(overlay).not.toBeNull();
+    });
+
+    test('after CYCLE_MS, render returns to plain idle (no sr-only, no overlay)', async () => {
+        const fake = makeFakeCtx();
+        const { container } = rtlRender(
+            <MinistryContext.Provider value={fake.ctx}>
+                <Hijackable as="h1" category="heading" text="My Title" />
+            </MinistryContext.Provider>,
+        );
+        fake.fireHijack('PROPAGANDA');
+        // Cycle ends at 2600ms.
+        act(() => vi.advanceTimersByTime(2600));
+        const h1 = container.querySelector('h1');
+        expect(h1.querySelector('.sr-only')).toBeNull();
+        expect(h1.querySelector('[aria-hidden="true"]')).toBeNull();
+        expect(h1.textContent).toBe('My Title');
+    });
+
+    test('without a provider, register/unregister are skipped — component still renders text', () => {
+        const { container } = rtlRender(
+            <Hijackable as="h1" category="heading" text="No Provider" />,
+        );
+        expect(container.firstChild.textContent).toBe('No Provider');
     });
 });
