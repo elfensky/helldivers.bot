@@ -15,7 +15,7 @@ vi.mock('@/db/db', () => ({
         $queryRaw: vi.fn(),
     },
 }));
-vi.mock('@/db/queries/validateApiKey', () => ({
+vi.mock('@/shared/utils/api/validateApiKey', () => ({
     validateApiKey: vi.fn(),
     API_KEY_ERROR: Object.freeze({
         MISSING: 'missing',
@@ -43,7 +43,7 @@ vi.mock('next/server', async (importOriginal) => {
 
 import { POST, GET, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/rebroadcast/route';
 import db from '@/db/db';
-import { validateApiKey } from '@/db/queries/validateApiKey.mjs';
+import { validateApiKey } from '@/shared/utils/api/validateApiKey.mjs';
 import { updateSeason } from '@/update/season.mjs';
 
 function createPostRequest(formEntries) {
@@ -123,7 +123,7 @@ describe('POST /api/h1/rebroadcast — auth & validation', () => {
     });
 
     test('returns 403 when API key is disabled', async () => {
-        const { API_KEY_ERROR } = await import('@/db/queries/validateApiKey');
+        const { API_KEY_ERROR } = await import('@/shared/utils/api/validateApiKey');
         vi.mocked(validateApiKey).mockResolvedValue({
             data: null,
             code: API_KEY_ERROR.DISABLED,

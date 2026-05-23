@@ -15,7 +15,7 @@ import {
 } from '@/db/queries/rebroadcast.mjs';
 import { updateSeason, SEASON_NOT_FOUND } from '@/update/season.mjs';
 //auth
-import { validateApiKey, API_KEY_ERROR } from '@/db/queries/validateApiKey.mjs';
+import { validateApiKey, API_KEY_ERROR } from '@/shared/utils/api/validateApiKey.mjs';
 //track
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 
