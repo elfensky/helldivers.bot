@@ -202,6 +202,51 @@ export default function MinistryProvider({ warTone, children }) {
         };
     }, [enabled]);
 
+    // ─── Dev-only debug hook ─────────────────────────────────────────────
+    // Gated by NODE_ENV so it is tree-shaken out of production builds.
+    // Exposes window.__ministry_test__.forceHijack(predicate) for Playwright.
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'production') return;
+        if (typeof window === 'undefined') return;
+        window.__ministry_test__ = {
+            /**
+             * Triggers onHijack on the first registered descriptor whose
+             * text matches the predicate. Returns true on success, false
+             * if nothing matched.
+             *
+             * @param {(text: string) => boolean} textPredicate - Returns true if this element should be hijacked
+             * @returns {boolean}
+             */
+            forceHijack(textPredicate) {
+                let fired = false;
+                registryRef.current.forEachEligible(
+                    { pathname: pathnameRef.current ?? '/' },
+                    (id, entry) => {
+                        if (fired) return;
+                        if (textPredicate(entry.text)) {
+                            const alt =
+                                entry.altText ??
+                                pickAlt(entry.category, warTone, Math.random);
+                            if (alt) {
+                                registryRef.current.setIdle(id, false);
+                                entry.onHijack(alt);
+                                setTimeout(
+                                    () => registryRef.current.setIdle(id, true),
+                                    CYCLE_MS,
+                                );
+                                fired = true;
+                            }
+                        }
+                    },
+                );
+                return fired;
+            },
+        };
+        return () => {
+            delete window.__ministry_test__;
+        };
+    }, [warTone]);
+
     return (
         <MinistryContext.Provider value={ctxValue}>{children}</MinistryContext.Provider>
     );
