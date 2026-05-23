@@ -11,7 +11,12 @@ import { ROLE } from '@/shared/enums/roles.mjs';
 import JsonLd from '@/shared/components/JsonLd';
 import ArchivesClient from '@/features/archives/ArchivesClient';
 import { FACTION_KEY, validateFaction } from '@/shared/preferences/faction.mjs';
-import { SORT_ORDER_KEY, validateSortOrder } from '@/shared/preferences/sortOrder.mjs';
+import {
+    SORT_ORDER_KEY,
+    validateSortOrder,
+    CASCADE_SORT_ORDER_KEY,
+    validateCascadeSortOrder,
+} from '@/shared/preferences/sortOrder.mjs';
 
 // Force dynamic rendering - skip build-time evaluation (requires database)
 export const dynamic = 'force-dynamic';
@@ -98,6 +103,9 @@ export default async function WarHistoryPage({ searchParams }) {
     const c = await cookies();
     const initialFaction = validateFaction(c.get(FACTION_KEY)?.value);
     const initialSortOrder = validateSortOrder(c.get(SORT_ORDER_KEY)?.value);
+    const initialCascadeSort = validateCascadeSortOrder(
+        c.get(CASCADE_SORT_ORDER_KEY)?.value,
+    );
 
     return (
         <div className="gutters flex flex-col gap-4 py-4">
@@ -110,6 +118,7 @@ export default async function WarHistoryPage({ searchParams }) {
                 isAdmin={isAdmin}
                 initialFaction={initialFaction}
                 initialSortOrder={initialSortOrder}
+                initialCascadeSort={initialCascadeSort}
             />
         </div>
     );

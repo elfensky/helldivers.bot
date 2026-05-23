@@ -7,6 +7,8 @@ import FactionHealthChart from '@/features/archives/FactionHealthChartLoader';
 import FactionTabs from '@/shared/components/FactionTabs';
 import StatGrid from '@/features/stats/StatGrid';
 import EventLog from '@/features/timeline/EventLog';
+import CascadeLog from '@/features/timeline/CascadeLog';
+import { findAllCascades } from '@/shared/utils/game/seasonAnalytics.mjs';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import SeasonSelector from '@/features/archives/SeasonSelector';
 import RefreshSeasonButton from '@/features/archives/RefreshSeasonButton';
@@ -71,8 +73,13 @@ export default function ArchivesClient({
     isAdmin = false,
     initialFaction = 'global',
     initialSortOrder = 'desc',
+    initialCascadeSort,
 }) {
     const events = data?.events ?? [];
+    const cascades = findAllCascades(events).map((c) => ({
+        season: data?.season,
+        ...c,
+    }));
     // 'global' shows the whole-war overview; bugs/cyborgs/illuminate show a
     // per-faction breakdown. Either way the stats render through the shared
     // StatGrid plus the archives-only ArchiveStats extras. Persisted via
@@ -140,6 +147,10 @@ export default function ArchivesClient({
                     />
                 </section>
             </div>
+
+            {cascades.length > 0 && (
+                <CascadeLog cascades={cascades} initialSortOrder={initialCascadeSort} />
+            )}
 
             {/* Two-column scrollytelling: event log + sticky map */}
             <div className="archives-scrollytelling">
