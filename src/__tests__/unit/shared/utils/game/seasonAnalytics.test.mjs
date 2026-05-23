@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-    findAllCascades,
-    findWorstCascade,
-} from '@/shared/utils/game/seasonAnalytics.mjs';
+import { findAllCascades } from '@/shared/utils/game/seasonAnalytics.mjs';
 
 /**
  * Helper to build a defend/fail event. `gapAfterPrevEndSec` defaults to
@@ -225,11 +222,5 @@ describe('findAllCascades', () => {
         expect(result).toHaveLength(2);
         expect(result[0].factionIndex).toBe(2);
         expect(result[1].factionIndex).toBe(0);
-    });
-});
-
-describe('findWorstCascade (legacy — kept for one task)', () => {
-    it('is still exported until Task 2', () => {
-        expect(typeof findWorstCascade).toBe('function');
     });
 });
