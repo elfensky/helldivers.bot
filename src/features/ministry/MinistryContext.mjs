@@ -13,8 +13,9 @@ import { createContext, useContext } from 'react';
  *   }
  *
  * All callbacks are referentially stable (created once in the
- * provider). The context value object is created once via useMemo so
- * downstream re-renders do NOT trigger when the registry mutates.
+ * provider). The context value object is stable against registry mutations (the registry lives
+ * in a useRef, so Map mutations never invalidate the context value). It re-creates
+ * only when warTone or enabled change.
  */
 export const MinistryContext = createContext(null);
 

@@ -1,7 +1,5 @@
 import { describe, test, expect, beforeEach } from 'vitest';
-import {
-    createRegistry,
-} from '@/features/ministry/ministryRegistry.mjs';
+import { createRegistry } from '@/features/ministry/ministryRegistry.mjs';
 
 describe('createRegistry', () => {
     let registry;
@@ -17,32 +15,45 @@ describe('createRegistry', () => {
             onHijack: () => {},
             onFlicker: () => {},
         });
-        const eligible = registry.pickEligible(
-            { rng: () => 0, pathname: '/', requireIdle: false },
-        );
+        const eligible = registry.pickEligible({
+            rng: () => 0,
+            pathname: '/',
+            requireIdle: false,
+        });
         expect(eligible?.id).toBe('a');
     });
 
     test('unregister removes the entry', () => {
         registry.register('a', {
-            text: 'X', category: 'heading', scope: 'global',
-            onHijack: () => {}, onFlicker: () => {},
+            text: 'X',
+            category: 'heading',
+            scope: 'global',
+            onHijack: () => {},
+            onFlicker: () => {},
         });
         registry.unregister('a');
-        const eligible = registry.pickEligible(
-            { rng: () => 0, pathname: '/', requireIdle: false },
-        );
+        const eligible = registry.pickEligible({
+            rng: () => 0,
+            pathname: '/',
+            requireIdle: false,
+        });
         expect(eligible).toBeNull();
     });
 
     test('global descriptors are eligible everywhere; archives only on /archives*', () => {
         registry.register('g', {
-            text: 'G', category: 'heading', scope: 'global',
-            onHijack: () => {}, onFlicker: () => {},
+            text: 'G',
+            category: 'heading',
+            scope: 'global',
+            onHijack: () => {},
+            onFlicker: () => {},
         });
         registry.register('a', {
-            text: 'A', category: 'body', scope: 'archives',
-            onHijack: () => {}, onFlicker: () => {},
+            text: 'A',
+            category: 'body',
+            scope: 'archives',
+            onHijack: () => {},
+            onFlicker: () => {},
         });
         // On home: only 'g' eligible.
         const onHome = [];
@@ -56,25 +67,34 @@ describe('createRegistry', () => {
 
         // On /archives/42: still both eligible (startsWith match).
         const onArchives42 = [];
-        registry.forEachEligible({ pathname: '/archives/42' }, (id) => onArchives42.push(id));
+        registry.forEachEligible({ pathname: '/archives/42' }, (id) =>
+            onArchives42.push(id),
+        );
         expect(onArchives42.sort()).toEqual(['a', 'g']);
     });
 
     test('setIdle controls whether requireIdle filter accepts the entry', () => {
         registry.register('a', {
-            text: 'X', category: 'heading', scope: 'global',
-            onHijack: () => {}, onFlicker: () => {},
+            text: 'X',
+            category: 'heading',
+            scope: 'global',
+            onHijack: () => {},
+            onFlicker: () => {},
         });
         registry.setIdle('a', false);
-        const pickedNonIdle = registry.pickEligible(
-            { rng: () => 0, pathname: '/', requireIdle: true },
-        );
+        const pickedNonIdle = registry.pickEligible({
+            rng: () => 0,
+            pathname: '/',
+            requireIdle: true,
+        });
         expect(pickedNonIdle).toBeNull();
 
         registry.setIdle('a', true);
-        const pickedIdle = registry.pickEligible(
-            { rng: () => 0, pathname: '/', requireIdle: true },
-        );
+        const pickedIdle = registry.pickEligible({
+            rng: () => 0,
+            pathname: '/',
+            requireIdle: true,
+        });
         expect(pickedIdle?.id).toBe('a');
     });
 

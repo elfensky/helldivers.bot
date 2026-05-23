@@ -47,15 +47,18 @@ describe('MinistryProvider — disabled states', () => {
         expect(typeof ctx.register).toBe('function');
         // Calling register should not throw and should not record anything we can observe.
         ctx.register('x', {
-            text: 'X', category: 'heading', scope: 'global',
-            onHijack: () => {}, onFlicker: () => {},
+            text: 'X',
+            category: 'heading',
+            scope: 'global',
+            onHijack: () => {},
+            onFlicker: () => {},
         });
         // Advance time — no scheduler should be running.
         act(() => vi.advanceTimersByTime(10 * 60 * 1000));
         // (No assertion needed beyond "didn't throw".)
     });
 
-    test("prefers-reduced-motion: reduce → context.enabled === false even with warTone set", () => {
+    test('prefers-reduced-motion: reduce → context.enabled === false even with warTone set', () => {
         reducedMotion = true;
         setupMatchMedia();
         let ctx;
@@ -67,7 +70,7 @@ describe('MinistryProvider — disabled states', () => {
         expect(ctx.enabled).toBe(false);
     });
 
-    test("warTone set and reduced-motion off → context.enabled === true", () => {
+    test('warTone set and reduced-motion off → context.enabled === true', () => {
         let ctx;
         render(
             <MinistryProvider warTone="losing">

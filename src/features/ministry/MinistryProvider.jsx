@@ -33,7 +33,9 @@ function randomBetween(min, max, rng) {
  *    is evaluated against the ref at pick-time, NOT via a re-render
  *    dependency, to eliminate the post-navigation stale-scope race.
  *
- * @param {{ warTone: 'winning' | 'losing' | null, children: React.ReactNode }} props
+ * @param {object} props Component props
+ * @param {'winning' | 'losing' | null} props.warTone War faction status for tone selection
+ * @param {React.ReactNode} props.children Child components
  */
 export default function MinistryProvider({ warTone, children }) {
     const registryRef = useRef(createRegistry());
@@ -72,13 +74,17 @@ export default function MinistryProvider({ warTone, children }) {
         registryRef.current.setIdle(id, isIdle);
     }, []);
 
-    // Stable context value — created once. Map mutations never invalidate it.
+    // Context value re-creates only when warTone or enabled change (e.g., reduced-motion
+    // toggle, or parent re-render with a different tone). Registry mutations via the Map
+    // never invalidate this object — that's the stability guarantee.
     const ctxValue = useMemo(
         () => ({ register, unregister, setIdle, warTone, enabled }),
         [register, unregister, setIdle, warTone, enabled],
     );
 
-    return <MinistryContext.Provider value={ctxValue}>{children}</MinistryContext.Provider>;
+    return (
+        <MinistryContext.Provider value={ctxValue}>{children}</MinistryContext.Provider>
+    );
 }
 
 // Exported for the scheduler in the next task — keeps test mocks predictable.
