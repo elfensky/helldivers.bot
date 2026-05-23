@@ -189,8 +189,11 @@ export default function MinistryProvider({ warTone, children }) {
                     ];
                 const dur = randomBetween(FLICKER_DUR_MIN_MS, FLICKER_DUR_MAX_MS, rng);
                 entry.onFlicker(charIdx, dur);
-            } catch {
-                // swallow; reschedule below
+            } catch (err) {
+                // Swallow flicker-scheduling errors and reschedule below.
+                // The flicker animation is a cosmetic non-critical path; we
+                // never want a transient timing issue to crash the provider.
+                console.debug('[MinistryProvider] flicker scheduling failed:', err);
             }
             scheduleNext();
         }

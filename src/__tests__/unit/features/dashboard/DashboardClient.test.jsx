@@ -65,7 +65,7 @@ vi.mock('@/features/stats/evaluateProgress.mjs', () => ({
 
 import DashboardClient from '@/features/dashboard/DashboardClient';
 
-function makeFactionMap(overrides = {}) {
+function makeDashboardMap(overrides = {}) {
     const map = {};
     for (let r = 0; r <= 11; r++) {
         map[r] = { region: `Region ${r}`, status: 'lost', event: 'idle', percent: 0 };
@@ -77,10 +77,10 @@ function makeFactionMap(overrides = {}) {
 }
 
 const baseMapState = {
-    0: makeFactionMap(),
-    1: makeFactionMap(),
-    2: makeFactionMap(),
-    3: makeFactionMap(), // Super Earth
+    0: makeDashboardMap(),
+    1: makeDashboardMap(),
+    2: makeDashboardMap(),
+    3: makeDashboardMap(), // Super Earth
 };
 
 function getCardProps(testId) {
@@ -306,7 +306,7 @@ describe('DashboardClient — homeworld card suppression', () => {
             },
             mapState: {
                 ...baseMapState,
-                0: makeFactionMap({
+                0: makeDashboardMap({
                     11: {
                         event: 'active',
                         status: 'active',
