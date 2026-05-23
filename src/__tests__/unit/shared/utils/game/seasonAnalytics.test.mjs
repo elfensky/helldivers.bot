@@ -1,105 +1,235 @@
 import { describe, it, expect } from 'vitest';
-import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
+import {
+    findAllCascades,
+    findWorstCascade,
+} from '@/shared/utils/game/seasonAnalytics.mjs';
 
-describe('findWorstCascade', () => {
-    it('returns null for empty events', () => {
-        expect(findWorstCascade([])).toBeNull();
+/**
+ * Helper to build a defend/fail event. `gapAfterPrevEndSec` defaults to
+ * 1800 (30 minutes), well inside the 1-hour cascade window.
+ */
+function makeFailedDefend({ enemy, region, prevEndTime = null, durationSec = 7200 }) {
+    const start_time = prevEndTime != null ? prevEndTime + 1800 : 0;
+    const end_time = start_time + durationSec;
+    return {
+        type: 'defend',
+        status: 'fail',
+        enemy,
+        region,
+        start_time,
+        end_time,
+        event_id: Math.floor(Math.random() * 1_000_000),
+    };
+}
+
+describe('findAllCascades', () => {
+    it('returns [] for empty events', () => {
+        expect(findAllCascades([])).toEqual([]);
+        expect(findAllCascades(null)).toEqual([]);
+        expect(findAllCascades(undefined)).toEqual([]);
     });
 
-    it('returns null for null events', () => {
-        expect(findWorstCascade(null)).toBeNull();
+    it('returns [] when fewer than 3 failed defends total', () => {
+        const e1 = makeFailedDefend({ enemy: 2, region: 8 });
+        const e2 = makeFailedDefend({ enemy: 2, region: 7, prevEndTime: e1.end_time });
+        expect(findAllCascades([e1, e2])).toEqual([]);
     });
 
-    it('returns null when fewer than 2 failed defends', () => {
-        const events = [
-            { type: 'defend', status: 'fail', enemy: 2, region: 5, end_time: 100 },
-        ];
-        expect(findWorstCascade(events)).toBeNull();
+    it('returns [] for a length-3 sequence that fails the gap rule', () => {
+        const e1 = makeFailedDefend({ enemy: 2, region: 8 });
+        // 2-hour gap (> 1-hour rule) → cascade breaks
+        const e2 = {
+            ...makeFailedDefend({ enemy: 2, region: 7 }),
+            start_time: e1.end_time + 7200,
+            end_time: e1.end_time + 7200 + 7200,
+        };
+        const e3 = {
+            ...makeFailedDefend({ enemy: 2, region: 6 }),
+            start_time: e2.end_time + 1800,
+            end_time: e2.end_time + 1800 + 7200,
+        };
+        expect(findAllCascades([e1, e2, e3])).toEqual([]);
     });
 
-    it('detects a cascade of decreasing regions for same faction', () => {
-        const events = [
-            {
-                type: 'defend',
-                status: 'fail',
-                enemy: 2,
-                region: 8,
-                end_time: 100,
-                event_id: 10,
-            },
-            {
-                type: 'defend',
-                status: 'fail',
-                enemy: 2,
-                region: 7,
-                end_time: 200,
-                event_id: 11,
-            },
-            {
-                type: 'defend',
-                status: 'fail',
-                enemy: 2,
-                region: 6,
-                end_time: 300,
-                event_id: 12,
-            },
-            {
-                type: 'defend',
-                status: 'fail',
-                enemy: 2,
-                region: 5,
-                end_time: 400,
-                event_id: 13,
-            },
-        ];
-        const result = findWorstCascade(events);
-        expect(result).not.toBeNull();
-        expect(result.length).toBe(4);
-        expect(result.faction).toBe('The Illuminate');
-        expect(result.regions).toEqual([8, 7, 6, 5]);
-        expect(result.firstEvent.event_id).toBe(10);
+    it('detects a length-3 cascade for one faction', () => {
+        const e1 = makeFailedDefend({ enemy: 2, region: 8 });
+        const e2 = makeFailedDefend({ enemy: 2, region: 7, prevEndTime: e1.end_time });
+        const e3 = makeFailedDefend({ enemy: 2, region: 6, prevEndTime: e2.end_time });
+        const result = findAllCascades([e1, e2, e3]);
+        expect(result).toHaveLength(1);
+        expect(result[0].length).toBe(3);
+        expect(result[0].faction).toBe('The Illuminate');
+        expect(result[0].factionIndex).toBe(2);
+        expect(result[0].regions).toEqual([8, 7, 6]);
+        expect(result[0].startTime).toBe(e1.start_time);
+        expect(result[0].endTime).toBe(e3.end_time);
+        expect(result[0].durationSec).toBe(e3.end_time - e1.start_time);
+        expect(result[0].firstEvent.event_id).toBe(e1.event_id);
+        expect(result[0].lastEvent.event_id).toBe(e3.event_id);
+        expect(result[0].events).toHaveLength(3);
     });
 
     it('ignores non-defend and non-fail events', () => {
         const events = [
-            { type: 'attack', status: 'success', enemy: 0, region: 5, end_time: 100 },
-            { type: 'defend', status: 'success', enemy: 0, region: 4, end_time: 200 },
-            { type: 'defend', status: 'fail', enemy: 0, region: 3, end_time: 300 },
+            {
+                type: 'attack',
+                status: 'success',
+                enemy: 0,
+                region: 5,
+                start_time: 0,
+                end_time: 100,
+            },
+            {
+                type: 'defend',
+                status: 'success',
+                enemy: 0,
+                region: 4,
+                start_time: 200,
+                end_time: 300,
+            },
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 0,
+                region: 3,
+                start_time: 400,
+                end_time: 500,
+            },
         ];
-        expect(findWorstCascade(events)).toBeNull();
+        expect(findAllCascades(events)).toEqual([]);
     });
 
-    it('does not count non-decreasing regions as cascade', () => {
-        const events = [
-            { type: 'defend', status: 'fail', enemy: 0, region: 3, end_time: 100 },
-            { type: 'defend', status: 'fail', enemy: 0, region: 5, end_time: 200 },
-        ];
-        expect(findWorstCascade(events)).toBeNull();
+    it('breaks the cascade when region does not strictly decrease', () => {
+        const e1 = makeFailedDefend({ enemy: 0, region: 5 });
+        const e2 = makeFailedDefend({ enemy: 0, region: 5, prevEndTime: e1.end_time });
+        const e3 = makeFailedDefend({ enemy: 0, region: 4, prevEndTime: e2.end_time });
+        expect(findAllCascades([e1, e2, e3])).toEqual([]);
     });
 
-    it('finds the longest cascade across multiple factions', () => {
-        const events = [
-            // Bugs: 2-region cascade
-            { type: 'defend', status: 'fail', enemy: 0, region: 4, end_time: 100 },
-            { type: 'defend', status: 'fail', enemy: 0, region: 3, end_time: 200 },
-            // Illuminate: 3-region cascade
-            { type: 'defend', status: 'fail', enemy: 2, region: 7, end_time: 300 },
-            { type: 'defend', status: 'fail', enemy: 2, region: 6, end_time: 400 },
-            { type: 'defend', status: 'fail', enemy: 2, region: 5, end_time: 500 },
-        ];
-        const result = findWorstCascade(events);
-        expect(result.length).toBe(3);
-        expect(result.faction).toBe('The Illuminate');
+    it('keeps cascades from separate factions independent', () => {
+        const b1 = makeFailedDefend({ enemy: 0, region: 4 });
+        const b2 = makeFailedDefend({ enemy: 0, region: 3, prevEndTime: b1.end_time });
+        const b3 = makeFailedDefend({ enemy: 0, region: 2, prevEndTime: b2.end_time });
+        const i1 = {
+            ...makeFailedDefend({ enemy: 2, region: 8 }),
+            end_time: b1.end_time + 60,
+        };
+        const i2 = {
+            ...makeFailedDefend({ enemy: 2, region: 7 }),
+            start_time: i1.end_time + 600,
+            end_time: i1.end_time + 600 + 7200,
+        };
+        const i3 = {
+            ...makeFailedDefend({ enemy: 2, region: 6 }),
+            start_time: i2.end_time + 600,
+            end_time: i2.end_time + 600 + 7200,
+        };
+        const i4 = {
+            ...makeFailedDefend({ enemy: 2, region: 5 }),
+            start_time: i3.end_time + 600,
+            end_time: i3.end_time + 600 + 7200,
+        };
+
+        const result = findAllCascades([b1, i1, b2, i2, b3, i3, i4]);
+        expect(result).toHaveLength(2);
+        expect(result[0].length).toBe(4);
+        expect(result[0].factionIndex).toBe(2);
+        expect(result[1].length).toBe(3);
+        expect(result[1].factionIndex).toBe(0);
     });
 
-    it('resets cascade when region order breaks', () => {
-        const events = [
-            { type: 'defend', status: 'fail', enemy: 0, region: 5, end_time: 100 },
-            { type: 'defend', status: 'fail', enemy: 0, region: 4, end_time: 200 },
-            { type: 'defend', status: 'fail', enemy: 0, region: 7, end_time: 300 }, // breaks cascade
-            { type: 'defend', status: 'fail', enemy: 0, region: 6, end_time: 400 },
-        ];
-        const result = findWorstCascade(events);
-        expect(result.length).toBe(2); // best is 2, not 4
+    it('emits multiple cascades from the same faction when separated by a gap', () => {
+        const a1 = makeFailedDefend({ enemy: 0, region: 5 });
+        const a2 = makeFailedDefend({ enemy: 0, region: 4, prevEndTime: a1.end_time });
+        const a3 = makeFailedDefend({ enemy: 0, region: 3, prevEndTime: a2.end_time });
+        const gapEnd = a3.end_time + 86400;
+        const b1 = {
+            ...makeFailedDefend({ enemy: 0, region: 6 }),
+            start_time: gapEnd,
+            end_time: gapEnd + 7200,
+        };
+        const b2 = makeFailedDefend({ enemy: 0, region: 5, prevEndTime: b1.end_time });
+        const b3 = makeFailedDefend({ enemy: 0, region: 4, prevEndTime: b2.end_time });
+
+        const result = findAllCascades([a1, a2, a3, b1, b2, b3]);
+        expect(result).toHaveLength(2);
+        expect(result.every((c) => c.length === 3 && c.factionIndex === 0)).toBe(true);
+    });
+
+    it('respects custom minLength', () => {
+        const e1 = makeFailedDefend({ enemy: 1, region: 4 });
+        const e2 = makeFailedDefend({ enemy: 1, region: 3, prevEndTime: e1.end_time });
+        const e3 = makeFailedDefend({ enemy: 1, region: 2, prevEndTime: e2.end_time });
+        expect(findAllCascades([e1, e2, e3])).toHaveLength(1);
+        expect(findAllCascades([e1, e2, e3], { minLength: 4 })).toHaveLength(0);
+        expect(findAllCascades([e1, e2, e3], { minLength: 2 })).toHaveLength(1);
+    });
+
+    it('sorts by length DESC, then speed DESC, then end_time DESC', () => {
+        const a1 = {
+            type: 'defend',
+            status: 'fail',
+            enemy: 0,
+            region: 5,
+            start_time: 0,
+            end_time: 10800,
+            event_id: 1,
+        };
+        const a2 = {
+            type: 'defend',
+            status: 'fail',
+            enemy: 0,
+            region: 4,
+            start_time: 12000,
+            end_time: 22800,
+            event_id: 2,
+        };
+        const a3 = {
+            type: 'defend',
+            status: 'fail',
+            enemy: 0,
+            region: 3,
+            start_time: 24000,
+            end_time: 34800,
+            event_id: 3,
+        };
+        const b1 = {
+            type: 'defend',
+            status: 'fail',
+            enemy: 2,
+            region: 5,
+            start_time: 100000,
+            end_time: 103600,
+            event_id: 4,
+        };
+        const b2 = {
+            type: 'defend',
+            status: 'fail',
+            enemy: 2,
+            region: 4,
+            start_time: 104000,
+            end_time: 107600,
+            event_id: 5,
+        };
+        const b3 = {
+            type: 'defend',
+            status: 'fail',
+            enemy: 2,
+            region: 3,
+            start_time: 108000,
+            end_time: 111600,
+            event_id: 6,
+        };
+
+        const result = findAllCascades([a1, a2, a3, b1, b2, b3]);
+        expect(result).toHaveLength(2);
+        expect(result[0].factionIndex).toBe(2);
+        expect(result[1].factionIndex).toBe(0);
+    });
+});
+
+describe('findWorstCascade (legacy — kept for one task)', () => {
+    it('is still exported until Task 2', () => {
+        expect(typeof findWorstCascade).toBe('function');
     });
 });
