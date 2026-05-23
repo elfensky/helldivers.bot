@@ -2,7 +2,11 @@ import { describe, test, expect, vi } from 'vitest';
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { getApiKeysByUserId, generateApiKey, deleteApiKey } from '@/db/queries/api.mjs';
+import {
+    getApiKeysByUserId,
+    generateApiKey,
+    deleteApiKey,
+} from '@/features/account/actions.mjs';
 
 const userId = '01908174-d3a5-7e50-b964-6f5e9e48c0a1';
 const otherUserId = '01908174-d3a5-7e50-b964-6f5e9e48c0a2';

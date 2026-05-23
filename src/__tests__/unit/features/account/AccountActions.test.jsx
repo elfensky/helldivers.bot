@@ -2,7 +2,7 @@
 import { vi, describe, test, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-vi.mock('@/db/queries/account', () => ({
+vi.mock('@/features/account/actions', () => ({
     exportUserData: vi.fn(),
     deleteUserAccount: vi.fn(),
 }));
