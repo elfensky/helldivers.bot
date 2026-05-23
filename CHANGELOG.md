@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.50.0
+
+### Features
+
+- **Sitewide "Ministry Interference" easter egg replaces the archives-only Cyberstan effect.** A single root-level `<MinistryProvider>` (mounted inside the existing `<LiveDataProvider>` in `layout.jsx`) drives two `setTimeout`-based schedulers across the whole app: a **rare hijack** every 2-5 minutes picks one opt-in `<Hijackable>` element at random and runs a 2.6-second `takeover → hold → restore` glitch cycle on it; a separate **ambient micro-flicker** every 15-30 seconds swaps one random character of one random element to a Cyberstan glyph for 150-300ms. Both schedulers honor `prefers-reduced-motion: reduce` (no manual toggle survives — the old `EffectsToggle` ⚡ button is gone). Tone is computed server-side from humanity's all-time war record via the existing `getCrossSeasonStats()` (React-`cache()`d, no extra DB hit): `'winning'` (≥50% completed wars won) → sardonic Resistance hackers mock the regime's victory framing; `'losing'` → an Underground pirate-radio broadcast cuts in with surveillance-state imagery aimed at the regime. On DB errors or zero completed wars `getWarTone()` returns `null` and the effect disables entirely rather than forcing a tone. Accessibility-first: during a hijack the wrapper element keeps an `sr-only` truth sibling so assistive tech always reads the real text, while the propaganda is rendered in an `aria-hidden` overlay (no visible/accessible-name divergence, no WCAG 2.5.3 risk). Banned categories (`nav`, `button`, `link`) throw in dev mode. **96 propaganda strings** across 8 pools (4 categories × 2 tones), 12-entry minimum enforced via a Vitest assertion. **v1 wrapping scope** is intentionally narrow — h1/h2 headings on the dashboard, archives header (h1 + body), archives OUTCOME card, `/stats`, `/legal`, `/docs/brandkit`, `/sign-in` — with nav/buttons/footer/stat-values deferred until layout-shift is measured. The existing `GlitchText.jsx` rendering machinery is reused unchanged; the old `useGlitchCycle`, `useCyberstanEffects`, `resistanceMessages`, `CyberstanInterference.css`, and `EffectsToggle` are deleted. The full design went through a 3-round adversarial AI debate before implementation; spec and plan archived under `docs/superpowers/specs/` and `docs/superpowers/plans/`.
+
 ## 0.49.0
 
 ### Features
