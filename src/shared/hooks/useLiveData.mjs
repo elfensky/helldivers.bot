@@ -37,8 +37,10 @@ function saveCachedState(data, mapState) {
             CACHE_KEY,
             JSON.stringify({ data, mapState, ts: Date.now() }),
         );
-    } catch {
-        // localStorage full or unavailable — ignore
+    } catch (err) {
+        // localStorage full / unavailable / disabled in private mode — ignore.
+        // The cache is an offline-fallback nicety, never a correctness path.
+        console.debug('[useLiveData] saveCachedState skipped:', err);
     }
 }
 
