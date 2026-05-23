@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.51.0
+
+### Features
+
+- **Cross-season Cascade Failures section on `/stats` plus a per-season cascade log on `/archives` (#272).** A "cascade" is a sequence of failed defends for one faction with strictly decreasing region numbers and no more than a 1-hour gap between consecutive events — the back-to-back collapses that mark a war's worst moments (e.g. season 155's Illuminate push from region 8 all the way to the homeworld). New `findAllCascades` algorithm in `seasonAnalytics.mjs` returns every qualifying cascade with min length 3, sorted by length DESC then speed (regions/hour) DESC then `endTime` DESC. A new `getCascadeLeaderboard()` cached server query pulls all failed defends in one indexed Prisma read and groups by season. On `/stats` a new `<CascadeLog>` section renders between **War Outcomes & Streaks** and **All-Time Records**, mirroring the existing `EventLog` layout (`event-log-section` → header + sort toggle → day-grouped grid) but grouped by season instead of by day. A persisted cookie (`cascade-log-sort`) tracks the user's choice between "worst first" (default) and "recent first"; an auto-generated lede sentence summarizes the dataset (`"N cascades across M wars. Worst: season X, where the FACTION pushed all the way home / swept N regions in DURATION."`). Each cascade card shows faction icon + title (`Defend cascade · N regions`), a duration pill, the start/end timestamp line, and the faction-colored region chain (`8 → 7 → 6 → … → 0`); clicking it deep-links to `/archives?season=N#cascade`. On `/archives` the same component renders below the `StatGrid`, filtered to the current season via `findAllCascades(events)` — same visual grammar, no `lede` prop. The cascade chain is the only genuinely new visual element; the existing `EventLog.css` provides the section layout via three additive classes (`.event-log-card-chain`, `.event-log-card--cascade`, `.event-log-lede`). Per-season outcome strings in group headers (`"1 cascade · Defeat"`) are deferred to a follow-up.
+
+### Changes
+
+- **`findWorstCascade` and the `WORST_CASCADE` stat card on `/archives` are removed.** The legacy detection helper had no time-gap awareness and accepted length-2 sequences with arbitrary spacing, so it could surface stale streaks weeks apart as "cascades". Replaced by the stricter `findAllCascades` algorithm above, with the dedicated `<CascadeLog>` panel taking over the storytelling that the lone stat card used to gesture at. The archives extras grid keeps OUTCOME, DEFENSE_RATE, ATTACK_RATE, and AVG_DIFFICULTY; the cascade story moves into its own section directly below.
+
 ## 0.50.0
 
 ### Features

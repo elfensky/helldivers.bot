@@ -5,7 +5,6 @@ import { formatRatio } from '@/shared/utils/format/formatRatio.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import Hijackable from '@/features/ministry/Hijackable';
 import factions, { FACTION_INDEX } from '@/shared/enums/factions.mjs';
-import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import map from '@/shared/enums/map.mjs';
 
@@ -84,7 +83,6 @@ export default function ArchiveStats({ faction, events, data, live }) {
             : undefined;
         const outcomeFaction =
             result?.faction != null ? factions[result.faction]?.name : null;
-        const worstCascade = findWorstCascade(events);
         // Per-faction stats are disjoint, so summing the three rows gives the
         // war-wide totals for the average-difficulty ratio.
         const diff = (live ?? []).reduce(
@@ -125,13 +123,6 @@ export default function ArchiveStats({ faction, events, data, live }) {
                 />
                 {rateCards(events)}
                 {difficultyCard(diff.difficulty, diff.successful)}
-                {worstCascade && (
-                    <StatCard
-                        label="WORST_CASCADE"
-                        value={`${worstCascade.length} regions`}
-                        subtitle={worstCascade.faction}
-                    />
-                )}
             </div>
         );
     }

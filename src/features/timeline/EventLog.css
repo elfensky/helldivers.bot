@@ -176,3 +176,89 @@
 .event-log-days--stack .event-log-day-grid > div + div > article {
     margin-top: -1px;
 }
+
+/* === Cascade log cards === */
+
+.event-log-card-chain {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.event-log-card-chain[data-faction="0"] { color: var(--color-faction-bugs); }
+.event-log-card-chain[data-faction="1"] { color: var(--color-faction-cyborgs); }
+.event-log-card-chain[data-faction="2"] { color: var(--color-faction-illuminate); }
+
+.event-log-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.event-log-card-link:hover .event-log-card {
+    border-color: var(--color-primary);
+}
+
+.event-log-card--cascade {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-ghost);
+    border-left: 4px solid var(--color-danger);
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-family: var(--font-mono, monospace);
+}
+
+.event-log-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.event-log-card-title {
+    font-family: var(--font-body);
+    font-size: var(--text-small);
+    font-weight: 700;
+    color: var(--color-text);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.event-log-card-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+.event-log-card-pill {
+    padding: 0.1rem 0.4rem;
+    font-size: 0.7rem;
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.event-log-card-time {
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+}
+
+.event-log-lede {
+    font-size: var(--text-small);
+    color: var(--color-text-muted);
+    margin: 0.25rem 0 0.75rem 0;
+}

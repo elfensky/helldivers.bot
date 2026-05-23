@@ -3,6 +3,14 @@ import FactionThreatRanking from '@/features/stats/FactionThreatRanking';
 import WarOutcomes from '@/features/stats/WarOutcomes';
 import SeasonRecords from '@/features/stats/SeasonRecords';
 import Hijackable from '@/features/ministry/Hijackable';
+import CascadeLog from '@/features/timeline/CascadeLog';
+import { getCascadeLeaderboard } from '@/db/queries/getCascadeLeaderboard.mjs';
+import { generateCascadeLede } from '@/features/stats/generateCascadeLede.mjs';
+import { cookies } from 'next/headers';
+import {
+    CASCADE_SORT_ORDER_KEY,
+    validateCascadeSortOrder,
+} from '@/shared/preferences/sortOrder.mjs';
 
 // DB-backed — the cross-season aggregate runs on each request (cached via
 // React's `cache()` inside getCrossSeasonStats); skip the build-time
@@ -27,6 +35,12 @@ export const metadata = {
 export default async function StatsPage() {
     const data = await getCrossSeasonStats();
     const seasonsCount = data.perSeason.length;
+    const cascades = await getCascadeLeaderboard();
+    const lede = generateCascadeLede(cascades, data.perSeason.length);
+    const c = await cookies();
+    const initialCascadeSort = validateCascadeSortOrder(
+        c.get(CASCADE_SORT_ORDER_KEY)?.value,
+    );
 
     return (
         <main className="gutters flex w-full flex-col gap-6 py-6">
@@ -52,6 +66,12 @@ export default async function StatsPage() {
                 <Hijackable as="h2" category="heading" text="War Outcomes & Streaks" />
                 <WarOutcomes perSeason={data.perSeason} />
             </section>
+
+            <CascadeLog
+                cascades={cascades}
+                lede={lede}
+                initialSortOrder={initialCascadeSort}
+            />
 
             <section className="flex flex-col gap-2">
                 <Hijackable as="h2" category="heading" text="All-Time Records" />
