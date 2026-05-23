@@ -34,6 +34,138 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 
+describe('MinistryProvider — hijack scheduler', () => {
+    test('fires onHijack with resolved altText after random(2-5 min)', () => {
+        // rng = 0 → first hijack fires after HIJACK_MIN_MS (2 min).
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        let ctx;
+        const onHijack = vi.fn();
+        render(
+            <MinistryProvider warTone="winning">
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('h', {
+            text: 'Live Statistics',
+            category: 'heading',
+            scope: 'global',
+            altText: undefined,
+            onHijack,
+            onFlicker: () => {},
+        });
+
+        act(() => vi.advanceTimersByTime(2 * 60 * 1000));
+
+        expect(onHijack).toHaveBeenCalledTimes(1);
+        // rng=0 → pickAlt returns the first entry of winning.heading.
+        const arg = onHijack.mock.calls[0][0];
+        expect(typeof arg).toBe('string');
+        expect(arg.length).toBeGreaterThan(0);
+    });
+
+    test('explicit altText on descriptor wins over pool lookup', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        let ctx;
+        const onHijack = vi.fn();
+        render(
+            <MinistryProvider warTone="winning">
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('h', {
+            text: 'My Title',
+            altText: 'Explicit Override',
+            category: 'heading',
+            scope: 'global',
+            onHijack,
+            onFlicker: () => {},
+        });
+        act(() => vi.advanceTimersByTime(2 * 60 * 1000));
+        expect(onHijack).toHaveBeenCalledWith('Explicit Override');
+    });
+
+    test('does NOT pick archives-scoped descriptor when pathname is /', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        let ctx;
+        const onHijack = vi.fn();
+        render(
+            <MinistryProvider warTone="losing">
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('a', {
+            text: 'X',
+            category: 'body',
+            scope: 'archives',
+            onHijack,
+            onFlicker: () => {},
+        });
+        act(() => vi.advanceTimersByTime(2 * 60 * 1000));
+        expect(onHijack).not.toHaveBeenCalled();
+    });
+
+    test('empty registry → tick reschedules without firing', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        render(
+            <MinistryProvider warTone="winning">
+                <Probe onCtx={() => {}} />
+            </MinistryProvider>,
+        );
+        // 2 min → no callback (no registrations). 4 min → still no callback.
+        act(() => vi.advanceTimersByTime(4 * 60 * 1000));
+        // (No assertion beyond "didn't throw"; we'd see an error if scheduler crashed.)
+    });
+
+    test('flicker timer skips elements with isIdle === false', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        let ctx;
+        const onFlicker = vi.fn();
+        render(
+            <MinistryProvider warTone="winning">
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('f', {
+            text: 'Hello world',
+            category: 'heading',
+            scope: 'global',
+            onHijack: () => {},
+            onFlicker,
+        });
+        ctx.setIdle('f', false);
+        act(() => vi.advanceTimersByTime(15 * 1000));
+        expect(onFlicker).not.toHaveBeenCalled();
+
+        ctx.setIdle('f', true);
+        act(() => vi.advanceTimersByTime(15 * 1000));
+        expect(onFlicker).toHaveBeenCalledTimes(1);
+    });
+
+    test('reduced-motion: reduce → no scheduler ever fires', () => {
+        reducedMotion = true;
+        setupMatchMedia();
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        let ctx;
+        const onHijack = vi.fn();
+        const onFlicker = vi.fn();
+        render(
+            <MinistryProvider warTone="winning">
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('h', {
+            text: 'X',
+            category: 'heading',
+            scope: 'global',
+            onHijack,
+            onFlicker,
+        });
+        act(() => vi.advanceTimersByTime(10 * 60 * 1000));
+        expect(onHijack).not.toHaveBeenCalled();
+        expect(onFlicker).not.toHaveBeenCalled();
+    });
+});
+
 describe('MinistryProvider — disabled states', () => {
     test('warTone null → context.enabled === false; register is a no-op', () => {
         let ctx;

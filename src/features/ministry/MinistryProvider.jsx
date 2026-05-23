@@ -82,6 +82,126 @@ export default function MinistryProvider({ warTone, children }) {
         [register, unregister, setIdle, warTone, enabled],
     );
 
+    // ─── Hijack scheduler ────────────────────────────────────────────────
+    useEffect(() => {
+        if (!enabled) return;
+
+        let timer = null;
+        let cycleResetTimer = null;
+        let cancelled = false;
+        const rng = Math.random;
+        const reg = registryRef.current;
+
+        function scheduleNext() {
+            if (cancelled) return;
+            const delay = randomBetween(HIJACK_MIN_MS, HIJACK_MAX_MS, rng);
+            timer = setTimeout(tick, delay);
+        }
+
+        function tick() {
+            if (cancelled) return;
+            if (typeof document !== 'undefined' && document.hidden) {
+                scheduleNext();
+                return;
+            }
+            try {
+                const picked = reg.pickEligible({
+                    rng,
+                    pathname: pathnameRef.current ?? '/',
+                    requireIdle: false,
+                });
+                if (!picked) {
+                    scheduleNext();
+                    return;
+                }
+                const { id, entry } = picked;
+                const altText = entry.altText ?? pickAlt(entry.category, warTone, rng);
+                if (!altText) {
+                    scheduleNext();
+                    return;
+                }
+                reg.setIdle(id, false);
+                entry.onHijack(altText);
+                cycleResetTimer = setTimeout(() => {
+                    reg.setIdle(id, true);
+                    scheduleNext();
+                }, CYCLE_MS);
+            } catch {
+                scheduleNext();
+            }
+        }
+
+        scheduleNext();
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+            clearTimeout(cycleResetTimer);
+        };
+    }, [enabled, warTone]);
+
+    // ─── Ambient flicker scheduler ──────────────────────────────────────
+    useEffect(() => {
+        if (!enabled) return;
+
+        let timer = null;
+        let cancelled = false;
+        const rng = Math.random;
+        const reg = registryRef.current;
+
+        function scheduleNext() {
+            if (cancelled) return;
+            const delay = randomBetween(FLICKER_MIN_MS, FLICKER_MAX_MS, rng);
+            timer = setTimeout(tick, delay);
+        }
+
+        function tick() {
+            if (cancelled) return;
+            if (typeof document !== 'undefined' && document.hidden) {
+                scheduleNext();
+                return;
+            }
+            try {
+                const picked = reg.pickEligible({
+                    rng,
+                    pathname: pathnameRef.current ?? '/',
+                    requireIdle: true, // per-element idle check
+                });
+                if (!picked) {
+                    scheduleNext();
+                    return;
+                }
+                const { entry } = picked;
+                // Pick a non-space char index from entry.text.
+                const nonSpaceIndices = [];
+                for (let i = 0; i < entry.text.length; i++) {
+                    if (entry.text[i] !== ' ') nonSpaceIndices.push(i);
+                }
+                if (nonSpaceIndices.length === 0) {
+                    scheduleNext();
+                    return;
+                }
+                const charIdx =
+                    nonSpaceIndices[
+                        Math.min(
+                            Math.floor(rng() * nonSpaceIndices.length),
+                            nonSpaceIndices.length - 1,
+                        )
+                    ];
+                const dur = randomBetween(FLICKER_DUR_MIN_MS, FLICKER_DUR_MAX_MS, rng);
+                entry.onFlicker(charIdx, dur);
+            } catch {
+                // swallow; reschedule below
+            }
+            scheduleNext();
+        }
+
+        scheduleNext();
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [enabled]);
+
     return (
         <MinistryContext.Provider value={ctxValue}>{children}</MinistryContext.Provider>
     );
