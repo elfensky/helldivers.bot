@@ -3,14 +3,13 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
 // ArchivesClient mirrors HomeClient's pin-state machine + adds a faction
-// switch (global vs per-faction), an admin-only refresh button, defeat-state
-// styling, and the synced glitch phase wiring to ArchivesHeader.
+// switch (global vs per-faction), an admin-only refresh button, and
+// defeat-state color logic for ArchiveStats.
 // Children + hooks are stubbed at the boundary; tests assert what
 // ArchivesClient itself wires.
 
 const mocks = vi.hoisted(() => ({
     useFactionPreferenceMock: vi.fn(),
-    useCyberstanEffectsMock: vi.fn(),
     useScrollEventMock: vi.fn(),
     useHeaderGlassFilterMock: vi.fn(),
     getWarOutcomeMock: vi.fn(),
@@ -29,16 +28,8 @@ vi.mock('@/features/archives/ArchiveStats', () => ({
     ),
 }));
 vi.mock('@/features/archives/ArchivesHeader', () => ({
-    default: ({ isDefeat, defeatMessageIndex }) => (
-        <div
-            data-testid="archives-header-stub"
-            data-is-defeat={String(!!isDefeat)}
-            data-defeat-index={defeatMessageIndex ?? ''}
-        />
-    ),
-    EffectsToggle: ({ active }) => (
-        <button data-testid="effects-toggle-stub" data-active={String(!!active)} />
-    ),
+    default: () => <div data-testid="archives-header-stub" />,
+    // EffectsToggle export removed in Task 12
 }));
 // ArchivesClient imports the lazy-load wrapper (next/dynamic) — mock that,
 // not the underlying chart, so the stub is what actually renders.
@@ -107,9 +98,6 @@ vi.mock('@/shared/utils/game/eventKey.mjs', () => ({
 vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
     getWarOutcome: mocks.getWarOutcomeMock,
 }));
-vi.mock('@/features/archives/useCyberstanEffects.mjs', () => ({
-    useCyberstanEffects: mocks.useCyberstanEffectsMock,
-}));
 vi.mock('@/shared/hooks/useScrollEvent.mjs', () => ({
     useScrollEvent: mocks.useScrollEventMock,
 }));
@@ -124,7 +112,6 @@ import ArchivesClient from '@/features/archives/ArchivesClient';
 
 const {
     useFactionPreferenceMock,
-    useCyberstanEffectsMock,
     useScrollEventMock,
     useHeaderGlassFilterMock,
     getWarOutcomeMock,
@@ -144,10 +131,6 @@ const baseData = {
 beforeEach(() => {
     const setFaction = vi.fn();
     useFactionPreferenceMock.mockReturnValue(['global', setFaction]);
-    useCyberstanEffectsMock.mockReturnValue({
-        headerScramble: false,
-        watermark: false,
-    });
     useScrollEventMock.mockReturnValue({
         selectedEvent: null,
         railRef: { current: null },
@@ -295,55 +278,26 @@ describe('ArchivesClient — admin gate (RefreshSeasonButton)', () => {
 });
 
 describe('ArchivesClient — defeat state', () => {
-    test('victory: no cyberstan-defeat class, no EffectsToggle', () => {
+    test('victory: no cyberstan-defeat class, ArchivesHeader renders without props', () => {
         getWarOutcomeMock.mockReturnValue({ outcome: 'victory' });
         const { container } = render(
             <ArchivesClient data={baseData} seasons={[]} currentSeason={157} />,
         );
         expect(container.querySelector('.cyberstan-defeat')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('effects-toggle-stub')).not.toBeInTheDocument();
-        expect(
-            screen.getByTestId('archives-header-stub').getAttribute('data-is-defeat'),
-        ).toBe('false');
+        expect(screen.getByTestId('archives-header-stub')).toBeInTheDocument();
     });
 
-    test('defeat: adds cyberstan-defeat class on the stats section AND shows EffectsToggle', () => {
+    test('defeat: no cyberstan-defeat class (removed), ArchivesHeader still renders', () => {
         getWarOutcomeMock.mockReturnValue({ outcome: 'defeat' });
         const { container } = render(
             <ArchivesClient data={baseData} seasons={[]} currentSeason={157} />,
         );
-        expect(container.querySelector('.cyberstan-defeat')).toBeInTheDocument();
-        expect(screen.getByTestId('effects-toggle-stub')).toBeInTheDocument();
-        expect(
-            screen.getByTestId('archives-header-stub').getAttribute('data-is-defeat'),
-        ).toBe('true');
-    });
-
-    test('watermark effect adds the cyberstan-watermark-active class when active', () => {
-        useCyberstanEffectsMock.mockReturnValue({
-            headerScramble: false,
-            watermark: true,
-        });
-        const { container } = render(
-            <ArchivesClient data={baseData} seasons={[]} currentSeason={157} />,
-        );
+        // Cyberstan classes removed — the section no longer receives defeat styling via className
+        expect(container.querySelector('.cyberstan-defeat')).not.toBeInTheDocument();
         expect(
             container.querySelector('.cyberstan-watermark-active'),
-        ).toBeInTheDocument();
-    });
-
-    test('defeatMessageIndex is forwarded to ArchivesHeader', () => {
-        render(
-            <ArchivesClient
-                data={baseData}
-                seasons={[]}
-                currentSeason={157}
-                defeatMessageIndex={3}
-            />,
-        );
-        expect(
-            screen.getByTestId('archives-header-stub').getAttribute('data-defeat-index'),
-        ).toBe('3');
+        ).not.toBeInTheDocument();
+        expect(screen.getByTestId('archives-header-stub')).toBeInTheDocument();
     });
 });
 

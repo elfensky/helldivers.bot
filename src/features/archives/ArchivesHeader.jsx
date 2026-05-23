@@ -1,112 +1,36 @@
 'use client';
 
-import { useEffect } from 'react';
-import './CyberstanInterference.css';
-import GlitchText from '@/features/archives/GlitchText';
-import { toggleCyberstanEffects } from '@/features/archives/useCyberstanEffects.mjs';
-import { useGlitchCycle } from '@/features/archives/useGlitchCycle.mjs';
-import {
-    RESISTANCE_MESSAGES,
-    PROPAGANDA_BODY,
-} from '@/features/archives/resistanceMessages.mjs';
-import Button from '@/shared/components/Button/Button';
+import Hijackable from '@/features/ministry/Hijackable';
 
-const PROPAGANDA_TITLE = 'Declassified Campaign Archives';
-const RESISTANCE_TITLE = 'Leaked Campaign Records';
+const TITLE = 'Declassified Campaign Archives';
+const BODY =
+    'Records verified by the Bureau of War Information. All outcomes reflect the supreme tactical genius of High Command. Unauthorized interpretation of campaign data is a Class-3 offense.';
 
-function PropagandaHeader() {
-    return (
-        <>
-            <h1 className="font-display text-body text-primary">{PROPAGANDA_TITLE}</h1>
-            <p className="mt-1 max-w-screen-md text-small text-text-muted">
-                {PROPAGANDA_BODY}
-            </p>
-        </>
-    );
-}
-
-function ResistanceHeader({ message, phase, takeoverMs, restoreMs }) {
-    return (
-        <>
-            <h1 className="font-display text-body">
-                <GlitchText
-                    text={RESISTANCE_TITLE}
-                    altText={PROPAGANDA_TITLE}
-                    className="text-primary"
-                    phase={phase}
-                    takeoverMs={takeoverMs}
-                    restoreMs={restoreMs}
-                />
-            </h1>
-            <p className="mt-1 max-w-screen-md text-small">
-                <GlitchText
-                    text={message}
-                    altText={PROPAGANDA_BODY}
-                    className="text-text-muted"
-                    phase={phase}
-                    takeoverMs={takeoverMs}
-                    restoreMs={restoreMs}
-                />
-            </p>
-        </>
-    );
-}
-
-export function EffectsToggle({ active }) {
-    function handleToggle() {
-        toggleCyberstanEffects();
-        window.location.reload();
-    }
-
-    const label = `${active ? 'Disable' : 'Enable'} interference`;
-
-    return (
-        <Button
-            size="icon"
-            variant="primary"
-            active={active}
-            onClick={handleToggle}
-            title={label}
-            aria-label={label}
-            data-umami-event="archive-effects-toggle"
-        >
-            ⚡
-        </Button>
-    );
-}
-
-export default function ArchivesHeader({
-    isDefeat,
-    effects,
-    defeatMessageIndex,
-    onPhaseChange,
-}) {
-    const { phase, TAKEOVER_MS, RESTORE_MS } = useGlitchCycle(
-        isDefeat && effects.headerScramble,
-    );
-
-    // Expose phase to parent so ArchiveStats can sync its GlitchText
-    useEffect(() => {
-        onPhaseChange?.(phase, TAKEOVER_MS, RESTORE_MS);
-    }, [phase, TAKEOVER_MS, RESTORE_MS, onPhaseChange]);
-
-    if (!isDefeat) {
-        return (
-            <div className="pb-2">
-                <PropagandaHeader />
-            </div>
-        );
-    }
-
-    const message = RESISTANCE_MESSAGES[defeatMessageIndex] ?? RESISTANCE_MESSAGES[0];
-
+/**
+ * Archives page header. The previous defeat-only Cyberstan interference
+ * effect was retired in favor of the sitewide Ministry Interference
+ * system (see `src/features/ministry/`). Both the h1 and the body are
+ * Hijackable — when picked, the new provider drives the glitch cycle.
+ *
+ * `scope="archives"` ensures these descriptors are only eligible for
+ * hijacks while the user is actually on an archives page.
+ */
+export default function ArchivesHeader() {
     return (
         <div className="pb-2">
-            <ResistanceHeader
-                message={message}
-                phase={phase}
-                takeoverMs={TAKEOVER_MS}
-                restoreMs={RESTORE_MS}
+            <Hijackable
+                as="h1"
+                category="heading"
+                scope="archives"
+                text={TITLE}
+                className="font-display text-body text-primary"
+            />
+            <Hijackable
+                as="p"
+                category="body"
+                scope="archives"
+                text={BODY}
+                className="mt-1 max-w-screen-md text-small text-text-muted"
             />
         </div>
     );
