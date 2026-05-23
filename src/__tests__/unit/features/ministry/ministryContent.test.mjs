@@ -48,6 +48,13 @@ describe('pickAlt', () => {
         expect(result).toBe(pool[pool.length - 1]);
     });
 
+    test('returns the last entry when rng() returns exactly 1.0 (guards Math.floor edge)', () => {
+        const rng = () => 1.0;
+        const result = pickAlt('heading', 'winning', rng);
+        const pool = MINISTRY_CONTENT.winning.heading;
+        expect(result).toBe(pool[pool.length - 1]);
+    });
+
     test('returns undefined for unknown category', () => {
         expect(pickAlt('nav', 'winning', Math.random)).toBeUndefined();
         expect(pickAlt('button', 'losing', Math.random)).toBeUndefined();
