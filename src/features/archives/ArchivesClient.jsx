@@ -11,7 +11,6 @@ import ArchiveMap from '@/features/archives/ArchiveMap';
 import SeasonSelector from '@/features/archives/SeasonSelector';
 import RefreshSeasonButton from '@/features/archives/RefreshSeasonButton';
 import { eventKey } from '@/shared/utils/game/eventKey.mjs';
-import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
 import { useScrollEvent } from '@/shared/hooks/useScrollEvent.mjs';
 import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
 import { usePersistedState } from '@/shared/hooks/usePersistedState.mjs';
@@ -92,7 +91,6 @@ export default function ArchivesClient({
     // `useHeaderGlassFilter` hook for the reasoning (Lightning CSS
     // strips `backdrop-filter` from the built CSS).
     const glassFilter = useHeaderGlassFilter();
-    const isDefeat = getWarOutcome(data)?.outcome === 'defeat';
     const { selectedEvent, railRef } = useScrollEvent(events);
 
     return (
