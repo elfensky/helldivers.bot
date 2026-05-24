@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changes
+
+- **Drop the redundant `rootSchema` intermediate from `isValidStatus.mjs` and `isValidSeason.mjs` — all 5 Zod validators now export their schema directly.** Three of the five `src/validators/isValid*.mjs` files (`isValidContentType`, `isValidNumber`, `isValidFormData`) wrote `export const isValidX = z.<schema>(...)` directly. The other two bound the root schema to a local `const rootSchema = ...` first and re-exported it on the next line — an unused indirection (the name was never referenced elsewhere in the file). Converged on the direct-export form. The `@typedef {z.infer<typeof isValidStatus>} StatusPayload` / `@typedef {z.infer<typeof isValidSeason>} SeasonPayload` annotations continue to work unchanged because they reference the exported name. Pure refactor — no runtime behavior change. Closes the `validator-protocol-unification` cluster and 3 `contract_coherence` findings from /desloppify (issue #406).
+
 ## 0.51.5
 
 ### Changes
