@@ -203,6 +203,149 @@ describe('MinistryProvider — hijack scheduler', () => {
     });
 });
 
+describe('MinistryProvider — forceHijack', () => {
+    test('fires onHijack on first eligible descriptor and returns true', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        let ctx;
+        const onHijack = vi.fn();
+        render(
+            <MinistryProvider warTone="winning">
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('h', {
+            text: 'Live Statistics',
+            category: 'heading',
+            scope: 'global',
+            onHijack,
+            onFlicker: () => {},
+        });
+
+        let result;
+        act(() => {
+            result = ctx.forceHijack();
+        });
+
+        expect(result).toBe(true);
+        expect(onHijack).toHaveBeenCalledTimes(1);
+        const arg = onHijack.mock.calls[0][0];
+        expect(typeof arg).toBe('string');
+        expect(arg.length).toBeGreaterThan(0);
+    });
+
+    test('predicate filters which descriptor gets hijacked', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        let ctx;
+        const onHijackA = vi.fn();
+        const onHijackB = vi.fn();
+        render(
+            <MinistryProvider warTone="winning">
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('a', {
+            text: 'Skip Me',
+            category: 'heading',
+            scope: 'global',
+            onHijack: onHijackA,
+            onFlicker: () => {},
+        });
+        ctx.register('b', {
+            text: 'Pick Me',
+            category: 'heading',
+            scope: 'global',
+            onHijack: onHijackB,
+            onFlicker: () => {},
+        });
+
+        let result;
+        act(() => {
+            result = ctx.forceHijack((text) => text === 'Pick Me');
+        });
+
+        expect(result).toBe(true);
+        expect(onHijackA).not.toHaveBeenCalled();
+        expect(onHijackB).toHaveBeenCalledTimes(1);
+    });
+
+    test('returns false when no eligible descriptor matches the predicate', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        let ctx;
+        const onHijack = vi.fn();
+        render(
+            <MinistryProvider warTone="winning">
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('h', {
+            text: 'Live Statistics',
+            category: 'heading',
+            scope: 'global',
+            onHijack,
+            onFlicker: () => {},
+        });
+
+        let result;
+        act(() => {
+            result = ctx.forceHijack(() => false);
+        });
+
+        expect(result).toBe(false);
+        expect(onHijack).not.toHaveBeenCalled();
+    });
+
+    test('returns false when warTone is null (no propaganda available)', () => {
+        let ctx;
+        const onHijack = vi.fn();
+        render(
+            <MinistryProvider warTone={null}>
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('h', {
+            text: 'Live Statistics',
+            category: 'heading',
+            scope: 'global',
+            onHijack,
+            onFlicker: () => {},
+        });
+
+        let result;
+        act(() => {
+            result = ctx.forceHijack();
+        });
+
+        expect(result).toBe(false);
+        expect(onHijack).not.toHaveBeenCalled();
+    });
+
+    test('respects scope: archives-scoped descriptor not picked when pathname is /', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        let ctx;
+        const onHijack = vi.fn();
+        render(
+            <MinistryProvider warTone="losing">
+                <Probe onCtx={(c) => (ctx = c)} />
+            </MinistryProvider>,
+        );
+        ctx.register('a', {
+            text: 'Archives Only',
+            category: 'body',
+            scope: 'archives',
+            onHijack,
+            onFlicker: () => {},
+        });
+
+        let result;
+        act(() => {
+            result = ctx.forceHijack();
+        });
+
+        expect(result).toBe(false);
+        expect(onHijack).not.toHaveBeenCalled();
+    });
+});
+
 describe('MinistryProvider — disabled states', () => {
     test('warTone null → context.enabled === false; register is a no-op', () => {
         let ctx;

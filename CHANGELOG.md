@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.52.0
+
+### Features
+
+- **Floating admin-only "Trigger Ministry" widget on every page so the Ministry Interference easter egg can be reproduced on demand instead of waiting on the 2–5 min random scheduler.** Sits bottom-right (above the mobile BottomNav), mounts only when `session.user.role === 'admin'` (server-resolved in `src/app/layout.jsx` via the BetterAuth session lookup; auth-disabled deploys correctly render no widget because `auth` is `null`). Clicking the button calls the new `MinistryContext.forceHijack()` method, which picks the first eligible Hijackable on the current page, fires its `onHijack` cycle with a propaganda string from the existing content pools, and resets idle state after `CYCLE_MS` — same code path the random scheduler uses. Sonner toasts report the outcome: success ("Hijack triggered"), no eligible elements ("No eligible Hijackable on this page"), or disabled state ("Ministry disabled — no war tone resolved"). Admin can stand on any page and reproduce the effect without tab juggling or devtools.
+
+### Changes
+
+- **Promote `forceHijack` from the dead `window.__ministry_test__` debug hook to a first-class `MinistryContext` method.** The dev-only `useEffect` that exposed `forceHijack(predicate)` on `window` was orphaned after the Playwright spec it served was replaced with Vitest smoke tests in commit `4ef57c3c`. Repurposed the existing logic into a `useCallback` on the `MinistryContext` value (memoized against `warTone`), updated the context JSDoc to document the new method, and deleted the dead window hook entirely. Public consumer is the new admin-trigger widget; the underlying behavior — pick the first eligible registered descriptor matching the predicate, fire `onHijack(altText)`, reset idle after `CYCLE_MS` — is unchanged. Five new tests in `MinistryProvider.test.jsx` cover the success path, predicate filtering, no-match, `warTone: null`, and scope rejection.
+
 ## 0.51.7
 
 ### Changes
