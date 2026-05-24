@@ -21,6 +21,7 @@ vi.mock('@/shared/utils/api/validateApiKey', () => ({
         MISSING: 'missing',
         INVALID: 'invalid',
         DISABLED: 'disabled',
+        DB_ERROR: 'db_error',
     }),
 }));
 vi.mock('@/update/season', () => ({
@@ -130,6 +131,16 @@ describe('POST /api/h1/rebroadcast — auth & validation', () => {
         });
         const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
         expect(res.status).toBe(403);
+    });
+
+    test('returns 503 when API key lookup hits a DB error', async () => {
+        const { API_KEY_ERROR } = await import('@/shared/utils/api/validateApiKey');
+        vi.mocked(validateApiKey).mockResolvedValue({
+            data: null,
+            code: API_KEY_ERROR.DB_ERROR,
+        });
+        const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
+        expect(res.status).toBe(503);
     });
 
     test('returns 400 for invalid content type', async () => {

@@ -25,6 +25,9 @@ export async function POST(request) {
     let formValues = null;
 
     const { code: keyCode } = await validateApiKey(request);
+    if (keyCode === API_KEY_ERROR.DB_ERROR) {
+        return errorResponse(503, start, 'database unreachable');
+    }
     if (keyCode === API_KEY_ERROR.DISABLED) {
         return errorResponse(403, start, 'Forbidden');
     }

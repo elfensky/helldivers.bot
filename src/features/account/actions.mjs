@@ -75,40 +75,45 @@ export async function generateApiKey(_, formData) {
         };
     }
 
-    const { data: apiKeyCount, error: countError } = await tryCatch(
-        db.ApiKey.count({ where: { userId: formValues.userId } }),
-    );
-    if (countError) throw countError;
-
-    if (apiKeyCount >= 5) {
-        return {
-            errors: {
-                general: 'You have reached the maximum number of API keys allowed',
-            },
-            time: performanceTime(start),
-        };
-    }
-
     const key = randomUUID();
     const hash = createHash('sha256').update(key).digest('hex');
 
     const { data: newApiKey, error: createError } = await tryCatch(
-        db.ApiKey.create({
-            data: {
-                userId: formValues.userId,
-                description: formValues.description,
-                createdAt: new Date(),
-                hash,
-                visible: key.slice(-4),
+        db.$transaction(
+            async (tx) => {
+                const count = await tx.ApiKey.count({
+                    where: { userId: check.data.userId },
+                });
+                if (count >= 5) {
+                    throw new Error('API_KEY_LIMIT_REACHED');
+                }
+                return tx.ApiKey.create({
+                    data: {
+                        userId: check.data.userId,
+                        description: check.data.description,
+                        createdAt: new Date(),
+                        hash,
+                        visible: key.slice(-4),
+                    },
+                });
             },
-        }),
+            { isolationLevel: 'Serializable' },
+        ),
     );
-    if (createError) throw createError;
-
-    newApiKey['key'] = key;
+    if (createError) {
+        if (createError.message === 'API_KEY_LIMIT_REACHED') {
+            return {
+                errors: {
+                    general: 'You have reached the maximum number of API keys allowed',
+                },
+                time: performanceTime(start),
+            };
+        }
+        throw createError;
+    }
 
     revalidatePath('/profile', 'layout');
-    return { data: newApiKey, time: performanceTime(start) };
+    return { data: { ...newApiKey, key }, time: performanceTime(start) };
 }
 
 /**
@@ -139,7 +144,7 @@ export async function deleteApiKey(_, formData) {
         };
     }
 
-    if (user.id !== formValues.userId) {
+    if (user.id !== check.data.userId) {
         return {
             errors: { auth: 'Not authorized' },
             time: performanceTime(start),
@@ -148,7 +153,7 @@ export async function deleteApiKey(_, formData) {
 
     const { data: deletedApiKey, error } = await tryCatch(
         db.ApiKey.delete({
-            where: { id: formValues.apikeyId, userId: formValues.userId },
+            where: { id: check.data.apikeyId, userId: check.data.userId },
         }),
     );
     if (error) throw error;
@@ -195,34 +200,45 @@ export async function exportUserData(userId) {
 }
 
 /**
- * Delete the authenticated user's account. Requires email confirmation.
- * Revokes session before cascade-deleting all user data.
+ * Delete the authenticated user's account. Cascade-deletes all user data,
+ * then revokes the session cookie.
  * @param {unknown} _ - Unused (server action signature)
- * @param {FormData} formData - Must contain userId and confirmEmail fields
+ * @param {FormData} formData - Must contain userId
  */
 export async function deleteUserAccount(_, formData) {
     const start = performance.now();
     const { user, error: authError } = await requireSession();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
-    const userId = formData.get('userId');
+    const formValues = { userId: formData.get('userId') };
 
-    if (user.id !== userId) {
+    const schema = z.object({ userId: z.string().min(1) });
+    const check = schema.safeParse(formValues);
+    if (!check.success) {
+        return {
+            errors: check.error.flatten().fieldErrors,
+            values: formValues,
+            time: performanceTime(start),
+        };
+    }
+
+    if (user.id !== check.data.userId) {
         return {
             errors: { auth: 'Not authorized' },
             time: performanceTime(start),
         };
     }
 
-    // Revoke all sessions before deleting user (cascade will delete sessions from DB,
-    // but we need to clear the cookie so no device holds a stale token)
+    const { error } = await tryCatch(
+        db.user.delete({ where: { id: check.data.userId } }),
+    );
+    if (error) throw error;
+
     const { error: revokeError } = await tryCatch(
         auth.api.revokeSessions({ headers: await headers() }),
     );
     if (revokeError) throw revokeError;
 
-    const { error } = await tryCatch(db.user.delete({ where: { id: userId } }));
-    if (error) throw error;
-
+    revalidatePath('/profile', 'layout');
     return { data: { deleted: true }, time: performanceTime(start) };
 }

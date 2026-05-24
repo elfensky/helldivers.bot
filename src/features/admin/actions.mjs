@@ -63,35 +63,43 @@ export async function updateUserRole(_, formData) {
         };
     }
 
-    if (user.id === formValues.userId) {
+    if (user.id === check.data.userId) {
         return {
             errors: { auth: 'Cannot change your own role' },
             time: performanceTime(start),
         };
     }
 
-    // Last-admin protection: block demotion if this is the only admin
-    if (formValues.newRole === ROLE.USER) {
-        const { data: adminCount, error: countError } = await tryCatch(
-            db.user.count({ where: { role: ROLE.ADMIN } }),
-        );
-        if (countError) throw countError;
+    const isDemotion = check.data.newRole === ROLE.USER;
 
-        if (adminCount === 1) {
+    const { data: updated, error } = await tryCatch(
+        db.$transaction(
+            async (tx) => {
+                if (isDemotion) {
+                    const adminCount = await tx.user.count({
+                        where: { role: ROLE.ADMIN },
+                    });
+                    if (adminCount === 1) {
+                        throw new Error('LAST_ADMIN');
+                    }
+                }
+                return tx.user.update({
+                    where: { id: check.data.userId },
+                    data: { role: check.data.newRole },
+                });
+            },
+            { isolationLevel: 'Serializable' },
+        ),
+    );
+    if (error) {
+        if (error.message === 'LAST_ADMIN') {
             return {
                 errors: { auth: 'Cannot demote the last admin' },
                 time: performanceTime(start),
             };
         }
+        throw error;
     }
-
-    const { data: updated, error } = await tryCatch(
-        db.user.update({
-            where: { id: formValues.userId },
-            data: { role: formValues.newRole },
-        }),
-    );
-    if (error) throw error;
 
     revalidatePath('/profile', 'layout');
     return { data: updated, time: performanceTime(start) };
@@ -126,38 +134,40 @@ export async function toggleUserBan(_, formData) {
         };
     }
 
-    // Last-admin protection: block banning the only remaining admin
-    if (check.data.banned === true) {
-        const { data: target, error: targetError } = await tryCatch(
-            db.user.findUnique({
-                where: { id: check.data.userId },
-                select: { role: true },
-            }),
-        );
-        if (targetError) throw targetError;
-
-        if (target?.role === ROLE.ADMIN) {
-            const { data: adminCount, error: countError } = await tryCatch(
-                db.user.count({ where: { role: ROLE.ADMIN } }),
-            );
-            if (countError) throw countError;
-
-            if (adminCount === 1) {
-                return {
-                    errors: { auth: 'Cannot ban the last admin' },
-                    time: performanceTime(start),
-                };
-            }
-        }
-    }
-
     const { data: updated, error } = await tryCatch(
-        db.user.update({
-            where: { id: check.data.userId },
-            data: { banned: check.data.banned },
-        }),
+        db.$transaction(
+            async (tx) => {
+                if (check.data.banned === true) {
+                    const target = await tx.user.findUnique({
+                        where: { id: check.data.userId },
+                        select: { role: true },
+                    });
+                    if (target?.role === ROLE.ADMIN) {
+                        const adminCount = await tx.user.count({
+                            where: { role: ROLE.ADMIN },
+                        });
+                        if (adminCount === 1) {
+                            throw new Error('LAST_ADMIN');
+                        }
+                    }
+                }
+                return tx.user.update({
+                    where: { id: check.data.userId },
+                    data: { banned: check.data.banned },
+                });
+            },
+            { isolationLevel: 'Serializable' },
+        ),
     );
-    if (error) throw error;
+    if (error) {
+        if (error.message === 'LAST_ADMIN') {
+            return {
+                errors: { auth: 'Cannot ban the last admin' },
+                time: performanceTime(start),
+            };
+        }
+        throw error;
+    }
 
     revalidatePath('/profile', 'layout');
     return { data: updated, time: performanceTime(start) };
@@ -179,7 +189,7 @@ export async function adminGetUserApiKeys(_, formData) {
 
     const { data: keys, error } = await tryCatch(
         db.ApiKey.findMany({
-            where: { userId },
+            where: { userId: check.data },
             select: {
                 id: true,
                 description: true,
@@ -194,7 +204,7 @@ export async function adminGetUserApiKeys(_, formData) {
     return { data: keys, time: performanceTime(start) };
 }
 
-export async function adminRevokeApiKey(_, formData) {
+export async function adminRevokeApiKey(formData) {
     const start = performance.now();
     const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
@@ -260,7 +270,7 @@ export async function getSystemStats() {
     const { data: results, error } = await tryCatch(
         Promise.all([
             db.worker_heartbeat.findUnique({ where: { worker_type: 'cron_api_poller' } }),
-            currentSeason ?
+            currentSeason !== null ?
                 // Count factions currently active in the current season.
                 // Reads latest h1_status row per enemy via $queryRaw DISTINCT ON,
                 // filters by status='active' in SQL.

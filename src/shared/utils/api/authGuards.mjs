@@ -1,4 +1,3 @@
-'use server';
 import { auth } from '@/auth';
 import { headers } from 'next/headers';
 import { ROLE } from '@/shared/enums/roles.mjs';

@@ -220,7 +220,7 @@ const { data: fetchedData, error: fetchedError } = await tryCatch(fetchStatus())
 **Step 2 — Zod validation**
 
 ```js
-const check = isValidStatus(fetchedData);
+const check = isValidStatus.safeParse(fetchedData);
 if (!check.success) throw new Error(...);
 ```
 
@@ -363,7 +363,7 @@ const { data: fetchedData, error: fetchedError } = await tryCatch(fetchSeason(se
 **Step 2 — Zod validation**
 
 ```js
-const check = isValidSeason(fetchedData);
+const check = isValidSeason.safeParse(fetchedData);
 ```
 
 Validates the snapshot response shape. On failure, the individual Zod issues are logged before throwing.

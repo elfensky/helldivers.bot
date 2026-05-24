@@ -22,6 +22,12 @@ function createFormData(entries) {
     return fd;
 }
 
+function mockTransaction(userMock) {
+    const tx = { user: userMock };
+    vi.mocked(db.$transaction).mockImplementation((cb) => cb(tx));
+    return tx;
+}
+
 // ─── getAllUsers ─────────────────────────────────────────────────────
 
 describe('getAllUsers', () => {
@@ -64,14 +70,17 @@ describe('updateUserRole', () => {
 
     test('updates role on success', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, role: 'admin' });
+        const tx = mockTransaction({
+            count: vi.fn().mockResolvedValue(0),
+            update: vi.fn().mockResolvedValue({ id: targetUserId, role: 'admin' }),
+        });
 
         const result = await updateUserRole(
             null,
             createFormData({ userId: targetUserId, newRole: 'admin' }),
         );
         expect(result.data).toBeDefined();
-        expect(db.user.update).toHaveBeenCalledWith({
+        expect(tx.user.update).toHaveBeenCalledWith({
             where: { id: targetUserId },
             data: { role: 'admin' },
         });
@@ -80,20 +89,25 @@ describe('updateUserRole', () => {
 
     test('prevents demoting the last admin', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.count).mockResolvedValue(1);
+        const tx = mockTransaction({
+            count: vi.fn().mockResolvedValue(1),
+            update: vi.fn(),
+        });
 
         const result = await updateUserRole(
             null,
             createFormData({ userId: targetUserId, newRole: 'user' }),
         );
         expect(result.errors.auth).toMatch(/last admin/i);
-        expect(db.user.update).not.toHaveBeenCalled();
+        expect(tx.user.update).not.toHaveBeenCalled();
     });
 
     test('allows demoting when multiple admins exist', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.count).mockResolvedValue(2);
-        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, role: 'user' });
+        mockTransaction({
+            count: vi.fn().mockResolvedValue(2),
+            update: vi.fn().mockResolvedValue({ id: targetUserId, role: 'user' }),
+        });
 
         const result = await updateUserRole(
             null,
@@ -115,14 +129,17 @@ describe('updateUserRole', () => {
 
     test('allows promoting to admin without guard check', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, role: 'admin' });
+        const tx = mockTransaction({
+            count: vi.fn(),
+            update: vi.fn().mockResolvedValue({ id: targetUserId, role: 'admin' }),
+        });
 
         const result = await updateUserRole(
             null,
             createFormData({ userId: targetUserId, newRole: 'admin' }),
         );
         expect(result.data).toBeDefined();
-        expect(db.user.count).not.toHaveBeenCalled();
+        expect(tx.user.count).not.toHaveBeenCalled();
     });
 });
 
@@ -149,15 +166,18 @@ describe('toggleUserBan', () => {
 
     test('toggles ban on success', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.findUnique).mockResolvedValue({ role: 'user' });
-        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, banned: true });
+        const tx = mockTransaction({
+            findUnique: vi.fn().mockResolvedValue({ role: 'user' }),
+            count: vi.fn(),
+            update: vi.fn().mockResolvedValue({ id: targetUserId, banned: true }),
+        });
 
         const result = await toggleUserBan(
             null,
             createFormData({ userId: targetUserId, banned: 'true' }),
         );
         expect(result.data).toBeDefined();
-        expect(db.user.update).toHaveBeenCalledWith({
+        expect(tx.user.update).toHaveBeenCalledWith({
             where: { id: targetUserId },
             data: { banned: true },
         });
@@ -165,22 +185,27 @@ describe('toggleUserBan', () => {
 
     test('prevents banning the last admin', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.findUnique).mockResolvedValue({ role: 'admin' });
-        vi.mocked(db.user.count).mockResolvedValue(1);
+        const tx = mockTransaction({
+            findUnique: vi.fn().mockResolvedValue({ role: 'admin' }),
+            count: vi.fn().mockResolvedValue(1),
+            update: vi.fn(),
+        });
 
         const result = await toggleUserBan(
             null,
             createFormData({ userId: targetUserId, banned: 'true' }),
         );
         expect(result.errors.auth).toMatch(/last admin/i);
-        expect(db.user.update).not.toHaveBeenCalled();
+        expect(tx.user.update).not.toHaveBeenCalled();
     });
 
     test('allows banning admin when multiple admins exist', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.findUnique).mockResolvedValue({ role: 'admin' });
-        vi.mocked(db.user.count).mockResolvedValue(2);
-        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, banned: true });
+        mockTransaction({
+            findUnique: vi.fn().mockResolvedValue({ role: 'admin' }),
+            count: vi.fn().mockResolvedValue(2),
+            update: vi.fn().mockResolvedValue({ id: targetUserId, banned: true }),
+        });
 
         const result = await toggleUserBan(
             null,
@@ -191,27 +216,34 @@ describe('toggleUserBan', () => {
 
     test('allows banning non-admin user without guard check', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.findUnique).mockResolvedValue({ role: 'user' });
-        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, banned: true });
+        const tx = mockTransaction({
+            findUnique: vi.fn().mockResolvedValue({ role: 'user' }),
+            count: vi.fn(),
+            update: vi.fn().mockResolvedValue({ id: targetUserId, banned: true }),
+        });
 
         const result = await toggleUserBan(
             null,
             createFormData({ userId: targetUserId, banned: 'true' }),
         );
         expect(result.data).toBeDefined();
-        expect(db.user.count).not.toHaveBeenCalled();
+        expect(tx.user.count).not.toHaveBeenCalled();
     });
 
     test('allows unbanning without guard check', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        vi.mocked(db.user.update).mockResolvedValue({ id: targetUserId, banned: false });
+        const tx = mockTransaction({
+            findUnique: vi.fn(),
+            count: vi.fn(),
+            update: vi.fn().mockResolvedValue({ id: targetUserId, banned: false }),
+        });
 
         const result = await toggleUserBan(
             null,
             createFormData({ userId: targetUserId, banned: 'false' }),
         );
         expect(result.data).toBeDefined();
-        expect(db.user.findUnique).not.toHaveBeenCalled();
+        expect(tx.user.findUnique).not.toHaveBeenCalled();
     });
 });
 
@@ -254,7 +286,7 @@ describe('adminRevokeApiKey', () => {
     test('returns auth error for non-admin', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(userSession);
         const apikeyId = '01908174-d3a5-7e50-b964-6f5e9e48c0a3';
-        const result = await adminRevokeApiKey(null, createFormData({ apikeyId }));
+        const result = await adminRevokeApiKey(createFormData({ apikeyId }));
         expect(result.errors.auth).toBeDefined();
     });
 
@@ -263,7 +295,7 @@ describe('adminRevokeApiKey', () => {
         const apikeyId = '01908174-d3a5-7e50-b964-6f5e9e48c0a3';
         vi.mocked(db.ApiKey.delete).mockResolvedValue({ id: apikeyId });
 
-        const result = await adminRevokeApiKey(null, createFormData({ apikeyId }));
+        const result = await adminRevokeApiKey(createFormData({ apikeyId }));
         expect(result.data).toBeDefined();
         expect(db.ApiKey.delete).toHaveBeenCalledWith({ where: { id: apikeyId } });
     });
