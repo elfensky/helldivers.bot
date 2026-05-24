@@ -10,11 +10,14 @@ import BottomNav from '@/shared/components/BottomNav/BottomNav';
 import PreferenceTracker from '@/shared/components/PreferenceTracker';
 import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 import MinistryProvider from '@/features/ministry/MinistryProvider';
+import MinistryTriggerWidget from '@/features/admin/MinistryTriggerWidget';
 //data
+import { auth } from '@/auth';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { getWarTone } from '@/features/ministry/warTone.mjs';
+import { ROLE } from '@/shared/enums/roles.mjs';
 
 const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],
@@ -66,6 +69,12 @@ export default async function RootLayout({ children }) {
     const { data } = await tryCatch(getCampaign());
     const initialMapState = data ? computeLiveMapState(data) : null;
     const warTone = await getWarTone();
+
+    // Session lookup gates the floating Ministry-trigger widget to admins.
+    // Auth-disabled deploys (BETTER_AUTH_SECRET unset) export `auth === null`
+    // so the optional chain bypasses the cookie read entirely.
+    const session = auth ? await auth.api.getSession({ headers: await headers() }) : null;
+    const isAdmin = session?.user?.role === ROLE.ADMIN;
 
     return (
         <html
@@ -211,6 +220,7 @@ export default async function RootLayout({ children }) {
                         </main>
                         <Footer />
                         <BottomNav />
+                        <MinistryTriggerWidget isAdmin={isAdmin} />
                     </MinistryProvider>
                 </LiveDataProvider>
                 {isProduction && process.env.UMAMI_SITE_ID ?
