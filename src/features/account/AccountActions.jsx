@@ -2,7 +2,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { exportUserData, deleteUserAccount } from '@/db/queries/account.mjs';
+import { exportUserData, deleteUserAccount } from '@/features/account/actions.mjs';
 import { linkSocial, unlinkAccount } from '@/auth-client';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import Button from '@/shared/components/Button/Button';

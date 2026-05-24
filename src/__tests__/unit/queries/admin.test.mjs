@@ -9,7 +9,7 @@ import {
     adminGetUserApiKeys,
     adminRevokeApiKey,
     getSystemStats,
-} from '@/db/queries/admin.mjs';
+} from '@/features/admin/actions.mjs';
 
 const adminId = '01908174-d3a5-7e50-b964-6f5e9e48c0a1';
 const targetUserId = '01908174-d3a5-7e50-b964-6f5e9e48c0a2';

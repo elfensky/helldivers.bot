@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
 import db from '@/db/db';
-import { validateApiKey } from '@/db/queries/validateApiKey.mjs';
+import { validateApiKey } from '@/shared/utils/api/validateApiKey.mjs';
 import { createHash } from 'crypto';
 
 function makeRequest(headerValue) {

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.51.5
+
+### Changes
+
+- **Split `src/db/queries/` by responsibility — pure data-access stays, server actions and boundary helpers move out.** The `src/db/queries/` directory had drifted into a misleading mix of pure DB queries (`get*` / `upsert*`), auth-gated server actions (`admin.mjs`, `api.mjs`, `account.mjs`), and HTTP-boundary helpers (`validateApiKey.mjs`, `_authGuards.mjs`) — all behind a "queries" label. Now reorganized so each layer lives next to its consumer: the seven admin server actions (`getAllUsers`, `updateUserRole`, `toggleUserBan`, `adminGetUserApiKeys`, `adminRevokeApiKey`, `getSystemStats`, `getAllApiKeys`) merge into the existing `src/features/admin/actions.mjs` (next to its UI), the three API-key actions (`getApiKeysByUserId`, `generateApiKey`, `deleteApiKey`) plus the two account lifecycle actions (`exportUserData`, `deleteUserAccount`) consolidate into a new `src/features/account/actions.mjs` (next to `ApiForm.jsx` / `AccountActions.jsx`), the three auth guard helpers (`requireSession` / `requireUser` / `requireAdmin`) move to `src/shared/utils/api/authGuards.mjs` next to `responses.mjs` and `methodNotAllowed.mjs`, and the API-key request validator (`validateApiKey`) moves to `src/shared/utils/api/validateApiKey.mjs` alongside it. After the relocation `src/db/queries/` contains only the pure data-access set (`getCampaign`, `getCascadeLeaderboard`, `getCrossSeasonStats`, `getKillsTrend`, `getPlayersAvg24h`, `rebroadcast`, `upsertEvent*` / `upsertSeason` / `upsertStatistic` / `upsertStatus`). Pure relocation — no behavior changes; imports updated across 9 source files, 7 test files, and 2 docs MDX pages. Closes `db-queries-actions-split` cluster + `db_queri` + `admin_ac` design_coherence findings from /desloppify (issue #406).
+
 ## 0.51.4
 
 ### Changes

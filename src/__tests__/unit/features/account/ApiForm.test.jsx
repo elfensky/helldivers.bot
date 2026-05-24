@@ -9,7 +9,7 @@ vi.mock('react', async (importOriginal) => {
         useActionState: vi.fn((action, initialState) => [initialState, vi.fn(), false]),
     };
 });
-vi.mock('@/db/queries/api', () => ({
+vi.mock('@/features/account/actions', () => ({
     generateApiKey: vi.fn(),
     deleteApiKey: vi.fn(),
 }));

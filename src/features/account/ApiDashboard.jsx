@@ -1,5 +1,5 @@
 //db
-import { getApiKeysByUserId } from '@/db/queries/api.mjs';
+import { getApiKeysByUserId } from '@/features/account/actions.mjs';
 //forms
 import { GenerateApiKeyForm, DeleteApiKeyForm } from '@/features/account/ApiForm';
 //utils

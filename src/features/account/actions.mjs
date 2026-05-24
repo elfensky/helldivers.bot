@@ -1,12 +1,16 @@
 'use server';
 import { z } from 'zod';
 import db from '@/db/db';
+import { auth } from '@/auth';
+import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/shared/utils/time.mjs';
 import { randomUUID, createHash } from 'crypto';
 import { revalidatePath } from 'next/cache';
-import { requireSession, requireUser } from '@/db/queries/_authGuards.mjs';
+import { requireSession, requireUser } from '@/shared/utils/api/authGuards.mjs';
+
+// ─── API key management (self-service) ──────────────────────────────
 
 /**
  * Retrieve all API keys for the authenticated user.
@@ -151,4 +155,74 @@ export async function deleteApiKey(_, formData) {
 
     revalidatePath('/profile', 'layout');
     return { data: deletedApiKey, time: performanceTime(start) };
+}
+
+// ─── User data lifecycle ────────────────────────────────────────────
+
+/**
+ * Export all data for the authenticated user (profile, accounts, settings, API keys).
+ * Auth guard: session must exist and match the requested userId.
+ * @param {string} userId - User ID to export data for
+ */
+export async function exportUserData(userId) {
+    const start = performance.now();
+    const { error: authError } = await requireUser(userId);
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
+
+    const { data: userData, error } = await tryCatch(
+        db.user.findUnique({
+            where: { id: userId },
+            include: {
+                accounts: {
+                    select: { providerId: true, accountId: true, createdAt: true },
+                },
+                settings: { select: { settings: true } },
+                apiKeys: {
+                    select: {
+                        id: true,
+                        description: true,
+                        visible: true,
+                        createdAt: true,
+                        enabled: true,
+                    },
+                },
+            },
+        }),
+    );
+    if (error) throw error;
+
+    return { data: userData, time: performanceTime(start) };
+}
+
+/**
+ * Delete the authenticated user's account. Requires email confirmation.
+ * Revokes session before cascade-deleting all user data.
+ * @param {unknown} _ - Unused (server action signature)
+ * @param {FormData} formData - Must contain userId and confirmEmail fields
+ */
+export async function deleteUserAccount(_, formData) {
+    const start = performance.now();
+    const { user, error: authError } = await requireSession();
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
+
+    const userId = formData.get('userId');
+
+    if (user.id !== userId) {
+        return {
+            errors: { auth: 'Not authorized' },
+            time: performanceTime(start),
+        };
+    }
+
+    // Revoke all sessions before deleting user (cascade will delete sessions from DB,
+    // but we need to clear the cookie so no device holds a stale token)
+    const { error: revokeError } = await tryCatch(
+        auth.api.revokeSessions({ headers: await headers() }),
+    );
+    if (revokeError) throw revokeError;
+
+    const { error } = await tryCatch(db.user.delete({ where: { id: userId } }));
+    if (error) throw error;
+
+    return { data: { deleted: true }, time: performanceTime(start) };
 }

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Form from 'next/form';
 import { useActionState } from 'react';
-import { generateApiKey, deleteApiKey } from '@/db/queries/api.mjs';
+import { generateApiKey, deleteApiKey } from '@/features/account/actions.mjs';
 import Button from '@/shared/components/Button/Button';
 
 const MAX_DESCRIPTION_LENGTH = 32;

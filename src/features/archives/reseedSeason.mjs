@@ -7,7 +7,7 @@ import { performanceTime } from '@/shared/utils/time.mjs';
 import { updateSeason } from '@/update/season.mjs';
 import { computeBucket } from '@/shared/utils/bucketing.mjs';
 import db from '@/db/db';
-import { requireAdmin } from '@/db/queries/_authGuards.mjs';
+import { requireAdmin } from '@/shared/utils/api/authGuards.mjs';
 
 const seasonSchema = z.number().int().positive();
 
