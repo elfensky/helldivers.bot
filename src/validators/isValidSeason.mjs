@@ -53,8 +53,7 @@ const eventSchema = z.object({
     region: z.number().optional(),
 });
 
-// The main schema
-const rootSchema = z.object({
+export const isValidSeason = z.object({
     time: z.number(),
     error_code: z.number(),
     introduction_order: z.array(z.number()).nullable(),
@@ -75,8 +74,6 @@ const rootSchema = z.object({
         }),
     ),
 });
-
-export const isValidSeason = rootSchema;
 
 /**
  * Inferred shape of a validated `get_snapshots` payload from HD1.
