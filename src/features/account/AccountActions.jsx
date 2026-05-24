@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { toast } from 'sonner';
 import { exportUserData, deleteUserAccount } from '@/features/account/actions.mjs';
 import { linkSocial, unlinkAccount } from '@/auth-client';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
@@ -37,6 +38,10 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
 
     const handleExport = useCallback(async () => {
         const result = await exportUserData(user.id);
+        if (result.errors) {
+            toast.error('Could not export account data. Please refresh and try again.');
+            return;
+        }
         if (result.data) {
             const blob = new Blob([JSON.stringify(result.data, null, 2)], {
                 type: 'application/json',
@@ -65,12 +70,16 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
         const fd = new FormData();
         fd.append('userId', user.id);
         const result = await deleteUserAccount(null, fd);
+        if (result?.data?.deleted) {
+            window.location.href = '/';
+            return;
+        }
         if (result?.errors) {
             setDeleteError(Object.values(result.errors).flat().join(', '));
-            setDeleting(false);
         } else {
-            window.location.href = '/';
+            toast.error('Could not delete account. Please refresh and try again.');
         }
+        setDeleting(false);
     }, [user.id]);
 
     return (

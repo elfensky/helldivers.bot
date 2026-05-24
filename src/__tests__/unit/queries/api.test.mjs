@@ -116,7 +116,10 @@ describe('generateApiKey', () => {
 
     test('returns max limit error when user has 5 keys', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(session);
-        vi.mocked(db.ApiKey.count).mockResolvedValue(5);
+        const txCreate = vi.fn();
+        vi.mocked(db.$transaction).mockImplementation((cb) =>
+            cb({ ApiKey: { count: vi.fn().mockResolvedValue(5), create: txCreate } }),
+        );
 
         const result = await generateApiKey(
             null,
@@ -124,11 +127,11 @@ describe('generateApiKey', () => {
         );
 
         expect(result.errors.general).toMatch(/maximum/i);
+        expect(txCreate).not.toHaveBeenCalled();
     });
 
     test('creates api key and revalidates on success', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(session);
-        vi.mocked(db.ApiKey.count).mockResolvedValue(2);
         const mockCreated = {
             id: 'new-key-id',
             userId,
@@ -136,7 +139,10 @@ describe('generateApiKey', () => {
             hash: 'abc',
             visible: '1234',
         };
-        vi.mocked(db.ApiKey.create).mockResolvedValue(mockCreated);
+        const txCreate = vi.fn().mockResolvedValue(mockCreated);
+        vi.mocked(db.$transaction).mockImplementation((cb) =>
+            cb({ ApiKey: { count: vi.fn().mockResolvedValue(2), create: txCreate } }),
+        );
 
         const result = await generateApiKey(
             null,
@@ -146,14 +152,21 @@ describe('generateApiKey', () => {
         expect(result.data).toBeDefined();
         expect(result.data.key).toBeDefined();
         expect(typeof result.data.key).toBe('string');
-        expect(db.ApiKey.create).toHaveBeenCalledOnce();
+        expect(result.data.id).toBe('new-key-id');
+        expect(txCreate).toHaveBeenCalledOnce();
         expect(revalidatePath).toHaveBeenCalledWith('/profile', 'layout');
     });
 
     test('propagates database errors from create', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(session);
-        vi.mocked(db.ApiKey.count).mockResolvedValue(0);
-        vi.mocked(db.ApiKey.create).mockRejectedValue(new Error('Insert failed'));
+        vi.mocked(db.$transaction).mockImplementation((cb) =>
+            cb({
+                ApiKey: {
+                    count: vi.fn().mockResolvedValue(0),
+                    create: vi.fn().mockRejectedValue(new Error('Insert failed')),
+                },
+            }),
+        );
 
         await expect(
             generateApiKey(
