@@ -42,11 +42,11 @@ describe('validateApiKey', () => {
         });
     });
 
-    test('returns invalid error when database throws', async () => {
+    test('returns db_error code when database throws', async () => {
         vi.mocked(db.ApiKey.findUnique).mockRejectedValue(new Error('db down'));
 
         const result = await validateApiKey(makeRequest('Bearer some-key'));
-        expect(result).toEqual({ data: null, code: 'invalid' });
+        expect(result).toEqual({ data: null, code: 'db_error' });
     });
 
     test('returns disabled error when key exists but is disabled', async () => {
