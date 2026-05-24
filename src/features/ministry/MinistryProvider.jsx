@@ -74,12 +74,40 @@ export default function MinistryProvider({ warTone, children }) {
         registryRef.current.setIdle(id, isIdle);
     }, []);
 
-    // Context value re-creates only when warTone or enabled change (e.g., reduced-motion
-    // toggle, or parent re-render with a different tone). Registry mutations via the Map
-    // never invalidate this object — that's the stability guarantee.
+    // Imperatively trigger one hijack on the first eligible descriptor whose text
+    // matches `predicate` (default: any eligible). Used by the admin debug panel
+    // so a hijack can be reproduced on demand without waiting on the random scheduler.
+    // Respects scope/pathname; ignores the document-hidden gate and the reduced-motion
+    // `enabled` flag (the caller asked for it explicitly). Returns true on success,
+    // false if no eligible descriptor matched or no propaganda string is available
+    // for the current warTone.
+    const forceHijack = useCallback(
+        (predicate = () => true) => {
+            const reg = registryRef.current;
+            if (!reg) return false;
+            let fired = false;
+            reg.forEachEligible({ pathname: pathnameRef.current ?? '/' }, (id, entry) => {
+                if (fired) return;
+                if (!predicate(entry.text)) return;
+                const alt =
+                    entry.altText ?? pickAlt(entry.category, warTone, Math.random);
+                if (!alt) return;
+                reg.setIdle(id, false);
+                entry.onHijack(alt);
+                setTimeout(() => reg.setIdle(id, true), CYCLE_MS);
+                fired = true;
+            });
+            return fired;
+        },
+        [warTone],
+    );
+
+    // Context value re-creates only when warTone, enabled, or forceHijack change
+    // (forceHijack is itself memoized against warTone). Registry mutations via the
+    // Map never invalidate this object — that's the stability guarantee.
     const ctxValue = useMemo(
-        () => ({ register, unregister, setIdle, warTone, enabled }),
-        [register, unregister, setIdle, warTone, enabled],
+        () => ({ register, unregister, setIdle, forceHijack, warTone, enabled }),
+        [register, unregister, setIdle, forceHijack, warTone, enabled],
     );
 
     // ─── Hijack scheduler ────────────────────────────────────────────────
@@ -204,51 +232,6 @@ export default function MinistryProvider({ warTone, children }) {
             clearTimeout(timer);
         };
     }, [enabled]);
-
-    // ─── Dev-only debug hook ─────────────────────────────────────────────
-    // Gated by NODE_ENV so it is tree-shaken out of production builds.
-    // Exposes window.__ministry_test__.forceHijack(predicate) for Playwright.
-    useEffect(() => {
-        if (process.env.NODE_ENV === 'production') return;
-        if (typeof window === 'undefined') return;
-        window.__ministry_test__ = {
-            /**
-             * Triggers onHijack on the first registered descriptor whose
-             * text matches the predicate. Returns true on success, false
-             * if nothing matched.
-             *
-             * @param {(text: string) => boolean} textPredicate - Returns true if this element should be hijacked
-             * @returns {boolean}
-             */
-            forceHijack(textPredicate) {
-                let fired = false;
-                registryRef.current.forEachEligible(
-                    { pathname: pathnameRef.current ?? '/' },
-                    (id, entry) => {
-                        if (fired) return;
-                        if (textPredicate(entry.text)) {
-                            const alt =
-                                entry.altText ??
-                                pickAlt(entry.category, warTone, Math.random);
-                            if (alt) {
-                                registryRef.current.setIdle(id, false);
-                                entry.onHijack(alt);
-                                setTimeout(
-                                    () => registryRef.current.setIdle(id, true),
-                                    CYCLE_MS,
-                                );
-                                fired = true;
-                            }
-                        }
-                    },
-                );
-                return fired;
-            },
-        };
-        return () => {
-            delete window.__ministry_test__;
-        };
-    }, [warTone]);
 
     return (
         <MinistryContext.Provider value={ctxValue}>{children}</MinistryContext.Provider>
