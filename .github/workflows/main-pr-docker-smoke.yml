@@ -40,7 +40,7 @@ jobs:
               # `# syntax=docker/dockerfile:1`, `RUN --mount=type=cache,...`,
               # and `RUN --mount=type=secret,...`. Without buildx, those parse
               # as ordinary RUNs and break the build.
-              uses: docker/setup-buildx-action@v4.0.0
+              uses: docker/setup-buildx-action@v4.1.0
 
             - name: Build images
               # `docker compose build` invokes buildx per service. No GHA cache
