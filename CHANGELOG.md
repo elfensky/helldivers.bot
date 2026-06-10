@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.52.1
+
+### Fixes
+
+- **Fix the `EACCES: permission denied, mkdir '/app/.next/cache'` flood in the production container by chowning the runtime image by numeric uid instead of the unresolvable name `nonroot`.** Root cause: the Chainguard runtime (`cgr.dev/chainguard/node:latest`) has **no `nonroot` entry in `/etc/passwd`** — uid 65532 is named `node` — so the runner-stage `COPY --from=builder --chown=nonroot:nonroot …` lines silently fell back to root (`0:0`). That left `/app/.next` root-owned (mode 755), and since the container runs as uid 65532, the Next.js image optimizer's first remote-avatar optimization (`mkdir('.next/cache/images', { recursive: true })` in `next/dist/server/lib/disk-lru-cache.external.js`, triggered by Discord/GitHub/Google/Gravatar avatars) failed with `EACCES` and rejected on every subsequent cacheable image request. `Dockerfile.app` now uses `--chown=65532:65532` (numeric IDs need no passwd lookup) on all three runner COPY lines, so the runtime user owns the standalone tree as intended and creates `.next/cache` on demand. Verified by reproducing the exact production state (`/app/.next` `uid=0`, `mkdir FAILED:EACCES`) and confirming the numeric-chown image yields `uid=65532` and a successful write. No application code or schema change; the image cache is ephemeral (Postgres holds all persistence). Requires a rebuilt image to deploy — production was on `v0.47.7`, which carries the same defect.
+
 ## 0.52.0
 
 ### Features
