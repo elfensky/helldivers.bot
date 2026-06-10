@@ -103,9 +103,18 @@ ARG NEXT_PUBLIC_DEPLOY_ENV
 ENV NEXT_PUBLIC_DEPLOY_ENV=$NEXT_PUBLIC_DEPLOY_ENV
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nonroot:nonroot /app/.next/standalone ./
-COPY --from=builder --chown=nonroot:nonroot /app/.next/static ./.next/static
-COPY --from=builder --chown=nonroot:nonroot /app/public ./public
+#
+# Chown by NUMERIC uid:gid, NOT the name `nonroot`. This Chainguard runtime
+# has no `nonroot` entry in /etc/passwd (uid 65532 is named `node`), so
+# `--chown=nonroot:nonroot` silently falls back to root (0:0). That left
+# /app/.next root-owned and made the Next.js image optimizer's runtime
+# `mkdir('.next/cache/images')` fail with EACCES, flooding logs with
+# unhandledRejection on every remote-avatar (Discord/GitHub/Google/Gravatar)
+# optimization. Numeric IDs need no passwd lookup, so 65532 (the runtime
+# user) owns the tree as intended and the cache dir is created on demand.
+COPY --from=builder --chown=65532:65532 /app/.next/standalone ./
+COPY --from=builder --chown=65532:65532 /app/.next/static ./.next/static
+COPY --from=builder --chown=65532:65532 /app/public ./public
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"

@@ -2,6 +2,19 @@
 import { useState, useEffect } from 'react';
 import { guardedReload, clearReloadGuard } from '@/shared/utils/reloadGuard.mjs';
 
+/**
+ * Tri-state polling status:
+ * - `'polling'` — request in flight (also the SSR-safe default).
+ * - `'live'` — last poll succeeded.
+ * - `'offline'` — last poll failed, or PWA detected offline.
+ *
+ * Hoisted to module level so other files can import it via
+ * `@typedef {import('@/shared/hooks/useLiveData.mjs').LiveStatus} LiveStatus`
+ * instead of redeclaring the union locally.
+ *
+ * @typedef {'polling'|'live'|'offline'} LiveStatus
+ */
+
 // Version-suffixed: bump the `-vN` suffix whenever the cached payload shape
 // changes (new/renamed/retyped fields). Old entries are then never read again
 // and naturally abandoned, avoiding hydration mismatches from stale caches.
@@ -24,8 +37,10 @@ function saveCachedState(data, mapState) {
             CACHE_KEY,
             JSON.stringify({ data, mapState, ts: Date.now() }),
         );
-    } catch {
-        // localStorage full or unavailable — ignore
+    } catch (err) {
+        // localStorage full / unavailable / disabled in private mode — ignore.
+        // The cache is an offline-fallback nicety, never a correctness path.
+        console.debug('[useLiveData] saveCachedState skipped:', err);
     }
 }
 
@@ -249,10 +264,8 @@ function teardownLeader() {
  *   notifications. Leaders yield on conflicting claims to prevent dupes.
  * - Fallback chain: live poll → server-rendered → localStorage cache → null.
  *
- * @typedef {'polling'|'live'|'offline'} LiveStatus
- *
- * @param {object | null} initialData - Server-rendered campaign data (null if offline)
- * @param {object | null} initialMapState - Server-rendered map state (null if offline)
+ * @param {object | null} initialData - Server-rendered campaign data (null if offline).
+ * @param {object | null} initialMapState - Server-rendered map state (null if offline).
  * @returns {{data: object | null, mapState: object | null, status: LiveStatus, prevData: object | null, isLeader: boolean}}
  */
 export function useLiveData(initialData, initialMapState) {

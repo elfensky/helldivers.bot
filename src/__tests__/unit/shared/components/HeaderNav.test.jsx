@@ -10,10 +10,10 @@ describe('HeaderNav', () => {
         vi.mocked(usePathname).mockReturnValue('/');
     });
 
-    test('renders 3 navigation links', () => {
+    test('renders 4 navigation links', () => {
         render(<HeaderNav />);
         const links = screen.getAllByRole('link');
-        expect(links).toHaveLength(3);
+        expect(links).toHaveLength(4);
     });
 
     test('renders correct labels', () => {
@@ -56,6 +56,10 @@ describe('HeaderNav', () => {
         expect(screen.getByRole('link', { name: /Archives/i })).toHaveAttribute(
             'href',
             '/archives',
+        );
+        expect(screen.getByRole('link', { name: /Stats/i })).toHaveAttribute(
+            'href',
+            '/stats',
         );
         expect(screen.getByRole('link', { name: /Docs/i })).toHaveAttribute(
             'href',

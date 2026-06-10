@@ -1,11 +1,17 @@
 'use client';
 import { signIn } from '@/auth-client';
+import Hijackable from '@/features/ministry/Hijackable';
 
 /** Sign-in page with Discord, GitHub, and Google OAuth buttons. */
 export default function SignInPage() {
     return (
         <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-6">
-            <h1 className="font-display text-primary">Sign In</h1>
+            <Hijackable
+                as="h1"
+                category="heading"
+                text="Sign In"
+                className="font-display text-primary"
+            />
             <div className="flex flex-col gap-3">
                 <button
                     className="flex w-64 cursor-pointer items-center justify-center gap-3 px-6 py-3 text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary active:scale-[0.98]"

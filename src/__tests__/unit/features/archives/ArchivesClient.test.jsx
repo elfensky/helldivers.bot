@@ -3,14 +3,13 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
 // ArchivesClient mirrors HomeClient's pin-state machine + adds a faction
-// switch (global vs per-faction), an admin-only refresh button, defeat-state
-// styling, and the synced glitch phase wiring to ArchivesHeader.
+// switch (global vs per-faction), an admin-only refresh button, and
+// defeat-state color logic for ArchiveStats.
 // Children + hooks are stubbed at the boundary; tests assert what
 // ArchivesClient itself wires.
 
 const mocks = vi.hoisted(() => ({
     useFactionPreferenceMock: vi.fn(),
-    useCyberstanEffectsMock: vi.fn(),
     useScrollEventMock: vi.fn(),
     useHeaderGlassFilterMock: vi.fn(),
     getWarOutcomeMock: vi.fn(),
@@ -24,21 +23,13 @@ vi.mock('@/features/archives/ArchiveStats', () => ({
         <div
             data-testid="archive-stats-stub"
             data-events={props.events?.length ?? 0}
-            data-live={props.live ?? ''}
+            data-faction={props.faction ?? ''}
         />
     ),
 }));
 vi.mock('@/features/archives/ArchivesHeader', () => ({
-    default: ({ isDefeat, defeatMessageIndex }) => (
-        <div
-            data-testid="archives-header-stub"
-            data-is-defeat={String(!!isDefeat)}
-            data-defeat-index={defeatMessageIndex ?? ''}
-        />
-    ),
-    EffectsToggle: ({ active }) => (
-        <button data-testid="effects-toggle-stub" data-active={String(!!active)} />
-    ),
+    default: () => <div data-testid="archives-header-stub" />,
+    // EffectsToggle export removed in Task 12
 }));
 // ArchivesClient imports the lazy-load wrapper (next/dynamic) — mock that,
 // not the underlying chart, so the stub is what actually renders.
@@ -60,9 +51,13 @@ vi.mock('@/shared/components/FactionTabs', () => ({
         />
     ),
 }));
-vi.mock('@/features/archives/FactionStats', () => ({
-    default: ({ faction }) => (
-        <div data-testid="faction-stats-stub" data-faction={faction} />
+vi.mock('@/features/stats/StatGrid', () => ({
+    default: (props) => (
+        <div
+            data-testid="stat-grid-stub"
+            data-faction={props.faction ?? ''}
+            data-archived={String(!!props.archived)}
+        />
     ),
 }));
 vi.mock('@/features/timeline/EventLog', () => ({
@@ -103,9 +98,6 @@ vi.mock('@/shared/utils/game/eventKey.mjs', () => ({
 vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
     getWarOutcome: mocks.getWarOutcomeMock,
 }));
-vi.mock('@/features/archives/useCyberstanEffects.mjs', () => ({
-    useCyberstanEffects: mocks.useCyberstanEffectsMock,
-}));
 vi.mock('@/shared/hooks/useScrollEvent.mjs', () => ({
     useScrollEvent: mocks.useScrollEventMock,
 }));
@@ -120,7 +112,6 @@ import ArchivesClient from '@/features/archives/ArchivesClient';
 
 const {
     useFactionPreferenceMock,
-    useCyberstanEffectsMock,
     useScrollEventMock,
     useHeaderGlassFilterMock,
     getWarOutcomeMock,
@@ -140,10 +131,6 @@ const baseData = {
 beforeEach(() => {
     const setFaction = vi.fn();
     useFactionPreferenceMock.mockReturnValue(['global', setFaction]);
-    useCyberstanEffectsMock.mockReturnValue({
-        headerScramble: false,
-        watermark: false,
-    });
     useScrollEventMock.mockReturnValue({
         selectedEvent: null,
         railRef: { current: null },
@@ -217,21 +204,30 @@ describe('ArchivesClient — layout + default render', () => {
     });
 });
 
-describe('ArchivesClient — faction switch (global ↔ per-faction)', () => {
-    test('faction="global" renders ArchiveStats, NOT FactionStats', () => {
+describe('ArchivesClient — stats section (StatGrid + ArchiveStats)', () => {
+    test('renders both StatGrid and ArchiveStats on the global tab', () => {
         useFactionPreferenceMock.mockReturnValue(['global', vi.fn()]);
         render(<ArchivesClient data={baseData} seasons={[]} currentSeason={157} />);
+        expect(screen.getByTestId('stat-grid-stub')).toBeInTheDocument();
         expect(screen.getByTestId('archive-stats-stub')).toBeInTheDocument();
-        expect(screen.queryByTestId('faction-stats-stub')).not.toBeInTheDocument();
     });
 
-    test('faction="bugs" renders FactionStats with the right faction prop, NOT ArchiveStats', () => {
+    test('passes the active faction to both StatGrid and ArchiveStats', () => {
         useFactionPreferenceMock.mockReturnValue(['bugs', vi.fn()]);
         render(<ArchivesClient data={baseData} seasons={[]} currentSeason={157} />);
-        expect(screen.queryByTestId('archive-stats-stub')).not.toBeInTheDocument();
-        const fStats = screen.getByTestId('faction-stats-stub');
-        expect(fStats).toBeInTheDocument();
-        expect(fStats.getAttribute('data-faction')).toBe('bugs');
+        expect(screen.getByTestId('stat-grid-stub').getAttribute('data-faction')).toBe(
+            'bugs',
+        );
+        expect(
+            screen.getByTestId('archive-stats-stub').getAttribute('data-faction'),
+        ).toBe('bugs');
+    });
+
+    test('renders the StatGrid in archived mode', () => {
+        render(<ArchivesClient data={baseData} seasons={[]} currentSeason={157} />);
+        expect(screen.getByTestId('stat-grid-stub').getAttribute('data-archived')).toBe(
+            'true',
+        );
     });
 
     test('clicking FactionTabs invokes the setter from useFactionPreference', () => {
@@ -282,55 +278,26 @@ describe('ArchivesClient — admin gate (RefreshSeasonButton)', () => {
 });
 
 describe('ArchivesClient — defeat state', () => {
-    test('victory: no cyberstan-defeat class, no EffectsToggle', () => {
+    test('victory: no cyberstan-defeat class, ArchivesHeader renders without props', () => {
         getWarOutcomeMock.mockReturnValue({ outcome: 'victory' });
         const { container } = render(
             <ArchivesClient data={baseData} seasons={[]} currentSeason={157} />,
         );
         expect(container.querySelector('.cyberstan-defeat')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('effects-toggle-stub')).not.toBeInTheDocument();
-        expect(
-            screen.getByTestId('archives-header-stub').getAttribute('data-is-defeat'),
-        ).toBe('false');
+        expect(screen.getByTestId('archives-header-stub')).toBeInTheDocument();
     });
 
-    test('defeat: adds cyberstan-defeat class on the stats section AND shows EffectsToggle', () => {
+    test('defeat: no cyberstan-defeat class (removed), ArchivesHeader still renders', () => {
         getWarOutcomeMock.mockReturnValue({ outcome: 'defeat' });
         const { container } = render(
             <ArchivesClient data={baseData} seasons={[]} currentSeason={157} />,
         );
-        expect(container.querySelector('.cyberstan-defeat')).toBeInTheDocument();
-        expect(screen.getByTestId('effects-toggle-stub')).toBeInTheDocument();
-        expect(
-            screen.getByTestId('archives-header-stub').getAttribute('data-is-defeat'),
-        ).toBe('true');
-    });
-
-    test('watermark effect adds the cyberstan-watermark-active class when active', () => {
-        useCyberstanEffectsMock.mockReturnValue({
-            headerScramble: false,
-            watermark: true,
-        });
-        const { container } = render(
-            <ArchivesClient data={baseData} seasons={[]} currentSeason={157} />,
-        );
+        // Cyberstan classes removed — the section no longer receives defeat styling via className
+        expect(container.querySelector('.cyberstan-defeat')).not.toBeInTheDocument();
         expect(
             container.querySelector('.cyberstan-watermark-active'),
-        ).toBeInTheDocument();
-    });
-
-    test('defeatMessageIndex is forwarded to ArchivesHeader', () => {
-        render(
-            <ArchivesClient
-                data={baseData}
-                seasons={[]}
-                currentSeason={157}
-                defeatMessageIndex={3}
-            />,
-        );
-        expect(
-            screen.getByTestId('archives-header-stub').getAttribute('data-defeat-index'),
-        ).toBe('3');
+        ).not.toBeInTheDocument();
+        expect(screen.getByTestId('archives-header-stub')).toBeInTheDocument();
     });
 });
 

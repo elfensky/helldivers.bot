@@ -56,7 +56,7 @@ const statisticsSchema = z.object({
     hits: z.number(),
 });
 
-const rootSchema = z.object({
+export const isValidStatus = z.object({
     time: z.number().int().min(1000000000).max(2000000000),
     error_code: z.number(),
     // campaign_status and statistics must be non-empty — the real HD1 API always
@@ -69,4 +69,9 @@ const rootSchema = z.object({
     statistics: z.array(statisticsSchema).min(1),
 });
 
-export const isValidStatus = rootSchema;
+/**
+ * Inferred shape of a validated `get_campaign_status` payload from HD1.
+ * Use this typedef downstream of Zod validation instead of typing as `object`.
+ *
+ * @typedef {import('zod').infer<typeof isValidStatus>} StatusPayload
+ */

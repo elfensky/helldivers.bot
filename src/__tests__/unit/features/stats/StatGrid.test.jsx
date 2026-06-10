@@ -93,6 +93,71 @@ describe('StatGrid', () => {
             // losses: 2 (enemy0 fail + enemy2 fail)
             expect(screen.getByText('2')).toBeInTheDocument();
         });
+
+        test('HELLDIVERS_LOST teamkill subtitle is labelled MARTYRS, not a percentage', () => {
+            render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
+            const subtitle = screen
+                .getByText('HELLDIVERS_LOST')
+                .closest('.stat-card')
+                ?.querySelector('.stat-card-subtitle')?.textContent;
+            // accidentals: 10+20+5 = 35, followed by the MARTYRS label
+            expect(subtitle).toContain('35');
+            expect(subtitle).toContain('Martyrs');
+            expect(subtitle).not.toContain('%');
+        });
+
+        // total kills 500+1000+750 = 2250 → last 24h = 2250 − ago24h
+        const killsSubtitle = () =>
+            screen
+                .getByText('ENEMIES_KILLED')
+                .closest('.stat-card')
+                ?.querySelector('.stat-card-subtitle');
+
+        test('ENEMIES_KILLED arrow is green ▲ when killing pace rose vs the prior 24h', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    killsTrend={{ global: { ago24h: 2000, ago48h: 1900 } }}
+                />,
+            );
+            // last 24h: 2250 − 2000 = 250; prior 24h: 2000 − 1900 = 100; pace up
+            expect(killsSubtitle()?.textContent).toContain('250');
+            expect(killsSubtitle()?.querySelector('.text-success')?.textContent).toBe(
+                '▲',
+            );
+        });
+
+        test('ENEMIES_KILLED arrow is red ▼ when killing pace fell vs the prior 24h', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    killsTrend={{ global: { ago24h: 2000, ago48h: 1650 } }}
+                />,
+            );
+            // last 24h: 2250 − 2000 = 250; prior 24h: 2000 − 1650 = 350; pace down
+            expect(killsSubtitle()?.textContent).toContain('250');
+            expect(killsSubtitle()?.querySelector('.text-danger')?.textContent).toBe('▼');
+        });
+
+        test('ENEMIES_KILLED arrow is a neutral ▪ when there is no 48h baseline', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    killsTrend={{ global: { ago24h: 2000, ago48h: null } }}
+                />,
+            );
+            // last 24h volume still shows, but pace can't be compared yet
+            expect(killsSubtitle()?.textContent).toContain('250');
+            expect(killsSubtitle()?.textContent).toContain('▪');
+            expect(killsSubtitle()?.querySelector('.text-success')).toBeNull();
+            expect(killsSubtitle()?.querySelector('.text-danger')).toBeNull();
+        });
     });
 
     describe('faction view', () => {
@@ -166,6 +231,157 @@ describe('StatGrid', () => {
                 <StatGrid live={sparseData} faction="illuminate" events={[]} />,
             );
             expect(container.innerHTML).toBe('');
+        });
+    });
+
+    describe('war duration card', () => {
+        const cardValue = (label) =>
+            screen
+                .getByText(label)
+                .closest('.stat-card')
+                ?.querySelector('.stat-card-value')?.textContent;
+
+        const cardSubtitle = (label) =>
+            screen
+                .getByText(label)
+                .closest('.stat-card')
+                ?.querySelector('.stat-card-subtitle')?.textContent;
+
+        test('global view shows total war duration', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    seasonDuration={86400 * 10}
+                    warStart={1000}
+                />,
+            );
+            expect(screen.getByText('WAR_DURATION')).toBeInTheDocument();
+            expect(cardValue('WAR_DURATION')).toBe('10 days');
+        });
+
+        test('faction view shows time since that faction was deployed', () => {
+            // bugs = enemy 0; it appeared 2 days after the war started
+            const live = mockLive.map((s) => ({ ...s, first_seen: 1000 }));
+            live[0] = { ...live[0], first_seen: 1000 + 86400 * 2 };
+            render(
+                <StatGrid
+                    live={live}
+                    faction="bugs"
+                    events={mockEvents}
+                    seasonDuration={86400 * 10}
+                    warStart={1000}
+                />,
+            );
+            // war ran 10 days; bugs deployed 2 days in → 8 days in the war
+            expect(cardValue('WAR_DURATION')).toBe('8 days');
+        });
+
+        test('faction not yet deployed (first_seen null) shows a dash', () => {
+            const live = mockLive.map((s) => ({ ...s, first_seen: 1000 }));
+            live[0] = { ...live[0], first_seen: null };
+            render(
+                <StatGrid
+                    live={live}
+                    faction="bugs"
+                    events={mockEvents}
+                    seasonDuration={86400 * 10}
+                    warStart={1000}
+                />,
+            );
+            expect(cardValue('WAR_DURATION')).toBe('—');
+        });
+
+        test('global view subtitle shows the war start date', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    seasonDuration={86400 * 10}
+                    warStart={Date.UTC(2025, 0, 25) / 1000}
+                />,
+            );
+            expect(cardSubtitle('WAR_DURATION')).toBe('25 JANUARY');
+        });
+
+        test('faction view subtitle shows that faction introduction date', () => {
+            // war started 20 Feb; bugs (enemy 0) were introduced 01 Mar
+            const warStart = Date.UTC(2025, 1, 20) / 1000;
+            const live = mockLive.map((s) => ({ ...s, first_seen: warStart }));
+            live[0] = { ...live[0], first_seen: Date.UTC(2025, 2, 1) / 1000 };
+            render(
+                <StatGrid
+                    live={live}
+                    faction="bugs"
+                    events={mockEvents}
+                    seasonDuration={86400 * 30}
+                    warStart={warStart}
+                />,
+            );
+            expect(cardSubtitle('WAR_DURATION')).toBe('01 MARCH');
+        });
+    });
+
+    describe('archived / redaction', () => {
+        const noTelemetryLive = [0, 1, 2].map((enemy) => ({
+            enemy,
+            players: 0,
+            kills: 0,
+            deaths: 0,
+            accidentals: 0,
+            successful_missions: 0,
+            missions: 0,
+        }));
+
+        test('archived global view without telemetry redacts the four telemetry cards', () => {
+            render(
+                <StatGrid
+                    live={noTelemetryLive}
+                    faction="global"
+                    events={mockEvents}
+                    archived
+                />,
+            );
+            expect(screen.getAllByText('████████')).toHaveLength(4);
+            expect(screen.getAllByText(/Data redacted/i)).toHaveLength(4);
+            // EVENTS and WAR_DURATION are not telemetry-derived — still render.
+            expect(screen.getByText('EVENTS')).toBeInTheDocument();
+            expect(screen.getByText('WAR_DURATION')).toBeInTheDocument();
+        });
+
+        test('archived faction view without telemetry redacts the telemetry cards', () => {
+            render(
+                <StatGrid
+                    live={noTelemetryLive}
+                    faction="bugs"
+                    events={mockEvents}
+                    archived
+                />,
+            );
+            expect(screen.getAllByText('████████')).toHaveLength(4);
+        });
+
+        test('archived season with real telemetry is not redacted', () => {
+            render(
+                <StatGrid
+                    live={mockLive}
+                    faction="global"
+                    events={mockEvents}
+                    archived
+                />,
+            );
+            expect(screen.queryByText('████████')).toBeNull();
+            expect(screen.getByText('450')).toBeInTheDocument();
+        });
+
+        test('without the archived prop a zero-telemetry season is never redacted', () => {
+            render(
+                <StatGrid live={noTelemetryLive} faction="global" events={mockEvents} />,
+            );
+            expect(screen.queryByText('████████')).toBeNull();
+            expect(screen.queryByText(/Data redacted/i)).toBeNull();
         });
     });
 });

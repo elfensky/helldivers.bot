@@ -1,189 +1,182 @@
-import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { StatCard } from '@/features/stats/StatGrid';
-import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
+import '@/features/stats/StatGrid.css';
+import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
+import { formatRatio } from '@/shared/utils/format/formatRatio.mjs';
 import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
-import GlitchText from '@/features/archives/GlitchText';
-import factions from '@/shared/enums/factions.mjs';
-import { findWorstCascade } from '@/shared/utils/game/seasonAnalytics.mjs';
+import Hijackable from '@/features/ministry/Hijackable';
+import factions, { FACTION_INDEX } from '@/shared/enums/factions.mjs';
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
+import map from '@/shared/enums/map.mjs';
 
-// Only 5 fields in h1_statistic are BigInt in the Prisma schema: kills, deaths,
-// shots, hits, accidentals. The other stat columns (missions, successful_missions,
-// players, total_unique_players, ...) are Int and come back as plain JS Number.
-// BigInt() coerces either losslessly. DO NOT use sumBigInt for global-per-season
-// fields (total_unique_players, season_duration) — those are repeated verbatim
-// across the 3 faction rows and summing them overcounts 3x; read live[0]?.field.
-function sumBigInt(live, field) {
-    return live.reduce((acc, f) => acc + BigInt(f[field] ?? 0), 0n);
+/**
+ * A DEFENSE_RATE / ATTACK_RATE card for one event type — the success rate
+ * with a "won / total" subtitle, tinted by whether the rate cleared 50%.
+ */
+function rateCard(label, typeEvents) {
+    const won = typeEvents.filter((e) => e.status === EVENT_STATUS.SUCCESS).length;
+    const total = typeEvents.length;
+    const rate = total > 0 ? Math.round((won / total) * 100) : null;
+    return (
+        <StatCard
+            label={label}
+            value={rate != null ? `${rate}%` : '—'}
+            subtitle={total > 0 ? `${won} / ${total}` : undefined}
+            accentColor={
+                rate != null ?
+                    rate > 50 ?
+                        'success'
+                    :   'danger'
+                :   undefined
+            }
+        />
+    );
 }
 
-function formatPercent(numerator, denominator) {
-    if (!denominator) return '—';
-    return ((Number(numerator) / Number(denominator)) * 100).toFixed(1) + '%';
+/** The DEFENSE_RATE + ATTACK_RATE pair derived from a set of events. */
+function rateCards(events) {
+    return (
+        <>
+            {rateCard(
+                'DEFENSE_RATE',
+                events.filter((e) => e.type === EVENT_TYPE.DEFEND),
+            )}
+            {rateCard(
+                'ATTACK_RATE',
+                events.filter((e) => e.type === EVENT_TYPE.ATTACK),
+            )}
+        </>
+    );
 }
 
-function formatRatio(numerator, denominator) {
-    if (!denominator) return '—';
-    return (Number(numerator) / Number(denominator)).toFixed(1);
+/**
+ * AVG_DIFFICULTY card — mean difficulty of successful missions on a 1-15
+ * scale. Telemetry-derived, so it renders nothing for seasons that predate
+ * stat collection (no successful missions on record).
+ */
+function difficultyCard(totalDifficulty, successfulMissions) {
+    if (!(Number(successfulMissions) > 0)) return null;
+    return (
+        <StatCard
+            label="AVG_DIFFICULTY"
+            value={formatRatio(totalDifficulty, successfulMissions)}
+            subtitle="of 15"
+        />
+    );
 }
 
-export default function ArchiveStats({
-    events,
-    live,
-    data,
-    effects: _effects,
-    glitchPhase,
-}) {
+/**
+ * Archives-only statistics that complement the shared `<StatGrid>`: the war
+ * outcome, defend/attack rates and mission difficulty on the global tab, plus
+ * a faction's hotspot, conquest and average battle length on a faction tab.
+ * Handles both views in one component, mirroring how `StatGrid` branches on
+ * `faction`.
+ */
+export default function ArchiveStats({ faction, events, data, live }) {
     if (!events?.length) return null;
 
-    // Event-derived stats
-    const sorted = [...events].sort((a, b) => a.start_time - b.start_time);
-    // DURATION: snapshot poll span is the archive-era source of truth; event span is the fallback.
-    const snapshots = data?.snapshots;
-    const seasonSeconds =
-        snapshots && snapshots.length >= 2 ?
-            snapshots[snapshots.length - 1].time - snapshots[0].time
-        :   sorted[sorted.length - 1].end_time - sorted[0].start_time;
-    const seasonDays = Math.round(seasonSeconds / 86400);
-    const seasonHumanDuration = formatDuration(seasonSeconds);
+    if (faction === 'global') {
+        const result = getWarOutcome(data);
+        const outcome = result?.outcome ?? 'unknown';
+        const outcomeColor =
+            outcome === 'victory' ? 'success'
+            : outcome === 'defeat' ? 'danger'
+            : undefined;
+        const outcomeFaction =
+            result?.faction != null ? factions[result.faction]?.name : null;
+        // Per-faction stats are disjoint, so summing the three rows gives the
+        // war-wide totals for the average-difficulty ratio.
+        const diff = (live ?? []).reduce(
+            (acc, s) => ({
+                difficulty: acc.difficulty + Number(s.total_mission_difficulty || 0),
+                successful: acc.successful + Number(s.successful_missions || 0),
+            }),
+            { difficulty: 0, successful: 0 },
+        );
 
-    // Defense / attack rates — split out from the old global WIN_RATE so the
-    // two activities can be read independently.
-    const defends = events.filter((e) => e.type === EVENT_TYPE.DEFEND);
-    const attacks = events.filter((e) => e.type === EVENT_TYPE.ATTACK);
-    const successfulDefends = defends.filter(
-        (e) => e.status === EVENT_STATUS.SUCCESS,
-    ).length;
-    const successfulAttacks = attacks.filter(
-        (e) => e.status === EVENT_STATUS.SUCCESS,
-    ).length;
-    const defenseRate =
-        defends.length > 0 ?
-            Math.round((successfulDefends / defends.length) * 100)
-        :   null;
-    const attackRate =
-        attacks.length > 0 ?
-            Math.round((successfulAttacks / attacks.length) * 100)
-        :   null;
-
-    // Outcome
-    const result = getWarOutcome(data);
-    const outcome = result?.outcome ?? 'unknown';
-    const outcomeColor =
-        outcome === 'victory' ? 'success'
-        : outcome === 'defeat' ? 'danger'
-        : undefined;
-    const outcomeFaction =
-        result?.faction != null ? factions[result.faction]?.name : null;
-
-    // Notable moments
-    const worstCascade = findWorstCascade(events);
-
-    // h1_statistic combat stats (only for seasons with live data)
-    const hasLive = live?.length > 0;
-    let liveCards = null;
-    if (hasLive) {
-        const kills = sumBigInt(live, 'kills');
-        const deaths = sumBigInt(live, 'deaths');
-        const missions = sumBigInt(live, 'missions');
-        const successfulMissions = sumBigInt(live, 'successful_missions');
-        const players = Math.max(...live.map((f) => Number(f.players ?? 0n)));
-        const shots = sumBigInt(live, 'shots');
-        const hits = sumBigInt(live, 'hits');
-        const accidentals = sumBigInt(live, 'accidentals');
-        liveCards = (
-            <>
-                <StatCard label="KILLS" value={formatNumber(kills)} />
-                <StatCard label="K/D" value={formatRatio(kills, deaths)} />
-                <StatCard label="ACCURACY" value={formatPercent(hits, shots)} />
+        return (
+            <div className="stat-grid">
                 <StatCard
-                    label="FRIENDLY_FIRE"
-                    value={formatPercent(accidentals, kills)}
-                    accentColor="danger"
+                    label="OUTCOME"
+                    value={
+                        outcome === 'victory' || outcome === 'defeat' ?
+                            <Hijackable
+                                category="value"
+                                scope="archives"
+                                text={outcome.toUpperCase()}
+                                altText={outcome === 'victory' ? 'DEFEAT' : 'VICTORY'}
+                                className={
+                                    outcome === 'defeat' ? 'text-danger' : 'text-success'
+                                }
+                                altClassName={
+                                    outcome === 'defeat' ? 'text-success' : 'text-danger'
+                                }
+                            />
+                        :   outcome.toUpperCase()
+                    }
+                    subtitle={outcomeFaction ?? undefined}
+                    accentColor={outcomeColor}
+                    valueColor={
+                        outcome !== 'victory' && outcome !== 'defeat' ?
+                            outcomeColor
+                        :   undefined
+                    }
                 />
-                <StatCard
-                    label="MISSION_SUCCESS"
-                    value={formatPercent(successfulMissions, missions)}
-                />
-                <StatCard label="PEAK_ONLINE" value={formatNumber(players)} />
-            </>
+                {rateCards(events)}
+                {difficultyCard(diff.difficulty, diff.successful)}
+            </div>
         );
     }
 
+    const factionIndex = FACTION_INDEX[faction];
+    if (factionIndex === undefined) return null;
+    const factionEvents = events.filter((e) => e.enemy === factionIndex);
+    if (!factionEvents.length) return null;
+
+    // Average battle length across this faction's events.
+    const durations = factionEvents
+        .filter((e) => e.end_time && e.start_time)
+        .map((e) => e.end_time - e.start_time);
+    const avgDuration =
+        durations.length > 0 ?
+            durations.reduce((a, b) => a + b, 0) / durations.length
+        :   null;
+
+    // Most-fought region for this faction.
+    const regionCounts = {};
+    for (const e of factionEvents) {
+        regionCounts[e.region] = (regionCounts[e.region] ?? 0) + 1;
+    }
+    const topRegion = Object.entries(regionCounts).sort((a, b) => b[1] - a[1])[0];
+    const hotspotName =
+        topRegion ? (map[factionIndex]?.[Number(topRegion[0])]?.region ?? '—') : '—';
+
+    // Final conquest share from the last snapshot.
+    let conquest = '—';
+    const snapshots = data?.snapshots;
+    const pointsMax = data?.points_max;
+    if (snapshots?.length && pointsMax?.points) {
+        const factionData = snapshots[snapshots.length - 1].data?.[factionIndex];
+        const maxPoints = pointsMax.points[factionIndex];
+        if (maxPoints > 0 && factionData?.points != null) {
+            conquest = ((Number(factionData.points) / maxPoints) * 100).toFixed(1) + '%';
+        }
+    }
+
+    const factionLive = live?.find((r) => r.enemy === factionIndex);
+
     return (
-        <div className="grid grid-cols-2 gap-1 lg:grid-cols-3">
+        <div className="stat-grid">
+            {rateCards(factionEvents)}
             <StatCard
-                label="OUTCOME"
-                value={
-                    outcome === 'defeat' ?
-                        <GlitchText
-                            text="DEFEAT"
-                            altText="VICTORY"
-                            className="text-danger"
-                            altClassName="text-success"
-                            phase={glitchPhase?.phase ?? 'idle'}
-                            takeoverMs={glitchPhase?.takeoverMs ?? 800}
-                            restoreMs={glitchPhase?.restoreMs ?? 800}
-                        />
-                    :   outcome.toUpperCase()
-                }
-                subtitle={outcomeFaction ?? undefined}
-                accentColor={outcomeColor}
-                valueColor={outcome !== 'defeat' ? outcomeColor : undefined}
+                label="AVG_BATTLE"
+                value={avgDuration != null ? formatCompactDuration(avgDuration) : '—'}
             />
-            <StatCard
-                label="DURATION"
-                value={`${seasonDays} ${seasonDays === 1 ? 'day' : 'days'}`}
-                subtitle={seasonHumanDuration}
-            />
-            <StatCard
-                label="DEFENSE_RATE"
-                value={defenseRate != null ? `${defenseRate}%` : '—'}
-                subtitle={
-                    defends.length > 0 ?
-                        `${successfulDefends} / ${defends.length}`
-                    :   undefined
-                }
-                accentColor={
-                    defenseRate != null ?
-                        defenseRate > 50 ?
-                            'success'
-                        :   'danger'
-                    :   undefined
-                }
-            />
-            <StatCard
-                label="ATTACK_RATE"
-                value={attackRate != null ? `${attackRate}%` : '—'}
-                subtitle={
-                    attacks.length > 0 ?
-                        `${successfulAttacks} / ${attacks.length}`
-                    :   undefined
-                }
-                accentColor={
-                    attackRate != null ?
-                        attackRate > 50 ?
-                            'success'
-                        :   'danger'
-                    :   undefined
-                }
-            />
-            {hasLive && (
-                <StatCard
-                    label="TOTAL_DIVERS"
-                    value={formatNumber(Number(live[0]?.total_unique_players ?? 0))}
-                />
+            <StatCard label="HOTSPOT" value={hotspotName} />
+            <StatCard label="CONQUEST" value={conquest} />
+            {difficultyCard(
+                factionLive?.total_mission_difficulty,
+                factionLive?.successful_missions,
             )}
-
-            {worstCascade && (
-                <StatCard
-                    label="WORST_CASCADE"
-                    value={`${worstCascade.length} regions`}
-                    subtitle={worstCascade.faction}
-                />
-            )}
-
-            {liveCards}
         </div>
     );
 }

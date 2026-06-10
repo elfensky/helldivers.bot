@@ -4,7 +4,10 @@ import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { updateSeason } from '@/update/season.mjs';
 
 vi.mock('@/db/queries/getCampaign', () => ({ getCampaign: vi.fn() }));
-vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
+vi.mock('@/update/season', () => ({
+    updateSeason: vi.fn(),
+    SEASON_NOT_FOUND: 'SEASON_NOT_FOUND',
+}));
 vi.mock('@/shared/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
 
 function createRouteRequest(path) {

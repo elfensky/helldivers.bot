@@ -157,22 +157,22 @@ All `/profile/*` routes are protected by this layout. Unauthenticated users are 
 
 ### Admin Guard (Server Actions)
 
-`src/db/queries/admin.mjs`
+`src/shared/utils/api/authGuards.mjs`
 
 ```js
 async function requireAdmin() {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session || !session.user) return { error: 'Not authenticated' };
-    if (session.user.role !== 'admin') return { error: 'Forbidden' };
-    return { user: session.user };
+    const { user, error } = await requireSession();
+    if (error) return { user: null, error };
+    if (user.role !== 'admin') return { user: null, error: 'Forbidden' };
+    return { user, error: null };
 }
 ```
 
-Used by all admin server actions (`getAllUsers`, `updateUserRole`, `toggleUserBan`, etc.). Returns `{ user }` on success or `{ error }` on failure.
+Used by all admin server actions (`getAllUsers`, `updateUserRole`, `toggleUserBan`, etc.) in `src/features/admin/actions.mjs`. Returns `{ user, error: null }` on success or `{ user: null, error }` on failure (both keys always present).
 
 ### Ownership Guard (Server Actions)
 
-`src/db/queries/account.mjs`, `src/db/queries/api.mjs`
+`src/features/account/actions.mjs`
 
 ```js
 const session = await auth.api.getSession({ headers: await headers() });
@@ -230,7 +230,7 @@ Roles are stored in `User.role` (string, default `"user"`). Admins can change ro
 
 API keys provide a separate authentication mechanism for the `/api/h1/rebroadcast` endpoint. They are independent of BetterAuth sessions.
 
-`src/db/queries/validateApiKey.mjs`
+`src/shared/utils/api/validateApiKey.mjs`
 
 ```mermaid
 graph LR

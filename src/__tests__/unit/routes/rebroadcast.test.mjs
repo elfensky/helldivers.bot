@@ -15,15 +15,19 @@ vi.mock('@/db/db', () => ({
         $queryRaw: vi.fn(),
     },
 }));
-vi.mock('@/db/queries/validateApiKey', () => ({
+vi.mock('@/shared/utils/api/validateApiKey', () => ({
     validateApiKey: vi.fn(),
     API_KEY_ERROR: Object.freeze({
         MISSING: 'missing',
         INVALID: 'invalid',
         DISABLED: 'disabled',
+        DB_ERROR: 'db_error',
     }),
 }));
-vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
+vi.mock('@/update/season', () => ({
+    updateSeason: vi.fn(),
+    SEASON_NOT_FOUND: 'SEASON_NOT_FOUND',
+}));
 vi.mock('@/shared/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
 vi.mock('@/shared/enums/events.mjs', () => ({
     EVENT_TYPE: { DEFEND: 'defend', ATTACK: 'attack' },
@@ -40,7 +44,7 @@ vi.mock('next/server', async (importOriginal) => {
 
 import { POST, GET, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/rebroadcast/route';
 import db from '@/db/db';
-import { validateApiKey } from '@/db/queries/validateApiKey.mjs';
+import { validateApiKey } from '@/shared/utils/api/validateApiKey.mjs';
 import { updateSeason } from '@/update/season.mjs';
 
 function createPostRequest(formEntries) {
@@ -120,13 +124,23 @@ describe('POST /api/h1/rebroadcast — auth & validation', () => {
     });
 
     test('returns 403 when API key is disabled', async () => {
-        const { API_KEY_ERROR } = await import('@/db/queries/validateApiKey');
+        const { API_KEY_ERROR } = await import('@/shared/utils/api/validateApiKey');
         vi.mocked(validateApiKey).mockResolvedValue({
             data: null,
             code: API_KEY_ERROR.DISABLED,
         });
         const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
         expect(res.status).toBe(403);
+    });
+
+    test('returns 503 when API key lookup hits a DB error', async () => {
+        const { API_KEY_ERROR } = await import('@/shared/utils/api/validateApiKey');
+        vi.mocked(validateApiKey).mockResolvedValue({
+            data: null,
+            code: API_KEY_ERROR.DB_ERROR,
+        });
+        const res = await POST(createPostRequest({ action: 'get_campaign_status' }));
+        expect(res.status).toBe(503);
     });
 
     test('returns 400 for invalid content type', async () => {

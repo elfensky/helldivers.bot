@@ -2,7 +2,11 @@ import { describe, test, expect, vi } from 'vitest';
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { getApiKeysByUserId, generateApiKey, deleteApiKey } from '@/db/queries/api.mjs';
+import {
+    getApiKeysByUserId,
+    generateApiKey,
+    deleteApiKey,
+} from '@/features/account/actions.mjs';
 
 const userId = '01908174-d3a5-7e50-b964-6f5e9e48c0a1';
 const otherUserId = '01908174-d3a5-7e50-b964-6f5e9e48c0a2';
@@ -20,7 +24,7 @@ describe('getApiKeysByUserId', () => {
     test('returns auth error when no session', async () => {
         const result = await getApiKeysByUserId(userId);
 
-        expect(result.errors.auth).toBe('No session found');
+        expect(result.errors.auth).toBe('Not authenticated');
         expect(result.data).toBeUndefined();
     });
 
@@ -29,7 +33,7 @@ describe('getApiKeysByUserId', () => {
 
         const result = await getApiKeysByUserId(otherUserId);
 
-        expect(result.errors.auth).toBe('User does not match');
+        expect(result.errors.auth).toBe('Not authorized');
         expect(result.data).toBeUndefined();
     });
 
@@ -85,7 +89,7 @@ describe('generateApiKey', () => {
 
         const result = await generateApiKey(null, validFormData);
 
-        expect(result.errors.auth).toMatch(/signed in/i);
+        expect(result.errors.auth).toBe('Not authenticated');
     });
 
     test('returns validation errors for invalid formData', async () => {
@@ -107,12 +111,15 @@ describe('generateApiKey', () => {
 
         const result = await generateApiKey(null, mismatchFormData);
 
-        expect(result.errors.auth).toMatch(/permission/i);
+        expect(result.errors.auth).toBe('Not authorized');
     });
 
     test('returns max limit error when user has 5 keys', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(session);
-        vi.mocked(db.ApiKey.count).mockResolvedValue(5);
+        const txCreate = vi.fn();
+        vi.mocked(db.$transaction).mockImplementation((cb) =>
+            cb({ ApiKey: { count: vi.fn().mockResolvedValue(5), create: txCreate } }),
+        );
 
         const result = await generateApiKey(
             null,
@@ -120,11 +127,11 @@ describe('generateApiKey', () => {
         );
 
         expect(result.errors.general).toMatch(/maximum/i);
+        expect(txCreate).not.toHaveBeenCalled();
     });
 
     test('creates api key and revalidates on success', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(session);
-        vi.mocked(db.ApiKey.count).mockResolvedValue(2);
         const mockCreated = {
             id: 'new-key-id',
             userId,
@@ -132,7 +139,10 @@ describe('generateApiKey', () => {
             hash: 'abc',
             visible: '1234',
         };
-        vi.mocked(db.ApiKey.create).mockResolvedValue(mockCreated);
+        const txCreate = vi.fn().mockResolvedValue(mockCreated);
+        vi.mocked(db.$transaction).mockImplementation((cb) =>
+            cb({ ApiKey: { count: vi.fn().mockResolvedValue(2), create: txCreate } }),
+        );
 
         const result = await generateApiKey(
             null,
@@ -142,14 +152,21 @@ describe('generateApiKey', () => {
         expect(result.data).toBeDefined();
         expect(result.data.key).toBeDefined();
         expect(typeof result.data.key).toBe('string');
-        expect(db.ApiKey.create).toHaveBeenCalledOnce();
+        expect(result.data.id).toBe('new-key-id');
+        expect(txCreate).toHaveBeenCalledOnce();
         expect(revalidatePath).toHaveBeenCalledWith('/profile', 'layout');
     });
 
     test('propagates database errors from create', async () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(session);
-        vi.mocked(db.ApiKey.count).mockResolvedValue(0);
-        vi.mocked(db.ApiKey.create).mockRejectedValue(new Error('Insert failed'));
+        vi.mocked(db.$transaction).mockImplementation((cb) =>
+            cb({
+                ApiKey: {
+                    count: vi.fn().mockResolvedValue(0),
+                    create: vi.fn().mockRejectedValue(new Error('Insert failed')),
+                },
+            }),
+        );
 
         await expect(
             generateApiKey(
@@ -171,7 +188,7 @@ describe('deleteApiKey', () => {
 
         const result = await deleteApiKey(null, validFormData);
 
-        expect(result.errors.auth).toMatch(/permission/i);
+        expect(result.errors.auth).toBe('Not authenticated');
     });
 
     test('returns validation errors for invalid formData', async () => {
@@ -190,7 +207,7 @@ describe('deleteApiKey', () => {
 
         const result = await deleteApiKey(null, mismatchFormData);
 
-        expect(result.errors.auth).toMatch(/permission/i);
+        expect(result.errors.auth).toBe('Not authorized');
     });
 
     test('deletes api key and revalidates on success', async () => {

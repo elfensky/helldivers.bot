@@ -97,7 +97,7 @@ export default function HomeClient({
     initialRegionsView = 'sector',
     initialSortOrder = 'desc',
     playersAvg24h = null,
-    kills24hAgo = null,
+    killsTrend = null,
 }) {
     const { data, mapState: liveMapState } = useLiveDataContext();
     const events = data?.events ?? [];
@@ -127,7 +127,7 @@ export default function HomeClient({
                         initialFaction={initialFaction}
                         initialRegionsView={initialRegionsView}
                         playersAvg24h={playersAvg24h}
-                        kills24hAgo={kills24hAgo}
+                        killsTrend={killsTrend}
                     />
                 </ComponentErrorBoundary>
                 <ComponentErrorBoundary name="Event Log">

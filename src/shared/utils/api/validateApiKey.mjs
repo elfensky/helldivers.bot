@@ -6,6 +6,7 @@ export const API_KEY_ERROR = Object.freeze({
     MISSING: 'missing',
     INVALID: 'invalid',
     DISABLED: 'disabled',
+    DB_ERROR: 'db_error',
 });
 
 /**
@@ -40,7 +41,10 @@ export async function validateApiKey(request) {
         }),
     );
 
-    if (dbError || !row) {
+    if (dbError) {
+        return { data: null, code: API_KEY_ERROR.DB_ERROR };
+    }
+    if (!row) {
         return { data: null, code: API_KEY_ERROR.INVALID };
     }
 

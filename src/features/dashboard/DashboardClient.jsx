@@ -1,9 +1,12 @@
 'use client';
+import { startTransition } from 'react';
 import './DashboardClient.css';
+import Hijackable from '@/features/ministry/Hijackable';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import LastUpdated from '@/shared/components/LastUpdated';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
 import DefeatedCard from '@/features/galaxy/DefeatedCard';
+import { highlightSector, clearSectorHighlight } from '@/features/galaxy/sectorLink.mjs';
 import FactionTabs from '@/shared/components/FactionTabs';
 import RegionsViewToggle from '@/features/dashboard/RegionsViewToggle';
 import StatGrid from '@/features/stats/StatGrid';
@@ -20,11 +23,32 @@ import { REGIONS_VIEW_KEY } from '@/shared/preferences/regionsView.mjs';
 
 const factionIndices = [0, 1, 2];
 
+/**
+ * Hover props for a region card's `<li>`: `data-*` attributes that key the
+ * card to its galaxy-map sector, plus handlers that light the matching map
+ * area on hover (faction territory faint, active sector strong). The `data-*`
+ * attributes also leave the card findable for a future map → card reverse
+ * highlight (#185).
+ *
+ * @param {number} factionIndex - 0-2 faction, or 3 for Super Earth
+ * @param {number | null} [sector] - Active sector (1-11; 0 for Super Earth);
+ *   omitted for a defeated faction with no single active sector
+ * @returns {object} Props to spread onto the card's `<li>`
+ */
+function sectorHoverProps(factionIndex, sector = null) {
+    return {
+        'data-faction-index': factionIndex,
+        ...(sector != null && { 'data-sector': sector }),
+        onMouseEnter: () => highlightSector(factionIndex, sector),
+        onMouseLeave: clearSectorHighlight,
+    };
+}
+
 export default function DashboardClient({
     initialFaction = 'global',
     initialRegionsView = 'sector',
     playersAvg24h = null,
-    kills24hAgo = null,
+    killsTrend = null,
 }) {
     const { data, mapState } = useLiveDataContext();
     const [faction, setFaction] = usePersistedState(FACTION_KEY, initialFaction);
@@ -36,7 +60,7 @@ export default function DashboardClient({
     if (!data) {
         return (
             <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
-                <h1>SIGNAL LOST</h1>
+                <Hijackable as="h1" category="heading" text="SIGNAL LOST" />
                 <p>
                     Communication with Super Earth High Command has been disrupted. This
                     is not cause for alarm. Remain calm and await further instructions.
@@ -60,8 +84,15 @@ export default function DashboardClient({
     function renderFrontierCard(index) {
         if (index === seDefenderIndex) {
             // Super Earth defense is an event-focused interrupt — always sector view.
+            // `data-attacker-index` links this card (filed under faction 3) to the
+            // attacking faction's map territory, so hovering there highlights it
+            // too — the map → card reverse highlight (#185).
             return (
-                <li key={`frontier-${index}`}>
+                <li
+                    key={`frontier-${index}`}
+                    {...sectorHoverProps(3, 0)}
+                    data-attacker-index={index}
+                >
                     <EventCard
                         action="defending"
                         barLabel="SUPER_EARTH_DEFENSE"
@@ -94,7 +125,7 @@ export default function DashboardClient({
                 Infinity,
             );
             return (
-                <li key={`frontier-${index}`}>
+                <li key={`frontier-${index}`} {...sectorHoverProps(index)}>
                     <DefeatedCard
                         factionIndex={index}
                         startTime={earliestStart !== Infinity ? earliestStart : null}
@@ -131,7 +162,7 @@ export default function DashboardClient({
             : frontier.pointsMax;
 
         return (
-            <li key={`frontier-${index}`}>
+            <li key={`frontier-${index}`} {...sectorHoverProps(index, frontier.sector)}>
                 <EventCard
                     action={isDefending ? 'defending' : 'capturing'}
                     barLabel={isDefending ? 'CAPITAL_DEFENSE' : 'SECTOR_PROGRESS'}
@@ -175,7 +206,7 @@ export default function DashboardClient({
         // this faction returns null (all sectors captured → computeFrontier
         // → null), so this homeworld card is the faction's primary card.
         return (
-            <li key={`attack-${index}`}>
+            <li key={`attack-${index}`} {...sectorHoverProps(index, HOMEWORLD_REGION)}>
                 <EventCard
                     action="capturing"
                     barLabel="HOMEWORLD_ASSAULT"
@@ -211,9 +242,12 @@ export default function DashboardClient({
     return (
         <>
             <section className="flex flex-col gap-2">
-                <h1 className="font-display text-body text-primary">
-                    Track Managed Democracy Across the Galaxy
-                </h1>
+                <Hijackable
+                    as="h1"
+                    category="heading"
+                    text="Track Managed Democracy Across the Galaxy"
+                    className="font-display text-body text-primary"
+                />
                 <p className="mb-0! text-small text-text-muted">
                     Don&apos;t miss a moment of the action! Follow the Helldivers&apos;
                     campaign progress as they battle the Bugs, Cyborgs, and Illuminate for
@@ -227,7 +261,11 @@ export default function DashboardClient({
 
             <section className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                    <h2>Season {data.season}</h2>
+                    <Hijackable
+                        as="h2"
+                        category="heading"
+                        text={`Season ${data.season}`}
+                    />
                     <RegionsViewToggle value={regionsView} onChange={setRegionsView} />
                 </div>
                 <ComponentErrorBoundary name="Regions">
@@ -240,15 +278,28 @@ export default function DashboardClient({
             <section className="flex flex-col gap-2">
                 <ComponentErrorBoundary name="Stats">
                     <div className="flex items-center justify-between gap-2">
-                        <h2>Stats</h2>
-                        <FactionTabs active={faction} onChange={setFaction} />
+                        <Hijackable as="h2" category="heading" text="Stats" />
+                        <FactionTabs
+                            active={faction}
+                            onChange={(id) =>
+                                // Switching the faction tab fans a re-render
+                                // out to ~10 react-slot-counter instances
+                                // (~41ms of work). startTransition marks it
+                                // non-urgent so React can yield through that
+                                // render instead of blocking the interaction
+                                // frame in one chunk.
+                                startTransition(() => setFaction(id))
+                            }
+                        />
                     </div>
                     <StatGrid
                         live={data.status}
                         faction={faction}
                         events={events}
                         playersAvg24h={playersAvg24h}
-                        kills24hAgo={kills24hAgo}
+                        killsTrend={killsTrend}
+                        seasonDuration={data.season_duration}
+                        warStart={data.war_start}
                     />
                 </ComponentErrorBoundary>
             </section>

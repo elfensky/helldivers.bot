@@ -2,6 +2,7 @@ import { cache } from 'react';
 import db from '@/db/db';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
+import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
 
 /**
  * Fetch the campaign data for a season (or the latest season if null).
@@ -9,7 +10,7 @@ import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
  * @returns {Promise<object | null>} Campaign data, or null if no season exists
  *
  * Returns the public getCampaign shape consumed by archives and rebroadcast:
- *   { season, last_updated, season_duration, status, introduction_order, points_max, snapshots, events }
+ *   { season, last_updated, season_duration, war_start, status, introduction_order, points_max, snapshots, events }
  *
  * - `status`     — 3 rows from h1_status, one per faction, latest bucket each.
  *                  Consumers cast this as an array of faction states.
@@ -22,6 +23,10 @@ import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
  *                  shape `{ order: number[] }` / `{ points: number[] }` to
  *                  preserve the historical 1:1 relation shape.
  * - `season_duration` — scalar int from h1_season (per-season, not per-faction).
+ * - `war_start` — unix-seconds time of the earliest h1_status bucket. Each
+ *                 `status[i]` also carries `first_seen` (earliest non-hidden
+ *                 bucket for that faction, or null if still hidden) — together
+ *                 they give per-faction deployment duration.
  */
 export const getCampaign = cache(async function getCampaign(season = null) {
     'use server';
@@ -83,6 +88,25 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         orderBy: [{ bucket: 'asc' }, { enemy: 'asc' }],
     });
 
+    // Per-faction first appearance. updateStatus writes a row for all 3
+    // factions every poll, so a pre-introduction faction carries 'hidden'
+    // rows from war start — first_seen must be the earliest NON-hidden
+    // bucket, not min(time). war_start is the overall earliest bucket.
+    let warStart = null;
+    const firstSeenByEnemy = new Map();
+    for (const row of allStatusRows) {
+        if (warStart === null || row.time < warStart) warStart = row.time;
+        if (row.status !== CAMPAIGN_STATUS.HIDDEN) {
+            const seen = firstSeenByEnemy.get(row.enemy);
+            if (seen == null || row.time < seen) {
+                firstSeenByEnemy.set(row.enemy, row.time);
+            }
+        }
+    }
+    for (const row of liveRows) {
+        row.first_seen = firstSeenByEnemy.get(row.enemy) ?? null;
+    }
+
     // Group full history by bucket into the public snapshot shape.
     // Each snapshot has { time, data: [f0, f1, f2] } — the consumer pattern
     // for archives charts (FactionHealthChart, getWarOutcome, etc.).
@@ -115,6 +139,9 @@ export const getCampaign = cache(async function getCampaign(season = null) {
         // of h1_statistic; exposed at the top level so consumers don't go
         // looking in data.status[i].
         season_duration: seasonRow.season_duration ?? 0,
+        // Unix-seconds timestamp of the earliest h1_status bucket — used with
+        // each status row's `first_seen` to derive per-faction deployment time.
+        war_start: warStart,
         status: liveRows,
         introduction_order: { order: seasonRow.introduction_order ?? [] },
         points_max: { points: seasonRow.points_max ?? [] },

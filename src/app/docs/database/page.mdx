@@ -534,7 +534,7 @@ Application API keys for external consumers. A random UUID is generated as the k
 | `createdAt`   | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                                            |
 | `enabled`     | `Boolean`   | `BOOLEAN`       | `@default(true)` — keys can be disabled without deletion                                     |
 
-> **Security note:** SHA-256 is used as a one-way hash for key lookup. The key space is a random UUID (128 bits of entropy), which provides the actual security. The hash allows O(1) database lookups without storing the raw key. Validation logic is in `src/db/queries/validateApiKey.mjs`.
+> **Security note:** SHA-256 is used as a one-way hash for key lookup. The key space is a random UUID (128 bits of entropy), which provides the actual security. The hash allows O(1) database lookups without storing the raw key. Validation logic is in `src/shared/utils/api/validateApiKey.mjs`.
 
 ---
 

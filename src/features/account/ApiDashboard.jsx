@@ -1,5 +1,5 @@
 //db
-import { getApiKeysByUserId } from '@/db/queries/api.mjs';
+import { getApiKeysByUserId } from '@/features/account/actions.mjs';
 //forms
 import { GenerateApiKeyForm, DeleteApiKeyForm } from '@/features/account/ApiForm';
 //utils
@@ -21,6 +21,15 @@ export default async function ApiDashboard({ user }) {
 
 async function ApiKeysList({ userId }) {
     const result = await getApiKeysByUserId(userId);
+
+    if (result.errors) {
+        return (
+            <p className="text-body text-danger">
+                Could not load API keys. Please refresh the page.
+            </p>
+        );
+    }
+
     const apiKeys = result.data;
 
     if (!apiKeys || apiKeys.length === 0) {

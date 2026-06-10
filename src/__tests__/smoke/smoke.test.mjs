@@ -67,4 +67,24 @@ describe.runIf(serverAvailable)('Smoke tests', () => {
         expect(response.status).toBe(200);
         expect(response.headers.get('content-type')).toContain('image/png');
     });
+
+    test('Archives page renders with Ministry Interference wrappers (truth text intact)', async () => {
+        const response = await fetch(`${BASE_URL}/archives`);
+        expect(response.status).toBe(200);
+        const body = await response.text();
+        // Hijackable idles on the server (no browser JS), so the truth text
+        // is the only content in the SSR HTML — no propaganda strings present.
+        expect(body).toContain('Declassified Campaign Archives');
+        // Body description from ArchivesHeader.
+        expect(body).toContain('Records verified by the Bureau of War Information');
+    });
+
+    test('Homepage renders with Ministry Interference wrappers (truth text intact)', async () => {
+        const response = await fetch(`${BASE_URL}/`);
+        expect(response.status).toBe(200);
+        const body = await response.text();
+        // DashboardClient wraps the hero heading in a Hijackable; idle SSR
+        // renders the truth directly so it must appear in the HTML.
+        expect(body).toContain('Track Managed Democracy Across the Galaxy');
+    });
 });

@@ -39,6 +39,29 @@ After any frontend/CSS change, verify via DevTools before declaring done:
 - For grid/flex: check parent-child sizing chain
 - For interactive changes: programmatically trigger state changes and verify DOM updates
 
+## Worktree Workflow
+
+Features use an isolated git worktree off `develop`; small chores commit directly on a branch (no worktree). Both still follow the rules in § Git Workflow.
+
+**When to use a worktree (features):** new functionality, multi-file refactors, anything large enough to warrant a PR, anything that benefits from isolation while iterating. Default for any task you'd otherwise raise a feature branch for.
+
+**When to skip the worktree (small chores/bugfixes):** dependency bumps, `npm audit` fixes, doc edits, lint/format passes, copy tweaks, single-call-site bugfixes, CLAUDE.md/CHANGELOG updates. Branch from `develop` in the main checkout, commit, merge with `git merge --no-ff` per § Git Workflow. Use judgment; if unsure, default to a worktree.
+
+**Feature workflow (worktree):**
+
+1. Create the worktree off `develop` (run from the main checkout):
+   `git worktree add .worktrees/<branch-dir> -b feature/<desc> develop`
+2. Copy gitignored env files from the main checkout: `cp ../../.env.development .` (and any `.env.local` if present — `*.env*` is gitignored, so the dev server can't boot without them)
+3. Install dependencies in the worktree: `npm install && npx prisma generate` (Prisma client outputs to `src/generated/prisma/` which is gitignored, so it must be regenerated per worktree)
+4. Do the work in the worktree directory — small, logical commits as you go, not one giant commit at the end
+5. Verify in the worktree: `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build` (all four must pass — same chain as § Critical Rules)
+6. Merge back from the main checkout: `git checkout develop && git merge --no-ff feature/<desc>` — include the version bump + CHANGELOG move into `## X.Y.Z` in the merge commit per § Git Workflow rule #2
+7. Push `develop`, then clean up: `git worktree remove .worktrees/<branch-dir>` + `git branch -d feature/<desc>`
+
+**Worktree directory:** `.worktrees/` in project root (already gitignored). Directory names mirror the branch with slashes replaced by hyphens (e.g., `feature/ministry-interference` → `.worktrees/feature-ministry-interference`).
+
+**Prisma migrations:** If the branch creates a migration under `prisma/migrations/`, remind the user to run `npx prisma migrate deploy` against the local database after merging, before the next dev-server restart.
+
 ## Git Workflow
 
 **Branching model:** Simplified Git Flow — no release branches.
@@ -54,7 +77,7 @@ After any frontend/CSS change, verify via DevTools before declaring done:
 **Rules:**
 
 0. **Never squash merge. Never fast-forward merge.** Always use `git merge --no-ff` so every merge creates a merge commit and the branch boundary stays visible in `git log --graph`. Never `--squash`, never `--rebase`, never `--ff-only`.
-1. **Create feature/bugfix/chore branches from `develop`.** Features merge back via PR. Bugfix and chore branches merge via `git merge --no-ff` directly into `develop` (branch → commit → `git checkout develop && git merge --no-ff <branch>` → push → delete branch). No PR needed.
+1. **Create feature/bugfix/chore branches from `develop`.** Features use a worktree (see § Worktree Workflow) and merge back via PR. Bugfix and chore branches skip the worktree and merge via `git merge --no-ff` directly into `develop` (branch → commit → `git checkout develop && git merge --no-ff <branch>` → push → delete branch). No PR needed.
 2. **Version on merge to `develop`:** When merging a branch into `develop`, **in the same commit** move its changelog entries from `## Unreleased` into a new `## X.Y.Z` section and bump `"version"` in `package.json` to match. Do not defer this to a separate commit or ask — it is part of the merge step. Use semver: patch for bugfixes, minor for features, major for breaking changes. Skipping version numbers between releases is fine — not every version on `develop` will be tagged on `main`.
 3. **Release process:** Merge `develop` → `main` via PR → **tag `vX.Y.Z` on the merge commit on `main`** (use the latest version from `CHANGELOG.md`) → push tag → **merge `main` back into `develop`** (`git checkout develop && git merge origin/main && git push`). The production Docker build only triggers on version tags, so forgetting to tag means no deployment. The merge-back carries main's PR merge commit into develop so the next release PR doesn't trip the "branch not up to date" check.
 4. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` with new version section → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
@@ -142,7 +165,7 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 - **Error tracking (optional):** Sentry SDK configured for self-hosted GlitchTip (`tracesSampleRate` 0.1 in production / 1.0 in dev, `environment` tagging, no replays/logs). Client tunnel (`/api/glitchtip`) bypasses ad blockers. CSP violations reported via `report-uri`. Route-level (`error.jsx`) and component-level (`ComponentErrorBoundary`) error boundaries for graceful degradation. When `SENTRY_AUTH_TOKEN` absent, `withSentryConfig` build plugin skipped.
 - **Node version:** mise pins node@24 (ships with npm 11 natively).
 - **Server actions:** Most utilities use `'use server'` directive.
-- **Shared utilities:** `formatNumber` (`src/shared/utils/format/formatNumber.mjs`) for compact numbers (25.0M, 1.2K — M suffix at 10M+, locale grouping below). `formatTimeAgo` (`src/shared/utils/format/formatTimeAgo.mjs`) for relative timestamps.
+- **Shared utilities:** `formatNumber` (`src/shared/utils/format/formatNumber.mjs`) for compact numbers (25.0M, 1.2K — M suffix at 1M+, locale grouping below). `formatTimeAgo` (`src/shared/utils/format/formatTimeAgo.mjs`) for relative timestamps.
 - **Map state:** `computeMapState` (`src/shared/utils/game/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — use the `computeLiveMapState(data)` helper from the same module to keep the filter and the call together.
 - **On-demand season fetching:** `/archives` page derives SeasonSelector from current season number (not DB query). Missing seasons are backfilled from the official HD1 API on first request via `updateSeason()` (`src/update/season.mjs`) -- the same shared pipeline the worker runs every poll for the active season and the admin "Refresh" button triggers via `reseedSeason`. `updateSeason` writes `h1_season` (with inlined arrays) + `h1_status` + `h1_statistic` + `h1_event` + `h1_event_progress`, then stamps `h1_season.last_updated`.
 - **Live polling:** `useLiveData` hook (`src/shared/hooks/useLiveData.mjs`) polls `GET /api/h1/live` every 10 seconds via `setInterval` + `fetch`. A `visibilitychange` listener fires an immediate poll on tab focus. Tri-state status: `'polling'` (request in flight), `'live'` (last poll succeeded), `'offline'` (last poll failed or PWA offline). Module-level singleton ensures one connection per tab. BroadcastChannel leader election for Web Notifications.

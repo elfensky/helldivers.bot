@@ -56,14 +56,14 @@ describe('sendTestNotification', () => {
     it('returns errors when session is null', async () => {
         auth.api.getSession.mockResolvedValue(null);
         const result = await sendTestNotification();
-        expect(result.errors).toEqual({ auth: 'Unauthorized' });
+        expect(result.errors).toEqual({ auth: 'Not authenticated' });
         expect(result.time).toEqual(expect.any(Number));
     });
 
     it('returns errors when user is not admin', async () => {
         auth.api.getSession.mockResolvedValue({ user: { role: 'user' } });
         const result = await sendTestNotification();
-        expect(result.errors).toEqual({ auth: 'Unauthorized' });
+        expect(result.errors).toEqual({ auth: 'Forbidden' });
         expect(result.time).toEqual(expect.any(Number));
     });
 

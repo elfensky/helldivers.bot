@@ -1,15 +1,13 @@
 'use server';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/auth';
-import { headers } from 'next/headers';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
 import { performanceTime } from '@/shared/utils/time.mjs';
 import { updateSeason } from '@/update/season.mjs';
 import { computeBucket } from '@/shared/utils/bucketing.mjs';
 import db from '@/db/db';
-import { ROLE } from '@/shared/enums/roles.mjs';
+import { requireAdmin } from '@/shared/utils/api/authGuards.mjs';
 
 const seasonSchema = z.number().int().positive();
 
@@ -33,13 +31,8 @@ const seasonSchema = z.number().int().positive();
  */
 export async function reseedSeason(season) {
     const start = performance.now();
-    if (!auth)
-        return { errors: { auth: 'Auth not configured' }, time: performanceTime(start) };
-
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user || session.user.role !== ROLE.ADMIN) {
-        return { errors: { auth: 'Forbidden' }, time: performanceTime(start) };
-    }
+    const { error: authError } = await requireAdmin();
+    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
 
     const parsed = seasonSchema.safeParse(season);
     if (!parsed.success)

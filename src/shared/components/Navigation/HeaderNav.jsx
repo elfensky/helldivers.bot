@@ -6,6 +6,7 @@ import StatusDot from '@/shared/components/StatusDot';
 const tabs = [
     { href: '/', label: 'Live', live: true, track: 'nav-live' },
     { href: '/archives', label: 'Archives', track: 'nav-archives' },
+    { href: '/stats', label: 'Stats', track: 'nav-stats' },
     { href: '/docs', label: 'Docs', track: 'nav-docs' },
 ];
 

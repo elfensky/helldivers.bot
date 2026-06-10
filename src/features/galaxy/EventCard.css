@@ -4,6 +4,9 @@
     height: 100%;
     background: var(--color-surface-1);
     border: 1px solid var(--color-ghost);
+    transition:
+        border-color 0.2s ease,
+        opacity 0.2s ease;
 }
 
 .sector-card-accent-flash {
@@ -172,4 +175,20 @@
         rgba(255, 255, 255, 0.1) var(--segment-percent, 0%)
     );
     border: 1px solid var(--color-danger);
+}
+
+/* === Map → card hover link (#185) ===
+ *
+ * Hovering a faction's territory on the galaxy map adds `.card-linked` to
+ * that faction's card <li>(s) — see src/features/galaxy/sectorLink.mjs. The
+ * card's ghost border firms up dim → bright, the mirror of the dim → bright
+ * lift the card → map direction gives the map's lost sectors. The defeated
+ * card sits at opacity 0.333; lift it so the faded card still visibly
+ * responds to the hover. */
+li.card-linked .sector-card {
+    border-color: rgba(255, 255, 255, 0.55);
+}
+
+li.card-linked .sector-card-defeated {
+    opacity: 0.6;
 }

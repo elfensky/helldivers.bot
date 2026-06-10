@@ -25,7 +25,7 @@ const baseProps = {
  * Build a mapState[factionIndex] with the given sector statuses.
  * Default: everything lost. Each entry in `overrides` keyed by region 1–11.
  */
-function makeFactionMap(overrides = {}) {
+function makeSectorMap(overrides = {}) {
     const map = {};
     for (let r = 1; r <= 11; r++) map[r] = { status: 'lost', percent: 0 };
     for (const [key, val] of Object.entries(overrides)) {
@@ -258,7 +258,7 @@ describe('EventCard (campaign view)', () => {
     const campaignProps = {
         ...baseProps,
         view: 'campaign',
-        factionMap: makeFactionMap({
+        factionMap: makeSectorMap({
             1: { status: 'captured', percent: 100 },
             2: { status: 'captured', percent: 100 },
             3: { status: 'captured', percent: 100 },
@@ -286,7 +286,7 @@ describe('EventCard (campaign view)', () => {
             <EventCard
                 {...baseProps}
                 view="campaign"
-                factionMap={makeFactionMap({
+                factionMap={makeSectorMap({
                     1: { status: 'captured', percent: 100 },
                     2: { status: 'captured', percent: 100 },
                     3: { status: 'in_progress', percent: 30 },
@@ -319,7 +319,7 @@ describe('EventCard (campaign view)', () => {
             <EventCard
                 {...baseProps}
                 view="campaign"
-                factionMap={makeFactionMap({
+                factionMap={makeSectorMap({
                     11: { status: 'active', percent: 42 },
                 })}
             />,
@@ -355,15 +355,15 @@ describe('EventCard (campaign view)', () => {
             <EventCard
                 {...baseProps}
                 view="campaign"
-                factionMap={makeFactionMap()}
+                factionMap={makeSectorMap()}
                 points={1234567}
                 pointsMax={5000000}
             />,
         );
         const points = container.querySelector('.sector-card-points');
-        // Values under 10M use locale grouping (e.g. 1,234,567 / 5,000,000)
-        expect(points.textContent).toMatch(/1.*234.*567/);
-        expect(points.textContent).toMatch(/5.*000.*000/);
+        // 1,234,567 and 5,000,000 both clear 1M, so each renders with the M suffix
+        expect(points.textContent).toMatch(/1\.2M/);
+        expect(points.textContent).toMatch(/5\.0M/);
     });
 
     test('missing factionMap does not crash, renders all 11 empty segments', () => {
