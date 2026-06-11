@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.52.2
+
+### Fixes
+
+- **Fix image-optimizer 500s (broken avatars/icons; 502s at the edge) caused by Sharp's native binary not loading on the Chainguard runtime.** A latent bug unmasked by the 0.52.1 `.next/cache` permission fix: with the cache now writable, the Next.js image optimizer finally runs far enough to load **Sharp** — and fails. `Dockerfile.app` built on `node:24-alpine` (musl) and stripped Sharp's glibc binaries, but the runtime image `cgr.dev/chainguard/node` is **glibc** (Wolfi), so only `@img/sharp-linuxmusl-x64` shipped into a glibc runtime → `Could not load the "sharp" module using the linux-x64 runtime` → every `/_next/image` request 500s. Fixed by building on a glibc base (`node:24` Debian) and removing the musl-only strip, so Sharp's glibc binary (`@img/sharp-linux-x64`) is installed, traced into the standalone output, and loads at runtime. Verified by building the production `linux/amd64` image and confirming Sharp both loads and encodes a WebP. (Prisma was unaffected because it uses the `@prisma/adapter-pg` JS driver, not a native query engine.)
+
 ## 0.52.1
 
 ### Fixes

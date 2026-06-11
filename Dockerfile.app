@@ -5,13 +5,11 @@
 # importantly `RUN --mount=type=cache,...` for npm + Next.js build caches and
 # `RUN --mount=type=secret,...` for Sentry credentials.
 # BuildKit is the default builder in Docker Desktop and modern docker engine.
-FROM node:24-alpine AS base
+FROM node:24 AS base
 
 #region deps
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-# RUN apk add --no-cache libc6-compat # disable this, as it prevents Prisma from running https://www.prisma.io/docs/guides/docker
 WORKDIR /app
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json ./
@@ -20,19 +18,17 @@ COPY package.json package-lock.json ./
 # packages that haven't changed. `sharing=locked` ensures concurrent builds
 # don't corrupt the cache.
 #
-# After install, strip Sharp's glibc-arm64 and glibc-x64 binaries. Alpine is
-# musl, so the linuxmusl variants are the only ones loaded at runtime. The
-# glibc variants are pulled in defensively as npm optional deps but never
-# `dlopen()`'d on a musl host — saves ~16.6 MB on the final image because
-# Next.js's `@vercel/nft` standalone trace would otherwise include them.
+# Build on glibc (node:24 is Debian, NOT Alpine/musl) so Sharp's prebuilt
+# glibc binary (@img/sharp-linux-x64) is installed and traced into the
+# standalone output. The runtime image (cgr.dev/chainguard/node, Wolfi) is
+# ALSO glibc, so the binary loads. Do NOT strip @img/sharp-* — building on
+# musl while shipping to a glibc runtime makes Sharp fail at runtime with
+# "Could not load the 'sharp' module using the linux-x64 runtime" (the image
+# optimizer then 500s on every avatar/icon).
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund; \
     else echo "Lockfile not found." && exit 1; \
-    fi && \
-    rm -rf node_modules/@img/sharp-libvips-linux-arm64 \
-           node_modules/@img/sharp-libvips-linux-x64 \
-           node_modules/@img/sharp-linux-arm64 \
-           node_modules/@img/sharp-linux-x64
+    fi
 #endregion
 
 #region builder
