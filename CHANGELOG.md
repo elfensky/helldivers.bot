@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.52.4
+
+### Changes
+
+- Bump `eslint-plugin-jsdoc` from 62.9.0 to 63.0.2.
+- Bump `hono` from 4.12.18 to 4.12.25.
+
 ## 0.52.3
 
 ### Changes
