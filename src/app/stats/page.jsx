@@ -28,9 +28,9 @@ export const metadata = {
  *
  * One DB query (`getCrossSeasonStats`) supplies every section so the page
  * stays a thin server-side composition: faction threat ranking on top
- * (Recharts bar), war outcomes + streaks + a per-season timeline in the
- * middle, all-time records grid at the bottom. Telemetry-derived components
- * are deferred — see issue #394.
+ * (Recharts bar), war outcomes + streaks in the middle, the all-time
+ * records grid, then the cascade-failures log at the bottom.
+ * Telemetry-derived components are deferred — see issue #394.
  */
 export default async function StatsPage() {
     const data = await getCrossSeasonStats();
@@ -67,16 +67,16 @@ export default async function StatsPage() {
                 <WarOutcomes perSeason={data.perSeason} />
             </section>
 
+            <section className="flex flex-col gap-2">
+                <Hijackable as="h2" category="heading" text="All-Time Records" />
+                <SeasonRecords perSeason={data.perSeason} />
+            </section>
+
             <CascadeLog
                 cascades={cascades}
                 lede={lede}
                 initialSortOrder={initialCascadeSort}
             />
-
-            <section className="flex flex-col gap-2">
-                <Hijackable as="h2" category="heading" text="All-Time Records" />
-                <SeasonRecords perSeason={data.perSeason} />
-            </section>
         </main>
     );
 }

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.52.3
+
+### Changes
+
+- Move the All-Time Records section above Cascade Failures on the stats page.
+
 ## 0.52.2
 
 ### Fixes
