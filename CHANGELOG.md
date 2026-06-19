@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Changes
+
+- Remove dead code surfaced by an over-engineering audit: four uncalled `time.mjs`
+  helpers (`formatDate`, `elapsedSeconds`, `elapsedMilliseconds`, `elapsedSeasonTime`)
+  and their tests, and unused `451`/`501`/`203` cases in the API response builder.
+- Replace the hand-rolled `JSON.parse(JSON.stringify(...))` deep clone in
+  `computeMapState` with native `structuredClone`.
+- Merge the mirror-image `EventLogSortToggle` and `CascadeLogSortToggle` into a
+  single `SortToggle` component.
+
 ## 0.52.4
 
 ### Changes

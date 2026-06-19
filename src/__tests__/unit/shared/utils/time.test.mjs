@@ -1,11 +1,7 @@
 import {
     performanceTime,
     roundedPerformanceTime,
-    formatDate,
     timeSince,
-    elapsedSeasonTime,
-    elapsedSeconds,
-    elapsedMilliseconds,
 } from '@/shared/utils/time.mjs';
 
 describe('performanceTime', () => {
@@ -49,28 +45,6 @@ describe('roundedPerformanceTime', () => {
     });
 });
 
-describe('formatDate', () => {
-    test('formats a date as YYYY-MM-DD HH:MM:SS', () => {
-        const date = new Date(2024, 0, 5, 9, 3, 7); // Jan 5, 2024 09:03:07
-        expect(formatDate(date)).toBe('2024-01-05 09:03:07');
-    });
-
-    test('pads single-digit months, days, hours, minutes, seconds', () => {
-        const date = new Date(2023, 2, 1, 1, 2, 3); // Mar 1, 2023 01:02:03
-        expect(formatDate(date)).toBe('2023-03-01 01:02:03');
-    });
-
-    test('handles midnight correctly', () => {
-        const date = new Date(2025, 11, 31, 0, 0, 0); // Dec 31, 2025 00:00:00
-        expect(formatDate(date)).toBe('2025-12-31 00:00:00');
-    });
-
-    test('handles end-of-day correctly', () => {
-        const date = new Date(2025, 5, 15, 23, 59, 59);
-        expect(formatDate(date)).toBe('2025-06-15 23:59:59');
-    });
-});
-
 describe('timeSince', () => {
     test('returns minutes ago for less than 60 minutes', () => {
         const thirtyMinsAgo = new Date(Date.now() - 30 * 60000);
@@ -110,72 +84,5 @@ describe('timeSince', () => {
     test('accepts date strings', () => {
         const twoHoursAgo = new Date(Date.now() - 2 * 3600000).toISOString();
         expect(timeSince(twoHoursAgo)).toBe('2 hours ago');
-    });
-});
-
-describe('elapsedSeasonTime', () => {
-    test('converts seconds to days, hours, minutes, seconds', () => {
-        // 1 day + 2 hours + 3 minutes + 4 seconds = 93784 seconds
-        const result = elapsedSeasonTime(93784);
-        expect(result).toEqual({
-            days: 1,
-            hours: 2,
-            minutes: 3,
-            seconds: 4,
-        });
-    });
-
-    test('handles zero seconds', () => {
-        expect(elapsedSeasonTime(0)).toEqual({
-            days: 0,
-            hours: 0,
-            minutes: 0,
-            seconds: 0,
-        });
-    });
-
-    test('handles exactly one day', () => {
-        expect(elapsedSeasonTime(86400)).toEqual({
-            days: 1,
-            hours: 0,
-            minutes: 0,
-            seconds: 0,
-        });
-    });
-
-    test('handles large values', () => {
-        // 100 days
-        const result = elapsedSeasonTime(100 * 86400);
-        expect(result.days).toBe(100);
-        expect(result.hours).toBe(0);
-        expect(result.minutes).toBe(0);
-        expect(result.seconds).toBe(0);
-    });
-
-    test('handles only seconds (less than a minute)', () => {
-        expect(elapsedSeasonTime(45)).toEqual({
-            days: 0,
-            hours: 0,
-            minutes: 0,
-            seconds: 45,
-        });
-    });
-});
-
-describe('elapsedSeconds', () => {
-    test('returns seconds since past date', () => {
-        const tenSecsAgo = new Date(Date.now() - 10000);
-        const result = elapsedSeconds(tenSecsAgo);
-        expect(result).toBeGreaterThanOrEqual(9);
-        expect(result).toBeLessThanOrEqual(11);
-    });
-});
-
-describe('elapsedMilliseconds', () => {
-    test('returns milliseconds since past date', () => {
-        const fiveSecsAgo = new Date(Date.now() - 5000);
-        const result = elapsedMilliseconds(fiveSecsAgo);
-        expect(result).toBeGreaterThanOrEqual(4900);
-        expect(result).toBeLessThanOrEqual(5200);
     });
 });

@@ -38,14 +38,8 @@ export function errorResponse(code, start, error = null) {
         case 429:
             message = 'Too many requests';
             break;
-        case 451:
-            message = 'Unavailable for legal reasons';
-            break;
         case 500:
             message = 'Internal server error';
-            break;
-        case 501:
-            message = 'Not implemented';
             break;
         case 502:
             message = 'Bad gateway'; //if can't reach official api
@@ -101,9 +95,6 @@ export function successResponse(code, start, data, opts = {}) {
             break;
         case 202:
             message = 'Accepted';
-            break;
-        case 203:
-            message = 'Non-authoritative information';
             break;
         case 204:
             message = 'No content';
