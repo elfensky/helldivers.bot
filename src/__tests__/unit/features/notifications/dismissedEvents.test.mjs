@@ -3,7 +3,6 @@ import { describe, expect, test, beforeEach } from 'vitest';
 import {
     getDismissedEvents,
     addDismissedEvent,
-    isDismissedAtStatus,
 } from '@/features/notifications/dismissedEvents.mjs';
 
 const STORAGE_KEY = 'dismissed-toast-events';
@@ -79,34 +78,6 @@ describe('dismissedEvents', () => {
             }
             const record = getDismissedEvents();
             expect(Object.keys(record).length).toBe(200);
-        });
-    });
-
-    describe('isDismissedAtStatus', () => {
-        test('returns false for id not in record', () => {
-            expect(isDismissedAtStatus(42, 'active')).toBe(false);
-        });
-
-        test('returns true when dismissed status matches', () => {
-            addDismissedEvent(42, 'active');
-            expect(isDismissedAtStatus(42, 'active')).toBe(true);
-        });
-
-        test('returns false when dismissed status differs', () => {
-            addDismissedEvent(42, 'active');
-            expect(isDismissedAtStatus(42, 'success')).toBe(false);
-        });
-
-        test('handles legacy string-value format', () => {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ 42: 'active' }));
-            expect(isDismissedAtStatus(42, 'active')).toBe(true);
-            expect(isDismissedAtStatus(42, 'success')).toBe(false);
-        });
-
-        test('handles legacy array format', () => {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(['42']));
-            expect(isDismissedAtStatus(42, 'active')).toBe(true);
-            expect(isDismissedAtStatus(42, 'success')).toBe(false);
         });
     });
 });

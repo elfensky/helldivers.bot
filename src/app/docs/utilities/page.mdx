@@ -22,7 +22,6 @@ graph TD
         FN["formatNumber()"]
         FT["formatTimeAgo()"]
         FU["formatUptime()"]
-        AO["addOrdinalSuffix()"]
     end
 
     subgraph GameLogic["GAME LOGIC"]
@@ -328,26 +327,6 @@ formatTimeAgo(date: Date | null, now?: Date): string | null
 **Used by:** `LastUpdated` (live hero-sidebar counter), `SystemOverview` (admin worker heartbeat display).
 
 **Note:** when used inside a component that ticks on an interval, pass `now` as state so the React Compiler can't elide re-renders — the hidden `Date.now()` fallback looks like a pure function to static analysis. See `LastUpdated.jsx` for the pattern.
-
----
-
-### `addOrdinalSuffix(num)`
-
-```ts
-addOrdinalSuffix(num: number): string
-```
-
-**Behavior:** Appends the English ordinal suffix to an integer. Handles the teen exception (11th, 12th, 13th) by checking `num % 100` before `num % 10`.
-
-| Condition        | Suffix |
-| ---------------- | ------ |
-| `% 100` in 11-13 | `th`   |
-| `% 10 === 1`     | `st`   |
-| `% 10 === 2`     | `nd`   |
-| `% 10 === 3`     | `rd`   |
-| otherwise        | `th`   |
-
-**Examples:** `1` → `"1st"`, `11` → `"11th"`, `21` → `"21st"`, `112` → `"112th"`.
 
 ---
 

@@ -1,14 +1,6 @@
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 /**
- * @param {Array<{status: string}>} events - Events to filter
- * @returns {Array<{status: string}>}
- */
-export function getActiveEvents(events) {
-    return events?.filter((e) => e.status === EVENT_STATUS.ACTIVE) ?? [];
-}
-
-/**
  * @param {Array<{start_time: number}>} events - Events to sort
  * @returns {Array<{start_time: number}>}
  */

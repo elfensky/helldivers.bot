@@ -1,28 +1,4 @@
-import {
-    getActiveEvents,
-    sortEventsByRecent,
-    countOutcomes,
-} from '@/shared/utils/game/eventFilters.mjs';
-
-describe('getActiveEvents', () => {
-    test('filters to only status active', () => {
-        const events = [
-            { id: 1, status: 'active' },
-            { id: 2, status: 'success' },
-            { id: 3, status: 'fail' },
-            { id: 4, status: 'active' },
-        ];
-        expect(getActiveEvents(events)).toEqual([
-            { id: 1, status: 'active' },
-            { id: 4, status: 'active' },
-        ]);
-    });
-
-    test('returns [] for null/undefined', () => {
-        expect(getActiveEvents(null)).toEqual([]);
-        expect(getActiveEvents(undefined)).toEqual([]);
-    });
-});
+import { sortEventsByRecent, countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
 
 describe('sortEventsByRecent', () => {
     test('sorts by start_time descending', () => {

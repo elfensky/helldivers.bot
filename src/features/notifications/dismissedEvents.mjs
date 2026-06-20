@@ -49,15 +49,3 @@ export function addDismissedEvent(eventId, status) {
         console.debug('[dismissedEvents] localStorage write failed:', err?.message);
     }
 }
-
-/**
- * Returns true if the event was dismissed at its current status. Dismissals
- * for a different (earlier) status return false so the caller re-shows the
- * toast on a real status change.
- */
-export function isDismissedAtStatus(eventId, status) {
-    const record = getDismissedEvents();
-    const entry = record[String(eventId)];
-    if (!entry) return false;
-    return entry.status === status;
-}

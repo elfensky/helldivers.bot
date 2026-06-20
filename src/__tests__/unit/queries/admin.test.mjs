@@ -6,8 +6,8 @@ import {
     getAllUsers,
     updateUserRole,
     toggleUserBan,
-    adminGetUserApiKeys,
     adminRevokeApiKey,
+    getAllApiKeys,
     getSystemStats,
 } from '@/features/admin/actions.mjs';
 
@@ -247,39 +247,6 @@ describe('toggleUserBan', () => {
     });
 });
 
-// ─── adminGetUserApiKeys ────────────────────────────────────────────
-
-describe('adminGetUserApiKeys', () => {
-    test('returns auth error for non-admin', async () => {
-        vi.mocked(auth.api.getSession).mockResolvedValue(userSession);
-        const result = await adminGetUserApiKeys(
-            null,
-            createFormData({ userId: targetUserId }),
-        );
-        expect(result.errors.auth).toBeDefined();
-    });
-
-    test('returns api keys for any user', async () => {
-        vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
-        const mockKeys = [
-            {
-                id: 'k1',
-                description: 'key',
-                visible: 'ab12',
-                createdAt: new Date(),
-                enabled: true,
-            },
-        ];
-        vi.mocked(db.ApiKey.findMany).mockResolvedValue(mockKeys);
-
-        const result = await adminGetUserApiKeys(
-            null,
-            createFormData({ userId: targetUserId }),
-        );
-        expect(result.data).toEqual(mockKeys);
-    });
-});
-
 // ─── adminRevokeApiKey ──────────────────────────────────────────────
 
 describe('adminRevokeApiKey', () => {
@@ -298,6 +265,38 @@ describe('adminRevokeApiKey', () => {
         const result = await adminRevokeApiKey(createFormData({ apikeyId }));
         expect(result.data).toBeDefined();
         expect(db.ApiKey.delete).toHaveBeenCalledWith({ where: { id: apikeyId } });
+    });
+});
+
+// ─── getAllApiKeys ──────────────────────────────────────────────────
+
+describe('getAllApiKeys', () => {
+    test('returns auth error for non-admin', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue(userSession);
+        const result = await getAllApiKeys();
+        expect(result.errors.auth).toBeDefined();
+        expect(db.ApiKey.findMany).not.toHaveBeenCalled();
+    });
+
+    test('returns every api key (newest first) for admin', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
+        const mockKeys = [
+            {
+                id: 'k1',
+                description: 'key',
+                visible: 'ab12',
+                enabled: true,
+                createdAt: new Date(),
+                user: { email: 'owner@test.com' },
+            },
+        ];
+        vi.mocked(db.ApiKey.findMany).mockResolvedValue(mockKeys);
+
+        const result = await getAllApiKeys();
+        expect(result.data).toEqual(mockKeys);
+        expect(db.ApiKey.findMany).toHaveBeenCalledWith(
+            expect.objectContaining({ orderBy: { createdAt: 'desc' } }),
+        );
     });
 });
 
