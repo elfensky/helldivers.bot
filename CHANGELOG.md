@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.52.7
+
+### Fixes
+
+- Fix the staging GHCR image-cleanup job that failed on every `develop` push:
+  `snok/container-retention-policy@v3` rejects the default `GITHUB_TOKEN` and can't
+  delete user-account packages, so it now authenticates with a classic-PAT secret
+  `GHCR_CLEANUP_TOKEN` (`delete:packages`). Also corrected the stale infrastructure
+  docs that claimed production used a (now-removed) `ACCESS_TOKEN`; production uses
+  `GITHUB_TOKEN` with `contents: write`.
+
 ## 0.52.6
 
 ### Security
