@@ -73,6 +73,11 @@ Features use an isolated git worktree off `develop`; small chores commit directl
 | `feature/<desc>`  | New functionality    | —                     | No            |
 | `bugfix/<desc>`   | Non-urgent fixes     | —                     | No            |
 | `hotfix/<semver>` | Emergency prod fixes | —                     | No            |
+| `metrics`         | CI-generated metrics | —                     | No            |
+
+`metrics` is a **standalone** branch, not part of the flow: CI pushes generated
+metrics to it (PageSpeed/Lighthouse, etc.). It never merges to or from `develop` or
+`main` — leave it alone (don't delete it as stale, don't fold it into the flow).
 
 **Rules:**
 

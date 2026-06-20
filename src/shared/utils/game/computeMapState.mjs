@@ -25,7 +25,7 @@ import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
  * @returns {object} Deep clone of map template with computed state
  */
 export function computeMapState(factionStates, events = []) {
-    const map = JSON.parse(JSON.stringify(mapTemplate));
+    const map = structuredClone(mapTemplate);
 
     // Process campaigns
     for (const campaign of factionStates) {

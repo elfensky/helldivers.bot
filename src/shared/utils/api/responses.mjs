@@ -1,6 +1,19 @@
 import { performanceTime } from '@/shared/utils/time.mjs';
 import { NextResponse } from 'next/server';
 
+const ERROR_MESSAGES = {
+    400: 'Bad Request',
+    401: 'Unauthorized', //idk who you are, but you're not allowed
+    403: 'Forbidden', //I know who you are, but still not allowed
+    404: 'Not found',
+    405: 'Method not allowed',
+    418: "I'm a teapot",
+    429: 'Too many requests',
+    500: 'Internal server error',
+    502: 'Bad gateway', //if can't reach official api
+    503: 'Service unavailable',
+};
+
 /**
  * Returns a standardized JSON error response using NextResponse.
  *
@@ -13,51 +26,9 @@ import { NextResponse } from 'next/server';
 export function errorResponse(code, start, error = null) {
     if (code < 400 || code > 599) throw new Error('Invalid error code');
 
-    let status = code;
-    let message = '';
-
-    switch (code) {
-        case 400:
-            message = 'Bad Request';
-            break;
-        case 401:
-            message = 'Unauthorized'; //idk who you are, but you're not allowed
-            break;
-        case 403:
-            message = 'Forbidden'; //I know who you are, but still not allowed
-            break;
-        case 404:
-            message = 'Not found';
-            break;
-        case 405:
-            message = 'Method not allowed';
-            break;
-        case 418:
-            message = "I'm a teapot";
-            break;
-        case 429:
-            message = 'Too many requests';
-            break;
-        case 451:
-            message = 'Unavailable for legal reasons';
-            break;
-        case 500:
-            message = 'Internal server error';
-            break;
-        case 501:
-            message = 'Not implemented';
-            break;
-        case 502:
-            message = 'Bad gateway'; //if can't reach official api
-            break;
-        case 503:
-            message = 'Service unavailable';
-            break;
-        default:
-            message = 'Unknown error';
-            status = 500;
-            break;
-    }
+    const known = ERROR_MESSAGES[code];
+    const message = known ?? 'Unknown error';
+    const status = known === undefined ? 500 : code; // unknown error code -> 500
 
     const body = JSON.stringify(
         {
@@ -74,6 +45,13 @@ export function errorResponse(code, start, error = null) {
     });
 }
 
+const SUCCESS_MESSAGES = {
+    200: 'OK',
+    201: 'Created',
+    202: 'Accepted',
+    204: 'No content',
+};
+
 /**
  * Returns a standardized JSON success response using NextResponse.
  *
@@ -89,30 +67,9 @@ export function errorResponse(code, start, error = null) {
 export function successResponse(code, start, data, opts = {}) {
     if (code < 200 || code > 299) throw new Error('Invalid success code');
 
-    let status = code;
-    let message = '';
-
-    switch (code) {
-        case 200:
-            message = 'OK';
-            break;
-        case 201:
-            message = 'Created';
-            break;
-        case 202:
-            message = 'Accepted';
-            break;
-        case 203:
-            message = 'Non-authoritative information';
-            break;
-        case 204:
-            message = 'No content';
-            break;
-        default:
-            message = 'Unknown';
-            status = 200;
-            break;
-    }
+    const known = SUCCESS_MESSAGES[code];
+    const message = known ?? 'Unknown';
+    const status = known === undefined ? 200 : code; // unknown success code -> 200
 
     const body = JSON.stringify(
         {

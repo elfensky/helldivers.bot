@@ -9,15 +9,9 @@
 export function groupEventsByDay(events, { sortOrder = 'desc' } = {}) {
     if (!events || events.length === 0) return [];
 
-    const groups = new Map();
-
-    for (const event of events) {
-        const date = new Date(event.start_time * 1000).toISOString().slice(0, 10);
-        if (!groups.has(date)) {
-            groups.set(date, []);
-        }
-        groups.get(date).push(event);
-    }
+    const groups = Map.groupBy(events, (event) =>
+        new Date(event.start_time * 1000).toISOString().slice(0, 10),
+    );
 
     const cmpDate =
         sortOrder === 'asc' ?
