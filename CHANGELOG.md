@@ -11,6 +11,19 @@
   `computeMapState` with native `structuredClone`.
 - Merge the mirror-image `EventLogSortToggle` and `CascadeLogSortToggle` into a
   single `SortToggle` component.
+- Remove five more dead exports surfaced by the over-engineering audit and their
+  tests: `addOrdinalSuffix`, `getActiveEvents`, `isDismissedAtStatus`, the registry
+  `size()` method, and the `adminGetUserApiKeys` server action. (#427)
+- Collapse the `errorResponse`/`successResponse` status `switch` blocks into
+  `ERROR_MESSAGES`/`SUCCESS_MESSAGES` lookup maps. (#429)
+- Replace the hand-rolled grouping loops in `groupEventsByDay` and
+  `groupCascadesBySeason` with native `Map.groupBy`. (#428)
+- Dedup `useEventLogSort` and `useCascadeLogSort` onto one generic `useToggleSort`
+  hook. (#430)
+- Inline `usePreferenceSnapshot` into its only consumer, `PreferenceTracker`. (#431)
+- Clear one of two React Compiler skip warnings in `Hijackable` by destructuring the
+  cycle hook so `exhaustive-deps` passes; the remaining disable is documented as an
+  intentional run-once registration. (#413)
 
 ## 0.52.4
 
