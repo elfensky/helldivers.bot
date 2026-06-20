@@ -175,35 +175,6 @@ export async function toggleUserBan(_, formData) {
 
 // ─── Admin-only API key management ──────────────────────────────────
 
-export async function adminGetUserApiKeys(_, formData) {
-    const start = performance.now();
-    const { error: authError } = await requireAdmin();
-    if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
-
-    const userId = formData.get('userId');
-    const schema = z.string().min(1);
-    const check = schema.safeParse(userId);
-    if (!check.success) {
-        return { errors: { userId: 'Invalid user ID' }, time: performanceTime(start) };
-    }
-
-    const { data: keys, error } = await tryCatch(
-        db.ApiKey.findMany({
-            where: { userId: check.data },
-            select: {
-                id: true,
-                description: true,
-                visible: true,
-                createdAt: true,
-                enabled: true,
-            },
-        }),
-    );
-    if (error) throw error;
-
-    return { data: keys, time: performanceTime(start) };
-}
-
 export async function adminRevokeApiKey(formData) {
     const start = performance.now();
     const { error: authError } = await requireAdmin();

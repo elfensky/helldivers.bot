@@ -54,17 +54,16 @@ export default function Hijackable({
 
     const ctx = useMinistryContext();
     const id = useId();
-    const cycle = useMinistryHijackCycle();
+    const { phase, trigger } = useMinistryHijackCycle();
     const [activeAlt, setActiveAlt] = useState(null);
     const [flickerState, setFlickerState] = useState(null); // { charIndex, glyph }
 
     const onHijack = useCallback(
         (alt) => {
             setActiveAlt(alt);
-            cycle.trigger();
+            trigger();
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [cycle.trigger],
+        [trigger],
     );
 
     const flickerTimerRef = useRef(null);
@@ -78,15 +77,15 @@ export default function Hijackable({
 
     // Reset overlay when the cycle returns to idle.
     useEffect(() => {
-        if (cycle.phase === 'idle') setActiveAlt(null);
-    }, [cycle.phase]);
+        if (phase === 'idle') setActiveAlt(null);
+    }, [phase]);
 
     // Mirror local idle state back to the registry so the ambient
     // flicker scheduler can skip mid-hijack elements.
     useEffect(() => {
         if (!ctx) return;
-        ctx.setIdle(id, cycle.phase === 'idle');
-    }, [ctx, id, cycle.phase]);
+        ctx.setIdle(id, phase === 'idle');
+    }, [ctx, id, phase]);
 
     // Register on mount, unregister on unmount.
     useEffect(() => {
@@ -103,11 +102,11 @@ export default function Hijackable({
             ctx.unregister(id);
             clearTimeout(flickerTimerRef.current);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id]); // intentionally NOT in deps: text/altText changes don't re-register
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional run-once registration: id (useId) is stable per mount; the other deps (text/altText/category/scope/onHijack/onFlicker/ctx) are deliberately omitted so the descriptor registers on mount and unregisters on unmount only. Listing them would re-register on every warTone flip (ctx re-creates) and on every content change — unwanted registry churn. React Compiler skips this component as a result.
+    }, [id]);
 
     const Tag = as;
-    const isHijacking = cycle.phase !== 'idle' && activeAlt;
+    const isHijacking = phase !== 'idle' && activeAlt;
 
     // Idle path: just the truth.
     if (!isHijacking && !flickerState) {
@@ -129,7 +128,7 @@ export default function Hijackable({
                         altText={activeAlt}
                         className={className}
                         altClassName={altClassName}
-                        phase={cycle.phase}
+                        phase={phase}
                         takeoverMs={TAKEOVER_MS}
                         restoreMs={RESTORE_MS}
                     />

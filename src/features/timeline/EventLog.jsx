@@ -3,7 +3,7 @@
 import { Fragment } from 'react';
 import './EventLog.css';
 import EventLogCard from '@/features/timeline/EventLogCard';
-import EventLogSortToggle from '@/features/timeline/EventLogSortToggle';
+import SortToggle from '@/features/timeline/SortToggle';
 import { useEventLogSort } from '@/features/timeline/useEventLogSort.mjs';
 import { groupEventsByDay } from '@/features/timeline/groupEventsByDay.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
@@ -51,9 +51,15 @@ export default function EventLog({
             <div className="event-log-content">
                 <div className="event-log-header">
                     <h2 className="event-log-heading">{title}</h2>
-                    <EventLogSortToggle
-                        sortOrder={sortOrder}
+                    <SortToggle
+                        descending={sortOrder === 'desc'}
                         onToggle={toggleSortOrder}
+                        label={
+                            sortOrder === 'desc' ? 'Sort oldest first' : (
+                                'Sort newest first'
+                            )
+                        }
+                        umamiEvent="event-log-sort-toggle"
                     />
                 </div>
 

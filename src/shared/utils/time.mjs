@@ -36,49 +36,4 @@ export function timeSince(date) {
         return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
     }
 }
-
-export function formatDate(date) {
-    const pad = (n) => n.toString().padStart(2, '0');
-    return (
-        date.getFullYear() +
-        '-' +
-        pad(date.getMonth() + 1) +
-        '-' +
-        pad(date.getDate()) +
-        ' ' +
-        pad(date.getHours()) +
-        ':' +
-        pad(date.getMinutes()) +
-        ':' +
-        pad(date.getSeconds())
-    );
-}
-
-export function elapsedSeconds(past) {
-    const now = new Date();
-    const elapsed = now - past;
-    return Math.floor(elapsed / 1000);
-}
-
-export function elapsedMilliseconds(past) {
-    const now = new Date();
-    const elapsed = now - past;
-    return elapsed;
-}
-
-export function elapsedSeasonTime(season_duration) {
-    const days = Math.floor(season_duration / 86400);
-    const hours = Math.floor((season_duration % 86400) / 3600);
-    const minutes = Math.floor((season_duration % 3600) / 60);
-    const seconds = season_duration % 60;
-
-    const time = {
-        days,
-        hours,
-        minutes,
-        seconds,
-    };
-    return time;
-}
-
 //endregion

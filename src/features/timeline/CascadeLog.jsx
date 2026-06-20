@@ -3,7 +3,7 @@
 import { Fragment } from 'react';
 import './EventLog.css';
 import CascadeLogCard from '@/features/timeline/CascadeLogCard';
-import CascadeLogSortToggle from '@/features/timeline/CascadeLogSortToggle';
+import SortToggle from '@/features/timeline/SortToggle';
 import { useCascadeLogSort } from '@/features/timeline/useCascadeLogSort.mjs';
 import { groupCascadesBySeason } from '@/features/timeline/groupCascadesBySeason.mjs';
 
@@ -34,9 +34,15 @@ export default function CascadeLog({
             <div className="event-log-content">
                 <div className="event-log-header">
                     <h2 className="event-log-heading">{title}</h2>
-                    <CascadeLogSortToggle
-                        sortOrder={sortOrder}
+                    <SortToggle
+                        descending={sortOrder === 'worst'}
                         onToggle={toggleSortOrder}
+                        label={
+                            sortOrder === 'worst' ? 'Sort recent first' : (
+                                'Sort worst first'
+                            )
+                        }
+                        umamiEvent="cascade-log-sort-toggle"
                     />
                 </div>
                 {lede && <p className="event-log-lede">{lede}</p>}

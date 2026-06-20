@@ -58,9 +58,5 @@ export function createRegistry() {
         return eligible[Math.min(idx, eligible.length - 1)];
     }
 
-    function size() {
-        return entries.size;
-    }
-
-    return { register, unregister, setIdle, forEachEligible, pickEligible, size };
+    return { register, unregister, setIdle, forEachEligible, pickEligible };
 }

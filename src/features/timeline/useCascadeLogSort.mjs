@@ -1,6 +1,5 @@
 'use client';
-import { useCallback } from 'react';
-import { usePersistedState } from '@/shared/hooks/usePersistedState.mjs';
+import { useToggleSort } from '@/shared/hooks/useToggleSort.mjs';
 import {
     CASCADE_SORT_ORDER_KEY,
     CASCADE_SORT_ORDER_DEFAULT,
@@ -13,9 +12,5 @@ import {
  * @param {'worst'|'recent'} [initial] - Optional initial value
  */
 export function useCascadeLogSort(initial = CASCADE_SORT_ORDER_DEFAULT) {
-    const [sortOrder, setSortOrder] = usePersistedState(CASCADE_SORT_ORDER_KEY, initial);
-    const toggleSortOrder = useCallback(() => {
-        setSortOrder(sortOrder === 'worst' ? 'recent' : 'worst');
-    }, [sortOrder, setSortOrder]);
-    return [sortOrder, toggleSortOrder];
+    return useToggleSort(CASCADE_SORT_ORDER_KEY, initial, ['worst', 'recent']);
 }
