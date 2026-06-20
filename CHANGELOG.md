@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.52.6
+
+### Security
+
+- Resolve five transitive-dependency advisories via `npm audit fix` (semver-compatible,
+  lockfile-only — `package.json` unchanged): `undici` (high, multiple CVEs), `form-data`
+  (high, CRLF injection), `dompurify` (moderate, XSS bypasses), `js-yaml` (moderate, DoS),
+  and `@babel/core` (low, arbitrary file read). `npm audit` now reports 0 vulnerabilities.
+
 ## 0.52.5
 
 ### Changes
