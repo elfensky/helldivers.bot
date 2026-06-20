@@ -24,6 +24,8 @@
 - Clear one of two React Compiler skip warnings in `Hijackable` by destructuring the
   cycle hook so `exhaustive-deps` passes; the remaining disable is documented as an
   intentional run-once registration. (#413)
+- Add unit tests for three previously-untested pure-logic modules: `computePulseDelays`,
+  the `sortOrder` validators, and the `getKillsTrend` DB query. (#404)
 
 ## 0.52.4
 
