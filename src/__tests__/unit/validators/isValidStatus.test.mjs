@@ -62,10 +62,18 @@ const makeStatistics = (overrides = {}) => ({
 const makeValidStatus = (overrides = {}) => ({
     time: 1700000000,
     error_code: 0,
-    campaign_status: [makeCampaignStatus()],
+    campaign_status: [
+        makeCampaignStatus({ introduction_order: 0 }),
+        makeCampaignStatus({ introduction_order: 1 }),
+        makeCampaignStatus({ introduction_order: 2 }),
+    ],
     defend_event: makeDefendEvent(),
     attack_events: [makeAttackEvent()],
-    statistics: [makeStatistics()],
+    statistics: [
+        makeStatistics({ enemy: 0 }),
+        makeStatistics({ enemy: 1 }),
+        makeStatistics({ enemy: 2 }),
+    ],
     ...overrides,
 });
 
@@ -95,8 +103,50 @@ describe('isValidStatus', () => {
         expect(result.success).toBe(false);
     });
 
+    test('rejects campaign_status with fewer than 3 factions', () => {
+        const result = isValidStatus.safeParse({
+            ...makeValidStatus(),
+            campaign_status: [makeCampaignStatus()],
+        });
+        expect(result.success).toBe(false);
+    });
+
+    test('rejects campaign_status with more than 3 factions', () => {
+        const result = isValidStatus.safeParse({
+            ...makeValidStatus(),
+            campaign_status: [
+                makeCampaignStatus({ introduction_order: 0 }),
+                makeCampaignStatus({ introduction_order: 1 }),
+                makeCampaignStatus({ introduction_order: 2 }),
+                makeCampaignStatus({ introduction_order: 3 }),
+            ],
+        });
+        expect(result.success).toBe(false);
+    });
+
     test('rejects empty statistics', () => {
         const result = isValidStatus.safeParse(makeValidStatus({ statistics: [] }));
+        expect(result.success).toBe(false);
+    });
+
+    test('rejects statistics with fewer than 3 factions', () => {
+        const result = isValidStatus.safeParse({
+            ...makeValidStatus(),
+            statistics: [makeStatistics({ enemy: 0 })],
+        });
+        expect(result.success).toBe(false);
+    });
+
+    test('rejects statistics with more than 3 factions', () => {
+        const result = isValidStatus.safeParse({
+            ...makeValidStatus(),
+            statistics: [
+                makeStatistics({ enemy: 0 }),
+                makeStatistics({ enemy: 1 }),
+                makeStatistics({ enemy: 2 }),
+                makeStatistics({ enemy: 3 }),
+            ],
+        });
         expect(result.success).toBe(false);
     });
 
@@ -142,7 +192,11 @@ describe('isValidStatus', () => {
             for (const status of ['active', 'defeated', 'hidden']) {
                 const result = isValidStatus.safeParse(
                     makeValidStatus({
-                        campaign_status: [makeCampaignStatus({ status })],
+                        campaign_status: [
+                            makeCampaignStatus({ introduction_order: 0, status }),
+                            makeCampaignStatus({ introduction_order: 1, status }),
+                            makeCampaignStatus({ introduction_order: 2, status }),
+                        ],
                     }),
                 );
                 expect(result.success).toBe(true);
