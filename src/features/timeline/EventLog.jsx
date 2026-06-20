@@ -44,7 +44,10 @@ export default function EventLog({
     layout = 'grid',
 }) {
     const [sortOrder, toggleSortOrder] = useEventLogSort(initialSortOrder);
-    const groups = groupEventsByDay(events ?? [], { sortOrder });
+    const groups = groupEventsByDay(events ?? [], {
+        // useEventLogSort constrains sortOrder to 'desc' | 'asc'
+        sortOrder: /** @type {'desc' | 'asc'} */ (sortOrder),
+    });
 
     return (
         <section id={id} className="event-log-section">

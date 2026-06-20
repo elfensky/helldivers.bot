@@ -22,6 +22,7 @@ import { eventKey } from '@/shared/utils/game/eventKey.mjs';
  */
 export function useScrollEvent(events) {
     const [selectedEvent, setSelectedEvent] = useState(null);
+    /** @type {import('react').RefObject<HTMLDivElement | null>} */
     const railRef = useRef(null);
 
     // Build a lookup map: eventKey string → event object
@@ -57,7 +58,10 @@ export function useScrollEvent(events) {
             const ratio = topAnchor + bottomProximity * driftRange;
             const anchor = headerHeight + visibleHeight * ratio;
 
-            const cards = rail.querySelectorAll('[data-event-key]');
+            const cards = /** @type {NodeListOf<HTMLElement>} */ (
+                rail.querySelectorAll('[data-event-key]')
+            );
+            /** @type {HTMLElement | null} */
             let best = null;
             let bestDist = Infinity;
             for (const card of cards) {

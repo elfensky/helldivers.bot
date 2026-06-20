@@ -74,7 +74,7 @@ export default async function StatsPage() {
 
             <CascadeLog
                 cascades={cascades}
-                lede={lede}
+                lede={lede ?? undefined}
                 initialSortOrder={initialCascadeSort}
             />
         </main>

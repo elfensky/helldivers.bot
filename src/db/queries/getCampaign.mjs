@@ -7,6 +7,7 @@ import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
 /**
  * Fetch the campaign data for a season (or the latest season if null).
  *
+ * @param {number | null} [season] - Season number, or null/omitted for the latest season.
  * @returns {Promise<object | null>} Campaign data, or null if no season exists
  *
  * Returns the public getCampaign shape consumed by archives and rebroadcast:
@@ -28,7 +29,9 @@ import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
  *                 bucket for that faction, or null if still hidden) — together
  *                 they give per-faction deployment duration.
  */
-export const getCampaign = cache(async function getCampaign(season = null) {
+export const getCampaign = cache(async function getCampaign(
+    /** @type {number | null} */ season = null,
+) {
     'use server';
 
     // Step 1: Find the target season row.

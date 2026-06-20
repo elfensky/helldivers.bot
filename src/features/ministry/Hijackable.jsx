@@ -34,7 +34,7 @@ const VALID_CATEGORIES = new Set(['heading', 'value', 'body', 'footer']);
  * @param {'global' | 'archives'} [props.scope='global'] - scope for interference rules
  * @param {string=} props.className - class name for wrapper element
  * @param {string=} props.altClassName - class name for propaganda overlay
- * @param {string} [props.as='span'] - wrapper tag
+ * @param {import('react').ElementType} [props.as='span'] - wrapper tag
  */
 export default function Hijackable({
     text,
@@ -55,8 +55,10 @@ export default function Hijackable({
     const ctx = useMinistryContext();
     const id = useId();
     const { phase, trigger } = useMinistryHijackCycle();
-    const [activeAlt, setActiveAlt] = useState(null);
-    const [flickerState, setFlickerState] = useState(null); // { charIndex, glyph }
+    const [activeAlt, setActiveAlt] = useState(/** @type {string | null} */ (null));
+    const [flickerState, setFlickerState] = useState(
+        /** @type {{ charIndex: number, glyph: string } | null} */ (null),
+    );
 
     const onHijack = useCallback(
         (alt) => {
@@ -66,9 +68,10 @@ export default function Hijackable({
         [trigger],
     );
 
+    /** @type {import('react').MutableRefObject<ReturnType<typeof setTimeout> | null>} */
     const flickerTimerRef = useRef(null);
     const onFlicker = useCallback((charIndex, durationMs) => {
-        clearTimeout(flickerTimerRef.current);
+        if (flickerTimerRef.current) clearTimeout(flickerTimerRef.current);
         // Capture the glyph at flicker-start so it stays stable for the
         // duration even if React re-renders the component for unrelated reasons.
         setFlickerState({ charIndex, glyph: randomGlyph() });
@@ -100,7 +103,7 @@ export default function Hijackable({
         });
         return () => {
             ctx.unregister(id);
-            clearTimeout(flickerTimerRef.current);
+            if (flickerTimerRef.current) clearTimeout(flickerTimerRef.current);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional run-once registration: id (useId) is stable per mount; the other deps (text/altText/category/scope/onHijack/onFlicker/ctx) are deliberately omitted so the descriptor registers on mount and unregisters on unmount only. Listing them would re-register on every warTone flip (ctx re-creates) and on every content change — unwanted registry churn. React Compiler skips this component as a result.
     }, [id]);

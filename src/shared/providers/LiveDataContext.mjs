@@ -2,8 +2,10 @@
 import { createContext, useContext } from 'react';
 
 /** @typedef {import('@/shared/hooks/useLiveData.mjs').LiveStatus} LiveStatus */
+/** @typedef {import('@/shared/hooks/useLiveData.mjs').LiveStore} LiveStore */
 
-export const LiveDataContext = createContext(null);
+/** @type {import('react').Context<LiveStore | null>} */
+export const LiveDataContext = createContext(/** @type {LiveStore | null} */ (null));
 
 /**
  * Read live campaign data from the nearest LiveDataProvider.

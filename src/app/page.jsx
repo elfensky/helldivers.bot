@@ -87,7 +87,14 @@ export default async function HomePage() {
                 initialRegionsView={initialRegionsView}
                 initialSortOrder={initialSortOrder}
                 playersAvg24h={playersRes.data ?? null}
-                killsTrend={killsRes.data ?? null}
+                // getKillsTrend builds its result with dynamic keys, so TS
+                // infers the bare `{}` shape; the runtime value is the
+                // documented KillsTrend map.
+                killsTrend={
+                    /** @type {import('@/features/stats/StatGrid').KillsTrend | null} */ (
+                        killsRes.data ?? null
+                    )
+                }
             />
         </>
     );

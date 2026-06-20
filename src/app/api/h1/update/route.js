@@ -32,6 +32,11 @@ export const WORKER_STARTUP_HEADER = 'x-worker-startup';
 // via the /archives refresh button.
 let lastSeasonObserved = null;
 
+/**
+ * @param {number} start - performance.now() timestamp when the poll began.
+ * @param {boolean} isStartup - True on the worker's first poll of a session.
+ * @param {string | null} [errorMsg] - Last error message to record, if any.
+ */
 async function writeHeartbeat(start, isStartup, errorMsg = null) {
     const now = new Date();
     const { error } = await tryCatch(
@@ -61,7 +66,10 @@ export async function GET(request) {
     const header = request.headers.get('authorization');
     const key = header?.startsWith('Bearer ') ? header.slice(7) : null;
     if (!key) return errorResponse(401, start);
-    const secret = process.env.UPDATE_KEY;
+    // UPDATE_KEY is a required env var (see .example.env / CLAUDE.md); treat it
+    // as a guaranteed string. If it were ever unset the hash comparison below
+    // would throw and the request would 500 — same as today.
+    const secret = /** @type {string} */ (process.env.UPDATE_KEY);
     const actual = crypto.createHash('sha256').update(key).digest();
     const expected = crypto.createHash('sha256').update(secret).digest();
     if (!crypto.timingSafeEqual(actual, expected)) return errorResponse(401, start);

@@ -20,6 +20,14 @@ import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs
  * Everything else (region, action label, points progress, duration pill,
  * faction icon, status styling, JSON-LD) is identical across both modes.
  */
+/**
+ * @param {object} props - Component props.
+ * @param {import('@/features/dashboard/DashboardClient').LiveEvent} props.event - The event to render.
+ * @param {'live' | 'absolute'} [props.timeFormat] - Secondary time line mode (ticking relative vs static absolute).
+ * @param {boolean} [props.isSelected] - Whether the card is highlighted as selected.
+ * @param {import('react').MouseEventHandler} [props.onMouseEnter] - Hover-enter handler.
+ * @param {import('react').MouseEventHandler} [props.onMouseLeave] - Hover-leave handler.
+ */
 export default function EventLogCard({
     event,
     timeFormat,
@@ -42,6 +50,7 @@ export default function EventLogCard({
             className={
                 isSelected ? 'border-l-[4px] border-l-primary !bg-primary-tint' : ''
             }
+            onClick={undefined}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >

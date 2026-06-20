@@ -19,7 +19,7 @@ const formatSectorPct = (v) =>
  *
  * @param {object} campaignData - { points, points_max, status, enemy }
  * @param {object} factionMap - mapState[factionIndex] with sector data (for region names)
- * @returns {{ sector, region, percent, points, pointsMax, event }} | null
+ * @returns {{ sector: number, region: string, percent: number, points: number, pointsMax: number, event: string } | null}
  */
 export function computeFrontier(campaignData, factionMap) {
     if (!campaignData || !factionMap || campaignData.status !== CAMPAIGN_STATUS.ACTIVE)
@@ -79,7 +79,11 @@ function SegmentCell({ seg, factionColor: _factionColor }) {
         return (
             <div
                 className="sector-card-segment sector-card-segment--in-progress"
-                style={{ '--segment-percent': `${pct}%` }}
+                style={
+                    /** @type {React.CSSProperties} */ ({
+                        '--segment-percent': `${pct}%`,
+                    })
+                }
             />
         );
     }
@@ -89,7 +93,11 @@ function SegmentCell({ seg, factionColor: _factionColor }) {
         return (
             <div
                 className="sector-card-segment sector-card-segment--active"
-                style={{ '--segment-percent': `${pct}%` }}
+                style={
+                    /** @type {React.CSSProperties} */ ({
+                        '--segment-percent': `${pct}%`,
+                    })
+                }
             />
         );
     }
@@ -150,10 +158,10 @@ export default function EventCard({
     const isCampaign = view === 'campaign';
     const { captured } = isCampaign ? countCapturedRegions(factionMap) : { captured: 0 };
 
-    const cardStyle = {
+    const cardStyle = /** @type {React.CSSProperties} */ ({
         '--accent-color': color,
         '--faction-color': color,
-    };
+    });
     if (pulseDelay != null) cardStyle['--pulse-delay'] = `${pulseDelay}s`;
 
     return (

@@ -8,5 +8,6 @@ export default function ArchiveMap({ data, selectedEvent }) {
         [selectedEvent, data],
     );
 
-    return <Galaxy mapState={mapState} />;
+    // Archives have no live pulse animation, so no per-sector delays.
+    return <Galaxy mapState={mapState} pulseDelays={undefined} />;
 }

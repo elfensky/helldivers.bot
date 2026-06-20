@@ -82,11 +82,13 @@ export default function GlitchText({
     restoreMs = 800,
 }) {
     const [chars, setChars] = useState(() => settled(text));
+    /** @type {import('react').MutableRefObject<ReturnType<typeof setInterval> | null>} */
     const intervalRef = useRef(null);
+    /** @type {import('react').MutableRefObject<ReturnType<typeof setTimeout>[]>} */
     const timersRef = useRef([]);
 
     const clearTimers = useCallback(() => {
-        clearInterval(intervalRef.current);
+        if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = null;
         timersRef.current.forEach(clearTimeout);
         timersRef.current = [];

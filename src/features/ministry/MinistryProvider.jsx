@@ -82,13 +82,19 @@ export default function MinistryProvider({ warTone, children }) {
     // false if no eligible descriptor matched or no propaganda string is available
     // for the current warTone.
     const forceHijack = useCallback(
-        (predicate = () => true) => {
+        /**
+         * @param {(text: string) => boolean} [predicate] - Filters which descriptors are eligible; defaults to matching any.
+         */
+        (predicate) => {
+            const match = predicate ?? (() => true);
             const reg = registryRef.current;
             if (!reg) return false;
+            // No warTone → no propaganda to draw from; nothing to hijack.
+            if (!warTone) return false;
             let fired = false;
             reg.forEachEligible({ pathname: pathnameRef.current ?? '/' }, (id, entry) => {
                 if (fired) return;
-                if (!predicate(entry.text)) return;
+                if (!match(entry.text)) return;
                 const alt =
                     entry.altText ?? pickAlt(entry.category, warTone, Math.random);
                 if (!alt) return;
@@ -143,7 +149,11 @@ export default function MinistryProvider({ warTone, children }) {
                     return;
                 }
                 const { id, entry } = picked;
-                const altText = entry.altText ?? pickAlt(entry.category, warTone, rng);
+                // `enabled` (the effect's gate) already implies warTone !== null,
+                // but TS can't carry that across the closure — narrow explicitly.
+                const altText =
+                    entry.altText ??
+                    (warTone ? pickAlt(entry.category, warTone, rng) : undefined);
                 if (!altText) {
                     scheduleNext();
                     return;

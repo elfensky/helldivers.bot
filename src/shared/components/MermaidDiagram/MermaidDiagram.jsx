@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useTrack } from '@/shared/hooks/useTrack.mjs';
-import { useMermaidRender } from './useMermaidRender';
+import { useMermaidRender } from './useMermaidRender.mjs';
 import DetailPanel from './DetailPanel';
 import './MermaidDiagram.css';
 
@@ -151,6 +151,7 @@ export default function MermaidDiagram({
 }) {
     const [activeView, setActiveView] = useState('all');
     const [selectedNode, setSelectedNode] = useState(null);
+    /** @type {import('react').RefObject<HTMLDivElement | null>} */
     const containerRef = useRef(null);
     const track = useTrack();
 
@@ -179,8 +180,11 @@ export default function MermaidDiagram({
         svgInjectedRef.current = svgHtml;
 
         injectSvg(containerRef.current, svgHtml);
-        // Set up accessibility on nodes that have details
-        const nodes = containerRef.current.querySelectorAll('.node');
+        // Set up accessibility on nodes that have details.
+        // Mermaid renders nodes as SVG <g> elements (have .style).
+        const nodes = /** @type {NodeListOf<SVGGElement>} */ (
+            containerRef.current.querySelectorAll('.node')
+        );
         nodes.forEach((node) => {
             const nodeId = extractNodeId(node);
             if (config.details[nodeId]) {

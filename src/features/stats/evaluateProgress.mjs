@@ -37,6 +37,7 @@ export function evaluateProgress(event) {
     const requiredRate = remainingTime > 0 ? remainingPoints / remainingTime : Infinity;
 
     const buffer = expectedPoints * 0.1;
+    /** @type {'ahead' | 'behind' | 'on_track'} */
     let status;
     if (event.points > expectedPoints + buffer) {
         status = 'ahead';

@@ -1,4 +1,8 @@
 //region Performance
+/**
+ * @param {number} start - The starting time value (from `performance.now()`).
+ * @returns {number} Elapsed time in milliseconds.
+ */
 export function performanceTime(start) {
     return performance.now() - start;
 }
@@ -20,10 +24,14 @@ export function roundedPerformanceTime(start) {
 //endregion
 
 //region userTime
+/**
+ * @param {Date|string|number} date - A date value parseable by `new Date()`.
+ * @returns {string} A human-readable relative time string (e.g. "5 minutes ago").
+ */
 export function timeSince(date) {
     const now = new Date();
     const then = new Date(date);
-    const diffMs = now - then;
+    const diffMs = now.getTime() - then.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);

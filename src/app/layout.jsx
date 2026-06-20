@@ -74,7 +74,10 @@ export default async function RootLayout({ children }) {
     // Auth-disabled deploys (BETTER_AUTH_SECRET unset) export `auth === null`
     // so the optional chain bypasses the cookie read entirely.
     const session = auth ? await auth.api.getSession({ headers: await headers() }) : null;
-    const isAdmin = session?.user?.role === ROLE.ADMIN;
+    // `role` is a custom BetterAuth additionalField (and a real DB column) not
+    // reflected in the inferred session-user type — see auth.js / prisma schema.
+    const sessionUser = /** @type {{ role?: string } | undefined} */ (session?.user);
+    const isAdmin = sessionUser?.role === ROLE.ADMIN;
 
     return (
         <html

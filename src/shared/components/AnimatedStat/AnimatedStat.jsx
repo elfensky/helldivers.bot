@@ -37,6 +37,14 @@ function prefersReducedMotion() {
  *
  * Respects `prefers-reduced-motion`: when set, renders the formatted value
  * as plain text and never instantiates the slot counter.
+ *
+ * @param {object} props - Component props.
+ * @param {string | number | null | undefined} props.value - The value to display.
+ * @param {(n: string | number | null | undefined) => string} [props.format] - Formatter applied to `value`.
+ * @param {'bottom-up' | 'top-down'} [props.direction] - Roll direction override; defaults to the sign of the change.
+ * @param {number} [props.duration] - Animation duration in seconds; omit to use the library default.
+ * @param {boolean} [props.sequentialAnimationMode] - Animate digits sequentially.
+ * @param {boolean} [props.useMonospaceWidth] - Render digits at a fixed monospace width.
  */
 export default function AnimatedStat({
     value,

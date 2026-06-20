@@ -51,6 +51,13 @@ function UserRow({ user, adminCount, currentUserId }) {
 
     const providers = user.accounts?.map((a) => a.providerId) ?? [];
 
+    // `title` is forwarded to the underlying <button> via Button's {...rest},
+    // but Button's JSDoc doesn't declare it — cast so the prop is accepted.
+    /** @type {{ title?: string }} */
+    const banButtonProps = {
+        title: isLastAdmin ? 'Cannot ban the last admin' : undefined,
+    };
+
     return (
         <tr
             className={`border-t border-ghost/30 ${isBanned ? 'opacity-50' : ''} hover:bg-surface-2`}
@@ -97,7 +104,7 @@ function UserRow({ user, adminCount, currentUserId }) {
                     <select
                         name="newRole"
                         defaultValue={user.role}
-                        onChange={(e) => e.target.form.requestSubmit()}
+                        onChange={(e) => e.target.form?.requestSubmit()}
                         disabled={roleDisabled}
                         title={
                             isSelf ? 'Cannot change your own role'
@@ -129,7 +136,7 @@ function UserRow({ user, adminCount, currentUserId }) {
                             type="submit"
                             variant={isBanned ? 'success' : 'danger'}
                             disabled={banDisabled}
-                            title={isLastAdmin ? 'Cannot ban the last admin' : undefined}
+                            {...banButtonProps}
                         >
                             {isBanned ? 'Unban' : 'Ban'}
                         </Button>

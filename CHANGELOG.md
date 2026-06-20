@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.52.9
+
+### Fixes
+
+- **Make the typecheck gate real.** The `jsconfig.json` `include` glob used brace
+  expansion (`src/**/*.{js,jsx,mjs}`), which TypeScript's `tsc` silently ignores —
+  so `npm run typecheck` was checking almost nothing under `src/` and passed
+  trivially in both local and CI. Fixing the glob to explicit patterns makes
+  `checkJs` actually cover the codebase, which surfaced 1023 latent errors.
+
+### Changes
+
+- Adopt a pragmatic checkJs policy: `noImplicitAny: false` while keeping
+  `strict`/`strictNullChecks`. Typecheck still catches real null bugs and
+  type mismatches, but doesn't demand an explicit annotation on every prop/param.
+  This narrowed the surfaced set to 249, all of which are now fixed across ~65
+  files (JSDoc annotations, null-narrowing, correct object shapes) with no runtime
+  behavior change. Notable: `Object.freeze(EVENT_TYPE)` to narrow the
+  `'defend'`/`'attack'` literals, `Button` typed for `...rest` DOM passthrough.
+- Harden engineering health: `initializeEnv` now requires `AUTH_GOOGLE_ID/SECRET`
+  when auth is enabled; `db.js` fails fast on a missing `POSTGRES_URL`;
+  `isValidStatus` requires exactly 3 factions; `.example.env` drops the unused
+  `POSTGRES_SSL` toggle and documents `PORT`/`DEPLOY_ENV`; `test:e2e` added as a
+  smoke-suite alias. New tests cover the db singleton, package scripts,
+  `.example.env`, and the typecheck include scope.
+
 ## 0.52.8
 
 ### Changes

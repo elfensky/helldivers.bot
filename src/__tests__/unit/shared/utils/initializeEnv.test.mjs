@@ -14,6 +14,8 @@ const ALL_ENV_VARS = {
     AUTH_DISCORD_SECRET: 'test-discord-secret',
     AUTH_GITHUB_ID: 'test-github-id',
     AUTH_GITHUB_SECRET: 'test-github-secret',
+    AUTH_GOOGLE_ID: 'test-google-id',
+    AUTH_GOOGLE_SECRET: 'test-google-secret',
 };
 
 const CORE_ENV_VARS = {
@@ -66,6 +68,8 @@ describe('initializeEnvironmentVariables', () => {
         'AUTH_DISCORD_SECRET',
         'AUTH_GITHUB_ID',
         'AUTH_GITHUB_SECRET',
+        'AUTH_GOOGLE_ID',
+        'AUTH_GOOGLE_SECRET',
     ])(
         'throws when BETTER_AUTH_SECRET is set but %s is missing (partial auth config)',
         async (envVar) => {

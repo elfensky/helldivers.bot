@@ -22,7 +22,10 @@ export default async function ProfileLayout({ children }) {
         redirect('/sign-in');
     }
 
-    if (session.user.banned) {
+    // `banned` is a real DB column on the user (see prisma schema) not
+    // reflected in the inferred session-user type.
+    const user = /** @type {{ banned?: boolean }} */ (session.user);
+    if (user.banned) {
         await auth.api.revokeSessions({ headers: await headers() });
         redirect('/');
     }

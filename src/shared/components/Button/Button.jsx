@@ -20,6 +20,16 @@ const SIZE = {
     lg: 'px-4 py-2 text-body font-semibold',
 };
 
+/**
+ * Native `<button>` props (so `...rest` passthrough like `title`, `aria-*`,
+ * `data-umami-event` type-checks) plus our three custom props.
+ *
+ * @param {import('react').ComponentPropsWithoutRef<'button'> & {
+ *   variant?: string,
+ *   size?: string,
+ *   active?: boolean,
+ * }} props - Native button props plus `variant`, `size`, and `active`.
+ */
 export default function Button({
     variant = 'ghost',
     size = 'sm',

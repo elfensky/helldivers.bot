@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.52.8",
+    "version": "0.52.9",
     "private": true,
     "type": "module",
     "scripts": {
@@ -14,6 +14,7 @@
         "test": "vitest run",
         "test:unit": "vitest run",
         "test:coverage": "vitest run --coverage",
+        "test:e2e": "vitest run --config vitest.smoke.config.mjs",
         "test:smoke": "vitest run --config vitest.smoke.config.mjs",
         "test:all": "vitest run && vitest run --config vitest.smoke.config.mjs",
         "update:safe": "npx npm-check-updates --cooldown 7d -u && npm install"

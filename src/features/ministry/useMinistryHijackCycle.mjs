@@ -16,7 +16,10 @@ export const CYCLE_MS = TAKEOVER_MS + HOLD_MS + RESTORE_MS; // 2600
  * @returns {{ phase: 'idle' | 'takeover' | 'hold' | 'restore', trigger: () => void }}
  */
 export function useMinistryHijackCycle() {
-    const [phase, setPhase] = useState('idle');
+    const [phase, setPhase] = useState(
+        /** @type {'idle' | 'takeover' | 'hold' | 'restore'} */ ('idle'),
+    );
+    /** @type {import('react').MutableRefObject<ReturnType<typeof setTimeout>[]>} */
     const timersRef = useRef([]);
 
     const clearTimers = useCallback(() => {

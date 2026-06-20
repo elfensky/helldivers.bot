@@ -8,7 +8,7 @@
  *   const session = await auth.api.getSession({ headers: await headers() });
  *
  * @see {@link module:auth-client} for client-side auth utilities
- * @see /src/app/api/auth/[...all]/route.js for the route handler
+ * @see the route handler at src/app/api/auth/[...all]/route.js
  * @module auth
  */
 import { betterAuth } from 'better-auth';
@@ -30,18 +30,23 @@ export const auth =
                     allowDifferentEmails: true,
                 },
             },
+            // Each provider's OAuth credentials are independently optional env
+            // vars; BetterAuth accepts the `undefined` they read as `string |
+            // undefined` and simply leaves the provider unconfigured. The
+            // provider config type narrows to `string`, so cast to preserve the
+            // runtime value (which may be `undefined`) without widening it.
             socialProviders: {
                 discord: {
-                    clientId: process.env.AUTH_DISCORD_ID,
-                    clientSecret: process.env.AUTH_DISCORD_SECRET,
+                    clientId: /** @type {string} */ (process.env.AUTH_DISCORD_ID),
+                    clientSecret: /** @type {string} */ (process.env.AUTH_DISCORD_SECRET),
                 },
                 github: {
-                    clientId: process.env.AUTH_GITHUB_ID,
-                    clientSecret: process.env.AUTH_GITHUB_SECRET,
+                    clientId: /** @type {string} */ (process.env.AUTH_GITHUB_ID),
+                    clientSecret: /** @type {string} */ (process.env.AUTH_GITHUB_SECRET),
                 },
                 google: {
-                    clientId: process.env.AUTH_GOOGLE_ID,
-                    clientSecret: process.env.AUTH_GOOGLE_SECRET,
+                    clientId: /** @type {string} */ (process.env.AUTH_GOOGLE_ID),
+                    clientSecret: /** @type {string} */ (process.env.AUTH_GOOGLE_SECRET),
                 },
             },
             user: {

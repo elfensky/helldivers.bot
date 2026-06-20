@@ -23,8 +23,19 @@ import { createContext, useContext } from 'react';
  * against registry mutations (the registry lives in a useRef, so Map mutations
  * never invalidate the context value). It re-creates only when warTone, enabled,
  * or forceHijack change.
+ *
+ * @typedef {object} MinistryContextValue
+ * @property {(id: string, descriptor: unknown) => void} register - Register a hijackable descriptor under an id.
+ * @property {(id: string) => void} unregister - Remove a previously registered descriptor by id.
+ * @property {(id: string, isIdle: boolean) => void} setIdle - Mark a descriptor idle (eligible) or busy.
+ * @property {(predicate?: (text: string) => boolean) => boolean} forceHijack - Imperatively hijack the first eligible descriptor; returns whether one fired.
+ * @property {'winning' | 'losing' | null} warTone - Current war tone, or null when undetermined.
+ * @property {boolean} enabled - Whether hijacking is enabled (false under reduced-motion).
  */
-export const MinistryContext = createContext(null);
+
+export const MinistryContext = createContext(
+    /** @type {MinistryContextValue | null} */ (null),
+);
 
 /**
  * Hook to read the Ministry context. Returns null when used outside a
