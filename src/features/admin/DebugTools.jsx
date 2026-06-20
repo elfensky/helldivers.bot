@@ -7,7 +7,9 @@ import { showEventToast } from '@/features/notifications/EventToast';
 import { addDismissedEvent } from '@/features/notifications/dismissedEvents.mjs';
 import Button from '@/shared/components/Button/Button';
 
+/** @type {import('@/shared/enums/events.mjs').EventChangeKind[]} */
 const PUSH_KINDS = ['event_started', 'event_won', 'event_lost'];
+/** @type {import('@/shared/enums/events.mjs').EventChangeKind[]} */
 const TOAST_KINDS = ['event_started', 'event_won', 'event_lost', 'catch_up'];
 const KIND_LABELS = {
     event_started: 'Started',
@@ -16,22 +18,34 @@ const KIND_LABELS = {
     catch_up: 'Active',
 };
 
-/** Pick a random event type, biased by kind. */
+/**
+ * Pick a random event type, biased by kind.
+ * @param {string} kind - The Sonner toast kind being simulated.
+ * @returns {import('@/shared/enums/events.mjs').EventType}
+ */
 function randomType(kind) {
     if (kind === 'event_started' || kind === 'catch_up') return 'defend';
     return Math.random() > 0.5 ? 'defend' : 'attack';
 }
 
-/** Derive event.status from the Sonner toast kind. */
+/**
+ * Derive event.status from the Sonner toast kind.
+ * @param {string} kind - The Sonner toast kind being simulated.
+ * @returns {import('@/shared/enums/events.mjs').EventStatus}
+ */
 function statusForKind(kind) {
     if (kind === 'event_won') return 'success';
     if (kind === 'event_lost') return 'fail';
     return 'active';
 }
 
+/** @typedef {import('@/shared/enums/events.mjs').Event} TestEvent */
+
 /**
  * Build a fresh fake event with random faction, region, and high-range
  * event_id (900M+ range to avoid collision with real HD1 ids 1-100k).
+ * @param {string} kind - The Sonner toast kind being simulated.
+ * @returns {TestEvent}
  */
 function freshTestEvent(kind) {
     const type = randomType(kind);
@@ -44,36 +58,55 @@ function freshTestEvent(kind) {
 const LABEL = 'font-mono text-small text-text-muted uppercase';
 
 export default function DebugTools() {
-    const [pushStatus, setPushStatus] = useState({});
-    const [pushMessage, setPushMessage] = useState(null);
+    /** @type {[Record<string, string>, import('react').Dispatch<import('react').SetStateAction<Record<string, string>>>]} */
+    const [pushStatus, setPushStatus] = useState(
+        /** @type {Record<string, string>} */ ({}),
+    );
+    const [pushMessage, setPushMessage] = useState(
+        /** @type {{ text: string, isError: boolean } | null} */ (null),
+    );
 
     // Currently-simulated test toast event. `Started` creates a fresh one;
     // `Won`/`Lost`/`Active` update its status in place (same event_id)
     // so the tester can exercise the dismissal/status-change flow.
-    const testEventRef = useRef(null);
+    const testEventRef = useRef(/** @type {TestEvent | null} */ (null));
 
     // Parallel ref for the push notification tester. Kept separate from
     // testEventRef so toast and push tests don't cross-contaminate.
     // `Started` creates a fresh event; `Won`/`Lost` re-use the same id
     // so the browser replaces the existing notification via tag dedupe.
-    const testPushEventRef = useRef(null);
+    const testPushEventRef = useRef(/** @type {TestEvent | null} */ (null));
 
-    const buildOrUpdateTestEvent = useCallback((kind) => {
-        const status = statusForKind(kind);
-        if (kind === 'event_started' || !testEventRef.current) {
-            testEventRef.current = freshTestEvent(kind);
-        } else {
-            testEventRef.current = { ...testEventRef.current, status };
-        }
-        return testEventRef.current;
-    }, []);
+    const buildOrUpdateTestEvent = useCallback(
+        /**
+         * @param {string} kind - The Sonner toast kind being simulated.
+         * @returns {TestEvent}
+         */
+        (kind) => {
+            const status = statusForKind(kind);
+            if (kind === 'event_started' || !testEventRef.current) {
+                testEventRef.current = freshTestEvent(kind);
+            } else {
+                testEventRef.current = { ...testEventRef.current, status };
+            }
+            return testEventRef.current;
+        },
+        [],
+    );
 
-    const buildOrUpdatePushEvent = useCallback((kind) => {
-        if (kind === 'event_started' || !testPushEventRef.current) {
-            testPushEventRef.current = freshTestEvent(kind);
-        }
-        return testPushEventRef.current;
-    }, []);
+    const buildOrUpdatePushEvent = useCallback(
+        /**
+         * @param {string} kind - The Sonner toast kind being simulated.
+         * @returns {TestEvent}
+         */
+        (kind) => {
+            if (kind === 'event_started' || !testPushEventRef.current) {
+                testPushEventRef.current = freshTestEvent(kind);
+            }
+            return testPushEventRef.current;
+        },
+        [],
+    );
 
     const handleTestPush = useCallback(
         async (kind) => {

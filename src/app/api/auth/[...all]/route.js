@@ -10,7 +10,9 @@ import { auth } from '@/auth';
 const disabledHandler = () =>
     Response.json({ error: 'Auth is not configured on this instance' }, { status: 503 });
 
+/** @type {(request: Request) => Response | Promise<Response>} */
 let GET = disabledHandler;
+/** @type {(request: Request) => Response | Promise<Response>} */
 let POST = disabledHandler;
 
 if (auth) {

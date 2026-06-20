@@ -15,6 +15,7 @@ import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 export function detectChanges(prevEvents, nextEvents) {
     if (!prevEvents || !nextEvents) return [];
 
+    /** @type {Array<{kind: 'event_started'|'event_won'|'event_lost', event: Event}>} */
     const changes = [];
 
     for (const next of nextEvents) {

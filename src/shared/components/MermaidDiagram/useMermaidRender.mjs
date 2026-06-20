@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ensureMermaidInit } from './initMermaid';
+import { ensureMermaidInit } from './initMermaid.mjs';
 
 /**
  * Renders a Mermaid definition to an SVG string.

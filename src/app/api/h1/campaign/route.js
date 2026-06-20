@@ -24,6 +24,7 @@ export async function GET(request) {
         await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'api-campaign', data);
     });
     let data = null;
+    /** @type {number | null} */
     let season = null;
 
     if (request.nextUrl.searchParams.get('season')) {

@@ -57,8 +57,12 @@ export function highlightSector(factionIndex, sector = null) {
     const wanted = sector != null ? String(sector) : null;
     groupEl.querySelectorAll('.sector').forEach((el) => {
         el.classList.add('sector-linked-faint');
-        if (wanted != null && el.dataset.name === wanted) {
-            el.classList.add('sector-linked-strong');
+        // `.sector` nodes are SVG <path>/<circle> elements, which carry
+        // `dataset` via HTMLOrSVGElement — but querySelectorAll types them
+        // as the base Element, so narrow to SVGElement to read data-name.
+        const svgEl = /** @type {SVGElement} */ (el);
+        if (wanted != null && svgEl.dataset.name === wanted) {
+            svgEl.classList.add('sector-linked-strong');
         }
     });
 }

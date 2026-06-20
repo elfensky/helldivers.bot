@@ -17,7 +17,6 @@ Sentry.init({
     // SDK overhead while staying statistically useful; full sampling in
     // dev/preview so local traces are never missed.
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    autoSessionTracking: false,
     tunnel: '/api/glitchtip',
     debug: false,
 });

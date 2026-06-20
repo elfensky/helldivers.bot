@@ -50,6 +50,12 @@ function evaluate(pointsMax, elapsedPct, actual) {
     return { status, expectedPts, delta, deltaPct };
 }
 
+/**
+ * Recharts injects `active` and `payload` via cloneElement when the tooltip
+ * renders, so both are optional at the JSX call site.
+ *
+ * @param {{ active?: boolean, payload?: Array<{ payload?: { pct: number, expected: number, bufferCeiling: number } }> }} props - Recharts-injected tooltip props.
+ */
 function CustomTooltip({ active, payload }) {
     if (!active || !payload?.length) return null;
     const d = payload[0]?.payload;
@@ -160,7 +166,14 @@ export default function ProgressExplainer() {
                             strokeDasharray="4 4"
                             fill={COLORS.buffer}
                             fillOpacity={1}
-                            baseLine={chartData.map((d) => d.expected)}
+                            // recharts accepts a plain y-value array for the Area
+                            // lower edge at runtime; its `BaseLineType` only models
+                            // the {x,y}[] form, so a `number[]` cast is rejected —
+                            // `any` is the only type that bridges the value-only array.
+                            baseLine={
+                                // eslint-disable-next-line jsdoc/reject-any-type -- recharts BaseLineType rejects the runtime-valid number[] form
+                                /** @type {any} */ (chartData.map((d) => d.expected))
+                            }
                             isAnimationActive={false}
                         />
                         <Area

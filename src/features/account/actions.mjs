@@ -10,6 +10,20 @@ import { randomUUID, createHash } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { requireSession, requireUser } from '@/shared/utils/api/authGuards.mjs';
 
+/**
+ * Result shape returned by the API-key server actions and threaded through
+ * `useActionState` in ApiForm.jsx. Every field is optional because a given
+ * call returns only the subset relevant to its outcome (success vs. the
+ * various failure modes). Zod field errors are `string[]`; the bespoke
+ * `auth` / `general` messages are plain strings.
+ *
+ * @typedef {object} ApiKeyActionState
+ * @property {{ auth?: string, general?: string, userId?: string[], description?: string[], apikeyId?: string[] }} [errors] - Per-field and bespoke error messages.
+ * @property {{ key?: string } & Record<string, unknown>} [data] - The created/deleted key record; `key` is the plaintext shown once.
+ * @property {Record<string, unknown>} [values] - Submitted form values, echoed back on validation failure.
+ * @property {number} [time] - Server-action execution time in ms.
+ */
+
 // ─── API key management (self-service) ──────────────────────────────
 
 /**
@@ -234,8 +248,12 @@ export async function deleteUserAccount(_, formData) {
     );
     if (error) throw error;
 
+    // `auth` is non-null here: requireSession() above returns an authError when
+    // auth is unconfigured, and we return early on it. Cast to non-null to
+    // satisfy checkJs (auth is typed `Auth | null`) without changing behavior.
+    const liveAuth = /** @type {NonNullable<typeof auth>} */ (auth);
     const { error: revokeError } = await tryCatch(
-        auth.api.revokeSessions({ headers: await headers() }),
+        liveAuth.api.revokeSessions({ headers: await headers() }),
     );
     if (revokeError) throw revokeError;
 

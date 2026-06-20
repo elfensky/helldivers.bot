@@ -13,6 +13,7 @@ export function groupEventsByDay(events, { sortOrder = 'desc' } = {}) {
         new Date(event.start_time * 1000).toISOString().slice(0, 10),
     );
 
+    /** @type {(a: [string, unknown], b: [string, unknown]) => number} */
     const cmpDate =
         sortOrder === 'asc' ?
             ([a], [b]) => a.localeCompare(b)

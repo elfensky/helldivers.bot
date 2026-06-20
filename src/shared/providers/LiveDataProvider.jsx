@@ -21,7 +21,17 @@ export default function LiveDataProvider({ initialData, initialMapState, childre
     );
 
     return (
-        <LiveDataContext.Provider value={{ data, mapState, status, prevData, isLeader }}>
+        <LiveDataContext.Provider
+            // `LiveDataContext` is explicitly typed `LiveStore | null`, so the
+            // live value object below is assignable directly — no cast needed.
+            value={{
+                data,
+                mapState,
+                status,
+                prevData,
+                isLeader,
+            }}
+        >
             <LiveToasts prevData={prevData} data={data} isLeader={isLeader} />
             {children}
         </LiveDataContext.Provider>

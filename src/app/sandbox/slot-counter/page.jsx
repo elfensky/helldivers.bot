@@ -18,7 +18,7 @@ export default function SlotCounterSandboxPage() {
     const [sequential, setSequential] = useState(false);
     const [monospace, setMonospace] = useState(true);
     const [autoTick, setAutoTick] = useState(false);
-    const autoRef = useRef(null);
+    const autoRef = useRef(/** @type {ReturnType<typeof setInterval> | null} */ (null));
     const durationProp = durationEnabled ? duration : undefined;
 
     useEffect(() => {
@@ -26,7 +26,7 @@ export default function SlotCounterSandboxPage() {
         autoRef.current = setInterval(() => {
             setValue((v) => v + Math.floor(Math.random() * 10000) + 1);
         }, 2000);
-        return () => clearInterval(autoRef.current);
+        return () => clearInterval(autoRef.current ?? undefined);
     }, [autoTick]);
 
     const bump = (delta) => setValue((v) => v + delta);
@@ -246,7 +246,7 @@ function Row({ label, children }) {
     );
 }
 
-function Btn({ onClick, active, children }) {
+function Btn({ onClick, active = false, children }) {
     const base =
         'font-mono text-xs uppercase tracking-wide px-3 py-1.5 border transition-colors';
     const variant =

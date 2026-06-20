@@ -19,7 +19,9 @@ import { upsertStatus } from '@/db/queries/upsertStatus.mjs';
 export const SEASON_NOT_FOUND = 'SEASON_NOT_FOUND';
 
 /**
- * @param {number} season - Season number to fetch and persist
+ * @param {number | null} season - Season number to fetch and persist. A falsy
+ *   value (null/0) throws "season is missing" — callers may pass a possibly-null
+ *   season and rely on that guard.
  * @param {{ protectedBucket?: number }} opts  When set, skip writing h1_status
  *   rows whose bucket >= this value. The worker poll passes this to prevent
  *   stale get_snapshots data from overwriting the live bucket that

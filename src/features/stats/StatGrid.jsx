@@ -167,9 +167,9 @@ function eventsScoreValue(wins, losses) {
  * @param {number | null} startUnix - Unix-seconds timestamp the span began
  */
 function warDurationCard(seconds, startUnix) {
-    const valid = Number.isFinite(seconds) && seconds > 0;
+    const valid = seconds != null && Number.isFinite(seconds) && seconds > 0;
     const days = valid ? Math.round(seconds / 86400) : null;
-    const startValid = Number.isFinite(startUnix) && startUnix > 0;
+    const startValid = startUnix != null && Number.isFinite(startUnix) && startUnix > 0;
     return (
         <StatCard
             label="WAR_DURATION"
@@ -216,6 +216,27 @@ function telemetryCard(redacted, label, cardProps) {
     return redacted ? redactedCard(label) : <StatCard label={label} {...cardProps} />;
 }
 
+/**
+ * @typedef {{[key: string]: number | null}} PlayersAvg24h
+ *   Per-faction 24h average player baselines, keyed by `'global'` and faction
+ *   name (`'bugs'`, `'cyborgs'`, `'illuminate'`).
+ *
+ * @typedef {{[key: string]: { ago24h: number | null, ago48h: number | null }}} KillsTrend
+ *   Per-faction cumulative kill baselines (~24h/48h ago), keyed by `'global'`
+ *   and faction name.
+ */
+
+/**
+ * @param {object} props - Component props.
+ * @param {Array<{[key: string]: number}>} props.live - Latest per-faction statistic rows.
+ * @param {string} props.faction - Active faction tab (`'global'` or a faction name).
+ * @param {Array<import('@/features/dashboard/DashboardClient').LiveEvent>} [props.events] - Resolved/active events for the season.
+ * @param {PlayersAvg24h | null} [props.playersAvg24h] - 24h player baselines, or null.
+ * @param {KillsTrend | null} [props.killsTrend] - 24h/48h kill baselines, or null.
+ * @param {number} [props.seasonDuration] - Total war duration in seconds.
+ * @param {number | null} [props.warStart] - Unix-seconds war start, or null.
+ * @param {boolean} [props.archived] - Whether this is an archived (historic) season.
+ */
 export default function StatGrid({
     live,
     faction,
@@ -305,7 +326,7 @@ export default function StatGrid({
     // span it spent 'hidden' before introduction. Null `first_seen` → the
     // faction has not been deployed yet.
     const factionSeconds =
-        stats.first_seen != null && Number.isFinite(warStart) ?
+        stats.first_seen != null && warStart != null && Number.isFinite(warStart) ?
             seasonDuration - (stats.first_seen - warStart)
         :   null;
 
@@ -338,6 +359,19 @@ export default function StatGrid({
     );
 }
 
+/**
+ * A single telemetry card: a label, a value, and an optional subtitle, with an
+ * optional colored accent line and click handler.
+ *
+ * @param {object} props - Component props.
+ * @param {import('react').ReactNode} props.label - The card label.
+ * @param {import('react').ReactNode} props.value - The card value.
+ * @param {import('react').ReactNode} [props.subtitle] - Optional subtitle line.
+ * @param {'success' | 'danger'} [props.accentColor] - Optional accent-line tint.
+ * @param {'success' | 'danger'} [props.valueColor] - Optional value-text tint.
+ * @param {(() => void)} [props.onClick] - Optional click handler.
+ * @param {string} [props.title] - Optional native tooltip text.
+ */
 export function StatCard({
     label,
     value,

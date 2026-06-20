@@ -28,7 +28,9 @@ export default function SeasonSelector({ seasons, currentSeason }) {
                     `/archives?season=${currentSeason}`,
                 );
             });
-            return () => cancel(id);
+            // `schedule`/`cancel` are paired (idle↔cancelIdle, timeout↔clearTimeout),
+            // but TS widens the handle to `number | Timeout`; cast to satisfy both.
+            return () => cancel(/** @type {number & NodeJS.Timeout} */ (id));
         }
     }, [currentSeason]);
 

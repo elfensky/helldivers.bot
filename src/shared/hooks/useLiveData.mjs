@@ -15,6 +15,15 @@ import { guardedReload, clearReloadGuard } from '@/shared/utils/reloadGuard.mjs'
  * @typedef {'polling'|'live'|'offline'} LiveStatus
  */
 
+/**
+ * @typedef {object} LiveStore
+ * @property {object | null} data - Latest poll payload, or null before the first successful poll.
+ * @property {object | null} mapState - Galaxy map state derived from `data`, or null.
+ * @property {LiveStatus} status - Tri-state connection status (`polling`/`live`/`offline`).
+ * @property {object | null} prevData - Previous poll payload, used for change detection.
+ * @property {boolean} isLeader - Whether this tab is the BroadcastChannel leader.
+ */
+
 // Version-suffixed: bump the `-vN` suffix whenever the cached payload shape
 // changes (new/renamed/retyped fields). Old entries are then never read again
 // and naturally abandoned, avoiding hydration mismatches from stale caches.
@@ -53,6 +62,7 @@ const cachedState = typeof window !== 'undefined' ? loadCachedState() : null;
 // React subscribes via useState + useEffect — setState is batched by React
 // 18+ and only processed when the scheduler is idle.
 
+/** @type {LiveStore} */
 const INITIAL_STORE = Object.freeze({
     data: null,
     mapState: null,
@@ -61,6 +71,7 @@ const INITIAL_STORE = Object.freeze({
     isLeader: false,
 });
 
+/** @type {LiveStore} */
 let store = INITIAL_STORE;
 let listeners = new Set();
 let pollTimer = null;
@@ -141,7 +152,8 @@ async function poll() {
         }
         emit();
     } catch (err) {
-        console.warn('[useLiveData] poll failed:', err?.message);
+        const message = err instanceof Error ? err.message : String(err);
+        console.warn('[useLiveData] poll failed:', message);
         if (store.status !== 'offline') {
             store = { ...store, status: 'offline' };
             emit();

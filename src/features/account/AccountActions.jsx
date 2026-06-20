@@ -12,8 +12,8 @@ const SOCIAL_PROVIDERS = ['discord', 'github', 'google'];
 
 export default function AccountActions({ user, avatarUrl, providers, canUnlink }) {
     const router = useRouter();
-    const [loading, setLoading] = useState(null);
-    const [linkError, setLinkError] = useState(null);
+    const [loading, setLoading] = useState(/** @type {string | null} */ (null));
+    const [linkError, setLinkError] = useState(/** @type {string | null} */ (null));
 
     const handleLink = async (provider) => {
         setLoading(provider);
@@ -56,7 +56,7 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
     }, [user.id]);
 
     const [deleting, setDeleting] = useState(false);
-    const [deleteError, setDeleteError] = useState(null);
+    const [deleteError, setDeleteError] = useState(/** @type {string | null} */ (null));
 
     const handleDelete = useCallback(async () => {
         if (

@@ -28,7 +28,12 @@ export default function DefeatedCard({
     return (
         <div
             className="sector-card sector-card-defeated"
-            style={{ '--accent-color': color, '--faction-color': color }}
+            style={
+                /** @type {React.CSSProperties} */ ({
+                    '--accent-color': color,
+                    '--faction-color': color,
+                })
+            }
         >
             <div className="sector-card-content">
                 <div className="sector-card-header">
