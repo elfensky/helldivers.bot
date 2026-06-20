@@ -190,19 +190,16 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 
 ## Task Tracking
 
-All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and [helldiversbot project board](https://github.com/users/elfensky/projects/5).
+All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues), grouped by milestone and labels. No project board — issues + milestones + labels only.
 
 - **Milestones** group issues by phase (Phase 0 through ~13 as of writing, plus `Desloppify` and `Shelved`). Phase numbers grow and open/closed status drifts — check the [milestones list](https://github.com/elfensky/helldivers.bot/milestones) for current state rather than trusting a number here.
 - **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
-- **Board statuses**: `Backlog` → `In progress` → `Done`. Issue title prefixes: `Phase N:`, `Shelved:`.
-- **Board fields**: Status, Priority (`P0`/`P1`/`P2`), Size (`XS`/`S`/`M`/`L`/`XL`), Estimate (hours), Start/End date (skip weekends).
+- **Issue title prefixes**: `Phase N:`, `Shelved:`.
 
 ### Workflow
 
-1. **Before starting**: Check GitHub Issues. If none exists, create one with milestone, labels, and project board assignment (`gh project item-add 5 --owner elfensky --url <issue-url>`).
-2. **When starting**: Move issue to `In progress`, set Start date to today.
-3. **When done**: Close issue with implementation comment, set End date. Board auto-moves to `Done`.
-4. **Timeline maintenance**: Update Start/End dates on downstream items when estimates shift.
+1. **Before starting**: Check GitHub Issues. If none exists, create one with the right milestone and labels.
+2. **When done**: Close the issue with an implementation comment.
 
 ## Specs & Plans
 
