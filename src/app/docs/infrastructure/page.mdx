@@ -167,7 +167,7 @@ Both build jobs pass `NODE_ENV=staging` as a build arg.
 
 **Registry auth:** `secrets.GITHUB_TOKEN` — the default token with `contents: write` and `packages: write` permissions declared at the workflow level.
 
-**Cleanup job:** Uses `snok/container-retention-policy@v3.0.1`. Deletes untagged versions of both `helldiversbot` and `helldiversbot-migrate` packages that are older than 30 minutes. This keeps GHCR from accumulating dangling layers from every push.
+**Cleanup job:** Uses `snok/container-retention-policy@v3.0.1`. Deletes untagged versions of both `helldiversbot` and `helldiversbot-migrate` packages that are older than 30 minutes. This keeps GHCR from accumulating dangling layers from every push. Authenticated via `secrets.GHCR_CLEANUP_TOKEN` — a **classic** PAT with the `delete:packages` scope (the action rejects fine-grained tokens, and the default `GITHUB_TOKEN` can't delete user-account packages).
 
 ### Production (`release.docker.yml`)
 
@@ -185,7 +185,7 @@ ghcr.io/elfensky/helldiversbot:latest
 
 **Version extraction:** The workflow reads the version from `package.json` via `jq -r '.version' package.json` and injects it into the image via the `VERSION` ARG (used by the Dockerfile label `version="${VERSION}"`).
 
-**Registry auth:** `secrets.ACCESS_TOKEN` — a personal access token with elevated permissions. The default `GITHUB_TOKEN` is not used here because the job also creates a GitHub Release, which requires broader write access.
+**Registry auth:** `secrets.GITHUB_TOKEN` — the workflow's `permissions: contents: write` + `packages: write` grant it enough access to push images to GHCR and create the GitHub Release, so no personal access token is needed.
 
 **GitHub Release:** Created by `softprops/action-gh-release@v2`. The release body is sourced from `RELEASE.md` at the repository root.
 
