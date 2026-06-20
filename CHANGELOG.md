@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.52.8
+
+### Changes
+
+- Drop the GitHub project board from the tracking convention — work is now tracked with
+  issues + milestones + labels only (`CLAUDE.md` Task Tracking). The board was unused and
+  has been deleted.
+
 ## 0.52.7
 
 ### Fixes
