@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.56.0
+
+### Features
+
+- **`GET /api/v1/h1/season`** (#31) — key-gated season metadata as an array;
+  supports multiple `?season=` params (defaults to `current`). Each entry:
+  `{ season, isCurrent, lastUpdated, introductionOrder, pointsMax, seasonDuration }`
+  (introduction order as faction slugs, points_max slug-keyed).
+- **`GET /api/v1/h1/map`** (#33) — key-gated render-ready galaxy geometry via
+  `computeMapState`: `{ season, bucket, events, fronts, activeEvents }` where
+  `fronts` is the per-faction map (`bugs`/`cyborgs`/`illuminate`/`superEarth`),
+  each with regions 1–10 + homeworld and full render state (name, capital, points,
+  percent, status). Params: `season`, `at=latest` (historical `at=<datetime>`
+  deferred), `enemy` filter, `events=active|none`. Returns the actual 3-front data
+  model rather than the spec's flat `sectors[]`/`homeworld` shape.
+
 ## 0.55.0
 
 ### Features
