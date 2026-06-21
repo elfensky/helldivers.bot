@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.53.0
+
+### Features
+
+- **Typed server config module** (`src/config/server.mjs`) — the config half of the
+  Public API milestone (#204). One Zod schema parses `process.env` once into a frozen,
+  typed `config` object: required vars (`POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL`)
+  fail fast at boot with a readable message; optional features self-disable via
+  presence-as-config. Co-locates the canonical cache tiers and rate-limit groups with
+  `getCacheControl(tier)` / `getRateLimitConfig(group)` helpers (consumed by the upcoming
+  cache-headers and rate-limiter work).
+- **Configurable site origin** — `src/config/site.mjs` exposes `SITE_URL`
+  (`NEXT_PUBLIC_SITE_URL` || `https://helldivers.bot`). All hardcoded site-origin
+  references (SEO metadata, JSON-LD, sitemap, OG-image branding, Umami hostname) now route
+  through it, so self-hosters can deploy under their own domain. Documented in
+  `.example.env` and the infrastructure env reference.
+
+### Notes
+
+- `bucketing.mjs` and `initializeEnv.mjs` intentionally keep their existing env reads for
+  now (hot-path / boot-critical, well-tested); `config` is the canonical typed source and
+  remaining `process.env` reads can migrate incrementally.
+
 ## 0.52.9
 
 ### Fixes

@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { SITE_URL } from '@/config/site.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
@@ -75,7 +76,7 @@ function fallbackImage() {
                 fontSize: 32,
             }}
         >
-            helldivers.bot
+            {new URL(SITE_URL).host}
         </div>,
         { width: 1200, height: 630 },
     );
@@ -300,7 +301,7 @@ export default async function Image() {
                         marginTop: 'auto',
                     }}
                 >
-                    helldivers.bot
+                    {new URL(SITE_URL).host}
                 </span>
             </div>
         </div>,

@@ -1,9 +1,11 @@
+import { SITE_URL } from '@/config/site.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 
-// Production hostname used for Umami session hashing. Inlined because
-// sendUmamiEvent early-returns in non-production, so the dev/staging
-// branches the old getHostname() switch carried were unreachable.
-const UMAMI_HOSTNAME = 'helldivers.bot';
+// Production hostname used for Umami session hashing. Derived from the
+// configured site origin. Inlined because sendUmamiEvent early-returns in
+// non-production, so the dev/staging branches the old getHostname() switch
+// carried were unreachable.
+const UMAMI_HOSTNAME = new URL(SITE_URL).host;
 
 /**
  * Server-side Umami event sender. Posts directly to the Umami instance

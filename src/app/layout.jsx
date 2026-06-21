@@ -12,6 +12,7 @@ import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 import MinistryProvider from '@/features/ministry/MinistryProvider';
 import MinistryTriggerWidget from '@/features/admin/MinistryTriggerWidget';
 //data
+import { SITE_URL } from '@/config/site.mjs';
 import { auth } from '@/auth';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
@@ -38,7 +39,7 @@ export const viewport = {
 };
 
 export const metadata = {
-    metadataBase: new URL('https://helldivers.bot'),
+    metadataBase: new URL(SITE_URL),
     title: 'Helldivers Bot - Live war dashboard for the original Helldivers',
     description:
         'Live Helldivers 1 war dashboard showing campaign progress, faction stats, active events, and an interactive galaxy map.',
@@ -244,7 +245,7 @@ const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite', // '@type': ['WebSite', 'WebApplication', 'VideoGame']
     applicationCategory: ['GameUtility', 'GameInformation', 'Entertainment'],
-    url: 'https://helldivers.bot',
+    url: SITE_URL,
 
     name: 'Helldivers Bot',
     // author: 'Andrei Lavrenov',
@@ -271,13 +272,13 @@ const schema = {
         // url: 'https://helldivers.bot/campaign',
     },
 
-    image: 'https://helldivers.bot/opengraph-image',
+    image: `${SITE_URL}/opengraph-image`,
 
     mainEntity: [
         {
             '@type': 'VideoGame',
             name: 'Helldivers',
-            url: 'https://helldivers.bot',
+            url: SITE_URL,
             gamePlatform: 'PC, PlayStation',
             applicationCategory: 'Action, Shooter',
             description:
@@ -310,10 +311,10 @@ const schema = {
         {
             '@type': 'WebAPI',
             name: 'Helldivers 1 API',
-            url: 'https://helldivers.bot/api',
+            url: `${SITE_URL}/api`,
             description:
                 'An API providing access to Helldivers campaign status and statistics. Written in JavaScript and powered by Next.js.',
-            documentation: 'https://helldivers.bot/docs',
+            documentation: `${SITE_URL}/docs`,
             provider: {
                 '@type': 'Person',
                 name: 'Andrei Lavrenov',
