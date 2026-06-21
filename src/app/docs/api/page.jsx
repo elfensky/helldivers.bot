@@ -81,22 +81,115 @@ export default function ApiReferencePage() {
                 <div>
                     <h3 className="mb-1 font-mono text-body text-text">Authentication</h3>
                     <p className="text-body leading-[1.7] text-text-muted">
+                        The versioned{' '}
+                        <code className="font-mono text-small text-text">
+                            /api/v1/h1/*
+                        </code>{' '}
+                        endpoints and{' '}
                         <code className="font-mono text-small text-text">
                             /api/h1/rebroadcast
                         </code>{' '}
-                        requires an API key via{' '}
+                        require a user API key via{' '}
                         <code className="font-mono text-small text-text">
                             Authorization: Bearer &lt;key&gt;
                         </code>
-                        . Keys are managed from the user dashboard.{' '}
+                        . Keys are created and managed from the user dashboard.{' '}
                         <code className="font-mono text-small text-text">
                             /api/h1/update
                         </code>{' '}
                         is internal (worker-only, Bearer token must match{' '}
                         <code className="font-mono text-small text-text">UPDATE_KEY</code>
-                        ). All other endpoints are public.
+                        ).{' '}
+                        <code className="font-mono text-small text-text">
+                            /api/h1/live
+                        </code>{' '}
+                        and{' '}
+                        <code className="font-mono text-small text-text">
+                            /api/h1/campaign
+                        </code>{' '}
+                        are public.
                     </p>
                 </div>
+            </div>
+
+            <div className="mb-8 border border-ghost bg-surface-1 p-4">
+                <h2 className="mb-3 font-display text-h3 text-primary">
+                    Versioning &amp; API surface
+                </h2>
+                <p className="mb-4 text-body leading-[1.7] text-text-muted">
+                    Human-readable endpoints live under a versioned path —{' '}
+                    <code className="font-mono text-small text-text">
+                        {'/api/v1/h1/{status,stats,season,map}'}
+                    </code>
+                    . Within <code className="font-mono text-small text-text">/v1</code>{' '}
+                    the contract is stable: field names and semantics never change, and
+                    additive changes (new fields, new optional query filters) are
+                    non-breaking. A breaking shape change introduces{' '}
+                    <code className="font-mono text-small text-text">/v2</code> while{' '}
+                    <code className="font-mono text-small text-text">/v1</code> stays
+                    operational. The version lives in the path — there is no header-based
+                    version negotiation.
+                </p>
+                <dl className="flex flex-col gap-3">
+                    <div>
+                        <dt className="font-mono text-small text-text">/api/v1/h1/*</dt>
+                        <dd className="text-body leading-[1.7] text-text-muted">
+                            Human-readable REST projection. Versioned, key-gated (user API
+                            key).
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="font-mono text-small text-text">
+                            /api/h1/rebroadcast
+                        </dt>
+                        <dd className="text-body leading-[1.7] text-text-muted">
+                            Drop-in replacement for the official HD1 API (raw wire
+                            format). Deliberately{' '}
+                            <strong className="text-text">unversioned and stable</strong>{' '}
+                            — it mirrors a frozen external contract, so it sits a level
+                            above{' '}
+                            <code className="font-mono text-small text-text">/v1</code>{' '}
+                            and never moves under it. Key-gated.
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="font-mono text-small text-text">/api/h1/live</dt>
+                        <dd className="text-body leading-[1.7] text-text-muted">
+                            Dashboard data source — a cache-policy + parameter preset over{' '}
+                            <code className="font-mono text-small text-text">
+                                /api/v1/h1/status
+                            </code>
+                            . Public.
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="font-mono text-small text-text">
+                            /api/h1/campaign
+                        </dt>
+                        <dd className="text-body leading-[1.7] text-text-muted">
+                            <strong className="text-text">Deprecated</strong> — superseded
+                            by{' '}
+                            <code className="font-mono text-small text-text">
+                                /api/v1/h1/status
+                            </code>{' '}
+                            +{' '}
+                            <code className="font-mono text-small text-text">
+                                /api/v1/h1/stats
+                            </code>
+                            .
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="font-mono text-small text-text">/api/h1/update</dt>
+                        <dd className="text-body leading-[1.7] text-text-muted">
+                            Internal worker trigger; gated by{' '}
+                            <code className="font-mono text-small text-text">
+                                UPDATE_KEY
+                            </code>
+                            .
+                        </dd>
+                    </div>
+                </dl>
             </div>
 
             <h2 className="mb-3 font-display text-h3 text-primary">Endpoints</h2>

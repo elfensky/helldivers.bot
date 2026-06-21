@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.53.1
+
+### Documentation
+
+- Document the public-API versioning policy and endpoint personalities in
+  `/docs/api` (#434): human-readable endpoints live under `/api/v1/h1/*` (the
+  version is in the path; the `/v1` contract is additive-only, breaking changes go
+  to `/v2`, no header negotiation). Each path's role is spelled out — `/v1/*`
+  (key-gated), `/api/h1/rebroadcast` (unversioned, stable HD1 drop-in that sits a
+  level above `/v1`), `/api/h1/live` (public BFF over status), `/api/h1/campaign`
+  (deprecated), `/api/h1/update` (internal). Authentication blurb updated for `/v1`
+  key-gating.
+
 ## 0.53.0
 
 ### Features
