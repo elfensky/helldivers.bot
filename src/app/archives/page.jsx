@@ -1,4 +1,5 @@
 //db
+import { SITE_URL } from '@/config/site.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { updateSeason } from '@/update/season.mjs';
@@ -135,7 +136,7 @@ const archivesStructuredData = [
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         applicationCategory: ['GameUtility', 'GameInformation', 'Entertainment'],
-        url: 'https://helldivers.bot/archives',
+        url: `${SITE_URL}/archives`,
         name: 'Archives | Helldivers Bot',
         author: 'Andrei Lavrenov',
         description:
@@ -155,7 +156,7 @@ const archivesStructuredData = [
                 '@type': 'ListItem',
                 position: 1,
                 name: 'Archives',
-                item: 'https://helldivers.bot/archives',
+                item: `${SITE_URL}/archives`,
             },
         ],
     },
