@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.54.0
+
+### Features
+
+- **`GET /api/v1/h1/status`** — the first public `/v1` endpoint (#29). Key-gated
+  (Bearer API key) human-readable campaign status with two modes: `mode=latest`
+  (default) returns the current bucket per faction projected to
+  `{ enemy, enemyId, points, pointsMax, progress, players, updatedAt }` (reusing
+  the cached `getCampaign` query); `mode=history` returns a cursor-paginated
+  timeseries (keyset on `bucket`+`enemy`, opaque base64url cursor) with `limit`
+  (default 100, max 500), `order`, `from`/`to`, and `enemy` filters. Zod query
+  validation, `{time,code,message,data}` envelope.
+- Shared `requireApiKey` guard and `FACTION_SLUG_BY_ID` map underpin the `/v1`
+  surface (reused by the remaining `/v1/h1/*` endpoints). Cache headers (#436) and
+  rate-limiting (#435) layer on later.
+
 ## 0.53.1
 
 ### Documentation
