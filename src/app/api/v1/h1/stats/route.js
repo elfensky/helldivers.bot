@@ -1,0 +1,82 @@
+import { performance } from 'perf_hooks';
+import { after } from 'next/server';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
+import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
+import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
+import { decodeCursor } from '@/shared/utils/api/cursor.mjs';
+import { config } from '@/config/server.mjs';
+import { getStats } from '@/db/queries/getStats.mjs';
+import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
+import { parseStatsQuery, projectStats, enemyIdFromSlug } from './statsProjection.mjs';
+
+/**
+ * GET /api/v1/h1/stats — human-readable statistics timeseries for a season,
+ * cursor-paginated. Key-gated.
+ *
+ * @param {Request} request - The incoming request.
+ */
+export async function GET(request) {
+    const start = performance.now();
+
+    const { error: authError } = await requireApiKey(request, start);
+    if (authError) return authError;
+
+    const parsed = parseStatsQuery(new URL(request.url).searchParams);
+    if (!parsed.success) return errorResponse(400, start, parsed.message);
+    const query = parsed.data;
+
+    if (query.season === 'all') {
+        // ponytail: cross-season pagination needs a season-aware cursor; defer
+        // until there's demand. Single-season + current cover the real use cases.
+        return errorResponse(
+            400,
+            start,
+            "season=all is not yet supported; specify a season number or 'current'",
+        );
+    }
+
+    const seasonInput = query.season === 'current' ? null : query.season;
+    const enemyId = query.enemy ? enemyIdFromSlug(query.enemy) : undefined;
+
+    let cursorPos = null;
+    if (query.cursor) {
+        cursorPos = decodeCursor(query.cursor);
+        if (!cursorPos) return errorResponse(400, start, 'Invalid cursor');
+    }
+    const fromUnix = query.from ? Math.floor(query.from.getTime() / 1000) : null;
+    const toUnix = query.to ? Math.floor(query.to.getTime() / 1000) : null;
+
+    after(async () => {
+        await umamiTrackEvent('API | v1 stats', '/api/v1/h1/stats', 'api-v1-stats', {});
+    });
+
+    const { data: result, error } = await tryCatch(
+        getStats(seasonInput, {
+            enemyId,
+            fromUnix,
+            toUnix,
+            limit: query.limit,
+            cursorPos,
+            order: query.order,
+        }),
+    );
+    if (error) {
+        reportError(error, { route: '/api/v1/h1/stats', stage: 'get-stats' });
+        return errorResponse(500, start, 'Internal server error');
+    }
+    if (!result) return errorResponse(404, start, 'Season not found');
+
+    return successResponse(
+        200,
+        start,
+        projectStats(result.rows, result.season, query.limit, config.bucketSize),
+    );
+}
+
+export const POST = methodNotAllowed;
+export const PUT = methodNotAllowed;
+export const DELETE = methodNotAllowed;
+export const PATCH = methodNotAllowed;
+export const OPTIONS = methodNotAllowed;

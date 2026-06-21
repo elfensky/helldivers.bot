@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { FACTION_SLUG_BY_ID, FACTION_INDEX } from '@/shared/enums/factions.mjs';
+import { encodeCursor, decodeCursor } from '@/shared/utils/api/cursor.mjs';
 
 /**
  * Query-parameter schema for `GET /api/v1/h1/status`.
@@ -135,24 +136,6 @@ export function projectHistory(rows, pointsMaxByEnemy, playersByKey, season, lim
     };
 }
 
-/**
- * @param {number} bucket - Bucket window start (unix seconds).
- * @param {number} enemy - Faction id.
- * @returns {string} opaque cursor.
- */
-export function encodeCursor(bucket, enemy) {
-    return Buffer.from(`${bucket}:${enemy}`).toString('base64url');
-}
-
-/**
- * @param {string} cursor - Opaque cursor from a prior page.
- * @returns {{ bucket: number, enemy: number } | null} decoded position, or null if malformed.
- */
-export function decodeCursor(cursor) {
-    const decoded = Buffer.from(cursor, 'base64url').toString('utf8');
-    const [b, e] = decoded.split(':');
-    const bucket = Number(b);
-    const enemy = Number(e);
-    if (!Number.isInteger(bucket) || !Number.isInteger(enemy)) return null;
-    return { bucket, enemy };
-}
+// Cursor helpers now live in the shared module; re-exported so existing
+// imports (and tests) of these from the status projection keep working.
+export { encodeCursor, decodeCursor };

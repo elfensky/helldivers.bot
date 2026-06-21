@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.55.0
+
+### Features
+
+- **`GET /api/v1/h1/stats`** — the second public `/v1` endpoint (#30). Key-gated,
+  cursor-paginated statistics timeseries over `h1_statistic`, projected to
+  `{ bucket, enemy, enemyId, season, missionsWon, missionsLost, kills, deaths,
+  shots, hits, players }` (BigInt counts → JSON-safe numbers; `bucketSize` sourced
+  from the typed config — its first runtime consumer). `season=current|number`;
+  `season=all` is deferred (returns a clear 400 until cross-season pagination is
+  needed).
+
+### Refactor
+
+- Extract the keyset pagination cursor into `src/shared/utils/api/cursor.mjs`,
+  shared by the `/v1` history endpoints (status now re-exports from it).
+
 ## 0.54.0
 
 ### Features
