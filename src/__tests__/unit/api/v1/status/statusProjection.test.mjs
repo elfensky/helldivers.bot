@@ -96,7 +96,7 @@ describe('projectLatest', () => {
         },
     ];
 
-    test('projects, sorts by enemyId, and computes progress', () => {
+    test('projects, sorts by enemyId, and computes percent', () => {
         const out = projectLatest(rows, 42, 100);
         expect(out.season).toBe(42);
         expect(out.mode).toBe('latest');
@@ -107,12 +107,12 @@ describe('projectLatest', () => {
             enemyId: 0,
             points: 200,
             pointsMax: 200,
-            progress: 1,
+            percent: 100,
             players: 30,
             updatedAt: '2023-11-14T22:28:20.000Z',
         });
-        expect(out.items[1].progress).toBe(0.5);
-        expect(out.items[2].progress).toBe(0); // guards pointsMax=0
+        expect(out.items[1].percent).toBe(50);
+        expect(out.items[2].percent).toBe(0); // guards pointsMax=0
         expect(out.items[0]).not.toHaveProperty('bucket'); // latest items omit bucket
         expect(out.page).toEqual({ limit: 100, nextCursor: null });
     });
@@ -137,7 +137,7 @@ describe('projectHistory', () => {
             enemyId: 0,
             points: 100,
             pointsMax: 200,
-            progress: 0.5,
+            percent: 50,
             players: 5,
             bucket: 1700000000,
         });
