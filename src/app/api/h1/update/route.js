@@ -12,6 +12,7 @@ import { updateStatus } from '@/update/status.mjs';
 import { updateSeason } from '@/update/season.mjs';
 import { checkAndNotify } from '@/update/pushNotifier.mjs';
 import { computeBucket } from '@/shared/utils/bucketing.mjs';
+import { cleanupRateLimitWindows } from '@/shared/utils/api/rateLimit.mjs';
 
 // Custom header set on the very first poll of a worker session so the
 // handler can run a one-time startup pass (e.g. backfill missing seasons).
@@ -31,6 +32,13 @@ export const WORKER_STARTUP_HEADER = 'x-worker-startup';
 // snapshot for that single transition is missed, which the admin can recover
 // via the /archives refresh button.
 let lastSeasonObserved = null;
+
+// Throttle for the rate-limit window cleanup. The worker polls every ~15s, so
+// we run the purge at most hourly (tracked here, not per-restart) to keep the
+// api_rate_limit table tiny without a DELETE on every poll. The 0 default makes
+// it fire on the first poll after boot.
+let lastRateLimitCleanup = 0;
+const RATE_LIMIT_CLEANUP_INTERVAL_MS = 3_600_000;
 
 /**
  * @param {number} start - performance.now() timestamp when the poll began.
@@ -75,6 +83,22 @@ export async function GET(request) {
     if (!crypto.timingSafeEqual(actual, expected)) return errorResponse(401, start);
 
     const isStartup = request.headers.get(WORKER_STARTUP_HEADER) === '1';
+
+    // Periodic rate-limit window cleanup (at most hourly), off the response path.
+    const nowMs = Date.now();
+    if (nowMs - lastRateLimitCleanup > RATE_LIMIT_CLEANUP_INTERVAL_MS) {
+        lastRateLimitCleanup = nowMs;
+        after(async () => {
+            const { error } = await tryCatch(cleanupRateLimitWindows());
+            if (error) {
+                reportError(error, {
+                    route: '/api/h1/update',
+                    stage: 'ratelimit-cleanup',
+                    level: 'warning',
+                });
+            }
+        });
+    }
 
     //STATUS
     const { data: statusData, error: statusError } = await tryCatch(updateStatus());

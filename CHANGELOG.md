@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.58.0
+
+### Features
+
+- **Postgres-backed fixed-window rate limiter** (#435). New `api_rate_limit`
+  table (migration `add_api_rate_limit`) + `src/shared/utils/api/rateLimit.mjs`:
+  one atomic `INSERT … ON CONFLICT DO UPDATE count = count + 1 RETURNING count`
+  per limited request, so limits survive restarts and span multiple Node
+  processes (no Redis). Config-driven groups (`config/policy.mjs`): `public_read`
+  120/min·IP (status latest, map, season), `history_read` 30/min·IP (status
+  history, stats), `rebroadcast` 60/min·API-key, `backfill_trigger` 5/min·IP,
+  `push` 20/min·IP. Emits `RateLimit-Limit/Remaining/Reset` + `Retry-After`
+  (429), reusing the standard error envelope. Fails **open** if the store is
+  unreachable. The in-memory limiter on `/api/notifications/subscribe` is
+  replaced by this one; the worker purges expired windows hourly.
+- **Backfill-on-demand for `/v1` reads.** A missing explicit season on
+  `status`/`stats`/`season`/`map` now triggers `updateSeason()` (gated by the
+  `backfill_trigger` group) and re-serves, instead of a flat 404 — mirroring
+  `/api/h1/campaign` and `/rebroadcast`. The seed carries every season, so this
+  is a fallback that rarely fires. `season=current` is never backfilled.
+
+### Refactor
+
+- Pure API-policy lookups (cache tiers + rate-limit groups) moved to
+  `src/config/policy.mjs` so they can be imported without tripping
+  `config/server.mjs`'s eager env validation; `server.mjs` re-exports them.
+
 ## 0.57.1
 
 ### Refactor

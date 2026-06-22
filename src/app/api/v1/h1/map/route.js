@@ -5,6 +5,9 @@ import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
 import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
+import { getClientIp } from '@/shared/utils/api/clientIp.mjs';
+import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
+import { backfillAndRetry } from '@/shared/utils/api/backfillSeason.mjs';
 import { getCacheControl } from '@/config/server.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMap, computeMapState } from '@/shared/utils/game/computeMapState.mjs';
@@ -35,6 +38,14 @@ export async function GET(request) {
         );
     }
 
+    const ip = getClientIp(request);
+    const { error: limitError, headers: rlHeaders } = await enforceRateLimit(
+        'public_read',
+        ip,
+        start,
+    );
+    if (limitError) return limitError;
+
     const seasonInput = query.season === 'current' ? null : query.season;
     const enemyId = query.enemy ? enemyIdFromSlug(query.enemy) : undefined;
 
@@ -42,10 +53,20 @@ export async function GET(request) {
         await umamiTrackEvent('API | v1 map', '/api/v1/h1/map', 'api-v1-map', {});
     });
 
-    const { data, error } = await tryCatch(getCampaign(seasonInput));
+    let { data, error } = await tryCatch(getCampaign(seasonInput));
     if (error) {
         reportError(error, { route: '/api/v1/h1/map', stage: 'get-campaign' });
         return errorResponse(500, start, 'Internal server error');
+    }
+    if (!data) {
+        const r = await backfillAndRetry({
+            season: query.season,
+            ip,
+            start,
+            rerun: () => getCampaign(seasonInput),
+        });
+        if (r.error) return r.error;
+        data = r.result;
     }
     if (!data) return errorResponse(404, start, 'Season not found');
 
@@ -70,7 +91,7 @@ export async function GET(request) {
             eventsMode: query.events,
             enemyId,
         }),
-        { headers: { 'Cache-Control': getCacheControl('latest') } },
+        { headers: { ...rlHeaders, 'Cache-Control': getCacheControl('latest') } },
     );
 }
 

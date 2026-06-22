@@ -4,6 +4,8 @@ import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
+import { getClientIp } from '@/shared/utils/api/clientIp.mjs';
+import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
 import db from '@/db/db';
 
 const subscriptionSchema = z.object({
@@ -24,10 +26,10 @@ const subscriptionSchema = z.object({
 // PushManager.subscribe()/.unsubscribe() — both go through the same-origin
 // fetch, so the Origin header is the app itself. Full session binding
 // would require adding push_subscription.user_id (separate migration).
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 20;
-const rateLimitBuckets = new Map();
-
+//
+// Rate limiting is the shared Postgres-backed limiter (`push` group), which
+// survives restarts and multiple Node processes — unlike the previous
+// in-memory Map.
 function isSameOriginRequest(request) {
     const origin = request.headers.get('origin');
     if (!origin) return false;
@@ -37,33 +39,18 @@ function isSameOriginRequest(request) {
     return origin === `https://${host}` || origin === `http://${host}`;
 }
 
-function getRequestIp(request) {
-    const forwarded = request.headers.get('x-forwarded-for');
-    if (forwarded) return forwarded.split(',')[0].trim();
-    return request.headers.get('x-real-ip') ?? 'anonymous';
-}
-
-function checkRateLimit(ip) {
-    const now = Date.now();
-    const bucket = rateLimitBuckets.get(ip);
-    if (!bucket || bucket.resetAt <= now) {
-        rateLimitBuckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-        return true;
-    }
-    if (bucket.count >= RATE_LIMIT_MAX) return false;
-    bucket.count++;
-    return true;
-}
-
 export async function POST(request) {
     const start = performance.now();
 
     if (!isSameOriginRequest(request)) {
         return errorResponse(403, start, 'Forbidden');
     }
-    if (!checkRateLimit(getRequestIp(request))) {
-        return errorResponse(429, start, 'Too many requests');
-    }
+    const { error: limitError } = await enforceRateLimit(
+        'push',
+        getClientIp(request),
+        start,
+    );
+    if (limitError) return limitError;
 
     const { data: body, error: parseError } = await tryCatch(request.json());
     if (parseError) return errorResponse(400, start, 'Invalid JSON');
@@ -107,9 +94,12 @@ export async function DELETE(request) {
     if (!isSameOriginRequest(request)) {
         return errorResponse(403, start, 'Forbidden');
     }
-    if (!checkRateLimit(getRequestIp(request))) {
-        return errorResponse(429, start, 'Too many requests');
-    }
+    const { error: limitError } = await enforceRateLimit(
+        'push',
+        getClientIp(request),
+        start,
+    );
+    if (limitError) return limitError;
 
     const { data: body, error: parseError } = await tryCatch(request.json());
     if (parseError) return errorResponse(400, start, 'Invalid JSON');

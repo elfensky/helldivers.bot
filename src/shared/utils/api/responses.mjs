@@ -20,10 +20,13 @@ const ERROR_MESSAGES = {
  * @param {number} code - The HTTP error status code (should be 4xx or 5xx).
  * @param {number} start - The start time (for calculating performance time).
  * @param {unknown} error - The error object to include in the response.
+ * @param {{ headers?: Record<string, string> }} [opts] - Optional extra
+ *   response headers (e.g. `Retry-After` + `RateLimit-*` on a 429). Merged on
+ *   top of the default `Content-Type: application/json`.
  * @returns {NextResponse} A NextResponse JSON object with timing, code, message, and null data.
  * @throws {Error} If the code is not an error status code (i.e., not 4xx or 5xx).
  */
-export function errorResponse(code, start, error = null) {
+export function errorResponse(code, start, error = null, opts = {}) {
     if (code < 400 || code > 599) throw new Error('Invalid error code');
 
     const known = ERROR_MESSAGES[code];
@@ -41,7 +44,7 @@ export function errorResponse(code, start, error = null) {
     );
     return new NextResponse(body, {
         status,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(opts.headers ?? {}) },
     });
 }
 

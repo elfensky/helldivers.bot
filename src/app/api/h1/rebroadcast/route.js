@@ -16,6 +16,7 @@ import {
 import { updateSeason, SEASON_NOT_FOUND } from '@/update/season.mjs';
 //auth
 import { validateApiKey, API_KEY_ERROR } from '@/shared/utils/api/validateApiKey.mjs';
+import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
 //track
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 
@@ -24,7 +25,7 @@ export async function POST(request) {
     let check = null;
     let formValues = null;
 
-    const { code: keyCode } = await validateApiKey(request);
+    const { data: keyData, code: keyCode } = await validateApiKey(request);
     if (keyCode === API_KEY_ERROR.DB_ERROR) {
         return errorResponse(503, start, 'database unreachable');
     }
@@ -34,6 +35,15 @@ export async function POST(request) {
     if (keyCode) {
         return errorResponse(401, start, 'Unauthorized');
     }
+
+    // Rebroadcast is limited per API key (not per IP) — it's the HD1-API drop-in.
+    // keyData is non-null here (every error code returned above).
+    const { error: limitError, headers: rlHeaders } = await enforceRateLimit(
+        'rebroadcast',
+        /** @type {string} */ (keyData?.keyId),
+        start,
+    );
+    if (limitError) return limitError;
 
     const contentType = request.headers.get('content-type') || '';
     check = isValidContentType.safeParse(contentType);
@@ -146,9 +156,9 @@ export async function POST(request) {
     }
 
     if (data === undefined || data === null) {
-        return errorResponse(404, start, 'Not found');
+        return errorResponse(404, start, 'Not found', { headers: rlHeaders });
     }
-    return successResponse(200, start, data);
+    return successResponse(200, start, data, { headers: rlHeaders });
 }
 
 export const GET = methodNotAllowed;

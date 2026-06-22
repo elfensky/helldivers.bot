@@ -14,52 +14,10 @@
 import { z } from 'zod';
 import { SITE_URL } from '@/config/site.mjs';
 
-/**
- * Tiered `Cache-Control` values — the Frozen-Tail / Living-Head split. Historic
- * data is immutable (long TTL); the current season is live (short or no cache).
- */
-const CACHE_CONTROL = Object.freeze({
-    live: 'no-store',
-    latest: 'public, max-age=10, stale-while-revalidate=30',
-    'current-season': 'public, max-age=60, stale-while-revalidate=300',
-    'closed-season': 'public, max-age=3600, stale-while-revalidate=86400',
-});
-
-/**
- * Per-group fixed-window rate limits. `limit` requests per `windowSeconds`.
- * `public_read` (general reads), `history_read` (paginated timeseries),
- * `rebroadcast` (HD1-API drop-in), `backfill_trigger` (on-demand season fetch).
- */
-const RATE_LIMITS = Object.freeze({
-    public_read: Object.freeze({ limit: 120, windowSeconds: 60 }),
-    history_read: Object.freeze({ limit: 30, windowSeconds: 60 }),
-    rebroadcast: Object.freeze({ limit: 60, windowSeconds: 60 }),
-    backfill_trigger: Object.freeze({ limit: 5, windowSeconds: 60 }),
-});
-
-/**
- * @param {keyof typeof CACHE_CONTROL} tier - Cache tier name.
- * @returns {string} the `Cache-Control` header value for the tier
- */
-export function getCacheControl(tier) {
-    const value = CACHE_CONTROL[tier];
-    if (!value) {
-        throw new Error(`Unknown cache tier: ${tier}`);
-    }
-    return value;
-}
-
-/**
- * @param {keyof typeof RATE_LIMITS} group - Rate-limit group name.
- * @returns {{ limit: number, windowSeconds: number }} the rate-limit config
- */
-export function getRateLimitConfig(group) {
-    const value = RATE_LIMITS[group];
-    if (!value) {
-        throw new Error(`Unknown rate-limit group: ${group}`);
-    }
-    return value;
-}
+// Pure API-policy lookups (cache tiers + rate-limit groups) live in policy.mjs
+// so they can be imported without triggering this module's eager env parsing.
+// Re-exported here for back-compat with existing `@/config/server.mjs` imports.
+export { getCacheControl, getRateLimitConfig } from '@/config/policy.mjs';
 
 // Auth is all-or-none: if the secret is present, every provider var must be too.
 const AUTH_PROVIDER_VARS = [
