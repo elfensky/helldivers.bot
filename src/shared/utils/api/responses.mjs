@@ -10,6 +10,7 @@ const ERROR_MESSAGES = {
     418: "I'm a teapot",
     429: 'Too many requests',
     500: 'Internal server error',
+    501: 'Not implemented',
     502: 'Bad gateway', //if can't reach official api
     503: 'Service unavailable',
 };
