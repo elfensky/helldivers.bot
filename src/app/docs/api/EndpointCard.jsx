@@ -234,6 +234,12 @@ export default function EndpointCard({ path, methods, schemas }) {
                             </div>
                         )}
 
+                        {operation.deprecated && (
+                            <span className="mb-2 inline-block bg-surface-3 px-2 py-0.5 font-mono text-small font-bold text-danger uppercase">
+                                Deprecated
+                            </span>
+                        )}
+
                         {operation.description && (
                             <p className="text-body leading-relaxed text-text-muted">
                                 {operation.description}

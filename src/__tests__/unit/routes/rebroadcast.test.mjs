@@ -395,6 +395,23 @@ describe('POST /api/h1/rebroadcast — get_snapshots', () => {
     });
 });
 
+describe('POST /api/h1/rebroadcast — unimplemented actions', () => {
+    // Each action carries exactly the fields its validator requires (no more —
+    // get_available_entitlements rejects extra keys) so it passes validation
+    // and reaches the switch's explicit 501.
+    test.each([
+        [{ action: 'get_available_entitlements' }],
+        [{ action: 'get_leaderboards', network: 'steam', season: 1 }],
+        [{ action: 'get_usernames', network: 'steam', count: 10 }],
+    ])('%o is recognised but returns 501 (not a silent 404)', async (form) => {
+        const res = await POST(createPostRequest(form));
+        expect(res.status).toBe(501);
+        const body = await res.json();
+        expect(body.code).toBe(501);
+        expect(body.message).toBe('Not implemented');
+    });
+});
+
 describe('method not allowed', () => {
     test.each([
         ['GET', GET],

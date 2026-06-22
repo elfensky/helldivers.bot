@@ -151,6 +151,18 @@ export async function POST(request) {
             }
             break;
         }
+        // Recognised by the validator but not implemented — Demand-Driven
+        // Compatibility. Return an explicit 501 (not a silent 404) so consumers
+        // know the action exists in the contract but isn't served yet.
+        case 'get_available_entitlements':
+        case 'get_leaderboards':
+        case 'get_usernames':
+            return errorResponse(
+                501,
+                start,
+                `action '${formValues.action}' is recognised but not implemented`,
+                { headers: rlHeaders },
+            );
         default:
             break;
     }
