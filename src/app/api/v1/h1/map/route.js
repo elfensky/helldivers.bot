@@ -7,8 +7,7 @@ import { reportError } from '@/shared/utils/observability.mjs';
 import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
 import { getCacheControl } from '@/config/server.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
-import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
-import { EVENT_STATUS } from '@/shared/enums/events.mjs';
+import { computeLiveMap, computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 import { parseMapQuery, projectMap, enemyIdFromSlug } from './mapProjection.mjs';
 
@@ -50,14 +49,13 @@ export async function GET(request) {
     }
     if (!data) return errorResponse(404, start, 'Season not found');
 
-    // Replicate computeLiveMapState's active-only filter (we also need the event
-    // list for the response, which the helper doesn't return). Keeps the filter
-    // and the computeMapState call together per the documented invariant.
-    const activeEvents =
+    // events=none asks for the bare campaign map (no event overlay); otherwise
+    // use the shared computeLiveMap helper so the active-events filter matches
+    // /api/h1/live exactly — single source of the rule (see computeMapState.mjs).
+    const { activeEvents, mapState } =
         query.events === 'none' ?
-            []
-        :   (data.events ?? []).filter((e) => e.status === EVENT_STATUS.ACTIVE);
-    const mapState = computeMapState(data.status ?? [], activeEvents);
+            { activeEvents: [], mapState: computeMapState(data.status ?? [], []) }
+        :   computeLiveMap(data);
     const bucket = (data.status ?? []).reduce(
         (max, r) => Math.max(max, r.bucket ?? 0),
         0,

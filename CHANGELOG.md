@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Refactor
+
+- **Unify the live map computation** (#437). Add `computeLiveMap(data)` as the
+  single source of the "only active events" rule — it returns
+  `{ activeEvents, mapState }`. `/api/v1/h1/map` now calls it instead of
+  re-implementing the active-events filter inline, so the public map and the
+  dashboard map (`/api/h1/live`, via the now-thin `computeLiveMapState` wrapper)
+  can no longer drift. `/api/h1/live` also sources its `no-store` header from
+  `getCacheControl('live')` for consistency with the other read tiers. No
+  response-shape changes; `/live` stays the dashboard's rich internal feed.
+
 ## 0.57.0
 
 ### Features

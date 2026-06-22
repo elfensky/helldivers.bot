@@ -11,6 +11,12 @@ vi.mock('@/shared/utils/game/computeMapState', () => ({
     computeMapState: vi.fn(),
     computeLiveMapState: vi.fn(),
 }));
+// config/server.mjs eagerly validates env on import (fail-fast at boot); the
+// env-less test runner would throw. Stub the pure tier lookup the route uses —
+// the live tier resolving to no-store is asserted below.
+vi.mock('@/config/server.mjs', () => ({
+    getCacheControl: vi.fn((tier) => (tier === 'live' ? 'no-store' : 'public')),
+}));
 
 const { getCampaign } = await import('@/db/queries/getCampaign');
 const { computeLiveMapState } = await import('@/shared/utils/game/computeMapState');

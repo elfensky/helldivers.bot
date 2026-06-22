@@ -1,4 +1,9 @@
-import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
+import {
+    computeMapState,
+    computeLiveMap,
+    computeLiveMapState,
+} from '@/shared/utils/game/computeMapState.mjs';
+import { EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 function makeFaction(enemy, points, pointsMax, status = 'active') {
     return { enemy, points, points_taken: points, points_max: pointsMax, status };
@@ -166,5 +171,48 @@ describe('computeMapState', () => {
         // Illuminate sectors follow normal campaign progression
         expect(map[2][1].status).toBe('captured'); // 7 sectors earned
         expect(map[2][7].status).toBe('captured');
+    });
+});
+
+describe('computeLiveMap', () => {
+    const data = {
+        status: [makeFaction(0, 100, 200)],
+        events: [
+            {
+                type: 'attack',
+                enemy: 0,
+                region: 11,
+                status: EVENT_STATUS.ACTIVE,
+                points: 5,
+                points_max: 10,
+                end_time: 2,
+            },
+            {
+                type: 'attack',
+                enemy: 0,
+                region: 11,
+                status: EVENT_STATUS.SUCCESS,
+                points: 10,
+                points_max: 10,
+                end_time: 1,
+            },
+        ],
+    };
+
+    test('returns only active events plus the map they produce', () => {
+        const { activeEvents, mapState } = computeLiveMap(data);
+        expect(activeEvents).toHaveLength(1);
+        expect(activeEvents[0].status).toBe(EVENT_STATUS.ACTIVE);
+        // single source: same input → same map as a direct computeMapState call
+        expect(mapState).toEqual(computeMapState(data.status, activeEvents));
+    });
+
+    test('computeLiveMapState is the map half of computeLiveMap', () => {
+        expect(computeLiveMapState(data)).toEqual(computeLiveMap(data).mapState);
+    });
+
+    test('tolerates empty/missing payloads', () => {
+        expect(computeLiveMap({}).activeEvents).toEqual([]);
+        expect(computeLiveMap(undefined).activeEvents).toEqual([]);
     });
 });
