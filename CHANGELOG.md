@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **OpenAPI coverage for the `/v1` endpoints** (#438). `GET /api/v1/h1/{status,
+  stats,season,map}` are now registered in the OpenAPI spec with query params,
+  typed response schemas, the `{time,code,message,data}` envelope, and the
+  401/404/429 + 304 responses — so `/docs/api` documents the real public API.
+- **Rebroadcast action reconciliation** (#438). The spec now declares all five
+  HD1-API actions; `get_available_entitlements`, `get_leaderboards`, and
+  `get_usernames` return an explicit **501 Not Implemented** (Demand-Driven
+  Compatibility) instead of a silent 404. Adds `501` to the error envelope.
+
+### Changed
+
+- **Public/internal API boundary.** `/docs/api` (and the OpenAPI spec) now
+  document the **public surface only** — the versioned `/api/v1/h1/*` reads,
+  `/api/h1/rebroadcast`, and the now-**deprecated** `/api/h1/campaign`. Internal
+  plumbing (`/api/h1/live`, `/api/h1/update`, `/api/notifications/subscribe`) is
+  excluded from the spec and noted as internal in prose. Deprecated endpoints
+  render a badge.
+
 ## 0.58.0
 
 ### Features

@@ -36,17 +36,13 @@ export default function ApiReferencePage() {
                         Standard Envelope
                     </h3>
                     <p className="mb-2 text-body leading-[1.7] text-text-muted">
-                        Used by{' '}
+                        Used by the{' '}
                         <code className="font-mono text-small text-text">
-                            /api/healthcheck
-                        </code>
-                        ,{' '}
+                            /api/v1/h1/*
+                        </code>{' '}
+                        reads and{' '}
                         <code className="font-mono text-small text-text">
                             /api/h1/campaign
-                        </code>
-                        ,{' '}
-                        <code className="font-mono text-small text-text">
-                            /api/h1/update
                         </code>
                         . The <code className="font-mono text-small text-text">time</code>{' '}
                         field is elapsed milliseconds (floating-point). The{' '}
@@ -103,11 +99,12 @@ export default function ApiReferencePage() {
                         <code className="font-mono text-small text-text">
                             /api/h1/live
                         </code>{' '}
-                        and{' '}
+                        is the dashboard&apos;s own feed — internal, not part of the
+                        public contract.{' '}
                         <code className="font-mono text-small text-text">
                             /api/h1/campaign
                         </code>{' '}
-                        are public.
+                        is public but deprecated.
                     </p>
                 </div>
             </div>
@@ -128,7 +125,9 @@ export default function ApiReferencePage() {
                     <code className="font-mono text-small text-text">/v2</code> while{' '}
                     <code className="font-mono text-small text-text">/v1</code> stays
                     operational. The version lives in the path — there is no header-based
-                    version negotiation.
+                    version negotiation. The endpoint reference below documents the{' '}
+                    <strong className="text-text">public surface only</strong> — internal
+                    plumbing is noted here but intentionally left out of the spec.
                 </p>
                 <dl className="flex flex-col gap-3">
                     <div>
@@ -153,13 +152,18 @@ export default function ApiReferencePage() {
                         </dd>
                     </div>
                     <div>
-                        <dt className="font-mono text-small text-text">/api/h1/live</dt>
+                        <dt className="font-mono text-small text-text">
+                            /api/h1/live · /api/h1/update
+                        </dt>
                         <dd className="text-body leading-[1.7] text-text-muted">
-                            Dashboard data source — a cache-policy + parameter preset over{' '}
+                            <strong className="text-text">Internal</strong> — the
+                            dashboard&apos;s rich live feed and the worker&apos;s update
+                            trigger (
                             <code className="font-mono text-small text-text">
-                                /api/v1/h1/status
+                                UPDATE_KEY
                             </code>
-                            . Public.
+                            -gated). Not part of the public contract and excluded from the
+                            spec below; they can change without notice.
                         </dd>
                     </div>
                     <div>
@@ -175,16 +179,6 @@ export default function ApiReferencePage() {
                             +{' '}
                             <code className="font-mono text-small text-text">
                                 /api/v1/h1/stats
-                            </code>
-                            .
-                        </dd>
-                    </div>
-                    <div>
-                        <dt className="font-mono text-small text-text">/api/h1/update</dt>
-                        <dd className="text-body leading-[1.7] text-text-muted">
-                            Internal worker trigger; gated by{' '}
-                            <code className="font-mono text-small text-text">
-                                UPDATE_KEY
                             </code>
                             .
                         </dd>
