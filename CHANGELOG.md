@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Tiered `Cache-Control` + ETag** (#436) — `/v1` read endpoints now send cache
+  headers from the typed config: `latest` (status `mode=latest`, map),
+  `current-season` (`season=current` history/stats/season metadata), and
+  `closed-season` (explicit past seasons). History reads (status `mode=history`,
+  stats) also carry a strong `ETag` and answer `If-None-Match` with `304`.
+  Request `season=current` for live freshness — an explicit current-season
+  _number_ is cached as a closed season.
+
+### Changed
+
+- **`/v1` map fronts are now arrays.** Each front (`bugs`/`cyborgs`/`illuminate`/
+  `superEarth`) is an `id`-sorted array of region objects
+  (`{ id, region, capital, points, pointsMax, percent, status, event }`) instead
+  of a region-number-keyed object, so consumers can iterate without depending on
+  key order. `id` is the region number (0 for Super Earth's homeworld).
+- **`/v1` status `progress` → `percent`.** The status item field is renamed and
+  rescaled from a 0–1 ratio to a 0–100 percent, matching the map/dashboard
+  convention.
+- **`/v1` stats drops `season=all`.** Cross-season totals are served by the
+  frontend directly (`getCrossSeasonStats`); `season=all` is now ordinary invalid
+  input (400). A dedicated totals endpoint can be added if a real consumer needs
+  one.
+
 ## 0.56.0
 
 ### Features

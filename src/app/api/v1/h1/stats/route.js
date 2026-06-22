@@ -6,7 +6,8 @@ import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
 import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
 import { decodeCursor } from '@/shared/utils/api/cursor.mjs';
-import { config } from '@/config/server.mjs';
+import { computeEtag, notModified } from '@/shared/utils/api/etag.mjs';
+import { config, getCacheControl } from '@/config/server.mjs';
 import { getStats } from '@/db/queries/getStats.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 import { parseStatsQuery, projectStats, enemyIdFromSlug } from './statsProjection.mjs';
@@ -26,16 +27,6 @@ export async function GET(request) {
     const parsed = parseStatsQuery(new URL(request.url).searchParams);
     if (!parsed.success) return errorResponse(400, start, parsed.message);
     const query = parsed.data;
-
-    if (query.season === 'all') {
-        // ponytail: cross-season pagination needs a season-aware cursor; defer
-        // until there's demand. Single-season + current cover the real use cases.
-        return errorResponse(
-            400,
-            start,
-            "season=all is not yet supported; specify a season number or 'current'",
-        );
-    }
 
     const seasonInput = query.season === 'current' ? null : query.season;
     const enemyId = query.enemy ? enemyIdFromSlug(query.enemy) : undefined;
@@ -68,11 +59,19 @@ export async function GET(request) {
     }
     if (!result) return errorResponse(404, start, 'Season not found');
 
-    return successResponse(
-        200,
-        start,
-        projectStats(result.rows, result.season, query.limit, config.bucketSize),
+    // Closed-season stats are immutable → long TTL + ETag. See status route for
+    // the `current` keyword vs explicit-number caveat.
+    const cacheControl = getCacheControl(
+        query.season === 'current' ? 'current-season' : 'closed-season',
     );
+    const data = projectStats(result.rows, result.season, query.limit, config.bucketSize);
+    const etag = computeEtag(data);
+    if (request.headers.get('if-none-match') === etag) {
+        return notModified(etag, cacheControl);
+    }
+    return successResponse(200, start, data, {
+        headers: { 'Cache-Control': cacheControl, ETag: etag },
+    });
 }
 
 export const POST = methodNotAllowed;
