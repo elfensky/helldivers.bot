@@ -23,11 +23,12 @@ export function computeEtag(data) {
  *
  * @param {string} etag - The matched ETag.
  * @param {string} cacheControl - The same `Cache-Control` the 200 would carry.
+ * @param {Record<string, string>} [extraHeaders] - Extra headers to echo (e.g. RateLimit-*).
  * @returns {NextResponse} a bodiless 304 response.
  */
-export function notModified(etag, cacheControl) {
+export function notModified(etag, cacheControl, extraHeaders = {}) {
     return new NextResponse(null, {
         status: 304,
-        headers: { ETag: etag, 'Cache-Control': cacheControl },
+        headers: { ...extraHeaders, ETag: etag, 'Cache-Control': cacheControl },
     });
 }
