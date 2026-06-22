@@ -158,17 +158,28 @@ export function computeMapState(factionStates, events = []) {
 }
 
 /**
- * Compute map state for a live campaign payload. Filters `data.events` to
- * active-only and then delegates to `computeMapState` — protects the
- * "only active events" invariant documented above so call sites can't
- * accidentally pass completed events.
+ * Single source of the "only active events" rule for live campaign data.
+ * Returns BOTH the active-event list and the map it produces, so every caller
+ * (the dashboard's `/api/h1/live` and the public `/api/v1/h1/map`) computes the
+ * map the same way and can't drift by re-filtering events independently.
+ *
+ * @param {{ status: Array, events?: Array }} data - Live campaign payload
+ * @returns {{ activeEvents: Array, mapState: object }} active events + map state
+ */
+export function computeLiveMap(data) {
+    const activeEvents = (data?.events ?? []).filter(
+        (e) => e.status === EVENT_STATUS.ACTIVE,
+    );
+    return { activeEvents, mapState: computeMapState(data?.status ?? [], activeEvents) };
+}
+
+/**
+ * Compute map state for a live campaign payload. Thin wrapper over
+ * `computeLiveMap` for call sites that only need the map.
  *
  * @param {{ status: Array, events?: Array }} data - Live campaign payload
  * @returns {object} Map state from computeMapState
  */
 export function computeLiveMapState(data) {
-    const activeEvents = (data?.events ?? []).filter(
-        (e) => e.status === EVENT_STATUS.ACTIVE,
-    );
-    return computeMapState(data?.status ?? [], activeEvents);
+    return computeLiveMap(data).mapState;
 }
