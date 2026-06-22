@@ -7,6 +7,9 @@ import { reportError } from '@/shared/utils/observability.mjs';
 import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
 import { getCacheControl } from '@/config/server.mjs';
 import { computeEtag, notModified } from '@/shared/utils/api/etag.mjs';
+import { getClientIp } from '@/shared/utils/api/clientIp.mjs';
+import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
+import { backfillAndRetry } from '@/shared/utils/api/backfillSeason.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { getStatusHistory } from '@/db/queries/getStatusHistory.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
@@ -35,6 +38,14 @@ export async function GET(request) {
     if (!parsed.success) return errorResponse(400, start, parsed.message);
     const query = parsed.data;
 
+    const ip = getClientIp(request);
+    const { error: limitError, headers: rlHeaders } = await enforceRateLimit(
+        query.mode === 'latest' ? 'public_read' : 'history_read',
+        ip,
+        start,
+    );
+    if (limitError) return limitError;
+
     const seasonInput = query.season === 'current' ? null : query.season;
     const enemyId = query.enemy ? enemyIdFromSlug(query.enemy) : undefined;
 
@@ -45,17 +56,27 @@ export async function GET(request) {
     });
 
     if (query.mode === 'latest') {
-        const { data: campaign, error } = await tryCatch(getCampaign(seasonInput));
+        let { data: campaign, error } = await tryCatch(getCampaign(seasonInput));
         if (error) {
             reportError(error, { route: '/api/v1/h1/status', stage: 'get-campaign' });
             return errorResponse(500, start, 'Internal server error');
+        }
+        if (!campaign) {
+            const r = await backfillAndRetry({
+                season: query.season,
+                ip,
+                start,
+                rerun: () => getCampaign(seasonInput),
+            });
+            if (r.error) return r.error;
+            campaign = r.result;
         }
         if (!campaign) return errorResponse(404, start, 'Season not found');
         return successResponse(
             200,
             start,
             projectLatest(campaign.status, campaign.season, query.limit, enemyId),
-            { headers: { 'Cache-Control': getCacheControl('latest') } },
+            { headers: { ...rlHeaders, 'Cache-Control': getCacheControl('latest') } },
         );
     }
 
@@ -68,7 +89,7 @@ export async function GET(request) {
     const fromUnix = query.from ? Math.floor(query.from.getTime() / 1000) : null;
     const toUnix = query.to ? Math.floor(query.to.getTime() / 1000) : null;
 
-    const { data: history, error } = await tryCatch(
+    const runHistory = () =>
         getStatusHistory(seasonInput, {
             enemyId,
             fromUnix,
@@ -76,11 +97,22 @@ export async function GET(request) {
             limit: query.limit,
             cursorPos,
             order: query.order,
-        }),
-    );
+        });
+
+    let { data: history, error } = await tryCatch(runHistory());
     if (error) {
         reportError(error, { route: '/api/v1/h1/status', stage: 'get-status-history' });
         return errorResponse(500, start, 'Internal server error');
+    }
+    if (!history) {
+        const r = await backfillAndRetry({
+            season: query.season,
+            ip,
+            start,
+            rerun: runHistory,
+        });
+        if (r.error) return r.error;
+        history = r.result;
     }
     if (!history) return errorResponse(404, start, 'Season not found');
 
@@ -99,10 +131,10 @@ export async function GET(request) {
     );
     const etag = computeEtag(data);
     if (request.headers.get('if-none-match') === etag) {
-        return notModified(etag, cacheControl);
+        return notModified(etag, cacheControl, rlHeaders);
     }
     return successResponse(200, start, data, {
-        headers: { 'Cache-Control': cacheControl, ETag: etag },
+        headers: { ...rlHeaders, 'Cache-Control': cacheControl, ETag: etag },
     });
 }
 

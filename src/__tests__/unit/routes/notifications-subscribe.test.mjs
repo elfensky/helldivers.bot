@@ -8,6 +8,12 @@ import {
     OPTIONS,
 } from '@/app/api/notifications/subscribe/route';
 import db from '@/db/db';
+import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
+import { errorResponse } from '@/shared/utils/api/responses.mjs';
+
+// The limiter itself is covered by rateLimit.test.mjs; here we stub the boundary
+// so the route tests assert delegation, not fixed-window counting.
+vi.mock('@/shared/utils/api/rateLimit', () => ({ enforceRateLimit: vi.fn() }));
 
 // /api/notifications/subscribe writes to db.push_subscription via the global
 // Prisma mock from vitest.setup.mjs. Each test resets the mock and asserts
@@ -53,6 +59,9 @@ const validBody = {
 beforeEach(() => {
     vi.mocked(db.push_subscription.upsert).mockReset().mockResolvedValue({});
     vi.mocked(db.push_subscription.delete).mockReset().mockResolvedValue({});
+    vi.mocked(enforceRateLimit)
+        .mockReset()
+        .mockResolvedValue({ error: null, headers: {} });
 });
 
 // -------- POST --------
@@ -302,31 +311,33 @@ describe('/api/notifications/subscribe — same-origin + rate limit', () => {
         expect(db.push_subscription.delete).not.toHaveBeenCalled();
     });
 
-    test('POST rate-limits the same IP after 20 requests in the same window', async () => {
-        const customIp = '203.0.113.1';
-        const reqWithIp = () =>
-            new Request('http://localhost/api/notifications/subscribe', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Origin: 'http://localhost',
-                    Host: 'localhost',
-                    'X-Forwarded-For': customIp,
-                },
-                body: JSON.stringify(validBody),
-            });
+    test('POST delegates to the push limiter (keyed by client IP) and returns its 429', async () => {
+        const reqWithIp = new Request('http://localhost/api/notifications/subscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Origin: 'http://localhost',
+                Host: 'localhost',
+                'X-Forwarded-For': '203.0.113.1',
+            },
+            body: JSON.stringify(validBody),
+        });
+        vi.mocked(enforceRateLimit).mockResolvedValueOnce({
+            error: errorResponse(429, 0, 'Rate limit exceeded'),
+            headers: {},
+        });
 
-        // 20 succeed
-        for (let i = 0; i < 20; i++) {
-            const res = await POST(reqWithIp());
-            expect(res.status).toBe(201);
-        }
-        // 21st is rejected
-        const blocked = await POST(reqWithIp());
+        const blocked = await POST(reqWithIp);
         expect(blocked.status).toBe(429);
         const body = await blocked.json();
         expect(body.code).toBe(429);
         expect(body.message).toBe('Too many requests');
+        // keyed by the first X-Forwarded-For hop, under the `push` group
+        expect(enforceRateLimit).toHaveBeenCalledWith(
+            'push',
+            '203.0.113.1',
+            expect.any(Number),
+        );
     });
 });
 

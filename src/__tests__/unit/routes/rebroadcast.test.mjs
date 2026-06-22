@@ -28,6 +28,9 @@ vi.mock('@/update/season', () => ({
     updateSeason: vi.fn(),
     SEASON_NOT_FOUND: 'SEASON_NOT_FOUND',
 }));
+// The limiter is covered by rateLimit.test.mjs; here we stub it so it doesn't
+// consume the shared db.$queryRaw mock that reconstructCampaignStatus uses.
+vi.mock('@/shared/utils/api/rateLimit', () => ({ enforceRateLimit: vi.fn() }));
 vi.mock('@/shared/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
 vi.mock('@/shared/enums/events.mjs', () => ({
     EVENT_TYPE: { DEFEND: 'defend', ATTACK: 'attack' },
@@ -45,6 +48,7 @@ vi.mock('next/server', async (importOriginal) => {
 import { POST, GET, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/rebroadcast/route';
 import db from '@/db/db';
 import { validateApiKey } from '@/shared/utils/api/validateApiKey.mjs';
+import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
 import { updateSeason } from '@/update/season.mjs';
 
 function createPostRequest(formEntries) {
@@ -111,6 +115,7 @@ beforeEach(() => {
         data: { userId: '1', keyId: '1' },
         code: null,
     });
+    vi.mocked(enforceRateLimit).mockResolvedValue({ error: null, headers: {} });
 });
 
 describe('POST /api/h1/rebroadcast — auth & validation', () => {

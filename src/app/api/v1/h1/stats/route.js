@@ -7,6 +7,9 @@ import { reportError } from '@/shared/utils/observability.mjs';
 import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
 import { decodeCursor } from '@/shared/utils/api/cursor.mjs';
 import { computeEtag, notModified } from '@/shared/utils/api/etag.mjs';
+import { getClientIp } from '@/shared/utils/api/clientIp.mjs';
+import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
+import { backfillAndRetry } from '@/shared/utils/api/backfillSeason.mjs';
 import { config, getCacheControl } from '@/config/server.mjs';
 import { getStats } from '@/db/queries/getStats.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
@@ -28,6 +31,14 @@ export async function GET(request) {
     if (!parsed.success) return errorResponse(400, start, parsed.message);
     const query = parsed.data;
 
+    const ip = getClientIp(request);
+    const { error: limitError, headers: rlHeaders } = await enforceRateLimit(
+        'history_read',
+        ip,
+        start,
+    );
+    if (limitError) return limitError;
+
     const seasonInput = query.season === 'current' ? null : query.season;
     const enemyId = query.enemy ? enemyIdFromSlug(query.enemy) : undefined;
 
@@ -43,7 +54,7 @@ export async function GET(request) {
         await umamiTrackEvent('API | v1 stats', '/api/v1/h1/stats', 'api-v1-stats', {});
     });
 
-    const { data: result, error } = await tryCatch(
+    const runStats = () =>
         getStats(seasonInput, {
             enemyId,
             fromUnix,
@@ -51,11 +62,22 @@ export async function GET(request) {
             limit: query.limit,
             cursorPos,
             order: query.order,
-        }),
-    );
+        });
+
+    let { data: result, error } = await tryCatch(runStats());
     if (error) {
         reportError(error, { route: '/api/v1/h1/stats', stage: 'get-stats' });
         return errorResponse(500, start, 'Internal server error');
+    }
+    if (!result) {
+        const r = await backfillAndRetry({
+            season: query.season,
+            ip,
+            start,
+            rerun: runStats,
+        });
+        if (r.error) return r.error;
+        result = r.result;
     }
     if (!result) return errorResponse(404, start, 'Season not found');
 
@@ -67,10 +89,10 @@ export async function GET(request) {
     const data = projectStats(result.rows, result.season, query.limit, config.bucketSize);
     const etag = computeEtag(data);
     if (request.headers.get('if-none-match') === etag) {
-        return notModified(etag, cacheControl);
+        return notModified(etag, cacheControl, rlHeaders);
     }
     return successResponse(200, start, data, {
-        headers: { 'Cache-Control': cacheControl, ETag: etag },
+        headers: { ...rlHeaders, 'Cache-Control': cacheControl, ETag: etag },
     });
 }
 
