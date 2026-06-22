@@ -5,6 +5,7 @@ import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
 import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
+import { getCacheControl } from '@/config/server.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { EVENT_STATUS } from '@/shared/enums/events.mjs';
@@ -71,6 +72,7 @@ export async function GET(request) {
             eventsMode: query.events,
             enemyId,
         }),
+        { headers: { 'Cache-Control': getCacheControl('latest') } },
     );
 }
 

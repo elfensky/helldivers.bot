@@ -49,7 +49,7 @@ describe('projectMap', () => {
         3: { 0: { status: 'active' } },
     };
 
-    test('re-keys fronts by faction slug and includes metadata', () => {
+    test('re-keys fronts by faction slug, as id-sorted arrays', () => {
         const out = projectMap(mapState, [], {
             season: 159,
             bucket: 1782004500,
@@ -62,7 +62,11 @@ describe('projectMap', () => {
             'illuminate',
             'superEarth',
         ]);
-        expect(out.fronts.bugs[1].status).toBe('captured');
+        // each front is an array; elements self-identify by `id` (sorted ascending)
+        expect(Array.isArray(out.fronts.bugs)).toBe(true);
+        expect(out.fronts.bugs.map((r) => r.id)).toEqual([1, 11]);
+        expect(out.fronts.bugs.find((r) => r.id === 1).status).toBe('captured');
+        expect(out.fronts.superEarth[0].id).toBe(0);
         expect(out.activeEvents).toEqual([]);
     });
 

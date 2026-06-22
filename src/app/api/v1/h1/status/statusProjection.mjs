@@ -49,9 +49,10 @@ export function enemyIdFromSlug(enemy) {
     return FACTION_INDEX[enemy];
 }
 
-function progressRatio(points, pointsMax) {
+function percentOf(points, pointsMax) {
     if (!pointsMax || pointsMax <= 0) return 0;
-    return Math.round((points / pointsMax) * 10000) / 10000;
+    // 0–100, two decimals — matches the map/dashboard `percent` convention.
+    return Math.round((points / pointsMax) * 10000) / 100;
 }
 
 function toIso(unixSeconds) {
@@ -73,7 +74,7 @@ function projectItem(row, pointsMax, players, includeBucket) {
         enemyId: row.enemy,
         points: row.points,
         pointsMax,
-        progress: progressRatio(row.points, pointsMax),
+        percent: percentOf(row.points, pointsMax),
         players,
         updatedAt: toIso(row.time),
     };

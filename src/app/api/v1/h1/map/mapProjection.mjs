@@ -61,9 +61,32 @@ function projectEvent(e) {
 }
 
 /**
- * Project the computed map state + events into the public response. The map is
- * the render-ready per-faction structure from `computeMapState` (each front is
- * regions 1–10 plus homeworld 11), re-keyed by faction slug.
+ * Flatten one front's region map into a sorted, self-identifying array. Each
+ * element carries its own `id` (region number — 1–11 for the three fronts, 0
+ * for Super Earth's homeworld) so consumers don't depend on array order.
+ *
+ * @param {Record<string, { region: string, capital: string, points: number, points_max: number, percent: number, status: string, event: string }>} regions - One faction's region → state map.
+ * @returns {Array<object>} regions as an array sorted by `id`.
+ */
+function frontToArray(regions) {
+    return Object.entries(regions)
+        .map(([regionId, r]) => ({
+            id: Number(regionId),
+            region: r.region,
+            capital: r.capital,
+            points: r.points,
+            pointsMax: r.points_max,
+            percent: r.percent,
+            status: r.status,
+            event: r.event,
+        }))
+        .sort((a, b) => a.id - b.id);
+}
+
+/**
+ * Project the computed map state + events into the public response. Each front
+ * (regions 1–10 plus homeworld 11, or region 0 for Super Earth) is an array
+ * keyed by faction slug — see `frontToArray`.
  *
  * @param {Record<string, Record<string, object>>} mapState - computeMapState output (faction id → region → state).
  * @param {Array<object>} events - The events included (active list, or empty).
@@ -71,14 +94,14 @@ function projectEvent(e) {
  * @returns {object} the public map response.
  */
 export function projectMap(mapState, events, meta) {
-    /** @type {Record<string, Record<string, object>>} */
+    /** @type {Record<string, Array<object>>} */
     const fronts = {};
     for (const [factionId, regions] of Object.entries(mapState)) {
         const id = Number(factionId);
         // enemy filter: keep only that front (Super Earth front stays — it carries
         // the homeworld-defense state that's relevant regardless of the filter).
         if (meta.enemyId !== undefined && id !== meta.enemyId && id !== 3) continue;
-        fronts[FRONT_KEY[id] ?? String(id)] = regions;
+        fronts[FRONT_KEY[id] ?? String(id)] = frontToArray(regions);
     }
     return {
         season: meta.season,

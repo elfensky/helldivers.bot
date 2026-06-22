@@ -5,6 +5,7 @@ import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
 import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
+import { getCacheControl } from '@/config/server.mjs';
 import { getSeasons } from '@/db/queries/getSeasons.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 import { parseSeasonQuery, projectSeasons } from './seasonProjection.mjs';
@@ -42,7 +43,16 @@ export async function GET(request) {
         return errorResponse(404, start, 'Season not found');
     }
 
-    return successResponse(200, start, projectSeasons(result.rows, result.current));
+    // If the response includes the live season its metadata can still change
+    // (last_updated); otherwise every row is a closed, immutable season.
+    const includesCurrent = result.rows.some((r) => r.season === result.current);
+    const cacheControl = getCacheControl(
+        includesCurrent ? 'current-season' : 'closed-season',
+    );
+
+    return successResponse(200, start, projectSeasons(result.rows, result.current), {
+        headers: { 'Cache-Control': cacheControl },
+    });
 }
 
 export const POST = methodNotAllowed;

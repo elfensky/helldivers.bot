@@ -4,16 +4,13 @@ import { encodeCursor } from '@/shared/utils/api/cursor.mjs';
 
 /**
  * Query-parameter schema for `GET /api/v1/h1/stats`.
- * `season` accepts `current` (default), `all`, or a positive integer; `all` is
- * validated here but handled (deferred) by the route.
+ * `season` accepts `current` (default) or a positive integer. Cross-season
+ * totals are served by the frontend directly (getCrossSeasonStats); a public
+ * `season=all` would need a season-aware cursor and has no consumer yet.
  */
 const querySchema = z.object({
     season: z
-        .union([
-            z.literal('current'),
-            z.literal('all'),
-            z.coerce.number().int().positive(),
-        ])
+        .union([z.literal('current'), z.coerce.number().int().positive()])
         .default('current'),
     enemy: z.enum(['bugs', 'cyborgs', 'illuminate']).optional(),
     from: z.coerce.date().optional(),

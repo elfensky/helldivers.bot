@@ -15,17 +15,12 @@ describe('parseStatsQuery', () => {
         expect(r.data).toMatchObject({ season: 'current', limit: 100, order: 'desc' });
     });
 
-    test('accepts season=all (route defers it)', () => {
-        const r = parseStatsQuery(sp('season=all'));
-        expect(r.success).toBe(true);
-        expect(r.data.season).toBe('all');
-    });
-
     test.each([
         ['enemy=martians', /enemy/],
         ['limit=0', /limit/],
         ['limit=501', /limit/],
         ['season=-1', /season/],
+        ['season=all', /season/], // cross-season totals are served by the frontend
         ['order=up', /order/],
     ])('rejects invalid query %s', (qs, re) => {
         const r = parseStatsQuery(sp(qs));

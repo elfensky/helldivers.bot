@@ -5,6 +5,8 @@ import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
 import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
+import { getCacheControl } from '@/config/server.mjs';
+import { computeEtag, notModified } from '@/shared/utils/api/etag.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { getStatusHistory } from '@/db/queries/getStatusHistory.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
@@ -53,6 +55,7 @@ export async function GET(request) {
             200,
             start,
             projectLatest(campaign.status, campaign.season, query.limit, enemyId),
+            { headers: { 'Cache-Control': getCacheControl('latest') } },
         );
     }
 
@@ -81,17 +84,26 @@ export async function GET(request) {
     }
     if (!history) return errorResponse(404, start, 'Season not found');
 
-    return successResponse(
-        200,
-        start,
-        projectHistory(
-            history.rows,
-            history.pointsMaxByEnemy,
-            history.playersByKey,
-            history.season,
-            query.limit,
-        ),
+    // Closed seasons are immutable → long TTL + ETag for 304s. `current` is the
+    // keyword for live freshness; an explicit current-season number is cached as
+    // closed (ponytail: param-based tier, no extra current-season query).
+    const cacheControl = getCacheControl(
+        query.season === 'current' ? 'current-season' : 'closed-season',
     );
+    const data = projectHistory(
+        history.rows,
+        history.pointsMaxByEnemy,
+        history.playersByKey,
+        history.season,
+        query.limit,
+    );
+    const etag = computeEtag(data);
+    if (request.headers.get('if-none-match') === etag) {
+        return notModified(etag, cacheControl);
+    }
+    return successResponse(200, start, data, {
+        headers: { 'Cache-Control': cacheControl, ETag: etag },
+    });
 }
 
 export const POST = methodNotAllowed;
