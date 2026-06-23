@@ -20,7 +20,7 @@ COPY package.json package-lock.json ./
 #
 # Build on glibc (node:24 is Debian, NOT Alpine/musl) so Sharp's prebuilt
 # glibc binary (@img/sharp-linux-x64) is installed and traced into the
-# standalone output. The runtime image (cgr.dev/chainguard/node, Wolfi) is
+# standalone output. The runtime image (distroless nodejs/Debian 12) is
 # ALSO glibc, so the binary loads. Do NOT strip @img/sharp-* — building on
 # musl while shipping to a glibc runtime makes Sharp fail at runtime with
 # "Could not load the 'sharp' module using the linux-x64 runtime" (the image
@@ -71,17 +71,20 @@ RUN --mount=type=cache,target=/app/.next/cache,sharing=locked \
     --mount=type=secret,id=sentry_url,env=SENTRY_URL \
     --mount=type=secret,id=sentry_org,env=SENTRY_ORG \
     --mount=type=secret,id=sentry_project,env=SENTRY_PROJECT \
-    if [ -f package-lock.json ]; then npm run build; \
+    if [ -f package-lock.json ]; then POSTGRES_URL=postgresql://dummy UPDATE_KEY=dummy UPDATE_INTERVAL=20 npm run build; \
     else echo "Lockfile not found." && exit 1; \
     fi
 #endregion
 
 #region runner
-# Hardened minimal runtime — Chainguard images are rebuilt daily with patched
-# packages and carry near-zero CVEs. The free `:latest` tag tracks current
-# stable Node. No shell, no package manager, no wget/curl — only the Node
-# runtime. Runs as `nonroot` (uid 65532) by default with ENTRYPOINT ["node"].
-FROM cgr.dev/chainguard/node:latest AS runner
+# Hardened minimal runtime — Google distroless ships no shell, package manager,
+# or extra userland, only the Node runtime, on glibc/Debian 12 (so Sharp's
+# prebuilt binaries work). Pinned to Node 24 — the Active LTS. We previously used
+# cgr.dev/chainguard/node:latest, but its free tier only offers the floating
+# `:latest` tag, which now tracks Node 26 (Current, non-LTS); distroless lets us
+# pin the LTS major. Runs as `nonroot` (uid 65532) by default with
+# ENTRYPOINT ["/nodejs/bin/node"].
+FROM gcr.io/distroless/nodejs24-debian12:nonroot AS runner
 WORKDIR /app
 # Pass the version from the build step
 ARG VERSION
@@ -100,14 +103,12 @@ ENV NEXT_PUBLIC_DEPLOY_ENV=$NEXT_PUBLIC_DEPLOY_ENV
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 #
-# Chown by NUMERIC uid:gid, NOT the name `nonroot`. This Chainguard runtime
-# has no `nonroot` entry in /etc/passwd (uid 65532 is named `node`), so
-# `--chown=nonroot:nonroot` silently falls back to root (0:0). That left
-# /app/.next root-owned and made the Next.js image optimizer's runtime
-# `mkdir('.next/cache/images')` fail with EACCES, flooding logs with
-# unhandledRejection on every remote-avatar (Discord/GitHub/Google/Gravatar)
-# optimization. Numeric IDs need no passwd lookup, so 65532 (the runtime
-# user) owns the tree as intended and the cache dir is created on demand.
+# Chown by NUMERIC uid:gid (65532 = the runtime user). Numeric IDs need no
+# /etc/passwd lookup, so the runtime user owns the tree regardless of how the
+# base image names that uid. This keeps /app/.next writable so the Next.js
+# image optimizer's runtime `mkdir('.next/cache/images')` doesn't fail with
+# EACCES — which previously flooded logs with unhandledRejection on every
+# remote-avatar (Discord/GitHub/Google/Gravatar) optimization.
 COPY --from=builder --chown=65532:65532 /app/.next/standalone ./
 COPY --from=builder --chown=65532:65532 /app/.next/static ./.next/static
 COPY --from=builder --chown=65532:65532 /app/public ./public
@@ -116,10 +117,11 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
-# Image ENTRYPOINT is ["node"], so CMD is just the script path.
+# Image ENTRYPOINT is ["/nodejs/bin/node"], so CMD is just the script path.
 CMD ["server.js"]
 # Node's built-in fetch (stable since Node 21) replaces wget/curl probes.
-# Exec form (JSON array) bypasses /bin/sh, which Chainguard doesn't ship.
+# Exec form (JSON array) bypasses /bin/sh, which distroless doesn't ship; and
+# `node` isn't on distroless's PATH, so the probe calls it by absolute path.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    CMD ["/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:3000/api/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 #endregion
