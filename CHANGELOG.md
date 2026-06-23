@@ -21,6 +21,10 @@
   plumbing (`/api/h1/live`, `/api/h1/update`, `/api/notifications/subscribe`) is
   excluded from the spec and noted as internal in prose. Deprecated endpoints
   render a badge.
+- **Cascade Failures leaderboard requires length ≥4.** `findAllCascades` now
+  defaults `minLength` to 4 (was 3) — length-3 runs are too common to be
+  noteworthy and made the board noisy. `getCascadeLeaderboard` drops its explicit
+  override and uses the new default.
 
 ## 0.58.0
 

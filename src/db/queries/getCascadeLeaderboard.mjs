@@ -50,7 +50,7 @@ export const getCascadeLeaderboard = cache(async () => {
     const bySeason = Map.groupBy(events, (e) => e.season);
     const all = [];
     for (const [season, seasonEvents] of bySeason) {
-        for (const cascade of findAllCascades(seasonEvents, { minLength: 3 })) {
+        for (const cascade of findAllCascades(seasonEvents)) {
             all.push({ season, ...cascade });
         }
     }

@@ -11,7 +11,8 @@ const MAX_GAP_SEC = 3600; // 1 hour
  *
  * @param {Array} events - h1_event records (any type, any status)
  * @param {object} [opts] - Optional configuration.
- * @param {number} [opts.minLength=3] - Inclusive minimum cascade length.
+ * @param {number} [opts.minLength=4] - Inclusive minimum cascade length. Default
+ *   4: a shorter run is too common to be noteworthy (was 3 — too noisy).
  * @returns {Array<{
  *   length: number,
  *   faction: string,
@@ -25,7 +26,7 @@ const MAX_GAP_SEC = 3600; // 1 hour
  *   events: object[],
  * }>}
  */
-export function findAllCascades(events, { minLength = 3 } = {}) {
+export function findAllCascades(events, { minLength = 4 } = {}) {
     if (!events?.length) return [];
 
     const failedDefends = events

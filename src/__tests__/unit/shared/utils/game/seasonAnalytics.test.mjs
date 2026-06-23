@@ -26,7 +26,7 @@ describe('findAllCascades', () => {
         expect(findAllCascades(undefined)).toEqual([]);
     });
 
-    it('returns [] when fewer than 3 failed defends total', () => {
+    it('returns [] when there are too few failed defends', () => {
         const e1 = makeFailedDefend({ enemy: 2, region: 8 });
         const e2 = makeFailedDefend({ enemy: 2, region: 7, prevEndTime: e1.end_time });
         expect(findAllCascades([e1, e2])).toEqual([]);
@@ -45,14 +45,14 @@ describe('findAllCascades', () => {
             start_time: e2.end_time + 1800,
             end_time: e2.end_time + 1800 + 7200,
         };
-        expect(findAllCascades([e1, e2, e3])).toEqual([]);
+        expect(findAllCascades([e1, e2, e3], { minLength: 3 })).toEqual([]);
     });
 
     it('detects a length-3 cascade for one faction', () => {
         const e1 = makeFailedDefend({ enemy: 2, region: 8 });
         const e2 = makeFailedDefend({ enemy: 2, region: 7, prevEndTime: e1.end_time });
         const e3 = makeFailedDefend({ enemy: 2, region: 6, prevEndTime: e2.end_time });
-        const result = findAllCascades([e1, e2, e3]);
+        const result = findAllCascades([e1, e2, e3], { minLength: 3 });
         expect(result).toHaveLength(1);
         expect(result[0].length).toBe(3);
         expect(result[0].faction).toBe('The Illuminate');
@@ -100,7 +100,7 @@ describe('findAllCascades', () => {
         const e1 = makeFailedDefend({ enemy: 0, region: 5 });
         const e2 = makeFailedDefend({ enemy: 0, region: 5, prevEndTime: e1.end_time });
         const e3 = makeFailedDefend({ enemy: 0, region: 4, prevEndTime: e2.end_time });
-        expect(findAllCascades([e1, e2, e3])).toEqual([]);
+        expect(findAllCascades([e1, e2, e3], { minLength: 3 })).toEqual([]);
     });
 
     it('keeps cascades from separate factions independent', () => {
@@ -127,7 +127,7 @@ describe('findAllCascades', () => {
             end_time: i3.end_time + 600 + 7200,
         };
 
-        const result = findAllCascades([b1, i1, b2, i2, b3, i3, i4]);
+        const result = findAllCascades([b1, i1, b2, i2, b3, i3, i4], { minLength: 3 });
         expect(result).toHaveLength(2);
         expect(result[0].length).toBe(4);
         expect(result[0].factionIndex).toBe(2);
@@ -148,7 +148,7 @@ describe('findAllCascades', () => {
         const b2 = makeFailedDefend({ enemy: 0, region: 5, prevEndTime: b1.end_time });
         const b3 = makeFailedDefend({ enemy: 0, region: 4, prevEndTime: b2.end_time });
 
-        const result = findAllCascades([a1, a2, a3, b1, b2, b3]);
+        const result = findAllCascades([a1, a2, a3, b1, b2, b3], { minLength: 3 });
         expect(result).toHaveLength(2);
         expect(result.every((c) => c.length === 3 && c.factionIndex === 0)).toBe(true);
     });
@@ -157,8 +157,8 @@ describe('findAllCascades', () => {
         const e1 = makeFailedDefend({ enemy: 1, region: 4 });
         const e2 = makeFailedDefend({ enemy: 1, region: 3, prevEndTime: e1.end_time });
         const e3 = makeFailedDefend({ enemy: 1, region: 2, prevEndTime: e2.end_time });
-        expect(findAllCascades([e1, e2, e3])).toHaveLength(1);
-        expect(findAllCascades([e1, e2, e3], { minLength: 4 })).toHaveLength(0);
+        expect(findAllCascades([e1, e2, e3])).toHaveLength(0); // default 4 rejects a 3-run
+        expect(findAllCascades([e1, e2, e3], { minLength: 3 })).toHaveLength(1);
         expect(findAllCascades([e1, e2, e3], { minLength: 2 })).toHaveLength(1);
     });
 
@@ -218,7 +218,7 @@ describe('findAllCascades', () => {
             event_id: 6,
         };
 
-        const result = findAllCascades([a1, a2, a3, b1, b2, b3]);
+        const result = findAllCascades([a1, a2, a3, b1, b2, b3], { minLength: 3 });
         expect(result).toHaveLength(2);
         expect(result[0].factionIndex).toBe(2);
         expect(result[1].factionIndex).toBe(0);
