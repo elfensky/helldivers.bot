@@ -73,7 +73,7 @@ let flashToggle = false;
  * @param {number}  [opts.duration]    - Sonner duration (default Infinity).
  * @param {string}  [opts.alertColor]  - Blink overlay color (default danger).
  * @param {number}  [opts.pulseDelay]  - Animation delay in seconds for per-event offset.
- * @param {Function} [opts.onDismiss]  - Called when toast is dismissed.
+ * @param {import('sonner').ToastT['onDismiss']} [opts.onDismiss]  - Called when toast is dismissed.
  */
 export function showEventToast(
     event,
@@ -90,10 +90,11 @@ export function showEventToast(
     const suffix = flashToggle ? 'a' : 'b';
     const accentClass = `toast-accent toast-accent--${suffix}`;
 
-    const style = {
+    // CSS custom properties aren't in the CSSProperties type — cast intentionally.
+    const style = /** @type {import('react').CSSProperties & Record<string, string>} */ ({
         '--faction-color': factionColor,
         '--alert-color': alertColor,
-    };
+    });
     if (pulseDelay != null) style['--pulse-delay'] = `${pulseDelay}s`;
 
     toast(<ToastContent event={event} kind={kind} accentClass={accentClass} />, {

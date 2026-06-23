@@ -90,5 +90,11 @@ function checkAuth() {
     if (!process.env.AUTH_GITHUB_SECRET) {
         throw new Error('AUTH_GITHUB_SECRET is not set');
     }
+    if (!process.env.AUTH_GOOGLE_ID) {
+        throw new Error('AUTH_GOOGLE_ID is not set');
+    }
+    if (!process.env.AUTH_GOOGLE_SECRET) {
+        throw new Error('AUTH_GOOGLE_SECRET is not set');
+    }
     return true;
 }

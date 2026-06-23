@@ -14,7 +14,9 @@ export default async function ProfilePage() {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) redirect('/sign-in');
     const user = session.user;
-    const isAdmin = user.role === ROLE.ADMIN;
+    // `role` is a custom BetterAuth additionalField (and a real DB column) not
+    // reflected in the inferred session-user type — see auth.js / prisma schema.
+    const isAdmin = /** @type {{ role?: string }} */ (user).role === ROLE.ADMIN;
 
     const { data: accounts, error } = await tryCatch(
         db.account.findMany({

@@ -9,8 +9,11 @@ import { StatCard } from '@/features/stats/StatGrid';
  * @returns {{ longestWin: {length:number, start:number|null, end:number|null}, longestLoss: {length:number, start:number|null, end:number|null} }}
  */
 function computeStreaks(perSeason) {
+    /** @type {{ length: number, start: number | null, end: number | null }} */
     let longestWin = { length: 0, start: null, end: null };
+    /** @type {{ length: number, start: number | null, end: number | null }} */
     let longestLoss = { length: 0, start: null, end: null };
+    /** @type {{ kind: string | null, length: number, start: number | null, end: number | null }} */
     let cur = { kind: null, length: 0, start: null, end: null };
 
     const flush = () => {

@@ -4,7 +4,7 @@ import { signOut } from '@/auth-client';
 
 /**
  * Sign-in button. Triggers OAuth flow via BetterAuth client.
- * @param {{ provider?: string }} props - OAuth provider (defaults to 'discord')
+ * @param {{ className?: string }} props - optional CSS class for the link
  */
 export function SignIn({ className }) {
     return (

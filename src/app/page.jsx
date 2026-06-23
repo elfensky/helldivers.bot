@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { SITE_URL } from '@/config/site.mjs';
 import JsonLd from '@/shared/components/JsonLd';
 import HomeClient from '@/features/dashboard/HomeClient';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
@@ -30,7 +31,7 @@ const structuredData = [
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         applicationCategory: ['GameApplication', 'GameUtility', 'Entertainment'],
-        url: 'https://helldivers.bot',
+        url: SITE_URL,
         name: 'Helldivers Bot — Live Galactic Campaign Dashboard',
         author: {
             '@type': 'Person',
@@ -55,7 +56,7 @@ const structuredData = [
                 '@type': 'ListItem',
                 position: 1,
                 name: 'Home',
-                item: 'https://helldivers.bot',
+                item: SITE_URL,
             },
         ],
     },
@@ -87,7 +88,14 @@ export default async function HomePage() {
                 initialRegionsView={initialRegionsView}
                 initialSortOrder={initialSortOrder}
                 playersAvg24h={playersRes.data ?? null}
-                killsTrend={killsRes.data ?? null}
+                // getKillsTrend builds its result with dynamic keys, so TS
+                // infers the bare `{}` shape; the runtime value is the
+                // documented KillsTrend map.
+                killsTrend={
+                    /** @type {import('@/features/stats/StatGrid').KillsTrend | null} */ (
+                        killsRes.data ?? null
+                    )
+                }
             />
         </>
     );

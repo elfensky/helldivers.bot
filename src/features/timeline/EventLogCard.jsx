@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { SITE_URL } from '@/config/site.mjs';
 import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import factions from '@/shared/enums/factions.mjs';
 import map from '@/shared/enums/map.mjs';
@@ -19,6 +20,14 @@ import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs
  *
  * Everything else (region, action label, points progress, duration pill,
  * faction icon, status styling, JSON-LD) is identical across both modes.
+ */
+/**
+ * @param {object} props - Component props.
+ * @param {import('@/features/dashboard/DashboardClient').LiveEvent} props.event - The event to render.
+ * @param {'live' | 'absolute'} [props.timeFormat] - Secondary time line mode (ticking relative vs static absolute).
+ * @param {boolean} [props.isSelected] - Whether the card is highlighted as selected.
+ * @param {import('react').MouseEventHandler} [props.onMouseEnter] - Hover-enter handler.
+ * @param {import('react').MouseEventHandler} [props.onMouseLeave] - Hover-leave handler.
  */
 export default function EventLogCard({
     event,
@@ -42,6 +51,7 @@ export default function EventLogCard({
             className={
                 isSelected ? 'border-l-[4px] border-l-primary !bg-primary-tint' : ''
             }
+            onClick={undefined}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         >
@@ -181,10 +191,10 @@ function schema(event, type) {
             description: `The Helldivers have launched an assault on ${capital} in the ${region}. Join the fight to liberate this sector from ${faction} control!`,
             startDate: new Date(event.start_time * 1000),
             endDate: new Date(event.end_time * 1000),
-            image: ['https://helldivers.bot/icons/attack.webp'],
+            image: [`${SITE_URL}/icons/attack.webp`],
             location: {
                 '@type': 'VirtualLocation',
-                url: 'https://helldivers.bot',
+                url: SITE_URL,
                 name: `${capital}, ${region}`,
             },
             eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
@@ -197,7 +207,7 @@ function schema(event, type) {
             },
             offers: {
                 '@type': 'Offer',
-                url: 'https://helldivers.bot',
+                url: SITE_URL,
                 price: 0,
                 priceCurrency: 'EUR',
                 availability: 'https://schema.org/InStock',
@@ -216,10 +226,10 @@ function schema(event, type) {
             description: `Cowardly ${faction} has attacked the innocent city of ${capital} in the ${region}. Get together and defend against this xeno threat!`,
             startDate: new Date(event.start_time * 1000),
             endDate: new Date(event.end_time * 1000),
-            image: ['https://helldivers.bot/icons/defend.webp'],
+            image: [`${SITE_URL}/icons/defend.webp`],
             location: {
                 '@type': 'VirtualLocation',
-                url: 'https://helldivers.bot',
+                url: SITE_URL,
                 name: `${capital}, ${region}`,
             },
             eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
@@ -232,7 +242,7 @@ function schema(event, type) {
             },
             offers: {
                 '@type': 'Offer',
-                url: 'https://helldivers.bot',
+                url: SITE_URL,
                 price: 0,
                 priceCurrency: 'EUR',
                 availability: 'https://schema.org/InStock',

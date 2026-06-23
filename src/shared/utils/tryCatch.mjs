@@ -18,6 +18,7 @@ export async function tryCatch(promise) {
         return { data, error: null };
     } catch (error) {
         reportError(error, { source: 'tryCatch', level: 'warning' });
-        return { data: null, error };
+        // `catch` binds as `unknown` under strict; thrown values are Errors in practice
+        return { data: null, error: /** @type {Error} */ (error) };
     }
 }

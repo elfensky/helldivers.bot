@@ -1,4 +1,5 @@
 //db
+import { SITE_URL } from '@/config/site.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { updateSeason } from '@/update/season.mjs';
@@ -55,8 +56,14 @@ export default async function WarHistoryPage({ searchParams }) {
     // Default to the most recent completed season if no season param
     const resolvedSeason = seasonParam ?? seasons[0] ?? null;
 
-    // Fetch requested season from DB
-    let { data, error } = await tryCatch(getCampaign(resolvedSeason));
+    // Fetch requested season from DB. getCampaign accepts a season number or
+    // null (latest), but its `season = null` default makes TS infer the param
+    // as `null`; cast the fn to its real signature rather than the arg.
+    const getCampaignBySeason =
+        /** @type {(season?: number | null) => ReturnType<typeof getCampaign>} */ (
+            getCampaign
+        );
+    let { data, error } = await tryCatch(getCampaignBySeason(resolvedSeason));
 
     // If season not in DB, fetch from official API and seed it via the
     // shared updateSeason pipeline (same helper the worker uses).
@@ -71,7 +78,7 @@ export default async function WarHistoryPage({ searchParams }) {
             );
         }
         // Re-query after seeding
-        ({ data, error } = await tryCatch(getCampaign(resolvedSeason)));
+        ({ data, error } = await tryCatch(getCampaignBySeason(resolvedSeason)));
     }
 
     if (error !== null) {
@@ -129,7 +136,7 @@ const archivesStructuredData = [
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         applicationCategory: ['GameUtility', 'GameInformation', 'Entertainment'],
-        url: 'https://helldivers.bot/archives',
+        url: `${SITE_URL}/archives`,
         name: 'Archives | Helldivers Bot',
         author: 'Andrei Lavrenov',
         description:
@@ -149,7 +156,7 @@ const archivesStructuredData = [
                 '@type': 'ListItem',
                 position: 1,
                 name: 'Archives',
-                item: 'https://helldivers.bot/archives',
+                item: `${SITE_URL}/archives`,
             },
         ],
     },

@@ -171,7 +171,7 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 - **Node version:** mise pins node@24 (ships with npm 11 natively).
 - **Server actions:** Most utilities use `'use server'` directive.
 - **Shared utilities:** `formatNumber` (`src/shared/utils/format/formatNumber.mjs`) for compact numbers (25.0M, 1.2K — M suffix at 1M+, locale grouping below). `formatTimeAgo` (`src/shared/utils/format/formatTimeAgo.mjs`) for relative timestamps.
-- **Map state:** `computeMapState` (`src/shared/utils/game/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events — use the `computeLiveMapState(data)` helper from the same module to keep the filter and the call together.
+- **Map state:** `computeMapState` (`src/shared/utils/game/computeMapState.mjs`) computes galaxy map sector ownership. Sectors 1-10 from campaign `points`/`points_max`; region 11 (homeworld) from attack events only. **Critical:** live views must only pass active events. `computeLiveMap(data)` is the **single source** of that active-events filter — it returns `{ activeEvents, mapState }` and is used by both `/api/h1/live` and the public `/api/v1/h1/map` so the two can't drift. `computeLiveMapState(data)` is a thin wrapper returning just the map, for SSR/OG callers (`layout.jsx`, `opengraph-image.jsx`).
 - **On-demand season fetching:** `/archives` page derives SeasonSelector from current season number (not DB query). Missing seasons are backfilled from the official HD1 API on first request via `updateSeason()` (`src/update/season.mjs`) -- the same shared pipeline the worker runs every poll for the active season and the admin "Refresh" button triggers via `reseedSeason`. `updateSeason` writes `h1_season` (with inlined arrays) + `h1_status` + `h1_statistic` + `h1_event` + `h1_event_progress`, then stamps `h1_season.last_updated`.
 - **Live polling:** `useLiveData` hook (`src/shared/hooks/useLiveData.mjs`) polls `GET /api/h1/live` every 10 seconds via `setInterval` + `fetch`. A `visibilitychange` listener fires an immediate poll on tab focus. Tri-state status: `'polling'` (request in flight), `'live'` (last poll succeeded), `'offline'` (last poll failed or PWA offline). Module-level singleton ensures one connection per tab. BroadcastChannel leader election for Web Notifications.
 - **Stale version auto-reload:** Three layers detect stale client code after deployments and hard-reload: (1) Next.js `deploymentId` in `next.config.mjs` triggers hard navigation on version mismatch during client-side routing; (2) `/api/h1/live` includes `appVersion` — `useLiveData` compares it against the build-time version and reloads on mismatch (~10s detection); (3) global `ChunkLoadError` handler in `instrumentation-client.js` catches failed dynamic imports. All layers share `guardedReload()` (`src/shared/utils/reloadGuard.mjs`) — a localStorage-backed circuit breaker with 30s TTL and max 3 attempts to prevent infinite reload loops.
@@ -190,19 +190,16 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 
 ## Task Tracking
 
-All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues) and [helldiversbot project board](https://github.com/users/elfensky/projects/5).
+All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues), grouped by milestone and labels. No project board — issues + milestones + labels only.
 
 - **Milestones** group issues by phase (Phase 0 through ~13 as of writing, plus `Desloppify` and `Shelved`). Phase numbers grow and open/closed status drifts — check the [milestones list](https://github.com/elfensky/helldivers.bot/milestones) for current state rather than trusting a number here.
 - **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
-- **Board statuses**: `Backlog` → `In progress` → `Done`. Issue title prefixes: `Phase N:`, `Shelved:`.
-- **Board fields**: Status, Priority (`P0`/`P1`/`P2`), Size (`XS`/`S`/`M`/`L`/`XL`), Estimate (hours), Start/End date (skip weekends).
+- **Issue title prefixes**: `Phase N:`, `Shelved:`.
 
 ### Workflow
 
-1. **Before starting**: Check GitHub Issues. If none exists, create one with milestone, labels, and project board assignment (`gh project item-add 5 --owner elfensky --url <issue-url>`).
-2. **When starting**: Move issue to `In progress`, set Start date to today.
-3. **When done**: Close issue with implementation comment, set End date. Board auto-moves to `Done`.
-4. **Timeline maintenance**: Update Start/End dates on downstream items when estimates shift.
+1. **Before starting**: Check GitHub Issues. If none exists, create one with the right milestone and labels.
+2. **When done**: Close the issue with an implementation comment.
 
 ## Specs & Plans
 

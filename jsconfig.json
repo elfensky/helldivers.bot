@@ -17,13 +17,18 @@
         "allowSyntheticDefaultImports": true,
         "forceConsistentCasingInFileNames": true,
         "strict": true,
+        // checkJs over a JSDoc-typed codebase: keep strict null-safety + real
+        // type-mismatch checks, but don't demand an explicit annotation on every
+        // parameter/prop. ponytail: noImplicitAny off skips annotation theater on
+        // React props while strictNullChecks still catches real null bugs.
+        "noImplicitAny": false,
         "maxNodeModuleJsDepth": 0,
         "paths": {
             "@/*": ["./src/*"],
             "@test-utils": ["./src/__tests__/test-utils.mjs"]
         }
     },
-    "include": ["src/**/*.{js,jsx,mjs}", "src/types/**/*.d.ts"],
+    "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.mjs", "src/types/**/*.d.ts"],
     "exclude": [
         "node_modules",
         ".next",

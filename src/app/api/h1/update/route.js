@@ -12,6 +12,7 @@ import { updateStatus } from '@/update/status.mjs';
 import { updateSeason } from '@/update/season.mjs';
 import { checkAndNotify } from '@/update/pushNotifier.mjs';
 import { computeBucket } from '@/shared/utils/bucketing.mjs';
+import { cleanupRateLimitWindows } from '@/shared/utils/api/rateLimit.mjs';
 
 // Custom header set on the very first poll of a worker session so the
 // handler can run a one-time startup pass (e.g. backfill missing seasons).
@@ -32,6 +33,18 @@ export const WORKER_STARTUP_HEADER = 'x-worker-startup';
 // via the /archives refresh button.
 let lastSeasonObserved = null;
 
+// Throttle for the rate-limit window cleanup. The worker polls every ~15s, so
+// we run the purge at most hourly (tracked here, not per-restart) to keep the
+// api_rate_limit table tiny without a DELETE on every poll. The 0 default makes
+// it fire on the first poll after boot.
+let lastRateLimitCleanup = 0;
+const RATE_LIMIT_CLEANUP_INTERVAL_MS = 3_600_000;
+
+/**
+ * @param {number} start - performance.now() timestamp when the poll began.
+ * @param {boolean} isStartup - True on the worker's first poll of a session.
+ * @param {string | null} [errorMsg] - Last error message to record, if any.
+ */
 async function writeHeartbeat(start, isStartup, errorMsg = null) {
     const now = new Date();
     const { error } = await tryCatch(
@@ -61,12 +74,31 @@ export async function GET(request) {
     const header = request.headers.get('authorization');
     const key = header?.startsWith('Bearer ') ? header.slice(7) : null;
     if (!key) return errorResponse(401, start);
-    const secret = process.env.UPDATE_KEY;
+    // UPDATE_KEY is a required env var (see .example.env / CLAUDE.md); treat it
+    // as a guaranteed string. If it were ever unset the hash comparison below
+    // would throw and the request would 500 — same as today.
+    const secret = /** @type {string} */ (process.env.UPDATE_KEY);
     const actual = crypto.createHash('sha256').update(key).digest();
     const expected = crypto.createHash('sha256').update(secret).digest();
     if (!crypto.timingSafeEqual(actual, expected)) return errorResponse(401, start);
 
     const isStartup = request.headers.get(WORKER_STARTUP_HEADER) === '1';
+
+    // Periodic rate-limit window cleanup (at most hourly), off the response path.
+    const nowMs = Date.now();
+    if (nowMs - lastRateLimitCleanup > RATE_LIMIT_CLEANUP_INTERVAL_MS) {
+        lastRateLimitCleanup = nowMs;
+        after(async () => {
+            const { error } = await tryCatch(cleanupRateLimitWindows());
+            if (error) {
+                reportError(error, {
+                    route: '/api/h1/update',
+                    stage: 'ratelimit-cleanup',
+                    level: 'warning',
+                });
+            }
+        });
+    }
 
     //STATUS
     const { data: statusData, error: statusError } = await tryCatch(updateStatus());

@@ -8,6 +8,7 @@ import Button from '@/shared/components/Button/Button';
 const MAX_DESCRIPTION_LENGTH = 32;
 
 export function GenerateApiKeyForm({ userId }) {
+    /** @type {[import('@/features/account/actions.mjs').ApiKeyActionState | null, (formData: FormData) => void, boolean]} */
     const [state, formAction, pending] = useActionState(generateApiKey, null);
     const [descLength, setDescLength] = useState(0);
 
@@ -71,6 +72,7 @@ export function GenerateApiKeyForm({ userId }) {
 }
 
 export function DeleteApiKeyForm({ userId, apikeyId }) {
+    /** @type {[import('@/features/account/actions.mjs').ApiKeyActionState | null, (formData: FormData) => void, boolean]} */
     const [state, formAction, pending] = useActionState(deleteApiKey, null);
 
     if (!userId || !apikeyId) {

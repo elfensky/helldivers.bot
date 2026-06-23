@@ -123,6 +123,11 @@ export default function DocsSidebar() {
     );
 }
 
+/**
+ * @param {object} props - Component props.
+ * @param {string} props.pathname - Current route pathname, used to mark the active link.
+ * @param {() => void} [props.onNavigate] - Called when a link is clicked (e.g. to close the mobile drawer).
+ */
 function SidebarContent({ pathname, onNavigate }) {
     return (
         <>

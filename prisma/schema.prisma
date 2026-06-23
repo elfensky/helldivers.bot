@@ -239,3 +239,19 @@ model worker_heartbeat {
 }
 
 // #endregion
+
+// #region RATE LIMITING
+// Fixed-window counters. One row per (key, route_group, window_start); the
+// window_start is the unix-second start of the fixed window. Rows are
+// incremented via atomic upsert and periodically purged once expired.
+model api_rate_limit {
+    key          String
+    route_group  String
+    window_start Int
+    count        Int    @default(0)
+
+    @@id([key, route_group, window_start])
+    @@index([window_start])
+}
+
+// #endregion

@@ -1,7 +1,12 @@
-export const EVENT_TYPE = {
+// Object.freeze narrows the values to their string literals ('defend' /
+// 'attack') instead of widening to `string`, so `EVENT_TYPE.DEFEND` is
+// assignable to the `'attack' | 'defend'` params on upsertEvent /
+// upsertEventProgress under checkJs. All consumers only read these values
+// for equality comparison, so freezing is safe.
+export const EVENT_TYPE = Object.freeze({
     DEFEND: 'defend',
     ATTACK: 'attack',
-};
+});
 
 export const EVENT_STATUS = {
     ACTIVE: 'active',

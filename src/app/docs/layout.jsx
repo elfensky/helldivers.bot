@@ -1,4 +1,5 @@
 import DocsSidebar from './components/DocsSidebar';
+import { SITE_URL } from '@/config/site.mjs';
 import JsonLd from '@/shared/components/JsonLd';
 
 const structuredData = [
@@ -13,7 +14,7 @@ const structuredData = [
         },
         isPartOf: {
             '@type': 'WebSite',
-            url: 'https://helldivers.bot',
+            url: SITE_URL,
         },
     },
     {
@@ -24,13 +25,13 @@ const structuredData = [
                 '@type': 'ListItem',
                 position: 1,
                 name: 'Home',
-                item: 'https://helldivers.bot',
+                item: SITE_URL,
             },
             {
                 '@type': 'ListItem',
                 position: 2,
                 name: 'Docs',
-                item: 'https://helldivers.bot/docs',
+                item: `${SITE_URL}/docs`,
             },
         ],
     },

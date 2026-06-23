@@ -23,7 +23,7 @@ export default function RefreshSeasonButton({ season, lastUpdated }) {
     const router = useRouter();
     const track = useTrack();
     const [pending, startTransition] = useTransition();
-    const [error, setError] = useState(null);
+    const [error, setError] = useState(/** @type {string | null} */ (null));
     const [remainingMs, setRemainingMs] = useState(0);
 
     useEffect(() => {
@@ -63,14 +63,15 @@ export default function RefreshSeasonButton({ season, lastUpdated }) {
         });
     }
 
+    // `title` + `data-umami-event` flow through Button's `...rest` to the
+    // underlying <button>, but Button's typed props don't declare passthrough
+    // DOM attributes — cast the extras so the analytics hook stays intact.
+    const passthrough = /** @type {Record<string, unknown>} */ ({
+        title,
+        'data-umami-event': 'archive-season-refresh-click',
+    });
     return (
-        <Button
-            size="md"
-            onClick={handleClick}
-            disabled={disabled}
-            title={title}
-            data-umami-event="archive-season-refresh-click"
-        >
+        <Button size="md" onClick={handleClick} disabled={disabled} {...passthrough}>
             {label}
         </Button>
     );

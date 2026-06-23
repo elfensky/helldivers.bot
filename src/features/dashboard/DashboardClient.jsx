@@ -24,6 +24,25 @@ import { REGIONS_VIEW_KEY } from '@/shared/preferences/regionsView.mjs';
 const factionIndices = [0, 1, 2];
 
 /**
+ * Shape of a single live event as returned by `getCampaign()`'s
+ * `h1_event.findMany` select. `sortEventsByRecent` is typed to its sort
+ * key alone (`{ start_time }`), so we restate the full shape here to read
+ * the other fields off each event without losing them to that narrow type.
+ * Unlike the optional-field `Event` typedef in enums/events.mjs, the live
+ * select always returns these columns as concrete values.
+ *
+ * @typedef {object} LiveEvent
+ * @property {import('@/shared/enums/events.mjs').EventType} type - Event type (`defend` or `attack`).
+ * @property {number} start_time - Unix-seconds event start.
+ * @property {number} end_time - Unix-seconds event end.
+ * @property {number} region - Galaxy-map region (sector 1-10, or 11 for homeworld).
+ * @property {number} enemy - Faction index (0-2).
+ * @property {number} points - Current event progress points.
+ * @property {number} points_max - Points required to complete the event.
+ * @property {import('@/shared/enums/events.mjs').EventStatus} status - Event status (active/success/fail).
+ */
+
+/**
  * Hover props for a region card's `<li>`: `data-*` attributes that key the
  * card to its galaxy-map sector, plus handlers that light the matching map
  * area on hover (faction territory faint, active sector strong). The `data-*`
@@ -44,6 +63,13 @@ function sectorHoverProps(factionIndex, sector = null) {
     };
 }
 
+/**
+ * @param {object} props - Component props.
+ * @param {string} [props.initialFaction] - Server-read active faction tab.
+ * @param {string} [props.initialRegionsView] - Server-read regions view mode.
+ * @param {import('@/features/stats/StatGrid').PlayersAvg24h | null} [props.playersAvg24h] - 24h player baselines.
+ * @param {import('@/features/stats/StatGrid').KillsTrend | null} [props.killsTrend] - 24h/48h kill baselines.
+ */
 export default function DashboardClient({
     initialFaction = 'global',
     initialRegionsView = 'sector',
@@ -69,7 +95,7 @@ export default function DashboardClient({
         );
     }
 
-    const events = sortEventsByRecent(data?.events);
+    const events = /** @type {LiveEvent[]} */ (sortEventsByRecent(data?.events));
     const pulseDelays = computePulseDelays(data?.events);
     const isCampaignView = regionsView === 'campaign';
 
@@ -82,7 +108,11 @@ export default function DashboardClient({
     const seDefenderIndex = superEarthDefendEvent?.enemy ?? null;
 
     function renderFrontierCard(index) {
-        if (index === seDefenderIndex) {
+        // `superEarthDefendEvent` is guaranteed defined whenever this branch
+        // runs: `seDefenderIndex` is `null` when the event is absent, and a
+        // numeric `index` never equals `null`. The explicit conjunct just
+        // proves that to the type checker.
+        if (index === seDefenderIndex && superEarthDefendEvent) {
             // Super Earth defense is an event-focused interrupt — always sector view.
             // `data-attacker-index` links this card (filed under faction 3) to the
             // attacking faction's map territory, so hovering there highlights it
@@ -108,6 +138,9 @@ export default function DashboardClient({
                         pace={evaluateProgress(superEarthDefendEvent)}
                         endTime={superEarthDefendEvent.end_time}
                         pulseDelay={pulseDelays.get(`${index}-0`)}
+                        // Sector-view (default) card — factionMap is only read
+                        // in campaign view, so undefined is intentional here.
+                        factionMap={undefined}
                     />
                 </li>
             );

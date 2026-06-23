@@ -167,7 +167,7 @@ Both build jobs pass `NODE_ENV=staging` as a build arg.
 
 **Registry auth:** `secrets.GITHUB_TOKEN` — the default token with `contents: write` and `packages: write` permissions declared at the workflow level.
 
-**Cleanup job:** Uses `snok/container-retention-policy@v3.0.1`. Deletes untagged versions of both `helldiversbot` and `helldiversbot-migrate` packages that are older than 30 minutes. This keeps GHCR from accumulating dangling layers from every push.
+**Cleanup job:** Uses `snok/container-retention-policy@v3.0.1`. Deletes untagged versions of both `helldiversbot` and `helldiversbot-migrate` packages that are older than 30 minutes. This keeps GHCR from accumulating dangling layers from every push. Authenticated via `secrets.GHCR_CLEANUP_TOKEN` — a **classic** PAT with the `delete:packages` scope (the action rejects fine-grained tokens, and the default `GITHUB_TOKEN` can't delete user-account packages).
 
 ### Production (`release.docker.yml`)
 
@@ -185,7 +185,7 @@ ghcr.io/elfensky/helldiversbot:latest
 
 **Version extraction:** The workflow reads the version from `package.json` via `jq -r '.version' package.json` and injects it into the image via the `VERSION` ARG (used by the Dockerfile label `version="${VERSION}"`).
 
-**Registry auth:** `secrets.ACCESS_TOKEN` — a personal access token with elevated permissions. The default `GITHUB_TOKEN` is not used here because the job also creates a GitHub Release, which requires broader write access.
+**Registry auth:** `secrets.GITHUB_TOKEN` — the workflow's `permissions: contents: write` + `packages: write` grant it enough access to push images to GHCR and create the GitHub Release, so no personal access token is needed.
 
 **GitHub Release:** Created by `softprops/action-gh-release@v2`. The release body is sourced from `RELEASE.md` at the repository root.
 
@@ -392,6 +392,7 @@ Variables are checked at startup by `initializeEnvironmentVariables()` in `src/s
 | `UPDATE_KEY`                   | **Yes**          | Updates        | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests                                                       |
 | `UPDATE_INTERVAL`              | **Yes**          | Updates        | Polling interval in seconds (e.g., `"20"`); passed to the worker thread                                                                           |
 | `PORT`                         | No               | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                                                              |
+| `NEXT_PUBLIC_SITE_URL`         | No               | Site           | Public site origin (e.g. `https://helldivers.bot`); inlined at build time so self-hosters can serve under their own domain. Defaults to `https://helldivers.bot` (`src/config/site.mjs`). |
 | `UMAMI_SITE_ID`                | No               | Analytics      | Umami website tracking ID; if absent, Umami script not loaded and server-side tracking skipped                                                    |
 | `UMAMI_SITE_URL`               | No               | Analytics      | Umami instance URL; used in server-side fetch calls                                                                                               |
 | `SENTRY_DSN`                   | No               | Error tracking | Sentry DSN for server-side error reporting (points to GlitchTip); if absent, error tracking disabled                                              |
@@ -409,6 +410,8 @@ Variables are checked at startup by `initializeEnvironmentVariables()` in `src/s
 | `AUTH_DISCORD_SECRET`          | If auth          | Auth           | Discord OAuth application client secret                                                                                                           |
 | `AUTH_GITHUB_ID`               | If auth          | Auth           | GitHub OAuth application client ID                                                                                                                |
 | `AUTH_GITHUB_SECRET`           | If auth          | Auth           | GitHub OAuth application client secret                                                                                                            |
+| `AUTH_GOOGLE_ID`               | If auth          | Auth           | Google OAuth application client ID                                                                                                                |
+| `AUTH_GOOGLE_SECRET`           | If auth          | Auth           | Google OAuth application client secret                                                                                                            |
 | `VAPID_PUBLIC_KEY`             | No (all-or-none) | Push           | Web Push VAPID public key; if absent, push notifications disabled                                                                                 |
 | `VAPID_PRIVATE_KEY`            | No               | Push           | Web Push VAPID private key                                                                                                                        |
 | `VAPID_SUBJECT`                | No               | Push           | VAPID contact identifier (`mailto:` email)                                                                                                        |

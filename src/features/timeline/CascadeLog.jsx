@@ -27,7 +27,10 @@ export default function CascadeLog({
 }) {
     const [sortOrder, toggleSortOrder] = useCascadeLogSort(initialSortOrder);
     if (!cascades?.length) return null;
-    const groups = groupCascadesBySeason(cascades, { sortOrder });
+    const groups = groupCascadesBySeason(cascades, {
+        // useCascadeLogSort constrains sortOrder to 'worst' | 'recent'
+        sortOrder: /** @type {'worst' | 'recent'} */ (sortOrder),
+    });
 
     return (
         <section id={id} className="event-log-section">

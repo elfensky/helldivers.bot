@@ -28,6 +28,9 @@ vi.mock('@/update/season', () => ({
     updateSeason: vi.fn(),
     SEASON_NOT_FOUND: 'SEASON_NOT_FOUND',
 }));
+// The limiter is covered by rateLimit.test.mjs; here we stub it so it doesn't
+// consume the shared db.$queryRaw mock that reconstructCampaignStatus uses.
+vi.mock('@/shared/utils/api/rateLimit', () => ({ enforceRateLimit: vi.fn() }));
 vi.mock('@/shared/utils/umami', () => ({ umamiTrackEvent: vi.fn() }));
 vi.mock('@/shared/enums/events.mjs', () => ({
     EVENT_TYPE: { DEFEND: 'defend', ATTACK: 'attack' },
@@ -45,6 +48,7 @@ vi.mock('next/server', async (importOriginal) => {
 import { POST, GET, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/rebroadcast/route';
 import db from '@/db/db';
 import { validateApiKey } from '@/shared/utils/api/validateApiKey.mjs';
+import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
 import { updateSeason } from '@/update/season.mjs';
 
 function createPostRequest(formEntries) {
@@ -111,6 +115,7 @@ beforeEach(() => {
         data: { userId: '1', keyId: '1' },
         code: null,
     });
+    vi.mocked(enforceRateLimit).mockResolvedValue({ error: null, headers: {} });
 });
 
 describe('POST /api/h1/rebroadcast — auth & validation', () => {
@@ -387,6 +392,23 @@ describe('POST /api/h1/rebroadcast — get_snapshots', () => {
             createPostRequest({ action: 'get_snapshots', season: '5' }),
         );
         expect(res.status).toBe(500);
+    });
+});
+
+describe('POST /api/h1/rebroadcast — unimplemented actions', () => {
+    // Each action carries exactly the fields its validator requires (no more —
+    // get_available_entitlements rejects extra keys) so it passes validation
+    // and reaches the switch's explicit 501.
+    test.each([
+        [{ action: 'get_available_entitlements' }],
+        [{ action: 'get_leaderboards', network: 'steam', season: 1 }],
+        [{ action: 'get_usernames', network: 'steam', count: 10 }],
+    ])('%o is recognised but returns 501 (not a silent 404)', async (form) => {
+        const res = await POST(createPostRequest(form));
+        expect(res.status).toBe(501);
+        const body = await res.json();
+        expect(body.code).toBe(501);
+        expect(body.message).toBe('Not implemented');
     });
 });
 

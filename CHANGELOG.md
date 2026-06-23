@@ -1,5 +1,228 @@
 # Changelog
 
+## 0.59.0
+
+### Features
+
+- **OpenAPI coverage for the `/v1` endpoints** (#438). `GET /api/v1/h1/{status,
+  stats,season,map}` are now registered in the OpenAPI spec with query params,
+  typed response schemas, the `{time,code,message,data}` envelope, and the
+  401/404/429 + 304 responses — so `/docs/api` documents the real public API.
+- **Rebroadcast action reconciliation** (#438). The spec now declares all five
+  HD1-API actions; `get_available_entitlements`, `get_leaderboards`, and
+  `get_usernames` return an explicit **501 Not Implemented** (Demand-Driven
+  Compatibility) instead of a silent 404. Adds `501` to the error envelope.
+
+### Changed
+
+- **Public/internal API boundary.** `/docs/api` (and the OpenAPI spec) now
+  document the **public surface only** — the versioned `/api/v1/h1/*` reads,
+  `/api/h1/rebroadcast`, and the now-**deprecated** `/api/h1/campaign`. Internal
+  plumbing (`/api/h1/live`, `/api/h1/update`, `/api/notifications/subscribe`) is
+  excluded from the spec and noted as internal in prose. Deprecated endpoints
+  render a badge.
+- **Cascade Failures leaderboard requires length ≥4.** `findAllCascades` now
+  defaults `minLength` to 4 (was 3) — length-3 runs are too common to be
+  noteworthy and made the board noisy. `getCascadeLeaderboard` drops its explicit
+  override and uses the new default.
+
+## 0.58.0
+
+### Features
+
+- **Postgres-backed fixed-window rate limiter** (#435). New `api_rate_limit`
+  table (migration `add_api_rate_limit`) + `src/shared/utils/api/rateLimit.mjs`:
+  one atomic `INSERT … ON CONFLICT DO UPDATE count = count + 1 RETURNING count`
+  per limited request, so limits survive restarts and span multiple Node
+  processes (no Redis). Config-driven groups (`config/policy.mjs`): `public_read`
+  120/min·IP (status latest, map, season), `history_read` 30/min·IP (status
+  history, stats), `rebroadcast` 60/min·API-key, `backfill_trigger` 5/min·IP,
+  `push` 20/min·IP. Emits `RateLimit-Limit/Remaining/Reset` + `Retry-After`
+  (429), reusing the standard error envelope. Fails **open** if the store is
+  unreachable. The in-memory limiter on `/api/notifications/subscribe` is
+  replaced by this one; the worker purges expired windows hourly.
+- **Backfill-on-demand for `/v1` reads.** A missing explicit season on
+  `status`/`stats`/`season`/`map` now triggers `updateSeason()` (gated by the
+  `backfill_trigger` group) and re-serves, instead of a flat 404 — mirroring
+  `/api/h1/campaign` and `/rebroadcast`. The seed carries every season, so this
+  is a fallback that rarely fires. `season=current` is never backfilled.
+
+### Refactor
+
+- Pure API-policy lookups (cache tiers + rate-limit groups) moved to
+  `src/config/policy.mjs` so they can be imported without tripping
+  `config/server.mjs`'s eager env validation; `server.mjs` re-exports them.
+
+## 0.57.1
+
+### Refactor
+
+- **Unify the live map computation** (#437). Add `computeLiveMap(data)` as the
+  single source of the "only active events" rule — it returns
+  `{ activeEvents, mapState }`. `/api/v1/h1/map` now calls it instead of
+  re-implementing the active-events filter inline, so the public map and the
+  dashboard map (`/api/h1/live`, via the now-thin `computeLiveMapState` wrapper)
+  can no longer drift. `/api/h1/live` also sources its `no-store` header from
+  `getCacheControl('live')` for consistency with the other read tiers. No
+  response-shape changes; `/live` stays the dashboard's rich internal feed.
+
+## 0.57.0
+
+### Features
+
+- **Tiered `Cache-Control` + ETag** (#436) — `/v1` read endpoints now send cache
+  headers from the typed config: `latest` (status `mode=latest`, map),
+  `current-season` (`season=current` history/stats/season metadata), and
+  `closed-season` (explicit past seasons). History reads (status `mode=history`,
+  stats) also carry a strong `ETag` and answer `If-None-Match` with `304`.
+  Request `season=current` for live freshness — an explicit current-season
+  _number_ is cached as a closed season.
+
+### Changed
+
+- **`/v1` map fronts are now arrays.** Each front (`bugs`/`cyborgs`/`illuminate`/
+  `superEarth`) is an `id`-sorted array of region objects
+  (`{ id, region, capital, points, pointsMax, percent, status, event }`) instead
+  of a region-number-keyed object, so consumers can iterate without depending on
+  key order. `id` is the region number (0 for Super Earth's homeworld).
+- **`/v1` status `progress` → `percent`.** The status item field is renamed and
+  rescaled from a 0–1 ratio to a 0–100 percent, matching the map/dashboard
+  convention.
+- **`/v1` stats drops `season=all`.** Cross-season totals are served by the
+  frontend directly (`getCrossSeasonStats`); `season=all` is now ordinary invalid
+  input (400). A dedicated totals endpoint can be added if a real consumer needs
+  one.
+
+## 0.56.0
+
+### Features
+
+- **`GET /api/v1/h1/season`** (#31) — key-gated season metadata as an array;
+  supports multiple `?season=` params (defaults to `current`). Each entry:
+  `{ season, isCurrent, lastUpdated, introductionOrder, pointsMax, seasonDuration }`
+  (introduction order as faction slugs, points_max slug-keyed).
+- **`GET /api/v1/h1/map`** (#33) — key-gated render-ready galaxy geometry via
+  `computeMapState`: `{ season, bucket, events, fronts, activeEvents }` where
+  `fronts` is the per-faction map (`bugs`/`cyborgs`/`illuminate`/`superEarth`),
+  each with regions 1–10 + homeworld and full render state (name, capital, points,
+  percent, status). Params: `season`, `at=latest` (historical `at=<datetime>`
+  deferred), `enemy` filter, `events=active|none`. Returns the actual 3-front data
+  model rather than the spec's flat `sectors[]`/`homeworld` shape.
+
+## 0.55.0
+
+### Features
+
+- **`GET /api/v1/h1/stats`** — the second public `/v1` endpoint (#30). Key-gated,
+  cursor-paginated statistics timeseries over `h1_statistic`, projected to
+  `{ bucket, enemy, enemyId, season, missionsWon, missionsLost, kills, deaths,
+  shots, hits, players }` (BigInt counts → JSON-safe numbers; `bucketSize` sourced
+  from the typed config — its first runtime consumer). `season=current|number`;
+  `season=all` is deferred (returns a clear 400 until cross-season pagination is
+  needed).
+
+### Refactor
+
+- Extract the keyset pagination cursor into `src/shared/utils/api/cursor.mjs`,
+  shared by the `/v1` history endpoints (status now re-exports from it).
+
+## 0.54.0
+
+### Features
+
+- **`GET /api/v1/h1/status`** — the first public `/v1` endpoint (#29). Key-gated
+  (Bearer API key) human-readable campaign status with two modes: `mode=latest`
+  (default) returns the current bucket per faction projected to
+  `{ enemy, enemyId, points, pointsMax, progress, players, updatedAt }` (reusing
+  the cached `getCampaign` query); `mode=history` returns a cursor-paginated
+  timeseries (keyset on `bucket`+`enemy`, opaque base64url cursor) with `limit`
+  (default 100, max 500), `order`, `from`/`to`, and `enemy` filters. Zod query
+  validation, `{time,code,message,data}` envelope.
+- Shared `requireApiKey` guard and `FACTION_SLUG_BY_ID` map underpin the `/v1`
+  surface (reused by the remaining `/v1/h1/*` endpoints). Cache headers (#436) and
+  rate-limiting (#435) layer on later.
+
+## 0.53.1
+
+### Documentation
+
+- Document the public-API versioning policy and endpoint personalities in
+  `/docs/api` (#434): human-readable endpoints live under `/api/v1/h1/*` (the
+  version is in the path; the `/v1` contract is additive-only, breaking changes go
+  to `/v2`, no header negotiation). Each path's role is spelled out — `/v1/*`
+  (key-gated), `/api/h1/rebroadcast` (unversioned, stable HD1 drop-in that sits a
+  level above `/v1`), `/api/h1/live` (public BFF over status), `/api/h1/campaign`
+  (deprecated), `/api/h1/update` (internal). Authentication blurb updated for `/v1`
+  key-gating.
+
+## 0.53.0
+
+### Features
+
+- **Typed server config module** (`src/config/server.mjs`) — the config half of the
+  Public API milestone (#204). One Zod schema parses `process.env` once into a frozen,
+  typed `config` object: required vars (`POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL`)
+  fail fast at boot with a readable message; optional features self-disable via
+  presence-as-config. Co-locates the canonical cache tiers and rate-limit groups with
+  `getCacheControl(tier)` / `getRateLimitConfig(group)` helpers (consumed by the upcoming
+  cache-headers and rate-limiter work).
+- **Configurable site origin** — `src/config/site.mjs` exposes `SITE_URL`
+  (`NEXT_PUBLIC_SITE_URL` || `https://helldivers.bot`). All hardcoded site-origin
+  references (SEO metadata, JSON-LD, sitemap, OG-image branding, Umami hostname) now route
+  through it, so self-hosters can deploy under their own domain. Documented in
+  `.example.env` and the infrastructure env reference.
+
+### Notes
+
+- `bucketing.mjs` and `initializeEnv.mjs` intentionally keep their existing env reads for
+  now (hot-path / boot-critical, well-tested); `config` is the canonical typed source and
+  remaining `process.env` reads can migrate incrementally.
+
+## 0.52.9
+
+### Fixes
+
+- **Make the typecheck gate real.** The `jsconfig.json` `include` glob used brace
+  expansion (`src/**/*.{js,jsx,mjs}`), which TypeScript's `tsc` silently ignores —
+  so `npm run typecheck` was checking almost nothing under `src/` and passed
+  trivially in both local and CI. Fixing the glob to explicit patterns makes
+  `checkJs` actually cover the codebase, which surfaced 1023 latent errors.
+
+### Changes
+
+- Adopt a pragmatic checkJs policy: `noImplicitAny: false` while keeping
+  `strict`/`strictNullChecks`. Typecheck still catches real null bugs and
+  type mismatches, but doesn't demand an explicit annotation on every prop/param.
+  This narrowed the surfaced set to 249, all of which are now fixed across ~65
+  files (JSDoc annotations, null-narrowing, correct object shapes) with no runtime
+  behavior change. Notable: `Object.freeze(EVENT_TYPE)` to narrow the
+  `'defend'`/`'attack'` literals, `Button` typed for `...rest` DOM passthrough.
+- Harden engineering health: `initializeEnv` now requires `AUTH_GOOGLE_ID/SECRET`
+  when auth is enabled; `db.js` fails fast on a missing `POSTGRES_URL`;
+  `isValidStatus` requires exactly 3 factions; `.example.env` drops the unused
+  `POSTGRES_SSL` toggle and documents `PORT`/`DEPLOY_ENV`; `test:e2e` added as a
+  smoke-suite alias. New tests cover the db singleton, package scripts,
+  `.example.env`, and the typecheck include scope.
+
+## 0.52.8
+
+### Changes
+
+- Drop the GitHub project board from the tracking convention — work is now tracked with
+  issues + milestones + labels only (`CLAUDE.md` Task Tracking). The board was unused and
+  has been deleted.
+
+## 0.52.7
+
+### Fixes
+
+- Fix the staging GHCR image-cleanup job that failed on every `develop` push:
+  `snok/container-retention-policy@v3` rejects the default `GITHUB_TOKEN` and can't
+  delete user-account packages, so it now authenticates with a classic-PAT secret
+  `GHCR_CLEANUP_TOKEN` (`delete:packages`). Also corrected the stale infrastructure
+  docs that claimed production used a (now-removed) `ACCESS_TOKEN`; production uses
+  `GITHUB_TOKEN` with `contents: write`.
+
 ## 0.52.6
 
 ### Security

@@ -66,6 +66,12 @@ function buildChartData(snapshots, pointsMax) {
         .filter(Boolean);
 }
 
+/**
+ * Recharts injects `active` and `payload` via cloneElement when the tooltip
+ * renders, so both are optional at the JSX call site.
+ *
+ * @param {{ active?: boolean, payload?: Array<{ payload?: {[key: string]: number | null} }> }} props - Recharts-injected tooltip props.
+ */
 function ChartTooltip({ active, payload }) {
     if (!active || !payload?.length) return null;
     const d = payload[0]?.payload;

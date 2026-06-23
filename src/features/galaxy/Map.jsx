@@ -42,9 +42,16 @@ const factions = [
     { id: 'illuminate', index: 2, paths: illuminatePaths },
 ];
 
+/**
+ * @param {Map<string, number> | undefined} delays - Per-key pulse delays in seconds, keyed by region.
+ * @param {string} key - The region key to look up a pulse delay for.
+ * @returns {React.CSSProperties | undefined}
+ */
 function pulseStyle(delays, key) {
     const delay = delays?.get(key);
-    return delay != null ? { '--pulse-delay': `${delay}s` } : undefined;
+    return delay != null ?
+            /** @type {React.CSSProperties} */ ({ '--pulse-delay': `${delay}s` })
+        :   undefined;
 }
 
 export default function Map({ map, pulseDelays }) {

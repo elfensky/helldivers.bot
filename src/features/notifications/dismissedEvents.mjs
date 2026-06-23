@@ -46,6 +46,7 @@ export function addDismissedEvent(eventId, status) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
         }
     } catch (err) {
-        console.debug('[dismissedEvents] localStorage write failed:', err?.message);
+        const message = err instanceof Error ? err.message : String(err);
+        console.debug('[dismissedEvents] localStorage write failed:', message);
     }
 }

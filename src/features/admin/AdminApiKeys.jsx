@@ -55,7 +55,13 @@ export default async function AdminApiKeys() {
                                         {key.enabled ? 'Active' : 'Disabled'}
                                     </td>
                                     <td className="p-3">
-                                        <form action={adminRevokeApiKey}>
+                                        <form
+                                            action={
+                                                /** @type {(formData: FormData) => void} */ (
+                                                    adminRevokeApiKey
+                                                )
+                                            }
+                                        >
                                             <input
                                                 type="hidden"
                                                 name="apikeyId"

@@ -28,6 +28,7 @@ export async function initializeWorker() {
                 workerPath = path.resolve('/app/public/workers/cron.js');
             }
 
+            /** @type {InstanceType<typeof Worker> | null} */
             let worker = new Worker(workerPath);
             worker.postMessage({ key: key, interval: interval, port: port });
             worker.on('message', (data) => {
@@ -62,7 +63,8 @@ export async function initializeWorker() {
 
             return true;
         } catch (error) {
-            console.error(error.message, {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error(message, {
                 cause: '/src/shared/utils/initializeWorker.mjs',
             });
             return false;

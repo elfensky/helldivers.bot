@@ -91,6 +91,13 @@ import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
  * `position: sticky; top: 80px` rule defined in `HomeClient.css`.
  * Stale mobile state classes (from a viewport resize) are explicitly
  * reset in the lg+ media block to avoid cross-breakpoint leakage.
+ *
+ * @param {object} props - Component props.
+ * @param {string} [props.initialFaction] - Server-read active faction tab.
+ * @param {string} [props.initialRegionsView] - Server-read regions view mode.
+ * @param {string} [props.initialSortOrder] - Server-read event-log sort order.
+ * @param {import('@/features/stats/StatGrid').PlayersAvg24h | null} [props.playersAvg24h] - 24h player baselines.
+ * @param {import('@/features/stats/StatGrid').KillsTrend | null} [props.killsTrend] - 24h/48h kill baselines.
  */
 export default function HomeClient({
     initialFaction = 'global',
@@ -138,8 +145,20 @@ export default function HomeClient({
                         id="event-log"
                         layout="stack"
                         initialSortOrder={initialSortOrder}
-                        selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
+                        selectedEventKey={
+                            // EventLog infers this prop as `null` from its
+                            // default; the real value is a string key or null.
+                            // Cast keeps the runtime value while satisfying the
+                            // call site until EventLog's prop type is widened.
+                            /** @type {null} */ (
+                                selectedEvent ? eventKey(selectedEvent) : null
+                            )
+                        }
                         railRef={railRef}
+                        // Documented-optional in EventLog but has no default in
+                        // its destructuring, so its inferred type marks it
+                        // required; pass undefined explicitly (no behavior change).
+                        onHoverEvent={undefined}
                     />
                 </ComponentErrorBoundary>
             </div>

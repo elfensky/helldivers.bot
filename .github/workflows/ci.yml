@@ -31,6 +31,14 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
+            # The Prisma client (src/generated/prisma/, gitignored) is imported by
+            # src/db/db.js, so it must exist before typecheck, unit tests, and build.
+            # Generate it right after install — not after the gates.
+            - name: Generate Prisma client
+              run: npx prisma generate
+              env:
+                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
+
             - name: Lint
               run: npm run lint
 
@@ -40,15 +48,13 @@ jobs:
             - name: Run unit tests
               run: npm run test:unit
 
-            - name: Generate Prisma client
-              run: npx prisma generate
-              env:
-                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
-
             - name: Build
               run: npm run build
               env:
-                  # Stub required build-time env vars so Next.js build succeeds in CI
+                  # Stub the eagerly-validated server config (config/server.mjs runs
+                  # parseServerConfig() at import) so `next build` page-data collection
+                  # succeeds. These three are the required vars; auth is left unset
+                  # (auth-off at build) to avoid the all-or-none provider check.
                   POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
-                  BETTER_AUTH_SECRET: 'ci-secret'
-                  BETTER_AUTH_URL: 'http://localhost:3000'
+                  UPDATE_KEY: 'ci-stub-key'
+                  UPDATE_INTERVAL: '20'

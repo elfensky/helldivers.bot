@@ -116,7 +116,10 @@ jobs:
               uses: snok/container-retention-policy@v3.0.1
               with:
                   account: user
-                  token: ${{ secrets.GITHUB_TOKEN }}
+                  # Classic PAT with delete:packages — the default GITHUB_TOKEN
+                  # (ghs_) is rejected by container-retention-policy and can't
+                  # delete user-account packages.
+                  token: ${{ secrets.GHCR_CLEANUP_TOKEN }}
                   image-names: 'helldiversbot'
                   tag-selection: untagged
                   cut-off: 30min
