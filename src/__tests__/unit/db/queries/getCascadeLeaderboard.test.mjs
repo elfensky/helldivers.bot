@@ -45,21 +45,23 @@ describe('getCascadeLeaderboard', () => {
             makeEvent(155, 2, 8, 100_000),
             makeEvent(155, 2, 7, 110_000),
             makeEvent(155, 2, 6, 120_000),
+            makeEvent(155, 2, 5, 130_000),
         ];
         const s142 = [
             makeEvent(142, 0, 6, 100_000),
             makeEvent(142, 0, 5, 110_000),
             makeEvent(142, 0, 4, 120_000),
             makeEvent(142, 0, 3, 130_000),
+            makeEvent(142, 0, 2, 140_000),
         ];
         vi.mocked(db.h1_event.findMany).mockResolvedValue([...s155, ...s142]);
 
         const result = await getCascadeLeaderboard();
         expect(result).toHaveLength(2);
-        // Longer cascade (s142, length 4) ranks first
+        // Longer cascade (s142, length 5) ranks first
         expect(result[0].season).toBe(142);
-        expect(result[0].length).toBe(4);
+        expect(result[0].length).toBe(5);
         expect(result[1].season).toBe(155);
-        expect(result[1].length).toBe(3);
+        expect(result[1].length).toBe(4);
     });
 });
