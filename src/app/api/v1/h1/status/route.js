@@ -17,9 +17,9 @@ import {
     parseStatusQuery,
     projectLatest,
     projectHistory,
-    enemyIdFromSlug,
     decodeCursor,
 } from './statusProjection.mjs';
+import { enemyIdFromSlug } from '@/shared/enums/factions.mjs';
 
 /**
  * GET /api/v1/h1/status — human-readable current campaign status (mode=latest)

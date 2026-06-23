@@ -1,4 +1,4 @@
-import factions from '@/shared/enums/factions.mjs';
+import factions, { enemyIdFromSlug } from '@/shared/enums/factions.mjs';
 
 describe('factions enum', () => {
     test('has exactly 4 faction keys (0-3)', () => {
@@ -36,5 +36,13 @@ describe('factions enum', () => {
         expect(factions[1].name).toBe('Cyborgs');
         expect(factions[2].name).toBe('The Illuminate');
         expect(factions[3].name).toBe('Federation of Super Earth');
+    });
+});
+
+describe('enemyIdFromSlug', () => {
+    test('maps slugs to ids', () => {
+        expect(enemyIdFromSlug('bugs')).toBe(0);
+        expect(enemyIdFromSlug('cyborgs')).toBe(1);
+        expect(enemyIdFromSlug('illuminate')).toBe(2);
     });
 });

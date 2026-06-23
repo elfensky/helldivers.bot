@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FACTION_SLUG_BY_ID, FACTION_INDEX } from '@/shared/enums/factions.mjs';
+import { FACTION_SLUG_BY_ID } from '@/shared/enums/factions.mjs';
 
 // computeMapState keys fronts by faction id (3 = Super Earth's own defense).
 const FRONT_KEY = { 0: 'bugs', 1: 'cyborgs', 2: 'illuminate', 3: 'superEarth' };
@@ -30,14 +30,6 @@ export function parseMapQuery(searchParams) {
         };
     }
     return { success: true, data: result.data };
-}
-
-/**
- * @param {string} enemy - Faction slug.
- * @returns {number} faction id.
- */
-export function enemyIdFromSlug(enemy) {
-    return FACTION_INDEX[enemy];
 }
 
 /**

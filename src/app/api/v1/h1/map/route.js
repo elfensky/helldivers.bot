@@ -12,7 +12,8 @@ import { getCacheControl } from '@/config/server.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMap, computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
-import { parseMapQuery, projectMap, enemyIdFromSlug } from './mapProjection.mjs';
+import { parseMapQuery, projectMap } from './mapProjection.mjs';
+import { enemyIdFromSlug } from '@/shared/enums/factions.mjs';
 
 /**
  * GET /api/v1/h1/map — render-ready galaxy map geometry (per-faction fronts)

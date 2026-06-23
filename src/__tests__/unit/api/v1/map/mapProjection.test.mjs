@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import {
-    parseMapQuery,
-    projectMap,
-    enemyIdFromSlug,
-} from '@/app/api/v1/h1/map/mapProjection.mjs';
+import { parseMapQuery, projectMap } from '@/app/api/v1/h1/map/mapProjection.mjs';
 
 const sp = (qs) => new URLSearchParams(qs);
 
@@ -32,12 +28,6 @@ describe('parseMapQuery', () => {
         const r = parseMapQuery(sp(qs));
         expect(r.success).toBe(false);
         expect(r.message).toMatch(re);
-    });
-});
-
-describe('enemyIdFromSlug', () => {
-    test('maps slugs to ids', () => {
-        expect(enemyIdFromSlug('illuminate')).toBe(2);
     });
 });
 

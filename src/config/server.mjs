@@ -12,7 +12,6 @@
  * @module config/server
  */
 import { z } from 'zod';
-import { SITE_URL } from '@/config/site.mjs';
 
 // Pure API-policy lookups (cache tiers + rate-limit groups) live in policy.mjs
 // so they can be imported without triggering this module's eager env parsing.
@@ -48,7 +47,6 @@ const schema = z.object({
  * @property {{ url: string }} db - Database connection config.
  * @property {{ updateKey: string, updateInterval: number, port: number }} worker - Worker/update config.
  * @property {number} bucketSize - Tumbling-window width (seconds) for h1_* timeseries.
- * @property {{ url: string }} site - Public site origin.
  * @property {string|null} deployEnv - Server-only deploy-environment tag, or null.
  * @property {boolean} auth - True when auth is fully configured (presence-as-config).
  * @property {{ umami: boolean, sentry: boolean }} analytics - Which analytics services are configured.
@@ -94,7 +92,6 @@ export function parseServerConfig(env = process.env) {
             port: parsed.PORT,
         }),
         bucketSize: parsed.BUCKET_SIZE,
-        site: Object.freeze({ url: SITE_URL }),
         deployEnv: parsed.DEPLOY_ENV ?? null,
         auth,
         analytics: Object.freeze({

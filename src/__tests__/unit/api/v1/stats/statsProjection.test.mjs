@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import {
-    parseStatsQuery,
-    projectStats,
-    enemyIdFromSlug,
-} from '@/app/api/v1/h1/stats/statsProjection.mjs';
+import { parseStatsQuery, projectStats } from '@/app/api/v1/h1/stats/statsProjection.mjs';
 import { encodeCursor, decodeCursor } from '@/shared/utils/api/cursor.mjs';
 
 const sp = (qs) => new URLSearchParams(qs);
@@ -26,13 +22,6 @@ describe('parseStatsQuery', () => {
         const r = parseStatsQuery(sp(qs));
         expect(r.success).toBe(false);
         expect(r.message).toMatch(re);
-    });
-});
-
-describe('enemyIdFromSlug', () => {
-    test('maps slugs to ids', () => {
-        expect(enemyIdFromSlug('bugs')).toBe(0);
-        expect(enemyIdFromSlug('illuminate')).toBe(2);
     });
 });
 

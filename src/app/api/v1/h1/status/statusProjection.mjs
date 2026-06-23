@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FACTION_SLUG_BY_ID, FACTION_INDEX } from '@/shared/enums/factions.mjs';
+import { FACTION_SLUG_BY_ID } from '@/shared/enums/factions.mjs';
 import { encodeCursor, decodeCursor } from '@/shared/utils/api/cursor.mjs';
 
 /**
@@ -39,14 +39,6 @@ export function parseStatusQuery(searchParams) {
         };
     }
     return { success: true, data: result.data };
-}
-
-/**
- * @param {string} enemy - Faction slug.
- * @returns {number} faction id.
- */
-export function enemyIdFromSlug(enemy) {
-    return FACTION_INDEX[enemy];
 }
 
 function percentOf(points, pointsMax) {
