@@ -86,6 +86,11 @@ RUN --mount=type=cache,target=/app/.next/cache,sharing=locked \
 # ENTRYPOINT ["/nodejs/bin/node"].
 FROM gcr.io/distroless/nodejs24-debian12:nonroot AS runner
 WORKDIR /app
+# distroless keeps the node binary at /nodejs/bin, which is NOT on the default
+# PATH. Add it so a bare `node` resolves — the HEALTHCHECK below and both
+# docker-compose healthchecks (ci + prod) invoke `node` directly, as they did
+# on the previous chainguard runtime where node was already on PATH.
+ENV PATH="/nodejs/bin:${PATH}"
 # Pass the version from the build step
 ARG VERSION
 LABEL org.opencontainers.image.source="https://github.com/elfensky/helldivers.bot"
@@ -120,8 +125,8 @@ ENV HOSTNAME="0.0.0.0"
 # Image ENTRYPOINT is ["/nodejs/bin/node"], so CMD is just the script path.
 CMD ["server.js"]
 # Node's built-in fetch (stable since Node 21) replaces wget/curl probes.
-# Exec form (JSON array) bypasses /bin/sh, which distroless doesn't ship; and
-# `node` isn't on distroless's PATH, so the probe calls it by absolute path.
+# Exec form (JSON array) bypasses /bin/sh, which distroless doesn't ship.
+# `node` resolves via the PATH set in the runner stage above.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD ["/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:3000/api/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 #endregion
