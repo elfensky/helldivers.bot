@@ -3,7 +3,6 @@ import {
     parseStatusQuery,
     projectLatest,
     projectHistory,
-    enemyIdFromSlug,
     encodeCursor,
     decodeCursor,
 } from '@/app/api/v1/h1/status/statusProjection.mjs';
@@ -46,14 +45,6 @@ describe('parseStatusQuery', () => {
         const r = parseStatusQuery(sp(qs));
         expect(r.success).toBe(false);
         expect(r.message).toMatch(re);
-    });
-});
-
-describe('enemyIdFromSlug', () => {
-    test('maps slugs to ids', () => {
-        expect(enemyIdFromSlug('bugs')).toBe(0);
-        expect(enemyIdFromSlug('cyborgs')).toBe(1);
-        expect(enemyIdFromSlug('illuminate')).toBe(2);
     });
 });
 

@@ -13,7 +13,8 @@ import { backfillAndRetry } from '@/shared/utils/api/backfillSeason.mjs';
 import { config, getCacheControl } from '@/config/server.mjs';
 import { getStats } from '@/db/queries/getStats.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
-import { parseStatsQuery, projectStats, enemyIdFromSlug } from './statsProjection.mjs';
+import { parseStatsQuery, projectStats } from './statsProjection.mjs';
+import { enemyIdFromSlug } from '@/shared/enums/factions.mjs';
 
 /**
  * GET /api/v1/h1/stats — human-readable statistics timeseries for a season,

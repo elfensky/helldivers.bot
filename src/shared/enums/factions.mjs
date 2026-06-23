@@ -35,3 +35,14 @@ export const FACTION_SLUG_BY_ID = Object.freeze(
         Object.fromEntries(Object.entries(FACTION_INDEX).map(([slug, id]) => [id, slug]))
     ),
 );
+
+/**
+ * Faction slug → enemy id. Inverse of {@link FACTION_SLUG_BY_ID}; the public API
+ * accepts the slug while the DB stores the id.
+ *
+ * @param {string} enemy - Faction slug (`bugs`/`cyborgs`/`illuminate`).
+ * @returns {number} faction id.
+ */
+export function enemyIdFromSlug(enemy) {
+    return FACTION_INDEX[enemy];
+}
