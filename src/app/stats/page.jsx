@@ -2,6 +2,10 @@ import { getCrossSeasonStats } from '@/db/queries/getCrossSeasonStats.mjs';
 import FactionThreatRanking from '@/features/stats/FactionThreatRanking';
 import WarOutcomes from '@/features/stats/WarOutcomes';
 import SeasonRecords from '@/features/stats/SeasonRecords';
+import RatioTrendChart from '@/features/stats/RatioTrendChart';
+import { computeTelemetryStats } from '@/features/stats/computeTelemetryStats.mjs';
+import { StatCard } from '@/features/stats/StatGrid';
+import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 import Hijackable from '@/features/ministry/Hijackable';
 import CascadeLog from '@/features/timeline/CascadeLog';
 import { getCascadeLeaderboard } from '@/db/queries/getCascadeLeaderboard.mjs';
@@ -35,6 +39,7 @@ export const metadata = {
 export default async function StatsPage() {
     const data = await getCrossSeasonStats();
     const seasonsCount = data.perSeason.length;
+    const telemetry = computeTelemetryStats(data.perSeason);
     const cascades = await getCascadeLeaderboard();
     const lede = generateCascadeLede(cascades, data.perSeason.length);
     const c = await cookies();
@@ -71,6 +76,55 @@ export default async function StatsPage() {
                 <Hijackable as="h2" category="heading" text="All-Time Records" />
                 <SeasonRecords perSeason={data.perSeason} />
             </section>
+
+            {telemetry.seasonsWithTelemetry > 0 && (
+                <section className="flex flex-col gap-2">
+                    <Hijackable as="h2" category="heading" text="Combat Telemetry" />
+                    <p className="text-small text-text-muted">
+                        Live combat stats from the {telemetry.seasonsWithTelemetry}{' '}
+                        {telemetry.seasonsWithTelemetry === 1 ? 'season' : 'seasons'} the
+                        bot has polled directly — earlier wars predate telemetry
+                        collection, so the trend grows as new wars are recorded.
+                    </p>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {telemetry.friendlyFire.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                                <h3 className="text-small text-text-muted">
+                                    Friendly Fire Index — accidentals per kill
+                                </h3>
+                                <RatioTrendChart
+                                    data={telemetry.friendlyFire}
+                                    label="Friendly fire"
+                                    color="#8b2d2d"
+                                    decimals={2}
+                                />
+                            </div>
+                        )}
+                        {telemetry.accuracy.length > 0 && (
+                            <div className="flex flex-col gap-1">
+                                <h3 className="text-small text-text-muted">
+                                    Accuracy Trend — hits per shot
+                                </h3>
+                                <RatioTrendChart
+                                    data={telemetry.accuracy}
+                                    label="Accuracy"
+                                    color="#7ec8e3"
+                                    decimals={1}
+                                />
+                            </div>
+                        )}
+                    </div>
+                    {telemetry.shotsPerPlanet != null && (
+                        <div className="stat-grid">
+                            <StatCard
+                                label="Shots per Planet"
+                                value={formatNumber(Math.round(telemetry.shotsPerPlanet))}
+                                subtitle="rounds fired per planet liberated"
+                            />
+                        </div>
+                    )}
+                </section>
+            )}
 
             <CascadeLog
                 cascades={cascades}
