@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.60.0
+
+### Features
+
+- **Combat Telemetry on `/stats`** (#178). Three telemetry vizzes fed by the
+  sums already carried through `getCrossSeasonStats`: a reusable `RatioTrendChart`
+  drives **Friendly Fire Index** (accidentals/kills) and **Accuracy Trend**
+  (hits/shots) as cross-season `%` line charts, plus a **Shots per Planet** "big
+  number" StatCard. `computeTelemetryStats` filters to telemetry-bearing seasons
+  (live-polled wars; historical seasons predate collection) and narrows BigInt
+  sums to Number so the result is safe across the server→client boundary. The
+  section and each viz hide when no telemetry exists, so it grows as the worker
+  records more wars.
+- **Player Engagement chart on `/archives`** (#275). A new lazy-loaded
+  per-faction scatter of `players_at_start` vs. day-into-war, showing whether the
+  community rallied, declined, or surged for the final battles. Hidden when a
+  season has no event player data.
+- **Closest Calls on `/archives`** (#273). The global archives stats now surface
+  the top-3 defend events that came nearest to holding (`points/points_max`
+  closest to 1.0 but short), each a danger-accented StatCard with region ·
+  faction · % held. Restricted to defend fails — the only events with a clean
+  margin signal — and hidden when a war had no genuine nail-biters.
+
 ## 0.59.2
 
 ### Changed
