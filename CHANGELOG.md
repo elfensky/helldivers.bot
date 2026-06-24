@@ -23,6 +23,19 @@
   faction · % held. Restricted to defend fails — the only events with a clean
   margin signal — and hidden when a war had no genuine nail-biters.
 
+### Fixed
+
+- **Lockfile synced to `0.60.0`** — `package-lock.json` still carried `0.59.1`.
+- **`/stats` Combat Telemetry charts deferred via `next/dynamic`** — added
+  `RatioTrendChartLoader` so the Recharts bundle stays out of the initial page
+  JS, matching the `/archives` chart loaders.
+- **`metrics.yml` pinned back to `lowlighter/metrics@v3.34`** — a CI group bump
+  had silently moved it to the unreleased `@v4` dev branch (not a release tag).
+- **`buildEngagementSeries` hardened and unit-tested** — extracted to its own
+  module; the anchor fallback uses `reduce` instead of `Math.min(...spread)` (no
+  `RangeError` on large event arrays), and the telemetry ratios guard missing
+  BigInt fields with `?? 0n`.
+
 ## 0.59.2
 
 ### Changed
