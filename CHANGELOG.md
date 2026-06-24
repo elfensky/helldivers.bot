@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.59.1
+
+### Changed
+
+- **recharts upgraded 3.8.1 → 3.9.0.** 3.9.0 removed the `<Area baseLine>` prop,
+  which `ProgressExplainer`'s on-track buffer band used. Reworked the band to
+  recharts 3.9's ranged-area form (a `[expected, bufferCeiling]` tuple dataKey)
+  plus a separate dashed `<Line>` for the +10% ceiling edge — visual unchanged.
+
 ## 0.59.0
 
 ### Features

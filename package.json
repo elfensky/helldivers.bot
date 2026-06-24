@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.59.0",
+    "version": "0.59.1",
     "private": true,
     "type": "module",
     "scripts": {
@@ -37,7 +37,7 @@
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
         "react-slot-counter": "^3.3.3",
-        "recharts": "^3.8.1",
+        "recharts": "^3.9.0",
         "remark-gfm": "^4.0.1",
         "serwist": "^9.5.11",
         "sonner": "^2.0.7",
