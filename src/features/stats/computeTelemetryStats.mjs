@@ -24,7 +24,7 @@ export function computeTelemetryStats(perSeason) {
         .filter((s) => Number(s.kills) > 0)
         .map((s) => ({
             season: s.season,
-            value: (Number(s.accidentals) / Number(s.kills)) * 100,
+            value: (Number(s.accidentals ?? 0n) / Number(s.kills)) * 100,
         }));
 
     // Accuracy Trend — hits as a percentage of shots fired.
@@ -32,7 +32,7 @@ export function computeTelemetryStats(perSeason) {
         .filter((s) => Number(s.shots) > 0)
         .map((s) => ({
             season: s.season,
-            value: (Number(s.hits) / Number(s.shots)) * 100,
+            value: (Number(s.hits ?? 0n) / Number(s.shots)) * 100,
         }));
 
     // Shots per Planet — one all-time "big number", aggregated across telemetry

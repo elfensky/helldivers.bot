@@ -2,7 +2,7 @@ import { getCrossSeasonStats } from '@/db/queries/getCrossSeasonStats.mjs';
 import FactionThreatRanking from '@/features/stats/FactionThreatRanking';
 import WarOutcomes from '@/features/stats/WarOutcomes';
 import SeasonRecords from '@/features/stats/SeasonRecords';
-import RatioTrendChart from '@/features/stats/RatioTrendChart';
+import RatioTrendChart from '@/features/stats/RatioTrendChartLoader';
 import { computeTelemetryStats } from '@/features/stats/computeTelemetryStats.mjs';
 import { StatCard } from '@/features/stats/StatGrid';
 import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
