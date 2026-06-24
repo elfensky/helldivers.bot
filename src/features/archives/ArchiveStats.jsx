@@ -7,6 +7,7 @@ import Hijackable from '@/features/ministry/Hijackable';
 import factions, { FACTION_INDEX } from '@/shared/enums/factions.mjs';
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import map from '@/shared/enums/map.mjs';
+import { selectClosestCalls } from '@/features/archives/selectClosestCalls.mjs';
 
 /**
  * A DEFENSE_RATE / ATTACK_RATE card for one event type — the success rate
@@ -93,37 +94,68 @@ export default function ArchiveStats({ faction, events, data, live }) {
             { difficulty: 0, successful: 0 },
         );
 
+        // The defends that came within a hair of holding — narrowest losses
+        // first. Hidden entirely when the war had no genuine nail-biters.
+        const closestCalls = selectClosestCalls(events);
+
         return (
-            <div className="stat-grid">
-                <StatCard
-                    label="OUTCOME"
-                    value={
-                        outcome === 'victory' || outcome === 'defeat' ?
-                            <Hijackable
-                                category="value"
-                                scope="archives"
-                                text={outcome.toUpperCase()}
-                                altText={outcome === 'victory' ? 'DEFEAT' : 'VICTORY'}
-                                className={
-                                    outcome === 'defeat' ? 'text-danger' : 'text-success'
-                                }
-                                altClassName={
-                                    outcome === 'defeat' ? 'text-success' : 'text-danger'
-                                }
-                            />
-                        :   outcome.toUpperCase()
-                    }
-                    subtitle={outcomeFaction ?? undefined}
-                    accentColor={outcomeColor}
-                    valueColor={
-                        outcome !== 'victory' && outcome !== 'defeat' ?
-                            outcomeColor
-                        :   undefined
-                    }
-                />
-                {rateCards(events)}
-                {difficultyCard(diff.difficulty, diff.successful)}
-            </div>
+            <>
+                <div className="stat-grid">
+                    <StatCard
+                        label="OUTCOME"
+                        value={
+                            outcome === 'victory' || outcome === 'defeat' ?
+                                <Hijackable
+                                    category="value"
+                                    scope="archives"
+                                    text={outcome.toUpperCase()}
+                                    altText={outcome === 'victory' ? 'DEFEAT' : 'VICTORY'}
+                                    className={
+                                        outcome === 'defeat' ? 'text-danger' : (
+                                            'text-success'
+                                        )
+                                    }
+                                    altClassName={
+                                        outcome === 'defeat' ? 'text-success' : (
+                                            'text-danger'
+                                        )
+                                    }
+                                />
+                            :   outcome.toUpperCase()
+                        }
+                        subtitle={outcomeFaction ?? undefined}
+                        accentColor={outcomeColor}
+                        valueColor={
+                            outcome !== 'victory' && outcome !== 'defeat' ?
+                                outcomeColor
+                            :   undefined
+                        }
+                    />
+                    {rateCards(events)}
+                    {difficultyCard(diff.difficulty, diff.successful)}
+                </div>
+                {closestCalls.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                        <h3 className="text-small text-text-muted">
+                            Closest Calls — defends that came nearest to holding
+                        </h3>
+                        <div className="stat-grid">
+                            {closestCalls.map((c, i) => (
+                                <StatCard
+                                    key={`${c.enemy}-${c.region}-${i}`}
+                                    label={
+                                        map[c.enemy]?.[c.region]?.region ??
+                                        `Region ${c.region}`
+                                    }
+                                    value={`${(c.ratio * 100).toFixed(1)}%`}
+                                    subtitle={factions[c.enemy]?.name}
+                                    accentColor="danger"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </>
         );
     }
 
