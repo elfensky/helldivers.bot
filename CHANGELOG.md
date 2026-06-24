@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **`/sign-in` now has its own page title** (`Sign In | Helldivers Bot`) via a
+  `sign-in/layout.jsx`, instead of inheriting the generic site-wide default.
+- **Removed the post-login `/dashboard → /profile` redirect hop.** OAuth
+  `callbackURL`s now point straight at `/profile`, and the redirect-only
+  `/dashboard` route (plus its `robots.txt` disallow) is deleted.
+
 ## 0.59.1
 
 ### Changed
