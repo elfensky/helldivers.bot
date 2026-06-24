@@ -113,7 +113,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Cleanup untagged packages
-              uses: snok/container-retention-policy@v3.0.1
+              uses: snok/container-retention-policy@v3.1.0
               with:
                   account: user
                   # Classic PAT with delete:packages — the default GITHUB_TOKEN
