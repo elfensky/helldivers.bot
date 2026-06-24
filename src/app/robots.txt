@@ -1,4 +1,3 @@
 User-Agent: *
 Allow: /
-Disallow: /dashboard/
 Sitemap: https://helldivers.bot/sitemap.xml

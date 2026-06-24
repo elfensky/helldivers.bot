@@ -17,7 +17,7 @@ export default function SignInPage() {
                     className="flex w-64 cursor-pointer items-center justify-center gap-3 px-6 py-3 text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary active:scale-[0.98]"
                     style={{ backgroundColor: '#5865F2' }}
                     data-umami-event="auth-signin-discord"
-                    onClick={() => signIn('discord', { callbackURL: '/dashboard' })}
+                    onClick={() => signIn('discord', { callbackURL: '/profile' })}
                 >
                     <svg
                         width="20"
@@ -37,7 +37,7 @@ export default function SignInPage() {
                     className="flex w-64 cursor-pointer items-center justify-center gap-3 px-6 py-3 text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary active:scale-[0.98]"
                     style={{ backgroundColor: '#24292e' }}
                     data-umami-event="auth-signin-github"
-                    onClick={() => signIn('github', { callbackURL: '/dashboard' })}
+                    onClick={() => signIn('github', { callbackURL: '/profile' })}
                 >
                     <svg
                         width="20"
@@ -59,7 +59,7 @@ export default function SignInPage() {
                     className="flex w-64 cursor-pointer items-center justify-center gap-3 border border-ghost px-6 py-3 transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary active:scale-[0.98]"
                     style={{ backgroundColor: '#fff', color: '#3c4043' }}
                     data-umami-event="auth-signin-google"
-                    onClick={() => signIn('google', { callbackURL: '/dashboard' })}
+                    onClick={() => signIn('google', { callbackURL: '/profile' })}
                 >
                     <svg
                         width="20"
