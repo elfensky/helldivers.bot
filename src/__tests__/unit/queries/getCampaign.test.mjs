@@ -86,11 +86,23 @@ const mockStatusHistory = [
 
 const mockEvents = [{ type: 'defend', event_id: 1 }];
 
+// Full h1_statistic history for the season — drives data.playerTimeseries.
+// Two buckets × three factions. time is unix-seconds; players is the signal.
+const mockStatHistory = [
+    { bucket: 1, enemy: 0, players: 100, time: 1000 },
+    { bucket: 1, enemy: 1, players: 50, time: 1000 },
+    { bucket: 1, enemy: 2, players: 25, time: 1000 },
+    { bucket: 2, enemy: 0, players: 200, time: 1000 + 86400 },
+    { bucket: 2, enemy: 1, players: 60, time: 1000 + 86400 },
+    { bucket: 2, enemy: 2, players: 40, time: 1000 + 86400 },
+];
+
 function seedDbMocks({
     seasonRow = mockSeasonRow,
     liveRows = mockLiveRows,
     statRows = mockStatRows,
     statusHistory = mockStatusHistory,
+    statHistory = mockStatHistory,
     events = mockEvents,
 } = {}) {
     vi.mocked(db.h1_season.findFirst).mockResolvedValue(seasonRow);
@@ -102,6 +114,8 @@ function seedDbMocks({
         .mockResolvedValueOnce(liveRows)
         .mockResolvedValueOnce(statRows);
     vi.mocked(db.h1_status.findMany).mockResolvedValue(statusHistory);
+    // Full h1_statistic history → data.playerTimeseries.
+    vi.mocked(db.h1_statistic.findMany).mockResolvedValue(statHistory);
     vi.mocked(db.h1_event.findMany).mockResolvedValue(events);
 }
 
@@ -460,6 +474,35 @@ describe('getCampaign', () => {
         // Downstream consumers can now safely do data.every(f => f.status ...)
         // without a null check.
         expect(result.snapshots[0].data.every((f) => f !== null)).toBe(true);
+    });
+
+    test('builds playerTimeseries from h1_statistic, with 1-based day anchored to war_start', async () => {
+        // war_start is the earliest h1_status bucket time. Align the status
+        // history's earliest time with the stat history so the day math is
+        // clean: bucket 1 stats at war_start → day 1, bucket 2 at +1 day → day 2.
+        seedDbMocks({
+            statusHistory: [
+                { bucket: 1, enemy: 0, status: 'active', time: 1000, points: 1, points_taken: 0 }, // prettier-ignore
+                { bucket: 1, enemy: 1, status: 'active', time: 1000, points: 1, points_taken: 0 }, // prettier-ignore
+                { bucket: 1, enemy: 2, status: 'active', time: 1000, points: 1, points_taken: 0 }, // prettier-ignore
+            ],
+        });
+
+        const result = await getCampaign();
+
+        expect(result.war_start).toBe(1000);
+        expect(result.playerTimeseries).toEqual([
+            { time: 1000, day: 1, total: 175, bugs: 100, cyborgs: 50, illuminate: 25 },
+            { time: 1000 + 86400, day: 2, total: 300, bugs: 200, cyborgs: 60, illuminate: 40 }, // prettier-ignore
+        ]);
+    });
+
+    test('playerTimeseries is empty for a season with no h1_statistic rows (historical)', async () => {
+        seedDbMocks({ statHistory: [] });
+
+        const result = await getCampaign();
+
+        expect(result.playerTimeseries).toEqual([]);
     });
 
     test('returns null when no season found', async () => {
