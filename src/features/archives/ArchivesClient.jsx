@@ -5,6 +5,7 @@ import ArchiveStats from '@/features/archives/ArchiveStats';
 import ArchivesHeader from '@/features/archives/ArchivesHeader';
 import FactionHealthChart from '@/features/archives/FactionHealthChartLoader';
 import PlayerEngagementChart from '@/features/archives/PlayerEngagementChartLoader';
+import NarrativeSection from '@/features/archives/NarrativeSection';
 import FactionTabs from '@/shared/components/FactionTabs';
 import StatGrid from '@/features/stats/StatGrid';
 import EventLog from '@/features/timeline/EventLog';
@@ -166,6 +167,8 @@ export default function ArchivesClient({
                         />
                     </section>
                 )}
+
+                <NarrativeSection data={data} />
             </div>
 
             {cascades.length > 0 && (
