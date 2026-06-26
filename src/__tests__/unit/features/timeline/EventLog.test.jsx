@@ -74,4 +74,68 @@ describe('EventLog', () => {
         expect(cards.length).toBeGreaterThan(0);
         expect(cards[0].getAttribute('data-event-key')).toBe('defend-1');
     });
+
+    describe('intro markers (archives opt-in)', () => {
+        const introMarkers = [
+            { kind: 'intro', enemy: 2, name: 'Illuminate', time: NOW - 400, day: 4 },
+        ];
+
+        test('renders an intro marker row when introMarkers is provided', () => {
+            const { container } = render(
+                <EventLog
+                    events={fakeEvents}
+                    timeFormat="absolute"
+                    layout="stack"
+                    introMarkers={introMarkers}
+                />,
+            );
+            const marker = container.querySelector('.event-log-intro');
+            expect(marker).toBeInTheDocument();
+            expect(marker.textContent).toContain('Day 4');
+            expect(marker.textContent).toContain('Illuminate enter the war');
+        });
+
+        test('does NOT render any intro marker when introMarkers is empty', () => {
+            const { container } = render(
+                <EventLog
+                    events={fakeEvents}
+                    timeFormat="absolute"
+                    layout="stack"
+                    introMarkers={[]}
+                />,
+            );
+            expect(container.querySelector('.event-log-intro')).toBeNull();
+        });
+
+        test('output is identical with the default (omitted) introMarkers prop', () => {
+            const withDefault = render(
+                <EventLog events={fakeEvents} timeFormat="absolute" layout="stack" />,
+            ).container.innerHTML;
+            const withEmpty = render(
+                <EventLog
+                    events={fakeEvents}
+                    timeFormat="absolute"
+                    layout="stack"
+                    introMarkers={[]}
+                />,
+            ).container.innerHTML;
+            expect(withEmpty).toBe(withDefault);
+        });
+
+        test('markers are not treated as events (no data-event-key, no W/L count)', () => {
+            const { container } = render(
+                <EventLog
+                    events={[]}
+                    timeFormat="absolute"
+                    layout="stack"
+                    introMarkers={introMarkers}
+                />,
+            );
+            // The marker renders but contributes no event card / scroll-sync key
+            expect(container.querySelector('.event-log-intro')).toBeInTheDocument();
+            expect(container.querySelector('[data-event-key]')).toBeNull();
+            // No outcome summary when the day holds only an intro marker
+            expect(container.querySelector('.event-log-day-summary')).toBeNull();
+        });
+    });
 });

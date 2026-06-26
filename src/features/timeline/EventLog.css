@@ -262,3 +262,38 @@
     color: var(--color-text-muted);
     margin: 0.25rem 0 0.75rem 0;
 }
+
+/* === Faction intro markers (archives only) ===
+ *
+ * Synthetic "a faction enters the war" dividers interleaved among the event
+ * rows on /archives. `--intro-color` is set inline per faction from the
+ * `--color-faction-*` token. Full-width so it reads as a divider even if a
+ * grid layout ever wraps it (the archives log uses the stack layout, so it
+ * naturally spans the single column there). */
+.event-log-intro {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    margin: 0.4rem 0;
+    background: color-mix(in srgb, var(--intro-color) 12%, transparent);
+    border-left: 4px solid var(--intro-color);
+    font-family: var(--font-mono, monospace);
+}
+
+.event-log-intro-day {
+    font-size: var(--text-small);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--intro-color);
+    white-space: nowrap;
+}
+
+.event-log-intro-label {
+    font-size: var(--text-small);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+}

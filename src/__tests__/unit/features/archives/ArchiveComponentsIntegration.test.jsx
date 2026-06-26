@@ -456,6 +456,49 @@ describe('Archive Components Integration Tests', () => {
             expect(props.selectedEvent).toEqual(mockEvent);
         });
 
+        test('EventLog receives computed faction intro markers', () => {
+            // getCampaign-shaped data: introduction_order.order is enemy-indexed
+            // reveal slots; status[i].first_seen is per-faction first appearance.
+            const warStart = 1700000000;
+            const introData = {
+                ...allSeeds[0].data,
+                war_start: warStart,
+                introduction_order: { order: [1, 2, 0] }, // illuminate never deployed
+                status: [
+                    { enemy: 0, first_seen: warStart }, // Bugs — Day 1
+                    { enemy: 1, first_seen: warStart + 3 * 86400 }, // Cyborgs — Day 4
+                    { enemy: 2, first_seen: null }, // never seen
+                ],
+            };
+
+            render(<ArchivesClient data={introData} seasons={[1]} currentSeason={1} />);
+
+            const props = JSON.parse(
+                screen.getByTestId('event-log-mock').getAttribute('data-props') || '{}',
+            );
+
+            expect(Array.isArray(props.introMarkers)).toBe(true);
+            expect(props.introMarkers.map((m) => m.enemy)).toEqual([0, 1]);
+            expect(props.introMarkers.map((m) => m.name)).toEqual(['Bugs', 'Cyborgs']);
+            expect(props.introMarkers.map((m) => m.day)).toEqual([1, 4]);
+        });
+
+        test('EventLog receives empty intro markers when intro data is absent', () => {
+            // The default seed lacks a getCampaign `status` array, so no markers.
+            render(
+                <ArchivesClient
+                    data={allSeeds[0].data}
+                    seasons={[1]}
+                    currentSeason={1}
+                />,
+            );
+
+            const props = JSON.parse(
+                screen.getByTestId('event-log-mock').getAttribute('data-props') || '{}',
+            );
+            expect(props.introMarkers).toEqual([]);
+        });
+
         test('Mobile viewport behavior simulation', () => {
             // Simulate mobile viewport
             global.innerWidth = 400;
