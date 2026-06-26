@@ -1,5 +1,60 @@
 # Changelog
 
+## 0.60.0
+
+### Features
+
+- **Combat Telemetry on `/stats`** (#178). Three telemetry vizzes fed by the
+  sums already carried through `getCrossSeasonStats`: a reusable `RatioTrendChart`
+  drives **Friendly Fire Index** (accidentals/kills) and **Accuracy Trend**
+  (hits/shots) as cross-season `%` line charts, plus a **Shots per Planet** "big
+  number" StatCard. `computeTelemetryStats` filters to telemetry-bearing seasons
+  (live-polled wars; historical seasons predate collection) and narrows BigInt
+  sums to Number so the result is safe across the server→client boundary. The
+  section and each viz hide when no telemetry exists, so it grows as the worker
+  records more wars.
+- **Player Engagement chart on `/archives`** (#275). A new lazy-loaded
+  per-faction scatter of `players_at_start` vs. day-into-war, showing whether the
+  community rallied, declined, or surged for the final battles. Hidden when a
+  season has no event player data.
+- **Closest Calls on `/archives`** (#273). The global archives stats now surface
+  the top-3 defend events that came nearest to holding (`points/points_max`
+  closest to 1.0 but short), each a danger-accented StatCard with region ·
+  faction · % held. Restricted to defend fails — the only events with a clean
+  margin signal — and hidden when a war had no genuine nail-biters.
+
+### Fixed
+
+- **Lockfile synced to `0.60.0`** — `package-lock.json` still carried `0.59.1`.
+- **`/stats` Combat Telemetry charts deferred via `next/dynamic`** — added
+  `RatioTrendChartLoader` so the Recharts bundle stays out of the initial page
+  JS, matching the `/archives` chart loaders.
+- **`metrics.yml` pinned back to `lowlighter/metrics@v3.34`** — a CI group bump
+  had silently moved it to the unreleased `@v4` dev branch (not a release tag).
+- **`buildEngagementSeries` hardened and unit-tested** — extracted to its own
+  module; the anchor fallback uses `reduce` instead of `Math.min(...spread)` (no
+  `RangeError` on large event arrays), and the telemetry ratios guard missing
+  BigInt fields with `?? 0n`.
+
+## 0.59.2
+
+### Changed
+
+- **`/sign-in` now has its own page title** (`Sign In | Helldivers Bot`) via a
+  `sign-in/layout.jsx`, instead of inheriting the generic site-wide default.
+- **Removed the post-login `/dashboard → /profile` redirect hop.** OAuth
+  `callbackURL`s now point straight at `/profile`, and the redirect-only
+  `/dashboard` route (plus its `robots.txt` disallow) is deleted.
+
+## 0.59.1
+
+### Changed
+
+- **recharts upgraded 3.8.1 → 3.9.0.** 3.9.0 removed the `<Area baseLine>` prop,
+  which `ProgressExplainer`'s on-track buffer band used. Reworked the band to
+  recharts 3.9's ranged-area form (a `[expected, bufferCeiling]` tuple dataKey)
+  plus a separate dashed `<Line>` for the +10% ceiling edge — visual unchanged.
+
 ## 0.59.0
 
 ### Features

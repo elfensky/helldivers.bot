@@ -4,6 +4,7 @@ import { useMapPin } from '@/shared/hooks/useMapPin.mjs';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 import ArchivesHeader from '@/features/archives/ArchivesHeader';
 import FactionHealthChart from '@/features/archives/FactionHealthChartLoader';
+import PlayerEngagementChart from '@/features/archives/PlayerEngagementChartLoader';
 import FactionTabs from '@/shared/components/FactionTabs';
 import StatGrid from '@/features/stats/StatGrid';
 import EventLog from '@/features/timeline/EventLog';
@@ -76,6 +77,10 @@ export default function ArchivesClient({
     initialCascadeSort,
 }) {
     const events = data?.events ?? [];
+    // Player-engagement data is snapshot-derived, so it exists for historical
+    // seasons too — but guard the section anyway so a season with no event
+    // player counts hides it entirely rather than showing an empty chart.
+    const hasPlayerData = events.some((e) => (e.players_at_start ?? 0) > 0);
     const cascades = findAllCascades(events).map((c) => ({
         season: data?.season,
         ...c,
@@ -146,6 +151,21 @@ export default function ArchivesClient({
                         pointsMax={data?.points_max}
                     />
                 </section>
+
+                {hasPlayerData && (
+                    <section className="mt-4 flex flex-col gap-2">
+                        <h2>Player Engagement</h2>
+                        <p className="text-small text-text-muted">
+                            Helldivers mobilized at the start of each event, over the
+                            course of the war — did the community rally for the final
+                            battles?
+                        </p>
+                        <PlayerEngagementChart
+                            events={events}
+                            warStart={data?.war_start}
+                        />
+                    </section>
+                )}
             </div>
 
             {cascades.length > 0 && (

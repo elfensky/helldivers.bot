@@ -88,10 +88,14 @@ export default function ProgressExplainer() {
         const points = [];
         for (let pct = 0; pct <= 100; pct += 2) {
             const expected = (pct / 100) * pointsMax;
+            const bufferCeiling = expected * 1.1;
             points.push({
                 pct,
                 expected,
-                bufferCeiling: expected * 1.1,
+                bufferCeiling,
+                // [low, high] tuple → ranged Area. recharts 3.9 removed
+                // <Area baseLine>; a tuple dataKey is the supported replacement.
+                band: [expected, bufferCeiling],
             });
         }
         return points;
@@ -158,22 +162,14 @@ export default function ProgressExplainer() {
                         />
                         <Tooltip content={<CustomTooltip />} />
 
-                        {/* Buffer zone fill between expected and buffer ceiling */}
+                        {/* Buffer zone: ranged area between expected (low) and
+                            bufferCeiling (high). recharts 3.9 removed <Area baseLine>;
+                            a [low, high] tuple dataKey renders the band. */}
                         <Area
-                            dataKey="bufferCeiling"
-                            stroke={COLORS.bufferStroke}
-                            strokeWidth={1}
-                            strokeDasharray="4 4"
+                            dataKey="band"
+                            stroke="none"
                             fill={COLORS.buffer}
                             fillOpacity={1}
-                            // recharts accepts a plain y-value array for the Area
-                            // lower edge at runtime; its `BaseLineType` only models
-                            // the {x,y}[] form, so a `number[]` cast is rejected —
-                            // `any` is the only type that bridges the value-only array.
-                            baseLine={
-                                // eslint-disable-next-line jsdoc/reject-any-type -- recharts BaseLineType rejects the runtime-valid number[] form
-                                /** @type {any} */ (chartData.map((d) => d.expected))
-                            }
                             isAnimationActive={false}
                         />
                         <Area
@@ -181,6 +177,16 @@ export default function ProgressExplainer() {
                             stroke="none"
                             fill="var(--color-surface-1)"
                             fillOpacity={1}
+                            isAnimationActive={false}
+                        />
+                        {/* Dashed upper edge of the buffer band (the +10% ceiling) —
+                            a separate Line so only the top edge is stroked, as before. */}
+                        <Line
+                            dataKey="bufferCeiling"
+                            stroke={COLORS.bufferStroke}
+                            strokeWidth={1}
+                            strokeDasharray="4 4"
+                            dot={false}
                             isAnimationActive={false}
                         />
 

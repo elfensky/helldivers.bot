@@ -19,6 +19,8 @@ jobs:
         steps:
             # https://github.com/lowlighter/metrics/tree/master/source/plugins/pagespeed
             - name: 'metrics: pagespeed'
+              # pinned to v3.34 (latest release tag); @v4 is an unreleased
+              # dev branch, not a tag — a group bump silently moved it there.
               uses: lowlighter/metrics@v3.34
               with:
                   token: NOT_NEEDED
