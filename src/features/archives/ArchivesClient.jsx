@@ -165,6 +165,7 @@ export default function ArchivesClient({
                             playerTimeseries={playerTimeseries}
                             events={events}
                             faction={faction}
+                            warStart={data?.war_start}
                         />
                     </section>
                 )}

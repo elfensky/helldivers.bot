@@ -32,6 +32,32 @@ describe('buildPlayerLine — line points', () => {
             100, 400, 100,
         ]);
     });
+
+    test('intra-day buckets get distinct fractional x (no vertical collapse)', () => {
+        const HOUR = 3600;
+        const sameDay = [
+            { time: 0, day: 1, total: 100, bugs: 0, cyborgs: 0, illuminate: 0 },
+            { time: HOUR, day: 1, total: 200, bugs: 0, cyborgs: 0, illuminate: 0 },
+            { time: 2 * HOUR, day: 1, total: 150, bugs: 0, cyborgs: 0, illuminate: 0 },
+        ];
+        const xs = buildPlayerLine(sameDay, [], 'global').points.map((p) => p.x);
+        // All on calendar day 1, but each must occupy its own x — otherwise the
+        // line draws a vertical stack instead of advancing through time.
+        expect(new Set(xs).size).toBe(3);
+        expect(xs[0]).toBe(1);
+        expect(xs[1]).toBeCloseTo(1 + HOUR / DAY, 6);
+        expect(xs[2]).toBeCloseTo(1 + (2 * HOUR) / DAY, 6);
+    });
+
+    test('warStart anchors day 1 (x is days since war_start, not the first bucket)', () => {
+        const ws = 5000;
+        const s = [
+            { time: 5000, day: 1, total: 10, bugs: 0, cyborgs: 0, illuminate: 0 },
+            { time: 5000 + DAY, day: 2, total: 20, bugs: 0, cyborgs: 0, illuminate: 0 },
+        ];
+        const xs = buildPlayerLine(s, [], 'global', ws).points.map((p) => p.x);
+        expect(xs).toEqual([1, 2]);
+    });
 });
 
 describe('buildPlayerLine — event dots', () => {
@@ -60,7 +86,9 @@ describe('buildPlayerLine — event dots', () => {
         expect(cyborgs).toMatchObject({ x: 3, y: 900, status: 'fail' });
         const illuminate = dots.find((d) => d.enemy === 2);
         // start_time=100 is nearest the day-1 bucket (time 0) → total 300.
-        expect(illuminate).toMatchObject({ x: 1, y: 300, status: 'active' });
+        // Continuous x: 100s into the war is a hair past day 1, not rounded to 1.
+        expect(illuminate.x).toBeCloseTo(1 + 100 / DAY, 6);
+        expect(illuminate).toMatchObject({ y: 300, status: 'active' });
     });
 
     test('a faction shows only its own events, dotted on its own line', () => {

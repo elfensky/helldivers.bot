@@ -106,9 +106,15 @@ function EventDotShape({ cx, cy, payload }) {
  * @param {Array<object>} props.playerTimeseries - Per-bucket player counts from getCampaign.
  * @param {Array<object>} props.events - The season's events.
  * @param {string} props.faction - 'global' | 'bugs' | 'cyborgs' | 'illuminate'.
+ * @param {number} [props.warStart] - Unix-seconds anchor for day 1 (continuous x-axis).
  */
-export default function PlayersOverTimeChart({ playerTimeseries, events, faction }) {
-    const { points, dots } = buildPlayerLine(playerTimeseries, events, faction);
+export default function PlayersOverTimeChart({
+    playerTimeseries,
+    events,
+    faction,
+    warStart,
+}) {
+    const { points, dots } = buildPlayerLine(playerTimeseries, events, faction, warStart);
     if (points.length === 0) return null;
 
     const stroke = LINE_COLOR[faction] ?? 'var(--color-primary)';
@@ -142,7 +148,7 @@ export default function PlayersOverTimeChart({ playerTimeseries, events, faction
                 />
                 <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<DotTooltip />} />
                 <Line
-                    type="monotone"
+                    type="linear"
                     dataKey="y"
                     stroke={stroke}
                     strokeWidth={2}
