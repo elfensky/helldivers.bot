@@ -38,19 +38,24 @@ const OUTCOME_LABEL = {
 };
 
 /**
- * Tooltip for an event dot: type · region · faction · outcome. Recharts injects
- * `active`/`payload` via cloneElement, so both are optional at the call site.
+ * Tooltip driven by the LINE — the hovered day + player count — with event
+ * details added when an event sits on that day. Reading the line's data point
+ * (not a scatter dot) is what makes the tooltip track the cursor instead of
+ * sticking on one event: the Line and the dots Scatter have different data
+ * arrays, so a dot-based payload doesn't follow the mouse. Recharts injects
+ * `active`/`label`/`payload`; `dots` is preserved through cloneElement.
  *
- * @param {{ active?: boolean, payload?: Array<{ payload?: {x:number, y:number, enemy:number, type:string, region:number, status:string} }> }} props - Recharts-injected tooltip props.
+ * @param {{ active?: boolean, label?: number, payload?: Array<{ value?: number, payload?: {x:number, y:number, enemy?:number} }>, dots?: Array<{x:number, enemy:number, type:string, region:number, status:string}> }} props - Recharts-injected props plus `dots`.
  */
-function DotTooltip({ active, payload }) {
+function PlayerTooltip({ active, label, payload, dots }) {
     if (!active || !payload?.length) return null;
-    // The dots Scatter is the only series with a tooltip target; find its entry.
-    const d = payload.find((p) => p?.payload?.enemy != null)?.payload;
-    if (!d) return null;
+    // The line's data point carries no `enemy`; its y is the player count here.
+    const lineEntry = payload.find((p) => p?.payload && p.payload.enemy == null);
+    const players = lineEntry?.value ?? lineEntry?.payload?.y;
+    if (players == null) return null;
 
-    const faction = FACTION_SLUG_BY_ID[d.enemy] ?? 'unknown';
-    const outcome = OUTCOME_LABEL[d.status] ?? d.status;
+    const day = Math.round(label ?? lineEntry?.payload?.x ?? 0);
+    const dot = dots?.find((d) => Math.round(d.x) === day);
 
     return (
         <div
@@ -62,15 +67,20 @@ function DotTooltip({ active, payload }) {
                 fontFamily: 'var(--font-mono)',
             }}
         >
-            <div style={{ color: 'var(--color-text-muted)', marginBottom: 4 }}>
-                Day {Math.round(d.x)} · {formatNumber(d.y)} players
+            <div style={{ color: 'var(--color-text-muted)', marginBottom: dot ? 4 : 0 }}>
+                Day {day} · {formatNumber(players)} players
             </div>
-            <div style={{ textTransform: 'capitalize' }}>
-                {d.type} · region {d.region}
-            </div>
-            <div style={{ color: 'var(--color-text-muted)' }}>
-                {faction} · {outcome}
-            </div>
+            {dot && (
+                <>
+                    <div style={{ textTransform: 'capitalize' }}>
+                        {dot.type} · region {dot.region}
+                    </div>
+                    <div style={{ color: 'var(--color-text-muted)' }}>
+                        {FACTION_SLUG_BY_ID[dot.enemy] ?? 'unknown'} ·{' '}
+                        {OUTCOME_LABEL[dot.status] ?? dot.status}
+                    </div>
+                </>
+            )}
         </div>
     );
 }
@@ -106,13 +116,15 @@ function EventDotShape({ cx, cy, payload }) {
  * @param {Array<object>} props.playerTimeseries - Per-bucket player counts from getCampaign.
  * @param {Array<object>} props.events - The season's events.
  * @param {string} props.faction - 'global' | 'bugs' | 'cyborgs' | 'illuminate'.
- * @param {number} [props.warStart] - Unix-seconds anchor for day 1 (continuous x-axis).
+ * @param {number} [props.warStart] - Unix-seconds anchor for day 0 (continuous x-axis).
+ * @param {number} [props.domainMax] - Shared last-day so the x-scale matches Conquest Progress.
  */
 export default function PlayersOverTimeChart({
     playerTimeseries,
     events,
     faction,
     warStart,
+    domainMax,
 }) {
     const { points, dots } = buildPlayerLine(playerTimeseries, events, faction, warStart);
     if (points.length === 0) return null;
@@ -137,7 +149,7 @@ export default function PlayersOverTimeChart({
                     stroke="var(--color-surface-4)"
                     tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
                     tickFormatter={(v) => `D${Math.round(v)}`}
-                    domain={[0, lastDay]}
+                    domain={[0, domainMax ?? lastDay]}
                     ticks={dayTicks}
                     label={{
                         value: 'Day into war',
@@ -152,7 +164,10 @@ export default function PlayersOverTimeChart({
                     tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
                     tickFormatter={formatNumber}
                 />
-                <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<DotTooltip />} />
+                <Tooltip
+                    cursor={{ strokeDasharray: '3 3' }}
+                    content={<PlayerTooltip dots={dots} />}
+                />
                 <Line
                     type="linear"
                     dataKey="y"

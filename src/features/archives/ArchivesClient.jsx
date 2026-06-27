@@ -82,6 +82,20 @@ export default function ArchivesClient({
     // entirely rather than showing an empty chart.
     const playerTimeseries = data?.playerTimeseries ?? [];
     const hasPlayerData = playerTimeseries.length > 0;
+    // Shared day-domain so Conquest Progress and Players Over Time use the SAME
+    // x-scale and line up day-for-day. Span = the latest data point of either
+    // series, in whole days since war start.
+    const warDayMax =
+        data?.war_start != null ?
+            Math.round(
+                (Math.max(
+                    data?.snapshots?.[data.snapshots.length - 1]?.time ?? data.war_start,
+                    playerTimeseries[playerTimeseries.length - 1]?.time ?? data.war_start,
+                ) -
+                    data.war_start) /
+                    86400,
+            )
+        :   undefined;
     const cascades = findAllCascades(events).map((c) => ({
         season: data?.season,
         ...c,
@@ -150,6 +164,8 @@ export default function ArchivesClient({
                     <FactionHealthChart
                         snapshots={data?.snapshots}
                         pointsMax={data?.points_max}
+                        warStart={data?.war_start}
+                        domainMax={warDayMax}
                     />
                 </section>
 
@@ -166,6 +182,7 @@ export default function ArchivesClient({
                             events={events}
                             faction={faction}
                             warStart={data?.war_start}
+                            domainMax={warDayMax}
                         />
                     </section>
                 )}
