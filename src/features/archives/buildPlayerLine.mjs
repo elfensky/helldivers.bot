@@ -51,16 +51,18 @@ function lineField(faction) {
  * Each dot sits on the line at the nearest bucket to the event's start time,
  * so it reads as "this event kicked off here, when N players were online".
  *
- * The x-axis is CONTINUOUS day-into-war (fractional), not the integer day:
- * many hourly buckets share one calendar day, so rounding x to the day would
- * collapse them onto a single column and draw a vertical stack instead of a
- * time series. Fractional x gives each bucket its own position, so the line
- * reads as real slopes and cliffs over time.
+ * The x-axis is CONTINUOUS days-since-war-start (fractional), not the integer
+ * day: many hourly buckets share one calendar day, so rounding x to the day
+ * would collapse them onto a single column and draw a vertical stack instead of
+ * a time series. Fractional x gives each bucket its own position, so the line
+ * reads as real slopes and cliffs over time. It is 0-based (day 0 = war start)
+ * to align with FactionHealthChart (Conquest Progress) so the two charts can be
+ * read against each other day-for-day.
  *
  * @param {Array<PlayerTimeseriesEntry>|null|undefined} playerTimeseries - From getCampaign.
  * @param {Array<{enemy:number, start_time:number, region:number, type:string, status:string}>|null|undefined} events - The season's events.
  * @param {string} faction - 'global' | 'bugs' | 'cyborgs' | 'illuminate'.
- * @param {number} [warStart] - Unix-seconds anchor for day 1. Falls back to the earliest bucket time.
+ * @param {number} [warStart] - Unix-seconds anchor for day 0. Falls back to the earliest bucket time.
  * @returns {{ points: Array<LinePoint>, dots: Array<EventDot> }}
  */
 export function buildPlayerLine(playerTimeseries, events, faction, warStart) {
@@ -69,11 +71,11 @@ export function buildPlayerLine(playerTimeseries, events, faction, warStart) {
 
     const field = lineField(faction);
 
-    // Anchor day 1 to war_start; fall back to the earliest bucket. reduce, not
+    // Anchor day 0 to war_start; fall back to the earliest bucket. reduce, not
     // Math.min(...spread): a large series can blow the engine's arg limit.
     const anchor = warStart ?? series.reduce((m, e) => Math.min(m, e.time), Infinity);
-    // Continuous (fractional) day-into-war so intra-day buckets stay distinct.
-    const dayInto = (time) => (time - anchor) / 86400 + 1;
+    // Continuous (fractional) days since war start, 0-based to match Conquest.
+    const dayInto = (time) => (time - anchor) / 86400;
 
     const points = series.map((entry) => ({
         x: dayInto(entry.time),

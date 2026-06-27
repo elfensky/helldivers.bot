@@ -119,6 +119,11 @@ export default function PlayersOverTimeChart({
 
     const stroke = LINE_COLOR[faction] ?? 'var(--color-primary)';
 
+    // All-day ticks (D0, D1, …, D<last>) so the x-axis lines up tick-for-tick
+    // with Conquest Progress (FactionHealthChart) for side-by-side comparison.
+    const lastDay = Math.round(points.reduce((m, p) => Math.max(m, p.x), 0));
+    const dayTicks = Array.from({ length: lastDay + 1 }, (_, i) => i);
+
     return (
         <ResponsiveContainer width="100%" height={280}>
             <ComposedChart
@@ -132,7 +137,8 @@ export default function PlayersOverTimeChart({
                     stroke="var(--color-surface-4)"
                     tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
                     tickFormatter={(v) => `D${Math.round(v)}`}
-                    domain={['dataMin', 'dataMax']}
+                    domain={[0, lastDay]}
+                    ticks={dayTicks}
                     label={{
                         value: 'Day into war',
                         position: 'insideBottom',
