@@ -48,6 +48,7 @@ import { FACTION_SLUG_BY_ID } from '@/shared/enums/factions.mjs';
  * @param {string} [props.id] - DOM id on the section wrapper.
  * @param {string} [props.initialSortOrder] - Initial sort preference (`'desc'` or `'asc'`).
  * @param {string | null} [props.selectedEventKey] - Highlight the card matching this key.
+ * @param {Set<string> | null} [props.highlightedKeys] - Cascade deep-link highlight set; matching cards get `data-highlighted` for the faction tint.
  * @param {(event: object) => void} [props.onHoverEvent] - Called on card hover.
  * @param {object} [props.railRef] - Forwarded to the scrolling container.
  * @param {string} [props.layout] - Layout mode (`'grid'` or `'stack'`).
