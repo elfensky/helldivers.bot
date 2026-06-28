@@ -11,6 +11,7 @@ import StatGrid from '@/features/stats/StatGrid';
 import EventLog from '@/features/timeline/EventLog';
 import CascadeLog from '@/features/timeline/CascadeLog';
 import { findAllCascades } from '@/shared/utils/game/seasonAnalytics.mjs';
+import { buildIntroMarkers } from '@/features/archives/buildIntroMarkers.mjs';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import SeasonSelector from '@/features/archives/SeasonSelector';
 import RefreshSeasonButton from '@/features/archives/RefreshSeasonButton';
@@ -102,6 +103,11 @@ export default function ArchivesClient({
         season: data?.season,
         ...c,
     }));
+    // Synthetic "faction enters the war" markers, interleaved chronologically
+    // into the archives Event Log only. Empty when intro/first_seen data is
+    // missing, in which case EventLog renders exactly as it does on the
+    // homepage (which passes no markers at all).
+    const introMarkers = buildIntroMarkers(data);
     // 'global' shows the whole-war overview; bugs/cyborgs/illuminate show a
     // per-faction breakdown. Either way the stats render through the shared
     // StatGrid plus the archives-only ArchiveStats extras. Persisted via
@@ -222,6 +228,7 @@ export default function ArchivesClient({
                         railRef={railRef}
                         highlightedKeys={highlightedKeys}
                         layout="stack"
+                        introMarkers={introMarkers}
                     />
                 </div>
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.64.0
+
+### Features
+
+- **Faction introduction markers in the `/archives` Event Log** (#157).
+  Synthetic "a faction enters the war" dividers (`buildIntroMarkers`) are
+  interleaved chronologically among the event rows, faction-colored via the
+  `--color-faction-*` tokens. Archives-only and opt-in: `EventLog` takes a new
+  `introMarkers` prop defaulting to `[]`, so the homepage's output is unchanged.
+
 ## 0.63.0
 
 ### Features

@@ -8,6 +8,7 @@ import { useEventLogSort } from '@/features/timeline/useEventLogSort.mjs';
 import { groupEventsByDay } from '@/features/timeline/groupEventsByDay.mjs';
 import { countOutcomes } from '@/shared/utils/game/eventFilters.mjs';
 import { eventKey } from '@/shared/utils/game/eventKey.mjs';
+import { FACTION_SLUG_BY_ID } from '@/shared/enums/factions.mjs';
 
 /**
  * Unified event log, shared between the homepage (`/`) and the archives
@@ -33,6 +34,24 @@ import { eventKey } from '@/shared/utils/game/eventKey.mjs';
  *   vertical column regardless of viewport width — required by the
  *   archives scrollytelling flow because `useScrollEvent`'s DOM-order
  *   optimization only works on a single column.
+ * - `introMarkers` (optional, default `[]`): archives-only synthetic
+ *   "faction enters the war" rows (`buildIntroMarkers`). They're
+ *   interleaved chronologically with the event rows and rendered as a
+ *   distinct faction-colored divider. The homepage passes nothing, so
+ *   with the default empty array the output is byte-for-byte identical
+ *   to before — the live dashboard is unaffected.
+ *
+ * @param {object} props - Component props.
+ * @param {Array} [props.events] - Full event list, unsorted.
+ * @param {'live' | 'absolute'} [props.timeFormat] - Time display mode.
+ * @param {string} [props.title] - Heading text.
+ * @param {string} [props.id] - DOM id on the section wrapper.
+ * @param {string} [props.initialSortOrder] - Initial sort preference (`'desc'` or `'asc'`).
+ * @param {string | null} [props.selectedEventKey] - Highlight the card matching this key.
+ * @param {(event: object) => void} [props.onHoverEvent] - Called on card hover.
+ * @param {object} [props.railRef] - Forwarded to the scrolling container.
+ * @param {string} [props.layout] - Layout mode (`'grid'` or `'stack'`).
+ * @param {Array<{kind:'intro', enemy:number, name:string, time:number, day:number}>} [props.introMarkers] - Archives-only intro markers.
  */
 export default function EventLog({
     events,
@@ -45,9 +64,21 @@ export default function EventLog({
     onHoverEvent,
     railRef,
     layout = 'grid',
+    introMarkers = [],
 }) {
     const [sortOrder, toggleSortOrder] = useEventLogSort(initialSortOrder);
-    const groups = groupEventsByDay(events ?? [], {
+    // Tag intro markers with `start_time` (their `time`) so they flow through
+    // the same day-grouping/sort path as events; `__intro` distinguishes them
+    // at render time. Empty `introMarkers` → the rows array is just `events`,
+    // preserving the homepage's exact output.
+    const rows =
+        introMarkers.length === 0 ?
+            (events ?? [])
+        :   [
+                ...(events ?? []),
+                ...introMarkers.map((m) => ({ ...m, __intro: true, start_time: m.time })),
+            ];
+    const groups = groupEventsByDay(rows, {
         // useEventLogSort constrains sortOrder to 'desc' | 'asc'
         sortOrder: /** @type {'desc' | 'asc'} */ (sortOrder),
     });
@@ -80,7 +111,11 @@ export default function EventLog({
                         ref={railRef}
                     >
                         {groups.map((group) => {
-                            const { wins, losses } = countOutcomes(group.events);
+                            // Intro markers carry no win/loss outcome; count
+                            // only real events for the day summary.
+                            const { wins, losses } = countOutcomes(
+                                group.events.filter((row) => !row.__intro),
+                            );
                             return (
                                 <Fragment key={group.date}>
                                     <div className="event-log-day">
@@ -95,7 +130,16 @@ export default function EventLog({
                                             )}
                                         </div>
                                         <div className="event-log-day-grid">
-                                            {group.events.map((event) => {
+                                            {group.events.map((row) => {
+                                                if (row.__intro) {
+                                                    return (
+                                                        <IntroMarker
+                                                            key={`intro-${row.enemy}`}
+                                                            marker={row}
+                                                        />
+                                                    );
+                                                }
+                                                const event = row;
                                                 const key = eventKey(event);
                                                 return (
                                                     <div
@@ -134,5 +178,32 @@ export default function EventLog({
                 }
             </div>
         </section>
+    );
+}
+
+/**
+ * A synthetic "faction enters the war" divider, interleaved among the event
+ * rows on /archives only. Faction-colored via the `--color-faction-*` theme
+ * tokens (resolved from the enemy id's slug). Static — no interactivity, so no
+ * umami tracking is needed.
+ *
+ * @param {object} props - Component props.
+ * @param {{enemy:number, name:string, day:number}} props.marker - One `buildIntroMarkers` entry.
+ */
+function IntroMarker({ marker }) {
+    const slug = FACTION_SLUG_BY_ID[marker.enemy] ?? 'bugs';
+    return (
+        <div
+            className="event-log-intro"
+            style={
+                // CSS custom property — cast past React.CSSProperties' typed keys.
+                /** @type {React.CSSProperties} */ ({
+                    '--intro-color': `var(--color-faction-${slug})`,
+                })
+            }
+        >
+            <span className="event-log-intro-day">Day {marker.day}</span>
+            <span className="event-log-intro-label">{marker.name} enter the war</span>
+        </div>
     );
 }
