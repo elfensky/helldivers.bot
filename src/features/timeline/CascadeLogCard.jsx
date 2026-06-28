@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import factions from '@/shared/enums/factions.mjs';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
+import { eventKey } from '@/shared/utils/game/eventKey.mjs';
 
 /**
  * One cascade rendered as a card inside a CascadeLog season group.
@@ -9,8 +10,9 @@ import { formatCompactDuration } from '@/shared/utils/format/formatCompactDurati
  *
  * @param {object} props - Component props
  * @param {object} props.cascade - Cascade record with season + findAllCascades output
+ * @param {Function} [props.onSelectCascade] - Called with the cascade when the card is clicked.
  */
-export default function CascadeLogCard({ cascade }) {
+export default function CascadeLogCard({ cascade, onSelectCascade }) {
     const faction = factions[cascade.factionIndex];
     const start = formatAbsolute(cascade.startTime);
     const end = formatAbsolute(cascade.endTime);
@@ -18,7 +20,8 @@ export default function CascadeLogCard({ cascade }) {
 
     return (
         <Link
-            href={`/archives?season=${cascade.season}#cascade`}
+            href={`/archives?season=${cascade.season}#${eventKey(cascade.lastEvent)}`}
+            onClick={() => onSelectCascade?.(cascade)}
             data-umami-event="cascade-card-click"
             className="event-log-card-link"
         >
