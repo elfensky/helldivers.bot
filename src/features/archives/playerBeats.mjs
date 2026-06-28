@@ -27,6 +27,7 @@ export function buildPlayerBeats(playerTimeseries, season) {
     const baseline = median(series.map((p) => p.total));
     if (baseline <= 0) return [];
 
+    /** @type {Array<{ time:number, day:number, kind:'surge'|'collapse', text:string }>} */
     const beats = [];
 
     // Surge: global max, anywhere.

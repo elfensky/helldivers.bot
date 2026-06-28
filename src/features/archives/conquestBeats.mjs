@@ -47,6 +47,7 @@ export function buildConquestBeats(snapshots, pointsMax, season, warStart) {
         if (breakthrough && firstFall) break;
     }
 
+    /** @type {Array<{ time:number, day:number, kind:'conquest', text:string }>} */
     const beats = [];
     if (breakthrough) {
         beats.push({
@@ -77,6 +78,8 @@ export function buildConquestBeats(snapshots, pointsMax, season, warStart) {
     // as one moment — keep the "falls" beat.
     if (
         beats.length === 2 &&
+        breakthrough &&
+        firstFall &&
         breakthrough.enemy === firstFall.enemy &&
         beats[0].day === beats[1].day
     ) {
