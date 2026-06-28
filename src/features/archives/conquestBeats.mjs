@@ -17,14 +17,15 @@ function factionName(enemy) {
  * @param {Array<{ time:number, data:Array<{ enemy:number, points:number, status:string }> }>} snapshots - Campaign snapshots with time and faction state data
  * @param {{ points:number[] }} pointsMax - Maximum points array indexed by faction
  * @param {number} season - Season number for narrative phrase selection
+ * @param {number} warStart - Unix-seconds anchor for day 1 (war start).
  * @returns {Array<{ time:number, day:number, kind:'conquest', text:string }>} Conquest milestone beats
  */
-export function buildConquestBeats(snapshots, pointsMax, season) {
+export function buildConquestBeats(snapshots, pointsMax, season, warStart) {
     const snaps = snapshots ?? [];
     const maxes = pointsMax?.points ?? [];
     if (snaps.length === 0) return [];
 
-    const dayOf = (time) => Math.floor(time / 86400) || 1;
+    const dayOf = (time) => Math.max(1, Math.floor((time - warStart) / 86400) + 1);
 
     let breakthrough = null; // first snapshot any faction crosses the gates
     let firstFall = null; // first snapshot any faction is defeated
