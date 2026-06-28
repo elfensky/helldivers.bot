@@ -2,7 +2,7 @@
 import {
     ComposedChart,
     Line,
-    Scatter,
+    ReferenceDot,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -39,11 +39,13 @@ const OUTCOME_LABEL = {
 
 /**
  * Tooltip driven by the LINE — the hovered day + player count — with event
- * details added when an event sits on that day. Reading the line's data point
- * (not a scatter dot) is what makes the tooltip track the cursor instead of
- * sticking on one event: the Line and the dots Scatter have different data
- * arrays, so a dot-based payload doesn't follow the mouse. Recharts injects
- * `active`/`label`/`payload`; `dots` is preserved through cloneElement.
+ * details added when an event sits on that day. The event markers are
+ * ReferenceDots (non-data decorators), so the Line is the ONLY data series and
+ * recharts updates `label`/`payload` per the hovered point — the tooltip tracks
+ * the cursor across the whole width. (A `<Scatter>` with its own, shorter data
+ * array used to clamp recharts' single active index and freeze the tooltip.)
+ * The event for the hovered day is looked up from the `dots` prop, which
+ * recharts preserves through cloneElement.
  *
  * @param {{ active?: boolean, label?: number, payload?: Array<{ value?: number, payload?: {x:number, y:number, enemy?:number} }>, dots?: Array<{x:number, enemy:number, type:string, region:number, status:string}> }} props - Recharts-injected props plus `dots`.
  */
@@ -82,26 +84,6 @@ function PlayerTooltip({ active, label, payload, dots }) {
                 </>
             )}
         </div>
-    );
-}
-
-/**
- * Custom dot for the event Scatter — a faction-colored ring so events stand out
- * against the line. Recharts passes the datum on `payload`.
- *
- * @param {{ cx?: number, cy?: number, payload?: {enemy:number} }} props - Recharts scatter-shape props.
- */
-function EventDotShape({ cx, cy, payload }) {
-    if (cx == null || cy == null || !payload) return null;
-    return (
-        <circle
-            cx={cx}
-            cy={cy}
-            r={4}
-            fill={DOT_COLOR[payload.enemy] ?? 'var(--color-text)'}
-            stroke="var(--color-surface-0)"
-            strokeWidth={1.5}
-        />
     );
 }
 
@@ -176,12 +158,24 @@ export default function PlayersOverTimeChart({
                     dot={false}
                     isAnimationActive={false}
                 />
-                <Scatter
-                    data={dots}
-                    dataKey="y"
-                    shape={<EventDotShape />}
-                    isAnimationActive={false}
-                />
+                {/* Event markers as ReferenceDots, NOT a Scatter with its own
+                    data array — a separate-data series breaks recharts' single
+                    activeTooltipIndex and freezes the tooltip past the dots'
+                    extent. ReferenceDots are non-data decorators, so the Line
+                    stays the sole tooltip source and the tooltip tracks the
+                    cursor across the whole width. */}
+                {dots.map((d, i) => (
+                    <ReferenceDot
+                        key={`ev-${d.enemy}-${Math.round(d.x)}-${i}`}
+                        x={d.x}
+                        y={d.y}
+                        r={4}
+                        fill={DOT_COLOR[d.enemy] ?? 'var(--color-text)'}
+                        stroke="var(--color-surface-0)"
+                        strokeWidth={1.5}
+                        ifOverflow="visible"
+                    />
+                ))}
             </ComposedChart>
         </ResponsiveContainer>
     );
