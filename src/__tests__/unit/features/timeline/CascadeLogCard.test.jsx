@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import CascadeLogCard from '@/features/timeline/CascadeLogCard';
 
 const cascade = (overrides) => ({
@@ -13,7 +13,7 @@ const cascade = (overrides) => ({
     endTime: 1709555520 + 14 * 3600 + 32 * 60,
     durationSec: 14 * 3600 + 32 * 60,
     firstEvent: {},
-    lastEvent: {},
+    lastEvent: { type: 'defend', event_id: 4242 },
     events: [],
     ...overrides,
 });
@@ -37,11 +37,15 @@ describe('CascadeLogCard', () => {
         expect(chain.getAttribute('data-faction')).toBe('2');
     });
 
-    it('wraps the card in an anchor linking to /archives?season=N#cascade', () => {
-        render(<CascadeLogCard cascade={cascade()} />);
+    it("links to the cascade's last event and fires onSelectCascade on click", () => {
+        const onSelectCascade = vi.fn();
+        const c = cascade();
+        render(<CascadeLogCard cascade={c} onSelectCascade={onSelectCascade} />);
         const link = screen.getByRole('link');
-        expect(link.getAttribute('href')).toBe('/archives?season=155#cascade');
+        expect(link.getAttribute('href')).toBe('/archives?season=155#defend-4242');
         expect(link.getAttribute('data-umami-event')).toBe('cascade-card-click');
+        fireEvent.click(link);
+        expect(onSelectCascade).toHaveBeenCalledWith(c);
     });
 
     it('renders a duration pill with formatted duration', () => {

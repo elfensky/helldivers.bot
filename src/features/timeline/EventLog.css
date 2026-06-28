@@ -262,3 +262,40 @@
     color: var(--color-text-muted);
     margin: 0.25rem 0 0.75rem 0;
 }
+
+/* === Cascade deep-link highlight ===
+ *
+ * scroll-margin-top offsets the fixed site header (h-[50px] mobile /
+ * h-[80px] at sm:) so a deep-linked cascade event isn't tucked under it
+ * when scrollIntoView lands it at the top of the viewport. */
+.event-log-day-grid > div {
+    scroll-margin-top: 80px;
+}
+
+@media (max-width: 639px) {
+    .event-log-day-grid > div {
+        scroll-margin-top: 56px;
+    }
+}
+
+/* Faction-tinted underlay across every event in a clicked cascade. Keyed
+ * off data-faction (same convention as .event-log-card-chain above). The
+ * card root is a direct-child <article>. isSelected's !bg-primary-tint
+ * intentionally wins on the one scroll-selected card, marking your current
+ * position within the highlighted range. */
+.event-log-day-grid > div[data-highlighted] > article {
+    border-left-width: 4px;
+    border-left-style: solid;
+}
+.event-log-day-grid > div[data-highlighted][data-faction="0"] > article {
+    background: var(--color-faction-bugs-fill);
+    border-left-color: var(--color-faction-bugs);
+}
+.event-log-day-grid > div[data-highlighted][data-faction="1"] > article {
+    background: var(--color-faction-cyborgs-fill);
+    border-left-color: var(--color-faction-cyborgs);
+}
+.event-log-day-grid > div[data-highlighted][data-faction="2"] > article {
+    background: var(--color-faction-illuminate-fill);
+    border-left-color: var(--color-faction-illuminate);
+}

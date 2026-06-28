@@ -17,6 +17,7 @@ import { groupCascadesBySeason } from '@/features/timeline/groupCascadesBySeason
  * @param {string} [props.title] - Optional heading text (defaults to "Cascade Failures").
  * @param {string} [props.id] - Optional DOM id (defaults to "cascade").
  * @param {'worst'|'recent'} [props.initialSortOrder] - Server-read sort preference.
+ * @param {Function} [props.onSelectCascade] - Forwarded to each CascadeLogCard; called with the cascade on click.
  */
 export default function CascadeLog({
     cascades,
@@ -24,6 +25,7 @@ export default function CascadeLog({
     title = 'Cascade Failures',
     id = 'cascade',
     initialSortOrder,
+    onSelectCascade,
 }) {
     const [sortOrder, toggleSortOrder] = useCascadeLogSort(initialSortOrder);
     if (!cascades?.length) return null;
@@ -67,6 +69,7 @@ export default function CascadeLog({
                                         <CascadeLogCard
                                             key={`${group.season}-${c.startTime}-${i}`}
                                             cascade={c}
+                                            onSelectCascade={onSelectCascade}
                                         />
                                     ))}
                                 </div>

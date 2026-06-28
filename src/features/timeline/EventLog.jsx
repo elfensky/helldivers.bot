@@ -23,6 +23,8 @@ import { eventKey } from '@/shared/utils/game/eventKey.mjs';
  * - `title`: heading text (defaults to "Event Log")
  * - `id`: DOM id on the section wrapper, used by anchor-scroll
  * - `selectedEventKey` (optional): highlight the card matching this key
+ * - `highlightedKeys` (optional): a `Set` of `eventKey` strings; matching
+ *   cards get `data-highlighted` for the cascade deep-link faction tint
  * - `onHoverEvent` (optional): called with `(event)` on card hover
  * - `railRef` (optional): forwarded to the scrolling container so
  *   `useScrollEvent` on `/archives` can query `[data-event-key]` cards
@@ -39,6 +41,7 @@ export default function EventLog({
     id = 'event-log',
     initialSortOrder,
     selectedEventKey = null,
+    highlightedKeys = /** @type {Set<string> | null} */ (null),
     onHoverEvent,
     railRef,
     layout = 'grid',
@@ -98,6 +101,11 @@ export default function EventLog({
                                                     <div
                                                         key={`${group.date}-${event.event_id}`}
                                                         data-event-key={key}
+                                                        data-faction={String(event.enemy)}
+                                                        data-highlighted={
+                                                            highlightedKeys?.has(key) ? ''
+                                                            :   undefined
+                                                        }
                                                     >
                                                         <EventLogCard
                                                             event={event}

@@ -15,6 +15,7 @@ import SeasonSelector from '@/features/archives/SeasonSelector';
 import RefreshSeasonButton from '@/features/archives/RefreshSeasonButton';
 import { eventKey } from '@/shared/utils/game/eventKey.mjs';
 import { useScrollEvent } from '@/shared/hooks/useScrollEvent.mjs';
+import { useCascadeHighlight } from '@/shared/hooks/useCascadeHighlight.mjs';
 import { useHeaderGlassFilter } from '@/shared/hooks/useHeaderGlassFilter.mjs';
 import { usePersistedState } from '@/shared/hooks/usePersistedState.mjs';
 import { FACTION_KEY } from '@/shared/preferences/faction.mjs';
@@ -104,6 +105,7 @@ export default function ArchivesClient({
     // strips `backdrop-filter` from the built CSS).
     const glassFilter = useHeaderGlassFilter();
     const { selectedEvent, railRef } = useScrollEvent(events);
+    const { highlightedKeys, pinCascade } = useCascadeHighlight(cascades, railRef);
 
     return (
         <>
@@ -169,7 +171,11 @@ export default function ArchivesClient({
             </div>
 
             {cascades.length > 0 && (
-                <CascadeLog cascades={cascades} initialSortOrder={initialCascadeSort} />
+                <CascadeLog
+                    cascades={cascades}
+                    initialSortOrder={initialCascadeSort}
+                    onSelectCascade={pinCascade}
+                />
             )}
 
             {/* Two-column scrollytelling: event log + sticky map */}
@@ -191,6 +197,7 @@ export default function ArchivesClient({
                         }
                         onHoverEvent={undefined}
                         railRef={railRef}
+                        highlightedKeys={highlightedKeys}
                         layout="stack"
                     />
                 </div>
