@@ -74,4 +74,32 @@ describe('EventLog', () => {
         expect(cards.length).toBeGreaterThan(0);
         expect(cards[0].getAttribute('data-event-key')).toBe('defend-1');
     });
+
+    test('marks cascade-highlighted cards with data-highlighted and data-faction', () => {
+        const { container } = render(
+            <EventLog
+                events={fakeEvents}
+                timeFormat="absolute"
+                layout="stack"
+                highlightedKeys={new Set(['defend-1'])}
+            />,
+        );
+        const wrapper = container.querySelector('[data-event-key="defend-1"]');
+        expect(wrapper.getAttribute('data-faction')).toBe('0');
+        expect(wrapper.hasAttribute('data-highlighted')).toBe(true);
+    });
+
+    test('omits data-highlighted when the key is not in highlightedKeys', () => {
+        const { container } = render(
+            <EventLog
+                events={fakeEvents}
+                timeFormat="absolute"
+                layout="stack"
+                highlightedKeys={new Set(['defend-999'])}
+            />,
+        );
+        const wrapper = container.querySelector('[data-event-key="defend-1"]');
+        expect(wrapper.getAttribute('data-faction')).toBe('0');
+        expect(wrapper.hasAttribute('data-highlighted')).toBe(false);
+    });
 });
