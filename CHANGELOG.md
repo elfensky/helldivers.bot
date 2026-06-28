@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Cascade deep-linking on `/archives`**. Clicking a cascade card now scrolls
+  the event log to that cascade and pins a persistent faction-tinted highlight
+  across every one of its events, clearing when you scroll away or pick another
+  cascade. The view is shareable via a URL hash (`/archives?season=N#<event>`):
+  the highlight rehydrates on direct load and browser back/forward. Scroll
+  targeting reads live DOM order, so it stays correct under either log sort.
+
 ## 0.60.0
 
 ### Features
