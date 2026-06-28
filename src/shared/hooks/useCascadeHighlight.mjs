@@ -16,7 +16,7 @@ const DISMISS_GRACE_MS = 700;
  * highlight clears when the user scrolls away or pins another cascade.
  *
  * @param {Array<object>} cascades - Cascades for the current season (each has `events`).
- * @param {{ current: HTMLElement | null }} railRef - Ref on the event-log container.
+ * @param {{ current: HTMLElement | null }} railRef - Stable ref (from useRef) on the event-log container. Passing a non-stable ref object re-fires the hash effect every render.
  * @returns {{ highlightedKeys: Set<string> | null, pinCascade: (cascade: object) => void }}
  */
 export function useCascadeHighlight(cascades, railRef) {
