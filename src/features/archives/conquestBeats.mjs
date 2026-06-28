@@ -14,7 +14,7 @@ function factionName(enemy) {
  *   - breakthrough: first time any faction's frac first crosses GATES_THRESHOLD
  *   - first homeworld falls: first time any faction first reads 'defeated'
  *
- * @param {Array<{ time:number, data:Array<{ enemy:number, points:number, status:string }> }>} snapshots - Campaign snapshots with time and faction state data
+ * @param {Array<{ time:number, data:Array<{ points:number, status:string }|null> }>} snapshots - data[enemy] positional (index = faction id; null before a faction is introduced)
  * @param {{ points:number[] }} pointsMax - Maximum points array indexed by faction
  * @param {number} season - Season number for narrative phrase selection
  * @param {number} warStart - Unix-seconds anchor for day 1 (war start).
@@ -31,17 +31,20 @@ export function buildConquestBeats(snapshots, pointsMax, season, warStart) {
     let firstFall = null; // first snapshot any faction is defeated
 
     for (const snap of snaps) {
-        for (const s of snap.data ?? []) {
-            const max = maxes[s.enemy] || 0;
+        const data = snap.data ?? [];
+        for (let enemy = 0; enemy < data.length; enemy++) {
+            const s = data[enemy];
+            if (!s) continue; // factions[i] may be null pre-introduction
+            const max = maxes[enemy] || 0;
             const frac =
                 s.status === 'defeated' ? 1
                 : max > 0 ? s.points / max
                 : 0;
             if (!breakthrough && frac >= GATES_THRESHOLD) {
-                breakthrough = { time: snap.time, enemy: s.enemy };
+                breakthrough = { time: snap.time, enemy };
             }
             if (!firstFall && s.status === 'defeated') {
-                firstFall = { time: snap.time, enemy: s.enemy };
+                firstFall = { time: snap.time, enemy };
             }
         }
         if (breakthrough && firstFall) break;
