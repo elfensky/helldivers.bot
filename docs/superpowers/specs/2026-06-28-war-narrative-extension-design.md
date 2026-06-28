@@ -5,6 +5,7 @@
 - **Area:** Archives (`/archives`) — War Narrative section
 - **Builds on:** the merged War Narrative feature (`buildWarNarrative.mjs`, v0.62.0) and the SHOW/HIDE button refinement (parked on `chore/narrative-toggle-button` — a prerequisite; see § Dependencies).
 - **Grounding:** every file:line below is code-verified.
+- **Review:** pressure-tested by a 5-way model debate (2026-06-29). Data flow, telemetry aggregation, player beats, and determinism verified correct; **feature 3 was reworked** from an inverted "territory pressure / darkest hour" reading to correct **offensive conquest milestones** (see § Feature 3), and a **coherence guard** was added (see that section).
 
 ## Problem / goal
 
@@ -16,7 +17,7 @@ The War Narrative ([buildWarNarrative.mjs](../../../src/features/archives/buildW
 |---|---|---|---|---|
 | 1 | Seeded phrasing variety | none | varies existing text (no new beats) | all |
 | 2 | Player surge/collapse beats | `data.playerTimeseries` | ≤2 beats | S157+ (telemetry) |
-| 3 | Territory turning-points | `data.snapshots` + `data.points_max` | ≤2 beats | **all** |
+| 3 | Conquest milestones (offensive) | `data.snapshots` + `data.points_max` | ≤2 beats | **all** |
 | 4 | War by the numbers | new telemetry aggregate | 1 beat | S157+ (telemetry) |
 
 New beats are capped (≤2 / ≤2 / 1 = **≤5**) so the already-long narrative stays punchy. The existing per-event field reports are left unchanged (out of scope).
@@ -59,16 +60,18 @@ Module `playerBeats.mjs`, `buildPlayerBeats(playerTimeseries) → beats[]`:
 - Text (seeded variants): surge → "The Helldivers rally — deployments surge to {N}." collapse → "The front grows quiet; deployments thin to {N}." (`N` via `formatNumber`).
 - Guard: a flat war (no bucket clears the thresholds) yields no beats.
 
-## Feature 3 — Territory turning-points
+## Feature 3 — Conquest milestones
 
-Source: `data.snapshots` = `[{ time, data: [s0, s1, s2] }]` where each `s_enemy` is an `h1_status` row with `points` + `status` (`'hidden' | 'active' | 'defeated'`), plus season caps `data.points_max.points[enemy]` (verified, [getCampaign.mjs:129-135](../../../src/db/queries/getCampaign.mjs#L129-L135), territory math mirrors [FactionHealthChart.jsx:61-64](../../../src/features/archives/FactionHealthChart.jsx#L61-L64)). Works for **all** seasons.
+> **Corrected after a 5-way design review.** An earlier draft read high `points/points_max` as enemy *pressure* on Super Earth ("darkest hour" = max). That is **inverted** — verified against [computeMapState.mjs:36,58-59,74-78](../../../src/shared/utils/game/computeMapState.mjs#L36) (more points ⇒ sectors `CAPTURED` by SE; `DEFEATED` ⇒ enemy eliminated) and the HD1 API docs ([hd1-api page.mdx:112-114](../../../src/app/docs/hd1-api/page.mdx#L112): `points_max` = "points required to trigger a **homeworld assault**", `points_taken` = "points **gained by players**"). `points` is **Super Earth's offensive conquest progress** toward assaulting the *enemy* homeworld — high = SE **winning**. "Super-Earth-in-danger" lives on the **defensive** side (failed defends marching to region 0), which the **cascade beats already narrate**. So feature 3 narrates the **offensive advance** instead — correct *and* non-redundant with cascades.
 
-Module `territoryBeats.mjs`, `buildTerritoryBeats(snapshots, pointsMax, outcome) → beats[]`:
-- Define **enemy pressure** at a snapshot: `pressure = Σ_enemy frac(enemy)`, where `frac = status === 'defeated' ? 1 : (points / pointsMax.points[enemy] || 0)`. Range 0–3; higher = closer to Super-Earth defeat.
-- **Darkest hour** = snapshot of max `pressure`, emitted only if `maxPressure ≥ DARK_THRESHOLD` (default `1.0` — at least one faction effectively at the gates) so a calm war produces nothing. → "The darkest hour: {region/faction} at the gates, Super Earth nearly overrun."
-- **Comeback** = emitted only if the war was **won** (`outcome.outcome === 'victory'`) and `pressure` later falls by `≥ RECOVERY_DELTA` (default `0.5`) from the darkest-hour peak; anchored at the recovery snapshot. → "The tide turns — Super Earth claws back the line."
-- **Cap ≤2** (darkest hour + optional comeback), time-anchored.
-- Guards: empty/flat snapshots ⇒ no beats.
+Source: `data.snapshots` = `[{ time, data: [s0, s1, s2] }]` where each `s_enemy` is an `h1_status` row with `points` + `status` (`'hidden' | 'active' | 'defeated'`), plus season caps `data.points_max.points[enemy]` (verified, [getCampaign.mjs:129-135](../../../src/db/queries/getCampaign.mjs#L129-L135) / [FactionHealthChart.jsx:54-64](../../../src/features/archives/FactionHealthChart.jsx#L54-L64)). Works for **all** seasons.
+
+Module `conquestBeats.mjs`, `buildConquestBeats(snapshots, pointsMax) → beats[]`:
+- Per faction, conquest progress `frac = status === 'defeated' ? 1 : (points / pointsMax.points[enemy] || 0)` — 0–1, **high = Super Earth advancing**.
+- **Breakthrough** = the earliest snapshot where any faction's `frac` first crosses `GATES_THRESHOLD` (default `0.9` — "at the gates", i.e. the homeworld-assault threshold per the chart's 10/11 framing). One beat, anchored at that snapshot → "The {Faction} are driven to the gates of their homeworld — the assault begins."
+- **First homeworld falls** = the earliest snapshot where any faction first flips to `'defeated'`. One beat → "The {Faction} homeworld falls — the first front is won." (Complements the closing outcome beat, which names the *last* faction to fall.)
+- **Cap ≤2**, time-anchored; if both milestones land on the same faction within the same day, keep only the "falls" beat.
+- Guards: a war with no breakthrough and no defeated faction (lost early / little conquest) ⇒ no beats. The defensive collapse story is left to the cascade beats.
 
 ## Feature 4 — War by the numbers
 
@@ -78,6 +81,15 @@ A new **archives-only** query `src/db/queries/getSeasonTelemetryTotals.mjs`, `ge
 - React-cacheable (`cache()`), like the other queries.
 
 Module `numbersBeat.mjs`, `buildNumbersBeat(telemetry, lastTime, day) → beat | null`: one beat anchored at `lastTime` (the last event), ordered **just before** the closing victory/defeat beat via the existing `order` tiebreaker so it reads as the penultimate line — "By the numbers: {kills} exterminated across {missions} missions; {accidentals} citizens met managed democracy ahead of schedule." (`formatNumber` for compact display). `null` when `telemetry` is null.
+
+## Coherence guard (read quality)
+
+After merge + chronological sort (the existing `time` then `order` comparator), an **adjacency pass** runs over the assembled beats so the new highlight beats don't read as whiplash:
+- If two **new highlight beats** (player surge/collapse or conquest) fall **adjacent** (same day) with **opposite sentiment** — e.g. a player *surge* next to a *collapse* — drop the less-extreme one.
+- Player surge and collapse are the global max/min of one series, so they are normally far apart; the guard is a cheap safety net, not a hot path.
+- The existing per-event field reports are never dropped — only the ≤5 new highlight beats are eligible for suppression.
+
+This is the readability mitigation the design review flagged: it keeps interleaved highlights from contradicting an immediate neighbor.
 
 ## Performance & page impact
 
@@ -93,7 +105,7 @@ Module `numbersBeat.mjs`, `buildNumbersBeat(telemetry, lastTime, day) → beat |
 | `src/features/archives/buildWarNarrative.mjs` | orchestrator, `(data, telemetry) → beats[]`; calls the sub-generators + sorts | Modify |
 | `src/features/archives/narrativePhrasing.mjs` | phrasing pools per outcome + deterministic seeded picker (feature 1) | Create |
 | `src/features/archives/playerBeats.mjs` | surge/collapse from `playerTimeseries` (feature 2) | Create |
-| `src/features/archives/territoryBeats.mjs` | darkest-hour/comeback from `snapshots` (feature 3) | Create |
+| `src/features/archives/conquestBeats.mjs` | breakthrough / first-homeworld-falls from `snapshots` (feature 3) | Create |
 | `src/features/archives/numbersBeat.mjs` | telemetry summary beat (feature 4) | Create |
 | `src/db/queries/getSeasonTelemetryTotals.mjs` | season telemetry sums (latest-bucket-per-enemy, BigInt→Number) | Create |
 | `src/app/archives/page.jsx` | fetch telemetry, compute `beats` server-side, pass down | Modify |
@@ -104,8 +116,8 @@ Splitting the beat generators into small pure modules keeps the 236-line `buildW
 
 ## Edge cases
 
-- **Pre-telemetry season** (≤~156): no player beats, no numbers beat; phrasing variety + territory beats still apply.
-- **Flat/calm war:** thresholds (`SURGE_FACTOR`, `COLLAPSE_FACTOR`, `DARK_THRESHOLD`, `RECOVERY_DELTA`) yield no beats rather than fabricating drama.
+- **Pre-telemetry season** (≤~156): no player beats, no numbers beat; phrasing variety + conquest beats still apply.
+- **Flat/calm war:** thresholds (`SURGE_FACTOR`, `COLLAPSE_FACTOR`, `GATES_THRESHOLD`) yield no beats rather than fabricating drama (e.g. a war with no faction reaching the gates emits no conquest beat).
 - **No events:** `buildWarNarrative` returns `[]` (existing) ⇒ section hidden.
 - **Determinism:** same `(data, telemetry)` ⇒ identical beats (snapshot test).
 - **`points_max` missing/zero for a faction:** `frac` guards with `|| 0`.
@@ -114,7 +126,8 @@ Splitting the beat generators into small pure modules keeps the 236-line `buildW
 
 - `narrativePhrasing` — picker is deterministic (same seed ⇒ same index) and pool-bounded; distinct seeds spread across the pool.
 - `playerBeats` — detects a surge and a collapse on a synthetic series; emits nothing on a flat series; respects the ≤2 cap.
-- `territoryBeats` — finds the darkest hour; emits a comeback only on a won war that recovered; nothing on a flat war.
+- `conquestBeats` — emits a breakthrough when a faction crosses the gates threshold and a "first homeworld falls" on the first `defeated`; nothing on a war with no conquest; respects the ≤2 cap + same-faction-same-day dedupe.
+- coherence guard — drops the less-extreme of two opposite-sentiment new highlight beats that land adjacent; never drops per-event beats.
 - `numbersBeat` — formats from totals; returns `null` for `null` telemetry.
 - `getSeasonTelemetryTotals` — aggregation logic (latest-bucket-per-enemy, BigInt narrowing) unit-tested against a small fixture; `null` for a telemetry-less season.
 - `buildWarNarrative` integration — given season data (+telemetry), produces the expected beats in chronological order; a determinism/snapshot test.
