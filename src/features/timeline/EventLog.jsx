@@ -41,7 +41,7 @@ export default function EventLog({
     id = 'event-log',
     initialSortOrder,
     selectedEventKey = null,
-    highlightedKeys = null,
+    highlightedKeys = /** @type {Set<string> | null} */ (null),
     onHoverEvent,
     railRef,
     layout = 'grid',
