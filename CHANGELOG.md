@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.64.1
+
+### Changed
+
+- **War Narrative toggle** on `/archives` now uses the shared primary `Button`
+  (yellow border, square) reading **SHOW** when collapsed / **HIDE** when
+  expanded, replacing the chevron `<details>` affordance. The Ministry subtitle
+  stays visible in both states; only the beats list toggles.
+
 ## 0.64.0
 
 ### Features
