@@ -1039,7 +1039,7 @@ export function buildWarNarrative(data, telemetry = null) {
     for (const pb of buildPlayerBeats(data?.playerTimeseries ?? [], season)) {
         beats.push({ ...pb, order: seq++ });
     }
-    for (const cb of buildConquestBeats(data?.snapshots ?? [], data?.points_max ?? { points: [] }, season)) {
+    for (const cb of buildConquestBeats(data?.snapshots ?? [], data?.points_max ?? { points: [] }, season, warStart)) {
         beats.push({ ...cb, order: seq++ });
     }
 
