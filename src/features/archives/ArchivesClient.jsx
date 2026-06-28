@@ -4,7 +4,7 @@ import { useMapPin } from '@/shared/hooks/useMapPin.mjs';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 import ArchivesHeader from '@/features/archives/ArchivesHeader';
 import FactionHealthChart from '@/features/archives/FactionHealthChartLoader';
-import PlayerEngagementChart from '@/features/archives/PlayerEngagementChartLoader';
+import PlayersOverTimeChart from '@/features/archives/PlayersOverTimeChartLoader';
 import NarrativeSection from '@/features/archives/NarrativeSection';
 import FactionTabs from '@/shared/components/FactionTabs';
 import StatGrid from '@/features/stats/StatGrid';
@@ -79,10 +79,25 @@ export default function ArchivesClient({
     initialCascadeSort,
 }) {
     const events = data?.events ?? [];
-    // Player-engagement data is snapshot-derived, so it exists for historical
-    // seasons too — but guard the section anyway so a season with no event
-    // player counts hides it entirely rather than showing an empty chart.
-    const hasPlayerData = events.some((e) => (e.players_at_start ?? 0) > 0);
+    // Per-bucket player counts (telemetry-only). Seasons predating stat
+    // collection have no timeseries, so the "Players over time" section hides
+    // entirely rather than showing an empty chart.
+    const playerTimeseries = data?.playerTimeseries ?? [];
+    const hasPlayerData = playerTimeseries.length > 0;
+    // Shared day-domain so Conquest Progress and Players Over Time use the SAME
+    // x-scale and line up day-for-day. Span = the latest data point of either
+    // series, in whole days since war start.
+    const warDayMax =
+        data?.war_start != null ?
+            Math.round(
+                (Math.max(
+                    data?.snapshots?.[data.snapshots.length - 1]?.time ?? data.war_start,
+                    playerTimeseries[playerTimeseries.length - 1]?.time ?? data.war_start,
+                ) -
+                    data.war_start) /
+                    86400,
+            )
+        :   undefined;
     const cascades = findAllCascades(events).map((c) => ({
         season: data?.season,
         ...c,
@@ -152,20 +167,25 @@ export default function ArchivesClient({
                     <FactionHealthChart
                         snapshots={data?.snapshots}
                         pointsMax={data?.points_max}
+                        warStart={data?.war_start}
+                        domainMax={warDayMax}
                     />
                 </section>
 
                 {hasPlayerData && (
                     <section className="mt-4 flex flex-col gap-2">
-                        <h2>Player Engagement</h2>
+                        <h2>Players Over Time</h2>
                         <p className="text-small text-text-muted">
-                            Helldivers mobilized at the start of each event, over the
-                            course of the war — did the community rally for the final
-                            battles?
+                            Helldivers online over the course of the war. Dots mark where
+                            each event kicked off — switch factions above to isolate a
+                            single front.
                         </p>
-                        <PlayerEngagementChart
+                        <PlayersOverTimeChart
+                            playerTimeseries={playerTimeseries}
                             events={events}
+                            faction={faction}
                             warStart={data?.war_start}
+                            domainMax={warDayMax}
                         />
                     </section>
                 )}

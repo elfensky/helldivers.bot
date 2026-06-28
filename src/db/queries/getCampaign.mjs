@@ -1,7 +1,10 @@
 import { cache } from 'react';
 import db from '@/db/db';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
-import { groupStatusByBucket } from '@/shared/utils/bucketing.mjs';
+import {
+    groupStatusByBucket,
+    groupStatisticByBucket,
+} from '@/shared/utils/bucketing.mjs';
 import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
 
 /**
@@ -11,7 +14,7 @@ import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
  * @returns {Promise<object | null>} Campaign data, or null if no season exists
  *
  * Returns the public getCampaign shape consumed by archives and rebroadcast:
- *   { season, last_updated, season_duration, war_start, status, introduction_order, points_max, snapshots, events }
+ *   { season, last_updated, season_duration, war_start, status, introduction_order, points_max, snapshots, playerTimeseries, events }
  *
  * - `status`     — 3 rows from h1_status, one per faction, latest bucket each.
  *                  Consumers cast this as an array of faction states.
@@ -20,6 +23,10 @@ import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
  *                  [{ time, data: [faction0, faction1, faction2] }, ...]
  *                  The archives chart readers iterate this list and access
  *                  data[enemy] for each time point.
+ * - `playerTimeseries` — full h1_statistic history grouped per bucket as
+ *                  [{ time, day, total, bugs, cyborgs, illuminate }, ...]
+ *                  for the archives "Players over time" chart. Empty for
+ *                  seasons predating telemetry collection.
  * - `introduction_order` / `points_max` — read from h1_season columns as
  *                  shape `{ order: number[] }` / `{ points: number[] }` to
  *                  preserve the historical 1:1 relation shape.
@@ -85,9 +92,18 @@ export const getCampaign = cache(async function getCampaign(
         };
     });
 
-    // Step 3: Full history for the archives chart.
+    // Step 3: Full history for the archives charts.
     const allStatusRows = await db.h1_status.findMany({
         where: { season: targetSeason },
+        orderBy: [{ bucket: 'asc' }, { enemy: 'asc' }],
+    });
+
+    // Full h1_statistic history — drives the archives "Players over time"
+    // chart. Telemetry-only: seasons predating stat collection return no rows,
+    // so playerTimeseries is [] and the chart (and its section) hides.
+    const allStatRows = await db.h1_statistic.findMany({
+        where: { season: targetSeason },
+        select: { enemy: true, bucket: true, time: true, players: true },
         orderBy: [{ bucket: 'asc' }, { enemy: 'asc' }],
     });
 
@@ -117,6 +133,21 @@ export const getCampaign = cache(async function getCampaign(
         time,
         data: factions,
     }));
+
+    // Per-bucket player counts for the archives "Players over time" chart.
+    // Each entry carries the three faction player counts + their sum (`total`)
+    // and a 1-based `day` into the war (anchored to war_start). Empty when the
+    // season has no h1_statistic rows (historical seasons predating telemetry).
+    const playerTimeseries = groupStatisticByBucket(allStatRows).map(
+        ({ time, players }) => ({
+            time,
+            day: warStart != null ? Math.floor((time - warStart) / 86400) + 1 : 1,
+            total: players[0] + players[1] + players[2],
+            bugs: players[0],
+            cyborgs: players[1],
+            illuminate: players[2],
+        }),
+    );
 
     // Step 4: Events for the season.
     const events = await db.h1_event.findMany({
@@ -149,6 +180,7 @@ export const getCampaign = cache(async function getCampaign(
         introduction_order: { order: seasonRow.introduction_order ?? [] },
         points_max: { points: seasonRow.points_max ?? [] },
         snapshots,
+        playerTimeseries,
         events,
     };
 });

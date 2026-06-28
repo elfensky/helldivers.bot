@@ -149,6 +149,27 @@ describe('FactionHealthChart — buildChartData logic (via captured props)', () 
         expect(data[2].day).toBe(3);
     });
 
+    test('intra-day snapshots get distinct fractional days (time-proportional, no collapse)', () => {
+        const HOUR = 3600;
+        render(
+            <FactionHealthChart
+                snapshots={[
+                    snapshot(0, [f(50), f(50), f(50)]),
+                    snapshot(HOUR, [f(50), f(50), f(50)]),
+                    snapshot(2 * HOUR, [f(50), f(50), f(50)]),
+                ]}
+                pointsMax={{ points: [100, 100, 100] }}
+            />,
+        );
+        const days = composedChartProps[0].data.map((d) => d.day);
+        // All on calendar day 0, but distinct fractional x — otherwise the areas
+        // collapse onto one column instead of advancing through time.
+        expect(new Set(days).size).toBe(3);
+        expect(days[0]).toBe(0);
+        expect(days[1]).toBeCloseTo(HOUR / 86400, 6);
+        expect(days[2]).toBeCloseTo((2 * HOUR) / 86400, 6);
+    });
+
     test('faction with status "hidden" maps to null (gap in the line)', () => {
         render(
             <FactionHealthChart

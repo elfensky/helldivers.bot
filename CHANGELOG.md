@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.63.0
+
+### Features
+
+- **Players Over Time on `/archives`** replaces the Player Engagement scatter.
+  A single per-war line plots player count over time, driven by the existing
+  faction toggle: `global` shows the total-players line and dots for every
+  event; a faction shows that faction's line and only its events. Event dots sit
+  on the line at each event's start day with a `type · region · faction ·
+  outcome` tooltip. `getCampaign` gains an additive `playerTimeseries` field
+  (per-bucket player counts from `h1_statistic`); the section hides for
+  historical seasons that predate telemetry. Chart math lives in the
+  unit-tested pure helper `buildPlayerLine`.
+
 ## 0.62.0
 
 ### Features

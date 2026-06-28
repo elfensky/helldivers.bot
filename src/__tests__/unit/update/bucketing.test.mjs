@@ -88,4 +88,48 @@ describe('bucketing', () => {
             expect(computeBucket(119)).toBe(60);
         });
     });
+
+    describe('groupStatisticByBucket', () => {
+        test('groups rows per bucket into [bugs, cyborgs, illuminate] player counts', async () => {
+            const { groupStatisticByBucket } = await import('@/shared/utils/bucketing');
+            const rows = [
+                { bucket: 1, enemy: 0, players: 100, time: 1000 },
+                { bucket: 1, enemy: 1, players: 50, time: 1000 },
+                { bucket: 1, enemy: 2, players: 25, time: 1000 },
+                { bucket: 2, enemy: 0, players: 200, time: 2000 },
+                { bucket: 2, enemy: 1, players: 60, time: 2000 },
+                { bucket: 2, enemy: 2, players: 40, time: 2000 },
+            ];
+            expect(groupStatisticByBucket(rows)).toEqual([
+                { time: 1000, players: [100, 50, 25] },
+                { time: 2000, players: [200, 60, 40] },
+            ]);
+        });
+
+        test('zero-fills factions missing from a bucket (keeps the bucket)', async () => {
+            const { groupStatisticByBucket } = await import('@/shared/utils/bucketing');
+            // Only bugs reported in this bucket — cyborgs/illuminate default to 0.
+            const rows = [{ bucket: 1, enemy: 0, players: 100, time: 1000 }];
+            expect(groupStatisticByBucket(rows)).toEqual([
+                { time: 1000, players: [100, 0, 0] },
+            ]);
+        });
+
+        test('sorts ascending by time and tracks the latest time within a bucket', async () => {
+            const { groupStatisticByBucket } = await import('@/shared/utils/bucketing');
+            const rows = [
+                { bucket: 2, enemy: 0, players: 200, time: 2000 },
+                { bucket: 1, enemy: 0, players: 100, time: 1000 },
+                // later poll within bucket 1 drifts its time forward
+                { bucket: 1, enemy: 1, players: 50, time: 1500 },
+            ];
+            const out = groupStatisticByBucket(rows);
+            expect(out.map((e) => e.time)).toEqual([1500, 2000]);
+        });
+
+        test('returns empty for no rows', async () => {
+            const { groupStatisticByBucket } = await import('@/shared/utils/bucketing');
+            expect(groupStatisticByBucket([])).toEqual([]);
+        });
+    });
 });

@@ -42,6 +42,16 @@ vi.mock('@/features/archives/FactionHealthChartLoader', () => ({
         />
     ),
 }));
+vi.mock('@/features/archives/PlayersOverTimeChartLoader', () => ({
+    default: ({ playerTimeseries, events, faction }) => (
+        <div
+            data-testid="players-over-time-chart-stub"
+            data-series={playerTimeseries?.length ?? 0}
+            data-events={events?.length ?? 0}
+            data-faction={faction ?? ''}
+        />
+    ),
+}));
 vi.mock('@/shared/components/FactionTabs', () => ({
     default: ({ active, onChange }) => (
         <button
@@ -237,6 +247,36 @@ describe('ArchivesClient — stats section (StatGrid + ArchiveStats)', () => {
 
         fireEvent.click(screen.getByTestId('faction-tabs-stub'));
         expect(setFaction).toHaveBeenCalledWith('bugs');
+    });
+});
+
+describe('ArchivesClient — Players Over Time section (telemetry gate)', () => {
+    test('hides the section when playerTimeseries is empty/absent (historical season)', () => {
+        render(<ArchivesClient data={baseData} seasons={[]} currentSeason={157} />);
+        expect(
+            screen.queryByTestId('players-over-time-chart-stub'),
+        ).not.toBeInTheDocument();
+        expect(screen.queryByText('Players Over Time')).not.toBeInTheDocument();
+    });
+
+    test('renders the section + forwards series/events/faction when telemetry exists', () => {
+        useFactionPreferenceMock.mockReturnValue(['cyborgs', vi.fn()]);
+        const data = {
+            ...baseData,
+            playerTimeseries: [
+                { time: 0, day: 1, total: 300, bugs: 100, cyborgs: 100, illuminate: 100 },
+                { time: 86400, day: 2, total: 600, bugs: 200, cyborgs: 200, illuminate: 200 }, // prettier-ignore
+            ],
+        };
+        render(<ArchivesClient data={data} seasons={[]} currentSeason={157} />);
+
+        const stub = screen.getByTestId('players-over-time-chart-stub');
+        expect(stub).toBeInTheDocument();
+        // Faction toggle drives the line: the active faction flows to the chart.
+        expect(stub.getAttribute('data-faction')).toBe('cyborgs');
+        expect(stub.getAttribute('data-series')).toBe('2');
+        expect(stub.getAttribute('data-events')).toBe('2');
+        expect(screen.getByText('Players Over Time')).toBeInTheDocument();
     });
 });
 
