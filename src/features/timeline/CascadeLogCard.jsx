@@ -6,7 +6,9 @@ import { eventKey } from '@/shared/utils/game/eventKey.mjs';
 
 /**
  * One cascade rendered as a card inside a CascadeLog season group.
- * Wraps the whole card in a Link to /archives?season=N#cascade.
+ * Wraps the whole card in a Link to /archives?season=N#<eventKey(lastEvent)>.
+ * When onSelectCascade is provided, the Link's default navigation is prevented
+ * and the handler owns both the highlight and the scroll.
  *
  * @param {object} props - Component props
  * @param {object} props.cascade - Cascade record with season + findAllCascades output
@@ -21,7 +23,11 @@ export default function CascadeLogCard({ cascade, onSelectCascade }) {
     return (
         <Link
             href={`/archives?season=${cascade.season}#${eventKey(cascade.lastEvent)}`}
-            onClick={() => onSelectCascade?.(cascade)}
+            onClick={(e) => {
+                if (!onSelectCascade) return;
+                e.preventDefault();
+                onSelectCascade(cascade);
+            }}
             data-umami-event="cascade-card-click"
             className="event-log-card-link"
         >

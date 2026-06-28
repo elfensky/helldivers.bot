@@ -36,6 +36,13 @@ export function useCascadeHighlight(cascades, railRef) {
             const keys = new Set(cascade.events.map(eventKey));
             setHighlightedKeys(keys);
 
+            // Reflect the cascade in the URL (shareable, enables back/forward
+            // rehydrate) without triggering Next's router scroll or a
+            // hashchange — pinCascade owns the scroll below. replaceState does
+            // not fire hashchange/popstate, so this does not re-enter.
+            const anchor = eventKey(cascade.events[cascade.events.length - 1]);
+            window.history.replaceState(null, '', '#' + anchor);
+
             // Scroll to the topmost highlighted card in current DOM order
             // (sort-agnostic). Double rAF so layout has painted before measuring.
             requestAnimationFrame(() => {
