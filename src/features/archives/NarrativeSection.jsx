@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import Button from '@/shared/components/Button/Button';
 import { buildWarNarrative } from '@/features/archives/buildWarNarrative.mjs';
 
 /**
@@ -8,10 +10,10 @@ import { buildWarNarrative } from '@/features/archives/buildWarNarrative.mjs';
  * propaganda voice. Renders nothing when there is no narrative to tell
  * (hide-when-empty, matching the player-engagement section).
  *
- * Uses the native `<details>`/`<summary>` collapsible idiom established by the
- * docs `EndpointCard` — no JS toggle state, keyboard-accessible for free. The
- * heading reuses the `.event-log-section` visual language so it reads as one
- * archives section alongside the Event Log and Cascade Failures.
+ * A primary (yellow-bordered, square) `Button` toggles the body, reading
+ * `SHOW` when collapsed and `HIDE` when expanded. The heading reuses the
+ * `.event-log-section` visual language so it reads as one archives section
+ * alongside the Event Log and Cascade Failures.
  *
  * @param {object} props - Component props.
  * @param {object} props.data - Campaign data (the getCampaign shape).
@@ -19,30 +21,30 @@ import { buildWarNarrative } from '@/features/archives/buildWarNarrative.mjs';
  */
 export default function NarrativeSection({ data, defaultOpen = false }) {
     const beats = buildWarNarrative(data);
+    const [open, setOpen] = useState(defaultOpen);
     if (beats.length === 0) return null;
 
     return (
         <section className="mt-4 flex flex-col gap-2">
-            <details className="group" open={defaultOpen}>
-                <summary
-                    className="flex cursor-pointer list-none items-center justify-between gap-2"
+            <div className="flex items-center justify-between gap-2">
+                <h2 className="m-0">War Narrative</h2>
+                <Button
+                    variant="primary"
+                    onClick={() => setOpen((o) => !o)}
+                    aria-expanded={open}
                     data-umami-event="archive-narrative-toggle"
                 >
-                    <h2 className="m-0">War Narrative</h2>
-                    <span
-                        aria-hidden="true"
-                        className="font-mono text-small text-text-muted transition-transform group-open:rotate-90"
-                    >
-                        ▸
-                    </span>
-                </summary>
+                    {open ? 'HIDE' : 'SHOW'}
+                </Button>
+            </div>
 
-                <p className="mt-2 text-small text-text-muted">
-                    The official record of the campaign, as approved for citizen
-                    consumption by the Ministry of Truth.
-                </p>
+            <p className="text-small text-text-muted">
+                The official record of the campaign, as approved for citizen
+                consumption by the Ministry of Truth.
+            </p>
 
-                <ol className="mt-3 flex flex-col gap-2">
+            {open && (
+                <ol className="flex flex-col gap-2">
                     {beats.map((beat, i) => (
                         <li
                             key={i}
@@ -55,7 +57,7 @@ export default function NarrativeSection({ data, defaultOpen = false }) {
                         </li>
                     ))}
                 </ol>
-            </details>
+            )}
         </section>
     );
 }
