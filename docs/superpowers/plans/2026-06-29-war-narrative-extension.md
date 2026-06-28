@@ -919,10 +919,10 @@ function describeOutcome(outcome, season) {
 }
 
 /**
- * After chronological sort, drop the less-extreme of two adjacent NEW highlight
- * beats (player/conquest) with opposite sentiment, so the narrative never reads
- * a surge directly beside a collapse. Per-event/opening/outcome beats (no
- * `kind`) are never dropped.
+ * After chronological sort, drops the LATER of two adjacent opposite-sentiment
+ * highlight beats (surge↔collapse, same day) — surge/collapse are the global
+ * max/min of one series so same-day adjacency is near-impossible; this is a
+ * cheap safety net. Per-event/opening/outcome beats (no `kind`) are never dropped.
  */
 const OPPOSITE = { surge: 'collapse', collapse: 'surge' };
 function coherenceGuard(beats) {

@@ -85,7 +85,7 @@ Module `numbersBeat.mjs`, `buildNumbersBeat(telemetry, lastTime, day) → beat |
 ## Coherence guard (read quality)
 
 After merge + chronological sort (the existing `time` then `order` comparator), an **adjacency pass** runs over the assembled beats so the new highlight beats don't read as whiplash:
-- If two **new highlight beats** (player surge/collapse or conquest) fall **adjacent** (same day) with **opposite sentiment** — e.g. a player *surge* next to a *collapse* — drop the less-extreme one.
+- If two **new highlight beats** (player surge/collapse or conquest) fall **adjacent** (same day) with **opposite sentiment** — e.g. a player *surge* next to a *collapse* — drop the later of the two.
 - Player surge and collapse are the global max/min of one series, so they are normally far apart; the guard is a cheap safety net, not a hot path.
 - The existing per-event field reports are never dropped — only the ≤5 new highlight beats are eligible for suppression.
 
@@ -127,7 +127,7 @@ Splitting the beat generators into small pure modules keeps the 236-line `buildW
 - `narrativePhrasing` — picker is deterministic (same seed ⇒ same index) and pool-bounded; distinct seeds spread across the pool.
 - `playerBeats` — detects a surge and a collapse on a synthetic series; emits nothing on a flat series; respects the ≤2 cap.
 - `conquestBeats` — emits a breakthrough when a faction crosses the gates threshold and a "first homeworld falls" on the first `defeated`; nothing on a war with no conquest; respects the ≤2 cap + same-faction-same-day dedupe.
-- coherence guard — drops the less-extreme of two opposite-sentiment new highlight beats that land adjacent; never drops per-event beats.
+- coherence guard — drops the later of two opposite-sentiment new highlight beats that land adjacent (same day); never drops per-event beats.
 - `numbersBeat` — formats from totals; returns `null` for `null` telemetry.
 - `getSeasonTelemetryTotals` — aggregation logic (latest-bucket-per-enemy, BigInt narrowing) unit-tested against a small fixture; `null` for a telemetry-less season.
 - `buildWarNarrative` integration — given season data (+telemetry), produces the expected beats in chronological order; a determinism/snapshot test.

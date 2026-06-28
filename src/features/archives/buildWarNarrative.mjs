@@ -57,11 +57,12 @@ function describeOutcome(outcome, season) {
 }
 
 /**
- * After chronological sort, drop the less-extreme of two adjacent NEW highlight
- * beats (player/conquest) with opposite sentiment, so the narrative never reads
- * a surge directly beside a collapse. Per-event/opening/outcome beats (no
- * `kind`) are never dropped.
+ * After chronological sort, drops the LATER of two adjacent opposite-sentiment
+ * highlight beats (surge↔collapse, same day) — surge/collapse are the global
+ * max/min of one series so same-day adjacency is near-impossible; this is a
+ * cheap safety net. Per-event/opening/outcome beats (no `kind`) are never dropped.
  */
+// Only surge↔collapse are opposites; conquest/numbers beats are intentionally never suppressed.
 const OPPOSITE = { surge: 'collapse', collapse: 'surge' };
 function coherenceGuard(beats) {
     const out = [];
@@ -179,9 +180,19 @@ export function buildWarNarrative(data, telemetry = null) {
         });
     }
 
-    // NEW highlight beats (features 2-4) — each carries a `kind`.
+    // lastTime caps the chronicle — computed before the highlight beats so we can
+    // clamp them to it (telemetry/snapshot buckets can extend past the final
+    // event; without clamping a late collapse could sort after the outcome).
+    const lastTime = sorted.reduce(
+        (m, e) => Math.max(m, e.end_time ?? e.start_time ?? warStart),
+        warStart,
+    );
+    const lastDay = dayOf(lastTime, warStart);
+
+    // NEW highlight beats (features 2-4) — each carries a `kind`; clamp time to
+    // lastTime so none sorts after the closing outcome beat.
     for (const pb of buildPlayerBeats(data?.playerTimeseries ?? [], season)) {
-        beats.push({ ...pb, order: seq++ });
+        beats.push({ ...pb, time: Math.min(pb.time, lastTime), order: seq++ });
     }
     for (const cb of buildConquestBeats(
         data?.snapshots ?? [],
@@ -189,16 +200,11 @@ export function buildWarNarrative(data, telemetry = null) {
         season,
         warStart,
     )) {
-        beats.push({ ...cb, order: seq++ });
+        beats.push({ ...cb, time: Math.min(cb.time, lastTime), order: seq++ });
     }
 
     // Outcome (caps the chronicle) + the numbers beat just before it.
     const outcome = getWarOutcome(data);
-    const lastTime = sorted.reduce(
-        (m, e) => Math.max(m, e.end_time ?? e.start_time ?? warStart),
-        warStart,
-    );
-    const lastDay = dayOf(lastTime, warStart);
     const numbers = buildNumbersBeat(telemetry, lastTime, lastDay, season);
     if (numbers) beats.push({ ...numbers, order: seq++ });
     if (outcome) {

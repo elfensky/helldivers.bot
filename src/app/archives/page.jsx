@@ -105,7 +105,10 @@ export default async function WarHistoryPage({ searchParams }) {
     // War Narrative is computed server-side so getCampaign stays untouched and
     // no narrative logic ships to the client. Telemetry is archives-only and
     // null for pre-telemetry seasons.
-    const { data: telemetry } = await tryCatch(getSeasonTelemetryTotals(resolvedSeason));
+    const { data: telemetry, error: telemetryError } = await tryCatch(
+        getSeasonTelemetryTotals(resolvedSeason),
+    );
+    if (telemetryError) console.error('getSeasonTelemetryTotals failed:', telemetryError);
     const narrativeBeats = buildWarNarrative(data, telemetry ?? null);
 
     // Admin-gated controls (e.g. RefreshSeasonButton) require a session check.
