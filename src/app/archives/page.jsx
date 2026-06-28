@@ -3,6 +3,8 @@ import { SITE_URL } from '@/config/site.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { updateSeason } from '@/update/season.mjs';
+import { getSeasonTelemetryTotals } from '@/db/queries/getSeasonTelemetryTotals.mjs';
+import { buildWarNarrative } from '@/features/archives/buildWarNarrative.mjs';
 //auth
 import { auth } from '@/auth';
 import { headers as nextHeaders, cookies } from 'next/headers';
@@ -100,6 +102,12 @@ export default async function WarHistoryPage({ searchParams }) {
 
     const currentSeason = data.season;
 
+    // War Narrative is computed server-side so getCampaign stays untouched and
+    // no narrative logic ships to the client. Telemetry is archives-only and
+    // null for pre-telemetry seasons.
+    const { data: telemetry } = await tryCatch(getSeasonTelemetryTotals(resolvedSeason));
+    const narrativeBeats = buildWarNarrative(data, telemetry ?? null);
+
     // Admin-gated controls (e.g. RefreshSeasonButton) require a session check.
     // When auth is disabled (no BETTER_AUTH_SECRET), `auth` is null and isAdmin
     // stays false — the button is simply hidden.
@@ -120,6 +128,7 @@ export default async function WarHistoryPage({ searchParams }) {
             <JsonLd data={archivesStructuredData} />
             <ArchivesClient
                 data={data}
+                narrativeBeats={narrativeBeats}
                 seasons={seasons}
                 currentSeason={currentSeason}
                 isAdmin={isAdmin}
