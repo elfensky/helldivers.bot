@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.62.0
+
+### Features
+
+- **War Narrative on `/archives`** (#274). A collapsible, in-world chronicle of
+  each season's campaign — generated chronologically from event data in the
+  Ministry of Truth's propaganda voice. Native `<details>`/`<summary>` (no JS
+  toggle state, keyboard-accessible), reusing the `.event-log-section` visual
+  language, and hidden when there is no narrative to tell.
+
 ## 0.61.0
 
 ### Features
