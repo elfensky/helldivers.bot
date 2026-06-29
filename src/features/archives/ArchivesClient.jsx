@@ -72,6 +72,7 @@ import { FACTION_KEY } from '@/shared/preferences/faction.mjs';
  */
 export default function ArchivesClient({
     data,
+    narrativeBeats,
     seasons,
     currentSeason,
     isAdmin = false,
@@ -196,7 +197,7 @@ export default function ArchivesClient({
                     </section>
                 )}
 
-                <NarrativeSection data={data} />
+                <NarrativeSection beats={narrativeBeats} />
             </div>
 
             {cascades.length > 0 && (

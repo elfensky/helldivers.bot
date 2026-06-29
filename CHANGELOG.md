@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.65.0
+
+### Features
+
+- **War Narrative enrichment on `/archives`**. The Ministry chronicle now varies
+  its phrasing per season (deterministic, SSR-stable), and gains player
+  surge/collapse beats, offensive conquest milestones (a faction driven to its
+  homeworld's gates / the first homeworld to fall), and a "war by the numbers"
+  telemetry beat. Computed server-side, so `getCampaign` and the rest of the app
+  are untouched; telemetry-backed beats appear only for seasons with telemetry.
+
 ## 0.64.1
 
 ### Changed

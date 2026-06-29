@@ -104,7 +104,9 @@ describe('buildWarNarrative', () => {
     it('splices a faction-arrival beat for mid-war introductions', () => {
         const beats = buildWarNarrative(fixture());
         const arrival = beats.find(
-            (b) => b.text.includes('Illuminate') && b.text.includes('enter the war'),
+            (b) =>
+                b.text.includes('Illuminate') &&
+                /enter the war|join the war/.test(b.text),
         );
         expect(arrival).toBeDefined();
     });
@@ -114,14 +116,16 @@ describe('buildWarNarrative', () => {
         // Bugs are introduced first → already on the field at war start, so no
         // separate "Bugs enter the war" arrival beat.
         const bugsArrival = beats.find(
-            (b) => b.text.includes('Bugs') && b.text.includes('enter the war'),
+            (b) => b.text.includes('Bugs') && /enter the war|join the war/.test(b.text),
         );
         expect(bugsArrival).toBeUndefined();
     });
 
     it('collapses a cascade run into one dramatic beat', () => {
         const beats = buildWarNarrative(fixture());
-        const cascadeBeats = beats.filter((b) => b.text.includes('devastating cascade'));
+        const cascadeBeats = beats.filter((b) =>
+            /devastating cascade|The line breaks/.test(b.text),
+        );
         // The 4 failed Bugs defends collapse into exactly one beat.
         expect(cascadeBeats).toHaveLength(1);
         expect(cascadeBeats[0].text).toContain('4 regions');
@@ -137,7 +141,7 @@ describe('buildWarNarrative', () => {
         const beats = buildWarNarrative(fixture());
         const last = beats[beats.length - 1];
         // Region-0 defend failed → defeat, attributed to the Illuminate.
-        expect(last.text).toContain('Super Earth falls');
+        expect(last.text).toMatch(/Super Earth falls|Super Earth's defeat/);
         expect(last.text).toContain('Illuminate');
     });
 
@@ -161,7 +165,7 @@ describe('buildWarNarrative', () => {
         };
         const beats = buildWarNarrative(data);
         const last = beats[beats.length - 1];
-        expect(last.text).toContain('The war is won');
+        expect(last.text).toMatch(/The war is won|Super Earth endures/);
     });
 
     it('falls back to the earliest event when war_start is absent', () => {
@@ -196,9 +200,11 @@ describe('buildWarNarrative', () => {
             })),
         };
         const beats = buildWarNarrative(data);
-        const cascade = beats.find((b) => b.text.includes('devastating cascade'));
+        const cascade = beats.find((b) =>
+            /devastating cascade|The line breaks/.test(b.text),
+        );
         expect(cascade).toBeDefined();
-        expect(cascade.text).toContain('The Illuminate push through');
+        expect(cascade.text).toMatch(/Illuminate (push through|sweep)/);
         // No beat should ever contain a doubled article from an unstripped name.
         for (const b of beats) expect(b.text).not.toMatch(/\bthe the\b/i);
     });
@@ -210,5 +216,68 @@ describe('buildWarNarrative', () => {
             expect(typeof b.text).toBe('string');
             expect(b.text.length).toBeGreaterThan(0);
         }
+    });
+});
+
+describe('buildWarNarrative — extension (generators + telemetry)', () => {
+    const extData = {
+        season: 157,
+        war_start: 0,
+        introduction_order: { order: [1, 0, 0] },
+        status: [
+            { enemy: 0, first_seen: 0, status: 'active', points: 0, points_taken: 0 },
+        ],
+        points_max: { points: [1000, 1000, 1000] },
+        snapshots: [],
+        playerTimeseries: [],
+        events: [
+            {
+                type: 'defend',
+                status: 'success',
+                enemy: 0,
+                region: 5,
+                start_time: 86400,
+                end_time: 90000,
+                event_id: 1,
+            },
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 0,
+                region: 4,
+                start_time: 172800,
+                end_time: 176400,
+                event_id: 2,
+            },
+        ],
+    };
+
+    it('is deterministic — same input yields identical output', () => {
+        expect(buildWarNarrative(extData, null)).toEqual(
+            buildWarNarrative(extData, null),
+        );
+    });
+
+    it('omits the numbers beat when telemetry is null', () => {
+        const texts = buildWarNarrative(extData, null).map((b) => b.text);
+        expect(texts.some((t) => /By the numbers|ledger of war/i.test(t))).toBe(false);
+    });
+
+    it('appends a numbers beat when telemetry is present', () => {
+        const texts = buildWarNarrative(extData, {
+            kills: 1000,
+            missions: 50,
+            accidentals: 9,
+        }).map((b) => b.text);
+        expect(texts.some((t) => /By the numbers|ledger of war/i.test(t))).toBe(true);
+    });
+
+    it('stays in chronological day order with the new beats', () => {
+        const days = buildWarNarrative(extData, {
+            kills: 1,
+            missions: 1,
+            accidentals: 0,
+        }).map((b) => b.day);
+        expect(days).toEqual([...days].sort((a, b) => a - b));
     });
 });

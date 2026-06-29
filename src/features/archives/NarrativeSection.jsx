@@ -2,27 +2,23 @@
 
 import { useState } from 'react';
 import Button from '@/shared/components/Button/Button';
-import { buildWarNarrative } from '@/features/archives/buildWarNarrative.mjs';
 
 /**
- * War Narrative — a collapsible, in-world chronicle of a season's campaign,
- * generated chronologically from event data in the Ministry of Truth's
- * propaganda voice. Renders nothing when there is no narrative to tell
- * (hide-when-empty, matching the player-engagement section).
+ * War Narrative — a collapsible, in-world chronicle of a season's campaign in
+ * the Ministry of Truth's propaganda voice. The beats are computed server-side
+ * (see buildWarNarrative + the archives page) and passed in; this component
+ * only renders + toggles. Renders nothing when there is no narrative to tell.
  *
- * A primary (yellow-bordered, square) `Button` toggles the body, reading
- * `SHOW` when collapsed and `HIDE` when expanded. The heading reuses the
- * `.event-log-section` visual language so it reads as one archives section
- * alongside the Event Log and Cascade Failures.
+ * A primary (yellow-bordered, square) Button toggles the body, reading SHOW
+ * when collapsed and HIDE when expanded.
  *
  * @param {object} props - Component props.
- * @param {object} props.data - Campaign data (the getCampaign shape).
+ * @param {Array<{ day:number, text:string }>} [props.beats] - Server-computed beats.
  * @param {boolean} [props.defaultOpen] - Whether the section starts expanded.
  */
-export default function NarrativeSection({ data, defaultOpen = false }) {
-    const beats = buildWarNarrative(data);
+export default function NarrativeSection({ beats, defaultOpen = false }) {
     const [open, setOpen] = useState(defaultOpen);
-    if (beats.length === 0) return null;
+    if (!beats?.length) return null;
 
     return (
         <section className="mt-4 flex flex-col gap-2">
