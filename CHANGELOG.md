@@ -1,5 +1,70 @@
 # Changelog
 
+## 0.65.0
+
+### Features
+
+- **War Narrative enrichment on `/archives`**. The Ministry chronicle now varies
+  its phrasing per season (deterministic, SSR-stable), and gains player
+  surge/collapse beats, offensive conquest milestones (a faction driven to its
+  homeworld's gates / the first homeworld to fall), and a "war by the numbers"
+  telemetry beat. Computed server-side, so `getCampaign` and the rest of the app
+  are untouched; telemetry-backed beats appear only for seasons with telemetry.
+
+## 0.64.1
+
+### Changed
+
+- **War Narrative toggle** on `/archives` now uses the shared primary `Button`
+  (yellow border, square) reading **SHOW** when collapsed / **HIDE** when
+  expanded, replacing the chevron `<details>` affordance. The Ministry subtitle
+  stays visible in both states; only the beats list toggles.
+
+## 0.64.0
+
+### Features
+
+- **Faction introduction markers in the `/archives` Event Log** (#157).
+  Synthetic "a faction enters the war" dividers (`buildIntroMarkers`) are
+  interleaved chronologically among the event rows, faction-colored via the
+  `--color-faction-*` tokens. Archives-only and opt-in: `EventLog` takes a new
+  `introMarkers` prop defaulting to `[]`, so the homepage's output is unchanged.
+
+## 0.63.0
+
+### Features
+
+- **Players Over Time on `/archives`** replaces the Player Engagement scatter.
+  A single per-war line plots player count over time, driven by the existing
+  faction toggle: `global` shows the total-players line and dots for every
+  event; a faction shows that faction's line and only its events. Event dots sit
+  on the line at each event's start day with a `type · region · faction ·
+  outcome` tooltip. `getCampaign` gains an additive `playerTimeseries` field
+  (per-bucket player counts from `h1_statistic`); the section hides for
+  historical seasons that predate telemetry. Chart math lives in the
+  unit-tested pure helper `buildPlayerLine`.
+
+## 0.62.0
+
+### Features
+
+- **War Narrative on `/archives`** (#274). A collapsible, in-world chronicle of
+  each season's campaign — generated chronologically from event data in the
+  Ministry of Truth's propaganda voice. Native `<details>`/`<summary>` (no JS
+  toggle state, keyboard-accessible), reusing the `.event-log-section` visual
+  language, and hidden when there is no narrative to tell.
+
+## 0.61.0
+
+### Features
+
+- **Cascade deep-linking on `/archives`**. Clicking a cascade card now scrolls
+  the event log to that cascade and pins a persistent faction-tinted highlight
+  across every one of its events, clearing when you scroll away or pick another
+  cascade. The view is shareable via a URL hash (`/archives?season=N#<event>`):
+  the highlight rehydrates on direct load and browser back/forward. Scroll
+  targeting reads live DOM order, so it stays correct under either log sort.
+
 ## 0.60.0
 
 ### Features

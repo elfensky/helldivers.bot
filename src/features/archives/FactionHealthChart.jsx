@@ -27,11 +27,15 @@ const FACTIONS = [
     },
 ];
 
-function buildChartData(snapshots, pointsMax) {
+function buildChartData(snapshots, pointsMax, warStart) {
     if (!snapshots?.length || !pointsMax?.points) return [];
 
     const maxPoints = pointsMax.points;
-    const firstTime = snapshots[0].time;
+    // Continuous, 0-based days since war start (falls back to the first
+    // snapshot). Fractional — not rounded — so intra-day snapshots stay distinct
+    // and the x-axis is time-proportional, matching PlayersOverTimeChart so the
+    // two charts can be read against each other day-for-day.
+    const anchor = warStart ?? snapshots[0].time;
 
     return snapshots
         .map((snap) => {
@@ -39,7 +43,7 @@ function buildChartData(snapshots, pointsMax) {
             if (!parsed) return null;
 
             const entry = {
-                day: Math.round((snap.time - firstTime) / 86400),
+                day: (snap.time - anchor) / 86400,
                 time: snap.time,
             };
 
@@ -88,7 +92,7 @@ function ChartTooltip({ active, payload }) {
             }}
         >
             <div style={{ color: 'var(--color-text-muted)', marginBottom: 4 }}>
-                Day {d.day}
+                Day {Math.round(d.day ?? 0)}
             </div>
             {FACTIONS.map(
                 (f) =>
@@ -111,9 +115,19 @@ function ChartTooltip({ active, payload }) {
     );
 }
 
-export default function FactionHealthChart({ snapshots, pointsMax }) {
-    const data = buildChartData(snapshots, pointsMax);
+export default function FactionHealthChart({
+    snapshots,
+    pointsMax,
+    warStart,
+    domainMax,
+}) {
+    const data = buildChartData(snapshots, pointsMax, warStart);
     if (!data.length) return null;
+
+    // All-day ticks (D0…D<last>) on a time-proportional axis so this chart lines
+    // up day-for-day with PlayersOverTimeChart for side-by-side comparison.
+    const lastDay = Math.round(data.reduce((m, d) => Math.max(m, d.day ?? 0), 0));
+    const dayTicks = Array.from({ length: lastDay + 1 }, (_, i) => i);
 
     return (
         <ResponsiveContainer width="100%" height={280}>
@@ -123,10 +137,13 @@ export default function FactionHealthChart({ snapshots, pointsMax }) {
             >
                 <CartesianGrid stroke="var(--color-surface-3)" strokeDasharray="3 3" />
                 <XAxis
+                    type="number"
                     dataKey="day"
                     stroke="var(--color-surface-4)"
                     tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
-                    tickFormatter={(v) => `D${v}`}
+                    tickFormatter={(v) => `D${Math.round(v)}`}
+                    domain={[0, domainMax ?? lastDay]}
+                    ticks={dayTicks}
                 />
                 <YAxis
                     stroke="var(--color-surface-4)"
