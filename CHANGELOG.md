@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.65.2
+
+### Fixed
+
+- **Browser-side GlitchTip reporting in Docker deploys**. `NEXT_PUBLIC_SENTRY_DSN`
+  is inlined into the client bundle at build time, but the Docker build never
+  received it, so shipped images ran `Sentry.init({ dsn: undefined })` on the
+  client — no browser error or trace capture (server-side capture via
+  `SENTRY_DSN` was unaffected). Now passed as a build arg in the Dockerfile and
+  both release/staging workflows. The DSN is public (it ships to browsers), so
+  it is a plain GitHub Actions variable, not a secret. Requires adding the
+  `NEXT_PUBLIC_SENTRY_DSN` repo variable in CI.
+
 ## 0.65.1
 
 ### Changed
