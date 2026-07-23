@@ -492,4 +492,54 @@ describe('buildWarNarrative — highlight beats through the orchestrator', () =>
         // Last event ends on day 8 — a beat cannot be dated after the war ends.
         expect(beat.day).toBeLessThanOrEqual(8);
     });
+
+    it('numbers beat threads formatNumber output and is dated on the last war day', () => {
+        const data = highlightFixture();
+        const telemetry = { kills: 25_000_000, missions: 50, accidentals: 9 };
+        const beats = buildWarNarrative(data, telemetry);
+        const numbers = beats.find((b) => /25\.0M|25,000,000/.test(b.text));
+        expect(numbers).toBeDefined();
+        const outcome = beats.find((b) =>
+            /Super Earth falls|Super Earth's defeat/.test(b.text),
+        );
+        expect(outcome).toBeDefined();
+        // {day, text} is all the public output carries — the numbers beat is
+        // anchored at lastTime/lastDay same as the outcome beat.
+        expect(numbers.day).toBe(outcome.day);
+    });
+
+    it('emits no breakthrough or homeworld-fall beats when no faction crosses the gates or falls', () => {
+        const data = highlightFixture();
+        data.snapshots = [
+            {
+                time: WAR_START + 2 * DAY,
+                data: [
+                    { points: 500, status: 'active' }, // frac 0.5, well under 0.9
+                    { points: 0, status: 'active' },
+                    { points: 0, status: 'active' },
+                ],
+            },
+            {
+                time: WAR_START + 4 * DAY,
+                data: [
+                    { points: 500, status: 'active' },
+                    { points: 0, status: 'active' },
+                    { points: 0, status: 'active' },
+                ],
+            },
+        ];
+        const texts = buildWarNarrative(data).map((b) => b.text);
+        const breakthrough = pickVariant(PHRASES.breakthrough, SEASON, 0)('Bugs');
+        const falls = pickVariant(PHRASES.homeworldFalls, SEASON, 10)('Bugs');
+        expect(texts).not.toContain(breakthrough);
+        expect(texts).not.toContain(falls);
+    });
+
+    it('a single-sample player timeseries emits no surge/collapse beats', () => {
+        const withOneSample = highlightFixture();
+        withOneSample.playerTimeseries = [{ time: WAR_START, day: 1, total: 100 }];
+        const withNone = highlightFixture();
+        withNone.playerTimeseries = [];
+        expect(buildWarNarrative(withOneSample)).toEqual(buildWarNarrative(withNone));
+    });
 });
