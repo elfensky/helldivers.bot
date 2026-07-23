@@ -18,12 +18,20 @@ import { dayOf } from '@/shared/utils/game/warClock.mjs';
  *   { season, last_updated, season_duration, war_start, status, introduction_order, points_max, snapshots, playerTimeseries, events }
  *
  * - `status`     — 3 rows from h1_status, one per faction, latest bucket each.
- *                  Consumers cast this as an array of faction states.
+ *                  KEYED convention: each row carries an explicit `.enemy` id.
  * - `snapshots`  — full h1_status history for the season, returned as a
  *                  shape:
  *                  [{ time, data: [faction0, faction1, faction2] }, ...]
- *                  The archives chart readers iterate this list and access
- *                  data[enemy] for each time point.
+ *                  POSITIONAL convention: `data[enemy]` — index IS the faction
+ *                  id (0=bugs, 1=cyborgs, 2=illuminate), no `.enemy` field on
+ *                  the elements. Always exactly 3 non-null entries: partial
+ *                  buckets are dropped by groupStatusByBucket (bucketing.mjs).
+ *                  ⚠ This mixed keyed-vs-positional convention mirrors the HD1
+ *                  wire format (campaign_status keyed, snapshots positional)
+ *                  and is round-trip-preserved by update/season.mjs (ingest)
+ *                  and rebroadcast.mjs (egress) — do NOT normalize it here;
+ *                  see the 2026-07-23 architecture review. Reading data with
+ *                  the wrong convention was the exact bug fixed in 1d2f974.
  * - `playerTimeseries` — full h1_statistic history grouped per bucket as
  *                  [{ time, day, total, bugs, cyborgs, illuminate }, ...]
  *                  for the archives "Players over time" chart. Empty for
