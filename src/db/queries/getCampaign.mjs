@@ -6,6 +6,7 @@ import {
     groupStatisticByBucket,
 } from '@/shared/utils/bucketing.mjs';
 import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
+import { dayOf } from '@/shared/utils/game/warClock.mjs';
 
 /**
  * Fetch the campaign data for a season (or the latest season if null).
@@ -141,7 +142,9 @@ export const getCampaign = cache(async function getCampaign(
     const playerTimeseries = groupStatisticByBucket(allStatRows).map(
         ({ time, players }) => ({
             time,
-            day: warStart != null ? Math.floor((time - warStart) / 86400) + 1 : 1,
+            // Deliberate default (not resolveWarStart): a season with no
+            // war_start gets flat day 1, not a data-derived anchor.
+            day: warStart != null ? dayOf(time, warStart) : 1,
             total: players[0] + players[1] + players[2],
             bugs: players[0],
             cyborgs: players[1],
