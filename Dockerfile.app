@@ -46,6 +46,14 @@ RUN POSTGRES_URL=postgresql://dummy npx prisma generate
 # fallback chain in instrumentation-client.js drops down to DEPLOY_ENV / NODE_ENV.
 ARG NEXT_PUBLIC_DEPLOY_ENV
 ENV NEXT_PUBLIC_DEPLOY_ENV=$NEXT_PUBLIC_DEPLOY_ENV
+# NEXT_PUBLIC_SENTRY_DSN is the browser-side GlitchTip DSN. Like DEPLOY_ENV
+# it is inlined into the client bundle at build time, so it MUST be set here as
+# a build arg — setting it only at runtime leaves the browser SDK inert (no
+# client-side error/trace reporting). It is a public value (it ships to every
+# browser by design), so a plain build arg is correct; unlike SENTRY_AUTH_TOKEN
+# it needs no secret mount. Empty is fine — the client SDK no-ops without it.
+ARG NEXT_PUBLIC_SENTRY_DSN
+ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
