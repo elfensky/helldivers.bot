@@ -217,14 +217,7 @@ export default function ArchivesClient({
                         title="Event Log"
                         id="archives-event-log"
                         initialSortOrder={initialSortOrder}
-                        selectedEventKey={
-                            /* EventLog compares this key by ===, so a string is the
-                               real contract, but its prop default makes TS infer the
-                               narrower null type — cast to pass the computed key. */
-                            /** @type {null | undefined} */ (
-                                selectedEvent ? eventKey(selectedEvent) : null
-                            )
-                        }
+                        selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
                         onHoverEvent={undefined}
                         railRef={railRef}
                         highlightedKeys={highlightedKeys}
