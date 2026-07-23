@@ -24,7 +24,13 @@ export const SECONDS_PER_DAY = 86400;
  */
 export function resolveWarStart(warStart, times) {
     if (warStart != null) return warStart;
-    return (times ?? []).reduce((m, t) => Math.min(m, t ?? Infinity), Infinity);
+    let min = Infinity;
+    for (const t of times ?? []) {
+        if (t != null) {
+            min = Math.min(min, t);
+        }
+    }
+    return min;
 }
 
 /**
