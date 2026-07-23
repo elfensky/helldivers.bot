@@ -1,4 +1,5 @@
 import { FACTION_INDEX } from '@/shared/enums/factions.mjs';
+import { dayFraction, resolveWarStart } from '@/shared/utils/game/warClock.mjs';
 
 /**
  * @typedef {object} PlayerTimeseriesEntry
@@ -71,11 +72,13 @@ export function buildPlayerLine(playerTimeseries, events, faction, warStart) {
 
     const field = lineField(faction);
 
-    // Anchor day 0 to war_start; fall back to the earliest bucket. reduce, not
-    // Math.min(...spread): a large series can blow the engine's arg limit.
-    const anchor = warStart ?? series.reduce((m, e) => Math.min(m, e.time), Infinity);
+    // Anchor day 0 to war_start; fall back to the earliest bucket.
+    const anchor = resolveWarStart(
+        warStart,
+        series.map((e) => e.time),
+    );
     // Continuous (fractional) days since war start, 0-based to match Conquest.
-    const dayInto = (time) => (time - anchor) / 86400;
+    const dayInto = (time) => dayFraction(time, anchor);
 
     const points = series.map((entry) => ({
         x: dayInto(entry.time),
