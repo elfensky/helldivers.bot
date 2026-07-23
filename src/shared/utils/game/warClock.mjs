@@ -15,7 +15,7 @@ export const SECONDS_PER_DAY = 86400;
 
 /**
  * Resolve the day-1 anchor: `warStart` when known, else the earliest observed
- * time. reduce, not `Math.min(...spread)` — a large array spread as call
+ * time. Iterates, never `Math.min(...spread)` — a large array spread as call
  * arguments can throw RangeError.
  *
  * @param {number | null | undefined} warStart - Unix-seconds war start, if known.
