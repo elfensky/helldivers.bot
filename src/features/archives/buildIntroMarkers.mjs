@@ -1,6 +1,5 @@
 import factions from '@/shared/enums/factions.mjs';
-
-const DAY = 86400;
+import { dayOf, resolveWarStart } from '@/shared/utils/game/warClock.mjs';
 
 /**
  * Build synthetic "a faction enters the war" markers for the archives Event
@@ -10,11 +9,9 @@ const DAY = 86400;
  * are revealed but lack a recorded first appearance are skipped: without a
  * timestamp there's nowhere to interleave the marker.
  *
- * `day` mirrors the war-day convention used elsewhere (1-based): the first day
+ * `day` uses the shared warClock `dayOf` convention (1-based): the first day
  * of the war is Day 1. `warStart` anchors Day 1, falling back to the earliest
- * `first_seen` across all introduced factions when absent (reduce, not
- * `Math.min(...spread)`, so a large status array can't trip the engine's
- * arg-count limit — matching buildEngagementSeries).
+ * `first_seen` across all introduced factions when absent (resolveWarStart).
  *
  * The faction name strips a leading article ("The Illuminate" → "Illuminate")
  * so it templates cleanly into "<Name> enter the war".
@@ -45,10 +42,10 @@ export function buildIntroMarkers(data) {
     }
     if (candidates.length === 0) return [];
 
-    // reduce, not Math.min(...spread): a long status array spread as call
-    // arguments can throw RangeError. Mirrors buildEngagementSeries.
-    const anchor =
-        data?.war_start ?? candidates.reduce((m, c) => Math.min(m, c.time), Infinity);
+    const anchor = resolveWarStart(
+        data?.war_start,
+        candidates.map((c) => c.time),
+    );
 
     return candidates
         .map(({ enemy, time }) => ({
@@ -56,7 +53,7 @@ export function buildIntroMarkers(data) {
             enemy,
             name: stripArticle(factions[enemy]?.name ?? `Faction ${enemy}`),
             time,
-            day: Math.floor((time - anchor) / DAY) + 1,
+            day: dayOf(time, anchor),
         }))
         .sort((a, b) => a.time - b.time);
 }
