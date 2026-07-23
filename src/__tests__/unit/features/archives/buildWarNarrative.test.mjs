@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildWarNarrative } from '@/features/archives/buildWarNarrative.mjs';
+import { PHRASES, pickVariant } from '@/features/archives/narrativePhrasing.mjs';
+import { formatNumber } from '@/shared/utils/format/formatNumber.mjs';
 
 const DAY = 86400;
 const HOUR = 3600;
@@ -279,5 +281,194 @@ describe('buildWarNarrative — extension (generators + telemetry)', () => {
             accidentals: 0,
         }).map((b) => b.day);
         expect(days).toEqual([...days].sort((a, b) => a - b));
+    });
+});
+
+describe('buildWarNarrative — highlight beats through the orchestrator', () => {
+    const SEASON = 210;
+
+    /**
+     * Fixture that drives every highlight-beat path through the public
+     * interface: a surge (day 4), a collapse (day 6), a conquest breakthrough
+     * (day 5), a homeworld fall (day 7), and a defeat outcome (day 8).
+     * playerTimeseries totals: [100,100,100,200,40] → median 100;
+     * 200 ≥ 1.4×100 → surge; 40 ≤ 0.6×100 → collapse (not index 0).
+     */
+    function highlightFixture() {
+        return {
+            season: SEASON,
+            war_start: WAR_START,
+            introduction_order: { order: [1, 0, 0] },
+            status: [{ enemy: 0, first_seen: WAR_START, status: 'active' }],
+            points_max: { points: [1000, 0, 0] },
+            // Slots 1/2 use non-null "active, 0 points" placeholders rather than
+            // null: getWarOutcome's anySnapshotDefeated check does
+            // `factionData.every((f) => f.status === ...)` over every length-3
+            // snapshot with no null-guard, so a null slot throws. max=0 keeps
+            // these placeholders from ever crossing the breakthrough threshold.
+            snapshots: [
+                {
+                    time: WAR_START + 2 * DAY,
+                    data: [
+                        { points: 500, status: 'active' },
+                        { points: 0, status: 'active' },
+                        { points: 0, status: 'active' },
+                    ],
+                },
+                {
+                    time: WAR_START + 4 * DAY, // frac 0.95 ≥ 0.9 → breakthrough, day 5
+                    data: [
+                        { points: 950, status: 'active' },
+                        { points: 0, status: 'active' },
+                        { points: 0, status: 'active' },
+                    ],
+                },
+                {
+                    time: WAR_START + 6 * DAY, // defeated → homeworld falls, day 7
+                    data: [
+                        { points: 1000, status: 'defeated' },
+                        { points: 0, status: 'active' },
+                        { points: 0, status: 'active' },
+                    ],
+                },
+            ],
+            playerTimeseries: [
+                { time: WAR_START, day: 1, total: 100 },
+                { time: WAR_START + 1 * DAY, day: 2, total: 100 },
+                { time: WAR_START + 2 * DAY, day: 3, total: 100 },
+                { time: WAR_START + 3 * DAY, day: 4, total: 200 }, // surge
+                { time: WAR_START + 5 * DAY, day: 6, total: 40 }, // collapse
+            ],
+            events: [
+                {
+                    type: 'defend',
+                    status: 'success',
+                    enemy: 0,
+                    region: 5,
+                    start_time: WAR_START,
+                    end_time: WAR_START + HOUR,
+                    event_id: 1,
+                    season: SEASON,
+                },
+                // Region-0 defend fails on day 8 → defeat outcome caps the log.
+                {
+                    type: 'defend',
+                    status: 'fail',
+                    enemy: 0,
+                    region: 0,
+                    start_time: WAR_START + 7 * DAY,
+                    end_time: WAR_START + 7 * DAY + HOUR,
+                    event_id: 2,
+                    season: SEASON,
+                },
+            ],
+        };
+    }
+
+    it('emits a surge beat on the peak day with the seeded phrase', () => {
+        const beats = buildWarNarrative(highlightFixture());
+        const expected = pickVariant(
+            PHRASES.surge,
+            SEASON,
+            (WAR_START + 3 * DAY) | 0,
+        )(formatNumber(200));
+        const surge = beats.find((b) => b.text === expected);
+        expect(surge).toBeDefined();
+        expect(surge.day).toBe(4);
+    });
+
+    it('emits a collapse beat on the trough day with the seeded phrase', () => {
+        const beats = buildWarNarrative(highlightFixture());
+        const expected = pickVariant(
+            PHRASES.collapse,
+            SEASON,
+            (WAR_START + 5 * DAY) | 0,
+        )(formatNumber(40));
+        const collapse = beats.find((b) => b.text === expected);
+        expect(collapse).toBeDefined();
+        expect(collapse.day).toBe(6);
+    });
+
+    it('emits conquest breakthrough and homeworld-fall beats on their crossing days', () => {
+        const beats = buildWarNarrative(highlightFixture());
+        const breakthrough = pickVariant(PHRASES.breakthrough, SEASON, 0)('Bugs');
+        const falls = pickVariant(PHRASES.homeworldFalls, SEASON, 10)('Bugs');
+        const bt = beats.find((b) => b.text === breakthrough);
+        const hf = beats.find((b) => b.text === falls);
+        expect(bt).toBeDefined();
+        expect(bt.day).toBe(5);
+        expect(hf).toBeDefined();
+        expect(hf.day).toBe(7);
+    });
+
+    it('emits no surge/collapse beats when player counts are steady', () => {
+        const data = highlightFixture();
+        data.playerTimeseries = [
+            { time: WAR_START, day: 1, total: 100 },
+            { time: WAR_START + 1 * DAY, day: 2, total: 101 },
+            { time: WAR_START + 2 * DAY, day: 3, total: 99 },
+        ];
+        const texts = buildWarNarrative(data).map((b) => b.text);
+        const surge = pickVariant(
+            PHRASES.surge,
+            SEASON,
+            (WAR_START + 1 * DAY) | 0,
+        )(formatNumber(101));
+        expect(texts).not.toContain(surge);
+    });
+
+    it('dedupes same-faction same-day breakthrough+fall into the fall beat only', () => {
+        const data = highlightFixture();
+        // Slots 1/2 non-null (see highlightFixture comment) — avoids the
+        // getWarOutcome null-slot crash on length-3 snapshots.
+        data.snapshots = [
+            {
+                time: WAR_START + 4 * DAY,
+                data: [
+                    { points: 950, status: 'active' },
+                    { points: 0, status: 'active' },
+                    { points: 0, status: 'active' },
+                ],
+            },
+            {
+                time: WAR_START + 4 * DAY + HOUR, // same war day → dedupe
+                data: [
+                    { points: 1000, status: 'defeated' },
+                    { points: 0, status: 'active' },
+                    { points: 0, status: 'active' },
+                ],
+            },
+        ];
+        const texts = buildWarNarrative(data).map((b) => b.text);
+        const breakthrough = pickVariant(PHRASES.breakthrough, SEASON, 0)('Bugs');
+        const falls = pickVariant(PHRASES.homeworldFalls, SEASON, 10)('Bugs');
+        expect(texts).not.toContain(breakthrough);
+        expect(texts).toContain(falls);
+    });
+
+    it('clamps a late highlight beat so the outcome still caps the chronicle', () => {
+        const data = highlightFixture();
+        // Telemetry buckets extend 12 days past the final event — the exact
+        // scenario the a6fa57e clamp exists for.
+        data.playerTimeseries = [
+            { time: WAR_START, day: 1, total: 100 },
+            { time: WAR_START + 1 * DAY, day: 2, total: 100 },
+            { time: WAR_START + 2 * DAY, day: 3, total: 100 },
+            { time: WAR_START + 20 * DAY, day: 21, total: 40 }, // late collapse
+        ];
+        data.snapshots = [];
+        const beats = buildWarNarrative(data);
+        const collapse = pickVariant(
+            PHRASES.collapse,
+            SEASON,
+            (WAR_START + 20 * DAY) | 0,
+        )(formatNumber(40));
+        const collapseIdx = beats.findIndex((b) => b.text === collapse);
+        expect(collapseIdx).toBeGreaterThan(-1);
+        // The outcome beat is last — the clamped collapse must sort before it.
+        expect(collapseIdx).toBeLessThan(beats.length - 1);
+        expect(beats[beats.length - 1].text).toMatch(
+            /Super Earth falls|Super Earth's defeat/,
+        );
     });
 });
