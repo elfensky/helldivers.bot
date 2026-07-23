@@ -60,7 +60,7 @@ export default function EventLog({
     title = 'Event Log',
     id = 'event-log',
     initialSortOrder,
-    selectedEventKey = null,
+    selectedEventKey = /** @type {string | null} */ (null),
     highlightedKeys = /** @type {Set<string> | null} */ (null),
     onHoverEvent,
     railRef,

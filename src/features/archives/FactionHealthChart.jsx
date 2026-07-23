@@ -10,6 +10,7 @@ import {
     ResponsiveContainer,
 } from 'recharts';
 import { CAMPAIGN_STATUS } from '@/shared/enums/events.mjs';
+import { dayFraction, resolveWarStart } from '@/shared/utils/game/warClock.mjs';
 
 const FACTIONS = [
     { key: 'bugs', label: 'Bugs', stroke: '#e8822a', fill: 'rgba(232, 130, 42, 0.2)' },
@@ -31,11 +32,14 @@ function buildChartData(snapshots, pointsMax, warStart) {
     if (!snapshots?.length || !pointsMax?.points) return [];
 
     const maxPoints = pointsMax.points;
-    // Continuous, 0-based days since war start (falls back to the first
+    // Continuous, 0-based days since war start (falls back to the earliest
     // snapshot). Fractional — not rounded — so intra-day snapshots stay distinct
     // and the x-axis is time-proportional, matching PlayersOverTimeChart so the
     // two charts can be read against each other day-for-day.
-    const anchor = warStart ?? snapshots[0].time;
+    const anchor = resolveWarStart(
+        warStart,
+        snapshots.map((s) => s.time),
+    );
 
     return snapshots
         .map((snap) => {
@@ -43,7 +47,7 @@ function buildChartData(snapshots, pointsMax, warStart) {
             if (!parsed) return null;
 
             const entry = {
-                day: (snap.time - anchor) / 86400,
+                day: dayFraction(snap.time, anchor),
                 time: snap.time,
             };
 

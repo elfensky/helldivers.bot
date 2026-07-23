@@ -2,6 +2,54 @@ import { vi } from 'vitest';
 import React from 'react';
 import '@testing-library/jest-dom/vitest';
 
+// #region Environment Fixes
+
+/**
+ * Node 22+ ships an experimental Web Storage global that is `undefined` unless
+ * node runs with `--localstorage-file`. Its mere presence on globalThis makes
+ * vitest's jsdom environment skip installing jsdom's own storage (the populate
+ * step only copies window keys not already `in global`), so `@vitest-environment
+ * jsdom` files see `localStorage === undefined`. Replace the dead stub with a
+ * spec-shaped in-memory Storage. DOM environments only — the default `node`
+ * environment keeps its stub untouched.
+ */
+class MemoryStorage {
+    #map = new Map();
+    get length() {
+        return this.#map.size;
+    }
+    key(i) {
+        return [...this.#map.keys()][i] ?? null;
+    }
+    getItem(k) {
+        return this.#map.has(String(k)) ? this.#map.get(String(k)) : null;
+    }
+    setItem(k, v) {
+        this.#map.set(String(k), String(v));
+    }
+    removeItem(k) {
+        this.#map.delete(String(k));
+    }
+    clear() {
+        this.#map.clear();
+    }
+}
+
+if (typeof document !== 'undefined' && typeof globalThis.localStorage === 'undefined') {
+    Object.defineProperty(globalThis, 'localStorage', {
+        value: new MemoryStorage(),
+        configurable: true,
+        writable: true,
+    });
+    Object.defineProperty(globalThis, 'sessionStorage', {
+        value: new MemoryStorage(),
+        configurable: true,
+        writable: true,
+    });
+}
+
+// #endregion
+
 // #region Auth Mocks
 
 /**

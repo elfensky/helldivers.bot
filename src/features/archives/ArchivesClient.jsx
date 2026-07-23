@@ -1,6 +1,7 @@
 'use client';
 import './ArchivesLayout.css';
 import { useMapPin } from '@/shared/hooks/useMapPin.mjs';
+import { warDaySpan } from '@/shared/utils/game/warClock.mjs';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 import ArchivesHeader from '@/features/archives/ArchivesHeader';
 import FactionHealthChart from '@/features/archives/FactionHealthChartLoader';
@@ -91,13 +92,12 @@ export default function ArchivesClient({
     // series, in whole days since war start.
     const warDayMax =
         data?.war_start != null ?
-            Math.round(
-                (Math.max(
+            warDaySpan(
+                data.war_start,
+                Math.max(
                     data?.snapshots?.[data.snapshots.length - 1]?.time ?? data.war_start,
                     playerTimeseries[playerTimeseries.length - 1]?.time ?? data.war_start,
-                ) -
-                    data.war_start) /
-                    86400,
+                ),
             )
         :   undefined;
     const cascades = findAllCascades(events).map((c) => ({
@@ -217,14 +217,7 @@ export default function ArchivesClient({
                         title="Event Log"
                         id="archives-event-log"
                         initialSortOrder={initialSortOrder}
-                        selectedEventKey={
-                            /* EventLog compares this key by ===, so a string is the
-                               real contract, but its prop default makes TS infer the
-                               narrower null type — cast to pass the computed key. */
-                            /** @type {null | undefined} */ (
-                                selectedEvent ? eventKey(selectedEvent) : null
-                            )
-                        }
+                        selectedEventKey={selectedEvent ? eventKey(selectedEvent) : null}
                         onHoverEvent={undefined}
                         railRef={railRef}
                         highlightedKeys={highlightedKeys}
