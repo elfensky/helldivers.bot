@@ -471,4 +471,25 @@ describe('buildWarNarrative — highlight beats through the orchestrator', () =>
             /Super Earth falls|Super Earth's defeat/,
         );
     });
+
+    it('clamps a late highlight beat DAY label to the last war day', () => {
+        const data = highlightFixture();
+        data.playerTimeseries = [
+            { time: WAR_START, day: 1, total: 100 },
+            { time: WAR_START + 1 * DAY, day: 2, total: 100 },
+            { time: WAR_START + 2 * DAY, day: 3, total: 100 },
+            { time: WAR_START + 20 * DAY, day: 21, total: 40 },
+        ];
+        data.snapshots = [];
+        const beats = buildWarNarrative(data);
+        const collapse = pickVariant(
+            PHRASES.collapse,
+            SEASON,
+            (WAR_START + 20 * DAY) | 0,
+        )(formatNumber(40));
+        const beat = beats.find((b) => b.text === collapse);
+        expect(beat).toBeDefined();
+        // Last event ends on day 8 — a beat cannot be dated after the war ends.
+        expect(beat.day).toBeLessThanOrEqual(8);
+    });
 });
