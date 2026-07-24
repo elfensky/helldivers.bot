@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **React hydration mismatch (#418) for non-en-US visitors**. `formatNumber`
+  grouped thousands with a bare `toLocaleString()`, so values in the 1K–999K
+  range rendered per the *runtime* locale: the server emitted `"3,522"` while a
+  ru-RU client re-rendered `"3 522"`. The differing text tripped React error
+  #418 on every affected page load (14 events on 0.65.2 in a single day, all
+  from non-en-US locales), forcing React to discard and re-render the
+  server-rendered tree on the client. The locale is now pinned to `en-US`,
+  matching every other formatter in the codebase and the server default.
+
 ## 0.65.2
 
 ### Fixed

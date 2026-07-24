@@ -12,6 +12,10 @@ export function formatNumber(n) {
     // M suffix from 1M up — a 7-digit grouped number ("3,522,088") overflows
     // the stat cards, so anything >= 1M collapses to "X.XM".
     if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M';
-    if (num >= 1_000) return num.toLocaleString();
+    // Pin the locale: a bare toLocaleString() groups per the runtime locale, so
+    // the server (en-US) and a non-en-US client (e.g. ru-RU → "3 522") produce
+    // different text, causing a React hydration mismatch (#418). en-US matches
+    // every other formatter in the codebase and the server default.
+    if (num >= 1_000) return num.toLocaleString('en-US');
     return String(num);
 }
