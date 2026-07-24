@@ -1,4 +1,3 @@
-import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { performance } from 'perf_hooks';
 import { roundedPerformanceTime } from '@/shared/utils/time.mjs';
 import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
@@ -9,8 +8,7 @@ import { after } from 'next/server';
 //validators
 import { isValidNumber } from '@/validators/isValidNumber.mjs';
 //db and fetch
-import { getCampaign } from '@/db/queries/getCampaign.mjs';
-import { updateSeason, SEASON_NOT_FOUND } from '@/update/season.mjs';
+import { getCampaignOrSeed } from '@/db/queries/getCampaignOrSeed.mjs';
 //track
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 
@@ -23,7 +21,6 @@ export async function GET(request) {
         };
         await umamiTrackEvent('API | Campaign', '/api/h1/campaign', 'api-campaign', data);
     });
-    let data = null;
     /** @type {number | null} */
     let season = null;
 
@@ -34,49 +31,19 @@ export async function GET(request) {
         season = Number(request.nextUrl.searchParams.get('season'));
     }
 
-    const { data: campaignData, error: campaignError } = await tryCatch(
-        getCampaign(season),
-    );
-    if (campaignError) {
-        reportError(campaignError, {
+    const result = await getCampaignOrSeed(season);
+    if (!result.ok) {
+        if (result.reason === 'not_found') {
+            return errorResponse(404, start, result.message);
+        }
+        reportError(result.error, {
             route: '/api/h1/campaign',
-            stage: 'get-campaign',
+            stage: result.stage,
             season,
         });
-        return errorResponse(500, start, campaignError?.message);
+        return errorResponse(500, start, result.error?.message);
     }
-
-    data = campaignData;
-
-    if (!campaignData) {
-        const { error: fetchError } = await tryCatch(updateSeason(season));
-        if (fetchError) {
-            if (fetchError.cause === SEASON_NOT_FOUND) {
-                return errorResponse(404, start, fetchError.message);
-            }
-            reportError(fetchError, {
-                route: '/api/h1/campaign',
-                stage: 'backfill-season',
-                season,
-            });
-            return errorResponse(500, start, fetchError?.message);
-        }
-
-        const { data: retriedCampaignData, error: retriedCampaignError } = await tryCatch(
-            getCampaign(season),
-        );
-        if (retriedCampaignError) {
-            reportError(retriedCampaignError, {
-                route: '/api/h1/campaign',
-                stage: 'get-campaign-retry',
-                season,
-            });
-            return errorResponse(500, start, retriedCampaignError?.message);
-        }
-
-        data = retriedCampaignData;
-    }
-    return successResponse(200, start, data);
+    return successResponse(200, start, result.data);
 }
 
 export const POST = methodNotAllowed;

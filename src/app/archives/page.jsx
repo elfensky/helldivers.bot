@@ -2,7 +2,7 @@
 import { SITE_URL } from '@/config/site.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
-import { updateSeason } from '@/update/season.mjs';
+import { getCampaignOrSeed } from '@/db/queries/getCampaignOrSeed.mjs';
 import { getSeasonTelemetryTotals } from '@/db/queries/getSeasonTelemetryTotals.mjs';
 import { buildWarNarrative } from '@/features/archives/buildWarNarrative.mjs';
 //auth
@@ -58,33 +58,19 @@ export default async function WarHistoryPage({ searchParams }) {
     // Default to the most recent completed season if no season param
     const resolvedSeason = seasonParam ?? seasons[0] ?? null;
 
-    // Fetch requested season from DB. getCampaign accepts a season number or
-    // null (latest), but its `season = null` default makes TS infer the param
-    // as `null`; cast the fn to its real signature rather than the arg.
-    const getCampaignBySeason =
-        /** @type {(season?: number | null) => ReturnType<typeof getCampaign>} */ (
-            getCampaign
-        );
-    let { data, error } = await tryCatch(getCampaignBySeason(resolvedSeason));
+    // Read the requested season, seeding from the official API on a miss —
+    // the same resolver /api/h1/campaign uses, so the two paths can't drift.
+    const result = await getCampaignOrSeed(resolvedSeason);
 
-    // If season not in DB, fetch from official API and seed it via the
-    // shared updateSeason pipeline (same helper the worker uses).
-    if (!error && !data && resolvedSeason !== null) {
-        const { error: seedError } = await tryCatch(updateSeason(resolvedSeason));
-        if (seedError) {
-            console.error('updateSeason failed:', seedError);
+    if (!result.ok) {
+        if (result.reason === 'not_found') {
             return (
                 <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
-                    Unable to fetch season {resolvedSeason} from the official API.
+                    No data available for season {resolvedSeason}.
                 </div>
             );
         }
-        // Re-query after seeding
-        ({ data, error } = await tryCatch(getCampaignBySeason(resolvedSeason)));
-    }
-
-    if (error !== null) {
-        console.error('getCampaign failed:', error);
+        console.error(`getCampaignOrSeed failed (${result.stage}):`, result.error);
         return (
             <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">
                 Unable to load campaign data. Please try again later.
@@ -92,6 +78,7 @@ export default async function WarHistoryPage({ searchParams }) {
         );
     }
 
+    const data = result.data;
     if (!data) {
         return (
             <div className="gutters flex min-h-full w-full flex-col items-center justify-center py-12">

@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.65.2
+
+### Fixed
+
+- **Browser-side GlitchTip reporting in Docker deploys**. `NEXT_PUBLIC_SENTRY_DSN`
+  is inlined into the client bundle at build time, but the Docker build never
+  received it, so shipped images ran `Sentry.init({ dsn: undefined })` on the
+  client — no browser error or trace capture (server-side capture via
+  `SENTRY_DSN` was unaffected). Now passed as a build arg in the Dockerfile and
+  both release/staging workflows. The DSN is public (it ships to browsers), so
+  it is a plain GitHub Actions variable, not a secret. Requires adding the
+  `NEXT_PUBLIC_SENTRY_DSN` repo variable in CI.
+
+## 0.65.1
+
+### Changed
+
+- **Archives architecture deepening** (2026-07-23 review):
+    - New `warClock` module (`src/shared/utils/game/warClock.mjs`) — single home for war-start-relative day math (`dayOf`, `dayFraction`, `resolveWarStart`, `warDaySpan`); six duplicated formulas across the archives builders/charts/queries now share it.
+    - War Narrative beat generators (`conquestBeats`, `playerBeats`, `numbersBeat`) folded into `buildWarNarrative` as internal implementation; highlight-beat behavior now tested through the public interface, including the previously untested lastTime clamp.
+    - New `getCampaignOrSeed` resolver deduplicates the season read-or-seed dance shared by `/archives` and `/api/h1/campaign` (previously two drifting hand-written copies; the page's copy was untested).
+
+### Fixed
+
+- Late highlight beats (telemetry buckets past the final event) now clamp their **day label** to the last war day, not just their sort position.
+- `EventLog`'s `selectedEventKey` prop is correctly typed `string | null` (drops a caller-side cast workaround).
+- Removed stale doc references to the deleted `buildEngagementSeries` module; corrected the snapshot-shape doc on the conquest beats (no null holes through `getCampaign`).
+- Local unit-test runs no longer fail with "localStorage is undefined" under Node 22+ — vitest setup replaces Node's experimental Web Storage stub with a working in-memory Storage for jsdom-environment tests.
+
 ## 0.65.0
 
 ### Features
