@@ -7,10 +7,10 @@ describe('formatNumber', () => {
         expect(formatNumber(999)).toBe('999');
     });
 
-    test('thousands use locale string', () => {
-        expect(formatNumber(1000)).toBe(Number(1000).toLocaleString());
-        expect(formatNumber(1500)).toBe(Number(1500).toLocaleString());
-        expect(formatNumber(999999)).toBe(Number(999999).toLocaleString());
+    test('thousands use en-US grouping (pinned to avoid SSR hydration mismatch)', () => {
+        expect(formatNumber(1000)).toBe('1,000');
+        expect(formatNumber(1500)).toBe('1,500');
+        expect(formatNumber(999999)).toBe('999,999');
     });
 
     test('values from 1M up use the M suffix with one decimal', () => {
