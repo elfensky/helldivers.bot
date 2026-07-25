@@ -7,7 +7,8 @@ const campaignStatusSchema = z.object({
     points_taken: z.number(),
     points_max: z.number(),
     status: z.enum(Object.values(CAMPAIGN_STATUS)),
-    introduction_order: z.number(),
+    // 0-based reveal rank for this faction; 255 = never introduced this season.
+    introduction_order: z.number().int().min(0).max(255),
 });
 
 const defendEventSchema = z.object({

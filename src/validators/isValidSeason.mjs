@@ -56,7 +56,10 @@ const eventSchema = z.object({
 export const isValidSeason = z.object({
     time: z.number(),
     error_code: z.number(),
-    introduction_order: z.array(z.number()).nullable(),
+    // 0-based reveal rank per faction; 255 = never introduced. Constrained so a
+    // malformed payload is rejected at the boundary rather than persisted — the
+    // permissive `z.array(z.number())` let the encoding drift unnoticed.
+    introduction_order: z.array(z.number().int().min(0).max(255)).length(3).nullable(),
     points_max: z.array(z.number()).nullable(),
     snapshots: z.array(snapshotSchema),
     defend_events: z.array(

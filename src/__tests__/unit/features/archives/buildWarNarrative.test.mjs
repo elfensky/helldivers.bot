@@ -31,7 +31,9 @@ function fixture() {
     return {
         season: 200,
         war_start: WAR_START,
-        introduction_order: { order: [1, 0, 2] }, // Bugs first, Illuminate second, Cyborgs absent
+        // 0-based reveal slots indexed by enemy id: Bugs (0) start the war,
+        // Illuminate (2) arrive second, Cyborgs (1) never appear (255).
+        introduction_order: { order: [0, 255, 1] },
         status: [
             { enemy: 0, first_seen: WAR_START, status: 'active' },
             { enemy: 1, first_seen: null, status: 'hidden' },
@@ -152,7 +154,7 @@ describe('buildWarNarrative', () => {
         const data = {
             season: 201,
             war_start: WAR_START,
-            introduction_order: { order: [1, 2, 3] },
+            introduction_order: { order: [0, 1, 2] },
             status: [],
             snapshots: [],
             events: [0, 1, 2].map((enemy, i) => ({
@@ -188,7 +190,7 @@ describe('buildWarNarrative', () => {
         const data = {
             season: 202,
             war_start: WAR_START,
-            introduction_order: { order: [1, 0, 2] },
+            introduction_order: { order: [0, 1, 2] },
             status: [],
             snapshots: [],
             events: [8, 6, 4, 2].map((region, i) => ({
@@ -225,7 +227,7 @@ describe('buildWarNarrative — extension (generators + telemetry)', () => {
     const extData = {
         season: 157,
         war_start: 0,
-        introduction_order: { order: [1, 0, 0] },
+        introduction_order: { order: [0, 1, 2] },
         status: [
             { enemy: 0, first_seen: 0, status: 'active', points: 0, points_taken: 0 },
         ],
@@ -298,7 +300,7 @@ describe('buildWarNarrative — highlight beats through the orchestrator', () =>
         return {
             season: SEASON,
             war_start: WAR_START,
-            introduction_order: { order: [1, 0, 0] },
+            introduction_order: { order: [0, 1, 2] },
             status: [{ enemy: 0, first_seen: WAR_START, status: 'active' }],
             points_max: { points: [1000, 0, 0] },
             // Slots 1/2 use non-null "active, 0 points" placeholders rather than
@@ -541,5 +543,63 @@ describe('buildWarNarrative — highlight beats through the orchestrator', () =>
         const withNone = highlightFixture();
         withNone.playerTimeseries = [];
         expect(buildWarNarrative(withOneSample)).toEqual(buildWarNarrative(withNone));
+    });
+});
+
+describe('buildWarNarrative — arrival beats are capped by the chronicle', () => {
+    const DAY_S = 86400;
+
+    /**
+     * Reproduces the live season-160 shape: a faction whose `first_seen` falls
+     * AFTER the last event resolved. Without clamping, its arrival beat sorts
+     * past the closing outcome beat and renders as the last line on the page.
+     */
+    function lateArrivalFixture() {
+        return {
+            season: 160,
+            war_start: 0,
+            // 0-based slots: Bugs (0) start the war, Cyborgs (1) arrive later.
+            introduction_order: { order: [0, 1, 255] },
+            status: [
+                { enemy: 0, first_seen: 0, status: 'active' },
+                // Day 3 — later than the last event's end_time (day 2).
+                { enemy: 1, first_seen: 3 * DAY_S, status: 'active' },
+            ],
+            points_max: { points: [1000, 1000, 1000] },
+            snapshots: [],
+            playerTimeseries: [],
+            events: [
+                // Region-0 defend failure → getWarOutcome reports a defeat.
+                {
+                    type: 'defend',
+                    status: 'fail',
+                    enemy: 0,
+                    region: 0,
+                    start_time: 1 * DAY_S,
+                    end_time: 2 * DAY_S,
+                    event_id: 1,
+                },
+            ],
+        };
+    }
+
+    it('emits the late arrival but never after the closing outcome beat', () => {
+        const beats = buildWarNarrative(lateArrivalFixture());
+
+        const arrival = beats.find((b) => /enter the war|join the war/.test(b.text));
+        expect(arrival).toBeDefined();
+
+        // The outcome is always the final word of the chronicle.
+        const last = beats[beats.length - 1];
+        expect(/enter the war|join the war/.test(last.text)).toBe(false);
+        expect(/prevail|falls|defeat|rebranding/i.test(last.text)).toBe(true);
+    });
+
+    it('clamps the arrival day to the last event day', () => {
+        const beats = buildWarNarrative(lateArrivalFixture());
+        const arrival = beats.find((b) => /enter the war|join the war/.test(b.text));
+        // first_seen is day 4 by the 1-based dayOf formula; the last event ends
+        // on day 3, so the label must be pulled back rather than reported raw.
+        expect(arrival.day).toBe(3);
     });
 });
