@@ -4,7 +4,7 @@
         "module": "esnext",
         "moduleResolution": "bundler",
         "jsx": "preserve",
-        "lib": ["es2022", "dom", "dom.iterable"],
+        "lib": ["es2024", "dom", "dom.iterable"],
         "types": ["node"],
         "allowJs": true,
         "checkJs": true,
