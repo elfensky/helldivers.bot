@@ -50,6 +50,7 @@ export async function reconstructCampaignStatus() {
         `,
         db.h1_event.findMany({
             where: { season: targetSeason, status: EVENT_STATUS.ACTIVE },
+            orderBy: [{ start_time: 'asc' }, { event_id: 'asc' }],
         }),
     ]);
 
@@ -132,7 +133,10 @@ export async function reconstructSnapshots(season) {
             where: { season },
             orderBy: [{ bucket: 'asc' }, { enemy: 'asc' }],
         }),
-        db.h1_event.findMany({ where: { season } }),
+        db.h1_event.findMany({
+            where: { season },
+            orderBy: [{ start_time: 'asc' }, { event_id: 'asc' }],
+        }),
     ]);
 
     const snapshots = groupStatusByBucket(allStatus).map(({ time, factions }) => ({

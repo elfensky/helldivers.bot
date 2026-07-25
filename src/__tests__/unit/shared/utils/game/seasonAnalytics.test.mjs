@@ -223,4 +223,62 @@ describe('findAllCascades', () => {
         expect(result[0].factionIndex).toBe(2);
         expect(result[1].factionIndex).toBe(0);
     });
+
+    it('is independent of input order when end_time values tie', () => {
+        // Sorting on end_time alone is a partial order: on a tie, cascade membership
+        // would depend on the caller's array order, so /stats (getCascadeLeaderboard)
+        // and /archives (getCampaign) could disagree and the deep link would miss.
+        // The event_id tiebreak makes the result a function of the input *set*.
+        const tied = [
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 0,
+                region: 5,
+                start_time: 0,
+                end_time: 3600,
+                event_id: 10,
+            },
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 0,
+                region: 4,
+                start_time: 3700,
+                end_time: 7200,
+                event_id: 11,
+            },
+            // same end_time as the previous event
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 0,
+                region: 3,
+                start_time: 3800,
+                end_time: 7200,
+                event_id: 12,
+            },
+            {
+                type: 'defend',
+                status: 'fail',
+                enemy: 0,
+                region: 2,
+                start_time: 7300,
+                end_time: 10800,
+                event_id: 13,
+            },
+        ];
+
+        const forward = findAllCascades(tied, { minLength: 3 });
+        const reversed = findAllCascades([...tied].reverse(), { minLength: 3 });
+        const shuffled = findAllCascades([tied[2], tied[0], tied[3], tied[1]], {
+            minLength: 3,
+        });
+
+        const shape = (cascades) =>
+            cascades.map((c) => c.events.map((e) => e.event_id).join('>'));
+
+        expect(shape(reversed)).toEqual(shape(forward));
+        expect(shape(shuffled)).toEqual(shape(forward));
+    });
 });

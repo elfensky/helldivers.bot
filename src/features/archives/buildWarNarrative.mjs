@@ -1,7 +1,7 @@
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import factions from '@/shared/enums/factions.mjs';
 import { findAllCascades } from '@/shared/utils/game/seasonAnalytics.mjs';
-import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
+import { getWarOutcome } from '@/shared/utils/game/getWarOutcome.mjs';
 import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 import {
     PHRASES,

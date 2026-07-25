@@ -93,13 +93,11 @@ export async function updateSeason(season, opts = {}) {
             const faction = parsed[enemy];
             if (!faction) continue;
 
-            const campaign = {
-                points: faction.points,
-                points_taken: faction.points_taken,
-                status: faction.status,
-            };
+            // upsertStatus plucks points/points_taken/status explicitly (never spreads),
+            // so passing the snapshot item straight through is equivalent to hand-building
+            // the triple — and matches how update/status.mjs calls it.
             const { error: statusError } = await tryCatch(
-                upsertStatus(season, enemy, snap.time, campaign),
+                upsertStatus(season, enemy, snap.time, faction),
             );
             if (statusError) {
                 warnings.push({

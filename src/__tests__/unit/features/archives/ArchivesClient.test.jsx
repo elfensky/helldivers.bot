@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
     useFactionPreferenceMock: vi.fn(),
     useScrollEventMock: vi.fn(),
     useHeaderGlassFilterMock: vi.fn(),
-    getWarOutcomeMock: vi.fn(),
 }));
 
 vi.mock('@/features/archives/ArchivesLayout.css', () => ({}));
@@ -105,9 +104,6 @@ vi.mock('@/features/archives/RefreshSeasonButton', () => ({
 vi.mock('@/shared/utils/game/eventKey.mjs', () => ({
     eventKey: (e) => `evt-${e.event_id}`,
 }));
-vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
-    getWarOutcome: mocks.getWarOutcomeMock,
-}));
 vi.mock('@/shared/hooks/useScrollEvent.mjs', () => ({
     useScrollEvent: mocks.useScrollEventMock,
 }));
@@ -120,12 +116,7 @@ vi.mock('@/shared/hooks/usePersistedState.mjs', () => ({
 
 import ArchivesClient from '@/features/archives/ArchivesClient';
 
-const {
-    useFactionPreferenceMock,
-    useScrollEventMock,
-    useHeaderGlassFilterMock,
-    getWarOutcomeMock,
-} = mocks;
+const { useFactionPreferenceMock, useScrollEventMock, useHeaderGlassFilterMock } = mocks;
 
 const baseData = {
     events: [
@@ -146,7 +137,6 @@ beforeEach(() => {
         railRef: { current: null },
     });
     useHeaderGlassFilterMock.mockReturnValue('');
-    getWarOutcomeMock.mockReturnValue({ outcome: 'victory' });
 });
 
 afterEach(() => {
@@ -317,9 +307,11 @@ describe('ArchivesClient — admin gate (RefreshSeasonButton)', () => {
     });
 });
 
+// ArchivesClient no longer derives the war outcome — the Cyberstan defeat styling
+// was removed and ArchiveStats (the only outcome consumer left in this subtree) is
+// stubbed above. These remain as regression guards against the classes returning.
 describe('ArchivesClient — defeat state', () => {
     test('victory: no cyberstan-defeat class, ArchivesHeader renders without props', () => {
-        getWarOutcomeMock.mockReturnValue({ outcome: 'victory' });
         const { container } = render(
             <ArchivesClient data={baseData} seasons={[]} currentSeason={157} />,
         );
@@ -328,7 +320,6 @@ describe('ArchivesClient — defeat state', () => {
     });
 
     test('defeat: no cyberstan-defeat class (removed), ArchivesHeader still renders', () => {
-        getWarOutcomeMock.mockReturnValue({ outcome: 'defeat' });
         const { container } = render(
             <ArchivesClient data={baseData} seasons={[]} currentSeason={157} />,
         );
