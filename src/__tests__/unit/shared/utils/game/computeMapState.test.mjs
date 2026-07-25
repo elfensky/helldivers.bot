@@ -175,8 +175,12 @@ describe('computeMapState', () => {
 });
 
 describe('computeLiveMap', () => {
+    // Discriminating fixture: the non-active event is a FAILED defend on
+    // sector 3. If it ever leaks past the filter into computeMapState it
+    // reverts sectors 3-10 to lost — a map the literal below would not match.
+    // The active attack is what legitimately drives region 11.
     const data = {
-        status: [makeFaction(0, 100, 200)],
+        status: [makeFaction(0, 55000, 100000)], // bugs: 5 sectors earned, 6th at 50%
         events: [
             {
                 type: 'attack',
@@ -188,23 +192,93 @@ describe('computeLiveMap', () => {
                 end_time: 2,
             },
             {
-                type: 'attack',
+                type: 'defend',
                 enemy: 0,
-                region: 11,
-                status: EVENT_STATUS.SUCCESS,
-                points: 10,
-                points_max: 10,
+                region: 3,
+                status: EVENT_STATUS.FAIL,
                 end_time: 1,
             },
         ],
     };
 
+    /** Extract only the computed state fields, dropping static region/capital labels. */
+    function shape(faction) {
+        return Object.keys(faction)
+            .map(Number)
+            .sort((a, b) => a - b)
+            .map((r) => {
+                const s = faction[r];
+                return {
+                    region: r,
+                    status: s.status,
+                    event: s.event,
+                    percent: s.percent,
+                    points: s.points,
+                    points_max: s.points_max,
+                    points_sector: s.points_sector,
+                    points_sector_max: s.points_sector_max,
+                };
+            });
+    }
+
+    // Hand-computed expected map for the bugs faction. Written out literally
+    // rather than derived from computeMapState — a `toEqual(computeMapState(...))`
+    // assertion is a tautology and cannot detect the caller passing the wrong
+    // event list, because both sides would receive the same list.
+    const EXPECTED_BUGS = [
+        // sectors 1-5: captured (55000 pts / 10000 per sector = 5 earned)
+        ...[1, 2, 3, 4, 5].map((r) => ({
+            region: r,
+            status: 'captured',
+            event: '',
+            percent: 100,
+            points: r * 10000,
+            points_max: r * 10000,
+            points_sector: 10000,
+            points_sector_max: 10000,
+        })),
+        // sector 6: in progress, 5000 of 10000 into the sector
+        {
+            region: 6,
+            status: 'in_progress',
+            event: '',
+            percent: 50,
+            points: 55000,
+            points_max: 60000,
+            points_sector: 5000,
+            points_sector_max: 10000,
+        },
+        // sectors 7-10: not yet reached
+        ...[7, 8, 9, 10].map((r) => ({
+            region: r,
+            status: 'lost',
+            event: '',
+            percent: 0,
+            points: 55000,
+            points_max: r * 10000,
+            points_sector: 0,
+            points_sector_max: 10000,
+        })),
+        // region 11 (homeworld): driven solely by the active attack event
+        {
+            region: 11,
+            status: 'active',
+            event: 'active',
+            percent: 50,
+            points: 5,
+            points_max: 10,
+            points_sector: 0,
+            points_sector_max: 0,
+        },
+    ];
+
     test('returns only active events plus the map they produce', () => {
         const { activeEvents, mapState } = computeLiveMap(data);
         expect(activeEvents).toHaveLength(1);
         expect(activeEvents[0].status).toBe(EVENT_STATUS.ACTIVE);
-        // single source: same input → same map as a direct computeMapState call
-        expect(mapState).toEqual(computeMapState(data.status, activeEvents));
+        // Literal expected map — independent of the implementation, so it
+        // catches computeLiveMap handing computeMapState an unfiltered list.
+        expect(shape(mapState[0])).toEqual(EXPECTED_BUGS);
     });
 
     test('computeLiveMapState is the map half of computeLiveMap', () => {
