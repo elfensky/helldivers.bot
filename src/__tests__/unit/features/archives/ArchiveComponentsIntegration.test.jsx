@@ -491,6 +491,108 @@ describe('Archive Components Integration Tests', () => {
         });
     });
 
+    describe('Large historical season', () => {
+        // The only place ArchivesClient is rendered at real archive scale. A
+        // long season carries ~1000 events and ~500 snapshots, and everything
+        // between the props and the leaf components — findAllCascades,
+        // buildIntroMarkers, warDaySpan — runs unmocked over the whole set. A
+        // render-time blowup here would otherwise reach production unnoticed.
+        //
+        // Deliberately NOT a timing test: the deleted "Performance Tests" this
+        // replaces asserted only `expect(container).toBeTruthy()` and measured
+        // nothing. These assert the payload arrives intact — full length, right
+        // order, unmodified values — which a truncating or re-sorting
+        // regression would fail.
+        const EVENT_COUNT = 1000;
+        const SNAPSHOT_COUNT = 500;
+
+        const largeSeason = {
+            ...allSeeds[0].data,
+            events: Array.from({ length: EVENT_COUNT }, (_, i) => ({
+                event_id: i,
+                enemy: i % 3,
+                region: (i % 10) + 1,
+                type: i % 2 === 0 ? 'defend' : 'attack',
+                status: i % 4 === 0 ? 'success' : 'fail',
+                start_time: 1700000000 + i * 1000,
+                end_time: 1700000000 + i * 1000 + 3600,
+            })),
+            snapshots: Array.from({ length: SNAPSHOT_COUNT }, (_, i) => ({
+                season: 1,
+                time: 1700000000 + i * 3600,
+                data: JSON.stringify([
+                    { points: i * 100, points_taken: i * 50, status: 'active' },
+                    { points: i * 80, points_taken: i * 40, status: 'active' },
+                    { points: i * 60, points_taken: i * 30, status: 'active' },
+                ]),
+            })),
+        };
+
+        function renderLarge() {
+            return render(
+                <ArchivesClient
+                    data={largeSeason}
+                    seasons={[1]}
+                    currentSeason={1}
+                    isAdmin={false}
+                />,
+            );
+        }
+
+        test('every one of the 1000 events reaches the event log, in order', () => {
+            renderLarge();
+
+            const props = JSON.parse(
+                screen.getByTestId('event-log-mock').getAttribute('data-props') || '{}',
+            );
+            expect(props.events).toHaveLength(EVENT_COUNT);
+            // Endpoints and a midpoint pin the ordering: a reverse or an
+            // off-by-one slice moves at least one of the three.
+            expect(props.events[0]).toEqual(largeSeason.events[0]);
+            expect(props.events[500]).toEqual(largeSeason.events[500]);
+            expect(props.events[EVENT_COUNT - 1]).toEqual({
+                event_id: 999,
+                enemy: 0,
+                region: 10,
+                type: 'attack',
+                status: 'fail',
+                start_time: 1700999000,
+                end_time: 1701002600,
+            });
+        });
+
+        test('every one of the 500 snapshots reaches the conquest chart, in order', () => {
+            renderLarge();
+
+            const props = JSON.parse(
+                screen
+                    .getByTestId('faction-health-chart-mock')
+                    .getAttribute('data-props') || '{}',
+            );
+            expect(props.snapshots).toHaveLength(SNAPSHOT_COUNT);
+            expect(props.snapshots[0].time).toBe(1700000000);
+            expect(props.snapshots[SNAPSHOT_COUNT - 1].time).toBe(
+                1700000000 + 499 * 3600,
+            );
+            // The chart parses these strings itself, so the payload must survive
+            // the trip verbatim rather than being re-serialised on the way.
+            expect(JSON.parse(props.snapshots[SNAPSHOT_COUNT - 1].data)[0].points).toBe(
+                49900,
+            );
+        });
+
+        test('the stats components receive the same full event set', () => {
+            renderLarge();
+
+            for (const testId of ['stat-grid-mock', 'archive-stats-mock']) {
+                const props = JSON.parse(
+                    screen.getByTestId(testId).getAttribute('data-props') || '{}',
+                );
+                expect(props.events).toHaveLength(EVENT_COUNT);
+            }
+        });
+    });
+
     describe('Accessibility Tests', () => {
         test('Mobile FAB has proper ARIA attributes', () => {
             render(
