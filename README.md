@@ -53,7 +53,7 @@ notifications when campaign events transition state.
 | PWA           | Serwist (`@serwist/next`) service worker                |
 | Observability | Sentry SDK wired to a self-hosted GlitchTip (optional)  |
 | Analytics     | Umami v3, self-hosted, cookieless (optional)            |
-| Testing       | Vitest (unit + jsdom) + a Playwright smoke config       |
+| Testing       | Vitest (unit + jsdom) + a Vitest HTTP smoke config      |
 | Deployment    | Docker images published to `ghcr.io`, deployed on a VPS |
 
 ### How it works

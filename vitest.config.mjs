@@ -11,27 +11,22 @@ export default defineConfig({
             provider: 'v8',
             reporter: ['text', 'html'],
             include: ['src/**/*.{js,jsx,mjs}'],
+            // Only two things are excluded: code we did not write, and the
+            // tests themselves. Everything else under src/ counts, tested or
+            // not — an untested file should read as 0%, not disappear.
+            //
+            // Do NOT re-add "server-rendered, covered by e2e/smoke" excludes.
+            // That claim is unsatisfiable: vitest.smoke.config.mjs has no
+            // coverage block and drives a separate server process over HTTP,
+            // so no smoke test can ever produce a coverage record. Nothing in
+            // this repo measures Next.js pages and layouts; excluding them
+            // only inflated the ratio (their covered-statement count is zero
+            // either way, so the numerator never changed — just the divisor).
             exclude: [
+                // Prisma's generated client — machine-written, not ours.
                 'src/generated/**',
                 'src/**/*.{test,spec}.{js,jsx,mjs}',
                 'src/__tests__/**',
-                'src/enums/icons.mjs',
-                'src/enums/worlds.mjs',
-                'src/db/queries/initializeSeasons.mjs',
-                'src/db/db.js',
-                'src/shared/components/MermaidDiagram/**',
-                // Next.js pages/layouts — server-rendered, tested via e2e/smoke
-                'src/app/layout.jsx',
-                'src/app/page.jsx',
-                'src/app/opengraph-image.jsx',
-                'src/app/global-error.jsx',
-                'src/app/not-found.jsx',
-                'src/app/archives/page.jsx',
-                'src/app/dashboard/page.jsx',
-                'src/app/docs/**',
-                'src/instrumentation.js',
-                'src/instrumentation-client.js',
-                'src/auth.js',
             ],
         },
     },

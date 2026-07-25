@@ -1,14 +1,31 @@
 const BASE_URL = process.env.TEST_SERVER_URL || 'http://localhost:3000';
 
+// An unreachable server is a FAILURE, not a skip. This suite exists to catch
+// "the app doesn't boot" — silently passing when there is nothing to talk to
+// makes it a smoke alarm with the battery pulled out. CI must never be able to
+// get a green tick from a suite that ran zero assertions.
+//
+// Local escape hatch: set SMOKE_ALLOW_SKIP=1 to downgrade to a skip while
+// iterating without a server. It is opt-in on purpose — CI sets nothing, so
+// CI fails.
+const allowSkip = /^(1|true)$/i.test(process.env.SMOKE_ALLOW_SKIP ?? '');
+
 const serverAvailable = await fetch(`${BASE_URL}/api/healthcheck`)
     .then(() => true)
-    .catch(() => {
-        console.error(
-            `\n  ✘ Dev server is not running on ${BASE_URL} — skipping smoke tests.\n` +
-                `    Start it with: npm run dev\n`,
-        );
-        return false;
-    });
+    .catch(() => false);
+
+if (!serverAvailable) {
+    const hint =
+        `No server is reachable at ${BASE_URL} — the smoke suite cannot verify anything.\n` +
+        `    Start one first (npm run dev, or npm run build && npm start), or point the\n` +
+        `    suite elsewhere with TEST_SERVER_URL=http://host:port.\n` +
+        `    To skip instead of fail while working locally: SMOKE_ALLOW_SKIP=1 npm run test:smoke`;
+
+    if (!allowSkip) {
+        throw new Error(hint);
+    }
+    console.warn(`\n  ⚠ ${hint}\n  SMOKE_ALLOW_SKIP is set — skipping smoke tests.\n`);
+}
 
 describe.runIf(serverAvailable)('Smoke tests', () => {
     const pages = [
