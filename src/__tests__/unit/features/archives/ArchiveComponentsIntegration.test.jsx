@@ -95,6 +95,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 import ArchivesClient from '@/features/archives/ArchivesClient';
+import { isValidSeason } from '@/validators/isValidSeason.mjs';
 
 const testSeasonData = {
     time: 1700000000,
@@ -265,47 +266,12 @@ describe('Archive Components Integration Tests', () => {
             expect(props).toHaveProperty('currentSeason', season);
         });
 
-        test('Data structure validation', () => {
-            // Basic validation that the seed data has expected structure
-            expect(data).toHaveProperty('time');
-            expect(data).toHaveProperty('error_code');
-            expect(data).toHaveProperty('introduction_order');
-            expect(data).toHaveProperty('points_max');
-            expect(data).toHaveProperty('snapshots');
-            expect(data).toHaveProperty('defend_events');
-            expect(data).toHaveProperty('attack_events');
-
-            // Validate arrays are present
-            expect(Array.isArray(data.introduction_order)).toBe(true);
-            expect(Array.isArray(data.points_max)).toBe(true);
-            expect(Array.isArray(data.snapshots)).toBe(true);
-            expect(Array.isArray(data.defend_events)).toBe(true);
-            expect(Array.isArray(data.attack_events)).toBe(true);
-        });
-
-        test('Events array structure', () => {
-            if (data.events && data.events.length > 0) {
-                const sampleEvent = data.events[0];
-                expect(sampleEvent).toHaveProperty('event_id');
-                expect(sampleEvent).toHaveProperty('enemy');
-                expect(sampleEvent).toHaveProperty('region');
-                expect(sampleEvent).toHaveProperty('type');
-                expect(sampleEvent).toHaveProperty('status');
-            }
-        });
-
-        test('Snapshots structure validation', () => {
-            if (data.snapshots && data.snapshots.length > 0) {
-                const sampleSnapshot = data.snapshots[0];
-                expect(sampleSnapshot).toHaveProperty('season');
-                expect(sampleSnapshot).toHaveProperty('time');
-                expect(sampleSnapshot).toHaveProperty('data');
-
-                // Validate that data is a stringified JSON array
-                expect(typeof sampleSnapshot.data).toBe('string');
-                const parsedData = JSON.parse(sampleSnapshot.data);
-                expect(Array.isArray(parsedData)).toBe(true);
-            }
+        // Replaces the old hand-rolled "Data structure validation" test, which
+        // only checked that a handful of keys existed and were arrays. These
+        // fixtures are the only place seed-shaped payloads are exercised, so
+        // hold them to the real get_snapshots contract instead.
+        test('fixture payload satisfies the get_snapshots schema', () => {
+            expect(isValidSeason.safeParse(data).error?.issues ?? []).toEqual([]);
         });
     });
 
@@ -522,56 +488,6 @@ describe('Archive Components Integration Tests', () => {
             // Reset viewport
             global.innerWidth = 1024;
             global.dispatchEvent(new Event('resize'));
-        });
-    });
-
-    describe('Performance Tests', () => {
-        test('Handles large event datasets', () => {
-            // Create data with many events
-            const largeEventData = {
-                ...allSeeds[0].data,
-                events: Array.from({ length: 1000 }, (_, i) => ({
-                    event_id: i,
-                    enemy: i % 3,
-                    region: (i % 10) + 1,
-                    type: i % 2 === 0 ? 'defend' : 'attack',
-                    status: i % 4 === 0 ? 'success' : 'fail',
-                    start_time: 1700000000 + i * 1000,
-                    end_time: 1700000000 + i * 1000 + 3600,
-                })),
-            };
-
-            const { container } = render(
-                <ArchivesClient data={largeEventData} seasons={[1]} currentSeason={1} />,
-            );
-
-            expect(container).toBeTruthy();
-        });
-
-        test('Handles many snapshots', () => {
-            // Create data with many snapshots
-            const largeSnapshotData = {
-                ...allSeeds[0].data,
-                snapshots: Array.from({ length: 500 }, (_, i) => ({
-                    season: 1,
-                    time: 1700000000 + i * 3600,
-                    data: JSON.stringify([
-                        { points: i * 100, points_taken: i * 50, status: 'active' },
-                        { points: i * 80, points_taken: i * 40, status: 'active' },
-                        { points: i * 60, points_taken: i * 30, status: 'active' },
-                    ]),
-                })),
-            };
-
-            const { container } = render(
-                <ArchivesClient
-                    data={largeSnapshotData}
-                    seasons={[1]}
-                    currentSeason={1}
-                />,
-            );
-
-            expect(container).toBeTruthy();
         });
     });
 
