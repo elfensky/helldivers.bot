@@ -35,6 +35,7 @@ import db from '@/db/db';
 import { validateApiKey } from '@/shared/utils/api/validateApiKey.mjs';
 import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
 import { updateSeason } from '@/update/season.mjs';
+import { makeSeasonRow } from '@test-utils/hd1.mjs';
 
 function createPostRequest(formEntries) {
     const formData = new FormData();
@@ -49,16 +50,6 @@ function createPostRequest(formEntries) {
 }
 
 // Helpers to build the shape the route's DISTINCT ON / findMany queries return.
-function makeSeasonRow(overrides = {}) {
-    return {
-        season: 34,
-        introduction_order: [0, 1, 2],
-        points_max: [1000, 2000, 3000],
-        season_duration: 604800,
-        last_updated: new Date('2024-01-01T00:00:00Z'),
-        ...overrides,
-    };
-}
 function makeStatusRow(enemy, overrides = {}) {
     return {
         id: `status-${enemy}`,
