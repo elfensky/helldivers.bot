@@ -1,0 +1,67 @@
+import { describe, expect, test } from 'vitest';
+import { encodeCursor, decodeCursor } from '@/shared/utils/api/cursor.mjs';
+
+/**
+ * The `(bucket, enemy)` keyset cursor is the only thing standing between a
+ * paginated caller and a wrong page, and it is decoded straight from
+ * attacker-controlled query text — so both directions matter.
+ */
+
+describe('encodeCursor', () => {
+    test('produces an opaque base64url token (no padding, no +/ characters)', () => {
+        const cursor = encodeCursor(1700000000, 2);
+        expect(cursor).toMatch(/^[A-Za-z0-9_-]+$/);
+        expect(cursor).not.toContain('=');
+        // Opaque means the caller cannot read the position off the wire.
+        expect(cursor).not.toContain(':');
+        expect(cursor).not.toContain('1700000000');
+    });
+
+    test('distinct positions produce distinct cursors', () => {
+        expect(encodeCursor(100, 0)).not.toBe(encodeCursor(100, 1));
+        expect(encodeCursor(100, 0)).not.toBe(encodeCursor(101, 0));
+    });
+
+    test('the same position always produces the same cursor', () => {
+        expect(encodeCursor(100, 1)).toBe(encodeCursor(100, 1));
+    });
+});
+
+describe('decodeCursor', () => {
+    test.each([
+        [1700000000, 0],
+        [1700000000, 2],
+        [0, 0],
+        [-900, 1],
+    ])('round-trips (%i, %i)', (bucket, enemy) => {
+        expect(decodeCursor(encodeCursor(bucket, enemy))).toEqual({ bucket, enemy });
+    });
+
+    test.each([
+        ['empty string', ''],
+        ['non-base64 junk', '!!!not-a-cursor!!!'],
+        ['base64url of a non-numeric pair', Buffer.from('a:b').toString('base64url')],
+        ['base64url with only one field', Buffer.from('100').toString('base64url')],
+        ['a fractional bucket', Buffer.from('1.5:0').toString('base64url')],
+        ['a fractional enemy', Buffer.from('100:0.5').toString('base64url')],
+        ['a JSON payload', Buffer.from('{"bucket":1}').toString('base64url')],
+    ])('returns null for %s rather than throwing', (_label, cursor) => {
+        expect(decodeCursor(cursor)).toBeNull();
+    });
+
+    test('an empty enemy field decodes to enemy 0 (Number("") === 0)', () => {
+        // Documenting the current contract, not endorsing it: `Number('')` is 0,
+        // so `"100:"` is accepted as (100, 0). Harmless — the keyset query just
+        // starts one faction earlier in that bucket, and the caller only ever
+        // gets cursors we minted.
+        expect(decodeCursor(Buffer.from('100:').toString('base64url'))).toEqual({
+            bucket: 100,
+            enemy: 0,
+        });
+    });
+
+    test('does not throw on adversarial input', () => {
+        // The route turns a null into a 400; an exception would be a 500.
+        expect(() => decodeCursor('\u0000\uFFFF\uD800')).not.toThrow();
+    });
+});
