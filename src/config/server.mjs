@@ -15,7 +15,8 @@ import { z } from 'zod';
 
 // Pure API-policy lookups (cache tiers + rate-limit groups) live in policy.mjs
 // so they can be imported without triggering this module's eager env parsing.
-// Re-exported here for back-compat with existing `@/config/server.mjs` imports.
+// Re-exported here for back-compat only — route modules should import them from
+// `@/config/policy.mjs` directly (env-free, import-safe in tests).
 export { getCacheControl, getRateLimitConfig } from '@/config/policy.mjs';
 
 // Auth is all-or-none: if the secret is present, every provider var must be too.

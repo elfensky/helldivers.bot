@@ -3,7 +3,7 @@ import { performance } from 'perf_hooks';
 import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs';
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
-import { getCacheControl } from '@/config/server.mjs';
+import { getCacheControl } from '@/config/policy.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
 
