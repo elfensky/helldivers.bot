@@ -1,16 +1,5 @@
 import { vi } from 'vitest';
 
-// `@/config/server.mjs` parses process.env eagerly at module load and throws
-// when POSTGRES_URL / UPDATE_KEY / UPDATE_INTERVAL are absent (they are, in the
-// test runner). The route only needs the pure `getCacheControl` lookup, which
-// server.mjs re-exports from the env-free `@/config/policy.mjs`. Stub it — same
-// approach as routes/live.test.mjs.
-vi.mock('@/config/server.mjs', () => ({
-    getCacheControl: vi.fn((tier) =>
-        tier === 'latest' ? 'public, max-age=60' : 'public',
-    ),
-}));
-
 // backfillAndRetry -> backfillSeason -> updateSeason hits the real HD1 API over
 // the network. Stub the season module so a 404/backfill path never leaves the
 // process. SEASON_NOT_FOUND must keep its identity: backfillSeason compares
@@ -24,6 +13,7 @@ const { GET, POST, PUT, DELETE, PATCH, OPTIONS } =
     await import('@/app/api/v1/h1/map/route');
 const { default: db } = await import('@/db/db');
 const { updateSeason } = await import('@/update/season.mjs');
+const { getCacheControl } = await import('@/config/policy.mjs');
 
 const VALID_KEY = { id: 'key-1', userId: 'user-1', enabled: true };
 
@@ -167,7 +157,7 @@ describe('GET /api/v1/h1/map — happy path', () => {
 
         const res = await GET(req());
         expect(res.status).toBe(200);
-        expect(res.headers.get('Cache-Control')).toBe('public, max-age=60');
+        expect(res.headers.get('Cache-Control')).toBe(getCacheControl('latest'));
         expect(res.headers.get('RateLimit-Limit')).toBeTruthy();
         expect(res.headers.get('RateLimit-Remaining')).toBeTruthy();
 
