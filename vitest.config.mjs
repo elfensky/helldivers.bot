@@ -15,13 +15,18 @@ export default defineConfig({
             // tests themselves. Everything else under src/ counts, tested or
             // not — an untested file should read as 0%, not disappear.
             //
-            // Do NOT re-add "server-rendered, covered by e2e/smoke" excludes.
-            // That claim is unsatisfiable: vitest.smoke.config.mjs has no
-            // coverage block and drives a separate server process over HTTP,
-            // so no smoke test can ever produce a coverage record. Nothing in
-            // this repo measures Next.js pages and layouts; excluding them
-            // only inflated the ratio (their covered-statement count is zero
-            // either way, so the numerator never changed — just the divisor).
+            // The old exclude list had three problems. (1) Four entries named
+            // files that no longer exist (src/enums/icons.mjs, enums/worlds.mjs,
+            // db/queries/initializeSeasons.mjs, app/dashboard/page.jsx) — dead
+            // config. (2) Three entries hid code that unit tests DO cover:
+            // measured on re-inclusion, src/db/db.js 10/10 statements,
+            // src/app/docs/** 49/114, src/auth.js 1/1. (3) The rest were
+            // excluded as "server-rendered, tested via e2e/smoke", which is
+            // unsatisfiable — vitest.smoke.config.mjs has no coverage block and
+            // drives a separate server process over HTTP, so no smoke test can
+            // produce a coverage record. Those files really are at 0 covered
+            // statements; excluding them shrank the divisor and inflated the
+            // ratio. Do NOT re-add any of it.
             exclude: [
                 // Prisma's generated client — machine-written, not ours.
                 'src/generated/**',
