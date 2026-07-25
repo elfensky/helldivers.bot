@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.65.3
+
+### Fixed
+
+- **React hydration mismatch (#418) for non-en-US visitors**. `formatNumber`
+  grouped thousands with a bare `toLocaleString()`, so values in the 1K–999K
+  range rendered per the *runtime* locale: the server emitted `"3,522"` while a
+  ru-RU client re-rendered `"3 522"`. The differing text tripped React error
+  #418 on every affected page load (14 events on 0.65.2 in a single day, all
+  from non-en-US locales), forcing React to discard and re-render the
+  server-rendered tree on the client. The locale is now pinned to `en-US`,
+  matching every other formatter in the codebase and the server default.
+
+- **Post-deploy chunk auto-reload never fired.** Two independent faults, both
+  surfaced by ChunkLoadErrors on 0.65.2 from real users on `/archives` and
+  `/sign-in`:
+    - The detection predicate tested `err.message || err.name`, but a real
+      `ChunkLoadError` carries the identifying token in `name` while `message`
+      is `"Failed to load chunk X from module Y"`. The non-empty message
+      short-circuited away the only field that matched, so nothing was ever
+      recognized as a chunk error. Detection now tests name and message
+      together, and the Turbopack message wording is matched explicitly.
+    - The only trigger was an `unhandledrejection` listener, but Next/React
+      catch these internally and report them as *handled* exceptions — every
+      observed production ChunkLoadError arrived that way. A Sentry
+      `beforeSend` hook now covers every reporting path; the listener is kept
+      as the fallback for when no DSN is configured.
+  Detection is extracted to `src/shared/utils/isChunkError.mjs` with unit
+  coverage pinned to the verbatim production error shape.
+
 ## 0.65.2
 
 ### Fixed

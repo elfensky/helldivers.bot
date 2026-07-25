@@ -75,13 +75,12 @@ describe('StatGrid', () => {
             expect(screen.getByText('35')).toBeInTheDocument();
         });
 
-        // formatNumber uses num.toLocaleString() without a locale argument for
-        // values 1K-999K, so the thousands separator is locale-dependent.
-        // Use a tolerant regex so this test survives non-en-US CI environments.
-        test('shows kills total with locale-tolerant separator', () => {
+        // formatNumber pins en-US grouping (a comma) for values 1K-999K so SSR
+        // and client render identical text \u2014 see formatNumber.mjs.
+        test('shows kills total with en-US thousands separator', () => {
             render(<StatGrid live={mockLive} faction="global" events={mockEvents} />);
-            // 500+1000+750 = 2,250 / 2.250 / 2 250 / 2\u202f250 depending on locale
-            expect(screen.getByText(/2[,.\s\u202f\u00a0]250/)).toBeInTheDocument();
+            // 500+1000+750 = 2,250
+            expect(screen.getByText('2,250')).toBeInTheDocument();
         });
 
         test('shows win/loss counts on the merged EVENTS card', () => {
