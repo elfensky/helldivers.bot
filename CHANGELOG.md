@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.66.0
+
+### Fixed
+
+- **Every season's archive narrative was missing a faction-arrival beat.** HD1's
+  `introduction_order` is a **0-based** reveal rank indexed by enemy id (`0` =
+  the faction the war started against, `1`/`2` = mid-war arrivals, `255` = never
+  introduced). `buildWarNarrative` was written under a 1-based assumption, so its
+  two guards compounded — `<= 0` correctly dropped rank 0, then
+  `firstIntroducedEnemy` dropped rank 1 as well, silently removing a faction that
+  genuinely arrived mid-war. Measured across all 160 seasons: 160/160 narratives
+  gain exactly one beat, none lose any (Cyborgs 59, Bugs 58, Illuminate 43).
+  This **completes** the fix landed for `buildIntroMarkers` in v0.65.4 — that
+  release corrected one reader of the encoding; this is the other.
+- **Arrival beats are now clamped to the end of the chronicle.** They were
+  anchored at the raw `first_seen` while the highlight beats have been clamped
+  since v0.65.2, so a faction appearing after the last resolved event sorted
+  _after_ the closing outcome beat and rendered as the final line of the page.
+  Season 124 already showed this; the current war (160) would have. Both are
+  corrected and the 160-season diff shows no other beat reordered.
+
+### Changed
+
+- **`introduction_order` is now documented and validated.** The encoding lived
+  nowhere authoritative, which is how it came to be misread twice in three days.
+  `prisma/schema.prisma` documents it on the column; `/docs/database` no longer
+  describes it as "planet introduction positions"; and both Zod validators are
+  tightened from a permissive `z.array(z.number())` to
+  `z.array(z.number().int().min(0).max(255)).length(3)`, matching the
+  `.length(3)` convention already used for `campaign_status` and `statistics`.
+  Verified against all 156 seed payloads — 156/156 validate, and the only shapes
+  present are the six permutations of `{0,1,2}`.
+
+### Notes
+
+- Five test fixtures encoded the wrong convention (`[1,0,2]`, `[1,2,3]`,
+  `[1,0,0]`) — none is a valid permutation of `{0,1,2}` and no such row exists in
+  the database, which is why the suite stayed green through the bug. Corrected,
+  plus two new tests covering the late-arrival clamp.
+
 ## 0.65.8
 
 ### Fixed

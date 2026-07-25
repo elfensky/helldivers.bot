@@ -33,7 +33,7 @@ const makeAttackEvent = (overrides = {}) => {
 const makeValidSeason = (overrides = {}) => ({
     time: 1700000000,
     error_code: 0,
-    introduction_order: [1, 2, 3],
+    introduction_order: [0, 1, 2],
     points_max: [1000, 2000, 3000],
     snapshots: [makeSnapshot()],
     defend_events: [makeDefendEvent()],
