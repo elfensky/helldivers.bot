@@ -202,7 +202,16 @@ export const getCampaign = cache(async function getCampaign(
 });
 
 async function _findSeason(season) {
-    const where = season === null ? { last_updated: { not: null } } : { season };
+    // `last_updated` gates BOTH branches. updateSeason creates the row unstamped and
+    // only stamps it once every write has landed, so an unstamped row means an import
+    // died partway through. Serving it would hand back a silently events-incomplete
+    // archive; treating it as a miss lets getCampaignOrSeed re-seed and surface the
+    // real error instead. Re-imports never clear an existing stamp (upsertSeason only
+    // writes last_updated when confirm is true), so a healthy season is unaffected.
+    const where =
+        season === null ?
+            { last_updated: { not: null } }
+        :   { season, last_updated: { not: null } };
     const orderBy = season === null ? { season: 'desc' } : undefined;
 
     const { data, error } = await tryCatch(

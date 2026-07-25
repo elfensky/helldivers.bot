@@ -157,8 +157,27 @@ describe('getCampaign', () => {
 
         expect(result).not.toBeNull();
         const callArg = db.h1_season.findFirst.mock.calls[0][0];
-        expect(callArg.where).toEqual({ season: 3 });
+        // last_updated gates the explicit-season branch too: an unstamped row means
+        // a partial import, and serving it would return an events-incomplete season.
+        expect(callArg.where).toEqual({ season: 3, last_updated: { not: null } });
         expect(callArg.orderBy).toBeUndefined();
+    });
+
+    test('treats an unstamped (partially imported) season as a miss', async () => {
+        // updateSeason creates the h1_season row unstamped and only sets last_updated
+        // once every write has landed. Serving an unstamped row would hand back an
+        // events-incomplete archive with no signal; returning null lets
+        // getCampaignOrSeed re-seed and surface the real error instead.
+        // Deliberately not seedDbMocks(): it queues mockResolvedValueOnce values on
+        // $queryRaw that this early-return path never consumes, leaving them to be
+        // eaten by the next test.
+        vi.mocked(db.h1_season.findFirst).mockResolvedValue(null);
+
+        expect(await getCampaign(3)).toBeNull();
+        expect(db.h1_season.findFirst.mock.calls[0][0].where).toEqual({
+            season: 3,
+            last_updated: { not: null },
+        });
     });
 
     test('selects introduction_order / points_max / season_duration from h1_season', async () => {

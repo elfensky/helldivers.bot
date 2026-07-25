@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.66.1
+
+### Fixed
+
+- **A partially imported season is no longer served as if complete.**
+  `updateSeason` creates the `h1_season` row unstamped and only sets
+  `last_updated` once every write has landed, but only the "current season" read
+  gated on that stamp — explicit-season reads used a bare `where: { season }`. So
+  when an import died partway through, the triggering request got one 500 and
+  every request afterwards received a silently events-incomplete archive with no
+  signal. `/api/v1/h1/status?mode=history` also carries a 1h/24h cache policy, so
+  a partial result was cacheable downstream. All four readers
+  (`getCampaign`, `reconstructSnapshots`, `getStatusHistory`, `getStats`) now
+  gate both branches; an unstamped season reads as a miss so `getCampaignOrSeed`
+  re-seeds and surfaces the real error. Healthy seasons are unaffected —
+  `upsertSeason` only writes `last_updated` when `confirm` is true, so
+  re-imports never clear an existing stamp.
+- **Non-fatal ingest warnings now reach GlitchTip.** A throw on the update path
+  reaches four channels (GlitchTip, the `worker_heartbeat` error the admin
+  dashboard renders, a 500 that reddens the uptime monitor, `console.error`); a
+  warning reached only `console.warn`, and the response body carrying warnings is
+  `postMessage`'d into the void by the cron worker. Every warning the ingest
+  layer already emitted was therefore invisible, so a degrading import stayed
+  silent until it became a failing one.
+
+### Notes
+
+- Deliberately **not** the inverse fix: softening `season.mjs`'s event-loop
+  throws into warnings would have removed three alerting channels rather than
+  adding any. The throw is correct; the reads were the problem.
+
 ## 0.66.0
 
 ### Fixed
