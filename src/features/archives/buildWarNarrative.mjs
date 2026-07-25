@@ -380,7 +380,7 @@ export function buildWarNarrative(data, telemetry = null) {
         beats.push({
             time: lastTime,
             day: lastDay,
-            order: seq++,
+            order: seq,
             text: describeOutcome(outcome, season),
         });
     }

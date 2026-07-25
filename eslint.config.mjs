@@ -1,5 +1,5 @@
 import js from '@eslint/js';
-import react from 'eslint-plugin-react';
+import eslintReact from '@eslint-react/eslint-plugin';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactCompiler from 'eslint-plugin-react-compiler';
 import nextPlugin from '@next/eslint-plugin-next';
@@ -23,6 +23,11 @@ export default [
 
     js.configs.recommended,
 
+    // @eslint-react replaces the unmaintained-for-eslint-10 eslint-plugin-react.
+    // Its recommended preset covers the JSX correctness rules (keys, no unknown
+    // property, etc.); it applies only to jsx/tsx files by default.
+    eslintReact.configs.recommended,
+
     {
         files: ['**/*.{js,mjs,jsx}'],
         languageOptions: {
@@ -37,27 +42,26 @@ export default [
             },
         },
         plugins: {
-            react,
             'react-hooks': reactHooks,
             'react-compiler': reactCompiler,
             '@next/next': nextPlugin,
         },
-        settings: {
-            react: { version: 'detect' },
-        },
         rules: {
-            ...react.configs.flat.recommended.rules,
-            ...react.configs.flat['jsx-runtime'].rules,
             ...reactHooks.configs.recommended.rules,
             ...nextPlugin.configs.recommended.rules,
             ...nextPlugin.configs['core-web-vitals'].rules,
             'react-compiler/react-compiler': 'warn',
-            'react/prop-types': 'off',
             'react-hooks/set-state-in-effect': 'off',
             'react-hooks/set-state-in-render': 'off',
             'react-hooks/purity': 'off',
             'react-hooks/refs': 'off',
             'react-hooks/static-components': 'off',
+            // @eslint-react re-implements several of the react-hooks opinions
+            // above; keep parity with the choices already made for this codebase
+            // (React Compiler handles set-state-in-effect churn; the Footer/SSR
+            // date is intentional).
+            '@eslint-react/set-state-in-effect': 'off',
+            '@eslint-react/purity': 'off',
             'no-console': ['warn', { allow: ['warn', 'error', 'info', 'debug'] }],
             'no-unused-vars': [
                 'warn',
