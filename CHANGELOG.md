@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.65.7
+
+### Security
+
+- **`npm audit` now reports 0 vulnerabilities.** Migrating to ESLint 10
+  (below) lets `brace-expansion` move to the patched `5.0.8`, clearing the
+  last 6 dev-only advisory hits from the ESLint tool chain.
+
+### Changed
+
+- **Replaced `eslint-plugin-react` with `@eslint-react/eslint-plugin`** and
+  bumped ESLint to 10. `eslint-plugin-react` had no ESLint 10 support;
+  `@eslint-react` is actively maintained and framework-agnostic. `react-hooks`,
+  `react-compiler`, and `@next/eslint-plugin-next` are unchanged.
+- Fixed 2 dead-assignment bugs surfaced by ESLint 10's `no-useless-assignment`
+  (unused `check` initializer in the rebroadcast route, trailing `seq++` in
+  `buildWarNarrative`).
+
+### Notes
+
+- `@eslint-react` leaves 31 non-blocking warnings (new lint opinions —
+  `no-context-provider`, `no-array-index-key`, React-19 context idioms, etc.).
+  These don't fail lint and are left for incremental triage. The four
+  `web-api-no-leaked-interval` and two `exhaustive-deps` warnings were
+  investigated and disabled as false positives / duplicates of
+  `react-hooks/exhaustive-deps`.
+
 ## 0.65.6
 
 ### Changed

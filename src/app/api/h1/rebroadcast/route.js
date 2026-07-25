@@ -22,7 +22,7 @@ import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 
 export async function POST(request) {
     const start = performance.now();
-    let check = null;
+    let check;
     let formValues = null;
 
     const { data: keyData, code: keyCode } = await validateApiKey(request);
