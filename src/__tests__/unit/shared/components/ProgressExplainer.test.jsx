@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('recharts', () => ({
     ComposedChart: vi.fn(({ children }) => (
@@ -85,5 +85,72 @@ describe('ProgressExplainer', () => {
         render(<ProgressExplainer />);
         expect(screen.getByTestId('responsive-container')).toBeDefined();
         expect(screen.getByTestId('composed-chart')).toBeDefined();
+    });
+});
+
+describe('ProgressExplainer — slider-driven recomputation', () => {
+    // Slider order matches the rendered controls.
+    const DURATION = 0;
+    const POINTS_MAX = 1;
+    const ELAPSED_PCT = 2;
+    const ACTUAL = 3;
+
+    function setSlider(index, value) {
+        const slider = screen.getAllByRole('slider')[index];
+        fireEvent.change(slider, { target: { value: String(value) } });
+    }
+
+    function readMetric(label) {
+        // <dt>label</dt><dd>value</dd>
+        return screen.getByText(label).nextElementSibling.textContent;
+    }
+
+    function status() {
+        return document.querySelector('.progress-result .progress-badge').textContent;
+    }
+
+    test('moving Actual above the 10% buffer flips the status to "ahead"', () => {
+        render(<ProgressExplainer />);
+        // Defaults: pointsMax 50,000, elapsed 50% => expected 25,000, buffer 2,500.
+        expect(status()).toBe('on track');
+
+        // 30,000 clears expected + 10% buffer (27,500) but NOT a 50% buffer.
+        setSlider(ACTUAL, 30000);
+        expect(status()).toBe('ahead');
+        expect(readMetric('Expected pts')).toBe('25,000');
+        expect(readMetric('Actual pts')).toBe('30,000');
+        expect(readMetric('Delta')).toContain('5,000');
+        expect(readMetric('Delta %')).toContain('20');
+    });
+
+    test('sitting just inside the buffer stays "on track"', () => {
+        render(<ProgressExplainer />);
+        // 27,000 < 25,000 + 2,500 buffer ceiling => still on track.
+        setSlider(ACTUAL, 27000);
+        expect(status()).toBe('on track');
+    });
+
+    test('dropping Actual below expected flips the status to "behind"', () => {
+        render(<ProgressExplainer />);
+        setSlider(ACTUAL, 10000);
+        expect(status()).toBe('behind');
+        expect(readMetric('Delta')).toContain('15,000');
+        expect(readMetric('Delta %')).toContain('-60');
+    });
+
+    test('expected pts tracks Points Max and Time Elapsed together', () => {
+        render(<ProgressExplainer />);
+        setSlider(POINTS_MAX, 80000);
+        setSlider(ELAPSED_PCT, 25);
+        // expected = 25% of 80,000 = 20,000
+        expect(readMetric('Expected pts')).toBe('20,000');
+    });
+
+    test('current rate is actual points over elapsed seconds', () => {
+        render(<ProgressExplainer />);
+        setSlider(DURATION, 10); // 10h => 36,000s elapsed at 100%
+        setSlider(ELAPSED_PCT, 50); // => 18,000s elapsed
+        setSlider(ACTUAL, 18000); // => 1 pt/s
+        expect(readMetric('Current rate')).toBe('1 pts/s');
     });
 });
