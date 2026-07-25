@@ -70,7 +70,11 @@ describe('Map — faction groups', () => {
         ['cyborgs', 1, cyborgPaths],
         ['illuminate', 2, illuminatePaths],
     ])(
-        'faction-%s paths use the id, data-name (sector), and d attributes from mapPaths',
+        // Wiring check only: `d` is echoed back from the same mapPaths export
+        // the component reads, so this catches the component dropping or
+        // mis-mapping an attribute, NOT bad geometry. Geometry sanity lives in
+        // mapPaths.test.mjs.
+        'faction-%s paths are wired to the matching mapPaths id, sector, and d',
         (id, _idx, paths) => {
             const { container } = render(<GalaxyMap map={buildMapState()} />);
             for (const p of paths) {
