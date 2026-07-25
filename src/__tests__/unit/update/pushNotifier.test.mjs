@@ -5,25 +5,6 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.mock('web-push', () => ({
     default: { setVapidDetails: vi.fn(), sendNotification: vi.fn() },
 }));
-vi.mock('@/db/db', () => ({
-    default: {
-        push_subscription: {
-            deleteMany: vi.fn(),
-            findMany: vi.fn(),
-        },
-        h1_season: { findFirst: vi.fn() },
-    },
-}));
-vi.mock('@/shared/utils/tryCatch.mjs', () => ({
-    tryCatch: vi.fn(async (p) => {
-        try {
-            const data = await p;
-            return { data, error: null };
-        } catch (e) {
-            return { data: null, error: e };
-        }
-    }),
-}));
 vi.mock('@/shared/utils/game/detectChanges.mjs', () => ({ detectChanges: vi.fn() }));
 
 import { buildPayload, sendWithConcurrencyLimit } from '@/update/pushNotifier.mjs';

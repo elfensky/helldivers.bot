@@ -129,6 +129,8 @@ vi.mock('@/db/db', () => ({
         worker_heartbeat: createModelMock(),
         // Push subscriptions
         push_subscription: createModelMock(),
+        // Rate limiting
+        api_rate_limit: createModelMock(),
         // Prisma utilities
         $transaction: vi.fn((fn) => Promise.resolve(Array.isArray(fn) ? fn : fn())),
         $connect: vi.fn(() => Promise.resolve()),
@@ -138,6 +140,19 @@ vi.mock('@/db/db', () => ({
         $executeRaw: vi.fn(() => Promise.resolve(0)),
         $executeRawUnsafe: vi.fn(() => Promise.resolve(0)),
     },
+}));
+
+// #endregion
+
+// #region Observability Mocks
+
+/**
+ * `observability.mjs` exports exactly one symbol: reportError. Mocking it
+ * globally keeps Sentry out of every test and removes the need for tests to
+ * re-implement `tryCatch` purely to suppress its reportError side-effect.
+ */
+vi.mock('@/shared/utils/observability.mjs', () => ({
+    reportError: vi.fn(),
 }));
 
 // #endregion

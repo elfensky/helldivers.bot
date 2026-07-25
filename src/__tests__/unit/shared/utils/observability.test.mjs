@@ -1,4 +1,8 @@
-import { reportError } from '@/shared/utils/observability.mjs';
+// This file tests the REAL reportError, so it must opt out of the global
+// observability mock installed in vitest.setup.mjs.
+vi.unmock('@/shared/utils/observability.mjs');
+
+const { reportError } = await vi.importActual('@/shared/utils/observability.mjs');
 import * as Sentry from '@sentry/nextjs';
 
 vi.mock('@sentry/nextjs', () => ({

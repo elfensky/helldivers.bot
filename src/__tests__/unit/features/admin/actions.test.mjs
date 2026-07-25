@@ -7,16 +7,6 @@ vi.mock('@/auth', () => ({
 vi.mock('next/headers', () => ({
     headers: vi.fn(() => new Headers()),
 }));
-vi.mock('@/shared/utils/tryCatch', () => ({
-    tryCatch: vi.fn(async (p) => {
-        try {
-            const data = await p;
-            return { data, error: null };
-        } catch (e) {
-            return { data: null, error: e };
-        }
-    }),
-}));
 vi.mock('@/update/pushNotifier', () => ({
     ensureVapid: vi.fn(),
     sendWithConcurrencyLimit: vi.fn(),
@@ -30,9 +20,6 @@ vi.mock('@/update/pushNotifier', () => ({
             renotify: true,
         }),
     ),
-}));
-vi.mock('@/db/db', () => ({
-    default: { push_subscription: { findMany: vi.fn() } },
 }));
 
 import { auth } from '@/auth';

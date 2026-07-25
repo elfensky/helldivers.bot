@@ -32,23 +32,23 @@ describe('parseSeasonQuery', () => {
         },
     );
 });
+import { makeSeasonRow } from '@test-utils/hd1.mjs';
 
 describe('projectSeasons', () => {
     const rows = [
-        {
+        makeSeasonRow({
             season: 158,
             last_updated: new Date('2026-06-01T00:00:00.000Z'),
             introduction_order: [0, 2, 1], // bugs=0, cyborgs=2, illuminate=1
             points_max: [280970, 325480, 202300],
             season_duration: 86400,
-        },
-        {
+        }),
+        makeSeasonRow({
             season: 159,
             last_updated: null,
-            introduction_order: [0, 1, 2],
             points_max: [100, 200, 300],
             season_duration: 0,
-        },
+        }),
     ];
 
     test('projects metadata with isCurrent, slug intro order, points_max object', () => {

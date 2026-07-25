@@ -1,19 +1,19 @@
 import { describe, test, expect, vi } from 'vitest';
 import db from '@/db/db';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
+import { makeSeasonRow } from '@test-utils/hd1.mjs';
 
 // getCampaign is wrapped in React's cache(), but in test the mock from
 // vitest.setup.mjs handles that transparently.
 
-const mockSeasonRow = {
+// season_duration is a per-season scalar (not per-faction). It lives on
+// h1_season and surfaces at the top level of the getCampaign return value.
+const mockSeasonRow = makeSeasonRow({
     season: 5,
     last_updated: new Date('2025-01-01'),
-    introduction_order: [0, 1, 2],
     points_max: [500, 600, 700],
-    // Per-season scalar (not per-faction). Lives on h1_season and surfaces
-    // at the top level of the getCampaign return value.
     season_duration: 7200,
-};
+});
 
 const mockLiveRows = [
     { enemy: 0, points: 100, points_taken: 10, status: 'active', bucket: 42 },
