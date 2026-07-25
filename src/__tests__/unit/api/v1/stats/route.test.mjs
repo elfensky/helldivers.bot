@@ -310,7 +310,12 @@ describe('GET /api/v1/h1/stats — rate limiting', () => {
 
         const res = await GET(req());
         expect(res.status).toBe(429);
-        expect(res.headers.get('Retry-After')).toBeTruthy();
+        // toBeTruthy() would pass for the string '0'. Retry-After must carry
+        // the real seconds-until-window-reset, i.e. mirror RateLimit-Reset.
+        const retryAfter = res.headers.get('Retry-After');
+        expect(retryAfter).toBe(res.headers.get('RateLimit-Reset'));
+        expect(Number(retryAfter)).toBeGreaterThan(0);
+        expect(Number(retryAfter)).toBeLessThanOrEqual(60);
         expect(res.headers.get('RateLimit-Remaining')).toBe('0');
         // Limiter must gate the data read, not merely annotate the response.
         expect(db.h1_season.findFirst).not.toHaveBeenCalled();

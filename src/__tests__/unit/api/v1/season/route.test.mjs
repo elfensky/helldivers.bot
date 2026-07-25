@@ -119,8 +119,11 @@ describe('GET /api/v1/h1/season — happy path', () => {
     test('200 projects a season into the public shape with rate-limit headers', async () => {
         const res = await GET(req());
         expect(res.status).toBe(200);
-        expect(res.headers.get('RateLimit-Limit')).toBeTruthy();
-        expect(res.headers.get('RateLimit-Remaining')).toBeTruthy();
+        // public_read is 120/min; history_read is 30/min. The header is the
+        // only externally visible proof of which group was charged.
+        expect(res.headers.get('RateLimit-Limit')).toBe('120');
+        // The mocked counter returns count=1, so 119 of 120 remain.
+        expect(res.headers.get('RateLimit-Remaining')).toBe('119');
 
         const body = await res.json();
         expect(body.code).toBe(200);
@@ -252,7 +255,12 @@ describe('GET /api/v1/h1/season — rate limiting', () => {
 
         const res = await GET(req());
         expect(res.status).toBe(429);
-        expect(res.headers.get('Retry-After')).toBeTruthy();
+        // toBeTruthy() would pass for the string '0'. Retry-After must carry
+        // the real seconds-until-window-reset, i.e. mirror RateLimit-Reset.
+        const retryAfter = res.headers.get('Retry-After');
+        expect(retryAfter).toBe(res.headers.get('RateLimit-Reset'));
+        expect(Number(retryAfter)).toBeGreaterThan(0);
+        expect(Number(retryAfter)).toBeLessThanOrEqual(60);
         expect(res.headers.get('RateLimit-Remaining')).toBe('0');
         // Limiter must gate the data read, not merely annotate the response.
         expect(db.h1_season.findFirst).not.toHaveBeenCalled();
