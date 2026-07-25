@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.65.4
+
+### Fixed
+
+- **Missing "Day 1" marker in the event log.** HD1's `introduction_order` is
+  0-based — `0` is the faction the war *started* against, `255` means "not yet
+  introduced" — but `buildIntroMarkers` filtered `<= 0`, dropping exactly the
+  war-start faction. The archives showed "Day 2 … enters the war" / "Day 3 …"
+  with no Day 1. The guard now includes order `0` and excludes the `255`
+  sentinel (absent factions stay filtered by their null `first_seen`).
+
+### Changed
+
+- The war-start faction now reads **"{faction} declare war"** (Day 1) to
+  distinguish it from the later arrivals' "{faction} enter the war".
+- The homepage event log now shows the faction intro markers too — previously
+  they were archives-only. `buildIntroMarkers` moved to `features/timeline`
+  since both callers share it.
+
 ## 0.65.3
 
 ### Fixed
