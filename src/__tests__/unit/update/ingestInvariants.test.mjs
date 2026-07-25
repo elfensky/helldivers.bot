@@ -157,6 +157,26 @@ function upsertPayloads(model) {
     return db[model].upsert.mock.calls.map(([args]) => args);
 }
 
+/**
+ * Collect the value of every key literally named `season`, at any depth, out of
+ * an upsert payload. Covers all three shapes the writers use — `where.season`
+ * (h1_season), `where.season_enemy_bucket.season` (h1_status / h1_statistic)
+ * and `create.season` (h1_event) — without hardcoding a path per model, so a
+ * newly added season-bearing field is caught rather than silently skipped.
+ *
+ * @param {unknown} node - Any node of an upsert payload.
+ * @param {number[]} [found] - Accumulator.
+ * @returns {number[]} every `season` value reachable from `node`.
+ */
+function collectSeasons(node, found = []) {
+    if (node === null || typeof node !== 'object') return found;
+    for (const [key, value] of Object.entries(node)) {
+        if (key === 'season' && typeof value === 'number') found.push(value);
+        else collectSeasons(value, found);
+    }
+    return found;
+}
+
 beforeEach(() => {
     for (const model of WRITTEN_MODELS) db[model].upsert.mockClear();
     vi.mocked(fetchStatus).mockReset();
@@ -198,7 +218,15 @@ describe('ingest invariants (edges mocked, wiring real)', () => {
                 ...upsertPayloads('h1_event_progress'),
             ];
             expect(everyWrite.length).toBeGreaterThan(0);
-            expect(JSON.stringify(everyWrite)).not.toContain(String(LAGGED_SEASON));
+
+            // Walk the payloads for real `season` keys rather than substring-
+            // matching the serialised JSON: "199" also occurs inside values
+            // like points: 1990 or a bucket timestamp, which would make this
+            // fail for reasons that have nothing to do with the guard.
+            const seasons = collectSeasons(everyWrite);
+            expect(seasons.length).toBeGreaterThan(0);
+            expect(seasons).not.toContain(LAGGED_SEASON);
+            expect(new Set(seasons)).toEqual(new Set([CURRENT_SEASON]));
         });
 
         it('DOES write the event once its season matches the active season', async () => {
@@ -255,6 +283,11 @@ describe('ingest invariants (edges mocked, wiring real)', () => {
             const payload = currentSeasonPayload();
             // Pick a poll time deliberately mid-bucket so floor != round and
             // floor(t) != floor(t + 1) is observable.
+            // midBucket is the last second of its bucket, so expectedBucket is
+            // BUCKET_SIZE-1 lower — on a bucket boundary by construction, and
+            // strictly below midBucket, which is what makes floor vs round
+            // distinguishable below. (Fixture arithmetic, not behaviour: the
+            // assertions that follow are the ones that test the code.)
             const midBucket =
                 Math.floor(POLL_TIME / BUCKET_SIZE) * BUCKET_SIZE + BUCKET_SIZE - 1;
             payload.time = midBucket;
@@ -262,9 +295,6 @@ describe('ingest invariants (edges mocked, wiring real)', () => {
             vi.mocked(fetchStatus).mockResolvedValue(payload);
 
             await updateStatus();
-
-            expect(expectedBucket % BUCKET_SIZE).toBe(0);
-            expect(expectedBucket).toBeLessThan(midBucket);
 
             const statusCalls = upsertPayloads('h1_status');
             expect(statusCalls).toHaveLength(3);
