@@ -3,7 +3,9 @@ import { GET, POST, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/h1/update/rout
 import { updateStatus } from '@/update/status.mjs';
 import { updateSeason } from '@/update/season.mjs';
 import { expectSuccessEnvelope, expectErrorEnvelope } from '@test-utils';
+import { reportError } from '@/shared/utils/observability.mjs';
 
+vi.mock('@/shared/utils/observability.mjs', () => ({ reportError: vi.fn() }));
 vi.mock('@/update/status', () => ({ updateStatus: vi.fn() }));
 vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
 vi.mock('@/update/pushNotifier', () => ({
@@ -83,6 +85,45 @@ describe('GET /api/h1/update', () => {
         expect(res.status).toBe(500);
         expectErrorEnvelope(await res.json(), { code: 500 });
         expect(updateSeason).not.toHaveBeenCalled();
+    });
+
+    test('reports non-fatal ingest warnings so they are not console-only', async () => {
+        // A throw on this path reaches GlitchTip, the heartbeat the admin dashboard
+        // reads, and the uptime monitor. A warning used to reach only console.warn,
+        // and the response body carrying it is postMessage'd into the void by the
+        // cron worker — so a degrading import was invisible until it started failing.
+        vi.mocked(updateStatus).mockResolvedValue({
+            season: 5,
+            time: 1000,
+            warnings: [
+                { stage: 'upsertEventProgress[defend]', message: 'progress row failed' },
+            ],
+        });
+        vi.mocked(updateSeason).mockResolvedValue({
+            warnings: [
+                {
+                    stage: 'upsertStatus.snapshot[season=5]',
+                    message: 'snapshot row failed',
+                },
+            ],
+        });
+
+        const req = new Request('http://localhost/api/h1/update', {
+            headers: { Authorization: 'Bearer test-secret-key' },
+        });
+        const res = await GET(req);
+
+        expect(res.status).toBe(200);
+        expect(reportError).toHaveBeenCalledTimes(2);
+        for (const [err, ctx] of vi.mocked(reportError).mock.calls) {
+            expect(err).toBeInstanceOf(Error);
+            expect(ctx.level).toBe('warning');
+            expect(ctx.route).toBe('/api/h1/update');
+        }
+        expect(vi.mocked(reportError).mock.calls.map(([, c]) => c.stage)).toEqual([
+            'upsertEventProgress[defend]',
+            'upsertStatus.snapshot[season=5]',
+        ]);
     });
 
     test('returns 500 with error envelope when updateSeason fails', async () => {

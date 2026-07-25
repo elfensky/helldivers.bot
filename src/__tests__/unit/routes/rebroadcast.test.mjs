@@ -4,7 +4,6 @@ vi.mock('@/db/db', () => ({
     default: {
         h1_season: {
             findFirst: vi.fn(),
-            findUnique: vi.fn(),
         },
         h1_status: {
             findMany: vi.fn(),
@@ -290,7 +289,7 @@ describe('POST /api/h1/rebroadcast — get_campaign_status', () => {
 
 describe('POST /api/h1/rebroadcast — get_snapshots', () => {
     test('reconstructs wire format from h1_season + h1_status + h1_event', async () => {
-        db.h1_season.findUnique.mockResolvedValue(makeSeasonRow({ season: 5 }));
+        db.h1_season.findFirst.mockResolvedValue(makeSeasonRow({ season: 5 }));
         // Two buckets, each with all 3 factions populated
         db.h1_status.findMany.mockResolvedValue([
             makeStatusRow(0, { season: 5, bucket: 100, time: 105 }),
@@ -333,7 +332,7 @@ describe('POST /api/h1/rebroadcast — get_snapshots', () => {
     });
 
     test('drops sparse buckets missing one or more factions', async () => {
-        db.h1_season.findUnique.mockResolvedValue(makeSeasonRow({ season: 5 }));
+        db.h1_season.findFirst.mockResolvedValue(makeSeasonRow({ season: 5 }));
         db.h1_status.findMany.mockResolvedValue([
             // Sparse bucket: only enemy 0 + 1 written, enemy 2 missing.
             makeStatusRow(0, { season: 5, bucket: 100, time: 105 }),
@@ -355,7 +354,7 @@ describe('POST /api/h1/rebroadcast — get_snapshots', () => {
     });
 
     test('fetches from remote when local season is missing, then returns reconstructed data', async () => {
-        db.h1_season.findUnique
+        db.h1_season.findFirst
             .mockResolvedValueOnce(null) // first attempt: no local row
             .mockResolvedValueOnce(makeSeasonRow({ season: 5 })); // after updateSeason()
         db.h1_status.findMany.mockResolvedValue([
@@ -376,7 +375,7 @@ describe('POST /api/h1/rebroadcast — get_snapshots', () => {
     });
 
     test('returns 500 when remote fetch also fails', async () => {
-        db.h1_season.findUnique.mockResolvedValue(null);
+        db.h1_season.findFirst.mockResolvedValue(null);
         vi.mocked(updateSeason).mockRejectedValue(new Error('fetch failed'));
 
         const res = await POST(
@@ -386,7 +385,7 @@ describe('POST /api/h1/rebroadcast — get_snapshots', () => {
     });
 
     test('returns 500 when an underlying query throws', async () => {
-        db.h1_season.findUnique.mockRejectedValue(new Error('DB error'));
+        db.h1_season.findFirst.mockRejectedValue(new Error('DB error'));
 
         const res = await POST(
             createPostRequest({ action: 'get_snapshots', season: '5' }),

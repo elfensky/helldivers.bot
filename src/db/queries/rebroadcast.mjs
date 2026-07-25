@@ -116,8 +116,11 @@ export async function reconstructCampaignStatus() {
 export async function reconstructSnapshots(season) {
     if (!season) return null;
 
-    const seasonRow = await db.h1_season.findUnique({
-        where: { season },
+    // findFirst rather than findUnique so the partial-import guard can apply: an
+    // unstamped row means updateSeason died partway through, and rebroadcasting it
+    // would emit a wire payload missing events (see getCampaign._findSeason).
+    const seasonRow = await db.h1_season.findFirst({
+        where: { season, last_updated: { not: null } },
         select: {
             season: true,
             introduction_order: true,
