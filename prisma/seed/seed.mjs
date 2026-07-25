@@ -29,7 +29,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SEASONS_DIR = join(__dirname, 'seasons');
 const CONCURRENCY = 10;
 
-// Tumbling-window bucket math for h1_status. Mirrors src/update/bucketing.mjs
+// Tumbling-window bucket math for h1_status. Mirrors src/shared/utils/bucketing.mjs
 // but inlined here so this script has no `@/*`-aliased dependencies.
 const DEFAULT_BUCKET_SIZE = 900;
 const parsedBucketSize = parseInt(process.env.BUCKET_SIZE ?? '', 10);
