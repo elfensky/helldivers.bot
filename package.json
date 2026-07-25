@@ -54,7 +54,7 @@
         "@testing-library/jest-dom": "^7.0.0",
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
-        "@types/node": "^24.13.3",
+        "@types/node": "^25.9.5",
         "@vitest/coverage-v8": "^4.1.9",
         "babel-plugin-react-compiler": "^1.0.0",
         "chokidar-cli": "^3.0.0",
