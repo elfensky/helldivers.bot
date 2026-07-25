@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.65.4",
+    "version": "0.65.5",
     "private": true,
     "type": "module",
     "scripts": {
@@ -20,7 +20,7 @@
         "update:safe": "npx npm-check-updates --cooldown 7d -u && npm install"
     },
     "dependencies": {
-        "@asteasolutions/zod-to-openapi": "^8.5.0",
+        "@asteasolutions/zod-to-openapi": "^9.1.0",
         "@mdx-js/loader": "^3.1.1",
         "@mdx-js/react": "^3.1.1",
         "@next/mdx": "^16.2.9",
@@ -50,10 +50,10 @@
         "@next/eslint-plugin-next": "^16.2.9",
         "@serwist/cli": "^9.5.11",
         "@tailwindcss/postcss": "^4.3.1",
-        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/jest-dom": "^7.0.0",
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
-        "@types/node": "^24.13.2",
+        "@types/node": "^26.1.1",
         "@vitest/coverage-v8": "^4.1.9",
         "babel-plugin-react-compiler": "^1.0.0",
         "chokidar-cli": "^3.0.0",
@@ -75,7 +75,12 @@
         "vitest": "^4.1.6"
     },
     "overrides": {
-        "postcss": "^8.5.10",
+        "postcss": "^8.5.18",
+        "better-sqlite3": "^12.0.0",
+        "sharp": "^0.35.3",
+        "valibot": "^1.4.2",
+        "brace-expansion": "^2.0.3",
+        "find-my-way": "^9.7.0",
         "prisma": {
             "hono": ">=4.12.18",
             "@hono/node-server": ">=1.19.10",

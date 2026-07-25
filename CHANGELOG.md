@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.65.5
+
+### Security
+
+- **Resolved all shipped-code vulnerabilities** flagged by Dependabot/`npm audit`:
+  Next.js 16.2.9→16.2.11 (middleware bypass, Server Action SSRF/DoS, cache
+  confusion, image-optimization DoS, internal endpoint disclosure), plus
+  overrides forcing patched `postcss` (path traversal), `sharp` (libvips CVEs),
+  `valibot`, `find-my-way` (HTTP/2 DoS), and `brace-expansion` (DoS).
+- `npm audit` still reports 6 highs in the **dev-only ESLint tool chain**
+  (`brace-expansion`/`minimatch` under `eslint`). These are not shipped to
+  production, and the installed `brace-expansion@2.1.2` already contains the
+  DoS fix — npm's over-broad `<=5.0.7` advisory range flags it anyway. The
+  clean resolution is ESLint 10, held back below.
+
+### Changed
+
+- **Dependency updates** to latest in-range: `@prisma/*` 7.8→7.9,
+  `@sentry/nextjs` 10.60→10.68, `react`/`react-dom` 19.2.7→19.2.8,
+  `better-auth` 1.6.20→1.6.25, `tailwindcss` 4.3.1→4.3.3, `recharts` 3.9→3.10,
+  `mermaid`, `vitest`, `prettier`, `serwist`, and others.
+- **Major bumps:** `@types/node` 24→26, `@testing-library/jest-dom` 6→7,
+  `@asteasolutions/zod-to-openapi` 8→9.
+- `jsconfig.json` `lib` es2022→es2024 — the codebase uses `Map.groupBy`
+  (Node 24 supports it); the ambient types shifted in the update, so the lib
+  is now declared directly.
+
+### Held back
+
+- **TypeScript 6→7**: surfaced 214 new type errors across 35 files (loose
+  `object` JSDoc property access under stricter TS 7 inference). Incompatible
+  with the codebase's intentional `noImplicitAny: false` style; pinned at ^6.
+- **ESLint 9→10**: `eslint-plugin-react@7.37.5` (latest) peers only up to
+  eslint `^9.7`; pinned at ^9 until the plugin supports 10.
+
 ## 0.65.4
 
 ### Fixed
