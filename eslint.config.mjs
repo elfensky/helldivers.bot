@@ -62,6 +62,15 @@ export default [
             // date is intentional).
             '@eslint-react/set-state-in-effect': 'off',
             '@eslint-react/purity': 'off',
+            // Duplicate of react-hooks/exhaustive-deps, which is the rule this
+            // codebase already annotates against (Hijackable, LiveToasts have
+            // documented run-once disables). Keep one source of truth.
+            '@eslint-react/exhaustive-deps': 'off',
+            // Doesn't recognize the ref-stored-interval + cleanup pattern used
+            // here (GlitchText clearTimers, slot-counter) — every flagged
+            // interval IS cleared in its effect cleanup, so this only fires
+            // false positives.
+            '@eslint-react/web-api-no-leaked-interval': 'off',
             'no-console': ['warn', { allow: ['warn', 'error', 'info', 'debug'] }],
             'no-unused-vars': [
                 'warn',
