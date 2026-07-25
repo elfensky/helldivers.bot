@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.65.6
+
+### Changed
+
+- Pinned `@types/node` back to `^24` to match the active-LTS runtime
+  (mise pins `node@24`); the previous `26` bump was ahead of the runtime.
+
 ## 0.65.5
 
 ### Security
