@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.66.2
+
+### Fixed
+
+- **The v1 pagination contract no longer contradicts itself.**
+  `/api/v1/h1/status?mode=latest` accepted `limit`, never applied it, and echoed
+  it back — so `?limit=1` returned `page.limit: 1` alongside three items.
+  `cursor`, `order`, `from` and `to` are likewise parsed then unused in that
+  mode. Corrected in the **documentation, not the response**: both code fixes
+  would be breaking (slicing silently drops factions for `limit < 3`; removing
+  the echo deletes a required field), and `/docs/api` promises field names and
+  semantics never change within v1. `limit`/`cursor`/`order` now state they are
+  paginated-mode concepts, matching how `from`/`to` were already qualified.
+  **Zero response bytes change.**
+
+### Added
+
+- **A v1 contract test** covering what the per-endpoint projection tests
+  structurally cannot: the behavioural invariant `items.length <= page.limit` on
+  the genuinely paginated projections (the offending response validates fine
+  against the shape schema, which is why nothing caught this), and that the
+  published OpenAPI document still describes the fields the projections emit.
+  Verified to have teeth — renaming `updatedAt` to `updated_at` fails the suite.
+
+### Changed
+
+- The map `fronts` object uses per-front `.optional()` instead of `.partial()`.
+  `.partial()` made all four optional at once, so no contract test could
+  distinguish "narrowed by `?enemy=`" from "dropped by a regression".
+
+### Notes
+
+- Left for a future v2: `?mode=latest&cursor=garbage` returns `200` while the
+  same token returns `400` under `mode=history`. Correcting it would break
+  requests that succeed today.
+
 ## 0.66.1
 
 ### Fixed
