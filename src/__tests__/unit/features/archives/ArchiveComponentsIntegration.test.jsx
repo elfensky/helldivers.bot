@@ -463,9 +463,9 @@ describe('Archive Components Integration Tests', () => {
             const introData = {
                 ...allSeeds[0].data,
                 war_start: warStart,
-                introduction_order: { order: [1, 2, 0] }, // illuminate never deployed
+                introduction_order: { order: [0, 1, 255] }, // illuminate not introduced
                 status: [
-                    { enemy: 0, first_seen: warStart }, // Bugs — Day 1
+                    { enemy: 0, first_seen: warStart }, // Bugs — Day 1, war-start
                     { enemy: 1, first_seen: warStart + 3 * 86400 }, // Cyborgs — Day 4
                     { enemy: 2, first_seen: null }, // never seen
                 ],
@@ -481,6 +481,8 @@ describe('Archive Components Integration Tests', () => {
             expect(props.introMarkers.map((m) => m.enemy)).toEqual([0, 1]);
             expect(props.introMarkers.map((m) => m.name)).toEqual(['Bugs', 'Cyborgs']);
             expect(props.introMarkers.map((m) => m.day)).toEqual([1, 4]);
+            // Bugs (order 0) opened the war; Cyborgs merely joined it.
+            expect(props.introMarkers.map((m) => m.isWarStart)).toEqual([true, false]);
         });
 
         test('EventLog receives empty intro markers when intro data is absent', () => {

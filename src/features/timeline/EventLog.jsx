@@ -52,7 +52,7 @@ import { FACTION_SLUG_BY_ID } from '@/shared/enums/factions.mjs';
  * @param {(event: object) => void} [props.onHoverEvent] - Called on card hover.
  * @param {object} [props.railRef] - Forwarded to the scrolling container.
  * @param {string} [props.layout] - Layout mode (`'grid'` or `'stack'`).
- * @param {Array<{kind:'intro', enemy:number, name:string, time:number, day:number}>} [props.introMarkers] - Archives-only intro markers.
+ * @param {Array<{kind:'intro', enemy:number, name:string, time:number, day:number, isWarStart:boolean}>} [props.introMarkers] - Intro markers (`buildIntroMarkers`).
  */
 export default function EventLog({
     events,
@@ -184,12 +184,14 @@ export default function EventLog({
 
 /**
  * A synthetic "faction enters the war" divider, interleaved among the event
- * rows on /archives only. Faction-colored via the `--color-faction-*` theme
- * tokens (resolved from the enemy id's slug). Static — no interactivity, so no
- * umami tracking is needed.
+ * rows on both the homepage and /archives. Faction-colored via the
+ * `--color-faction-*` theme tokens (resolved from the enemy id's slug). The
+ * war-start faction (`isWarStart`, HD1 introduction_order 0) gets distinct
+ * wording — it opens the war rather than joining an ongoing one. Static — no
+ * interactivity, so no umami tracking is needed.
  *
  * @param {object} props - Component props.
- * @param {{enemy:number, name:string, day:number}} props.marker - One `buildIntroMarkers` entry.
+ * @param {{enemy:number, name:string, day:number, isWarStart:boolean}} props.marker - One `buildIntroMarkers` entry.
  */
 function IntroMarker({ marker }) {
     const slug = FACTION_SLUG_BY_ID[marker.enemy] ?? 'bugs';
@@ -204,7 +206,9 @@ function IntroMarker({ marker }) {
             }
         >
             <span className="event-log-intro-day">Day {marker.day}</span>
-            <span className="event-log-intro-label">{marker.name} enter the war</span>
+            <span className="event-log-intro-label">
+                {marker.name} {marker.isWarStart ? 'declare war' : 'enter the war'}
+            </span>
         </div>
     );
 }

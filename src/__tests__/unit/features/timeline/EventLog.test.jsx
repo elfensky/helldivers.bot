@@ -105,7 +105,14 @@ describe('EventLog', () => {
 
     describe('intro markers (archives opt-in)', () => {
         const introMarkers = [
-            { kind: 'intro', enemy: 2, name: 'Illuminate', time: NOW - 400, day: 4 },
+            {
+                kind: 'intro',
+                enemy: 2,
+                name: 'Illuminate',
+                time: NOW - 400,
+                day: 4,
+                isWarStart: false,
+            },
         ];
 
         test('renders an intro marker row when introMarkers is provided', () => {
@@ -121,6 +128,30 @@ describe('EventLog', () => {
             expect(marker).toBeInTheDocument();
             expect(marker.textContent).toContain('Day 4');
             expect(marker.textContent).toContain('Illuminate enter the war');
+        });
+
+        test('war-start marker reads "declare war" instead of "enter the war"', () => {
+            const { container } = render(
+                <EventLog
+                    events={fakeEvents}
+                    timeFormat="absolute"
+                    layout="stack"
+                    introMarkers={[
+                        {
+                            kind: 'intro',
+                            enemy: 0,
+                            name: 'Bugs',
+                            time: NOW - 800,
+                            day: 1,
+                            isWarStart: true,
+                        },
+                    ]}
+                />,
+            );
+            const marker = container.querySelector('.event-log-intro');
+            expect(marker.textContent).toContain('Day 1');
+            expect(marker.textContent).toContain('Bugs declare war');
+            expect(marker.textContent).not.toContain('enter the war');
         });
 
         test('does NOT render any intro marker when introMarkers is empty', () => {

@@ -12,7 +12,7 @@ import StatGrid from '@/features/stats/StatGrid';
 import EventLog from '@/features/timeline/EventLog';
 import CascadeLog from '@/features/timeline/CascadeLog';
 import { findAllCascades } from '@/shared/utils/game/seasonAnalytics.mjs';
-import { buildIntroMarkers } from '@/features/archives/buildIntroMarkers.mjs';
+import { buildIntroMarkers } from '@/features/timeline/buildIntroMarkers.mjs';
 import ArchiveMap from '@/features/archives/ArchiveMap';
 import SeasonSelector from '@/features/archives/SeasonSelector';
 import RefreshSeasonButton from '@/features/archives/RefreshSeasonButton';
