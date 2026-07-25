@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.65.8
+
+### Fixed
+
+- **Event reads are now explicitly ordered.** Five `h1_event` queries had no
+  `ORDER BY`, so Postgres made no ordering promise while ~10 consumers read the
+  resulting arrays positionally. Visible consequences: the OG image's status
+  line could flip between renders when two fronts were live, and the public
+  `/api/v1/h1/map` shipped `activeEvents[]` in undefined order despite
+  `/docs/api` promising a stable v1 contract. `getCampaign`, `rebroadcast` (×2),
+  `getCrossSeasonStats` and `pushNotifier` now order by
+  `start_time asc, event_id asc`.
+
+### Changed
+
+- **`findAllCascades` sorts on a total order.** `end_time` alone is partial; on
+  a tie, cascade membership depended on the caller's array order, so `/stats`
+  and `/archives` could compute different cascade sets and silently break the
+  deep link between them. Adds an `event_id` tiebreak — safe because the list is
+  pre-filtered to `defend` and `event_id` is unique per type. Hardening only:
+  real data has 0 ties across 3,224 failed defends, and the tiebreak changes 0
+  cascades across all 160 seasons.
+- **`getWarOutcome.mjs` moved to `src/shared/utils/game/`.**
+  `db/queries/getCrossSeasonStats.mjs` imported it from `features/` — the only
+  `db/ → features/` import in the repo. `getCascadeLeaderboard` already
+  establishes `db/ → shared/` as the sanctioned direction. Test file relocated
+  to match, and the already-stale doc path corrected.
+- `update/season.mjs` passes the snapshot item straight to `upsertStatus`
+  (which plucks the three fields explicitly and never spreads), matching how
+  `update/status.mjs` already calls it.
+
+### Notes
+
+- Removed a dead `getWarOutcome` mock from `ArchivesClient.test.jsx`:
+  `ArchivesClient` no longer imports it and `ArchiveStats` is stubbed, so the
+  `mockReturnValue` calls falsely implied the war outcome affected that render.
+
 ## 0.65.7
 
 ### Security

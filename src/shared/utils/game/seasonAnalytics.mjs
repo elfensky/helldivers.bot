@@ -29,9 +29,14 @@ const MAX_GAP_SEC = 3600; // 1 hour
 export function findAllCascades(events, { minLength = 4 } = {}) {
     if (!events?.length) return [];
 
+    // end_time alone is a partial order: on a tie, cascade membership would depend on
+    // the caller's incoming array order, and /stats (getCascadeLeaderboard) and
+    // /archives (getCampaign) could then disagree. event_id is unique per type and this
+    // list is pre-filtered to DEFEND, so it is a total order here — do not lift this
+    // comparator onto a mixed-type event list.
     const failedDefends = events
         .filter((e) => e.type === EVENT_TYPE.DEFEND && e.status === EVENT_STATUS.FAIL)
-        .sort((a, b) => a.end_time - b.end_time);
+        .sort((a, b) => a.end_time - b.end_time || a.event_id - b.event_id);
 
     if (failedDefends.length < minLength) return [];
 

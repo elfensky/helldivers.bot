@@ -118,6 +118,9 @@ export async function checkAndNotify() {
             orderBy: { season: 'desc' },
             select: {
                 events: {
+                    // Ordered so push notifications fan out in a stable, chronological
+                    // order rather than whatever the planner returns.
+                    orderBy: [{ start_time: 'asc' }, { event_id: 'asc' }],
                     select: {
                         type: true,
                         event_id: true,

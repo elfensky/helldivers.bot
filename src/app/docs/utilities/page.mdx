@@ -455,7 +455,7 @@ Same-origin proxy for the Umami tracker script. Receives POST from the client-si
 
 ## 7. War Outcome — `getWarOutcome`
 
-`src/features/archives/getWarOutcome.mjs`
+`src/shared/utils/game/getWarOutcome.mjs`
 
 ```ts
 getWarOutcome(data: { snapshots?, events?, live? }): { outcome: 'victory'|'defeat', reason: string } | null
@@ -473,7 +473,7 @@ Determines whether a war ended in victory or defeat. Extracted from `War.jsx` fo
 
 **Consumers:** `War.jsx` (UI banner), potentially future features. Note: the OG image route does NOT use this — it derives status directly from events.
 
-**Tests:** `src/__tests__/unit/utils/getWarOutcome.test.mjs` (8 cases)
+**Tests:** `src/__tests__/unit/shared/utils/game/getWarOutcome.test.mjs`
 
 ---
 

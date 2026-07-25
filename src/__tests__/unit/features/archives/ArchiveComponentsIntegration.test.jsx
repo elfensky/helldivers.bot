@@ -79,7 +79,7 @@ vi.mock('@/shared/hooks/useHeaderGlassFilter.mjs', () => ({
     useHeaderGlassFilter: mockUseHeaderGlassFilter,
 }));
 
-vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
+vi.mock('@/shared/utils/game/getWarOutcome.mjs', () => ({
     getWarOutcome: mockGetWarOutcome,
 }));
 

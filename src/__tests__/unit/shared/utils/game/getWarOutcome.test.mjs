@@ -1,4 +1,4 @@
-import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
+import { getWarOutcome } from '@/shared/utils/game/getWarOutcome.mjs';
 
 describe('getWarOutcome', () => {
     test('returns null when no data', () => {
