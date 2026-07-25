@@ -92,14 +92,16 @@ const enemyParam = factionSlug.optional().openapi({
     description: 'Restrict the response to a single faction.',
 });
 const limitParam = z.coerce.number().int().min(1).max(500).optional().openapi({
-    description: 'Page size, 1–500 (default 100).',
+    description:
+        'Page size, 1–500 (default 100). Paginated responses only. `mode=latest` is unpaginated — it returns one item per faction (at most three) and echoes this value back as `page.limit` without applying it.',
     example: 100,
 });
 const cursorParam = z.string().optional().openapi({
-    description: 'Opaque keyset cursor returned as `page.nextCursor` of a prior page.',
+    description:
+        'Opaque keyset cursor returned as `page.nextCursor` of a prior page (history). Ignored by `mode=latest`, which is unpaginated.',
 });
 const orderParam = z.enum(['asc', 'desc']).optional().openapi({
-    description: 'Bucket order (default `desc`).',
+    description: 'Bucket order (default `desc`) (history). Ignored by `mode=latest`.',
 });
 const fromParam = z.string().optional().openapi({
     description: 'ISO datetime lower bound (history).',
@@ -110,7 +112,10 @@ const toParam = z.string().optional().openapi({
     example: '2026-02-01T00:00:00Z',
 });
 const pageSchema = z.object({
-    limit: z.number(),
+    limit: z.number().openapi({
+        description:
+            'Echo of the requested page size. In paginated modes `items.length <= limit`; `mode=latest` is unpaginated and always returns every matching faction.',
+    }),
     nextCursor: z
         .string()
         .nullable()
@@ -411,16 +416,19 @@ registry.registerPath({
                     season: z.number(),
                     bucket: z.number(),
                     events: z.enum(['active', 'none']),
+                    // Per-front .optional() rather than .partial(): .partial() made
+                    // every front optional in one stroke, so a contract test could not
+                    // tell "filtered out by ?enemy=" from "dropped by a regression".
                     fronts: z
                         .object({
-                            bugs: z.array(MapRegionSchema),
-                            cyborgs: z.array(MapRegionSchema),
-                            illuminate: z.array(MapRegionSchema),
-                            superEarth: z.array(MapRegionSchema),
+                            bugs: z.array(MapRegionSchema).optional(),
+                            cyborgs: z.array(MapRegionSchema).optional(),
+                            illuminate: z.array(MapRegionSchema).optional(),
+                            superEarth: z.array(MapRegionSchema).optional(),
                         })
-                        .partial()
                         .openapi({
-                            description: 'Per-faction fronts (filtered by `enemy`).',
+                            description:
+                                'Per-faction fronts. All four are present unless narrowed by `enemy`, in which case only the requested faction (and `superEarth`) appears.',
                         }),
                     activeEvents: z.array(MapEventSchema),
                 }),
