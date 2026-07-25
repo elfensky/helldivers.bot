@@ -1,5 +1,70 @@
 # Changelog
 
+## 0.67.0
+
+### Fixed
+
+- **Four real bugs could ship without failing a single test.** Mutation testing
+  the suite — injecting realistic bugs and checking whether anything went red —
+  found four that survived all 1,619 tests: `computeLiveMap` computing the map
+  from unfiltered events (the drift CLAUDE.md marks Critical), every sector
+  path geometry replaced by a stub, the attack percentage losing its `* 100`,
+  and the `ProgressExplainer` buffer moving from 0.1 to 0.5. The root causes
+  were a self-referential assertion (`expect(mapState).toEqual(computeMapState(...))`,
+  where the expected value is produced by the code under test), a fixture whose
+  event ordering made the leak a no-op, sliders that were rendered but never
+  moved, and geometry assertions satisfied by `"M0 0"`. All four now fail on
+  injection; the suite is re-verified at **17 mutations, 17 killed**.
+- **The smoke suite reported success when it tested nothing.** `describe.runIf`
+  meant an unreachable server produced 12 skipped tests and exit code 0 — and
+  no workflow invoked it in the first place. It now fails loudly by default,
+  with `SMOKE_ALLOW_SKIP=1` as an explicit local opt-out.
+
+### Added
+
+- **Handler tests for the entire public v1 API**, which previously had none —
+  only its pure projections were covered. The auth gate, rate-limit group
+  selection, parameter validation, backfill-and-retry, ETag/304 and cache tiers
+  across `/status`, `/stats`, `/map` and `/season` are now pinned, along with
+  `authGuards` (`requireAdmin` was mocked by all three of its consumers and
+  tested by none) and the previously untested `cursor` codec.
+- **A composed ingest test** (`ingestInvariants.test.mjs`) that mocks only the
+  fetch layer and the database, leaving the season resolver, both cross-season
+  guards and the bucket arithmetic real — so the invariants are verified as a
+  chain rather than as five sealed units.
+- **Schema-scoped HD1 wire fixtures** (`@test-utils/hd1.mjs`). Deliberately not
+  unified: the two endpoints' event schemas differ in opposite directions
+  (`region` required in one, forbidden on attack in the other), and a superset
+  factory was measured to let a real schema regression through, because Zod
+  strips unknown keys.
+- **A test pinning `role: { input: false }`** in `src/auth.js` — the single line
+  preventing a client from submitting `role: 'admin'` at sign-up — plus the
+  `BETTER_AUTH_SECRET`-absent branch and the trusted-provider list, so adding an
+  unverified provider trips a test rather than shipping silently.
+
+### Changed
+
+- **Coverage stops flattering itself.** The exclude list waived ~4,000 LOC on the
+  grounds that it was "tested via e2e/smoke" — a suite that never ran in CI and
+  that, having no coverage instrumentation, could not have produced coverage
+  data in any case. Four entries named files deleted long ago, and two excluded
+  files were already tested at 100%, so their earned coverage was being
+  discarded. The list is now generated code and tests only.
+- **The main-PR smoke job runs the smoke suite** instead of a single
+  `curl | grep` health check, reusing the compose stack it already builds.
+- **Route modules import cache helpers from `config/policy.mjs`** (env-free)
+  rather than `config/server.mjs`, which validates environment at import time.
+  Behaviourally identical — `server.mjs` was a bare re-export — and it removes a
+  class of import-time friction. One convention across all five routes.
+- **One db-mocking convention.** Six local `vi.mock('@/db/db')` blocks that
+  shadowed the global mock with strict subsets are gone, `api_rate_limit` was
+  added to the global mock, and the dead `createMockModel`/`createMockSession`
+  helpers (a byte-identical copy of a private setup helper, and an unused one)
+  are deleted.
+- Corrected `CLAUDE.md` and `README.md`, which both described Playwright smoke
+  tests that do not exist, and `CLAUDE.md`'s `bucketing.mjs` path and
+  `BUCKET_SIZE` default (900s, not one hour).
+
 ## 0.66.2
 
 ### Fixed
