@@ -1,19 +1,5 @@
 import { vi } from 'vitest';
 
-vi.mock('@/db/db', () => ({
-    default: {
-        h1_season: {
-            findFirst: vi.fn(),
-        },
-        h1_status: {
-            findMany: vi.fn(),
-        },
-        h1_event: {
-            findMany: vi.fn(),
-        },
-        $queryRaw: vi.fn(),
-    },
-}));
 vi.mock('@/shared/utils/api/validateApiKey', () => ({
     validateApiKey: vi.fn(),
     API_KEY_ERROR: Object.freeze({

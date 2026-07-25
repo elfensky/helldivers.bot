@@ -1,9 +1,3 @@
-import { vi } from 'vitest';
-
-vi.mock('@/db/db', () => ({
-    default: { $queryRaw: vi.fn() },
-}));
-
 import db from '@/db/db';
 import { GET, POST, PUT, DELETE, PATCH, OPTIONS } from '@/app/api/healthcheck/route';
 

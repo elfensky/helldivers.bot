@@ -5,7 +5,6 @@ import { updateSeason } from '@/update/season.mjs';
 import { expectSuccessEnvelope, expectErrorEnvelope } from '@test-utils';
 import { reportError } from '@/shared/utils/observability.mjs';
 
-vi.mock('@/shared/utils/observability.mjs', () => ({ reportError: vi.fn() }));
 vi.mock('@/update/status', () => ({ updateStatus: vi.fn() }));
 vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
 vi.mock('@/update/pushNotifier', () => ({
