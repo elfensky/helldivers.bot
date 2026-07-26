@@ -3,9 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 function listTypecheckedFiles() {
-    const repoRoot = path.resolve(import.meta.dirname, '../../..');
+    const repoRoot = path.resolve(import.meta.dirname, '../../../..');
     const tscPath = fileURLToPath(
-        new URL('../../../node_modules/typescript/bin/tsc', import.meta.url),
+        new URL('../../../../node_modules/typescript/bin/tsc', import.meta.url),
     );
     const output = execFileSync(
         process.execPath,
@@ -33,7 +33,7 @@ test('typecheck includes app source files and excludes unit tests', () => {
     expect(
         files.some((file) =>
             file.endsWith(
-                path.join('src', '__tests__', 'unit', 'packageScripts.test.mjs'),
+                path.join('src', '__tests__', 'unit', '_meta', 'packageScripts.test.mjs'),
             ),
         ),
     ).toBe(false);

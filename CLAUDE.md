@@ -25,6 +25,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Vitest:** `npm run test:unit` (single run), `npm run test:coverage` (with coverage).
 - **Smoke tests:** `npm run test:smoke` (`test:e2e` is an alias) — plain Vitest + `fetch` against a running server, no Playwright and no browser. Requires a server on `:3000` or `TEST_SERVER_URL`; it **fails** if none is reachable (`SMOKE_ALLOW_SKIP=1` to skip instead).
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
+- **The unit test tree mirrors the source tree.** See § Test Layout below — put a new test at the mirrored path of the module it covers, or `npm run test:unit` fails.
 - **Progressive env vars:** Only `POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL` are required. Auth, analytics, and `BUCKET_SIZE` (timeseries bucket width) are optional — see `.example.env` section headers.
 
 ### DevTools Verification
@@ -131,6 +132,29 @@ When adding a new interactive element, always add a `data-umami-event` attribute
 ### Validation
 
 All external data validated with Zod schemas (`src/validators/`) before database operations.
+
+### Test Layout
+
+`src/__tests__/unit/` mirrors the source tree, so "does X have a test?" is answerable by path. A test for `src/features/galaxy/Map.jsx` is at `src/__tests__/unit/features/galaxy/Map.test.jsx`, and nowhere else. Enforced by `src/__tests__/unit/_meta/mirrorTree.test.mjs`:
+
+> a test at `unit/<dir>/<Base>[.<qualifier>].test.*` must have a source file at `<root>/<dir>/<Base>.*` or `<root>/<dir>/<Base>/<Base>.*`, for `<root>` in {`src`, `public`}
+
+Both source shapes are accepted because `src/shared/components/` mixes them (per-component folders _and_ flat files) — mirror whichever shape the component actually uses.
+
+The optional `.<qualifier>` segment covers everything the bare rule can't:
+
+- **Several tests for one module** — `actions.apiKeys.test.mjs` + `actions.userData.test.mjs` both cover `features/account/actions.mjs`.
+- **A named export of a differently-named file** — `StatGrid.StatCard.test.jsx` tests `StatCard`, exported from `StatGrid.jsx`. Name it after the **host file**, not the export.
+
+Three escape hatches, all name-based (there is no allowlist):
+
+| Pattern                | Use for                                                               |
+| ---------------------- | --------------------------------------------------------------------- |
+| `unit/_meta/**`        | tests of the repo itself — `package.json`, `jsconfig`, `.example.env` |
+| `*.contract.test.*`    | a contract spanning several modules (e.g. the v1 pagination contract) |
+| `*.integration.test.*` | a test exercising several modules together                            |
+
+Don't reach for an escape hatch to dodge a move. A test that imports many modules but is _about_ one still belongs next to that one.
 
 ### Imports
 
