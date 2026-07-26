@@ -289,8 +289,17 @@ vi.mock('next/link', () => ({
 // on console output should use `vi.spyOn(console, 'error').mockImplementation(...)`
 // scoped to their own file/test.
 
+// `resetAllMocks`, not `clearAllMocks`. `clearAllMocks` only wipes call history;
+// an implementation installed by `mockResolvedValue`/`mockImplementation` survives
+// into every later test in the file. That silently broke the documented contract
+// of the mocks above ("getSession defaults to null / findMany defaults to []") —
+// the default held only until the first test overrode it, so tests asserting the
+// logged-out path passed purely because they happened to run before the tests that
+// log a user in. `resetAllMocks` restores each `vi.fn(impl)` to its `impl` and each
+// `vi.spyOn` to the original method, so every test starts from the documented
+// defaults regardless of order.
 beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 });
 
 // #endregion
