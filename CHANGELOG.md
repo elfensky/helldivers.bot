@@ -71,6 +71,18 @@
   `next/dynamic` chart was asserted synchronously, passing only when an earlier
   test had already warmed React's lazy cache. Now green across seeds 42, 7, 11,
   777, 2024 and 31337, and under unseeded shuffle.
+- **The unit test tree mirrors the source tree again**, so "does X have a test?"
+  is answerable by path. It had drifted into three homes for `src/app/api/`, two
+  for `src/db/queries/`, two for `src/shared/utils/format/`, a stale `unit/utils/`
+  prefix, two misnamed worker tests, and four tests filed under the wrong feature
+  entirely. 57 renames put every test next to the module it covers, and
+  `unit/_meta/mirrorTree.test.mjs` now enforces it — a filesystem rule needing no
+  import parsing and **no allowlist**, with three name-based escape hatches
+  (`_meta/`, `.contract.`, `.integration.`) documented in CLAUDE.md. The drift was
+  not cosmetic: `shared/utils/utils.test.mjs` existed because someone checked the
+  obvious path, found nothing, and wrote a second formatNumber suite — its unique
+  BigInt/NaN/Infinity/0 cases are folded into the real one rather than dropped.
+
 - **Coverage stops flattering itself.** The exclude list waived ~4,000 LOC on the
   grounds that it was "tested via e2e/smoke" — a suite that never ran in CI and
   that, having no coverage instrumentation, could not have produced coverage
