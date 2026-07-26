@@ -3,7 +3,7 @@ import { createRequire } from 'module';
 import Module from 'module';
 import path from 'path';
 
-// public/workers/cron.js is the worker_threads ENTRY shell. cron.test.mjs
+// public/workers/cron.js is the worker_threads ENTRY shell. cronLogic.test.mjs
 // tests cronLogic.js (its dependency) in isolation; this file tests that
 // cron.js still wires parentPort + cronLogic together correctly.
 //
