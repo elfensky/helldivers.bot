@@ -44,6 +44,33 @@
 
 ### Changed
 
+- **CI boots the app on every PR, instead of only proving it compiles.** `ci.yml`
+  gained a Postgres service, migrate + offline seed, and a standalone boot of the
+  build it already produced — then runs the smoke suite against it. Roughly +2
+  minutes, because it reuses that build rather than rebuilding container images.
+  `main-pr-docker-smoke.yml` stays as a separate release gate answering a
+  different question: whether the *shipping artifact* works. One caveat found
+  while verifying: the cron worker polls the HD1 API immediately on boot and
+  writes live rows, which would drift the seeded database mid-run, so CI pins the
+  HD1 host to `0.0.0.0` — the gate asserts nothing about upstream reachability.
+- **The smoke suite covers the public v1 API** (12 → 22 tests), asserting the
+  differentiated cache tiers, per-group rate-limit headers, and the ETag/304
+  round-trip — regressions that are invisible to unit tests because a wrong
+  `Cache-Control` breaks nothing, it just serves stale war data. Gated on a
+  deterministic seeded key that only exists when `SEED_TEST_API_KEY` is set;
+  these assertions skip cleanly without it.
+- **The suite is order-independent.** It passed in file order but failed under
+  `--sequence.shuffle` — and `shuffle` reorders tests *within* a file, which is
+  where all the rot was. Three leaks: the global `beforeEach` used
+  `vi.clearAllMocks()`, which wipes call history but leaves implementations set
+  by `mockResolvedValue` in place, so the documented "logged-out by default"
+  session mock only held until the first test logged a user in (both
+  `returns auth error when no session` tests passed purely on file order); a
+  `document.hidden` override shadowed the prototype getter and was never removed,
+  leaving every later test in that file believing the tab was hidden; and a
+  `next/dynamic` chart was asserted synchronously, passing only when an earlier
+  test had already warmed React's lazy cache. Now green across seeds 42, 7, 11,
+  777, 2024 and 31337, and under unseeded shuffle.
 - **Coverage stops flattering itself.** The exclude list waived ~4,000 LOC on the
   grounds that it was "tested via e2e/smoke" — a suite that never ran in CI and
   that, having no coverage instrumentation, could not have produced coverage
