@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 function readPackageJson() {
-    const packageJsonPath = new URL('../../../package.json', import.meta.url);
+    const packageJsonPath = new URL('../../../../package.json', import.meta.url);
     return JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 }
 
