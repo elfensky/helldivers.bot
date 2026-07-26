@@ -41,25 +41,24 @@ jobs:
         env:
             # Connection string for every smoke-gate step (NOT the build — see above).
             SMOKE_POSTGRES_URL: 'postgresql://ci:ci@localhost:5433/ci'
-            # Deterministic API key for the key-gated /api/v1/h1/* smoke assertions.
             #
-            # NOT A SECRET. This is a throwaway, CI-only test credential, checked in
-            # deliberately as a plain workflow constant (not a repository secret) —
-            # it grants access to nothing but this job's Postgres service container,
-            # which is created and destroyed with the runner. It MUST NEVER be used
-            # anywhere else: not in a developer database, not in staging, not in
-            # production. `prisma/seed/seed.mjs` creates the matching ApiKey row only
-            # when the _HASH variable below is set, so no developer or production
-            # seed run ever produces a key.
+            # The deterministic API key for the key-gated /api/v1/h1/* smoke
+            # assertions is deliberately NOT declared at job level. It is split
+            # across the only two steps that need it, so the separation holds at
+            # runtime rather than merely on paper:
+            #   - "Seed the database"  gets SEED_TEST_API_KEY_HASH (digest only)
+            #   - "Run smoke tests"    gets SEED_TEST_API_KEY (plaintext, for the
+            #     `Authorization: Bearer <key>` header)
+            # The seed therefore never has the plaintext in its environment at all,
+            # and never hashes anything.
             #
-            # The two halves are split on purpose. Only the smoke suite gets the
-            # plaintext (it has to send `Authorization: Bearer <key>`); the seed gets
-            # only the digest, so it never handles key material and never has to hash
-            # anything. The digest is the sha-256 hex of the plaintext above:
-            #     printf 'ci-smoke-test-key-do-not-use-elsewhere' | shasum -a 256
-            # Recompute and update both lines together if the plaintext ever changes.
-            SEED_TEST_API_KEY: 'ci-smoke-test-key-do-not-use-elsewhere'
-            SEED_TEST_API_KEY_HASH: 'f419d915c0daa5ac45543eb22fda2cd2b7030f26e69b3cc2e7850885aa34bb56'
+            # NOT A SECRET. A throwaway CI-only test credential, checked in
+            # deliberately as a plain constant rather than a repository secret — it
+            # grants access to nothing but this job's Postgres service container,
+            # created and destroyed with the runner. It MUST NEVER be used anywhere
+            # else: not in a developer database, not in staging, not in production.
+            # seed.mjs creates the ApiKey row only when the _HASH var is set, so no
+            # developer or production seed run ever produces a key.
 
         steps:
             - name: Checkout code
@@ -141,6 +140,11 @@ jobs:
               run: node prisma/seed/seed.mjs
               env:
                   POSTGRES_URL: ${{ env.SMOKE_POSTGRES_URL }}
+                  # sha-256 hex of the plaintext key used by the smoke step below.
+                  # Non-secret, CI-only, throwaway. Never use elsewhere. Regenerate
+                  # both together:
+                  #   printf 'ci-smoke-test-key-do-not-use-elsewhere' | shasum -a 256
+                  SEED_TEST_API_KEY_HASH: 'f419d915c0daa5ac45543eb22fda2cd2b7030f26e69b3cc2e7850885aa34bb56'
 
             # next.config.mjs sets output:'standalone', so `next start` does not
             # work. The script locates .next/standalone/**/server.js, copies in the
@@ -163,6 +167,9 @@ jobs:
               run: npm run test:smoke
               env:
                   TEST_SERVER_URL: http://127.0.0.1:3000
+                  # Plaintext of the digest seeded above. Non-secret, CI-only,
+                  # throwaway. Unsetting it makes the v1 assertions skip.
+                  SEED_TEST_API_KEY: 'ci-smoke-test-key-do-not-use-elsewhere'
                   # SMOKE_ALLOW_SKIP is deliberately unset: an unreachable server
                   # must fail this job, never skip it.
 

@@ -57,7 +57,7 @@
   differentiated cache tiers, per-group rate-limit headers, and the ETag/304
   round-trip — regressions that are invisible to unit tests because a wrong
   `Cache-Control` breaks nothing, it just serves stale war data. Gated on a
-  deterministic seeded key that only exists when `SEED_TEST_API_KEY` is set;
+  deterministic key seeded from its sha-256 digest, present only when `SEED_TEST_API_KEY_HASH` is set;
   these assertions skip cleanly without it.
 - **The suite is order-independent.** It passed in file order but failed under
   `--sequence.shuffle` — and `shuffle` reorders tests *within* a file, which is
