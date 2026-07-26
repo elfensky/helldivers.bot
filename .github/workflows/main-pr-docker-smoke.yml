@@ -10,6 +10,13 @@ name: Main PR Docker Smoke
 # Scoped to `pull_request: branches: [main]` only — runs on release PRs from
 # develop → main and on hotfix PRs to main. Not on develop PRs (too slow for
 # the integration loop) and not on pushes (by then the merge already happened).
+#
+# Not superseded by the smoke gate in ci.yml. That gate boots `next build`'s
+# standalone output directly on the runner, so it proves the *application*
+# runs; this one builds and runs the *shipping artifact*, so it is the only
+# check that covers the Dockerfiles, the compose wiring, the image-level
+# dependency trace, and raw-Node module resolution. Same smoke suite, different
+# subject — keep both.
 
 on:
     pull_request:

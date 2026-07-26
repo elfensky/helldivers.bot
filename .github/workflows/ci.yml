@@ -18,6 +18,36 @@ jobs:
         name: Test & Build
         runs-on: ubuntu-latest
 
+        # Backing store for the smoke gate at the end of this job. Nothing before
+        # the "Apply migrations" step touches it — in particular the Build step
+        # keeps its unreachable stub URL (localhost:5432), which is why this maps
+        # to 5433 instead of the default port: the build's behaviour stays exactly
+        # what it is today rather than silently acquiring a live database.
+        services:
+            postgres:
+                image: postgres:17-alpine
+                env:
+                    POSTGRES_USER: ci
+                    POSTGRES_PASSWORD: ci
+                    POSTGRES_DB: ci
+                ports:
+                    - 5433:5432
+                options: >-
+                    --health-cmd "pg_isready -U ci -d ci"
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 10
+
+        env:
+            # Connection string for every smoke-gate step (NOT the build — see above).
+            SMOKE_POSTGRES_URL: 'postgresql://ci:ci@localhost:5433/ci'
+            # Deterministic API key for the key-gated /api/v1/h1/* smoke assertions.
+            # Safe to hardcode: it only ever exists in this job's throwaway Postgres
+            # service container, which is destroyed with the runner. `prisma/seed/
+            # seed.mjs` creates the matching ApiKey row only when this is set, so no
+            # developer or production seed run ever produces a key.
+            SEED_TEST_API_KEY: 'ci-smoke-test-key-do-not-use-elsewhere'
+
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.0
@@ -58,3 +88,74 @@ jobs:
                   POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
                   UPDATE_KEY: 'ci-stub-key'
                   UPDATE_INTERVAL: '20'
+
+            # ─── Smoke gate ─────────────────────────────────────────────
+            #
+            # Everything above proves the app compiles. Everything below proves it
+            # BOOTS: the build that `npm run build` just produced is assembled,
+            # started against a migrated + seeded database, and answered against by
+            # the smoke suite. Reusing that build is the whole point — a separate
+            # `needs:` job would have to redo `npm ci` + `npm run build` (or ship
+            # `.next` through the artifact store) and would still be serialised
+            # behind this one, so ordered steps are both simpler and faster. The
+            # fast feedback loop is unaffected: lint/typecheck/unit still run first
+            # and still abort the job on failure without waiting for a boot.
+            #
+            # This gate is deliberately NOT a replacement for
+            # main-pr-docker-smoke.yml — see the note at the top of that file.
+
+            # The cron worker spawns on boot and immediately polls the official HD1
+            # API through /api/h1/update, which would write live season rows into
+            # the database mid-test and make the gate depend on a third party being
+            # up. Pinning the domain to a dead address makes that first poll fail
+            # fast, so the database stays exactly as seeded and the gate is
+            # hermetic. Reaching the real HD1 API is not this job's assertion.
+            - name: Blackhole the official HD1 API
+              run: echo '0.0.0.0 api.helldiversgame.com' | sudo tee -a /etc/hosts
+
+            - name: Apply migrations
+              run: npx prisma migrate deploy
+              env:
+                  POSTGRES_URL: ${{ env.SMOKE_POSTGRES_URL }}
+
+            # Fully offline: seed.mjs reads the ~156 season fixtures committed under
+            # prisma/seed/seasons/ and makes no network call. Seeding is required,
+            # not cosmetic — /archives renders a "unable to load" fallback instead
+            # of the text the smoke suite asserts when getCampaign() finds no rows.
+            # SEED_TEST_API_KEY additionally creates the v1 API key + owner row.
+            - name: Seed the database
+              run: node prisma/seed/seed.mjs
+              env:
+                  POSTGRES_URL: ${{ env.SMOKE_POSTGRES_URL }}
+
+            # next.config.mjs sets output:'standalone', so `next start` does not
+            # work. The script locates .next/standalone/**/server.js, copies in the
+            # .next/static and public/ trees that next build leaves out (exactly as
+            # Dockerfile.app does), boots it, and blocks until /api/healthcheck
+            # returns 200 — failing loudly with the server log if it never does.
+            - name: Boot the built app
+              run: scripts/start-standalone.sh
+              env:
+                  PORT: '3000'
+                  POSTGRES_URL: ${{ env.SMOKE_POSTGRES_URL }}
+                  NODE_ENV: production
+                  UPDATE_KEY: 'ci-smoke-stub-key'
+                  # One poll fires immediately on boot regardless; a long interval
+                  # means it is also the only one. It fails anyway (see the
+                  # /etc/hosts pin above).
+                  UPDATE_INTERVAL: '3600'
+
+            - name: Run smoke tests against the built app
+              run: npm run test:smoke
+              env:
+                  TEST_SERVER_URL: http://127.0.0.1:3000
+                  # SMOKE_ALLOW_SKIP is deliberately unset: an unreachable server
+                  # must fail this job, never skip it.
+
+            - name: Dump the server log on failure
+              if: failure()
+              run: cat .next/standalone-server.log || true
+
+            - name: Stop the server
+              if: always()
+              run: kill "$(cat .next/standalone-server.pid)" 2>/dev/null || true
