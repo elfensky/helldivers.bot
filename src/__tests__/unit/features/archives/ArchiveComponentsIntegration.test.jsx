@@ -217,12 +217,18 @@ describe('Archive Components Integration Tests', () => {
             expect(props).toHaveProperty('data', data);
         });
 
-        test('FactionHealthChart receives snapshots and points_max', () => {
+        // `findBy`, not `getBy`: ArchivesClient reaches the chart through
+        // FactionHealthChartLoader, a `next/dynamic` wrapper, so the mocked
+        // module arrives on a later microtask. React.lazy caches the resolved
+        // module, so a synchronous `getBy` only works once some *earlier* test
+        // in this file has already rendered ArchivesClient and warmed that
+        // cache — which is order dependence, not a passing test.
+        test('FactionHealthChart receives snapshots and points_max', async () => {
             render(
                 <ArchivesClient data={data} seasons={[season]} currentSeason={season} />,
             );
 
-            const chartElement = screen.getByTestId('faction-health-chart-mock');
+            const chartElement = await screen.findByTestId('faction-health-chart-mock');
             const props = JSON.parse(chartElement.getAttribute('data-props') || '{}');
 
             expect(props).toHaveProperty('snapshots', data.snapshots);
@@ -561,14 +567,12 @@ describe('Archive Components Integration Tests', () => {
             });
         });
 
-        test('every one of the 500 snapshots reaches the conquest chart, in order', () => {
+        // `findBy` for the same reason as above — the chart is lazily loaded.
+        test('every one of the 500 snapshots reaches the conquest chart, in order', async () => {
             renderLarge();
 
-            const props = JSON.parse(
-                screen
-                    .getByTestId('faction-health-chart-mock')
-                    .getAttribute('data-props') || '{}',
-            );
+            const chart = await screen.findByTestId('faction-health-chart-mock');
+            const props = JSON.parse(chart.getAttribute('data-props') || '{}');
             expect(props.snapshots).toHaveLength(SNAPSHOT_COUNT);
             expect(props.snapshots[0].time).toBe(1700000000);
             expect(props.snapshots[SNAPSHOT_COUNT - 1].time).toBe(
