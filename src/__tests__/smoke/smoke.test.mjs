@@ -109,10 +109,12 @@ describe.runIf(serverAvailable)('Smoke tests', () => {
 // ─── Public v1 API ──────────────────────────────────────────────────
 //
 // Every /api/v1/h1/* route is key-gated, so these assertions need a real key in
-// a real database. `SEED_TEST_API_KEY` supplies one: the CI workflow generates a
-// value, hands it to `prisma/seed/seed.mjs` (which creates the matching ApiKey
-// row), and passes the same value here. Absent the variable the block skips, so
-// `npm run test:smoke` against a plain dev server still works unchanged.
+// a real database. `SEED_TEST_API_KEY` supplies one. The CI workflow splits the
+// key in two: `prisma/seed/seed.mjs` is handed only the sha-256 digest (which it
+// writes to `ApiKey.hash`), and the plaintext comes here — the one place that
+// actually has to put it on the wire as a Bearer token. Absent the variable the
+// block skips, so `npm run test:smoke` against a plain dev server still works
+// unchanged.
 //
 // What lives here and not in the unit suite: unit tests mock the DB and call the
 // route handler directly, which cannot observe what an HTTP client actually

@@ -19,7 +19,6 @@ dotenv.config(); // fallback to .env (production/Docker)
 import { readdir, readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createHash } from 'node:crypto';
 
 // Relative imports — @/* aliases don't work outside Next.js
 import { PrismaClient } from '../../src/generated/prisma/client.ts';
@@ -175,15 +174,28 @@ async function seedSeason(db, file) {
 // the seed re-uses the same user instead of piling up orphans.
 const TEST_USER_ID = '00000000-0000-7000-8000-000000000001';
 
+// `ApiKey.visible` is display-only metadata — the dashboard renders it as
+// `****{visible}` (src/features/{account/ApiDashboard,admin/AdminApiKeys}.jsx)
+// and nothing in validateApiKey.mjs reads it (that lookup selects id/userId/
+// enabled only). Normally it holds the plaintext's last 4 characters, but this
+// seed never sees a plaintext, so a fixed non-secret marker stands in.
+const TEST_KEY_VISIBLE = 'ci';
+
 /**
  * CI/TEST ONLY — seed one deterministic API key so the smoke suite can exercise
  * the key-gated `/api/v1/h1/*` surface.
  *
- * Gated entirely behind `SEED_TEST_API_KEY`: when the variable is absent this is
- * a no-op, so ordinary developer seeding and the production/Docker migrate
- * container never create a key. NEVER set this variable outside CI or a local
- * throwaway database — the value is the plaintext key, and anyone holding it can
- * call the whole public API.
+ * Takes the **already-hashed** key, never the plaintext: `SEED_TEST_API_KEY_HASH`
+ * is the sha-256 hex digest that `validateApiKey.mjs` will compute from the
+ * `Authorization: Bearer <key>` header at request time, and it is written to
+ * `ApiKey.hash` verbatim. The matching plaintext goes only to the smoke suite
+ * that has to send it. Keeping the two apart means this script handles no secret
+ * material at all — it does no hashing, and logs nothing key-derived.
+ *
+ * Gated entirely behind the variable: when it is absent this is a no-op, so
+ * ordinary developer seeding and the production/Docker migrate container never
+ * create a key. NEVER point this at a hash whose plaintext is used anywhere real
+ * — a row here grants full access to the public API.
  *
  * Runs before the "already seeded" short-circuit below so the key is created even
  * when the season data is already present.
@@ -192,12 +204,14 @@ const TEST_USER_ID = '00000000-0000-7000-8000-000000000001';
  * @returns {Promise<void>}
  */
 async function seedTestApiKey(db) {
-    const key = process.env.SEED_TEST_API_KEY;
-    if (!key) return;
+    const hash = process.env.SEED_TEST_API_KEY_HASH;
+    if (!hash) return;
 
-    // Same derivation as generateApiKey() in src/features/account/actions.mjs and
-    // the lookup in validateApiKey.mjs — sha-256 hex of the plaintext key.
-    const hash = createHash('sha256').update(key).digest('hex');
+    if (!/^[0-9a-f]{64}$/.test(hash)) {
+        throw new Error(
+            'SEED_TEST_API_KEY_HASH must be a 64-character lowercase sha-256 hex digest.',
+        );
+    }
 
     await db.user.upsert({
         where: { id: TEST_USER_ID },
@@ -215,16 +229,14 @@ async function seedTestApiKey(db) {
         update: { enabled: true, userId: TEST_USER_ID },
         create: {
             hash,
-            visible: key.slice(-4),
+            visible: TEST_KEY_VISIBLE,
             userId: TEST_USER_ID,
             description: 'CI smoke test key',
             enabled: true,
         },
     });
 
-    console.log(
-        `SEED_TEST_API_KEY is set — seeded the CI smoke-test API key (…${key.slice(-4)}).`,
-    );
+    console.log('SEED_TEST_API_KEY_HASH is set — seeded the CI smoke-test API key.');
 }
 
 async function seed() {

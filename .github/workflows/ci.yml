@@ -42,11 +42,24 @@ jobs:
             # Connection string for every smoke-gate step (NOT the build — see above).
             SMOKE_POSTGRES_URL: 'postgresql://ci:ci@localhost:5433/ci'
             # Deterministic API key for the key-gated /api/v1/h1/* smoke assertions.
-            # Safe to hardcode: it only ever exists in this job's throwaway Postgres
-            # service container, which is destroyed with the runner. `prisma/seed/
-            # seed.mjs` creates the matching ApiKey row only when this is set, so no
-            # developer or production seed run ever produces a key.
+            #
+            # NOT A SECRET. This is a throwaway, CI-only test credential, checked in
+            # deliberately as a plain workflow constant (not a repository secret) —
+            # it grants access to nothing but this job's Postgres service container,
+            # which is created and destroyed with the runner. It MUST NEVER be used
+            # anywhere else: not in a developer database, not in staging, not in
+            # production. `prisma/seed/seed.mjs` creates the matching ApiKey row only
+            # when the _HASH variable below is set, so no developer or production
+            # seed run ever produces a key.
+            #
+            # The two halves are split on purpose. Only the smoke suite gets the
+            # plaintext (it has to send `Authorization: Bearer <key>`); the seed gets
+            # only the digest, so it never handles key material and never has to hash
+            # anything. The digest is the sha-256 hex of the plaintext above:
+            #     printf 'ci-smoke-test-key-do-not-use-elsewhere' | shasum -a 256
+            # Recompute and update both lines together if the plaintext ever changes.
             SEED_TEST_API_KEY: 'ci-smoke-test-key-do-not-use-elsewhere'
+            SEED_TEST_API_KEY_HASH: 'f419d915c0daa5ac45543eb22fda2cd2b7030f26e69b3cc2e7850885aa34bb56'
 
         steps:
             - name: Checkout code
@@ -122,7 +135,8 @@ jobs:
             # prisma/seed/seasons/ and makes no network call. Seeding is required,
             # not cosmetic — /archives renders a "unable to load" fallback instead
             # of the text the smoke suite asserts when getCampaign() finds no rows.
-            # SEED_TEST_API_KEY additionally creates the v1 API key + owner row.
+            # SEED_TEST_API_KEY_HASH additionally creates the v1 API key + owner row
+            # (from the digest alone — the seed never sees the plaintext key).
             - name: Seed the database
               run: node prisma/seed/seed.mjs
               env:
