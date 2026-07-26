@@ -8,7 +8,7 @@ import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
 import { getClientIp } from '@/shared/utils/api/clientIp.mjs';
 import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
 import { backfillAndRetry } from '@/shared/utils/api/backfillSeason.mjs';
-import { getCacheControl } from '@/config/server.mjs';
+import { getCacheControl } from '@/config/policy.mjs';
 import { getSeasons } from '@/db/queries/getSeasons.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 import { parseSeasonQuery, projectSeasons } from './seasonProjection.mjs';

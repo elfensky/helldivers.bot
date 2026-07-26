@@ -17,7 +17,7 @@ import { cleanupRateLimitWindows } from '@/shared/utils/api/rateLimit.mjs';
 // Custom header set on the very first poll of a worker session so the
 // handler can run a one-time startup pass (e.g. backfill missing seasons).
 // Mirror of WORKER_STARTUP_HEADER in public/workers/cronLogic.js — the test
-// in src/__tests__/unit/workers/cron.test.mjs asserts the two stay aligned.
+// in src/__tests__/unit/workers/cronLogic.test.mjs asserts the two stay aligned.
 // HTTP header names are case-insensitive; we read it lowercase here to
 // match what `request.headers.get(...)` normalises to.
 export const WORKER_STARTUP_HEADER = 'x-worker-startup';

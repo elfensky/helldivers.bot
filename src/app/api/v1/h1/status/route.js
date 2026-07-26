@@ -5,7 +5,7 @@ import { errorResponse, successResponse } from '@/shared/utils/api/responses.mjs
 import { methodNotAllowed } from '@/shared/utils/api/methodNotAllowed.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
 import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
-import { getCacheControl } from '@/config/server.mjs';
+import { getCacheControl } from '@/config/policy.mjs';
 import { computeEtag, notModified } from '@/shared/utils/api/etag.mjs';
 import { getClientIp } from '@/shared/utils/api/clientIp.mjs';
 import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';

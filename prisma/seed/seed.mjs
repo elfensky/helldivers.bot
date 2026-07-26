@@ -29,7 +29,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SEASONS_DIR = join(__dirname, 'seasons');
 const CONCURRENCY = 10;
 
-// Tumbling-window bucket math for h1_status. Mirrors src/update/bucketing.mjs
+// Tumbling-window bucket math for h1_status. Mirrors src/shared/utils/bucketing.mjs
 // but inlined here so this script has no `@/*`-aliased dependencies.
 const DEFAULT_BUCKET_SIZE = 900;
 const parsedBucketSize = parseInt(process.env.BUCKET_SIZE ?? '', 10);
@@ -170,9 +170,80 @@ async function seedSeason(db, file) {
     );
 }
 
+// Fixed owner row for the CI key. A literal UUID (not randomUUID) so re-running
+// the seed re-uses the same user instead of piling up orphans.
+const TEST_USER_ID = '00000000-0000-7000-8000-000000000001';
+
+// `ApiKey.visible` is display-only metadata — the dashboard renders it as
+// `****{visible}` (src/features/{account/ApiDashboard,admin/AdminApiKeys}.jsx)
+// and nothing in validateApiKey.mjs reads it (that lookup selects id/userId/
+// enabled only). Normally it holds the plaintext's last 4 characters, but this
+// seed never sees a plaintext, so a fixed non-secret marker stands in.
+const TEST_KEY_VISIBLE = 'ci';
+
+/**
+ * CI/TEST ONLY — seed one deterministic API key so the smoke suite can exercise
+ * the key-gated `/api/v1/h1/*` surface.
+ *
+ * Takes the **already-hashed** key, never the plaintext: `SEED_TEST_API_KEY_HASH`
+ * is the sha-256 hex digest that `validateApiKey.mjs` will compute from the
+ * `Authorization: Bearer <key>` header at request time, and it is written to
+ * `ApiKey.hash` verbatim. The matching plaintext goes only to the smoke suite
+ * that has to send it. Keeping the two apart means this script handles no secret
+ * material at all — it does no hashing, and logs nothing key-derived.
+ *
+ * Gated entirely behind the variable: when it is absent this is a no-op, so
+ * ordinary developer seeding and the production/Docker migrate container never
+ * create a key. NEVER point this at a hash whose plaintext is used anywhere real
+ * — a row here grants full access to the public API.
+ *
+ * Runs before the "already seeded" short-circuit below so the key is created even
+ * when the season data is already present.
+ *
+ * @param {import('../../src/generated/prisma/client.ts').PrismaClient} db - Connected client.
+ * @returns {Promise<void>}
+ */
+async function seedTestApiKey(db) {
+    const hash = process.env.SEED_TEST_API_KEY_HASH;
+    if (!hash) return;
+
+    if (!/^[0-9a-f]{64}$/.test(hash)) {
+        throw new Error(
+            'SEED_TEST_API_KEY_HASH must be a 64-character lowercase sha-256 hex digest.',
+        );
+    }
+
+    await db.user.upsert({
+        where: { id: TEST_USER_ID },
+        update: {},
+        create: {
+            id: TEST_USER_ID,
+            name: 'CI Smoke Test',
+            email: 'ci-smoke-test@invalid',
+            role: 'user',
+        },
+    });
+
+    await db.apiKey.upsert({
+        where: { hash },
+        update: { enabled: true, userId: TEST_USER_ID },
+        create: {
+            hash,
+            visible: TEST_KEY_VISIBLE,
+            userId: TEST_USER_ID,
+            description: 'CI smoke test key',
+            enabled: true,
+        },
+    });
+
+    console.log('SEED_TEST_API_KEY_HASH is set — seeded the CI smoke-test API key.');
+}
+
 async function seed() {
     const adapter = new PrismaPg({ connectionString: process.env.POSTGRES_URL });
     const db = new PrismaClient({ adapter });
+
+    await seedTestApiKey(db);
 
     const { data: files, error } = await readdir(SEASONS_DIR)
         .then((d) => ({ data: d, error: null }))

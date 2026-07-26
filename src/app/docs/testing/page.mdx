@@ -47,8 +47,8 @@ graph TD
 
     subgraph Utils["TEST UTILITIES (@test-utils)"]
         MR["createMockRequest()"]
-        MS["createMockSession()"]
-        MM["createMockModel()"]
+        ENV["expectSuccessEnvelope()<br/>expectErrorEnvelope()"]
+        HD1["hd1.mjs<br/><small>HD1 wire-shape fixtures</small>"]
     end
 
     Mocks --> Unit
@@ -141,7 +141,7 @@ The setup file runs before each test file and provides mocks for:
 // Default: logged out (null session)
 // Override in tests:
 import { auth } from '@/auth';
-vi.mocked(auth.api.getSession).mockResolvedValue(createMockSession());
+vi.mocked(auth.api.getSession).mockResolvedValue({ user: { id: 'u1', role: 'admin' } });
 ```
 
 ### Prisma Client
@@ -151,6 +151,22 @@ All models from the schema are mocked with stub CRUD methods (`findMany`, `findU
 ```js
 import db from '@/db/db';
 vi.mocked(db.h1_season.findMany).mockResolvedValue([{ id: 1, season: 1 }]);
+```
+
+This global mock is the **single** db-mocking convention. Do not add a local
+`vi.mock('@/db/db')` in a test file — a local factory shadows the global with a
+strict subset, so any model or method the file later needs silently becomes
+`undefined`. If a model is missing, add it to `vitest.setup.mjs` instead.
+
+### Observability
+
+`reportError` is mocked globally so Sentry never fires from a test, and so tests
+don't have to re-implement `tryCatch` just to suppress its error side-effect.
+The one file that tests the real implementation opts out explicitly:
+
+```js
+vi.unmock('@/shared/utils/observability.mjs');
+const { reportError } = await vi.importActual('@/shared/utils/observability.mjs');
 ```
 
 ### Next.js Modules
@@ -172,13 +188,27 @@ Location: `src/__tests__/utils/index.mjs` (importable as `@test-utils`)
 
 Wraps `new Request()` for API route handler tests. Sets `content-type: application/json` by default.
 
-### createMockSession(overrides)
+### expectSuccessEnvelope(body, opts) / expectErrorEnvelope(body, opts)
 
-Returns a BetterAuth session object with `user` and `session` sub-objects (test user, 24h expiry). Merge overrides for custom scenarios.
+Assert that an API response body matches the standard envelope produced by
+`src/shared/utils/api/responses.mjs`.
 
-### createMockModel()
+### HD1 wire fixtures (`@test-utils/hd1.mjs`)
 
-Returns a Prisma model stub with all standard CRUD methods as `vi.fn()`. Useful for ad-hoc mocks beyond what `vitest.setup.mjs` provides.
+Factories for the official HD1 API wire shapes. Event factories are **scoped to
+the endpoint whose schema they satisfy** — `makeStatusDefendEvent`,
+`makeStatusAttackEvent`, `makeSeasonDefendEvent`, `makeSeasonAttackEvent` — because
+`get_campaign_status` and `get_snapshots` declare genuinely different (and in
+places opposite) field sets. A single superset factory would satisfy all four
+schemas today while hiding field-set contract changes from the rejection tests,
+since Zod strips unknown keys. Keep the field sets exact.
+
+Also exports the shapes that genuinely do unify: `makeValidStatus`,
+`makeValidSeason`, `makeSnapshot`, `makeSnapshotFrame`, `makeCampaignStatus`,
+`makeStatistics`, and the `h1_season` DB row `makeSeasonRow`.
+
+All factories return plain, mutable objects so callers can build rejection cases
+via rest-destructure or `delete obj.field`.
 
 ---
 
@@ -197,7 +227,7 @@ Returns a Prisma model stub with all standard CRUD methods as `vi.fn()`. Useful 
 App Router route handlers are tested by importing the handler directly:
 
 ```js
-vi.mock('@/db/db', () => ({ default: { $queryRaw: vi.fn() } }));
+// No local vi.mock('@/db/db') — vitest.setup.mjs already provides it.
 import db from '@/db/db';
 import { GET } from '@/app/api/healthcheck/route';
 

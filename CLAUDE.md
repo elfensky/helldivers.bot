@@ -23,8 +23,9 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Use agents** for codebase exploration and multi-step research tasks.
 - **Use git worktrees** for parallel development on separate branches.
 - **Vitest:** `npm run test:unit` (single run), `npm run test:coverage` (with coverage).
-- **Playwright smoke tests:** `npm run test:e2e` to verify app builds and runs.
+- **Smoke tests:** `npm run test:smoke` (`test:e2e` is an alias) — plain Vitest + `fetch` against a running server, no Playwright and no browser. Requires a server on `:3000` or `TEST_SERVER_URL`; it **fails** if none is reachable (`SMOKE_ALLOW_SKIP=1` to skip instead).
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
+- **The unit test tree mirrors the source tree.** See § Test Layout below — put a new test at the mirrored path of the module it covers, or `npm run test:unit` fails.
 - **Progressive env vars:** Only `POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL` are required. Auth, analytics, and `BUCKET_SIZE` (timeseries bucket width) are optional — see `.example.env` section headers.
 
 ### DevTools Verification
@@ -132,6 +133,29 @@ When adding a new interactive element, always add a `data-umami-event` attribute
 
 All external data validated with Zod schemas (`src/validators/`) before database operations.
 
+### Test Layout
+
+`src/__tests__/unit/` mirrors the source tree, so "does X have a test?" is answerable by path. A test for `src/features/galaxy/Map.jsx` is at `src/__tests__/unit/features/galaxy/Map.test.jsx`, and nowhere else. Enforced by `src/__tests__/unit/_meta/mirrorTree.test.mjs`:
+
+> a test at `unit/<dir>/<Base>[.<qualifier>].test.*` must have a source file at `<root>/<dir>/<Base>.*` or `<root>/<dir>/<Base>/<Base>.*`, for `<root>` in {`src`, `public`}
+
+Both source shapes are accepted because `src/shared/components/` mixes them (per-component folders _and_ flat files) — mirror whichever shape the component actually uses.
+
+The optional `.<qualifier>` segment covers everything the bare rule can't:
+
+- **Several tests for one module** — `actions.apiKeys.test.mjs` + `actions.userData.test.mjs` both cover `features/account/actions.mjs`.
+- **A named export of a differently-named file** — `StatGrid.StatCard.test.jsx` tests `StatCard`, exported from `StatGrid.jsx`. Name it after the **host file**, not the export.
+
+Three escape hatches, all name-based (there is no allowlist):
+
+| Pattern                | Use for                                                               |
+| ---------------------- | --------------------------------------------------------------------- |
+| `unit/_meta/**`        | tests of the repo itself — `package.json`, `jsconfig`, `.example.env` |
+| `*.contract.test.*`    | a contract spanning several modules (e.g. the v1 pagination contract) |
+| `*.integration.test.*` | a test exercising several modules together                            |
+
+Don't reach for an escape hatch to dodge a move. A test that imports many modules but is _about_ one still belongs next to that one.
+
 ### Imports
 
 `@/*` maps to `./src/*` (configured in `jsconfig.json`).
@@ -159,7 +183,7 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 ## Architecture — Stack
 
 - **Normalized 5-table schema:** `h1_season` (root anchor with inlined `introduction_order[]`, `points_max[]`, `season_duration[]`), `h1_status` (bucketed campaign timeseries), `h1_statistic` (bucketed stats timeseries), `h1_event` (mutable current event state), `h1_event_progress` (bucketed event progression). No raw-cache tables — the rebroadcast API reconstructs wire format from normalized data.
-- **Bucket-upsert pattern:** Both API paths (`updateStatus` from `get_campaign_status`, `updateSeason` from `get_snapshots`) write to the same `h1_status` / `h1_statistic` / `h1_event_progress` tables. Polls are grouped into configurable time buckets (`BUCKET_SIZE` env var, default 1 hour). Within a bucket, values are overwritten (upsert by `season + enemy + bucket`); a new bucket creates a new row. Shared helper: `src/update/bucketing.mjs`.
+- **Bucket-upsert pattern:** Both API paths (`updateStatus` from `get_campaign_status`, `updateSeason` from `get_snapshots`) write to the same `h1_status` / `h1_statistic` / `h1_event_progress` tables. Polls are grouped into configurable time buckets (`BUCKET_SIZE` env var, in seconds, default `900` = 15 min). Within a bucket, values are overwritten (upsert by `season + enemy + bucket`); a new bucket creates a new row. Shared helper: `src/shared/utils/bucketing.mjs`.
 - **Data-source unification:** Both HD1 endpoints write to the same normalized tables. `get_campaign_status` provides live campaign progress + statistics; `get_snapshots` provides historical snapshots + events. The worker polls both every ~15 seconds. On-demand backfill of missing seasons also uses `updateSeason`. The live dashboard reads the latest bucket; archives read the full timeseries.
 - **Season transition closing pass:** When the HD1 API flips from one season to the next, it writes one final "closing" snapshot to the old season a few minutes after the transition. `src/app/api/h1/update/route.js` tracks the season from the previous poll in module-level state (`lastSeasonObserved`) and runs `updateSeason(previousSeason)` once when the current poll's season is higher — catching that closing frame before the worker moves on. Non-fatal on error; the module state resets on worker restart (the only edge case being a restart during the tiny transition window, recoverable via the admin refresh button).
 - **Cross-season lagged event slots:** `get_campaign_status` returns `defend_event` and `attack_events` as "most recent event" slots that persist across season transitions until a new event of the same type replaces them. `getSeasonFromStatus` must NOT aggregate their `.season` into the current-season resolver (they'll report stale values for hours or days after a transition), and `queryUpsertEvent` has an explicit `if (event.season !== season) skip` guard to prevent lagged events from leaking into the wrong season bucket.

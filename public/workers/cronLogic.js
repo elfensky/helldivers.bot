@@ -10,7 +10,7 @@
 // /api/h1/update handler can run a one-time startup pass (e.g. backfill
 // missing seasons). Must match the lowercase string read in
 // src/app/api/h1/update/route.js — kept in lockstep by the test in
-// src/__tests__/unit/workers/cron.test.mjs.
+// src/__tests__/unit/workers/cronLogic.test.mjs.
 const WORKER_STARTUP_HEADER = 'X-Worker-Startup';
 
 /**

@@ -129,6 +129,8 @@ vi.mock('@/db/db', () => ({
         worker_heartbeat: createModelMock(),
         // Push subscriptions
         push_subscription: createModelMock(),
+        // Rate limiting
+        api_rate_limit: createModelMock(),
         // Prisma utilities
         $transaction: vi.fn((fn) => Promise.resolve(Array.isArray(fn) ? fn : fn())),
         $connect: vi.fn(() => Promise.resolve()),
@@ -138,6 +140,19 @@ vi.mock('@/db/db', () => ({
         $executeRaw: vi.fn(() => Promise.resolve(0)),
         $executeRawUnsafe: vi.fn(() => Promise.resolve(0)),
     },
+}));
+
+// #endregion
+
+// #region Observability Mocks
+
+/**
+ * `observability.mjs` exports exactly one symbol: reportError. Mocking it
+ * globally keeps Sentry out of every test and removes the need for tests to
+ * re-implement `tryCatch` purely to suppress its reportError side-effect.
+ */
+vi.mock('@/shared/utils/observability.mjs', () => ({
+    reportError: vi.fn(),
 }));
 
 // #endregion
@@ -274,8 +289,17 @@ vi.mock('next/link', () => ({
 // on console output should use `vi.spyOn(console, 'error').mockImplementation(...)`
 // scoped to their own file/test.
 
+// `resetAllMocks`, not `clearAllMocks`. `clearAllMocks` only wipes call history;
+// an implementation installed by `mockResolvedValue`/`mockImplementation` survives
+// into every later test in the file. That silently broke the documented contract
+// of the mocks above ("getSession defaults to null / findMany defaults to []") —
+// the default held only until the first test overrode it, so tests asserting the
+// logged-out path passed purely because they happened to run before the tests that
+// log a user in. `resetAllMocks` restores each `vi.fn(impl)` to its `impl` and each
+// `vi.spyOn` to the original method, so every test starts from the documented
+// defaults regardless of order.
 beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 });
 
 // #endregion

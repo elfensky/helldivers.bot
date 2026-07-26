@@ -1,12 +1,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('@/db/db', () => ({
-    default: { $queryRaw: vi.fn(), api_rate_limit: { deleteMany: vi.fn() } },
-}));
 vi.mock('@/config/policy.mjs', () => ({
     getRateLimitConfig: vi.fn(() => ({ limit: 3, windowSeconds: 60 })),
 }));
-vi.mock('@/shared/utils/observability.mjs', () => ({ reportError: vi.fn() }));
 
 const db = (await import('@/db/db')).default;
 const { reportError } = await import('@/shared/utils/observability.mjs');

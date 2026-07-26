@@ -1,413 +1,95 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-    makeDoWork,
-    WORKER_STARTUP_HEADER as CRON_WORKER_STARTUP_HEADER,
-} from '../../../../public/workers/cronLogic.js';
-import { WORKER_STARTUP_HEADER as ROUTE_WORKER_STARTUP_HEADER } from '@/app/api/h1/update/route.js';
+import { createRequire } from 'module';
+import Module from 'module';
+import path from 'path';
 
-// public/workers/cron.js is the entry shell — it only wires up
-// parentPort.on('message', ...) → makeDoWork(...). The interesting logic
-// lives in public/workers/cronLogic.js and is what these tests exercise.
-// makeDoWork(cfg, parentPort) returns a self-scheduling doWork() closure
-// that fetches /api/h1/update on the configured interval and reports
-// success/error via parentPort.postMessage.
+// public/workers/cron.js is the worker_threads ENTRY shell. cronLogic.test.mjs
+// tests cronLogic.js (its dependency) in isolation; this file tests that
+// cron.js still wires parentPort + cronLogic together correctly.
+//
+// vi.mock can't reliably intercept require('worker_threads') (a Node
+// built-in) so we monkey-patch Module._load to inject a controllable
+// parentPort BEFORE Node resolves cron.js's top-level require.
 
-function makeParentPort() {
-    return { postMessage: vi.fn() };
-}
+// `require` is not defined in ESM `.mjs` scope. We construct a CommonJS
+// require here via createRequire — both for require()ing cron.js (which is
+// CJS) AND for accessing the require.cache (so we can evict cron.js between
+// tests and re-evaluate it with our patched Module._load in place).
+const requireFromHere = createRequire(import.meta.url);
 
-const baseCfg = { key: 'test-update-key', interval: 30, port: 3000 };
+const cronPath = path.resolve(process.cwd(), 'public/workers/cron.js');
+const _cronLogicPath = path.resolve(process.cwd(), 'public/workers/cronLogic.js');
+
+let parentPortMock;
+let originalLoad;
+let registeredListeners;
+let makeDoWorkSpy;
+let doWorkSpy;
 
 beforeEach(() => {
-    vi.useFakeTimers();
+    registeredListeners = new Map();
+    parentPortMock = {
+        on: vi.fn((event, listener) => {
+            registeredListeners.set(event, listener);
+        }),
+        postMessage: vi.fn(),
+    };
+    doWorkSpy = vi.fn();
+    makeDoWorkSpy = vi.fn(() => doWorkSpy);
+
+    // Intercept Module._load to swap worker_threads + the real cronLogic.
+    originalLoad = Module._load;
+    Module._load = function (request, parent, ...rest) {
+        if (request === 'worker_threads') {
+            return { parentPort: parentPortMock };
+        }
+        if (request === './cronLogic' && parent?.filename === cronPath) {
+            return { makeDoWork: makeDoWorkSpy };
+        }
+        return originalLoad.call(this, request, parent, ...rest);
+    };
+
+    // Clear Node's require cache so re-importing cron.js re-evaluates it
+    // with our patched _load. require.cache is per-Module-system; the
+    // createRequire'd require shares Node's main require.cache.
+    delete requireFromHere.cache[cronPath];
 });
 
 afterEach(() => {
-    vi.useRealTimers();
+    Module._load = originalLoad;
+    delete requireFromHere.cache[cronPath];
     vi.restoreAllMocks();
-    vi.unstubAllEnvs();
-    delete globalThis.fetch;
 });
 
-// Drain microtasks + 0-delay timers without firing scheduled future timers.
-async function flushMicrotasks() {
-    for (let i = 0; i < 20; i += 1) {
-        const before = vi.getTimerCount();
-        await vi.advanceTimersByTimeAsync(0);
-        const after = vi.getTimerCount();
-        if (after === 0 || after === before) break;
-    }
-}
+describe('public/workers/cron.js — entry shell wiring', () => {
+    test('registers a "message" listener on parentPort at module load', () => {
+        requireFromHere(cronPath);
 
-// --- Tests ---
-
-describe('cron worker — first poll', () => {
-    test('immediately fetches /api/h1/update when doWork() is called', async () => {
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve({ ok: true }) }),
-        );
-        const parentPort = makeParentPort();
-        const doWork = makeDoWork(baseCfg, parentPort);
-
-        doWork();
-        await flushMicrotasks();
-
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-        expect(globalThis.fetch).toHaveBeenCalledWith(
-            'http://localhost:3000/api/h1/update',
-            expect.objectContaining({
-                headers: expect.objectContaining({
-                    Authorization: 'Bearer test-update-key',
-                }),
-            }),
-        );
-    });
-});
-
-describe('cron worker — first-poll header', () => {
-    test('cron worker constant matches the route handler (case-insensitive)', () => {
-        // The worker writes the header as-is; HTTP normalises the name on the
-        // wire. NextRequest.headers.get(...) lowercases on lookup. This test
-        // protects against either side drifting the spelling without the other.
-        expect(CRON_WORKER_STARTUP_HEADER.toLowerCase()).toBe(
-            ROUTE_WORKER_STARTUP_HEADER.toLowerCase(),
-        );
+        expect(parentPortMock.on).toHaveBeenCalledTimes(1);
+        expect(parentPortMock.on).toHaveBeenCalledWith('message', expect.any(Function));
     });
 
-    test('sends X-Worker-Startup: 1 on the first poll', async () => {
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve({ ok: true }) }),
-        );
-        const doWork = makeDoWork(baseCfg, makeParentPort());
+    test('on receipt of a message, calls makeDoWork(msg, parentPort) and immediately invokes the returned doWork', () => {
+        requireFromHere(cronPath);
 
-        doWork();
-        await flushMicrotasks();
+        const handler = registeredListeners.get('message');
+        expect(handler).toBeDefined();
 
-        const [, init] = globalThis.fetch.mock.calls[0];
-        expect(init.headers['X-Worker-Startup']).toBe('1');
+        const msg = { key: 'test-key', interval: 30, port: 3000 };
+        handler(msg);
+
+        // makeDoWork received exactly (msg, parentPort) — same instance, no transform.
+        expect(makeDoWorkSpy).toHaveBeenCalledTimes(1);
+        expect(makeDoWorkSpy).toHaveBeenCalledWith(msg, parentPortMock);
+
+        // The returned doWork was invoked once (loop started).
+        expect(doWorkSpy).toHaveBeenCalledTimes(1);
     });
 
-    test('does NOT send X-Worker-Startup on subsequent polls', async () => {
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve({ ok: true }) }),
-        );
-        const doWork = makeDoWork(baseCfg, makeParentPort());
+    test('does NOT call makeDoWork or doWork at module load (only on message)', () => {
+        requireFromHere(cronPath);
 
-        doWork();
-        await flushMicrotasks();
-
-        // Advance one full interval to trigger the second poll.
-        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000 + 50);
-        await flushMicrotasks();
-
-        expect(globalThis.fetch).toHaveBeenCalledTimes(2);
-        const [, secondInit] = globalThis.fetch.mock.calls[1];
-        expect(secondInit.headers).not.toHaveProperty('X-Worker-Startup');
-    });
-});
-
-describe('cron worker — setTimeout non-overlap invariant', () => {
-    test('next poll is scheduled AFTER the current request resolves (setTimeout, not setInterval)', async () => {
-        // Build a fetch that hangs on the first call. With setInterval, a
-        // second fetch would fire after the interval regardless of the first
-        // resolving. With setTimeout self-scheduling, the second fetch must
-        // wait for the first to resolve AND another interval to elapse.
-        let resolveFirst;
-        const fetchCalls = [];
-        globalThis.fetch = vi.fn((url, init) => {
-            fetchCalls.push({ url, init });
-            const idx = fetchCalls.length;
-            if (idx === 1) {
-                return new Promise((res) => {
-                    resolveFirst = () =>
-                        res({ json: () => Promise.resolve({ ok: true, idx }) });
-                });
-            }
-            return Promise.resolve({
-                json: () => Promise.resolve({ ok: true, idx }),
-            });
-        });
-
-        const doWork = makeDoWork(baseCfg, makeParentPort());
-        doWork();
-        await flushMicrotasks();
-        expect(fetchCalls).toHaveLength(1);
-
-        // Advance past 3× interval while the first fetch is still pending.
-        // setInterval would have queued more fetches; setTimeout has not.
-        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000 * 3);
-        await flushMicrotasks();
-        expect(fetchCalls).toHaveLength(1);
-
-        // Resolve the first. The doWork closure now schedules its setTimeout.
-        resolveFirst();
-        await flushMicrotasks();
-        // Still only one fetch — the second is scheduled but not fired yet.
-        expect(fetchCalls).toHaveLength(1);
-
-        // Advance one interval — second fires.
-        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000 + 50);
-        await flushMicrotasks();
-        expect(fetchCalls).toHaveLength(2);
-    });
-
-    test('each subsequent poll is scheduled at the configured interval after the previous resolves', async () => {
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve({ ok: true }) }),
-        );
-        const doWork = makeDoWork(baseCfg, makeParentPort());
-        doWork();
-        await flushMicrotasks();
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-
-        // Just under the interval — no new fetch.
-        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000 - 100);
-        await flushMicrotasks();
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-
-        // Cross it — second fires.
-        await vi.advanceTimersByTimeAsync(200);
-        await flushMicrotasks();
-        expect(globalThis.fetch).toHaveBeenCalledTimes(2);
-
-        // Another full interval — third fires.
-        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000);
-        await flushMicrotasks();
-        expect(globalThis.fetch).toHaveBeenCalledTimes(3);
-    });
-});
-
-describe('cron worker — success reporting', () => {
-    test('posts { data, time } to parentPort on successful fetch', async () => {
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({
-                json: () => Promise.resolve({ season: 157, status: 'ok' }),
-            }),
-        );
-        const parentPort = makeParentPort();
-        const doWork = makeDoWork(baseCfg, parentPort);
-
-        doWork();
-        await flushMicrotasks();
-
-        expect(parentPort.postMessage).toHaveBeenCalledTimes(1);
-        const msg = parentPort.postMessage.mock.calls[0][0];
-        expect(msg.data).toEqual({ season: 157, status: 'ok' });
-        expect(typeof msg.time).toBe('string');
-        expect(msg.time.length).toBeGreaterThan(10);
-    });
-});
-
-describe('cron worker — error recovery', () => {
-    test('fetch rejection posts { error, time } to parentPort and the loop continues', async () => {
-        let callCount = 0;
-        globalThis.fetch = vi.fn(() => {
-            callCount += 1;
-            if (callCount === 1) {
-                return Promise.reject(new Error('connection refused'));
-            }
-            return Promise.resolve({ json: () => Promise.resolve({ ok: true }) });
-        });
-        const parentPort = makeParentPort();
-        const doWork = makeDoWork(baseCfg, parentPort);
-
-        doWork();
-        await flushMicrotasks();
-
-        expect(parentPort.postMessage).toHaveBeenCalledTimes(1);
-        const errMsg = parentPort.postMessage.mock.calls[0][0];
-        expect(errMsg.error).toBe('Error: connection refused');
-        expect(typeof errMsg.time).toBe('string');
-        expect(errMsg.data).toBeUndefined();
-
-        // Crucially: the loop continued. The next interval fires.
-        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000 + 50);
-        await flushMicrotasks();
-
-        expect(globalThis.fetch).toHaveBeenCalledTimes(2);
-        expect(parentPort.postMessage).toHaveBeenCalledTimes(2);
-        expect(parentPort.postMessage.mock.calls[1][0].data).toEqual({ ok: true });
-    });
-
-    test('response.json() rejection (malformed JSON from server) is reported as error and loop continues', async () => {
-        let callCount = 0;
-        globalThis.fetch = vi.fn(() => {
-            callCount += 1;
-            if (callCount === 1) {
-                return Promise.resolve({
-                    json: () => Promise.reject(new SyntaxError('Unexpected token')),
-                });
-            }
-            return Promise.resolve({ json: () => Promise.resolve({ ok: true }) });
-        });
-        const parentPort = makeParentPort();
-        const doWork = makeDoWork(baseCfg, parentPort);
-
-        doWork();
-        await flushMicrotasks();
-
-        expect(parentPort.postMessage).toHaveBeenCalledTimes(1);
-        expect(parentPort.postMessage.mock.calls[0][0].error).toContain(
-            'Unexpected token',
-        );
-
-        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000 + 50);
-        await flushMicrotasks();
-        expect(globalThis.fetch).toHaveBeenCalledTimes(2);
-    });
-
-    test('errors do NOT cause an X-Worker-Startup header on the next poll (isFirstPoll still flips)', async () => {
-        let callCount = 0;
-        globalThis.fetch = vi.fn(() => {
-            callCount += 1;
-            if (callCount === 1) {
-                return Promise.reject(new Error('boom'));
-            }
-            return Promise.resolve({ json: () => Promise.resolve({ ok: true }) });
-        });
-        const doWork = makeDoWork(baseCfg, makeParentPort());
-
-        doWork();
-        await flushMicrotasks();
-        // First call had the header.
-        expect(globalThis.fetch.mock.calls[0][1].headers['X-Worker-Startup']).toBe('1');
-
-        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000 + 50);
-        await flushMicrotasks();
-
-        // Second call must NOT have it — isFirstPoll is reset on the success
-        // path AND the error path (line `isFirstPoll = false` runs after the
-        // try/catch).
-        const [, secondInit] = globalThis.fetch.mock.calls[1];
-        expect(secondInit.headers).not.toHaveProperty('X-Worker-Startup');
-    });
-});
-
-describe('cron worker — GlitchTip uptime heartbeat', () => {
-    const HEARTBEAT_URL = 'https://glitchtip.example.com/heartbeat/abc';
-
-    test('POSTs to GLITCHTIP_HEARTBEAT_URL after a successful (2xx) poll', async () => {
-        vi.stubEnv('GLITCHTIP_HEARTBEAT_URL', HEARTBEAT_URL);
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ ok: true, json: () => Promise.resolve({}) }),
-        );
-        const doWork = makeDoWork(baseCfg, makeParentPort());
-
-        doWork();
-        await flushMicrotasks();
-
-        // Call 1: /api/h1/update. Call 2: the heartbeat ping.
-        expect(globalThis.fetch).toHaveBeenCalledTimes(2);
-        const [hbUrl, hbInit] = globalThis.fetch.mock.calls[1];
-        expect(hbUrl).toBe(HEARTBEAT_URL);
-        expect(hbInit.method).toBe('POST');
-    });
-
-    test('does NOT heartbeat when /api/h1/update returns non-2xx', async () => {
-        vi.stubEnv('GLITCHTIP_HEARTBEAT_URL', HEARTBEAT_URL);
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ ok: false, json: () => Promise.resolve({}) }),
-        );
-        const doWork = makeDoWork(baseCfg, makeParentPort());
-
-        doWork();
-        await flushMicrotasks();
-
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    });
-
-    test('does NOT heartbeat when GLITCHTIP_HEARTBEAT_URL is unset', async () => {
-        vi.stubEnv('GLITCHTIP_HEARTBEAT_URL', '');
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ ok: true, json: () => Promise.resolve({}) }),
-        );
-        const doWork = makeDoWork(baseCfg, makeParentPort());
-
-        doWork();
-        await flushMicrotasks();
-
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    });
-
-    test('heartbeat fetch failure does not crash the poll loop', async () => {
-        vi.stubEnv('GLITCHTIP_HEARTBEAT_URL', HEARTBEAT_URL);
-        let callCount = 0;
-        globalThis.fetch = vi.fn(() => {
-            callCount += 1;
-            if (callCount === 2) {
-                // The heartbeat fetch fails — must be swallowed.
-                return Promise.reject(new Error('heartbeat upstream down'));
-            }
-            return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
-        });
-        const parentPort = makeParentPort();
-        const doWork = makeDoWork(baseCfg, parentPort);
-
-        doWork();
-        await flushMicrotasks();
-
-        // The poll succeeded; the heartbeat rejection must not surface.
-        expect(parentPort.postMessage).toHaveBeenCalledTimes(1);
-        expect(parentPort.postMessage.mock.calls[0][0].error).toBeUndefined();
-
-        // Next poll fires as scheduled.
-        await vi.advanceTimersByTimeAsync(baseCfg.interval * 1000 + 50);
-        await flushMicrotasks();
-        // Call 1: update. Call 2: heartbeat (failed). Call 3: next update. Call 4: next heartbeat.
-        expect(globalThis.fetch).toHaveBeenCalledTimes(4);
-    });
-});
-
-describe('cron worker — config wiring', () => {
-    test('uses cfg.port in the fetch URL', async () => {
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve({ ok: true }) }),
-        );
-        const doWork = makeDoWork({ ...baseCfg, port: 9999 }, makeParentPort());
-
-        doWork();
-        await flushMicrotasks();
-
-        expect(globalThis.fetch).toHaveBeenCalledWith(
-            'http://localhost:9999/api/h1/update',
-            expect.any(Object),
-        );
-    });
-
-    test('uses cfg.key as the Bearer token', async () => {
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve({ ok: true }) }),
-        );
-        const doWork = makeDoWork(
-            { ...baseCfg, key: 'super-secret-rotation-token' },
-            makeParentPort(),
-        );
-
-        doWork();
-        await flushMicrotasks();
-
-        const [, init] = globalThis.fetch.mock.calls[0];
-        expect(init.headers.Authorization).toBe('Bearer super-secret-rotation-token');
-    });
-
-    test('uses cfg.interval (seconds → milliseconds) for setTimeout', async () => {
-        globalThis.fetch = vi.fn(() =>
-            Promise.resolve({ json: () => Promise.resolve({ ok: true }) }),
-        );
-        const doWork = makeDoWork({ ...baseCfg, interval: 5 }, makeParentPort());
-
-        doWork();
-        await flushMicrotasks();
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-
-        // 4.9s — no second.
-        await vi.advanceTimersByTimeAsync(4900);
-        await flushMicrotasks();
-        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-
-        // Cross 5s — second fires.
-        await vi.advanceTimersByTimeAsync(200);
-        await flushMicrotasks();
-        expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+        expect(makeDoWorkSpy).not.toHaveBeenCalled();
+        expect(doWorkSpy).not.toHaveBeenCalled();
     });
 });
