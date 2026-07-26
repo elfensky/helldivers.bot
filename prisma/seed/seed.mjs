@@ -19,6 +19,7 @@ dotenv.config(); // fallback to .env (production/Docker)
 import { readdir, readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 // Relative imports — @/* aliases don't work outside Next.js
 import { PrismaClient } from '../../src/generated/prisma/client.ts';
@@ -170,9 +171,67 @@ async function seedSeason(db, file) {
     );
 }
 
+// Fixed owner row for the CI key. A literal UUID (not randomUUID) so re-running
+// the seed re-uses the same user instead of piling up orphans.
+const TEST_USER_ID = '00000000-0000-7000-8000-000000000001';
+
+/**
+ * CI/TEST ONLY — seed one deterministic API key so the smoke suite can exercise
+ * the key-gated `/api/v1/h1/*` surface.
+ *
+ * Gated entirely behind `SEED_TEST_API_KEY`: when the variable is absent this is
+ * a no-op, so ordinary developer seeding and the production/Docker migrate
+ * container never create a key. NEVER set this variable outside CI or a local
+ * throwaway database — the value is the plaintext key, and anyone holding it can
+ * call the whole public API.
+ *
+ * Runs before the "already seeded" short-circuit below so the key is created even
+ * when the season data is already present.
+ *
+ * @param {import('../../src/generated/prisma/client.ts').PrismaClient} db - Connected client.
+ * @returns {Promise<void>}
+ */
+async function seedTestApiKey(db) {
+    const key = process.env.SEED_TEST_API_KEY;
+    if (!key) return;
+
+    // Same derivation as generateApiKey() in src/features/account/actions.mjs and
+    // the lookup in validateApiKey.mjs — sha-256 hex of the plaintext key.
+    const hash = createHash('sha256').update(key).digest('hex');
+
+    await db.user.upsert({
+        where: { id: TEST_USER_ID },
+        update: {},
+        create: {
+            id: TEST_USER_ID,
+            name: 'CI Smoke Test',
+            email: 'ci-smoke-test@invalid',
+            role: 'user',
+        },
+    });
+
+    await db.apiKey.upsert({
+        where: { hash },
+        update: { enabled: true, userId: TEST_USER_ID },
+        create: {
+            hash,
+            visible: key.slice(-4),
+            userId: TEST_USER_ID,
+            description: 'CI smoke test key',
+            enabled: true,
+        },
+    });
+
+    console.log(
+        `SEED_TEST_API_KEY is set — seeded the CI smoke-test API key (…${key.slice(-4)}).`,
+    );
+}
+
 async function seed() {
     const adapter = new PrismaPg({ connectionString: process.env.POSTGRES_URL });
     const db = new PrismaClient({ adapter });
+
+    await seedTestApiKey(db);
 
     const { data: files, error } = await readdir(SEASONS_DIR)
         .then((d) => ({ data: d, error: null }))
