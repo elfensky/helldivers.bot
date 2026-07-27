@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.68.0
+
+### Added
+
+- **Staging deploy pipeline to the Raspberry Pi Docker Swarm ([#474](https://github.com/elfensky/helldivers.bot/issues/474)).**
+  A `deploy-staging` job (self-hosted runner), a Swarm stack manifest (`deploy/stack.staging.yml`),
+  and an Uptime Kuma maintenance-banner script (`.github/scripts/kuma-maintenance.mjs`). The job is
+  **dormant** until the repo variable `STAGING_DEPLOY_ENABLED=true`, so it merges safely before the
+  cluster exists (it skips instead of hanging for a missing runner). Scaffold is DRAFT/untested until
+  a real run — open TODOs in `deploy/README.md`.
+- **`*_FILE` environment convention (`hydrateFileSecrets`).** Populates `<KEY>` from a `<KEY>_FILE`
+  path before validation, so Docker/Swarm secrets reach the app as files under `/run/secrets/*`
+  rather than plaintext env vars (which leak into `docker inspect`, logs, and error reports). A
+  directly-set `<KEY>` still wins, so local `.env` is untouched. Unit-tested.
+
 ## 0.67.6
 
 ### Added
