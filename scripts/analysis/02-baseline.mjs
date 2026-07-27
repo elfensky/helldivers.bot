@@ -148,6 +148,9 @@ for (const cfg of CONFIGS) {
         `  calibration  p25=${summary.calibration.q25.toFixed(3)}/0.250 (n=${summary.calibrationN.q25})  p50=${summary.calibration.q50.toFixed(3)}/0.500 (n=${summary.calibrationN.q50})  p75=${summary.calibration.q75.toFixed(3)}/0.750 (n=${summary.calibrationN.q75})`,
     );
     console.log(
+        `  uncensored-only calibration (diagnostic, NOT the gate)  p25=${summary.calibrationUncensored.q25.toFixed(3)}/0.250 (n=${summary.calibrationUncensoredN.q25})  p50=${summary.calibrationUncensored.q50.toFixed(3)}/0.500 (n=${summary.calibrationUncensoredN.q50})  p75=${summary.calibrationUncensored.q75.toFixed(3)}/0.750 (n=${summary.calibrationUncensoredN.q75})`,
+    );
+    console.log(
         `  sharpness    p25-p75 band median width = ${summary.sharpnessHours.toFixed(1)}h`,
     );
     console.log(

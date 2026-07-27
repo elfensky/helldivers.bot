@@ -129,8 +129,13 @@ p50 (0.441) both miss; p75 (0.737) passes.
 Restricted to *uncensored* moments only — dropping the moments where the
 walk-forward clock ran out before the next event started, so the true wait
 was never observed — all six quantiles pass: all-enemies comes out to
-0.209/0.469/0.757 and lull-only to 0.207/0.491/0.776, each within ±0.05 of
-its nominal target. That isolates the driver: censored moments are scored
+0.209/0.469/0.757 and lull-only to 0.206/0.491/0.777, each within ±0.05 of
+its nominal target. These are printed by `02-baseline.mjs` as the
+"uncensored-only calibration (diagnostic, NOT the gate)" line under each
+config, computed by `calibrationUncensoredFor` in
+`scripts/analysis/lib/backtest.mjs` — reproducible by re-running the script,
+not copied from a one-off session. That isolates the driver: censored moments are
+scored
 as definitionally non-hits, which pulls the pooled rate down by
 construction. That is the harness's deliberate, correct treatment, not a
 bug to explain away — `backtest.mjs:70-76` documents why right-censored

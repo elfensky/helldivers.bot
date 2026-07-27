@@ -72,6 +72,18 @@ function forwardRecurrenceMedian(trainEvents, seasons, stepHours) {
  * Only `q > c` is unknown. For the error metric, a censored moment with
  * `p50 <= c` contributes the lower bound `c - p50`.
  *
+ * Returned summary fields: `moments`/`uncensored`/`censoredScored`/
+ * `censoredUnknown`/`warmupSkipped` (moment counts), `effectiveN` (distinct
+ * target events, not clock moments), `calibration`/`calibrationN` (the
+ * censoring-aware `{q25,q50,q75}` hit rate — the PRIMARY metric read against
+ * the gate, see `calibrationFor` above), `calibrationUncensored`/
+ * `calibrationUncensoredN` (DIAGNOSTIC-ONLY `{q25,q50,q75}` hit rate
+ * restricted to uncensored moments — NOT the gate metric, see
+ * `calibrationUncensoredFor` above), `sharpnessHours` (median p25-p75 band
+ * width), `medianAbsErrorHours`/`baselineMedianAbsErrorHours` (predictor vs.
+ * constant-baseline error), and `skillRatio`/`skillRatioCI` (their ratio and
+ * its 95% season-block-bootstrap CI).
+ *
  * @param {object} options
  * @returns {object} summary
  */
@@ -211,6 +223,10 @@ export function walkForward({
      * Uncensored: `wait < q` is directly answerable.
      * Censored at c: answerable only when `q <= c`, and then it is false.
      *
+     * This is the PRIMARY calibration metric — do not change its treatment of
+     * censored moments. See `calibrationUncensoredFor` below for the
+     * diagnostic-only, uncensored-restricted variant.
+     *
      * @param {'q25'|'q50'|'q75'} key
      * @returns {{rate: number, n: number}}
      */
@@ -227,6 +243,30 @@ export function walkForward({
             }
         }
         return { rate: answerable > 0 ? hits / answerable : 0, n: answerable };
+    }
+
+    /**
+     * Uncensored-only calibration for one quantile level — DIAGNOSTIC, not the
+     * gate metric. Restricted to moments where the true wait was actually
+     * observed (`wait !== null`), dropping every right-censored moment rather
+     * than scoring it as a known-false hit like `calibrationFor` does. Useful
+     * for isolating whether a censoring-aware calibration failure is driven by
+     * the censored moments themselves, but it is not a substitute for
+     * `calibrationFor` — it silently discards information the primary metric
+     * is deliberately designed to keep.
+     *
+     * @param {'q25'|'q50'|'q75'} key
+     * @returns {{rate: number, n: number}}
+     */
+    function calibrationUncensoredFor(key) {
+        let hits = 0;
+        let n = 0;
+        for (const r of records) {
+            if (r.wait === null) continue;
+            n++;
+            if (r.wait < r[key]) hits++;
+        }
+        return { rate: n > 0 ? hits / n : 0, n };
     }
 
     const scored = records.filter((r) => r.absErr !== null);
@@ -308,6 +348,17 @@ export function walkForward({
             q25: calibrationFor('q25').n,
             q50: calibrationFor('q50').n,
             q75: calibrationFor('q75').n,
+        },
+        // Diagnostic-only — NOT the gate metric. See calibrationUncensoredFor.
+        calibrationUncensored: {
+            q25: calibrationUncensoredFor('q25').rate,
+            q50: calibrationUncensoredFor('q50').rate,
+            q75: calibrationUncensoredFor('q75').rate,
+        },
+        calibrationUncensoredN: {
+            q25: calibrationUncensoredFor('q25').n,
+            q50: calibrationUncensoredFor('q50').n,
+            q75: calibrationUncensoredFor('q75').n,
         },
         sharpnessHours: quantileOf(widths, 0.5) ?? 0,
         medianAbsErrorHours,
