@@ -108,6 +108,65 @@ jobs:
                       sentry_org=${{ secrets.SENTRY_ORG }}
                       sentry_project=${{ secrets.SENTRY_PROJECT }}
 
+    # ⚠️ DRAFT / UNTESTED until a self-hosted runner exists on a Pi swarm manager.
+    # GitHub's cloud runners cannot reach the home-LAN cluster; this job runs on
+    # the runner installed there. See deploy/README.md for the open TODOs.
+    deploy-staging:
+        needs: [build-app, build-migrate]
+        # Runs even when build-migrate was skipped (no migration changes) — the
+        # existing :staging migrate image is reused. Skips only if the app build failed.
+        if: ${{ !cancelled() && needs.build-app.result == 'success' }}
+        runs-on: self-hosted
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.0
+
+            - name: Log in to GHCR
+              run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            - name: Maintenance banner ON (optional — skipped if Kuma unset)
+              if: ${{ vars.KUMA_URL != '' }}
+              run: |
+                  npm i socket.io-client@4 --no-save --silent
+                  node .github/scripts/kuma-maintenance.mjs start
+              env:
+                  KUMA_URL: ${{ vars.KUMA_URL }}
+                  KUMA_USERNAME: ${{ secrets.KUMA_USERNAME }}
+                  KUMA_PASSWORD: ${{ secrets.KUMA_PASSWORD }}
+                  KUMA_MONITOR_IDS: ${{ vars.KUMA_STAGING_MONITOR_IDS }}
+
+            - name: Run migrations (one-shot, before the stack)
+              run: |
+                  docker pull ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
+                  docker run --rm \
+                    -e POSTGRES_URL="${{ secrets.STAGING_POSTGRES_URL }}" \
+                    ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
+
+            - name: Deploy the stack
+              run: |
+                  docker pull ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
+                  docker stack deploy --with-registry-auth -c deploy/stack.staging.yml helldivers
+
+            - name: Wait for the app service to converge (healthy)
+              run: |
+                  for i in $(seq 1 30); do
+                    reps=$(docker service ls --filter name=helldivers_app --format '{{.Replicas}}')
+                    echo "helldivers_app: ${reps:-pending}"
+                    [ "$reps" = "1/1" ] && exit 0
+                    sleep 10
+                  done
+                  echo "::error::app service did not converge"; docker service ps helldivers_app --no-trunc; exit 1
+
+            - name: Maintenance banner OFF (always)
+              if: ${{ always() && vars.KUMA_URL != '' }}
+              run: |
+                  npm i socket.io-client@4 --no-save --silent
+                  node .github/scripts/kuma-maintenance.mjs end
+              env:
+                  KUMA_URL: ${{ vars.KUMA_URL }}
+                  KUMA_USERNAME: ${{ secrets.KUMA_USERNAME }}
+                  KUMA_PASSWORD: ${{ secrets.KUMA_PASSWORD }}
+
     cleanup:
         needs: [build-migrate, build-app]
         if: ${{ !cancelled() }} # Run even when build-migrate is skipped
