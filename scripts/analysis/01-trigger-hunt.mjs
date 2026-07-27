@@ -185,22 +185,32 @@ function fmt(x) {
 
 /**
  * Run the full trigger hunt (phase-matched controls + permutation test, then
- * the S157-160 high-resolution re-test) for ONE event type. Everything about
- * the method is identical between event types — only the event filter and the
- * "previous event" lookup (same type AND enemy) change.
+ * the S157-160 high-resolution re-test) over a given event array. Everything
+ * about the method is identical regardless of which events are passed in —
+ * only the event set and the "previous event" lookup (same type AND enemy,
+ * scoped to whatever subset was passed in) change.
+ *
+ * `eventType` still drives type-specific behaviour (attack headline stats,
+ * the article in the caveat sentence, pluralized wording) — callers passing a
+ * restricted subset of one type (e.g. defend train starts) still pass that
+ * type's word here. `label` is purely for the section banner/header/verdict
+ * text, so a restricted run can be told apart from the pooled one; it
+ * defaults to `eventType`, which is exactly the old behaviour.
  *
  * @param {object} ds dataset
- * @param {'defend'|'attack'} eventType
- * @returns {void}
+ * @param {object[]} events the events to analyse (already filtered by caller)
+ * @param {'defend'|'attack'} eventType drives type-specific report sections
+ * @param {string} [label] display label for the section banner; defaults to `eventType`
+ * @returns {Record<string, {iqrRatio: number, spanRatio: number, pValue: number, ruleLike: boolean}>}
+ *   per-variable concentration results, keyed by variable name
  */
-function runTriggerHunt(ds, eventType) {
+function runTriggerHunt(ds, events, eventType, label = eventType) {
     console.log(`\n${'#'.repeat(78)}`);
-    console.log(`# EVENT TYPE: ${eventType.toUpperCase()}`);
+    console.log(`# EVENT TYPE: ${label.toUpperCase()}`);
     console.log('#'.repeat(78));
 
     const rng = makeRng(20260727);
 
-    const events = ds.events.filter((e) => e.type === eventType);
     const eventsBySeasonEnemy = new Map();
     for (const e of events) {
         const key = `${e.season}:${e.enemy}`;
@@ -276,7 +286,7 @@ function runTriggerHunt(ds, eventType) {
 
     // --- report --------------------------------------------------------------
 
-    console.log(`\n=== Phase 1: trigger hunt (${eventType}) ===`);
+    console.log(`\n=== Phase 1: trigger hunt (${label}) ===`);
     console.log(
         `${eventType}s=${events.length}  controls attempted=${controlsAttempted}  rejected=${controlsRejected}`,
     );
@@ -286,6 +296,8 @@ function runTriggerHunt(ds, eventType) {
 
     const permRng = makeRng(31337);
     const verdicts = [];
+    /** @type {Record<string, {iqrRatio: number, spanRatio: number, pValue: number, ruleLike: boolean}>} */
+    const results = {};
     for (const v of VARIABLES) {
         const A = summarize(atEvent[v]);
         const C = summarize(atControl[v]);
@@ -298,6 +310,7 @@ function runTriggerHunt(ds, eventType) {
         const effectLarge = iqrRatio <= RULE_IQR_RATIO && spanRatio <= RULE_SPAN_RATIO;
         const ruleLike = effectLarge && pValue < ALPHA;
         verdicts.push({ v, ruleLike, effectLarge, pValue });
+        results[v] = { iqrRatio, spanRatio, pValue, ruleLike };
 
         console.log(`${v}`);
         console.log(
@@ -321,8 +334,8 @@ function runTriggerHunt(ds, eventType) {
 
     console.log(
         ruleLike.length ?
-            `VERDICT (${eventType}): rule-like variable(s): ${ruleLike.join(', ')} — investigate as a deterministic trigger before modelling.`
-        :   `VERDICT (${eventType}): no deterministic trigger detectable at daily status resolution. Proceed to Phase 2.`,
+            `VERDICT (${label}): rule-like variable(s): ${ruleLike.join(', ')} — investigate as a deterministic trigger before modelling.`
+        :   `VERDICT (${label}): no deterministic trigger detectable at daily status resolution. Proceed to Phase 2.`,
     );
     if (effectOnly.length) {
         console.log(
@@ -396,7 +409,7 @@ function runTriggerHunt(ds, eventType) {
     // --- high-resolution re-test on S157-160 ----------------------------------
 
     console.log(
-        `\n=== Phase 1b: same test, S157-160 only (15-min status) — ${eventType} ===`,
+        `\n=== Phase 1b: same test, S157-160 only (15-min status) — ${label} ===`,
     );
     const hiRes = events.filter((a) => a.season >= 157);
     if (hiRes.length < 5) {
@@ -419,12 +432,56 @@ function runTriggerHunt(ds, eventType) {
             );
         }
     }
+
+    return results;
 }
 
-// --- run for both event types, defends first -------------------------------
+/**
+ * Print the pooled-defend vs train-starts IQR ratio side by side per
+ * variable. This is the load-bearing comparison for #472: the pooled defend
+ * trigger hunt found no rule, but pooling mixes ~62% mechanical train
+ * follow-ups (which carry no campaign-state relationship) in with the 1,976
+ * train starts. If a real trigger exists only for train starts, it was
+ * diluted by that pooling and should surface here as a smaller IQR ratio for
+ * the train-starts column — visible whichever way the numbers land.
+ *
+ * @param {Record<string, {iqrRatio: number}>} pooled defend results, keyed by variable
+ * @param {Record<string, {iqrRatio: number}>} trainStarts train-starts results, keyed by variable
+ * @returns {void}
+ */
+function printDilutionComparison(pooled, trainStarts) {
+    console.log(`\n${'#'.repeat(78)}`);
+    console.log('# DILUTION CHECK: pooled defend vs train-starts-only IQR ratio');
+    console.log('#'.repeat(78));
+    console.log(
+        `\n${'variable'.padEnd(24)}${'pooled defend'.padEnd(16)}${'train starts'.padEnd(16)}(both <= ${RULE_IQR_RATIO} is rule-like effect size)`,
+    );
+    for (const v of VARIABLES) {
+        console.log(
+            `${v.padEnd(24)}${fmt(pooled[v]?.iqrRatio).padEnd(16)}${fmt(trainStarts[v]?.iqrRatio).padEnd(16)}`,
+        );
+    }
+}
+
+// --- run defend, attack, then defend train starts ---------------------------
 
 const ds = await loadDataset();
 
-for (const eventType of ['defend', 'attack']) {
-    runTriggerHunt(ds, eventType);
-}
+const defendResults = runTriggerHunt(
+    ds,
+    ds.events.filter((e) => e.type === 'defend'),
+    'defend',
+);
+runTriggerHunt(
+    ds,
+    ds.events.filter((e) => e.type === 'attack'),
+    'attack',
+);
+const trainStartResults = runTriggerHunt(
+    ds,
+    ds.events.filter((e) => e.type === 'defend' && e.isTrainStart),
+    'defend',
+    'defend TRAIN STARTS',
+);
+
+printDilutionComparison(defendResults, trainStartResults);
