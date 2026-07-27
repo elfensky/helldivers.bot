@@ -1,6 +1,7 @@
 /**
- * 01-trigger-hunt.mjs — does HD1 fire attack events on a deterministic
- * campaign-state rule? If so there is nothing to forecast and #472 ends here.
+ * 01-trigger-hunt.mjs — does HD1 fire events (defend, attack) on a
+ * deterministic campaign-state rule? If so there is nothing to forecast for
+ * that event type, and for attacks specifically #472 ends there.
  *
  * Run: node --env-file=.env.development scripts/analysis/01-trigger-hunt.mjs
  */
@@ -53,14 +54,14 @@ function summarize(values) {
  * Concentration ratio. Zero denominator with a non-zero numerator is Infinity
  * (maximally un-concentrated), which is the honest reading.
  *
- * @param {number} attackSpread
+ * @param {number} eventSpread
  * @param {number} controlSpread
  * @returns {number}
  */
-function ratio(attackSpread, controlSpread) {
-    if (attackSpread === 0) return 0;
+function ratio(eventSpread, controlSpread) {
+    if (eventSpread === 0) return 0;
     if (controlSpread === 0) return Infinity;
-    return attackSpread / controlSpread;
+    return eventSpread / controlSpread;
 }
 
 // --- self-check on the pure helpers ---------------------------------------
@@ -94,11 +95,11 @@ const VARIABLES = [
  * Campaign-state variables for one faction at one instant.
  *
  * `playerPercentile` is computed internally via `ds.playerPercentileAt` — it
- * must be evaluable at an arbitrary instant so the attack side and the
+ * must be evaluable at an arbitrary instant so the event side and the
  * control side each get their OWN value. Passing it in as a parameter (the
  * original, defective version) meant every control silently reused the
- * attack's own percentile, collapsing the control population onto the
- * attack population and making that variable's comparison vacuous.
+ * event's own percentile, collapsing the control population onto the
+ * event population and making that variable's comparison vacuous.
  *
  * @param {object} ds dataset
  * @param {number} season
@@ -134,24 +135,24 @@ const PERMUTATIONS = 2000;
 const ALPHA = 0.05 / VARIABLES.length;
 
 /**
- * Permutation p-value for "attack values are more concentrated than controls".
+ * Permutation p-value for "event values are more concentrated than controls".
  *
- * Pools attack and control values, reshuffles the labels `PERMUTATIONS` times,
+ * Pools event and control values, reshuffles the labels `PERMUTATIONS` times,
  * and reports how often chance alone produces an IQR ratio at least as small as
  * the observed one. No distributional assumption, which matters because none of
  * these variables is remotely normal.
  *
- * @param {number[]} attackVals
+ * @param {number[]} eventVals
  * @param {number[]} controlVals
  * @param {() => number} rand
  * @returns {number} p-value
  */
-function permutationP(attackVals, controlVals, rand) {
-    const observed = ratio(summarize(attackVals).iqr, summarize(controlVals).iqr);
+function permutationP(eventVals, controlVals, rand) {
+    const observed = ratio(summarize(eventVals).iqr, summarize(controlVals).iqr);
     if (!Number.isFinite(observed)) return 1;
 
-    const pool = [...attackVals, ...controlVals];
-    const nA = attackVals.length;
+    const pool = [...eventVals, ...controlVals];
+    const nA = eventVals.length;
     let atLeastAsExtreme = 0;
 
     for (let p = 0; p < PERMUTATIONS; p++) {
@@ -212,7 +213,7 @@ function runTriggerHunt(ds, eventType) {
     /** @type {Record<string, number[]>} */
     const atControl = Object.fromEntries(VARIABLES.map((v) => [v, []]));
 
-    const CONTROLS_PER_ATTACK = 5;
+    const CONTROLS_PER_EVENT = 5;
     const EXCLUSION_HOURS = 3;
 
     // Seasons usable as phase-matched control donors.
@@ -244,7 +245,7 @@ function runTriggerHunt(ds, eventType) {
         if (!season || season.spanSeconds <= 0) continue;
         const phase = (a.start_time - season.firstStart) / season.spanSeconds;
 
-        for (let i = 0; i < CONTROLS_PER_ATTACK; i++) {
+        for (let i = 0; i < CONTROLS_PER_EVENT; i++) {
             controlsAttempted++;
 
             const other = candidateSeasons[Math.floor(rng() * candidateSeasons.length)];
@@ -328,9 +329,69 @@ function runTriggerHunt(ds, eventType) {
             `NOTE: large effect but NOT significant after Bonferroni: ${effectOnly.join(', ')}. Do not halt on these.`,
         );
     }
+    const article = /^[aeiou]/i.test(eventType) ? 'an' : 'a';
     console.log(
-        `\nCaveat: h1_status is ~1 bucket/day for 156 of 160 seasons, so campaign state at an ${eventType} start can be up to 24h stale. A real threshold would still concentrate, but smeared. A negative result here does NOT rule out a trigger.`,
+        `\nCaveat: h1_status is ~1 bucket/day for 156 of 160 seasons, so campaign state at ${article} ${eventType} start can be up to 24h stale. A real threshold would still concentrate, but smeared. A negative result here does NOT rule out a trigger.`,
     );
+
+    // --- attack headline stats (reproducibility for the write-up's numbers) ---
+    //
+    // The write-up's headline attack claims ("all N target region 11", "X% at
+    // exactly 9/10 sectors captured") are read off `region` and
+    // `sectorsCaptured`, both already computed above per-event — this just
+    // prints their distributions so the numbers are reproducible from a
+    // committed script instead of a one-off REPL session.
+    if (eventType === 'attack') {
+        console.log(`\n=== Attack headline stats: region + sectors captured ===`);
+
+        const regionCounts = new Map();
+        for (const e of events) {
+            regionCounts.set(e.region, (regionCounts.get(e.region) ?? 0) + 1);
+        }
+        console.log('Region at attack start:');
+        for (const [region, count] of [...regionCounts.entries()].sort(
+            (a, b) => b[1] - a[1],
+        )) {
+            console.log(
+                `  region ${region}: ${count}/${events.length} (${((count / events.length) * 100).toFixed(1)}%)`,
+            );
+        }
+
+        const sectorCounts = new Map();
+        for (const a of events) {
+            const siblings = eventsBySeasonEnemy.get(`${a.season}:${a.enemy}`) ?? [];
+            const prevEvent =
+                siblings.filter((s) => s.start_time < a.start_time).at(-1) ?? null;
+            const { sectorsCaptured } = stateAt(
+                ds,
+                a.season,
+                a.enemy,
+                a.start_time,
+                prevEvent,
+            );
+            if (sectorsCaptured === null) continue;
+            sectorCounts.set(
+                sectorsCaptured,
+                (sectorCounts.get(sectorsCaptured) ?? 0) + 1,
+            );
+        }
+        const sectorTotal = [...sectorCounts.values()].reduce((sum, c) => sum + c, 0);
+        console.log('Sectors captured at attack start:');
+        for (const [sectors, count] of [...sectorCounts.entries()].sort(
+            (a, b) => a[0] - b[0],
+        )) {
+            console.log(
+                `  ${sectors}/${SECTOR_COUNT}: ${count}/${sectorTotal} (${((count / sectorTotal) * 100).toFixed(1)}%)`,
+            );
+        }
+        let atLeast9 = 0;
+        for (const [sectors, count] of sectorCounts) {
+            if (sectors >= 9) atLeast9 += count;
+        }
+        console.log(
+            `  >= 9/${SECTOR_COUNT}: ${atLeast9}/${sectorTotal} (${((atLeast9 / sectorTotal) * 100).toFixed(1)}%)\n`,
+        );
+    }
 
     // --- high-resolution re-test on S157-160 ----------------------------------
 
