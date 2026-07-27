@@ -51,9 +51,11 @@ commit), and close the issue with an implementation comment.
 
 ## Now — unblock the release
 
-`develop` is ~50 commits and several versions (0.66.0 → 0.67.x) ahead of `main`,
-which is still tagged `v0.65.3`. Nothing else should start until this ships,
-because every subsequent version bump compounds the gap.
+`develop` is **74 commits** and several versions (0.66.0 → 0.67.x) ahead of
+`main`, which is still tagged `v0.65.3`. `main` is fully contained in `develop`
+(0 commits behind), so the release PR is a clean fast-forward-free merge with no
+conflicts to resolve. Nothing else should start until this ships, because every
+subsequent version bump compounds the gap.
 
 ### S0 — Release the develop backlog
 
@@ -64,6 +66,38 @@ because every subsequent version bump compounds the gap.
 PR `develop` → `main`, tag the version at the top of `CHANGELOG.md` on the merge
 commit, push the tag, merge `main` back into `develop`. The production Docker
 build only triggers on version tags — forgetting the tag means no deployment.
+
+### S0a — Dependency security backlog ⚠️
+
+- **Prep:** none
+- **Branch:** direct (chore)
+- **Blocked by:** —, but **ship it with or immediately after S0**
+
+**23 open Dependabot alerts as of 2026-07-27: 13 high, 9 moderate, 1 low.** Not
+previously tracked by any issue or milestone. Re-check the live count before
+working it:
+
+```
+gh api repos/elfensky/helldivers.bot/dependabot/alerts --paginate \
+  -q '[.[]|select(.state=="open")]|group_by(.security_advisory.severity)|.[]|"\(.[0].security_advisory.severity): \(length)"'
+```
+
+Two of the highs land squarely on paths this app uses, which is why this sits
+next to the release rather than in Track A:
+
+- **`better-auth`** — account takeover via pre-account hijacking. This app runs
+  BetterAuth with Discord + GitHub OAuth (§ Architecture — Auth).
+- **`next`** — SSRF in Server Actions and in rewrites, plus a Middleware/proxy
+  bypass in App Router apps. This app is App Router, uses server actions
+  throughout, and has a `/api/send` rewrite for the Umami proxy.
+
+Also high: `postcss` path traversal, `brace-expansion` DoS, `fast-uri` host
+confusion.
+
+A Next.js bump is not a rubber stamp — run the full chain plus `npm run
+test:smoke`, and re-verify the Umami proxy rewrite and the auth flow specifically,
+since those are the two surfaces the advisories touch. If a major bump is
+required, split it into its own session rather than bundling it with the rest.
 
 ---
 
@@ -415,6 +449,7 @@ open issues.** New bugs land here by default.
 
 ```
 S0  release the backlog      ← blocks everything
+S0a dependency security ⚠️   ← 13 high alerts, incl. auth + Next.js
 S1  co-locate tests          ← before feature work adds more test files
 S2  stale-issue triage       ← ✅ done 2026-07-27
 S2a #469 map faction reveal
