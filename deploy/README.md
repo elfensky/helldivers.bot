@@ -34,11 +34,10 @@ push to develop
     printf '%s' "$UPDATE_KEY"       | docker secret create staging_update_key -
     printf '%s' "$CF_TUNNEL_TOKEN"  | docker secret create staging_cf_tunnel_token -
     ```
-3. **App secrets-as-files wiring.** The app reads `POSTGRES_URL` / `UPDATE_KEY` from
-   `process.env`, but Swarm secrets are files. The stack sets `POSTGRES_URL_FILE` /
-   `UPDATE_KEY_FILE` — the app must learn to read `*_FILE` when set (small change), or
-   add an entrypoint shim that exports the files into env. **Until this lands the app
-   container will start without a DB URL.**
+3. ~~App secrets-as-files wiring.~~ **DONE** — the app supports the `*_FILE`
+   convention (`src/shared/utils/hydrateFileSecrets.mjs`): the stack sets
+   `POSTGRES_URL_FILE` / `UPDATE_KEY_FILE` and the env loader populates the real
+   vars from the mounted secret files before Prisma reads them.
 4. **Cloudflare Tunnel.** Create the tunnel, put its token/creds in the
    `staging_cf_tunnel_token` secret, finalize the `cloudflared` service (token via the
    entrypoint shim, or creds-file + a `config.yml` with the ingress rules), point

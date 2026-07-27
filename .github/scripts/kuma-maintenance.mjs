@@ -79,11 +79,11 @@ socket.on('connect', async () => {
                 const { appendFileSync } = await import('node:fs');
                 appendFileSync(process.env.GITHUB_ENV, `MAINT_ID=${id}\n`);
             }
-            console.log(`kuma-maintenance: opened maintenance ${id}`);
+            console.info(`kuma-maintenance: opened maintenance ${id}`);
         } else {
             if (!MAINT_ID) warnAndExit('no MAINT_ID to close');
             await emit('deleteMaintenance', Number(MAINT_ID));
-            console.log(`kuma-maintenance: closed maintenance ${MAINT_ID}`);
+            console.info(`kuma-maintenance: closed maintenance ${MAINT_ID}`);
         }
         clearTimeout(fail);
         socket.close();

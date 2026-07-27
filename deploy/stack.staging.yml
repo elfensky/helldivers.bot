@@ -33,11 +33,9 @@ services:
             NODE_ENV: production
             PORT: '3000'
             UPDATE_INTERVAL: '20'
-            # TODO(secrets): the app reads POSTGRES_URL / UPDATE_KEY from process.env,
-            # but Swarm secrets are FILES at /run/secrets/*. Resolve one of:
-            #   (a) add `*_FILE` support in the app (if POSTGRES_URL_FILE is set, read it), or
-            #   (b) an entrypoint shim that exports the secret files into env before `node server.js`.
-            # The (a) convention is wired below and is the smaller change:
+            # The app reads secrets from files via the `*_FILE` convention
+            # (src/shared/utils/hydrateFileSecrets.mjs): if POSTGRES_URL_FILE is set,
+            # it populates POSTGRES_URL from that file before Prisma reads it.
             POSTGRES_URL_FILE: /run/secrets/staging_postgres_url
             UPDATE_KEY_FILE: /run/secrets/staging_update_key
         secrets:
