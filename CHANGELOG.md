@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.69.0
+
+### Added
+
+- **Next-event timing forecast investigation, findings recorded ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  The question split into two halves with opposite answers. Attacks are
+  mechanically triggered, not a forecasting problem: all 925 target the enemy
+  homeworld, 83.6% fire at exactly 9 of 10 sectors captured, and liberation at
+  attack start has an IQR of 0.051 against a phase-matched control IQR of
+  0.378 (permutation p=0.0005, Bonferroni alpha 0.01 across five variables).
+  "When is the next attack" reduces to "when will players capture 9 sectors"
+  — a campaign-progress readout, already derivable, not a forecast.
+
+    Defends have no deterministic trigger and campaign state does not drive
+    them (all four campaign-state variables land at "no rule", p=1.0000). The
+    only variable carrying signal is time since the previous event. 63.1% of
+    defends chain within 10 minutes of the previous one ending; given no
+    chain, the lull runs p25 27.8h / p50 36.8h / p75 46.4h. A features-free
+    empirical residual-life model scores a skill ratio of 0.628–0.770
+    depending on configuration — better than a constant baseline, but the
+    project's pre-registered decision gate (calibration within ±0.05 at each
+    quartile, skill-ratio CI upper bound <= 0.6) is not cleared by either.
+    Adding evidence-backed features (cyclic hour-of-day, weekend, capped
+    elapsed time) in a logistic hazard model made it worse, not better —
+    skill ratios of 1.057–1.464, confirmed genuine rather than a bug by a
+    dedicated review that cleared five artifact hypotheses and re-implemented
+    the fitter independently.
+
+    Recommendation: do not ship a countdown or an ETA. The honest surface, if
+    any, is a progress readout on the attack side ("N of 10 sectors captured")
+    and a descriptive band on the defend side ("defends typically chain; when
+    they don't, the next one is usually 28–46h out") — explicitly not a
+    prediction. Full write-up at
+    `docs/superpowers/findings/2026-07-27-next-event-timing.md`; the five
+    analysis scripts behind the numbers are documented in `scripts/README.md`
+    under `## analysis/`.
+
 ## 0.68.0
 
 ### Added
