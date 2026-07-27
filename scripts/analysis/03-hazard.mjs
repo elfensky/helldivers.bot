@@ -507,8 +507,10 @@ for (const variant of VARIANTS) {
 //
 // Phase 3 justifies its existence ONLY if it beats Phase 2 on the SAME
 // configuration: lower skill ratio AND calibration no worse. Compare CIs, not
-// point estimates — that is the project's decision rule (see 02-baseline.mjs
-// and progress.md). Numbers below are copied from /tmp/phase2.txt.
+// point estimates — that is the project's decision rule (see the decision
+// gate in 02-baseline.mjs). The PHASE2 figures below are hardcoded for this
+// comparison, produced by running `02-baseline.mjs`; if that script's output
+// ever changes, these must be refreshed to match.
 
 const PHASE2 = {
     'defend, all enemies': { skill: 0.628, ciLo: 0.605, ciHi: 0.653, effN: 3925 },
