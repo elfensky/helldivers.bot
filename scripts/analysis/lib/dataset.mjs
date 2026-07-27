@@ -176,7 +176,30 @@ export async function loadDataset() {
         return st.points / max;
     }
 
-    return { events, seasons, statusAt, liberationAt };
+    /**
+     * Within-season player percentile evaluable at an ARBITRARY instant.
+     *
+     * Returns the percentile of the most recent event at or before `t`, ranked
+     * against events strictly earlier in the same season. Causal by
+     * construction, and — unlike the per-event field — computable at a control
+     * moment, which is what makes a comparison of this variable non-degenerate.
+     *
+     * @param {number} season
+     * @param {number} t unix seconds
+     * @returns {number} percentile in [0, 1]; 0.5 when no event precedes `t`
+     */
+    function playerPercentileAt(season, t) {
+        const list = eventsBySeason.get(season) ?? [];
+        const earlier = list.filter((e) => e.start_time <= t);
+        if (earlier.length === 0) return 0.5;
+        const mine = earlier.at(-1).players_at_start ?? 0;
+        const priors = earlier.slice(0, -1).map((e) => e.players_at_start ?? 0);
+        return priors.length > 0 ?
+                priors.filter((p) => p < mine).length / priors.length
+            :   0.5;
+    }
+
+    return { events, seasons, statusAt, liberationAt, playerPercentileAt };
 }
 
 if (import.meta.filename === process.argv[1]) {
@@ -282,6 +305,39 @@ if (import.meta.filename === process.argv[1]) {
         }
     }
     assert(ds.statusAt(1, 0, 0) === null, 'statusAt should be null before all buckets');
+
+    // playerPercentileAt must be evaluable at an ARBITRARY instant — that is
+    // the whole point of it — and must agree with the per-event field when
+    // queried exactly at an event start. Restricted to events with a unique
+    // start_time in their season, since ties make "the most recent event at t"
+    // ambiguous.
+    {
+        const bySeasonPct = new Map();
+        for (const e of ds.events) {
+            if (!bySeasonPct.has(e.season)) bySeasonPct.set(e.season, []);
+            bySeasonPct.get(e.season).push(e);
+        }
+        let checked = 0;
+        outer: for (const [, list] of bySeasonPct) {
+            for (const e of list) {
+                if (list.filter((x) => x.start_time === e.start_time).length !== 1) {
+                    continue;
+                }
+                assert.equal(
+                    ds.playerPercentileAt(e.season, e.start_time),
+                    e.playerPercentileInSeason,
+                    `playerPercentileAt disagrees with the per-event field at season ${e.season}`,
+                );
+                if (++checked >= 200) break outer;
+            }
+        }
+        assert(checked > 0, 'no unique-start events found to cross-check');
+        assert.equal(
+            ds.playerPercentileAt(1, 0),
+            0.5,
+            'percentile before any event should be 0.5',
+        );
+    }
 
     // The RNG is deterministic.
     const a = makeRng(42);
