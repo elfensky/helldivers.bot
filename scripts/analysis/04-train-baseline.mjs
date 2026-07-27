@@ -19,7 +19,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { loadDataset, HOUR, makeRng } from './lib/dataset.mjs';
+import { loadDataset, HOUR } from './lib/dataset.mjs';
 import { walkForward, quantileOf } from './lib/backtest.mjs';
 
 // --- pure helpers ------------------------------------------------------------
@@ -86,99 +86,137 @@ function isNoDefendActive(activeIndex, season, t) {
 }
 
 /**
- * Concentration ratio. Zero denominator with a non-zero numerator is
- * Infinity (maximally un-concentrated) — the honest reading. Same
- * convention as 01-trigger-hunt.mjs's `ratio()`.
- *
- * @param {number} eventSpread
- * @param {number} controlSpread
- * @returns {number}
- */
-function concentrationRatio(eventSpread, controlSpread) {
-    if (eventSpread === 0) return 0;
-    if (controlSpread === 0) return Infinity;
-    return eventSpread / controlSpread;
-}
-
-/**
  * @param {number[]} values
- * @returns {{n: number, p25: number|null, p75: number|null, iqr: number, span: number}}
+ * @returns {{n: number, p25: number|null, p50: number|null, p75: number|null}}
  */
-function summarizeVar(values) {
-    const p05 = quantileOf(values, 0.05);
-    const p25 = quantileOf(values, 0.25);
-    const p75 = quantileOf(values, 0.75);
-    const p95 = quantileOf(values, 0.95);
+function quantileSummary(values) {
     return {
         n: values.length,
-        p25,
-        p75,
-        iqr: p25 !== null && p75 !== null ? p75 - p25 : 0,
-        span: p05 !== null && p95 !== null ? p95 - p05 : 0,
+        p25: quantileOf(values, 0.25),
+        p50: quantileOf(values, 0.5),
+        p75: quantileOf(values, 0.75),
     };
 }
 
 /**
- * The previous-train stats a HYPOTHETICAL train start would inherit at
- * instant `t`: the length/failures of the most recently COMPLETED train in
- * this season, i.e. whatever the next actual train start (whenever it
- * occurs) will carry as its own prevTrainLength/prevTrainFailures. Only
- * meaningful when `t` sits in a lull — callers must reject `t` where a
- * defend is active before calling this (a hypothetical new train can't start
- * while one is already running, same rule as `isNoDefendActive`).
+ * Pearson correlation coefficient. A constant input has zero variance, which
+ * makes the coefficient mathematically undefined (0/0) — this returns 0 (the
+ * documented "no linear relationship measurable" sentinel) rather than NaN,
+ * so callers can print a number without a special case.
  *
- * @param {object[]} seasonTrainStarts train-start events for ONE season,
- *   sorted ascending by start_time (each carries prevTrainLength/prevTrainFailures)
- * @param {number} t unix seconds
- * @returns {{length: number, failures: number}|null} null if there is no
- *   later train start in this season, or if that next train start is itself
- *   the season's first train (no preceding train exists yet)
+ * @param {number[]} xs
+ * @param {number[]} ys
+ * @returns {number} in [-1, 1], or 0 when either input is constant
  */
-function prevTrainStatsAt(seasonTrainStarts, t) {
-    const next = seasonTrainStarts.find((e) => e.start_time > t);
-    if (!next || next.prevTrainLength === null) return null;
-    return { length: next.prevTrainLength, failures: next.prevTrainFailures };
+function pearsonCorrelation(xs, ys) {
+    assert.equal(xs.length, ys.length, 'pearsonCorrelation requires equal-length inputs');
+    const n = xs.length;
+    if (n === 0) return 0;
+
+    const meanX = xs.reduce((a, b) => a + b, 0) / n;
+    const meanY = ys.reduce((a, b) => a + b, 0) / n;
+    let cov = 0;
+    let varX = 0;
+    let varY = 0;
+    for (let i = 0; i < n; i++) {
+        const dx = xs[i] - meanX;
+        const dy = ys[i] - meanY;
+        cov += dx * dy;
+        varX += dx * dx;
+        varY += dy * dy;
+    }
+    if (varX === 0 || varY === 0) return 0;
+    return cov / Math.sqrt(varX * varY);
 }
 
 /**
- * Permutation p-value for "event values are more concentrated than
- * controls". Identical method to 01-trigger-hunt.mjs's `permutationP` —
- * duplicated locally rather than imported since 01-trigger-hunt.mjs is a
- * script, not a library.
+ * Bucket label for prevTrainLength/prevTrainFailures: values 0-5 get their
+ * own bucket, 6+ folds together (sparse tail).
  *
- * @param {number[]} eventVals
- * @param {number[]} controlVals
- * @param {() => number} rand
- * @param {number} permutations
- * @returns {number} p-value
+ * @param {number} v
+ * @returns {string}
  */
-function permutationPValue(eventVals, controlVals, rand, permutations) {
-    const observed = concentrationRatio(
-        summarizeVar(eventVals).iqr,
-        summarizeVar(controlVals).iqr,
-    );
-    if (!Number.isFinite(observed)) return 1;
+function bucketLabel(v) {
+    return v >= 6 ? '6+' : String(v);
+}
 
-    const pool = [...eventVals, ...controlVals];
-    const nA = eventVals.length;
-    let atLeastAsExtreme = 0;
+/**
+ * For each REAL train start with a defined previous train, the lull it sits
+ * at the end of — the gap from the END of the previous train (the end_time
+ * of that train's LAST defend) to THIS train start's start_time — plus the
+ * mechanical start-to-start gap, for the side-by-side contrast the write-up
+ * calls for.
+ *
+ * Deliberately does NOT reuse the old `prevTrainStatsAt` helper (deleted —
+ * see the block comment above its former call site). That helper computed a
+ * HYPOTHETICAL control's inherited stats at an arbitrary instant, and its
+ * value was piecewise-constant across an entire lull — identical to the
+ * value the real train start ending that lull carries. Every "control" was
+ * therefore an exact copy of some real event's value by construction, which
+ * is why that test was degenerate. This function reads prevTrainLength /
+ * prevTrainFailures directly off the real train-start event (already correct,
+ * from dataset.mjs) and locates the previous train's actual last defend by
+ * walking the full per-season defend list — no hypothetical control involved.
+ *
+ * @param {object[]} allDefends every defend event, all seasons
+ * @returns {{prevTrainLength: number, prevTrainFailures: number, lullHours: number, startToStartGapHours: number}[]}
+ */
+function buildLullRecords(allDefends) {
+    const bySeason = new Map();
+    for (const e of allDefends) {
+        if (!bySeason.has(e.season)) bySeason.set(e.season, []);
+        bySeason.get(e.season).push(e);
+    }
 
-    for (let p = 0; p < permutations; p++) {
-        const shuffled = [...pool];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(rand() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    const records = [];
+    for (const [, list] of bySeason) {
+        const startIndices = [];
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].isTrainStart) startIndices.push(i);
         }
-        const permRatio = concentrationRatio(
-            summarizeVar(shuffled.slice(0, nA)).iqr,
-            summarizeVar(shuffled.slice(nA)).iqr,
-        );
-        if (Number.isFinite(permRatio) && permRatio <= observed) {
-            atLeastAsExtreme++;
+        // k starts at 1: the season's FIRST train (startIndices[0]) has no
+        // preceding train, so it contributes no lull record.
+        for (let k = 1; k < startIndices.length; k++) {
+            const start = list[startIndices[k]];
+            if (start.prevTrainLength === null) continue; // defensive; never true for k >= 1
+            const prevTrainLastDefend = list[startIndices[k] - 1];
+            const prevStart = list[startIndices[k - 1]];
+            records.push({
+                prevTrainLength: start.prevTrainLength,
+                prevTrainFailures: start.prevTrainFailures,
+                lullHours: (start.start_time - prevTrainLastDefend.end_time) / HOUR,
+                startToStartGapHours: (start.start_time - prevStart.start_time) / HOUR,
+            });
         }
     }
-    // Add-one smoothing: a p-value of exactly 0 is never honest from a finite sample.
-    return (atLeastAsExtreme + 1) / (permutations + 1);
+    return records;
+}
+
+/**
+ * Stratify lull-hours by a previous-train feature, bucketed via `bucketLabel`.
+ *
+ * @param {{prevTrainLength: number, prevTrainFailures: number, lullHours: number}[]} records
+ * @param {'prevTrainLength'|'prevTrainFailures'} key
+ * @returns {Map<string, {n: number, p25: number|null, p50: number|null, p75: number|null}>}
+ *   ordered ascending by bucket, with '6+' last
+ */
+function stratifyLullBy(records, key) {
+    const byBucket = new Map();
+    for (const r of records) {
+        const label = bucketLabel(r[key]);
+        if (!byBucket.has(label)) byBucket.set(label, []);
+        byBucket.get(label).push(r.lullHours);
+    }
+    const order = [...byBucket.keys()].sort((a, b) => {
+        if (a === '6+') return 1;
+        if (b === '6+') return -1;
+        return Number(a) - Number(b);
+    });
+    const result = new Map();
+    for (const label of order) {
+        result.set(label, quantileSummary(byBucket.get(label)));
+    }
+    return result;
 }
 
 // --- self-checks on the pure helpers (no DB) --------------------------------
@@ -222,50 +260,94 @@ function permutationPValue(eventVals, controlVals, rand, permutations) {
 }
 
 {
-    // concentrationRatio / summarizeVar / prevTrainStatsAt
-    assert.equal(concentrationRatio(0, 4), 0, 'zero numerator ratio');
-    assert.equal(concentrationRatio(2, 0), Infinity, 'zero denominator ratio');
+    // pearsonCorrelation
+    assert.equal(
+        pearsonCorrelation([1, 2, 3, 4], [2, 4, 6, 8]),
+        1,
+        'perfectly correlated input should give r=1',
+    );
+    assert.equal(
+        pearsonCorrelation([1, 2, 3, 4], [8, 6, 4, 2]),
+        -1,
+        'perfectly anti-correlated input should give r=-1',
+    );
+    assert.equal(
+        pearsonCorrelation([1, 2, 3, 4], [5, 5, 5, 5]),
+        0,
+        'constant y should give the documented 0 sentinel, not NaN',
+    );
+    assert.equal(
+        pearsonCorrelation([5, 5, 5, 5], [5, 5, 5, 5]),
+        0,
+        'both-constant input should give the documented 0 sentinel, not NaN',
+    );
+}
 
-    const spread = summarizeVar([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    assert.equal(spread.n, 10);
-    assert(spread.iqr > 0, 'iqr should be positive for a spread sample');
-    const flat = summarizeVar([7, 7, 7, 7, 7, 7, 7, 7, 7, 7]);
-    assert.equal(flat.iqr, 0, 'iqr of a constant sample is 0');
-
-    const fakeTrainStarts = [
-        { season: 1, start_time: 0, prevTrainLength: null, prevTrainFailures: null },
-        { season: 1, start_time: 1000, prevTrainLength: 3, prevTrainFailures: 2 },
-        { season: 1, start_time: 2000, prevTrainLength: 5, prevTrainFailures: 4 },
+{
+    // buildLullRecords / stratifyLullBy
+    //
+    // One season: train A (defends at 0-100 and 200-300, length 2), a 10h
+    // lull, train B (a single defend at 36300-36400, length 1), a 20h lull,
+    // train C (a single defend starting at 108400).
+    const fakeDefends = [
+        {
+            season: 1,
+            start_time: 0,
+            end_time: 100,
+            isTrainStart: true,
+            prevTrainLength: null,
+            prevTrainFailures: null,
+        },
+        {
+            season: 1,
+            start_time: 200,
+            end_time: 300,
+            isTrainStart: false,
+            prevTrainLength: null,
+            prevTrainFailures: null,
+        },
+        {
+            season: 1,
+            start_time: 300 + 10 * HOUR,
+            end_time: 300 + 10 * HOUR + 100,
+            isTrainStart: true,
+            prevTrainLength: 2,
+            prevTrainFailures: 1,
+        },
+        {
+            season: 1,
+            start_time: 300 + 10 * HOUR + 100 + 20 * HOUR,
+            end_time: 300 + 10 * HOUR + 100 + 20 * HOUR + 100,
+            isTrainStart: true,
+            prevTrainLength: 1,
+            prevTrainFailures: 0,
+        },
     ];
-    assert.equal(
-        prevTrainStatsAt(fakeTrainStarts, 500)?.length,
-        3,
-        "a lull before the 2nd train start should report the 1st train's stats",
-    );
-    assert.equal(
-        prevTrainStatsAt(fakeTrainStarts, 1500)?.length,
-        5,
-        "a lull before the 3rd train start should report the 2nd train's stats",
-    );
-    assert.equal(
-        prevTrainStatsAt(fakeTrainStarts, 2500),
-        null,
-        'past every train start there is no next train to report',
+
+    const records = buildLullRecords(fakeDefends);
+    assert.equal(records.length, 2, 'season first train contributes no lull record');
+    assert.equal(records[0].prevTrainLength, 2, "train B's previous train had length 2");
+    assert.equal(records[0].lullHours, 10, "train B's lull should be exactly 10h");
+    assert.equal(records[1].prevTrainLength, 1, "train C's previous train had length 1");
+    assert.equal(records[1].lullHours, 20, "train C's lull should be exactly 20h");
+    assert(
+        records[0].startToStartGapHours > records[0].lullHours,
+        'start-to-start gap must exceed the lull (it also spans the previous train itself)',
     );
 
-    // permutationPValue: an obviously concentrated event sample against a
-    // spread-out control sample must land a low p-value.
-    const rng = makeRng(1);
-    const p = permutationPValue(
-        [5, 5, 5, 5, 5],
-        [1, 10, 20, 30, 40, 50, 60, 70],
-        rng,
-        500,
+    const byLength = stratifyLullBy(records, 'prevTrainLength');
+    assert.deepEqual(
+        [...byLength.keys()],
+        ['1', '2'],
+        'buckets should be sorted ascending, with 6+ last',
     );
-    assert(
-        p < 0.2,
-        `expected a low p-value for an obviously concentrated sample, got ${p}`,
-    );
+    assert.equal(byLength.get('2').n, 1);
+    assert.equal(byLength.get('2').p50, 10);
+
+    // bucketLabel folds 6+ into one bucket.
+    assert.equal(bucketLabel(5), '5');
+    assert.equal(bucketLabel(6), '6+');
+    assert.equal(bucketLabel(12), '6+');
 }
 
 console.log('\n=== Phase 4: train-start baseline — pure self-checks OK ===');
@@ -456,156 +538,99 @@ for (const { cfg, summary } of results) {
     );
 }
 
-// --- previous-train feature concentration test ------------------------------
+// --- previous-train features vs. the following lull -------------------------
 //
-// Do prevTrainLength/prevTrainFailures differ at real train starts versus
-// phase-matched controls? Same method as 01-trigger-hunt.mjs: IQR/span
-// concentration ratio + permutation test with Bonferroni correction,
-// phase-matched controls drawn from OTHER seasons at the same fractional
-// point through the war, with a 3h exclusion window around real events. A
-// control point is additionally rejected if it falls where a defend is
-// active — a hypothetical new train cannot start there either.
-const PREV_TRAIN_VARIABLES = ['prevTrainLength', 'prevTrainFailures'];
-const RULE_IQR_RATIO = 0.25; // same threshold as 01-trigger-hunt.mjs
-const RULE_SPAN_RATIO = 0.35;
-const PREV_TRAIN_PERMUTATIONS = 2000;
-const PREV_TRAIN_ALPHA = 0.05 / PREV_TRAIN_VARIABLES.length;
+// A prior version of this test built "controls" via a `prevTrainStatsAt`
+// helper: the previous-train stats a HYPOTHETICAL train start would inherit
+// at a phase-matched instant in some OTHER season. That value is
+// piecewise-constant across the entire lull it falls in, and its value on
+// that lull IS the value the REAL train start ending that lull carries — so
+// every "control" was, by construction, an exact copy of some real event's
+// value. Across the full run, 0 of 6270 control draws fell outside the set
+// of real event values. A reviewer proved the resulting statistic was
+// invariant to the data: shuffling the feature values across all train
+// starts (destroying any real relationship) produced IDENTICAL output — IQR
+// ratio 1.000, p=1.0000 — and a synthetic world with a literally
+// deterministic trigger was still reported as "no signal". A statistic that
+// cannot distinguish shuffled data from real data cannot be published as
+// evidence, so that test was deleted rather than patched.
+//
+// This replacement asks the question directly: does the previous train's
+// length / failure count predict how long the FOLLOWING LULL runs? Real
+// train starts only, stratified by prevTrainLength and (separately) by
+// prevTrainFailures, plus the Pearson correlation between each feature and
+// the lull across all train starts.
+console.log(
+    '\n=== Previous-train features vs. the following lull (replaces a degenerate concentration test) ===\n',
+);
 
-/**
- * @param {object} dataset the loaded dataset
- * @param {object[]} restrictedTrainStarts train-start events (already filtered)
- * @returns {boolean} true if either variable is RULE-LIKE
- */
-function runPrevTrainConcentrationTest(dataset, restrictedTrainStarts) {
-    console.log('\n=== Previous-train feature concentration test ===\n');
+const lullRecords = buildLullRecords(allDefends);
+console.log(
+    `train starts with a defined previous train and a following lull: ${lullRecords.length}\n`,
+);
 
-    const bySeasonTS = new Map();
-    for (const e of restrictedTrainStarts) {
-        if (!bySeasonTS.has(e.season)) bySeasonTS.set(e.season, []);
-        bySeasonTS.get(e.season).push(e);
-    }
-    const bySeasonDefends = new Map();
-    for (const e of allDefends) {
-        if (!bySeasonDefends.has(e.season)) bySeasonDefends.set(e.season, []);
-        bySeasonDefends.get(e.season).push(e);
-    }
-
-    const rng = makeRng(20260728);
-    const CONTROLS_PER_EVENT = 5;
-    const EXCLUSION_HOURS = 3;
-    const candidateSeasons = [...dataset.seasons.values()].filter(
-        (s) => s.spanSeconds > 0,
-    );
-
-    const atEvent = { prevTrainLength: [], prevTrainFailures: [] };
-    const atControl = { prevTrainLength: [], prevTrainFailures: [] };
-
-    // Season-first trains carry a null prevTrainLength on both sides — same
-    // null-filtering convention as 01-trigger-hunt.mjs's stateAt() variables.
-    const eventsWithPrevTrain = restrictedTrainStarts.filter(
-        (e) => e.prevTrainLength !== null,
-    );
-
-    let controlsAttempted = 0;
-    let controlsRejected = 0;
-
-    for (const e of eventsWithPrevTrain) {
-        atEvent.prevTrainLength.push(e.prevTrainLength);
-        atEvent.prevTrainFailures.push(e.prevTrainFailures);
-
-        const season = dataset.seasons.get(e.season);
-        if (!season || season.spanSeconds <= 0) continue;
-        const phase = (e.start_time - season.firstStart) / season.spanSeconds;
-
-        for (let i = 0; i < CONTROLS_PER_EVENT; i++) {
-            controlsAttempted++;
-            const other = candidateSeasons[Math.floor(rng() * candidateSeasons.length)];
-            if (!other || other.season === e.season) {
-                controlsRejected++;
-                continue;
-            }
-            const t = other.firstStart + phase * other.spanSeconds;
-
-            const otherDefends = bySeasonDefends.get(other.season) ?? [];
-            const tooClose = otherDefends.some(
-                (d) => Math.abs(d.start_time - t) < EXCLUSION_HOURS * HOUR,
-            );
-            if (tooClose) {
-                controlsRejected++;
-                continue;
-            }
-            if (!isNoDefendActive(activeIndex, other.season, t)) {
-                controlsRejected++;
-                continue;
-            }
-
-            const otherTrainStarts = bySeasonTS.get(other.season) ?? [];
-            const stats = prevTrainStatsAt(otherTrainStarts, t);
-            if (!stats) {
-                controlsRejected++;
-                continue;
-            }
-            atControl.prevTrainLength.push(stats.length);
-            atControl.prevTrainFailures.push(stats.failures);
-        }
-    }
-
-    console.log(
-        `train starts with a defined previous train=${eventsWithPrevTrain.length}  controls attempted=${controlsAttempted}  rejected=${controlsRejected}`,
-    );
-    console.log(
-        `controls are PHASE-MATCHED from other seasons, restricted to lulls; ${PREV_TRAIN_PERMUTATIONS} permutations; Bonferroni alpha=${PREV_TRAIN_ALPHA.toFixed(4)} across ${PREV_TRAIN_VARIABLES.length} variables\n`,
-    );
-
-    const permRng = makeRng(31338);
-    let anyRuleLike = false;
-    for (const v of PREV_TRAIN_VARIABLES) {
-        const A = summarizeVar(atEvent[v]);
-        const C = summarizeVar(atControl[v]);
-        const iqrRatio = concentrationRatio(A.iqr, C.iqr);
-        const spanRatio = concentrationRatio(A.span, C.span);
-        const pValue = permutationPValue(
-            atEvent[v],
-            atControl[v],
-            permRng,
-            PREV_TRAIN_PERMUTATIONS,
-        );
-        const effectLarge = iqrRatio <= RULE_IQR_RATIO && spanRatio <= RULE_SPAN_RATIO;
-        const ruleLike = effectLarge && pValue < PREV_TRAIN_ALPHA;
-        if (ruleLike) anyRuleLike = true;
-
-        console.log(`${v}`);
+for (const key of /** @type {const} */ (['prevTrainLength', 'prevTrainFailures'])) {
+    console.log(`stratified by ${key} (lull hours per stratum):`);
+    const strata = stratifyLullBy(lullRecords, key);
+    for (const [label, s] of strata) {
         console.log(
-            `  at train starts  n=${A.n}  p25=${A.p25?.toFixed(2)}  p75=${A.p75?.toFixed(2)}  IQR=${A.iqr.toFixed(2)}  span=${A.span.toFixed(2)}`,
-        );
-        console.log(
-            `  at controls      n=${C.n}  p25=${C.p25?.toFixed(2)}  p75=${C.p75?.toFixed(2)}  IQR=${C.iqr.toFixed(2)}  span=${C.span.toFixed(2)}`,
-        );
-        console.log(
-            `  concentration: IQR ratio=${iqrRatio.toFixed(3)} (<=${RULE_IQR_RATIO})  span ratio=${spanRatio.toFixed(3)} (<=${RULE_SPAN_RATIO})  effect=${effectLarge ? 'LARGE' : 'small'}`,
-        );
-        console.log(
-            `  permutation p=${pValue.toFixed(4)} (significant if < ${PREV_TRAIN_ALPHA.toFixed(4)})  => ${ruleLike ? 'RULE-LIKE' : 'no signal'}\n`,
+            `  ${key}=${label.padEnd(3)} n=${String(s.n).padEnd(4)} lull p25=${s.p25?.toFixed(1)}h  p50=${s.p50?.toFixed(1)}h  p75=${s.p75?.toFixed(1)}h`,
         );
     }
-
-    console.log(
-        anyRuleLike ?
-            'VERDICT: previous-train features show a concentration signal — build a feature model.'
-        :   'VERDICT: no concentration signal for prevTrainLength/prevTrainFailures — null result, do not fit a feature model to noise.',
-    );
-
-    return anyRuleLike;
+    console.log('');
 }
 
-const prevTrainSignal = runPrevTrainConcentrationTest(ds, trainStarts);
+const lullVsLength = pearsonCorrelation(
+    lullRecords.map((r) => r.prevTrainLength),
+    lullRecords.map((r) => r.lullHours),
+);
+const lullVsFailures = pearsonCorrelation(
+    lullRecords.map((r) => r.prevTrainFailures),
+    lullRecords.map((r) => r.lullHours),
+);
+// For CONTRAST ONLY — not the forecasting-relevant quantity. See the note
+// printed below.
+const startGapVsLength = pearsonCorrelation(
+    lullRecords.map((r) => r.prevTrainLength),
+    lullRecords.map((r) => r.startToStartGapHours),
+);
 
-if (prevTrainSignal) {
+console.log(
+    `Pearson r, prevTrainLength   vs LULL length (end of prev train -> this train's start): ${lullVsLength.toFixed(3)}`,
+);
+console.log(
+    `Pearson r, prevTrainFailures vs LULL length (end of prev train -> this train's start): ${lullVsFailures.toFixed(3)}`,
+);
+console.log(
+    `\nFor CONTRAST, not as evidence of signal: Pearson r, prevTrainLength vs the` +
+        `\nSTART-TO-START gap (this train's start minus the PREVIOUS train's start) = ${startGapVsLength.toFixed(3)}.` +
+        `\nThat correlation is MECHANICAL, not predictive — a longer previous train pushes its own` +
+        `\nend time later, which pushes the start-to-start gap out even when the LULL that follows it` +
+        `\n(the actually forecasting-relevant quantity) is unrelated to how long the train was. Read` +
+        `\nthe LULL correlations above as the answer to "does the previous train predict the wait" —` +
+        `\nnot this one.\n`,
+);
+
+// Not a formal significance test (that machinery is exactly what was just
+// deleted for being degenerate) — a plain, documented magnitude threshold on
+// the correlation coefficient itself.
+const FLAT_R_THRESHOLD = 0.1;
+const flatSignal =
+    Math.abs(lullVsLength) < FLAT_R_THRESHOLD &&
+    Math.abs(lullVsFailures) < FLAT_R_THRESHOLD;
+
+console.log(
+    flatSignal ?
+        `VERDICT: |r| < ${FLAT_R_THRESHOLD} for both features against the lull — null result, consistent with the flat medians above. Do not fit a feature model to noise.`
+    :   `VERDICT: |r| >= ${FLAT_R_THRESHOLD} for at least one feature against the lull — a relationship worth a closer look before dismissing as noise.`,
+);
+
+if (!flatSignal) {
     console.log(
-        '\nSignal detected — a feature-conditioned predictor would be the next step. Not built in this run pending that decision.',
+        '\nA relationship was measured — a feature-conditioned predictor would be the next step. Not built in this run pending that decision.',
     );
 } else {
     console.log(
-        '\nNull result stands as reported above. No feature model was fit — fitting one to a null concentration test would be fitting noise, not signal.',
+        '\nNull result stands as reported above. No feature model was fit — fitting one to a null relationship would be fitting noise, not signal.',
     );
 }

@@ -461,6 +461,17 @@ function printDilutionComparison(pooled, trainStarts) {
             `${v.padEnd(24)}${fmt(pooled[v]?.iqrRatio).padEnd(16)}${fmt(trainStarts[v]?.iqrRatio).padEnd(16)}`,
         );
     }
+    console.log(
+        `\nNOTE on hoursSincePrevEventEnd: this variable CHANGES MEANING between the two` +
+            `\ncolumns, because the "previous event" lookup (stateAt's \`prevEvent\` argument) is` +
+            `\nscoped to whichever event array the caller passed in — see \`eventsBySeasonEnemy\`` +
+            `\nabove, built fresh per call from \`events\`, not from the full defend log. The pooled` +
+            `\ncolumn therefore means "hours since the previous defend of any kind ended"; the` +
+            `\ntrain-starts column means "hours since the previous TRAIN's first defend ended" (the` +
+            `\nnearest preceding train start, since mechanical follow-ups are excluded from that` +
+            `\narray entirely). A move like 0.352 -> 0.928 is consequently partly DEFINITIONAL, not` +
+            `\npurely a dilution effect — the two numbers are not measuring the same underlying gap.`,
+    );
 }
 
 // --- run defend, attack, then defend train starts ---------------------------
