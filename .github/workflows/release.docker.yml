@@ -17,6 +17,9 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v7.0.0
 
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v4.2.0
+
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v4.1.0
 
@@ -32,7 +35,7 @@ jobs:
               with:
                   context: .
                   file: ./Dockerfile.app
-                  # platforms: linux/amd64,linux/arm64
+                  platforms: linux/amd64,linux/arm64
                   push: true
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:${{ github.ref_name }}
@@ -63,6 +66,9 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v7.0.0
 
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v4.2.0
+
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v4.1.0
 
@@ -78,6 +84,7 @@ jobs:
               with:
                   context: .
                   file: ./Dockerfile.migrate
+                  platforms: linux/amd64,linux/arm64
                   push: true
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:${{ github.ref_name }}

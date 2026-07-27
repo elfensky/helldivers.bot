@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.67.5
+
+### Changed
+
+- **Docker images are now built multi-arch (`linux/amd64` + `linux/arm64`).**
+  Both the staging (`develop`) and release (tag) workflows set up QEMU and build
+  the app and migrate images for arm64 as well, so they run on the Raspberry Pi
+  swarm nodes and not just amd64 hosts. arm64 is cross-built under emulation; if
+  the `next build` step proves too slow, the follow-up is native arm64 runners
+  (`ubuntu-24.04-arm`, free for this public repo).
+
 ## 0.67.4
 
 ### Changed
