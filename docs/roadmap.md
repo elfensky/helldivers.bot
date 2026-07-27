@@ -51,11 +51,11 @@ commit), and close the issue with an implementation comment.
 
 ## Now — unblock the release
 
-`develop` is **74 commits** and several versions (0.66.0 → 0.67.x) ahead of
-`main`, which is still tagged `v0.65.3`. `main` is fully contained in `develop`
-(0 commits behind), so the release PR is a clean fast-forward-free merge with no
-conflicts to resolve. Nothing else should start until this ships, because every
-subsequent version bump compounds the gap.
+`develop` is **74 commits and nine versions** (0.65.4 → 0.67.1) ahead of `main`,
+which is still tagged `v0.65.3`. `main` is fully contained in `develop`
+(0 commits behind), so the release PR is a clean merge with no conflicts to
+resolve. Nothing else should start until this ships, because every subsequent
+version bump compounds the gap.
 
 ### S0 — Release the develop backlog
 
