@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.70.0
+
+### Added
+
+- **Defend train-start analysis, correcting the v0.69.0 defend verdict ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  v0.69.0's defend predictor was measured against a mis-specified target:
+  all 4,928 defend-to-defend gaps, a bimodal series dominated by ~2.5h
+  mechanical chain gaps. Measured directly this time: a defend train
+  continues iff the previous defend in it was FAILED (96.9% vs 0.1% after a
+  success) — a game mechanic, not a statistical tendency — so ~62% of
+  defend events are mechanical follow-ups and only the 1,976 train starts
+  are forecasting targets (train-start gaps CV 0.45 vs the pooled series'
+  1.32).
+
+    Retrained and re-evaluated on the corrected target: skill ratio 0.753
+    (95% CI [0.732, 0.773], effective N 1461), median absolute error 9.1h
+    vs a constant baseline's 12.1h. Calibration now PASSES (it FAILED
+    against the old target); sharpness (23.1h) is still not narrower than
+    the train-start gap IQR (22.4h). Verdict unchanged: **INCONCLUSIVE** —
+    clears neither the 0.6 ship bar nor the 0.8 dead bar. The trigger hunt
+    was re-run restricted to train starts only to rule out dilution
+    masking a trigger in the pooled run; it found none (all four
+    campaign-state variables still land at "no rule").
+
+    A follow-up test for whether the previous train's length/failure count
+    predicts the length of the following lull found no relationship (lull
+    medians flat at 35.5h-37.9h across every `prevTrainLength` stratum,
+    Pearson r = -0.036) — replacing an earlier version of that same test
+    that a reviewer proved was invariant to the data (shuffling the input
+    reproduced identical output) and was deleted rather than patched.
+
+    Recommendation unchanged: do not ship a countdown. The descriptive
+    surface is corrected to "trains continue while you keep losing; once
+    you hold, the next wave is usually 34-56h out." Full write-up at
+    `docs/superpowers/findings/2026-07-27-next-event-timing.md`; the new
+    script is `scripts/analysis/04-train-baseline.mjs`, documented in
+    `scripts/README.md` under `## analysis/`.
+
 ## 0.69.0
 
 ### Added

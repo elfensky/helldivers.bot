@@ -1,10 +1,24 @@
 # Next-event timing forecast — findings
 
 **Issue:** [#472](https://github.com/elfensky/helldivers.bot/issues/472)
-**Date:** 2026-07-27
+**Date:** 2026-07-27 (defend verdict corrected 2026-07-28 — see § Train starts)
 **Design doc:** [`docs/superpowers/specs/2026-07-27-next-event-timing-forecast-design.md`](../specs/2026-07-27-next-event-timing-forecast-design.md)
-**Plan:** [`docs/superpowers/plans/2026-07-27-next-event-timing-forecast.md`](../plans/2026-07-27-next-event-timing-forecast.md)
+**Plan:** [`docs/superpowers/plans/2026-07-27-next-event-timing-forecast.md`](../plans/2026-07-27-next-event-timing-forecast.md), [`docs/superpowers/plans/2026-07-28-defend-train-starts.md`](../plans/2026-07-28-defend-train-starts.md)
 **Scripts:** [`scripts/README.md`](../../../scripts/README.md#analysis) (`## analysis/`)
+
+> **Correction notice (2026-07-28):** the original defend predictor (Phase
+> 2/3, below) was trained and evaluated against a mis-specified target: all
+> 4,928 defend-to-defend gaps, a distribution dominated by ~2.5h mechanical
+> chain gaps from a game mechanic (a defend train continues iff the previous
+> defend was FAILED — 96.9% vs 0.1%, see § Train starts). The corrected
+> target is train-start-to-train-start gaps only (n=1,816). Every defend
+> skill/calibration number below this notice through § How well can defend
+> timing be predicted? was measured against the OLD, mis-specified target and
+> is **superseded** by § Train starts, which retrains and re-evaluates on the
+> correct series. The numbers are kept in place, not deleted, because they
+> remain a useful comparator (see the "versus v0.69.0" subsection below) and
+> because a false "we found a rule" retraction should be as visible as the
+> original claim — but do not read them as the current defend verdict.
 
 ## Question
 
@@ -23,9 +37,11 @@ The question had two halves, and they had opposite answers.
   already exists.
 - **Defends have no deterministic trigger**, and the best predictive model
   built for them does not clear the pre-registered decision gate. The
-  verdict is genuinely inconclusive, not dead: both configurations beat a
-  constant baseline, just not by enough, and adding features made things
-  worse rather than better.
+  verdict is genuinely inconclusive, not dead: the corrected-target
+  configuration beats a constant baseline, just not by enough, and adding
+  features made things worse rather than better. **(Corrected 2026-07-28 —
+  see § Train starts. The verdict itself — INCONCLUSIVE, do not ship — is
+  unchanged; the skill/calibration numbers underneath it are.)**
 
 Recommendation: **do not ship a countdown or an ETA.** See § Recommendation.
 
@@ -72,7 +88,26 @@ machinery: P(chain within 10 minutes of a defend ending) = 0.631 (n=4928).
 Given no chain, lull length runs p25 27.8h / p50 36.8h / p75 46.4h
 (n=1816).
 
+> **Note (2026-07-28):** "chain within 10 minutes" here is the same
+> phenomenon later identified precisely as a game mechanic, not a
+> statistical tendency — see § Train starts. This pooled trigger-hunt result
+> mixes the ~62% of defends that are mechanical train follow-ups in with the
+> 1,976 real train starts; if a trigger existed only for train starts, it
+> could have been masked by that dilution. It was rerun restricted to train
+> starts only and the "no rule" conclusion held (see § Train starts), so this
+> section's trigger-hunt verdict stands — but the P(chain)/lull numbers just
+> above are superseded by the train-start regularity numbers below, which
+> measure the correct unit directly instead of inferring it from a 10-minute
+> chain threshold.
+
 ## How well can defend timing be predicted?
+
+> **SUPERSEDED (2026-07-28):** every skill ratio, calibration figure, and
+> gate verdict below this point through the end of § Phase 3 was measured
+> against a mis-specified target (see the correction notice at the top of
+> this document). The corrected numbers are in § Train starts. This section
+> is kept as the historical record of that first pass, not as the current
+> defend verdict.
 
 ### Phase 2 — features-free baseline
 
@@ -191,6 +226,155 @@ model carrying three weak, independently-measured features dilutes that
 signal rather than sharpening it — the extra flexibility costs more in
 variance than it buys in fit.
 
+## Train starts: correcting the mis-specified target
+
+**Follow-up plan:** [`docs/superpowers/plans/2026-07-28-defend-train-starts.md`](../plans/2026-07-28-defend-train-starts.md).
+**Scripts:** `01-trigger-hunt.mjs` (extended, third run over train starts),
+`04-train-baseline.mjs` (new).
+
+### The mechanic
+
+A defend train continues iff the previous defend in it was **FAILED** — a
+game mechanic, not a statistical tendency:
+
+| Previous defend outcome | Chained within 10 min?  |
+| ------------------------ | ----------------------- |
+| FAILED                    | 3110 / 3208 = **96.9%** |
+| SUCCEEDED                 | 2 / 1720 = **0.1%**     |
+
+So roughly 62% of the 5,088 defend events (n=3,112) are mechanical
+follow-ups whose timing is dictated by the game's own continuation rule, not
+by anything forecastable, and only the **1,976 train starts** are
+forecasting targets. Every skill/calibration number in the superseded
+section above was computed on the pooled 4,928-gap series (a bimodal mix of
+~2.5h mechanical chain gaps and real inter-train waits), used to predict
+~44h waits — the mis-specified target this correction fixes.
+
+### Regularity
+
+| Series          |    n | p25   | p50   | p75   | CV       |
+| ---------------- | ---: | ----- | ----- | ----- | -------- |
+| all defends       | 4928 | 2.5h  | 2.5h  | 32.9h | 1.32     |
+| train starts       | 1816 | 33.6h | 44.1h | 56.0h | **0.45** |
+
+Train starts are a far more regular series than the pooled one — the CV drop
+from 1.32 to 0.45 is exactly what the bimodal-mixing hypothesis predicts.
+
+### Trigger hunt on train starts: still no trigger
+
+`01-trigger-hunt.mjs` was extended with a third run over
+`ds.events.filter(e => e.type === 'defend' && e.isTrainStart)`, printed
+alongside a pooled-vs-train-starts IQR-ratio comparison so the dilution
+effect (or its absence) is visible either way. Result: **the dilution
+hypothesis is rejected** — restricting to train starts did not surface a
+trigger the pooled run had masked.
+
+| Variable                 | Pooled defend IQR ratio | Train-starts IQR ratio |
+| -------------------------- | -----------------------: | ------------------------: |
+| `liberation`                 |                     1.084 |                      1.057 |
+| `sectorsCaptured`            |                     1.000 |                      1.000 |
+| `daysIntoSeason`             |                     1.534 |                      1.403 |
+| `playerPercentile`           |                     1.180 |                      1.175 |
+| `hoursSincePrevEventEnd`     |                     0.352 |                      0.928 |
+
+`hoursSincePrevEventEnd` moves the most (0.352 -> 0.928), but that move is
+**partly definitional, not purely dilution**: the "previous event" lookup is
+scoped to whichever event array was passed in, so the pooled column means
+"hours since the previous defend of any kind ended," while the train-starts
+column means "hours since the previous TRAIN's first defend ended" (the
+nearest preceding train start — mechanical follow-ups are excluded from that
+array entirely, so they can't be "the previous event"). These are not the
+same underlying quantity, so the shift toward "no rule" is not solely
+evidence against a masked trigger — `01-trigger-hunt.mjs`'s dilution-check
+table now prints this caveat directly beneath the numbers. All four
+campaign-state variables (`liberation`, `sectorsCaptured`, `daysIntoSeason`,
+`playerPercentile`) land at "no rule" on both columns regardless, which is
+the load-bearing comparison and is unaffected by the definitional caveat.
+
+### Corrected baseline
+
+`04-train-baseline.mjs` retrains AND evaluates on train-start-to-train-start
+gaps (method identical to `02-baseline.mjs` — empirical residual life
+through `walkForward` — only the event set changes), under the
+`NO DEFEND ACTIVE` moment filter (a train cannot start while one is already
+running):
+
+| Configuration                              | Skill ratio | 95% CI         | Effective N |
+| -------------------------------------------- | ----------: | -------------- | ----------: |
+| train starts, `NO DEFEND ACTIVE` (corrected) |       0.753 | [0.732, 0.773] |        1461 |
+
+- Median absolute error **9.1h** vs a constant baseline's **12.1h**.
+- Calibration **PASSES** (within ±0.05 of nominal at all three quartiles) —
+  it **FAILED** on the old mis-specified target.
+- Sharpness: predicted band median width 23.1h vs the train-start gap IQR
+  22.4h — **NOT narrower**, so that gate leg still fails.
+- **Verdict: INCONCLUSIVE** — clears neither the 0.6 ship bar nor the 0.8
+  dead bar.
+
+**Versus v0.69.0:** the like-for-like comparator is the old `defend, LULL
+ONLY` configuration (0.770, CI [0.746, 0.789]) — the closest prior config to
+"predict a lull's length," even though its training data was still the
+pooled, mis-specified series. Correcting the target improved skill slightly
+(0.770 -> 0.753) and flipped calibration from FAIL to PASS, but **did not
+change the verdict** — INCONCLUSIVE either way.
+
+### Previous-train features: null
+
+A prior version of this test built phase-matched "controls" for
+`prevTrainLength`/`prevTrainFailures` via a helper (`prevTrainStatsAt`) that
+computed the previous-train stats a HYPOTHETICAL train start would inherit
+at an arbitrary instant. That value is piecewise-constant across an entire
+lull, and its value on that lull IS the value the REAL train start ending
+that lull carries — so every "control" was, by construction, an exact copy
+of a real event's value (0 of 6270 control draws fell outside the set of
+real event values). A reviewer proved the resulting concentration/permutation
+statistic was **invariant to the data**: shuffling the feature values across
+all train starts produced IDENTICAL output (IQR ratio 1.000, p=1.0000), and
+a synthetic world with a literally deterministic trigger was still reported
+as "no signal." A statistic that cannot distinguish shuffled data from real
+data cannot be published as evidence, so that test was **deleted, not
+patched** — this section is the project's own record of catching it.
+
+The replacement asks the question directly: does the previous train's
+length/failure count predict how long the FOLLOWING LULL runs (the gap from
+the end of the previous train to this train start), stratified by
+`prevTrainLength`/`prevTrainFailures`:
+
+```
+stratified by prevTrainLength (lull hours per stratum):
+  prevTrainLength=1   n=809  lull p25=25.0h  p50=36.1h  p75=47.7h
+  prevTrainLength=2   n=246  lull p25=29.9h  p50=37.6h  p75=45.9h
+  prevTrainLength=3   n=258  lull p25=29.3h  p50=37.9h  p75=45.6h
+  prevTrainLength=4   n=238  lull p25=29.2h  p50=37.9h  p75=46.2h
+  prevTrainLength=5   n=121  lull p25=29.8h  p50=36.2h  p75=44.9h
+  prevTrainLength=6+  n=144  lull p25=28.7h  p50=35.5h  p75=44.7h
+```
+
+Medians run a flat 35.5h-37.9h across every stratum from L=1 to L=6+ — no
+trend with previous-train length. The Pearson correlation across all 1,816
+train starts confirms it: **r = -0.036** for `prevTrainLength` vs lull length
+(and r = -0.059 for `prevTrainFailures` vs lull length). For contrast —
+_not_ as evidence of signal — `prevTrainLength` correlates r = 0.324 with the
+**start-to-start** gap (this train's start minus the previous train's
+start), but that correlation is mechanical: a longer previous train simply
+pushes its own end time later, which pushes the start-to-start gap out even
+when the lull that follows it is unrelated to how long the train was. The
+script prints this distinction explicitly, because the start-to-start
+correlation is exactly the kind of number a reader could otherwise mistake
+for signal.
+
+**VERDICT: null.** `prevTrainLength`/`prevTrainFailures` do not predict the
+following lull. No feature model was built — fitting one to a null result
+would be fitting noise, not signal.
+
+### Recommendation (train starts)
+
+Unchanged from the pooled analysis: **do not ship a countdown.** ~9.1h
+typical error on a ~44h cycle is not a usable ETA — over a fifth of the
+predicted interval. The supportable defend surface remains descriptive:
+"trains continue while you keep losing; once you hold, the next wave is
+usually 34-56h out."
+
 ## Recommendation
 
 **Do not ship a countdown or an ETA.** Neither event type supports one:
@@ -203,10 +387,18 @@ If a product surface ships anyway, the honest options are:
 - **Attack side:** a progress readout — "N of 10 sectors captured, homeworld
   assault unlocks at 9" — which is deterministic and already derivable from
   data the game exposes today. Not a prediction; a fact.
-- **Defend side:** a descriptive band, not a prediction — "defends typically
-  chain; when they don't, the next one is usually 28–46h out." This states
-  the measured P(chain) = 0.631 and lull IQR directly, with no model and no
-  implied precision beyond what the data supports.
+- **Defend side:** a descriptive band, not a prediction — "trains continue
+  while you keep losing; once you hold, the next wave is usually 34–56h
+  out." **(Corrected 2026-07-28 — see § Train starts.** The mechanic is now
+  measured directly (fail -> 96.9% continuation, success -> 0.1%) rather than
+  inferred from a 10-minute chain threshold, and the lull band is the
+  train-start gap p25–p75, 33.6h–56.0h, rounded to the nearer whole-train
+  figures above — this supersedes the earlier "chain; 28–46h out" framing,
+  which was built on the pooled/mis-specified series.)
+
+Either way, ~9.1h of typical error against a ~44h train-start cycle (§ Train
+starts, corrected baseline) is too coarse for a countdown — descriptive
+language, not a number, is what the data supports.
 
 ## Method caveats
 
