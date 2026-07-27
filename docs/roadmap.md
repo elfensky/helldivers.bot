@@ -85,22 +85,29 @@ the issue body (`.dockerignore`, `pageExtensions`, `output: 'standalone'` all
 checked), and every feature session that lands first adds more test files to
 move.
 
-### S2 — Stale-issue triage
+### ~~S2 — Stale-issue triage~~ ✅ done 2026-07-27
 
-- **Prep:** none
-- **Branch:** none — issue hygiene only, no code
+Resolved before the roadmap shipped. Outcome:
 
-Three issues look already-implemented or overlapping. Verify against the code,
-then close or rewrite:
+| Issue                                                                                      | Outcome                                                                                                                  |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| [#274](https://github.com/elfensky/helldivers.bot/issues/274) Auto-generated war narrative | **Closed** — fully implemented. Follow-up lives in [#453](https://github.com/elfensky/helldivers.bot/issues/453)         |
+| [#157](https://github.com/elfensky/helldivers.bot/issues/157) Timeline intro-order viz     | **Closed, split.** Event Log half shipped; map half became [#469](https://github.com/elfensky/helldivers.bot/issues/469) |
+| [#269](https://github.com/elfensky/helldivers.bot/issues/269) Season comparison            | **Narrowed** to the two-season selector + side-by-side layout. Overlay → #179, delta badges → #462                       |
 
-| Issue                                                                                      | Evidence it may be stale                                                                                                       |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| [#274](https://github.com/elfensky/helldivers.bot/issues/274) Auto-generated war narrative | `src/features/archives/buildWarNarrative.mjs` + `NarrativeSection.jsx` exist and are tested                                    |
-| [#157](https://github.com/elfensky/helldivers.bot/issues/157) Timeline intro-order viz     | `src/features/timeline/buildIntroMarkers.mjs` exists; `bugfix/introduction-order-0-based` shipped in v0.66.0                   |
-| [#269](https://github.com/elfensky/helldivers.bot/issues/269) Archives season comparison   | Overlaps [#462](https://github.com/elfensky/helldivers.bot/issues/462) (compare vs global averages) — merge one into the other |
+### S2a — Archives map: hide factions until introduced ([#469](https://github.com/elfensky/helldivers.bot/issues/469))
 
-Cheap session, high leverage: it shrinks the Archive Analytics milestone before
-anyone plans against it.
+- **Prep:** plan — the risk is in the blast radius, not the logic
+- **Branch:** worktree
+
+`computeMapState` renders a not-yet-introduced faction identically to a wiped-out
+one (both `LOST` at 0%), so scrubbing an archives timeline to Day 1 looks like a
+total defeat. `introduction_order` is already in the DB and already returned by
+`getCampaign()` — the map just ignores it.
+
+**Constraint:** `computeMapState` is shared with the live dashboard and the OG
+image path. Gate in the archives-only caller (`computeMapStateAtEvent`) rather
+than widening the shared contract, and verify the live map is unchanged.
 
 ### S3 — `getWarOutcome` null-slot crash ([#459](https://github.com/elfensky/helldivers.bot/issues/459))
 
@@ -224,12 +231,49 @@ against a schema that no longer exists. They reference `h1_live_snapshot`,
 (see § Architecture — Stack). Every field mapping in those three bodies is
 wrong.
 
-Rewrite each against the real tables, and re-check feasibility while you're
-there: `h1_statistic` telemetry only exists for recent seasons (~S157+), so
-anything cross-season built on per-faction stats has far less history than the
-issues assume. Snapshot data (events, `players_at_start`, `points`) goes back
-further. Some listed features may not be buildable at all — say so in the issue
-rather than discovering it mid-implementation.
+Rewrite each against the real tables. While you're there, record the data
+reality below in each issue — not to cut features, but so nobody plans one
+without knowing its reach.
+
+#### Measured coverage (queried 2026-07-27)
+
+| Table          | Seasons | Notes                                               |
+| -------------- | ------: | --------------------------------------------------- |
+| `h1_season`    | **160** | seasons 1–160                                       |
+| `h1_status`    | **160** | liberation points over time — the campaign backbone |
+| `h1_event`     | **160** | events incl. `players_at_start`                     |
+| `h1_statistic` |   **4** | seasons 157–160 only — **2.5%**                     |
+
+Everything in `h1_statistic` — players, total_unique_players, kills, deaths,
+accidentals, hits, shots, missions, successful_missions, completed_planets,
+total_mission_difficulty — exists for four seasons. Re-run the check before
+relying on these numbers; the telemetry side grows by one season per war.
+
+Which means, per planned feature:
+
+| Reach         | Features                                                                                                          |
+| ------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **All 160**   | Momentum Tracker, Clutch Factor, Planet Heartbeat, Perfect Storm, event win rates, cascade severity, war duration |
+| **4 seasons** | Season Fingerprint (4 of 6 axes are telemetry), Peak Hour Heatmap, Player Attrition Curve                         |
+| **Partial**   | Season Report Card — event win rate is universal, mission/kill efficiency is not                                  |
+
+#### Policy: build all, hide when empty
+
+**Decision (2026-07-27):** build every feature. Do not re-sequence around
+coverage and do not drop the telemetry-backed ones. They rely on the existing
+convention — telemetry-backed components hide when empty rather than rendering
+zeros — and their reach improves every season as telemetry accumulates.
+
+Two things follow, and S17 should write both into the issues:
+
+1. **Every telemetry-backed component needs an explicit empty state**, and a test
+   that pins it. A chart that renders zeros for 156 of 160 seasons is a bug, not
+   a thin result.
+2. **Anything comparing two seasons must handle mixed coverage** — if one side
+   has telemetry and the other doesn't, drop those rows for both rather than
+   rendering a half-empty table. Relevant to
+   [#269](https://github.com/elfensky/helldivers.bot/issues/269) and
+   [#462](https://github.com/elfensky/helldivers.bot/issues/462).
 
 ### S18 — Phase B: Core Analytics ([#179](https://github.com/elfensky/helldivers.bot/issues/179))
 
@@ -244,6 +288,14 @@ Five features: Season Report Card, Season Fingerprint (radar), Player Attrition
 Curve, Momentum Tracker, Peak Hour Heatmap. Estimated L (8–16h) as a group —
 **split into 2–3 sessions** by feature if the first one runs long. Charts go
 through Recharts, already a dependency.
+
+Start with **Momentum Tracker** — it's the only one of the five that works on all
+160 seasons, so it's the one most archive visits will actually see. The other
+four render for seasons 157–160 and need the empty state built alongside them,
+not after.
+
+Note the Season Fingerprint radar carries #269's old overlay requirement
+("compare up to 3 seasons") — that's why #269 was narrowed rather than closed.
 
 ### S19 — Phase C: Storytelling ([#180](https://github.com/elfensky/helldivers.bot/issues/180))
 
@@ -267,11 +319,12 @@ git history, so start by finding that commit.
 
 ### Independent — anytime after S17
 
-| Issue                                                                                                                  | Prep | Branch   | Note                                                        |
-| ---------------------------------------------------------------------------------------------------------------------- | ---- | -------- | ----------------------------------------------------------- |
-| [#453](https://github.com/elfensky/helldivers.bot/issues/453) War narrative phrasing variety + `defendWon` grammar fix | none | direct   | Includes a real grammar bug; smallest win in this milestone |
-| [#462](https://github.com/elfensky/helldivers.bot/issues/462) Season stats vs global averages                          | plan | worktree | Reconcile with #269 in S2 first                             |
-| [#247](https://github.com/elfensky/helldivers.bot/issues/247) Event progress in region tab                             | none | worktree |                                                             |
+| Issue                                                                                                                  | Prep | Branch   | Note                                                                                                |
+| ---------------------------------------------------------------------------------------------------------------------- | ---- | -------- | --------------------------------------------------------------------------------------------------- |
+| [#453](https://github.com/elfensky/helldivers.bot/issues/453) War narrative phrasing variety + `defendWon` grammar fix | none | direct   | Includes a real grammar bug; smallest win in this milestone                                         |
+| [#462](https://github.com/elfensky/helldivers.bot/issues/462) Season stats vs global averages                          | plan | worktree | Owns delta badges. Baseline population is an open question in the issue — settle it before building |
+| [#269](https://github.com/elfensky/helldivers.bot/issues/269) Two-season side-by-side comparison                       | plan | worktree | Narrowed to the 2nd selector + layout. Best done **after** S18, since the radar overlay lands there |
+| [#247](https://github.com/elfensky/helldivers.bot/issues/247) Event progress in region tab                             | none | worktree |                                                                                                     |
 
 > [#298](https://github.com/elfensky/helldivers.bot/issues/298) (SSE) also sits
 > in this milestone but is scheduled **last of everything** — see Track F.
@@ -356,9 +409,10 @@ open issues.** New bugs land here by default.
 ## Suggested order, condensed
 
 ```
-S0  release v0.67.0          ← blocks everything
+S0  release the backlog      ← blocks everything
 S1  co-locate tests          ← before feature work adds more test files
-S2  stale-issue triage       ← cheap, shrinks Track D
+S2  stale-issue triage       ← ✅ done 2026-07-27
+S2a #469 map faction reveal
 S3  #459 null crash
 S5  #42 design tokens        ← before S6/S7
 S8  …S15  Loadout Builder    ← the main feature arc
