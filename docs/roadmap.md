@@ -105,6 +105,11 @@ one (both `LOST` at 0%), so scrubbing an archives timeline to Day 1 looks like a
 total defeat. `introduction_order` is already in the DB and already returned by
 `getCampaign()` — the map just ignores it.
 
+**Verified in the browser** (season 160, Day 2): all 11 Cyborg sectors render
+`sector lost` with computed styles byte-identical to a genuinely lost sector,
+while Bugs and Illuminate show mixed captured/in_progress. Full evidence in the
+issue — no query or schema change needed, the data is already on the client.
+
 **Constraint:** `computeMapState` is shared with the live dashboard and the OG
 image path. Gate in the archives-only caller (`computeMapStateAtEvent`) rather
 than widening the shared contract, and verify the live map is unchanged.
