@@ -113,9 +113,12 @@ jobs:
     # the runner installed there. See deploy/README.md for the open TODOs.
     deploy-staging:
         needs: [build-app, build-migrate]
-        # Runs even when build-migrate was skipped (no migration changes) — the
-        # existing :staging migrate image is reused. Skips only if the app build failed.
-        if: ${{ !cancelled() && needs.build-app.result == 'success' }}
+        # DORMANT until the swarm + self-hosted runner exist. Flip repo variable
+        # STAGING_DEPLOY_ENABLED=true to activate (without it the job skips cleanly
+        # instead of hanging "pending" waiting for a runner that isn't there).
+        # Runs even when build-migrate was skipped — the existing :staging migrate
+        # image is reused. Skips if the app build failed.
+        if: ${{ !cancelled() && needs.build-app.result == 'success' && vars.STAGING_DEPLOY_ENABLED == 'true' }}
         runs-on: self-hosted
         steps:
             - name: Checkout code

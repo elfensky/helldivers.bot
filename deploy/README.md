@@ -46,6 +46,10 @@ push to develop
     - `secrets.STAGING_POSTGRES_URL` — for the migrate one-shot (the documented env exception).
     - Optional Kuma: `vars.KUMA_URL`, `secrets.KUMA_USERNAME`, `secrets.KUMA_PASSWORD`,
       `vars.KUMA_STAGING_MONITOR_IDS`. Leave `KUMA_URL` unset and the banner steps skip cleanly.
+6. **Flip the enable flag — do this LAST.** Set repo variable `STAGING_DEPLOY_ENABLED=true`.
+   The `deploy-staging` job is **dormant** until then (it skips cleanly instead of hanging
+   "pending" for a runner that isn't there), so it's safe to have on `develop` before the
+   swarm exists. Flip it once items 1–5 are done.
 
 ## TODO to verify (non-blocking)
 
