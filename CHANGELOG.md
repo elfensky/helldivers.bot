@@ -19,6 +19,8 @@
     already-implemented (#274 war narrative, #157 intro-order — the event-log half)
     while #269 and #462 overlap.
 
+## 0.67.0
+
 ### Fixed
 
 - **Four real bugs could ship without failing a single test.** Mutation testing
