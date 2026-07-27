@@ -109,7 +109,12 @@ export function walkForward({
         const trainEvents = matching.filter((e) => e.season < testSeason);
         if (trainEvents.length < 30) continue;
 
-        // Leakage guard — the single assert that keeps every number honest.
+        // Leakage guard — defensive no-op retained for symmetry with the
+        // post-fitPredictor check below. `trainEvents` was just built by
+        // `matching.filter(e => e.season < testSeason)` above, so this
+        // specific assert can never fire; the real work happens after
+        // `fitPredictor` runs, where a predictor that mutates its training
+        // array would otherwise slip future data past this guard.
         for (const e of trainEvents) {
             assert(
                 e.season < testSeason,
@@ -375,11 +380,76 @@ if (import.meta.filename === process.argv[1]) {
         'censored moments were not scored — the drop-bias is back',
     );
 
-    // The bootstrap CI must bracket the point estimate.
+    // The bootstrap CI must bracket the point estimate. Necessary but not
+    // sufficient — holds for essentially any centered resampling scheme, so
+    // it cannot by itself catch a regression to per-moment resampling. See
+    // the discriminating check below.
     assert(
         good.skillRatioCI[0] <= good.skillRatio &&
             good.skillRatio <= good.skillRatioCI[1],
         `CI ${JSON.stringify(good.skillRatioCI)} does not bracket ${good.skillRatio}`,
+    );
+
+    // A second synthetic world that can actually TELL APART season-level
+    // block bootstrap from naive per-moment bootstrap. The oracle world above
+    // cannot: it is perfectly periodic with a zero-variance predictor, so
+    // every resampling scheme agrees. Here, seasons alternate a 10h
+    // inter-arrival period (odd) and a 40h period (even), and the predictor
+    // always predicts a constant 5h regardless of season or moment — a good
+    // fit for the 10h seasons, a poor one for the 40h seasons. That produces
+    // sharply different per-season-type absolute error.
+    //
+    // A season-level bootstrap samples whole seasons, so a given resample can
+    // land mostly-odd, mostly-even, or mixed — it inherits the between-season
+    // spread and yields a WIDE CI. A moment-level bootstrap draws individual
+    // moments from the ~1600-moment pool, which is close to a 50/50 mix of
+    // both populations in every draw by the law of large numbers — the
+    // resampled median barely moves, collapsing the CI toward zero width.
+    const varyingEvents = [];
+    const varyingSeasons = new Map();
+    const VARYING_SPAN_HOURS = 480;
+    for (let s = 1; s <= 30; s++) {
+        const base = s * 10_000_000;
+        const period = s % 2 === 1 ? 10 : 40; // odd seasons: 10h, even: 40h
+        const count = Math.floor(VARYING_SPAN_HOURS / period);
+        for (let k = 0; k < count; k++) {
+            varyingEvents.push({
+                season: s,
+                type: 'attack',
+                enemy: 0,
+                start_time: base + k * period * 3600,
+                end_time: base + k * period * 3600 + 3600,
+            });
+        }
+        varyingSeasons.set(s, {
+            season: s,
+            firstStart: base,
+            lastEnd: base + VARYING_SPAN_HOURS * 3600,
+            spanSeconds: VARYING_SPAN_HOURS * 3600,
+        });
+    }
+    const constantPredictor = () => () => ({ p25: 5, p50: 5, p75: 5 });
+
+    const varying = walkForward({
+        events: varyingEvents,
+        seasons: varyingSeasons,
+        type: 'attack',
+        enemy: 0,
+        fitPredictor: constantPredictor,
+    });
+
+    // Empirically measured against this exact fixture (see
+    // task-4-report.md): the current season-level block bootstrap gives a CI
+    // width of ~0.625; mutating the bootstrap loop to resample individual
+    // moments instead of whole seasons collapses that width to 0.000. 0.2
+    // sits with wide margin above the moment-level failure mode (0) and wide
+    // margin below the season-level result (0.625) — a regression to
+    // per-moment resampling cannot pass this.
+    const varyingWidth = varying.skillRatioCI[1] - varying.skillRatioCI[0];
+    assert(
+        varyingWidth > 0.2,
+        `season-block CI width (${varyingWidth}) too narrow — resampling may have ` +
+            `regressed to per-moment (autocorrelation-blind) sampling`,
     );
 
     // The baseline constant must be the forward-recurrence median, not the gap
