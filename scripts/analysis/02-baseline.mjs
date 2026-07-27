@@ -65,6 +65,13 @@ function makeResidualPredictor(gaps) {
 
 // --- run -------------------------------------------------------------------
 
+// A defend "chains" if it starts within this many seconds of the previous
+// one ending. Shared between the chain-vs-lull decomposition below and the
+// sharpness-check marginal further down, so a momentFilter-restricted config
+// (LULL ONLY) is compared against the same lull-length distribution its
+// walk-forward moments are actually drawn from.
+const CHAIN_SECONDS = 600;
+
 const ds = await loadDataset();
 
 /**
@@ -157,7 +164,6 @@ console.log('=== Defend: chain-vs-lull decomposition ===\n');
         if (!bySeason.has(e.season)) bySeason.set(e.season, []);
         bySeason.get(e.season).push(e);
     }
-    const CHAIN_SECONDS = 600;
     let chains = 0;
     let total = 0;
     const lulls = [];
@@ -212,11 +218,19 @@ for (const { cfg, summary } of results) {
 }
 
 console.log(
-    `\nSharpness check: compare each band width above against that configuration's unconditional gap IQR. Ship-worthy requires the band to be NARROWER than the IQR — otherwise the model is only restating the marginal distribution.`,
+    `\nSharpness check: compare each band width above against that configuration's own unconditional marginal IQR below (lull-length for a momentFilter config, gap otherwise). Ship-worthy requires the band to be NARROWER than that marginal — otherwise the model is only restating the marginal distribution.`,
 );
 
-// Unconditional gap IQR per config, for that comparison.
-console.log('\nUnconditional gap IQR (hours):');
+// Unconditional marginal IQR per config, for that comparison. A
+// momentFilter-restricted config (e.g. LULL ONLY) only ever evaluates
+// moments with no event active, so its correct marginal is the lull-length
+// distribution (idle time strictly greater than the chain threshold) — NOT
+// the raw start-to-start gap. Comparing against the raw gap would silently
+// print the pooled config's marginal for both rows, understating how wide
+// the LULL ONLY band needs to beat.
+console.log('\nUnconditional gap/lull-length IQR (hours) — marginal each config is');
+console.log('actually evaluated against (lull-length for a momentFilter config, raw');
+console.log('start-to-start gap otherwise):');
 for (const cfg of CONFIGS) {
     const list = ds.events
         .filter(
@@ -224,12 +238,20 @@ for (const cfg of CONFIGS) {
                 e.type === cfg.type && (cfg.enemy === undefined || e.enemy === cfg.enemy),
         )
         .sort((a, b) => a.season - b.season || a.start_time - b.start_time);
-    const gaps = [];
+
+    const values = [];
     for (let i = 1; i < list.length; i++) {
-        if (list[i].season === list[i - 1].season) {
-            gaps.push((list[i].start_time - list[i - 1].start_time) / HOUR);
+        if (list[i].season !== list[i - 1].season) continue;
+        if (cfg.momentFilter) {
+            const idleSeconds = list[i].start_time - list[i - 1].end_time;
+            if (idleSeconds > CHAIN_SECONDS) values.push(idleSeconds / HOUR);
+        } else {
+            values.push((list[i].start_time - list[i - 1].start_time) / HOUR);
         }
     }
-    const iqr = (quantileOf(gaps, 0.75) ?? 0) - (quantileOf(gaps, 0.25) ?? 0);
-    console.log(`  ${cfg.label}: ${iqr.toFixed(1)}h (n=${gaps.length})`);
+    const iqr = (quantileOf(values, 0.75) ?? 0) - (quantileOf(values, 0.25) ?? 0);
+    const marginalKind = cfg.momentFilter ? 'lull-length' : 'gap';
+    console.log(
+        `  ${cfg.label}: ${iqr.toFixed(1)}h (${marginalKind}, n=${values.length})`,
+    );
 }
