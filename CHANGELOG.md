@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.67.3
+
+### Added
+
+- **Implementation plan for the next-event timing forecast ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  `docs/superpowers/plans/2026-07-27-next-event-timing-forecast.md` — seven tasks
+  with runnable code for a shared loader, a walk-forward backtest harness, the
+  trigger hunt, the renewal baseline, and the feature hazard model.
+
+    Task 3 is a decision gate rather than code: if the trigger hunt shows attacks
+    fire on a campaign-state rule, the modelling tasks are never written. The
+    harness carries one assert that matters more than the rest — no training row
+    may come from a season at or after the test season, since leakage there
+    produces beautiful, wrong numbers.
+
 ## 0.67.2
 
 ### Added
