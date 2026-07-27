@@ -439,6 +439,22 @@ unmilestoned but shelved), CrowdSec verification, leaderboard reverse-engineerin
 
 Leave them. They're a parking lot, not a backlog.
 
+## Track G — Staging deploy (gated on the homelab)
+
+### S23 — Staging deploy to the Pi swarm ([#474](https://github.com/elfensky/helldivers.bot/issues/474))
+
+- **Prep:** none — the pipeline is already scaffolded on `feature/deploy-rpi-staging`; the
+  remaining work is homelab setup, not code (see `deploy/README.md` and the issue checklist)
+- **Branch:** `feature/deploy-rpi-staging` (exists). The `*_FILE` secrets bridge is done +
+  tested; the deploy job, stack file, and Kuma banner script are DRAFT until a real run
+- **Blocked by:** the 3-Pi staging swarm + a self-hosted runner being up (external — tracked
+  in the `hardenup` refocus, [drunikbe/hardenup#1](https://github.com/drunikbe/hardenup/issues/1))
+
+Gated on the homelab, not on appetite. Once `docker node ls` shows a healthy 3-manager swarm
+and the self-hosted runner is registered: create the Swarm secrets, finalize the Cloudflare
+Tunnel, set the GitHub Actions secrets, then let the first `develop` push validate it
+end-to-end. Multi-arch (arm64) image builds already merged (v0.67.5).
+
 ## Engineering Health — never closes
 
 Milestone [#17](https://github.com/elfensky/helldivers.bot/milestone/17) is a
@@ -463,6 +479,7 @@ S17 Archive Analytics spec refresh ⚠️  ← before any Track D code
 S18 …S20  Archive Analytics
 S21 SSE spike (throwaway)   ← last; may conclude "don't"
 S22 SSE implementation      ← only if S21 says yes
+S23 staging deploy          ← gated on the homelab Pi swarm, not appetite
 ```
 
 S4, S6, S7, Track E and the Track D independents slot in wherever there's

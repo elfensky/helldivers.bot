@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.67.6
+
+### Added
+
+- Roadmap **Track G** ([#474](https://github.com/elfensky/helldivers.bot/issues/474)): staging
+  deploy of the app to the homelab Raspberry Pi Docker Swarm, gated on the cluster + a
+  self-hosted runner being up. The pipeline scaffold and the `*_FILE` Swarm-secrets bridge
+  live on `feature/deploy-rpi-staging`.
+
 ## 0.67.5
 
 ### Changed
