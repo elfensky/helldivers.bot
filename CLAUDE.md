@@ -216,6 +216,8 @@ All visual properties use CSS custom properties defined in the Tailwind v4 `@the
 
 All work tracked via [GitHub Issues](https://github.com/elfensky/helldivers.bot/issues), grouped by milestone and labels. No project board — issues + milestones + labels only.
 
+**Execution order lives in [`docs/roadmap.md`](docs/roadmap.md)** — which issue to pick up next, how to slice it into sessions, and whether it needs a brainstorm/plan first. Issues are the source of truth for _what_; the roadmap is the source of truth for _when_.
+
 - **Milestones** group issues by phase (Phase 0 through ~13 as of writing, plus `Desloppify` and `Shelved`). Phase numbers grow and open/closed status drifts — check the [milestones list](https://github.com/elfensky/helldivers.bot/milestones) for current state rather than trusting a number here.
 - **Labels**: `bug`, `enhancement`, `feature`, `api`, `frontend`, `infrastructure`, `security`, `chore`, `shelved`.
 - **Issue title prefixes**: `Phase N:`, `Shelved:`.

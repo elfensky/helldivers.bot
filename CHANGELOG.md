@@ -1,6 +1,23 @@
 # Changelog
 
-## 0.67.0
+## 0.67.1
+
+### Added
+
+- **`docs/roadmap.md` — execution order for the 43 open issues.** Issues already
+  said _what_; nothing said _when_, or how to slice a milestone into sessions
+  that fit one context window. Each entry now carries a prep level (none → plan
+  → brainstorm → spec refresh), a branch strategy, and its blockers, so a fresh
+  session can pick up the next item without re-deriving the ordering. CLAUDE.md
+  § Task Tracking points at it.
+
+    Writing it surfaced three things worth recording: `develop` is several versions
+    ahead of the last tag on `main`, so finished work isn't deployed; the Archive
+    Analytics Phase B/C/D issues are specced against `h1_live_snapshot` /
+    `h1_snapshot` / `h1_event_snapshot`, tables dropped in the schema
+    normalization, making every field mapping in them wrong; and two issues look
+    already-implemented (#274 war narrative, #157 intro-order — the event-log half)
+    while #269 and #462 overlap.
 
 ### Fixed
 
@@ -49,7 +66,7 @@
   build it already produced — then runs the smoke suite against it. Roughly +2
   minutes, because it reuses that build rather than rebuilding container images.
   `main-pr-docker-smoke.yml` stays as a separate release gate answering a
-  different question: whether the *shipping artifact* works. One caveat found
+  different question: whether the _shipping artifact_ works. One caveat found
   while verifying: the cron worker polls the HD1 API immediately on boot and
   writes live rows, which would drift the seeded database mid-run, so CI pins the
   HD1 host to `0.0.0.0` — the gate asserts nothing about upstream reachability.
@@ -60,7 +77,7 @@
   deterministic key seeded from its sha-256 digest, present only when `SEED_TEST_API_KEY_HASH` is set;
   these assertions skip cleanly without it.
 - **The suite is order-independent.** It passed in file order but failed under
-  `--sequence.shuffle` — and `shuffle` reorders tests *within* a file, which is
+  `--sequence.shuffle` — and `shuffle` reorders tests _within_ a file, which is
   where all the rot was. Three leaks: the global `beforeEach` used
   `vi.clearAllMocks()`, which wipes call history but leaves implementations set
   by `mockResolvedValue` in place, so the documented "logged-out by default"
@@ -322,7 +339,7 @@
 ### Fixed
 
 - **Missing "Day 1" marker in the event log.** HD1's `introduction_order` is
-  0-based — `0` is the faction the war *started* against, `255` means "not yet
+  0-based — `0` is the faction the war _started_ against, `255` means "not yet
   introduced" — but `buildIntroMarkers` filtered `<= 0`, dropping exactly the
   war-start faction. The archives showed "Day 2 … enters the war" / "Day 3 …"
   with no Day 1. The guard now includes order `0` and excludes the `255`
@@ -342,7 +359,7 @@
 
 - **React hydration mismatch (#418) for non-en-US visitors**. `formatNumber`
   grouped thousands with a bare `toLocaleString()`, so values in the 1K–999K
-  range rendered per the *runtime* locale: the server emitted `"3,522"` while a
+  range rendered per the _runtime_ locale: the server emitted `"3,522"` while a
   ru-RU client re-rendered `"3 522"`. The differing text tripped React error
   #418 on every affected page load (14 events on 0.65.2 in a single day, all
   from non-en-US locales), forcing React to discard and re-render the
@@ -359,12 +376,12 @@
       recognized as a chunk error. Detection now tests name and message
       together, and the Turbopack message wording is matched explicitly.
     - The only trigger was an `unhandledrejection` listener, but Next/React
-      catch these internally and report them as *handled* exceptions — every
+      catch these internally and report them as _handled_ exceptions — every
       observed production ChunkLoadError arrived that way. A Sentry
       `beforeSend` hook now covers every reporting path; the listener is kept
       as the fallback for when no DSN is configured.
-  Detection is extracted to `src/shared/utils/isChunkError.mjs` with unit
-  coverage pinned to the verbatim production error shape.
+      Detection is extracted to `src/shared/utils/isChunkError.mjs` with unit
+      coverage pinned to the verbatim production error shape.
 
 ## 0.65.2
 
@@ -434,7 +451,7 @@
   faction toggle: `global` shows the total-players line and dots for every
   event; a faction shows that faction's line and only its events. Event dots sit
   on the line at each event's start day with a `type · region · faction ·
-  outcome` tooltip. `getCampaign` gains an additive `playerTimeseries` field
+outcome` tooltip. `getCampaign` gains an additive `playerTimeseries` field
   (per-bucket player counts from `h1_statistic`); the section hides for
   historical seasons that predate telemetry. Chart math lives in the
   unit-tested pure helper `buildPlayerLine`.
@@ -520,7 +537,7 @@
 ### Features
 
 - **OpenAPI coverage for the `/v1` endpoints** (#438). `GET /api/v1/h1/{status,
-  stats,season,map}` are now registered in the OpenAPI spec with query params,
+stats,season,map}` are now registered in the OpenAPI spec with query params,
   typed response schemas, the `{time,code,message,data}` envelope, and the
   401/404/429 + 304 responses — so `/docs/api` documents the real public API.
 - **Rebroadcast action reconciliation** (#438). The spec now declares all five
@@ -631,7 +648,7 @@
 - **`GET /api/v1/h1/stats`** — the second public `/v1` endpoint (#30). Key-gated,
   cursor-paginated statistics timeseries over `h1_statistic`, projected to
   `{ bucket, enemy, enemyId, season, missionsWon, missionsLost, kills, deaths,
-  shots, hits, players }` (BigInt counts → JSON-safe numbers; `bucketSize` sourced
+shots, hits, players }` (BigInt counts → JSON-safe numbers; `bucketSize` sourced
   from the typed config — its first runtime consumer). `season=current|number`;
   `season=all` is deferred (returns a clear 400 until cross-season pagination is
   needed).
@@ -815,19 +832,19 @@
 
 - **15 bugs fixed across the `db/queries/` split surface (PRs #411 + #412) from a max-effort code review — one production-broken feature, three concurrency races, one mis-mapped HTTP status, four UI error-handling gaps, plus six smaller correctness fixes.** Patch release. No new behavior; only edge cases get better. Files touched: `src/features/account/actions.mjs`, `src/features/admin/actions.mjs`, `src/features/admin/AdminApiKeys.jsx`, `src/features/account/AccountActions.jsx`, `src/features/account/ApiDashboard.jsx`, `src/shared/utils/api/{authGuards,validateApiKey}.mjs`, `src/app/api/h1/rebroadcast/route.js`, and `src/app/docs/data-flow/page.mdx`, plus matching test updates.
 
-  - **Admin Revoke API key button was completely broken in production.** `<form action={adminRevokeApiKey}>` in `AdminApiKeys.jsx:58` is a bare form action (no `useActionState` wrapper), so Next.js invokes the action with one argument (the FormData). The action's signature was `(_, formData)` — FormData landed in `_` and the named `formData` parameter was `undefined`, throwing `TypeError: Cannot read properties of undefined (reading 'get')` on every click. Fixed by dropping the unused first arg, matching the actual call convention. Tests updated accordingly.
+    - **Admin Revoke API key button was completely broken in production.** `<form action={adminRevokeApiKey}>` in `AdminApiKeys.jsx:58` is a bare form action (no `useActionState` wrapper), so Next.js invokes the action with one argument (the FormData). The action's signature was `(_, formData)` — FormData landed in `_` and the named `formData` parameter was `undefined`, throwing `TypeError: Cannot read properties of undefined (reading 'get')` on every click. Fixed by dropping the unused first arg, matching the actual call convention. Tests updated accordingly.
 
-  - **Three TOCTOU races wrapped in `db.$transaction` with `Serializable` isolation.** (1) `updateUserRole` read `db.user.count({ where: { role: ADMIN } })` then `db.user.update` without a transaction — two concurrent admin demotions could both pass the last-admin guard with count=2 and both succeed, leaving zero admins and locking the role out of the admin panel. (2) `toggleUserBan` had the identical count-then-update pattern when banning an admin. (3) `generateApiKey` similarly read `db.ApiKey.count` then called `db.ApiKey.create` non-transactionally, so parallel calls could bypass the 5-key cap. All three now use `db.$transaction(async (tx) => { ... }, { isolationLevel: 'Serializable' })` so the read-then-conditional-write is atomic and concurrent transactions either serialize or one retries.
+    - **Three TOCTOU races wrapped in `db.$transaction` with `Serializable` isolation.** (1) `updateUserRole` read `db.user.count({ where: { role: ADMIN } })` then `db.user.update` without a transaction — two concurrent admin demotions could both pass the last-admin guard with count=2 and both succeed, leaving zero admins and locking the role out of the admin panel. (2) `toggleUserBan` had the identical count-then-update pattern when banning an admin. (3) `generateApiKey` similarly read `db.ApiKey.count` then called `db.ApiKey.create` non-transactionally, so parallel calls could bypass the 5-key cap. All three now use `db.$transaction(async (tx) => { ... }, { isolationLevel: 'Serializable' })` so the read-then-conditional-write is atomic and concurrent transactions either serialize or one retries.
 
-  - **`validateApiKey` DB outages no longer surface as 401 Unauthorized.** The function previously collapsed Prisma errors and missing-keys into the same `INVALID` code (`if (dbError || !row) return code: INVALID`), so a database outage on `/api/h1/rebroadcast` made operators see a flood of "bad API key" 401s instead of the actual infrastructure failure. Added `API_KEY_ERROR.DB_ERROR` and split the collapse; the route now returns 503 "database unreachable" on DB errors (matching `/api/healthcheck`'s 503 wording) and keeps 401/403 for missing/disabled keys. Pre-existing regression carried verbatim from the old `db/queries/validateApiKey.mjs`.
+    - **`validateApiKey` DB outages no longer surface as 401 Unauthorized.** The function previously collapsed Prisma errors and missing-keys into the same `INVALID` code (`if (dbError || !row) return code: INVALID`), so a database outage on `/api/h1/rebroadcast` made operators see a flood of "bad API key" 401s instead of the actual infrastructure failure. Added `API_KEY_ERROR.DB_ERROR` and split the collapse; the route now returns 503 "database unreachable" on DB errors (matching `/api/healthcheck`'s 503 wording) and keeps 401/403 for missing/disabled keys. Pre-existing regression carried verbatim from the old `db/queries/validateApiKey.mjs`.
 
-  - **`deleteUserAccount` Zod-validates input, reorders revoke/delete, fires `revalidatePath`.** (1) The function's JSDoc claimed "Requires email confirmation" / "Must contain userId and confirmEmail fields" but no validation existed and the client never sent `confirmEmail`. Added a Zod schema validating `userId` (matching the sibling `deleteApiKey` pattern) and dropped the false `confirmEmail` claim from the docstring — the existing `window.confirm` dialog remains as the user-facing safeguard (adding an email-confirmation input is a UX decision deferred). (2) Reversed `revokeSessions → delete` order to `delete → revoke` so a transient delete failure leaves the user logged in to retry instead of locked out of a still-existing account. (3) Added the missing `revalidatePath('/profile', 'layout')` that every sibling action already calls, so admin views (UserTable) refresh after a user self-deletes.
+    - **`deleteUserAccount` Zod-validates input, reorders revoke/delete, fires `revalidatePath`.** (1) The function's JSDoc claimed "Requires email confirmation" / "Must contain userId and confirmEmail fields" but no validation existed and the client never sent `confirmEmail`. Added a Zod schema validating `userId` (matching the sibling `deleteApiKey` pattern) and dropped the false `confirmEmail` claim from the docstring — the existing `window.confirm` dialog remains as the user-facing safeguard (adding an email-confirmation input is a UX decision deferred). (2) Reversed `revokeSessions → delete` order to `delete → revoke` so a transient delete failure leaves the user logged in to retry instead of locked out of a still-existing account. (3) Added the missing `revalidatePath('/profile', 'layout')` that every sibling action already calls, so admin views (UserTable) refresh after a user self-deletes.
 
-  - **Four UI consumers now handle the `result.errors` envelope explicitly.** `ApiDashboard.jsx` rendered "No API keys yet" silently when `getApiKeysByUserId` returned `{ errors: { auth: ... } }` from a mid-render session lapse — now shows a danger-styled "Could not load API keys" message. `AccountActions.jsx::handleExport` produced no toast and no console output when `exportUserData` returned an errors envelope — now fires a Sonner `toast.error`. `AccountActions.jsx::handleDelete` redirected to `/` on _any_ falsy `result?.errors`, including `undefined` (a future regression dropping `return { data: { deleted: true } }` would silently lie about deletion success) — now checks `result?.data?.deleted` explicitly and toasts on every non-success path. Two new test cases pin both `AccountActions.jsx` branches.
+    - **Four UI consumers now handle the `result.errors` envelope explicitly.** `ApiDashboard.jsx` rendered "No API keys yet" silently when `getApiKeysByUserId` returned `{ errors: { auth: ... } }` from a mid-render session lapse — now shows a danger-styled "Could not load API keys" message. `AccountActions.jsx::handleExport` produced no toast and no console output when `exportUserData` returned an errors envelope — now fires a Sonner `toast.error`. `AccountActions.jsx::handleDelete` redirected to `/` on _any_ falsy `result?.errors`, including `undefined` (a future regression dropping `return { data: { deleted: true } }` would silently lie about deletion success) — now checks `result?.data?.deleted` explicitly and toasts on every non-success path. Two new test cases pin both `AccountActions.jsx` branches.
 
-  - **`authGuards.mjs` `'use server'` directive removed.** The directive made `requireSession` / `requireUser` / `requireAdmin` callable as RPC server actions even though every importer (`features/admin/actions.mjs`, `features/account/actions.mjs`, `features/archives/reseedSeason.mjs`) is itself a `'use server'` module — they are never reached from `'use client'` code. The directive was carried over verbatim from the old `src/db/queries/_authGuards.mjs` (which had it as an R100 byte-identical rename predecessor). Removing it closes the unintended whoami-probe RPC surface and aligns the file with its `src/shared/utils/api/` siblings (`responses.mjs`, `methodNotAllowed.mjs`, `validateApiKey.mjs`), none of which has the directive.
+    - **`authGuards.mjs` `'use server'` directive removed.** The directive made `requireSession` / `requireUser` / `requireAdmin` callable as RPC server actions even though every importer (`features/admin/actions.mjs`, `features/account/actions.mjs`, `features/archives/reseedSeason.mjs`) is itself a `'use server'` module — they are never reached from `'use client'` code. The directive was carried over verbatim from the old `src/db/queries/_authGuards.mjs` (which had it as an R100 byte-identical rename predecessor). Removing it closes the unintended whoami-probe RPC surface and aligns the file with its `src/shared/utils/api/` siblings (`responses.mjs`, `methodNotAllowed.mjs`, `validateApiKey.mjs`), none of which has the directive.
 
-  - **Six smaller correctness fixes.** (1) `generateApiKey` returned the Prisma model instance after mutating it (`newApiKey['key'] = key`); now returns `{ ...newApiKey, key }` as a fresh DTO to keep the RSC serialization boundary clean. (2) `getSystemStats` did `currentSeason ? <SQL> : Promise.resolve(0)` — falsy-zero would skip the active-factions count when season 0 (a valid early-war value referenced by `sendTestNotification`) was current; fixed to `currentSeason !== null ?`. (3-5) Three server actions (`updateUserRole`, `adminGetUserApiKeys`, `deleteApiKey`) used raw `formValues.*` for DB queries and ownership checks instead of the validated `check.data.*`; switched to `check.data.*` everywhere to match the `toggleUserBan` / `generateApiKey` convention and pre-empt fragility if a future `.trim()` or `.transform()` is ever added to any of those schemas. (6) `src/app/docs/data-flow/page.mdx` code samples called `isValidStatus(fetchedData)` and `isValidSeason(fetchedData)` as if the validators were callable functions; both are `z.object({...})` instances — switched the doc to `.safeParse(...)` so a reader copy-pasting the example doesn't immediately hit `TypeError: isValidStatus is not a function`.
+    - **Six smaller correctness fixes.** (1) `generateApiKey` returned the Prisma model instance after mutating it (`newApiKey['key'] = key`); now returns `{ ...newApiKey, key }` as a fresh DTO to keep the RSC serialization boundary clean. (2) `getSystemStats` did `currentSeason ? <SQL> : Promise.resolve(0)` — falsy-zero would skip the active-factions count when season 0 (a valid early-war value referenced by `sendTestNotification`) was current; fixed to `currentSeason !== null ?`. (3-5) Three server actions (`updateUserRole`, `adminGetUserApiKeys`, `deleteApiKey`) used raw `formValues.*` for DB queries and ownership checks instead of the validated `check.data.*`; switched to `check.data.*` everywhere to match the `toggleUserBan` / `generateApiKey` convention and pre-empt fragility if a future `.trim()` or `.transform()` is ever added to any of those schemas. (6) `src/app/docs/data-flow/page.mdx` code samples called `isValidStatus(fetchedData)` and `isValidSeason(fetchedData)` as if the validators were callable functions; both are `z.object({...})` instances — switched the doc to `.safeParse(...)` so a reader copy-pasting the example doesn't immediately hit `TypeError: isValidStatus is not a function`.
 
 ## 0.51.6
 
