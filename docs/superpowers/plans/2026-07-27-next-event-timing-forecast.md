@@ -10,6 +10,24 @@
 
 **Spec:** `docs/superpowers/specs/2026-07-27-next-event-timing-forecast-design.md`
 
+## Design-debate corrections (v2)
+
+A blinded multi-model review (Codex, Copilot, Sonnet, Opus) endorsed the
+approach and rejected the instrumentation. Seven corrections are now baked into
+the tasks below. **They are load-bearing — do not simplify them back out.**
+
+| #   | Correction                                                        | Task | Why it matters                                                                                                                     |
+| --- | ----------------------------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `playerPercentileInSeason` uses an expanding within-season window | 1    | Whole-season ranking leaks the future past the season-number leakage assert. The only defect that silently inverts the conclusion. |
+| 2   | Gaps scoped by `(type, enemy)`, not `type`                        | 1    | Mixing factions makes a Cyborg attack "the previous attack" for a Bug one.                                                         |
+| 3   | Censored moments kept and scored one-sided                        | 4    | Dropping them removed 14.9% of attack moments / 8.5% of defend — structurally the longest waits.                                   |
+| 4   | Baseline = median forward-recurrence wait, not median gap         | 4    | Measured: 54.5h vs 46.8h, inflating every skill ratio ~12% against a 0.6 gate.                                                     |
+| 5   | `effectiveN` + season block-bootstrap CI on skill ratio           | 4, 5 | 18,810 moments come from 774 real intervals; precision overstated ~4.9x. The gate reads the CI, not the point estimate.            |
+| 6   | Phase 1 permutation test + Bonferroni across 5 variables          | 2, 3 | One uncorrected fluke halts the entire investigation through the Task 3 routing gate.                                              |
+| 7   | Defend estimand split: P(chain) + conditional lull length         | 5    | 63% of defends chain, so a pooled defend score is winnable by always predicting ~0.                                                |
+
+Debate record: `~/.claude-octopus/debates/local/001-next-event-forecast-plan/`
+
 ## Global Constraints
 
 - **No new npm dependencies.** `pg` and `node:assert` only.
@@ -108,6 +126,60 @@ if (import.meta.filename === process.argv[1]) {
             e.hoursSinceLastSameType === null || e.hoursSinceLastSameType >= 0,
             'negative hoursSinceLastSameType',
         );
+    }
+
+    // The percentile must be causal: recomputing it from strictly-earlier
+    // events in the same season has to reproduce the stored value exactly.
+    // This is the guard against the whole-season-rank leak.
+    {
+        const bySeason = new Map();
+        for (const e of ds.events) {
+            if (!bySeason.has(e.season)) bySeason.set(e.season, []);
+            bySeason.get(e.season).push(e);
+        }
+        for (const [, list] of bySeason) {
+            for (let i = 0; i < Math.min(list.length, 25); i++) {
+                const mine = list[i].players_at_start ?? 0;
+                const earlier = list.slice(0, i).map((e) => e.players_at_start ?? 0);
+                const expected =
+                    earlier.length > 0 ?
+                        earlier.filter((p) => p < mine).length / earlier.length
+                    :   0.5;
+                assert.equal(
+                    list[i].playerPercentileInSeason,
+                    expected,
+                    `percentile is not causal at season ${list[i].season} index ${i}`,
+                );
+            }
+        }
+    }
+
+    // Gaps must be enemy-scoped: the referenced predecessor has to share both
+    // type AND enemy, not just type.
+    for (const e of sampleGapEvents(ds)) {
+        const sameSeason = ds.events.filter(
+            (x) =>
+                x.season === e.season &&
+                x.type === e.type &&
+                x.enemy === e.enemy &&
+                x.start_time < e.start_time,
+        );
+        assert(
+            sameSeason.length > 0,
+            'hoursSinceLastSameType set but no same-enemy predecessor exists',
+        );
+        const prev = sameSeason.at(-1);
+        assert.equal(
+            e.hoursSinceLastSameType,
+            (e.start_time - prev.start_time) / 3600,
+            'hoursSinceLastSameType does not match the same-enemy predecessor',
+        );
+    }
+
+    function sampleGapEvents(dataset) {
+        return dataset.events
+            .filter((e) => e.hoursSinceLastSameType !== null)
+            .filter((_, i) => i % 211 === 0);
     }
 
     // statusAt never returns a bucket in the future, and returns null before
@@ -229,25 +301,35 @@ export async function loadDataset() {
 
     // --- derived per-event fields -----------------------------------------
     for (const [, list] of eventsBySeason) {
-        // Player percentile within the season: fraction of the season's events
-        // with strictly fewer players_at_start. Normalizes away the war-era
-        // drift that made the raw player counts useless.
-        const players = list.map((e) => e.players_at_start ?? 0);
-        for (const e of list) {
-            const mine = e.players_at_start ?? 0;
-            const below = players.filter((p) => p < mine).length;
-            e.playerPercentileInSeason =
-                players.length > 1 ? below / (players.length - 1) : 0;
+        // Player percentile within the season, on an EXPANDING window: each
+        // event is ranked only against events EARLIER in the same season.
+        //
+        // Ranking against the whole season would leak future information into
+        // every feature built on this field. The walk-forward leakage assert
+        // only compares season numbers, so a whole-season rank passes it
+        // cleanly while quietly handing the model the future — the single
+        // defect most likely to invert the conclusion.
+        for (let i = 0; i < list.length; i++) {
+            const mine = list[i].players_at_start ?? 0;
+            const earlier = list.slice(0, i).map((e) => e.players_at_start ?? 0);
+            list[i].playerPercentileInSeason =
+                earlier.length > 0 ?
+                    earlier.filter((p) => p < mine).length / earlier.length
+                :   0.5; // neutral prior for a season's first event
         }
 
+        // Gaps are per (type, enemy). Mixing factions inside a season would
+        // report a Cyborg attack as "the previous attack" for a Bug one.
         for (const type of ['defend', 'attack']) {
-            const sameType = list.filter((e) => e.type === type);
-            for (let i = 0; i < sameType.length; i++) {
-                const e = sameType[i];
-                const prev = i > 0 ? sameType[i - 1] : null;
-                e.idleSeconds = prev ? e.start_time - prev.end_time : null;
-                e.hoursSinceLastSameType =
-                    prev ? (e.start_time - prev.start_time) / HOUR : null;
+            for (const enemy of [0, 1, 2]) {
+                const series = list.filter((e) => e.type === type && e.enemy === enemy);
+                for (let i = 0; i < series.length; i++) {
+                    const e = series[i];
+                    const prev = i > 0 ? series[i - 1] : null;
+                    e.idleSeconds = prev ? e.start_time - prev.end_time : null;
+                    e.hoursSinceLastSameType =
+                        prev ? (e.start_time - prev.start_time) / HOUR : null;
+                }
             }
         }
     }
@@ -504,6 +586,9 @@ const atControl = Object.fromEntries(VARIABLES.map((v) => [v, []]));
 const CONTROLS_PER_ATTACK = 5;
 const EXCLUSION_HOURS = 3;
 
+// Seasons usable as phase-matched control donors.
+const candidateSeasons = [...ds.seasons.values()].filter((s) => s.spanSeconds > 0);
+
 let controlsAttempted = 0;
 let controlsRejected = 0;
 
@@ -523,23 +608,47 @@ for (const a of attacks) {
         if (vars[v] !== null && Number.isFinite(vars[v])) atAttack[v].push(vars[v]);
     }
 
-    // Controls: random instants in the same season, away from any attack start
-    // of this enemy.
+    // PHASE-MATCHED controls, drawn from OTHER seasons at the SAME fractional
+    // point through the war.
+    //
+    // Uniform same-season controls are confounded: liberation rises roughly
+    // monotonically with season phase, so if attacks merely cluster in a
+    // particular phase, liberation looks concentrated relative to a uniform
+    // control even with no threshold rule at all — a false "we found a rule".
+    // Holding phase fixed makes any remaining concentration attributable to
+    // campaign state rather than to when in the war we happen to be looking.
     const season = ds.seasons.get(a.season);
     if (!season || season.spanSeconds <= 0) continue;
+    const phase = (a.start_time - season.firstStart) / season.spanSeconds;
 
     for (let i = 0; i < CONTROLS_PER_ATTACK; i++) {
         controlsAttempted++;
-        const t = season.firstStart + rng() * season.spanSeconds;
-        const tooClose = siblings.some(
+
+        const other = candidateSeasons[Math.floor(rng() * candidateSeasons.length)];
+        if (!other || other.season === a.season) {
+            controlsRejected++;
+            continue;
+        }
+        const t = other.firstStart + phase * other.spanSeconds;
+
+        const otherSiblings =
+            attacksBySeasonEnemy.get(`${other.season}:${a.enemy}`) ?? [];
+        const tooClose = otherSiblings.some(
             (s) => Math.abs(s.start_time - t) < EXCLUSION_HOURS * HOUR,
         );
         if (tooClose) {
             controlsRejected++;
             continue;
         }
-        const prev = siblings.filter((s) => s.start_time < t).at(-1) ?? null;
-        const cVars = stateAt(ds, a.season, a.enemy, t, prev, a.playerPercentileInSeason);
+        const prev = otherSiblings.filter((s) => s.start_time < t).at(-1) ?? null;
+        const cVars = stateAt(
+            ds,
+            other.season,
+            a.enemy,
+            t,
+            prev,
+            a.playerPercentileInSeason,
+        );
         for (const v of VARIABLES) {
             if (cVars[v] !== null && Number.isFinite(cVars[v])) {
                 atControl[v].push(cVars[v]);
@@ -553,19 +662,73 @@ for (const a of attacks) {
 const RULE_IQR_RATIO = 0.25;
 const RULE_SPAN_RATIO = 0.35;
 
+// Five variables are tested. A raw 0.05 threshold applied five times fires a
+// false positive ~23% of the time, and a single false positive halts the entire
+// investigation via the Task 3 routing gate. Bonferroni-correct.
+const PERMUTATIONS = 2000;
+const ALPHA = 0.05 / VARIABLES.length;
+
+/**
+ * Permutation p-value for "attack values are more concentrated than controls".
+ *
+ * Pools attack and control values, reshuffles the labels `PERMUTATIONS` times,
+ * and reports how often chance alone produces an IQR ratio at least as small as
+ * the observed one. No distributional assumption, which matters because none of
+ * these variables is remotely normal.
+ *
+ * @param {number[]} attackVals
+ * @param {number[]} controlVals
+ * @param {() => number} rand
+ * @returns {number} p-value
+ */
+function permutationP(attackVals, controlVals, rand) {
+    const observed = ratio(summarize(attackVals).iqr, summarize(controlVals).iqr);
+    if (!Number.isFinite(observed)) return 1;
+
+    const pool = [...attackVals, ...controlVals];
+    const nA = attackVals.length;
+    let atLeastAsExtreme = 0;
+
+    for (let p = 0; p < PERMUTATIONS; p++) {
+        const shuffled = [...pool];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(rand() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        const permRatio = ratio(
+            summarize(shuffled.slice(0, nA)).iqr,
+            summarize(shuffled.slice(nA)).iqr,
+        );
+        if (Number.isFinite(permRatio) && permRatio <= observed) {
+            atLeastAsExtreme++;
+        }
+    }
+    // Add-one smoothing: a p-value of exactly 0 is never honest from 2000 draws.
+    return (atLeastAsExtreme + 1) / (PERMUTATIONS + 1);
+}
+
 console.log(`\n=== Phase 1: trigger hunt ===`);
 console.log(
-    `attacks=${attacks.length}  controls attempted=${controlsAttempted}  rejected (too near an attack)=${controlsRejected}\n`,
+    `attacks=${attacks.length}  controls attempted=${controlsAttempted}  rejected=${controlsRejected}`,
+);
+console.log(
+    `controls are PHASE-MATCHED from other seasons; ${PERMUTATIONS} permutations; Bonferroni alpha=${ALPHA.toFixed(4)} across ${VARIABLES.length} variables\n`,
 );
 
+const permRng = makeRng(31337);
 const verdicts = [];
 for (const v of VARIABLES) {
     const A = summarize(atAttack[v]);
     const C = summarize(atControl[v]);
     const iqrRatio = ratio(A.iqr, C.iqr);
     const spanRatio = ratio(A.span, C.span);
-    const ruleLike = iqrRatio <= RULE_IQR_RATIO && spanRatio <= RULE_SPAN_RATIO;
-    verdicts.push({ v, ruleLike });
+    const pValue = permutationP(atAttack[v], atControl[v], permRng);
+
+    // Rule-like now requires BOTH the effect size AND statistical significance
+    // after correction. Either alone is not enough to halt the investigation.
+    const effectLarge = iqrRatio <= RULE_IQR_RATIO && spanRatio <= RULE_SPAN_RATIO;
+    const ruleLike = effectLarge && pValue < ALPHA;
+    verdicts.push({ v, ruleLike, effectLarge, pValue });
 
     console.log(`${v}`);
     console.log(
@@ -575,7 +738,10 @@ for (const v of VARIABLES) {
         `  at controls n=${C.n}  p25=${fmt(C.p25)}  p50=${fmt(C.p50)}  p75=${fmt(C.p75)}  IQR=${fmt(C.iqr)}  p05-p95 span=${fmt(C.span)}`,
     );
     console.log(
-        `  concentration: IQR ratio=${fmt(iqrRatio)} (rule if <=${RULE_IQR_RATIO})  span ratio=${fmt(spanRatio)} (rule if <=${RULE_SPAN_RATIO})  => ${ruleLike ? 'RULE-LIKE' : 'no rule'}\n`,
+        `  concentration: IQR ratio=${fmt(iqrRatio)} (<=${RULE_IQR_RATIO})  span ratio=${fmt(spanRatio)} (<=${RULE_SPAN_RATIO})  effect=${effectLarge ? 'LARGE' : 'small'}`,
+    );
+    console.log(
+        `  permutation p=${pValue.toFixed(4)} (significant if < ${ALPHA.toFixed(4)})  => ${ruleLike ? 'RULE-LIKE' : 'no rule'}\n`,
     );
 }
 
@@ -586,11 +752,20 @@ function fmt(x) {
 }
 
 const ruleLike = verdicts.filter((x) => x.ruleLike).map((x) => x.v);
+const effectOnly = verdicts
+    .filter((x) => x.effectLarge && !x.ruleLike)
+    .map((x) => `${x.v} (p=${x.pValue.toFixed(4)})`);
+
 console.log(
     ruleLike.length ?
         `VERDICT: rule-like variable(s): ${ruleLike.join(', ')} — investigate as a deterministic trigger before modelling.`
     :   `VERDICT: no deterministic trigger detectable at daily status resolution. Proceed to Phase 2.`,
 );
+if (effectOnly.length) {
+    console.log(
+        `NOTE: large effect but NOT significant after Bonferroni: ${effectOnly.join(', ')}. Do not halt on these.`,
+    );
+}
 console.log(
     `\nCaveat: h1_status is ~1 bucket/day for 156 of 160 seasons, so campaign state at an attack start can be up to 24h stale. A real threshold would still concentrate, but smeared. A negative result here does NOT rule out a trigger.`,
 );
@@ -663,7 +838,8 @@ git commit -m "analysis(472): trigger hunt — concentration vs control"
 
 - [ ] **Step 2: Apply the routing rule**
 
-- **If any variable is RULE-LIKE:** stop. Do not implement Tasks 4–6. Write the findings comment (Task 7) reporting the rule, its threshold, and how many attacks obey it. The forecasting question is answered — it is a rule, not a forecast.
+- **If any variable is RULE-LIKE** (large effect AND permutation `p < 0.01` after Bonferroni): stop. Do not implement Tasks 4–6. Write the findings comment (Task 7) reporting the rule, its threshold, and how many attacks obey it. The forecasting question is answered — it is a rule, not a forecast.
+- **If a variable shows a large effect but does NOT survive Bonferroni:** do not halt. The script prints these separately under `NOTE:`. Record them in the findings comment as "suggestive, underpowered" and continue to Task 4. Halting the whole investigation on an uncorrected fluke across five simultaneous tests is exactly the failure this gate was rebuilt to prevent.
 - **If no variable is RULE-LIKE:** continue to Task 4. Report in the findings comment that no trigger was detectable at daily resolution, and include the S157–160 re-test as corroboration.
 
 - [ ] **Step 3: Report the decision to the user before continuing**
@@ -680,13 +856,33 @@ State which branch was taken and paste the VERDICT line plus the table. Do not p
 
 **Interfaces:**
 
-- Consumes: `HOUR`, `DAY` from `./dataset.mjs`.
+- Consumes: `HOUR` from `./dataset.mjs`.
 - Produces:
     - `walkForward(options): Summary`
-      where `options = { events, seasons, type, enemy, fitPredictor, stepHours = 3, firstEvalSeason = 21, horizonHours = 1500 }`.
-      `fitPredictor(trainEvents, ctx)` must return `predict(moment) -> {p25, p50, p75}` in **hours**. `moment` is `{ t, season, enemy, lastEvent }`.
-    - `Summary` = `{ moments, censored, warmupSkipped, calibration: {q25, q50, q75}, sharpnessHours, medianAbsErrorHours, baselineMedianAbsErrorHours, skillRatio }`
+      where `options = { events, seasons, type, enemy, fitPredictor, stepHours = 3, firstEvalSeason = 21, horizonHours = 1500, bootstrapSamples = 200, momentFilter = null }`.
+      `fitPredictor(trainEvents, ctx)` must return `predict(moment) -> {p25, p50, p75}` in **hours**. `moment` is `{ t, season, enemy, lastEvent }`. `ctx` is `{ testSeason, trainGaps, baselineConstant }`.
+      `momentFilter(t, seasonEvents)` is optional; return `false` to exclude a moment (used for the defend lull estimand).
+    - `Summary` = `{ moments, uncensored, censoredScored, censoredUnknown, warmupSkipped, effectiveN, calibration: {q25, q50, q75}, calibrationN: {q25, q50, q75}, sharpnessHours, medianAbsErrorHours, baselineMedianAbsErrorHours, skillRatio, skillRatioCI: [lo, hi] }`
     - `quantileOf(values, q): number|null` — re-exported so predictors share one definition.
+
+**Three corrections from the design debate are baked into this task. Do not
+"simplify" them back out:**
+
+1. **Censored moments are kept, not dropped.** A moment at the end of a season
+   with no subsequent event still carries information: the true wait is known to
+   exceed the remaining span `c`. For a predicted quantile `q <= c`, the
+   comparison `trueWait < q` is answerable — it is false. Only `q > c` is
+   genuinely unknown. Dropping these removed 14.9% of attack moments and 8.5% of
+   defend moments, and they are structurally the longest waits.
+2. **The baseline constant is the median forward-recurrence wait, not the median
+   gap.** Waits are sampled from a random clock, and forward recurrence time is
+   not distributed like the gap. Measured on the real data: median gap 54.5h vs
+   median forward recurrence 46.8h, which inflates every skill ratio by ~12%
+   against a gate set at 0.6.
+3. **Effective N is reported alongside `moments`.** 3h stepping yields ~18,810
+   attack moments from only 774 real inter-arrival intervals — precision is
+   overstated ~4.9x. `effectiveN` counts distinct target events; the skill ratio
+   gets a season-level block-bootstrap CI so the 0.6 gate is read against noise.
 
 - [ ] **Step 1: Write the self-check first**
 
@@ -749,6 +945,67 @@ if (import.meta.filename === process.argv[1]) {
     assert(good.skillRatio < 0.5, `oracle skill ratio too high: ${good.skillRatio}`);
     assert(good.sharpnessHours === 0, 'oracle bands should have zero width');
 
+    // Effective N must count target EVENTS, not clock moments. With a 10h
+    // period and 3h stepping there are ~3.3 moments per event, so effectiveN
+    // has to come out far below `moments` — this is the guard against
+    // reporting 4.9x-overstated precision.
+    assert(
+        good.effectiveN < good.moments / 2,
+        `effectiveN (${good.effectiveN}) should be well under moments (${good.moments})`,
+    );
+
+    // Censored moments must be SCORED, not dropped. In this synthetic world the
+    // clock runs to lastEnd, past the final event start, so censored moments
+    // exist and the ones with q <= remaining span must be counted.
+    assert(
+        good.censoredScored > 0,
+        'censored moments were not scored — the drop-bias is back',
+    );
+
+    // The bootstrap CI must bracket the point estimate.
+    assert(
+        good.skillRatioCI[0] <= good.skillRatio &&
+            good.skillRatio <= good.skillRatioCI[1],
+        `CI ${JSON.stringify(good.skillRatioCI)} does not bracket ${good.skillRatio}`,
+    );
+
+    // The baseline constant must be the forward-recurrence median, not the gap
+    // median. With a perfectly periodic 10h process, forward recurrence from a
+    // uniform clock averages ~5h while the gap is 10h — so a baseline built on
+    // the gap would be visibly wrong. Assert the harness picked the right one.
+    let capturedBaseline = null;
+    walkForward({
+        events,
+        seasons,
+        type: 'attack',
+        enemy: 0,
+        fitPredictor: (_trainEvents, ctx) => {
+            capturedBaseline = ctx.baselineConstant;
+            return () => ({ p25: 1, p50: 1, p75: 1 });
+        },
+        bootstrapSamples: 0,
+    });
+    assert(
+        capturedBaseline !== null && capturedBaseline < 8,
+        `baseline should be forward-recurrence (~5h), got ${capturedBaseline}`,
+    );
+
+    // momentFilter must actually exclude moments. Filter on the first half of
+    // each season — NOT on `t % 2`, because every synthetic timestamp here is
+    // even (base = s * 10_000_000, steps of 3h = 10800s) and that predicate
+    // silently excludes nothing, making the assert vacuous.
+    const filtered = walkForward({
+        events,
+        seasons,
+        type: 'attack',
+        enemy: 0,
+        fitPredictor: oracle,
+        momentFilter: (t, seasonEvents) =>
+            t < seasonEvents[Math.floor(seasonEvents.length / 2)].start_time,
+        bootstrapSamples: 0,
+    });
+    assert(filtered.moments < good.moments, 'momentFilter did not exclude anything');
+
     // Leakage guard: a fitPredictor that peeks at the test season must throw.
     assert.throws(
         () =>
@@ -808,13 +1065,50 @@ export function quantileOf(values, q) {
 }
 
 /**
+ * Median forward-recurrence wait sampled on the same clock the evaluation uses.
+ *
+ * This — NOT the median gap — is the correct constant baseline. Waits are
+ * observed from a uniformly random clock moment, and forward recurrence time is
+ * length-biased relative to the gap distribution. On the real data the two
+ * differ by 54.5h vs 46.8h, which inflates skill ratios by ~12%.
+ *
+ * @param {object[]} trainEvents matching events from training seasons
+ * @param {Map<number, object>} seasons
+ * @param {number} stepHours
+ * @returns {number}
+ */
+function forwardRecurrenceMedian(trainEvents, seasons, stepHours) {
+    const bySeason = new Map();
+    for (const e of trainEvents) {
+        if (!bySeason.has(e.season)) bySeason.set(e.season, []);
+        bySeason.get(e.season).push(e);
+    }
+
+    const waits = [];
+    for (const [season, list] of bySeason) {
+        const span = seasons.get(season);
+        if (!span) continue;
+        for (let t = span.firstStart; t <= span.lastEnd; t += stepHours * HOUR) {
+            const next = list.find((e) => e.start_time > t);
+            if (next) waits.push((next.start_time - t) / HOUR);
+        }
+    }
+    return quantileOf(waits, 0.5) ?? 0;
+}
+
+/**
  * Walk-forward-by-season backtest.
  *
  * For each evaluation season N: fit on seasons < N only, then step a clock
  * through N in `stepHours` increments. At each moment the predictor emits
  * p25/p50/p75 of the wait (hours) until the next matching event start strictly
- * after that moment. Moments with no subsequent event are right-censored and
- * dropped.
+ * after that moment.
+ *
+ * Moments with no subsequent event are RIGHT-CENSORED, not dropped. The true
+ * wait is known to exceed the remaining span `c`, so any predicted quantile
+ * `q <= c` still yields an answerable comparison (`trueWait < q` is false).
+ * Only `q > c` is unknown. For the error metric, a censored moment with
+ * `p50 <= c` contributes the lower bound `c - p50`.
  *
  * @param {object} options
  * @returns {object} summary
@@ -828,6 +1122,8 @@ export function walkForward({
     stepHours = 3,
     firstEvalSeason = 21,
     horizonHours = 1500,
+    bootstrapSamples = 200,
+    momentFilter = null,
 }) {
     const matching = events
         .filter((e) => e.type === type && (enemy === undefined || e.enemy === enemy))
@@ -837,16 +1133,14 @@ export function walkForward({
         .filter((s) => s >= firstEvalSeason)
         .sort((a, b) => a - b);
 
-    const trueWaits = [];
-    const q25s = [];
-    const q50s = [];
-    const q75s = [];
-    let censored = 0;
+    // One record per evaluated moment. Keeping them in a flat list (rather than
+    // parallel arrays) is what makes the season-level block bootstrap cheap.
+    /** @type {{season: number, target: string, wait: number|null, censorAt: number|null,
+     *          p25: number, p50: number, p75: number, absErr: number|null,
+     *          baselineAbsErr: number|null}[]} */
+    const records = [];
     let warmupSkipped = 0;
-
-    // The constant-median baseline: median gap over ALL training seasons seen
-    // so far, recomputed per fold exactly like the real predictor.
-    const baselineErrors = [];
+    let censoredUnknown = 0;
 
     for (const testSeason of evalSeasons) {
         const trainEvents = matching.filter((e) => e.season < testSeason);
@@ -868,9 +1162,14 @@ export function walkForward({
                 );
             }
         }
-        const baselineMedian = quantileOf(trainGaps, 0.5) ?? 0;
+        // Forward-recurrence median, NOT median gap. See the note above.
+        const baselineConstant = forwardRecurrenceMedian(trainEvents, seasons, stepHours);
 
-        const predict = fitPredictor(trainEvents, { testSeason, trainGaps });
+        const predict = fitPredictor(trainEvents, {
+            testSeason,
+            trainGaps,
+            baselineConstant,
+        });
         // fitPredictor may mutate its own copy; re-verify nothing future leaked in.
         for (const e of trainEvents) {
             assert(
@@ -884,11 +1183,8 @@ export function walkForward({
         if (!span || seasonEvents.length === 0) continue;
 
         for (let t = span.firstStart; t <= span.lastEnd; t += stepHours * HOUR) {
-            const next = seasonEvents.find((e) => e.start_time > t);
-            if (!next) {
-                censored++;
-                continue;
-            }
+            if (momentFilter && !momentFilter(t, seasonEvents)) continue;
+
             // Before the season's first matching event there is no meaningful
             // "time since last event" — falling back to the previous season's
             // last event would feed the predictor a multi-month elapsed value.
@@ -898,43 +1194,158 @@ export function walkForward({
                 continue;
             }
 
-            const trueWait = (next.start_time - t) / HOUR;
+            const next = seasonEvents.find((e) => e.start_time > t);
             const p = predict({ t, season: testSeason, enemy, lastEvent });
+            const q25 = Math.min(p.p25, horizonHours);
+            const q50 = Math.min(p.p50, horizonHours);
+            const q75 = Math.min(p.p75, horizonHours);
 
-            trueWaits.push(trueWait);
-            q25s.push(Math.min(p.p25, horizonHours));
-            q50s.push(Math.min(p.p50, horizonHours));
-            q75s.push(Math.min(p.p75, horizonHours));
-            baselineErrors.push(Math.abs(trueWait - baselineMedian));
+            if (next) {
+                const wait = (next.start_time - t) / HOUR;
+                records.push({
+                    season: testSeason,
+                    target: `${testSeason}:${next.start_time}`,
+                    wait,
+                    censorAt: null,
+                    q25,
+                    q50,
+                    q75,
+                    absErr: Math.abs(wait - q50),
+                    baselineAbsErr: Math.abs(wait - baselineConstant),
+                });
+            } else {
+                // Right-censored: the true wait exceeds the remaining span.
+                const censorAt = (span.lastEnd - t) / HOUR;
+                if (censorAt <= 0) continue;
+                records.push({
+                    season: testSeason,
+                    target: `${testSeason}:censored`,
+                    wait: null,
+                    censorAt,
+                    q25,
+                    q50,
+                    q75,
+                    // |true - q50| >= censorAt - q50 when q50 <= censorAt.
+                    absErr: q50 <= censorAt ? censorAt - q50 : null,
+                    baselineAbsErr:
+                        baselineConstant <= censorAt ? censorAt - baselineConstant : null,
+                });
+                if (q50 > censorAt) censoredUnknown++;
+            }
         }
     }
 
-    assert(trueWaits.length > 0, 'backtest produced no evaluable moments');
+    assert(records.length > 0, 'backtest produced no evaluable moments');
 
-    const below = (qs) => trueWaits.filter((w, i) => w < qs[i]).length / trueWaits.length;
+    /**
+     * Censoring-aware calibration for one quantile level.
+     *
+     * Uncensored: `wait < q` is directly answerable.
+     * Censored at c: answerable only when `q <= c`, and then it is false.
+     *
+     * @param {'q25'|'q50'|'q75'} key
+     * @returns {{rate: number, n: number}}
+     */
+    function calibrationFor(key) {
+        let hits = 0;
+        let answerable = 0;
+        for (const r of records) {
+            const q = r[key];
+            if (r.wait !== null) {
+                answerable++;
+                if (r.wait < q) hits++;
+            } else if (q <= r.censorAt) {
+                answerable++; // known false — true wait exceeds c >= q
+            }
+        }
+        return { rate: answerable > 0 ? hits / answerable : 0, n: answerable };
+    }
 
-    const absErrors = trueWaits.map((w, i) => Math.abs(w - q50s[i]));
-    const widths = q75s.map((q, i) => q - q25s[i]);
+    const scored = records.filter((r) => r.absErr !== null);
+    const baselineScored = records.filter((r) => r.baselineAbsErr !== null);
 
-    const medianAbsErrorHours = quantileOf(absErrors, 0.5) ?? 0;
-    const baselineMedianAbsErrorHours = quantileOf(baselineErrors, 0.5) ?? 0;
+    const medianAbsErrorHours =
+        quantileOf(
+            scored.map((r) => r.absErr),
+            0.5,
+        ) ?? 0;
+    const baselineMedianAbsErrorHours =
+        quantileOf(
+            baselineScored.map((r) => r.baselineAbsErr),
+            0.5,
+        ) ?? 0;
+    const skillRatio =
+        baselineMedianAbsErrorHours > 0 ?
+            medianAbsErrorHours / baselineMedianAbsErrorHours
+        :   Infinity;
+
+    // Season-level block bootstrap. Resampling SEASONS (not moments) is what
+    // respects the autocorrelation 3h stepping introduces — moments inside one
+    // inter-arrival interval are near-duplicates and must move together.
+    const seasonIds = [...new Set(records.map((r) => r.season))];
+    const bySeasonRecords = new Map(
+        seasonIds.map((s) => [s, records.filter((r) => r.season === s)]),
+    );
+    const ratios = [];
+    // ponytail: fixed-seed LCG inline — the harness must stay import-free of
+    // dataset.mjs so its self-check runs with no DB.
+    let rngState = 987654321;
+    const rand = () => {
+        rngState = (Math.imul(rngState, 1664525) + 1013904223) >>> 0;
+        return rngState / 4294967296;
+    };
+    for (let b = 0; b < bootstrapSamples; b++) {
+        const sample = [];
+        for (let i = 0; i < seasonIds.length; i++) {
+            const pick = seasonIds[Math.floor(rand() * seasonIds.length)];
+            sample.push(...bySeasonRecords.get(pick));
+        }
+        const m = quantileOf(
+            sample.filter((r) => r.absErr !== null).map((r) => r.absErr),
+            0.5,
+        );
+        const base = quantileOf(
+            sample.filter((r) => r.baselineAbsErr !== null).map((r) => r.baselineAbsErr),
+            0.5,
+        );
+        if (m !== null && base !== null && base > 0) ratios.push(m / base);
+    }
+    ratios.sort((a, b) => a - b);
+    const skillRatioCI =
+        ratios.length > 0 ?
+            [
+                quantileOf(ratios, 0.025) ?? skillRatio,
+                quantileOf(ratios, 0.975) ?? skillRatio,
+            ]
+        :   [skillRatio, skillRatio];
+
+    const widths = records.map((r) => r.q75 - r.q25);
 
     return {
-        moments: trueWaits.length,
-        censored,
+        moments: records.length,
+        uncensored: records.filter((r) => r.wait !== null).length,
+        censoredScored: records.filter((r) => r.wait === null && r.absErr !== null)
+            .length,
+        censoredUnknown,
         warmupSkipped,
+        // Distinct target events, not clock moments. This is the honest N.
+        effectiveN: new Set(records.filter((r) => r.wait !== null).map((r) => r.target))
+            .size,
         calibration: {
-            q25: below(q25s),
-            q50: below(q50s),
-            q75: below(q75s),
+            q25: calibrationFor('q25').rate,
+            q50: calibrationFor('q50').rate,
+            q75: calibrationFor('q75').rate,
+        },
+        calibrationN: {
+            q25: calibrationFor('q25').n,
+            q50: calibrationFor('q50').n,
+            q75: calibrationFor('q75').n,
         },
         sharpnessHours: quantileOf(widths, 0.5) ?? 0,
         medianAbsErrorHours,
         baselineMedianAbsErrorHours,
-        skillRatio:
-            baselineMedianAbsErrorHours > 0 ?
-                medianAbsErrorHours / baselineMedianAbsErrorHours
-            :   Infinity,
+        skillRatio,
+        skillRatioCI,
     };
 }
 ```
@@ -1079,12 +1490,33 @@ function fitPredictor(trainEvents, ctx) {
     };
 }
 
+/**
+ * Is a defend event active at time `t`? Used to isolate the lull estimand.
+ *
+ * @param {number} t
+ * @param {object[]} seasonEvents
+ * @returns {boolean}
+ */
+function inLull(t, seasonEvents) {
+    return !seasonEvents.some((e) => e.start_time <= t && e.end_time > t);
+}
+
 const CONFIGS = [
     { label: 'attack, all enemies', type: 'attack', enemy: undefined },
     { label: 'attack, Bugs (0)', type: 'attack', enemy: 0 },
     { label: 'attack, Cyborgs (1)', type: 'attack', enemy: 1 },
     { label: 'attack, Illuminate (2)', type: 'attack', enemy: 2 },
     { label: 'defend, all enemies', type: 'defend', enemy: undefined },
+    // 63% of defends chain back-to-back, so the pooled defend number is
+    // dominated by "wait ~= 0" and a predictor scores well by always saying
+    // zero. The decision-relevant question is when a LULL ends, so it gets its
+    // own configuration restricted to moments with no defend active.
+    {
+        label: 'defend, LULL ONLY (no defend active)',
+        type: 'defend',
+        enemy: undefined,
+        momentFilter: inLull,
+    },
 ];
 
 console.log('\n=== Phase 2: renewal baseline (empirical residual life) ===\n');
@@ -1097,19 +1529,54 @@ for (const cfg of CONFIGS) {
         type: cfg.type,
         enemy: cfg.enemy,
         fitPredictor,
+        momentFilter: cfg.momentFilter ?? null,
     });
     results.push({ cfg, summary });
 
     console.log(cfg.label);
-    console.log(`  moments=${summary.moments}  censored=${summary.censored}`);
     console.log(
-        `  calibration  p25=${summary.calibration.q25.toFixed(3)} (target 0.250)  p50=${summary.calibration.q50.toFixed(3)} (target 0.500)  p75=${summary.calibration.q75.toFixed(3)} (target 0.750)`,
+        `  moments=${summary.moments} (uncensored=${summary.uncensored} censored-scored=${summary.censoredScored} censored-unknown=${summary.censoredUnknown} warmup-skipped=${summary.warmupSkipped})`,
+    );
+    console.log(
+        `  EFFECTIVE N=${summary.effectiveN} distinct target events — read every figure below against THIS, not against moments`,
+    );
+    console.log(
+        `  calibration  p25=${summary.calibration.q25.toFixed(3)}/0.250 (n=${summary.calibrationN.q25})  p50=${summary.calibration.q50.toFixed(3)}/0.500 (n=${summary.calibrationN.q50})  p75=${summary.calibration.q75.toFixed(3)}/0.750 (n=${summary.calibrationN.q75})`,
     );
     console.log(
         `  sharpness    p25-p75 band median width = ${summary.sharpnessHours.toFixed(1)}h`,
     );
     console.log(
-        `  skill        median |true-p50| = ${summary.medianAbsErrorHours.toFixed(1)}h  vs baseline ${summary.baselineMedianAbsErrorHours.toFixed(1)}h  => ratio ${summary.skillRatio.toFixed(3)}\n`,
+        `  skill        median |true-p50| = ${summary.medianAbsErrorHours.toFixed(1)}h  vs baseline ${summary.baselineMedianAbsErrorHours.toFixed(1)}h  => ratio ${summary.skillRatio.toFixed(3)} (95% CI ${summary.skillRatioCI[0].toFixed(3)}-${summary.skillRatioCI[1].toFixed(3)})\n`,
+    );
+}
+
+// --- defend two-part estimand ---------------------------------------------
+
+console.log('=== Defend: chain-vs-lull decomposition ===\n');
+{
+    const bySeason = new Map();
+    for (const e of ds.events.filter((x) => x.type === 'defend')) {
+        if (!bySeason.has(e.season)) bySeason.set(e.season, []);
+        bySeason.get(e.season).push(e);
+    }
+    const CHAIN_SECONDS = 600;
+    let chains = 0;
+    let total = 0;
+    const lulls = [];
+    for (const [, list] of bySeason) {
+        for (let i = 1; i < list.length; i++) {
+            const idle = list[i].start_time - list[i - 1].end_time;
+            total++;
+            if (idle <= CHAIN_SECONDS) chains++;
+            else lulls.push(idle / HOUR);
+        }
+    }
+    console.log(
+        `P(chain within 10 min of a defend ending) = ${(chains / total).toFixed(3)}  (n=${total})`,
+    );
+    console.log(
+        `Given NO chain, lull length hours: p25=${(quantileOf(lulls, 0.25) ?? 0).toFixed(1)}  p50=${(quantileOf(lulls, 0.5) ?? 0).toFixed(1)}  p75=${(quantileOf(lulls, 0.75) ?? 0).toFixed(1)}  (n=${lulls.length})\n`,
     );
 }
 
@@ -1126,17 +1593,24 @@ for (const { cfg, summary } of results) {
         Math.abs(summary.calibration.q50 - 0.5) <= CAL_TOLERANCE &&
         Math.abs(summary.calibration.q75 - 0.75) <= CAL_TOLERANCE;
 
+    // The gate is read against the CI, not the point estimate. With effective N
+    // in the hundreds, a point estimate of 0.59 with a CI spanning 0.45-0.78 is
+    // not evidence of clearing a 0.6 bar.
+    const [ciLo, ciHi] = summary.skillRatioCI;
+
     let verdict;
-    if (calOk && summary.skillRatio <= SHIP_SKILL) {
+    if (calOk && ciHi <= SHIP_SKILL) {
         verdict = 'SHIP-WORTHY (pending the sharpness check below)';
-    } else if (summary.skillRatio > DEAD_SKILL) {
+    } else if (ciLo > DEAD_SKILL) {
         verdict = 'NOT USEFULLY PREDICTABLE';
+    } else if (calOk && summary.skillRatio <= SHIP_SKILL) {
+        verdict = 'PROMISING BUT UNDERPOWERED — point estimate passes, CI does not';
     } else {
         verdict = 'INCONCLUSIVE — try Phase 3 features';
     }
 
     console.log(
-        `${cfg.label}: calibration ${calOk ? 'PASS' : 'FAIL'}, skill ratio ${summary.skillRatio.toFixed(3)} => ${verdict}`,
+        `${cfg.label}: calibration ${calOk ? 'PASS' : 'FAIL'}, skill ${summary.skillRatio.toFixed(3)} [${ciLo.toFixed(3)}-${ciHi.toFixed(3)}], effN=${summary.effectiveN} => ${verdict}`,
     );
 }
 
@@ -1542,7 +2016,9 @@ node --env-file=.env.development scripts/analysis/03-hazard.mjs | tee /tmp/phase
 
 Expected: PASS — four configurations with the same three scores as Phase 2.
 
-This is the slowest script (it refits a logistic model per season fold). If it exceeds ~10 minutes, reduce `iterations` in the `fitLogistic` call from 3000 to 800 and note the change in the findings comment.
+This is the slowest script (it refits a logistic model per season fold). Expect **5–20 minutes**: roughly 4 configs × 140 folds × 3000 iterations over ~5–10k rows, which is low billions of `Math.exp` calls. If it exceeds ~20 minutes, reduce `iterations` in the `fitLogistic` call from 3000 to 800 and note the change in the findings comment.
+
+There is no convergence check on the fixed 3000 iterations — deliberate, since the payoff here is expected to be low. If Phase 3 does beat Phase 2, add one before believing it.
 
 - [ ] **Step 7: Lint and commit**
 
@@ -1682,9 +2158,14 @@ Minor bump, not patch: this adds new files and answers a research question, but 
 | No `tryCatch`, no vitest, inline asserts, leakage assert                | Global Constraints, Task 4 Step 3          |
 | Findings as a comment on #472, not a doc                                | Task 7                                     |
 | Out of scope: region/enemy/outcome prediction, UI, LLM                  | not implemented anywhere — correct         |
+| Debate corrections 1–7                                                  | Tasks 1, 2, 3, 4, 5 (see the v2 table)     |
 
 Two spec requirements are implemented with deliberate deviations, both flagged in place: the harness lives in `lib/backtest.mjs` rather than inside `02-baseline.mjs` (Task 4 header), and Phase 1 concentration is measured as IQR/span ratios rather than the spec's "tightest 10% band" (Task 2 header).
 
+**The spec is now behind the plan on three points.** The spec still says censored moments are "dropped, and the dropped count is reported" (§ Phase 2), still frames the decision gate on the point estimate rather than the CI, and does not mention the permutation test. The plan is authoritative; update the spec when the findings land rather than now, so both documents change once.
+
 **Placeholder scan:** one intentional bracket remains — Task 7 Step 3's changelog text says to replace a sentence with the finding, which cannot be written before the analysis runs. Every other step contains runnable content.
 
-**Type consistency:** `loadDataset` returns `{events, seasons, statusAt, liberationAt}`, used with those exact names in Tasks 2, 5, 6. `walkForward` takes `{events, seasons, type, enemy, fitPredictor}` and `fitPredictor(trainEvents, ctx)` returns `predict(moment)` with `moment = {t, season, enemy, lastEvent}` — consistent across Tasks 4, 5, 6. `quantileOf` is defined once in `backtest.mjs` and imported by `02-baseline.mjs`; `01-trigger-hunt.mjs` defines its own local `quantile` because it does not import the harness. `ctx.trainGaps` is produced in Task 4 and consumed in Task 5.
+**Type consistency:** `loadDataset` returns `{events, seasons, statusAt, liberationAt}`, used with those exact names in Tasks 2, 5, 6. `walkForward` takes `{events, seasons, type, enemy, fitPredictor, momentFilter}` and `fitPredictor(trainEvents, ctx)` returns `predict(moment)` with `moment = {t, season, enemy, lastEvent}` — consistent across Tasks 4, 5, 6. `ctx` is `{testSeason, trainGaps, baselineConstant}`: `trainGaps` is consumed by Task 5's residual predictor, `baselineConstant` by Task 4's own self-check. `quantileOf` is defined once in `backtest.mjs` and imported by `02-baseline.mjs`; `01-trigger-hunt.mjs` defines its own local `quantile` because it does not import the harness. `Summary` gained `uncensored`, `censoredScored`, `censoredUnknown`, `effectiveN`, `calibrationN`, and `skillRatioCI` in v2 — Task 5's print block and decision gate consume all six.
+
+`backtest.mjs` deliberately does not import `makeRng` from `dataset.mjs` (it inlines its own LCG) so that its self-check runs with no database connection. `01-trigger-hunt.mjs` does import `makeRng`, and uses two independent generators: `makeRng(20260727)` for control sampling and `makeRng(31337)` for the permutation shuffles.
