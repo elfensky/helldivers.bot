@@ -86,6 +86,14 @@ predicted wait distribution is `(gap - e)` over training gaps longer than
 | `defend, all enemies`                  |       0.628 | [0.605, 0.653] |        3925 |
 | `defend, LULL ONLY (no defend active)` |       0.770 | [0.746, 0.789] |        1472 |
 
+63% of defends chain back-to-back (start within 10 minutes of the previous
+one ending), so the pooled `defend, all enemies` row is flattered: a
+predictor that always guesses "wait ~= 0" scores well on it just by
+exploiting that chaining, not by forecasting anything. The decision-relevant
+question is when a *lull* ends, which is what the `LULL ONLY` row isolates
+by restricting to moments with no defend active — read that row as the real
+answer to "how well can defend timing be predicted," not the pooled one.
+
 Skill ratio is the median `|true wait − predicted p50|` divided by the same
 quantity for a constant baseline (the median forward-recurrence wait, not
 the median gap — see § Method caveats). Below 1.0 means the model beats a
@@ -93,26 +101,56 @@ single constant number; above 1.0 means it's worse.
 
 The project's decision gate — written down before any of these numbers
 existed — requires all three: calibration within ±0.05 of nominal at each
-quartile (p25/p50/p75), the skill-ratio CI's **upper bound** <= 0.6 (not
-just the point estimate), and the predicted p25–p75 band narrower than the
-unconditional gap IQR. **Neither configuration clears it.** Both skill
-ratios sit comfortably below the 0.8 "not usefully predictable" line, so the
-verdict is **INCONCLUSIVE**, not dead — there is real, measured skill here,
-just not enough to trust the confidence interval it comes with.
+quartile (p25/p50/p75), skill ratio <= 0.6, and the predicted p25–p75 band
+narrower than the unconditional gap IQR. That's what was pre-registered
+(design doc, § Decision gate); a later design review strengthened the skill
+requirement to the skill-ratio CI's **upper bound** <= 0.6, not just the
+point estimate — a stricter bar than originally written down, though the
+outcome doesn't hinge on the difference: both configurations miss even the
+looser, pre-registered point-estimate form too (0.628 and 0.770, both above
+0.6). **Neither configuration clears it.**
 
-Calibration fails on both defend configurations. A dedicated review traced
-this to three genuine drivers, not a bug:
+Both skill ratios sit below the 0.8 "not usefully predictable" line, but the
+lull config is close, not comfortably clear of it — 0.770 with a CI upper
+bound of 0.789, just 0.011 from that line — so the verdict is
+**INCONCLUSIVE**, not dead. That is not the same as "underpowered," though:
+both configurations' CIs are tight and lie entirely above the 0.6 bar
+(`[0.605, 0.653]` and `[0.746, 0.789]`), which is a clean effect-size
+failure. `02-baseline.mjs:203-205` has a separate verdict string for the
+genuinely underpowered case — point estimate passes, CI does not
+(`'PROMISING BUT UNDERPOWERED'`) — and neither configuration triggered it.
 
-1. **Censored moments are definitionally non-hits.** They pull the pooled
-   calibration rate down by construction. Restricting to the
-   lull-only _uncensored_ moments, p50 calibration comes out to 0.491 —
-   comfortably inside the ±0.05 tolerance around the nominal 0.5.
-2. **Real non-stationarity.** Per-season p50 hit rate swings from 0.12 to
-   1.00 across the roughly 160-season history, with a trend rather than
-   noise around a constant.
-3. **An elapsed-dependent bias.** Hit rate rises monotonically with elapsed
-   time since the last defend — the predictor is systematically miscalibrated
-   as a function of how long the lull has already run.
+Calibration fails on both defend configurations, but the two failures are
+narrower than "fails" suggests. For `LULL ONLY`, only p25 misses tolerance
+(0.194 against a nominal 0.25, off by 0.056); p50 (0.467) and p75 (0.755)
+are both inside ±0.05. For the pooled `all enemies` config, p25 (0.193) and
+p50 (0.441) both miss; p75 (0.737) passes.
+
+Restricted to *uncensored* moments only — dropping the moments where the
+walk-forward clock ran out before the next event started, so the true wait
+was never observed — all six quantiles pass: all-enemies comes out to
+0.209/0.469/0.757 and lull-only to 0.207/0.491/0.776, each within ±0.05 of
+its nominal target. That isolates the driver: censored moments are scored
+as definitionally non-hits, which pulls the pooled rate down by
+construction. That is the harness's deliberate, correct treatment, not a
+bug to explain away — `backtest.mjs:70-76` documents why right-censored
+moments must be scored rather than dropped, `backtest.mjs:208-230`
+(`calibrationFor`) implements it, and the harness's own self-check fails
+loudly (`'censored moments were not scored — the drop-bias is back'`) if a
+future change ever reintroduces the drop-bias that scoring exists to
+prevent. So: the pooled calibration FAIL is driven by censored moments
+being counted as misses by design, not by a defect in the predictor.
+
+Two other properties of the predictor are real and worth recording, but
+neither is needed to explain the gate result above — they describe how the
+predictor behaves, not why it failed calibration here:
+
+- **Non-stationarity.** Per-season p50 hit rate swings from 0.12 to 1.00
+  across the roughly 160-season history, with a trend rather than noise
+  around a constant.
+- **Elapsed-dependent bias.** Hit rate rises monotonically with elapsed
+  time since the last defend — the predictor is systematically
+  miscalibrated as a function of how long the lull has already run.
 
 ### Phase 3 — features made it worse, verified
 
