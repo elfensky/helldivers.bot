@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.67.2
+
+### Added
+
+- **Design spec for the next-event timing forecast ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  `docs/superpowers/specs/2026-07-27-next-event-timing-forecast-design.md` records
+  what the event log can actually support before any modelling starts: 6,013 events
+  across all 160 seasons, but `h1_status` runs at ~1 bucket/day for 156 of them, so
+  only 11 of 925 attacks have more than one status reading in the preceding 24h. A
+  fine-grained "faction progress speed" feature therefore does not exist historically.
+
+    The plan leads with a trigger hunt rather than a model — if HD1 fires attacks at a
+    liberation threshold, it is a rule and there is nothing to forecast. A
+    renewal-hazard baseline follows as the yardstick, and features only if the cheap
+    rungs measurably miss. The decision gate (calibration, sharpness, skill ratio) is
+    written down before the numbers exist, so "not usefully predictable" stays an
+    acceptable outcome.
+
+- `docs/roadmap.md` entry tracking [#471](https://github.com/elfensky/helldivers.bot/issues/471)
+  under Track E. (Merged in `8c63b02`, which named v0.67.2 in its message without
+  bumping the version — recorded here under the number it claimed.)
+
 ## 0.67.1
 
 ### Added
