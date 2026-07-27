@@ -5,7 +5,7 @@
  * 02-baseline.mjs (the renewal baseline) on the SAME configuration to justify
  * itself — see the Phase 2 vs Phase 3 comparison printed at the end.
  *
- * Re-scoped from the original plan (see progress.md "Task 6 RE-SCOPE"):
+ * Re-scoped from the original plan:
  * attacks are mechanically triggered (retired as a target), and the original
  * campaign-state features (liberation velocity, player percentile) measured
  * as dead ends for defends. This model also tests recency-weighted training,
@@ -132,8 +132,8 @@ function waitQuantilesFromHourlyHazard(hazardForHour, horizonHours) {
 
 // --- features ---------------------------------------------------------------
 //
-// Only features with measured support survive the Task 6 re-scope (see
-// progress.md): hour-of-day (chi2=128.1, df=23), weekend (chi2=21.7, df=6),
+// Only features with measured support survive the Task 6 re-scope:
+// hour-of-day (chi2=128.1, df=23), weekend (chi2=21.7, df=6),
 // and elapsed-since-last-defend (the renewal/chain structure Phase 2 already
 // exploits, here made trend-aware via the recency-weighted training variant).
 // Campaign-state features (liberation velocity, player percentile) are
@@ -343,7 +343,7 @@ function windowFilter(trainEvents, w) {
 
 // --- run ---------------------------------------------------------------
 
-const ITERATIONS = 800; // see report: cost estimated before running full — at
+const ITERATIONS = 800; // cost estimated before running full — at
 // hourly resolution there are ~24x more training rows than the original
 // daily design (grand total ~8.9M row-builds summed across all folds for
 // both variants combined, per a pre-run measurement). Model-caching (one fit

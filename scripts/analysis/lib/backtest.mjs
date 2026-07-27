@@ -438,9 +438,9 @@ if (import.meta.filename === process.argv[1]) {
         fitPredictor: constantPredictor,
     });
 
-    // Empirically measured against this exact fixture (see
-    // task-4-report.md): the current season-level block bootstrap gives a CI
-    // width of ~0.625; mutating the bootstrap loop to resample individual
+    // Empirically measured against this exact fixture: the current
+    // season-level block bootstrap gives a CI width of ~0.625; mutating the
+    // bootstrap loop to resample individual
     // moments instead of whole seasons collapses that width to 0.000. 0.2
     // sits with wide margin above the moment-level failure mode (0) and wide
     // margin below the season-level result (0.625) — a regression to
