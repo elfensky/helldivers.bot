@@ -1,81 +1,11 @@
 import { isValidStatus } from '@/validators/isValidStatus.mjs';
-
-const makeCampaignStatus = (overrides = {}) => ({
-    season: 1,
-    points: 500,
-    points_taken: 250,
-    points_max: 1000,
-    status: 'active',
-    introduction_order: 1,
-    ...overrides,
-});
-
-const makeDefendEvent = (overrides = {}) => ({
-    season: 1,
-    event_id: 10,
-    start_time: 1700000000,
-    end_time: 1700003600,
-    region: 3,
-    enemy: 2,
-    points_max: 1000,
-    points: 500,
-    status: 'active',
-    ...overrides,
-});
-
-const makeAttackEvent = (overrides = {}) => ({
-    season: 1,
-    event_id: 20,
-    start_time: 1700000000,
-    end_time: 1700003600,
-    enemy: 1,
-    points_max: 2000,
-    points: 800,
-    status: 'active',
-    players_at_start: 150,
-    max_event_id: 25,
-    ...overrides,
-});
-
-const makeStatistics = (overrides = {}) => ({
-    season: 1,
-    season_duration: 86400,
-    enemy: 2,
-    players: 1000,
-    total_unique_players: 5000,
-    missions: 10000,
-    successful_missions: 8000,
-    total_mission_difficulty: 50000,
-    completed_planets: 5,
-    defend_events: 10,
-    successful_defend_events: 7,
-    attack_events: 15,
-    successful_attack_events: 12,
-    deaths: 50000,
-    kills: 200000,
-    accidentals: 5000,
-    shots: 1000000,
-    hits: 600000,
-    ...overrides,
-});
-
-const makeValidStatus = (overrides = {}) => ({
-    time: 1700000000,
-    error_code: 0,
-    campaign_status: [
-        makeCampaignStatus({ introduction_order: 0 }),
-        makeCampaignStatus({ introduction_order: 1 }),
-        makeCampaignStatus({ introduction_order: 2 }),
-    ],
-    defend_event: makeDefendEvent(),
-    attack_events: [makeAttackEvent()],
-    statistics: [
-        makeStatistics({ enemy: 0 }),
-        makeStatistics({ enemy: 1 }),
-        makeStatistics({ enemy: 2 }),
-    ],
-    ...overrides,
-});
+import {
+    makeCampaignStatus,
+    makeStatusDefendEvent as makeDefendEvent,
+    makeStatusAttackEvent as makeAttackEvent,
+    makeStatistics,
+    makeValidStatus,
+} from '@test-utils/hd1.mjs';
 
 describe('isValidStatus', () => {
     test('accepts valid status data', () => {

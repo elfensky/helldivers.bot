@@ -5,8 +5,12 @@ import db from '@/db/db';
  * @returns {Promise<number | null>} resolved season number, or null if none exists.
  */
 async function findSeasonNumber(seasonInput) {
+    // An unstamped row means a partial import — treat it as a miss rather than
+    // serving an incomplete season (see getCampaign._findSeason).
     const where =
-        seasonInput == null ? { last_updated: { not: null } } : { season: seasonInput };
+        seasonInput == null ?
+            { last_updated: { not: null } }
+        :   { season: seasonInput, last_updated: { not: null } };
     const orderBy = seasonInput == null ? { season: 'desc' } : undefined;
     const row = await db.h1_season.findFirst({
         ...(orderBy && { orderBy }),

@@ -5,7 +5,6 @@ vi.mock('@/update/season.mjs', () => ({
     SEASON_NOT_FOUND: 'SEASON_NOT_FOUND',
 }));
 vi.mock('@/shared/utils/api/rateLimit.mjs', () => ({ enforceRateLimit: vi.fn() }));
-vi.mock('@/shared/utils/observability.mjs', () => ({ reportError: vi.fn() }));
 
 const { updateSeason, SEASON_NOT_FOUND } = await import('@/update/season.mjs');
 const { enforceRateLimit } = await import('@/shared/utils/api/rateLimit.mjs');

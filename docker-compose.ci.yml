@@ -75,9 +75,9 @@ services:
                 # (gated at runtime per the v0.47.0 observability work).
                 NEXT_PUBLIC_DEPLOY_ENV: ci
         ports:
-            # Published on localhost only so the workflow can curl the
-            # healthcheck from the runner host as a final HTTP sanity check
-            # after `compose up --wait` reports healthy.
+            # Published on localhost only so the workflow can run the smoke
+            # suite (src/__tests__/smoke/) from the runner host against this
+            # port after `compose up --wait` reports healthy.
             - '127.0.0.1:3000:3000'
         environment:
             POSTGRES_URL: postgresql://ci:ci@postgres:5432/ci?sslmode=disable

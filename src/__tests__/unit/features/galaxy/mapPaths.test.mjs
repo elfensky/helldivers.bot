@@ -47,6 +47,32 @@ describe('mapPaths enum', () => {
             }
         });
 
+        // Structural guard against wholesale geometry corruption (a bad export,
+        // a botched SVG re-optimisation, every `d` collapsing to a stub like
+        // "M0 0"). Pinning 33 literal path strings would be unmaintainable, so
+        // assert the cheap invariants instead: every path starts with a moveto,
+        // carries a plausible amount of geometry, and is distinct from the
+        // other 32. Real paths are 73-699 chars with 5-16 commands, so these
+        // floors leave ample room for legitimate redraws.
+        test.each([
+            ['bugPaths', bugPaths],
+            ['cyborgPaths', cyborgPaths],
+            ['illuminatePaths', illuminatePaths],
+        ])('%s entries carry real geometry, not stubs', (_name, paths) => {
+            for (const path of paths) {
+                expect(path.d).toMatch(/^[Mm]/);
+                expect(path.d.length).toBeGreaterThanOrEqual(40);
+                const commands = path.d.match(/[A-Za-z]/g) ?? [];
+                expect(commands.length).toBeGreaterThanOrEqual(4);
+            }
+        });
+
+        test('all 33 sector paths are distinct', () => {
+            const all = [...bugPaths, ...cyborgPaths, ...illuminatePaths];
+            expect(all).toHaveLength(33);
+            expect(new Set(all.map((p) => p.d)).size).toBe(33);
+        });
+
         test('sector numbers are sequential 1-11 for each faction', () => {
             for (const paths of [bugPaths, cyborgPaths, illuminatePaths]) {
                 const sectors = paths.map((p) => p.sector);

@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import db from '@/db/db';
-import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
+import { getWarOutcome } from '@/shared/utils/game/getWarOutcome.mjs';
 
 /**
  * Aggregate cross-season statistics across the full war history — used by
@@ -89,6 +89,7 @@ export const getCrossSeasonStats = cache(async function getCrossSeasonStats() {
     //    in JS, then each season's slice is fed to getWarOutcome alongside its
     //    final faction states and a synthetic any-all-3-defeated snapshot flag.
     const allEvents = await db.h1_event.findMany({
+        orderBy: [{ season: 'asc' }, { start_time: 'asc' }, { event_id: 'asc' }],
         select: {
             season: true,
             type: true,

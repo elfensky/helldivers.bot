@@ -245,7 +245,7 @@ The root anchor for all game data. Every normalised game table points back to th
 | `id`                 | `String`    | `TEXT`          | `@id @default(uuid(7))` — surrogate PK, UUIDv7                                                                                                                                |
 | `last_updated`       | `DateTime?` | `TIMESTAMPTZ`   | Nullable. `null` means the season row was pre-seeded but has not yet received a successful data update. Set to the current timestamp at the end of a successful update cycle. |
 | `season`             | `Int`       | `INTEGER`       | `@unique` — the game season number. Used as the FK target by all child tables.                                                                                                |
-| `introduction_order` | `Int[]`     | `INTEGER[]`     | `@default([])` — ordered list of planet introduction positions for the season. Indexed by faction (enemy 0, 1, 2).                                                            |
+| `introduction_order` | `Int[]`     | `INTEGER[]`     | `@default([])` — faction reveal order, indexed by faction (enemy 0, 1, 2). The **value** is a 0-based rank: `0` = the faction the war started against, `1`/`2` = mid-war arrivals, `255` = never introduced. |
 | `points_max`         | `Int[]`     | `INTEGER[]`     | `@default([])` — maximum liberation points per faction. Indexed by faction (enemy 0, 1, 2).                                                                                   |
 | `season_duration`    | `Int`       | `INTEGER`       | `@default(0)` — total duration of the season in seconds.                                                                                                                      |
 

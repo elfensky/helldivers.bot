@@ -27,7 +27,7 @@ import { PrismaClient } from '../src/generated/prisma/client.ts';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 // ---------------------------------------------------------------------------
-// Inline bucket math (mirrors src/update/bucketing.mjs)
+// Inline bucket math (mirrors src/shared/utils/bucketing.mjs)
 // ---------------------------------------------------------------------------
 const DEFAULT_BUCKET_SIZE = 900;
 const parsedBucketSize = parseInt(process.env.BUCKET_SIZE ?? '', 10);

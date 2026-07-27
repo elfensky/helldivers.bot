@@ -1,12 +1,367 @@
 # Changelog
 
+## 0.67.1
+
+### Added
+
+- **`docs/roadmap.md` — execution order for the 43 open issues.** Issues already
+  said _what_; nothing said _when_, or how to slice a milestone into sessions
+  that fit one context window. Each entry now carries a prep level (none → plan
+  → brainstorm → spec refresh), a branch strategy, and its blockers, so a fresh
+  session can pick up the next item without re-deriving the ordering. CLAUDE.md
+  § Task Tracking points at it.
+
+    Writing it surfaced three things worth recording: `develop` is several versions
+    ahead of the last tag on `main`, so finished work isn't deployed; the Archive
+    Analytics Phase B/C/D issues are specced against `h1_live_snapshot` /
+    `h1_snapshot` / `h1_event_snapshot`, tables dropped in the schema
+    normalization, making every field mapping in them wrong; and two issues look
+    already-implemented (#274 war narrative, #157 intro-order — the event-log half)
+    while #269 and #462 overlap.
+
+## 0.67.0
+
+### Fixed
+
+- **Four real bugs could ship without failing a single test.** Mutation testing
+  the suite — injecting realistic bugs and checking whether anything went red —
+  found four that survived all 1,619 tests: `computeLiveMap` computing the map
+  from unfiltered events (the drift CLAUDE.md marks Critical), every sector
+  path geometry replaced by a stub, the attack percentage losing its `* 100`,
+  and the `ProgressExplainer` buffer moving from 0.1 to 0.5. The root causes
+  were a self-referential assertion (`expect(mapState).toEqual(computeMapState(...))`,
+  where the expected value is produced by the code under test), a fixture whose
+  event ordering made the leak a no-op, sliders that were rendered but never
+  moved, and geometry assertions satisfied by `"M0 0"`. All four now fail on
+  injection; the suite is re-verified at **17 mutations, 17 killed**.
+- **The smoke suite reported success when it tested nothing.** `describe.runIf`
+  meant an unreachable server produced 12 skipped tests and exit code 0 — and
+  no workflow invoked it in the first place. It now fails loudly by default,
+  with `SMOKE_ALLOW_SKIP=1` as an explicit local opt-out.
+
+### Added
+
+- **Handler tests for the entire public v1 API**, which previously had none —
+  only its pure projections were covered. The auth gate, rate-limit group
+  selection, parameter validation, backfill-and-retry, ETag/304 and cache tiers
+  across `/status`, `/stats`, `/map` and `/season` are now pinned, along with
+  `authGuards` (`requireAdmin` was mocked by all three of its consumers and
+  tested by none) and the previously untested `cursor` codec.
+- **A composed ingest test** (`ingestInvariants.test.mjs`) that mocks only the
+  fetch layer and the database, leaving the season resolver, both cross-season
+  guards and the bucket arithmetic real — so the invariants are verified as a
+  chain rather than as five sealed units.
+- **Schema-scoped HD1 wire fixtures** (`@test-utils/hd1.mjs`). Deliberately not
+  unified: the two endpoints' event schemas differ in opposite directions
+  (`region` required in one, forbidden on attack in the other), and a superset
+  factory was measured to let a real schema regression through, because Zod
+  strips unknown keys.
+- **A test pinning `role: { input: false }`** in `src/auth.js` — the single line
+  preventing a client from submitting `role: 'admin'` at sign-up — plus the
+  `BETTER_AUTH_SECRET`-absent branch and the trusted-provider list, so adding an
+  unverified provider trips a test rather than shipping silently.
+
+### Changed
+
+- **CI boots the app on every PR, instead of only proving it compiles.** `ci.yml`
+  gained a Postgres service, migrate + offline seed, and a standalone boot of the
+  build it already produced — then runs the smoke suite against it. Roughly +2
+  minutes, because it reuses that build rather than rebuilding container images.
+  `main-pr-docker-smoke.yml` stays as a separate release gate answering a
+  different question: whether the _shipping artifact_ works. One caveat found
+  while verifying: the cron worker polls the HD1 API immediately on boot and
+  writes live rows, which would drift the seeded database mid-run, so CI pins the
+  HD1 host to `0.0.0.0` — the gate asserts nothing about upstream reachability.
+- **The smoke suite covers the public v1 API** (12 → 22 tests), asserting the
+  differentiated cache tiers, per-group rate-limit headers, and the ETag/304
+  round-trip — regressions that are invisible to unit tests because a wrong
+  `Cache-Control` breaks nothing, it just serves stale war data. Gated on a
+  deterministic key seeded from its sha-256 digest, present only when `SEED_TEST_API_KEY_HASH` is set;
+  these assertions skip cleanly without it.
+- **The suite is order-independent.** It passed in file order but failed under
+  `--sequence.shuffle` — and `shuffle` reorders tests _within_ a file, which is
+  where all the rot was. Three leaks: the global `beforeEach` used
+  `vi.clearAllMocks()`, which wipes call history but leaves implementations set
+  by `mockResolvedValue` in place, so the documented "logged-out by default"
+  session mock only held until the first test logged a user in (both
+  `returns auth error when no session` tests passed purely on file order); a
+  `document.hidden` override shadowed the prototype getter and was never removed,
+  leaving every later test in that file believing the tab was hidden; and a
+  `next/dynamic` chart was asserted synchronously, passing only when an earlier
+  test had already warmed React's lazy cache. Now green across seeds 42, 7, 11,
+  777, 2024 and 31337, and under unseeded shuffle.
+- **The unit test tree mirrors the source tree again**, so "does X have a test?"
+  is answerable by path. It had drifted into three homes for `src/app/api/`, two
+  for `src/db/queries/`, two for `src/shared/utils/format/`, a stale `unit/utils/`
+  prefix, two misnamed worker tests, and four tests filed under the wrong feature
+  entirely. 57 renames put every test next to the module it covers, and
+  `unit/_meta/mirrorTree.test.mjs` now enforces it — a filesystem rule needing no
+  import parsing and **no allowlist**, with three name-based escape hatches
+  (`_meta/`, `.contract.`, `.integration.`) documented in CLAUDE.md. The drift was
+  not cosmetic: `shared/utils/utils.test.mjs` existed because someone checked the
+  obvious path, found nothing, and wrote a second formatNumber suite — its unique
+  BigInt/NaN/Infinity/0 cases are folded into the real one rather than dropped.
+
+- **Coverage stops flattering itself.** The exclude list waived ~4,000 LOC on the
+  grounds that it was "tested via e2e/smoke" — a suite that never ran in CI and
+  that, having no coverage instrumentation, could not have produced coverage
+  data in any case. Four entries named files deleted long ago, and two excluded
+  files were already tested at 100%, so their earned coverage was being
+  discarded. The list is now generated code and tests only.
+- **The main-PR smoke job runs the smoke suite** instead of a single
+  `curl | grep` health check, reusing the compose stack it already builds.
+- **Route modules import cache helpers from `config/policy.mjs`** (env-free)
+  rather than `config/server.mjs`, which validates environment at import time.
+  Behaviourally identical — `server.mjs` was a bare re-export — and it removes a
+  class of import-time friction. One convention across all five routes.
+- **One db-mocking convention.** Six local `vi.mock('@/db/db')` blocks that
+  shadowed the global mock with strict subsets are gone, `api_rate_limit` was
+  added to the global mock, and the dead `createMockModel`/`createMockSession`
+  helpers (a byte-identical copy of a private setup helper, and an unused one)
+  are deleted.
+- Corrected `CLAUDE.md` and `README.md`, which both described Playwright smoke
+  tests that do not exist, and `CLAUDE.md`'s `bucketing.mjs` path and
+  `BUCKET_SIZE` default (900s, not one hour).
+
+## 0.66.2
+
+### Fixed
+
+- **The v1 pagination contract no longer contradicts itself.**
+  `/api/v1/h1/status?mode=latest` accepted `limit`, never applied it, and echoed
+  it back — so `?limit=1` returned `page.limit: 1` alongside three items.
+  `cursor`, `order`, `from` and `to` are likewise parsed then unused in that
+  mode. Corrected in the **documentation, not the response**: both code fixes
+  would be breaking (slicing silently drops factions for `limit < 3`; removing
+  the echo deletes a required field), and `/docs/api` promises field names and
+  semantics never change within v1. `limit`/`cursor`/`order` now state they are
+  paginated-mode concepts, matching how `from`/`to` were already qualified.
+  **Zero response bytes change.**
+
+### Added
+
+- **A v1 contract test** covering what the per-endpoint projection tests
+  structurally cannot: the behavioural invariant `items.length <= page.limit` on
+  the genuinely paginated projections (the offending response validates fine
+  against the shape schema, which is why nothing caught this), and that the
+  published OpenAPI document still describes the fields the projections emit.
+  Verified to have teeth — renaming `updatedAt` to `updated_at` fails the suite.
+
+### Changed
+
+- The map `fronts` object uses per-front `.optional()` instead of `.partial()`.
+  `.partial()` made all four optional at once, so no contract test could
+  distinguish "narrowed by `?enemy=`" from "dropped by a regression".
+
+### Notes
+
+- Left for a future v2: `?mode=latest&cursor=garbage` returns `200` while the
+  same token returns `400` under `mode=history`. Correcting it would break
+  requests that succeed today.
+
+## 0.66.1
+
+### Fixed
+
+- **A partially imported season is no longer served as if complete.**
+  `updateSeason` creates the `h1_season` row unstamped and only sets
+  `last_updated` once every write has landed, but only the "current season" read
+  gated on that stamp — explicit-season reads used a bare `where: { season }`. So
+  when an import died partway through, the triggering request got one 500 and
+  every request afterwards received a silently events-incomplete archive with no
+  signal. `/api/v1/h1/status?mode=history` also carries a 1h/24h cache policy, so
+  a partial result was cacheable downstream. All four readers
+  (`getCampaign`, `reconstructSnapshots`, `getStatusHistory`, `getStats`) now
+  gate both branches; an unstamped season reads as a miss so `getCampaignOrSeed`
+  re-seeds and surfaces the real error. Healthy seasons are unaffected —
+  `upsertSeason` only writes `last_updated` when `confirm` is true, so
+  re-imports never clear an existing stamp.
+- **Non-fatal ingest warnings now reach GlitchTip.** A throw on the update path
+  reaches four channels (GlitchTip, the `worker_heartbeat` error the admin
+  dashboard renders, a 500 that reddens the uptime monitor, `console.error`); a
+  warning reached only `console.warn`, and the response body carrying warnings is
+  `postMessage`'d into the void by the cron worker. Every warning the ingest
+  layer already emitted was therefore invisible, so a degrading import stayed
+  silent until it became a failing one.
+
+### Notes
+
+- Deliberately **not** the inverse fix: softening `season.mjs`'s event-loop
+  throws into warnings would have removed three alerting channels rather than
+  adding any. The throw is correct; the reads were the problem.
+
+## 0.66.0
+
+### Fixed
+
+- **Every season's archive narrative was missing a faction-arrival beat.** HD1's
+  `introduction_order` is a **0-based** reveal rank indexed by enemy id (`0` =
+  the faction the war started against, `1`/`2` = mid-war arrivals, `255` = never
+  introduced). `buildWarNarrative` was written under a 1-based assumption, so its
+  two guards compounded — `<= 0` correctly dropped rank 0, then
+  `firstIntroducedEnemy` dropped rank 1 as well, silently removing a faction that
+  genuinely arrived mid-war. Measured across all 160 seasons: 160/160 narratives
+  gain exactly one beat, none lose any (Cyborgs 59, Bugs 58, Illuminate 43).
+  This **completes** the fix landed for `buildIntroMarkers` in v0.65.4 — that
+  release corrected one reader of the encoding; this is the other.
+- **Arrival beats are now clamped to the end of the chronicle.** They were
+  anchored at the raw `first_seen` while the highlight beats have been clamped
+  since v0.65.2, so a faction appearing after the last resolved event sorted
+  _after_ the closing outcome beat and rendered as the final line of the page.
+  Season 124 already showed this; the current war (160) would have. Both are
+  corrected and the 160-season diff shows no other beat reordered.
+
+### Changed
+
+- **`introduction_order` is now documented and validated.** The encoding lived
+  nowhere authoritative, which is how it came to be misread twice in three days.
+  `prisma/schema.prisma` documents it on the column; `/docs/database` no longer
+  describes it as "planet introduction positions"; and both Zod validators are
+  tightened from a permissive `z.array(z.number())` to
+  `z.array(z.number().int().min(0).max(255)).length(3)`, matching the
+  `.length(3)` convention already used for `campaign_status` and `statistics`.
+  Verified against all 156 seed payloads — 156/156 validate, and the only shapes
+  present are the six permutations of `{0,1,2}`.
+
+### Notes
+
+- Five test fixtures encoded the wrong convention (`[1,0,2]`, `[1,2,3]`,
+  `[1,0,0]`) — none is a valid permutation of `{0,1,2}` and no such row exists in
+  the database, which is why the suite stayed green through the bug. Corrected,
+  plus two new tests covering the late-arrival clamp.
+
+## 0.65.8
+
+### Fixed
+
+- **Event reads are now explicitly ordered.** Five `h1_event` queries had no
+  `ORDER BY`, so Postgres made no ordering promise while ~10 consumers read the
+  resulting arrays positionally. Visible consequences: the OG image's status
+  line could flip between renders when two fronts were live, and the public
+  `/api/v1/h1/map` shipped `activeEvents[]` in undefined order despite
+  `/docs/api` promising a stable v1 contract. `getCampaign`, `rebroadcast` (×2),
+  `getCrossSeasonStats` and `pushNotifier` now order by
+  `start_time asc, event_id asc`.
+
+### Changed
+
+- **`findAllCascades` sorts on a total order.** `end_time` alone is partial; on
+  a tie, cascade membership depended on the caller's array order, so `/stats`
+  and `/archives` could compute different cascade sets and silently break the
+  deep link between them. Adds an `event_id` tiebreak — safe because the list is
+  pre-filtered to `defend` and `event_id` is unique per type. Hardening only:
+  real data has 0 ties across 3,224 failed defends, and the tiebreak changes 0
+  cascades across all 160 seasons.
+- **`getWarOutcome.mjs` moved to `src/shared/utils/game/`.**
+  `db/queries/getCrossSeasonStats.mjs` imported it from `features/` — the only
+  `db/ → features/` import in the repo. `getCascadeLeaderboard` already
+  establishes `db/ → shared/` as the sanctioned direction. Test file relocated
+  to match, and the already-stale doc path corrected.
+- `update/season.mjs` passes the snapshot item straight to `upsertStatus`
+  (which plucks the three fields explicitly and never spreads), matching how
+  `update/status.mjs` already calls it.
+
+### Notes
+
+- Removed a dead `getWarOutcome` mock from `ArchivesClient.test.jsx`:
+  `ArchivesClient` no longer imports it and `ArchiveStats` is stubbed, so the
+  `mockReturnValue` calls falsely implied the war outcome affected that render.
+
+## 0.65.7
+
+### Security
+
+- **`npm audit` now reports 0 vulnerabilities.** Migrating to ESLint 10
+  (below) lets `brace-expansion` move to the patched `5.0.8`, clearing the
+  last 6 dev-only advisory hits from the ESLint tool chain.
+
+### Changed
+
+- **Replaced `eslint-plugin-react` with `@eslint-react/eslint-plugin`** and
+  bumped ESLint to 10. `eslint-plugin-react` had no ESLint 10 support;
+  `@eslint-react` is actively maintained and framework-agnostic. `react-hooks`,
+  `react-compiler`, and `@next/eslint-plugin-next` are unchanged.
+- Fixed 2 dead-assignment bugs surfaced by ESLint 10's `no-useless-assignment`
+  (unused `check` initializer in the rebroadcast route, trailing `seq++` in
+  `buildWarNarrative`).
+
+### Notes
+
+- `@eslint-react` leaves 31 non-blocking warnings (new lint opinions —
+  `no-context-provider`, `no-array-index-key`, React-19 context idioms, etc.).
+  These don't fail lint and are left for incremental triage. The four
+  `web-api-no-leaked-interval` and two `exhaustive-deps` warnings were
+  investigated and disabled as false positives / duplicates of
+  `react-hooks/exhaustive-deps`.
+
+## 0.65.6
+
+### Changed
+
+- Pinned `@types/node` back to `^24` to match the active-LTS runtime
+  (mise pins `node@24`); the previous `26` bump was ahead of the runtime.
+
+## 0.65.5
+
+### Security
+
+- **Resolved all shipped-code vulnerabilities** flagged by Dependabot/`npm audit`:
+  Next.js 16.2.9→16.2.11 (middleware bypass, Server Action SSRF/DoS, cache
+  confusion, image-optimization DoS, internal endpoint disclosure), plus
+  overrides forcing patched `postcss` (path traversal), `sharp` (libvips CVEs),
+  `valibot`, `find-my-way` (HTTP/2 DoS), and `brace-expansion` (DoS).
+- `npm audit` still reports 6 highs in the **dev-only ESLint tool chain**
+  (`brace-expansion`/`minimatch` under `eslint`). These are not shipped to
+  production, and the installed `brace-expansion@2.1.2` already contains the
+  DoS fix — npm's over-broad `<=5.0.7` advisory range flags it anyway. The
+  clean resolution is ESLint 10, held back below.
+
+### Changed
+
+- **Dependency updates** to latest in-range: `@prisma/*` 7.8→7.9,
+  `@sentry/nextjs` 10.60→10.68, `react`/`react-dom` 19.2.7→19.2.8,
+  `better-auth` 1.6.20→1.6.25, `tailwindcss` 4.3.1→4.3.3, `recharts` 3.9→3.10,
+  `mermaid`, `vitest`, `prettier`, `serwist`, and others.
+- **Major bumps:** `@types/node` 24→26, `@testing-library/jest-dom` 6→7,
+  `@asteasolutions/zod-to-openapi` 8→9.
+- `jsconfig.json` `lib` es2022→es2024 — the codebase uses `Map.groupBy`
+  (Node 24 supports it); the ambient types shifted in the update, so the lib
+  is now declared directly.
+
+### Held back
+
+- **TypeScript 6→7**: surfaced 214 new type errors across 35 files (loose
+  `object` JSDoc property access under stricter TS 7 inference). Incompatible
+  with the codebase's intentional `noImplicitAny: false` style; pinned at ^6.
+- **ESLint 9→10**: `eslint-plugin-react@7.37.5` (latest) peers only up to
+  eslint `^9.7`; pinned at ^9 until the plugin supports 10.
+
+## 0.65.4
+
+### Fixed
+
+- **Missing "Day 1" marker in the event log.** HD1's `introduction_order` is
+  0-based — `0` is the faction the war _started_ against, `255` means "not yet
+  introduced" — but `buildIntroMarkers` filtered `<= 0`, dropping exactly the
+  war-start faction. The archives showed "Day 2 … enters the war" / "Day 3 …"
+  with no Day 1. The guard now includes order `0` and excludes the `255`
+  sentinel (absent factions stay filtered by their null `first_seen`).
+
+### Changed
+
+- The war-start faction now reads **"{faction} declare war"** (Day 1) to
+  distinguish it from the later arrivals' "{faction} enter the war".
+- The homepage event log now shows the faction intro markers too — previously
+  they were archives-only. `buildIntroMarkers` moved to `features/timeline`
+  since both callers share it.
+
 ## 0.65.3
 
 ### Fixed
 
 - **React hydration mismatch (#418) for non-en-US visitors**. `formatNumber`
   grouped thousands with a bare `toLocaleString()`, so values in the 1K–999K
-  range rendered per the *runtime* locale: the server emitted `"3,522"` while a
+  range rendered per the _runtime_ locale: the server emitted `"3,522"` while a
   ru-RU client re-rendered `"3 522"`. The differing text tripped React error
   #418 on every affected page load (14 events on 0.65.2 in a single day, all
   from non-en-US locales), forcing React to discard and re-render the
@@ -23,12 +378,12 @@
       recognized as a chunk error. Detection now tests name and message
       together, and the Turbopack message wording is matched explicitly.
     - The only trigger was an `unhandledrejection` listener, but Next/React
-      catch these internally and report them as *handled* exceptions — every
+      catch these internally and report them as _handled_ exceptions — every
       observed production ChunkLoadError arrived that way. A Sentry
       `beforeSend` hook now covers every reporting path; the listener is kept
       as the fallback for when no DSN is configured.
-  Detection is extracted to `src/shared/utils/isChunkError.mjs` with unit
-  coverage pinned to the verbatim production error shape.
+      Detection is extracted to `src/shared/utils/isChunkError.mjs` with unit
+      coverage pinned to the verbatim production error shape.
 
 ## 0.65.2
 
@@ -98,7 +453,7 @@
   faction toggle: `global` shows the total-players line and dots for every
   event; a faction shows that faction's line and only its events. Event dots sit
   on the line at each event's start day with a `type · region · faction ·
-  outcome` tooltip. `getCampaign` gains an additive `playerTimeseries` field
+outcome` tooltip. `getCampaign` gains an additive `playerTimeseries` field
   (per-bucket player counts from `h1_statistic`); the section hides for
   historical seasons that predate telemetry. Chart math lives in the
   unit-tested pure helper `buildPlayerLine`.
@@ -184,7 +539,7 @@
 ### Features
 
 - **OpenAPI coverage for the `/v1` endpoints** (#438). `GET /api/v1/h1/{status,
-  stats,season,map}` are now registered in the OpenAPI spec with query params,
+stats,season,map}` are now registered in the OpenAPI spec with query params,
   typed response schemas, the `{time,code,message,data}` envelope, and the
   401/404/429 + 304 responses — so `/docs/api` documents the real public API.
 - **Rebroadcast action reconciliation** (#438). The spec now declares all five
@@ -295,7 +650,7 @@
 - **`GET /api/v1/h1/stats`** — the second public `/v1` endpoint (#30). Key-gated,
   cursor-paginated statistics timeseries over `h1_statistic`, projected to
   `{ bucket, enemy, enemyId, season, missionsWon, missionsLost, kills, deaths,
-  shots, hits, players }` (BigInt counts → JSON-safe numbers; `bucketSize` sourced
+shots, hits, players }` (BigInt counts → JSON-safe numbers; `bucketSize` sourced
   from the typed config — its first runtime consumer). `season=current|number`;
   `season=all` is deferred (returns a clear 400 until cross-season pagination is
   needed).
@@ -479,19 +834,19 @@
 
 - **15 bugs fixed across the `db/queries/` split surface (PRs #411 + #412) from a max-effort code review — one production-broken feature, three concurrency races, one mis-mapped HTTP status, four UI error-handling gaps, plus six smaller correctness fixes.** Patch release. No new behavior; only edge cases get better. Files touched: `src/features/account/actions.mjs`, `src/features/admin/actions.mjs`, `src/features/admin/AdminApiKeys.jsx`, `src/features/account/AccountActions.jsx`, `src/features/account/ApiDashboard.jsx`, `src/shared/utils/api/{authGuards,validateApiKey}.mjs`, `src/app/api/h1/rebroadcast/route.js`, and `src/app/docs/data-flow/page.mdx`, plus matching test updates.
 
-  - **Admin Revoke API key button was completely broken in production.** `<form action={adminRevokeApiKey}>` in `AdminApiKeys.jsx:58` is a bare form action (no `useActionState` wrapper), so Next.js invokes the action with one argument (the FormData). The action's signature was `(_, formData)` — FormData landed in `_` and the named `formData` parameter was `undefined`, throwing `TypeError: Cannot read properties of undefined (reading 'get')` on every click. Fixed by dropping the unused first arg, matching the actual call convention. Tests updated accordingly.
+    - **Admin Revoke API key button was completely broken in production.** `<form action={adminRevokeApiKey}>` in `AdminApiKeys.jsx:58` is a bare form action (no `useActionState` wrapper), so Next.js invokes the action with one argument (the FormData). The action's signature was `(_, formData)` — FormData landed in `_` and the named `formData` parameter was `undefined`, throwing `TypeError: Cannot read properties of undefined (reading 'get')` on every click. Fixed by dropping the unused first arg, matching the actual call convention. Tests updated accordingly.
 
-  - **Three TOCTOU races wrapped in `db.$transaction` with `Serializable` isolation.** (1) `updateUserRole` read `db.user.count({ where: { role: ADMIN } })` then `db.user.update` without a transaction — two concurrent admin demotions could both pass the last-admin guard with count=2 and both succeed, leaving zero admins and locking the role out of the admin panel. (2) `toggleUserBan` had the identical count-then-update pattern when banning an admin. (3) `generateApiKey` similarly read `db.ApiKey.count` then called `db.ApiKey.create` non-transactionally, so parallel calls could bypass the 5-key cap. All three now use `db.$transaction(async (tx) => { ... }, { isolationLevel: 'Serializable' })` so the read-then-conditional-write is atomic and concurrent transactions either serialize or one retries.
+    - **Three TOCTOU races wrapped in `db.$transaction` with `Serializable` isolation.** (1) `updateUserRole` read `db.user.count({ where: { role: ADMIN } })` then `db.user.update` without a transaction — two concurrent admin demotions could both pass the last-admin guard with count=2 and both succeed, leaving zero admins and locking the role out of the admin panel. (2) `toggleUserBan` had the identical count-then-update pattern when banning an admin. (3) `generateApiKey` similarly read `db.ApiKey.count` then called `db.ApiKey.create` non-transactionally, so parallel calls could bypass the 5-key cap. All three now use `db.$transaction(async (tx) => { ... }, { isolationLevel: 'Serializable' })` so the read-then-conditional-write is atomic and concurrent transactions either serialize or one retries.
 
-  - **`validateApiKey` DB outages no longer surface as 401 Unauthorized.** The function previously collapsed Prisma errors and missing-keys into the same `INVALID` code (`if (dbError || !row) return code: INVALID`), so a database outage on `/api/h1/rebroadcast` made operators see a flood of "bad API key" 401s instead of the actual infrastructure failure. Added `API_KEY_ERROR.DB_ERROR` and split the collapse; the route now returns 503 "database unreachable" on DB errors (matching `/api/healthcheck`'s 503 wording) and keeps 401/403 for missing/disabled keys. Pre-existing regression carried verbatim from the old `db/queries/validateApiKey.mjs`.
+    - **`validateApiKey` DB outages no longer surface as 401 Unauthorized.** The function previously collapsed Prisma errors and missing-keys into the same `INVALID` code (`if (dbError || !row) return code: INVALID`), so a database outage on `/api/h1/rebroadcast` made operators see a flood of "bad API key" 401s instead of the actual infrastructure failure. Added `API_KEY_ERROR.DB_ERROR` and split the collapse; the route now returns 503 "database unreachable" on DB errors (matching `/api/healthcheck`'s 503 wording) and keeps 401/403 for missing/disabled keys. Pre-existing regression carried verbatim from the old `db/queries/validateApiKey.mjs`.
 
-  - **`deleteUserAccount` Zod-validates input, reorders revoke/delete, fires `revalidatePath`.** (1) The function's JSDoc claimed "Requires email confirmation" / "Must contain userId and confirmEmail fields" but no validation existed and the client never sent `confirmEmail`. Added a Zod schema validating `userId` (matching the sibling `deleteApiKey` pattern) and dropped the false `confirmEmail` claim from the docstring — the existing `window.confirm` dialog remains as the user-facing safeguard (adding an email-confirmation input is a UX decision deferred). (2) Reversed `revokeSessions → delete` order to `delete → revoke` so a transient delete failure leaves the user logged in to retry instead of locked out of a still-existing account. (3) Added the missing `revalidatePath('/profile', 'layout')` that every sibling action already calls, so admin views (UserTable) refresh after a user self-deletes.
+    - **`deleteUserAccount` Zod-validates input, reorders revoke/delete, fires `revalidatePath`.** (1) The function's JSDoc claimed "Requires email confirmation" / "Must contain userId and confirmEmail fields" but no validation existed and the client never sent `confirmEmail`. Added a Zod schema validating `userId` (matching the sibling `deleteApiKey` pattern) and dropped the false `confirmEmail` claim from the docstring — the existing `window.confirm` dialog remains as the user-facing safeguard (adding an email-confirmation input is a UX decision deferred). (2) Reversed `revokeSessions → delete` order to `delete → revoke` so a transient delete failure leaves the user logged in to retry instead of locked out of a still-existing account. (3) Added the missing `revalidatePath('/profile', 'layout')` that every sibling action already calls, so admin views (UserTable) refresh after a user self-deletes.
 
-  - **Four UI consumers now handle the `result.errors` envelope explicitly.** `ApiDashboard.jsx` rendered "No API keys yet" silently when `getApiKeysByUserId` returned `{ errors: { auth: ... } }` from a mid-render session lapse — now shows a danger-styled "Could not load API keys" message. `AccountActions.jsx::handleExport` produced no toast and no console output when `exportUserData` returned an errors envelope — now fires a Sonner `toast.error`. `AccountActions.jsx::handleDelete` redirected to `/` on _any_ falsy `result?.errors`, including `undefined` (a future regression dropping `return { data: { deleted: true } }` would silently lie about deletion success) — now checks `result?.data?.deleted` explicitly and toasts on every non-success path. Two new test cases pin both `AccountActions.jsx` branches.
+    - **Four UI consumers now handle the `result.errors` envelope explicitly.** `ApiDashboard.jsx` rendered "No API keys yet" silently when `getApiKeysByUserId` returned `{ errors: { auth: ... } }` from a mid-render session lapse — now shows a danger-styled "Could not load API keys" message. `AccountActions.jsx::handleExport` produced no toast and no console output when `exportUserData` returned an errors envelope — now fires a Sonner `toast.error`. `AccountActions.jsx::handleDelete` redirected to `/` on _any_ falsy `result?.errors`, including `undefined` (a future regression dropping `return { data: { deleted: true } }` would silently lie about deletion success) — now checks `result?.data?.deleted` explicitly and toasts on every non-success path. Two new test cases pin both `AccountActions.jsx` branches.
 
-  - **`authGuards.mjs` `'use server'` directive removed.** The directive made `requireSession` / `requireUser` / `requireAdmin` callable as RPC server actions even though every importer (`features/admin/actions.mjs`, `features/account/actions.mjs`, `features/archives/reseedSeason.mjs`) is itself a `'use server'` module — they are never reached from `'use client'` code. The directive was carried over verbatim from the old `src/db/queries/_authGuards.mjs` (which had it as an R100 byte-identical rename predecessor). Removing it closes the unintended whoami-probe RPC surface and aligns the file with its `src/shared/utils/api/` siblings (`responses.mjs`, `methodNotAllowed.mjs`, `validateApiKey.mjs`), none of which has the directive.
+    - **`authGuards.mjs` `'use server'` directive removed.** The directive made `requireSession` / `requireUser` / `requireAdmin` callable as RPC server actions even though every importer (`features/admin/actions.mjs`, `features/account/actions.mjs`, `features/archives/reseedSeason.mjs`) is itself a `'use server'` module — they are never reached from `'use client'` code. The directive was carried over verbatim from the old `src/db/queries/_authGuards.mjs` (which had it as an R100 byte-identical rename predecessor). Removing it closes the unintended whoami-probe RPC surface and aligns the file with its `src/shared/utils/api/` siblings (`responses.mjs`, `methodNotAllowed.mjs`, `validateApiKey.mjs`), none of which has the directive.
 
-  - **Six smaller correctness fixes.** (1) `generateApiKey` returned the Prisma model instance after mutating it (`newApiKey['key'] = key`); now returns `{ ...newApiKey, key }` as a fresh DTO to keep the RSC serialization boundary clean. (2) `getSystemStats` did `currentSeason ? <SQL> : Promise.resolve(0)` — falsy-zero would skip the active-factions count when season 0 (a valid early-war value referenced by `sendTestNotification`) was current; fixed to `currentSeason !== null ?`. (3-5) Three server actions (`updateUserRole`, `adminGetUserApiKeys`, `deleteApiKey`) used raw `formValues.*` for DB queries and ownership checks instead of the validated `check.data.*`; switched to `check.data.*` everywhere to match the `toggleUserBan` / `generateApiKey` convention and pre-empt fragility if a future `.trim()` or `.transform()` is ever added to any of those schemas. (6) `src/app/docs/data-flow/page.mdx` code samples called `isValidStatus(fetchedData)` and `isValidSeason(fetchedData)` as if the validators were callable functions; both are `z.object({...})` instances — switched the doc to `.safeParse(...)` so a reader copy-pasting the example doesn't immediately hit `TypeError: isValidStatus is not a function`.
+    - **Six smaller correctness fixes.** (1) `generateApiKey` returned the Prisma model instance after mutating it (`newApiKey['key'] = key`); now returns `{ ...newApiKey, key }` as a fresh DTO to keep the RSC serialization boundary clean. (2) `getSystemStats` did `currentSeason ? <SQL> : Promise.resolve(0)` — falsy-zero would skip the active-factions count when season 0 (a valid early-war value referenced by `sendTestNotification`) was current; fixed to `currentSeason !== null ?`. (3-5) Three server actions (`updateUserRole`, `adminGetUserApiKeys`, `deleteApiKey`) used raw `formValues.*` for DB queries and ownership checks instead of the validated `check.data.*`; switched to `check.data.*` everywhere to match the `toggleUserBan` / `generateApiKey` convention and pre-empt fragility if a future `.trim()` or `.transform()` is ever added to any of those schemas. (6) `src/app/docs/data-flow/page.mdx` code samples called `isValidStatus(fetchedData)` and `isValidSeason(fetchedData)` as if the validators were callable functions; both are `z.object({...})` instances — switched the doc to `.safeParse(...)` so a reader copy-pasting the example doesn't immediately hit `TypeError: isValidStatus is not a function`.
 
 ## 0.51.6
 

@@ -167,10 +167,12 @@ describe('MinistryProvider — hijack scheduler', () => {
 
     test('document.hidden gate: no callback fires when tab is hidden', () => {
         vi.spyOn(Math, 'random').mockReturnValue(0);
-        const originalHidden = Object.getOwnPropertyDescriptor(
-            Document.prototype,
-            'hidden',
-        );
+        // jsdom defines `hidden` as a getter on Document.prototype, so this
+        // defines an own property on `document` that *shadows* it. The shadow
+        // has to be deleted again — restoring the prototype descriptor would
+        // put back something that was never changed and leave the shadow in
+        // place, making every later test in this file see a hidden tab (both
+        // schedulers bail on document.hidden, so nothing would ever fire).
         Object.defineProperty(document, 'hidden', {
             configurable: true,
             get: () => true,
@@ -196,9 +198,7 @@ describe('MinistryProvider — hijack scheduler', () => {
             expect(onHijack).not.toHaveBeenCalled();
             expect(onFlicker).not.toHaveBeenCalled();
         } finally {
-            if (originalHidden)
-                Object.defineProperty(Document.prototype, 'hidden', originalHidden);
-            else delete document.hidden;
+            delete document.hidden;
         }
     });
 });

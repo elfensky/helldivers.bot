@@ -1,45 +1,10 @@
 import { isValidSeason } from '@/validators/isValidSeason.mjs';
-
-const makeSnapshot = (overrides = {}) => ({
-    season: 1,
-    time: 1700000000,
-    data: JSON.stringify([
-        { points: 100, points_taken: 50, status: 'active' },
-        { points: 200, points_taken: 75, status: 'active' },
-        { points: 300, points_taken: 100, status: 'hidden' },
-    ]),
-    ...overrides,
-});
-
-const makeDefendEvent = (overrides = {}) => ({
-    season: 1,
-    event_id: 1,
-    start_time: 1700000000,
-    end_time: 1700003600,
-    enemy: 2,
-    points_max: 1000,
-    points: 500,
-    status: 'success',
-    players_at_start: 100,
-    region: 5,
-    ...overrides,
-});
-
-const makeAttackEvent = (overrides = {}) => {
-    const { region: _region, ...base } = makeDefendEvent(overrides);
-    return { ...base, ...overrides };
-};
-
-const makeValidSeason = (overrides = {}) => ({
-    time: 1700000000,
-    error_code: 0,
-    introduction_order: [1, 2, 3],
-    points_max: [1000, 2000, 3000],
-    snapshots: [makeSnapshot()],
-    defend_events: [makeDefendEvent()],
-    attack_events: [makeAttackEvent({ region: undefined })],
-    ...overrides,
-});
+import {
+    makeSnapshot,
+    makeSeasonDefendEvent as makeDefendEvent,
+    makeSeasonAttackEvent as makeAttackEvent,
+    makeValidSeason,
+} from '@test-utils/hd1.mjs';
 
 describe('isValidSeason', () => {
     test('accepts valid season data', () => {

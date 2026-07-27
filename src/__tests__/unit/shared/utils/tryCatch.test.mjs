@@ -1,10 +1,6 @@
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
 
-vi.mock('@/shared/utils/observability.mjs', () => ({
-    reportError: vi.fn(),
-}));
-
 describe('tryCatch', () => {
     beforeEach(() => {
         vi.clearAllMocks();

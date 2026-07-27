@@ -6,6 +6,7 @@ import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 import Galaxy from '@/features/galaxy/Galaxy';
 import DashboardClient from '@/features/dashboard/DashboardClient';
 import EventLog from '@/features/timeline/EventLog';
+import { buildIntroMarkers } from '@/features/timeline/buildIntroMarkers.mjs';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 import { useScrollEvent } from '@/shared/hooks/useScrollEvent.mjs';
 import { eventKey } from '@/shared/utils/game/eventKey.mjs';
@@ -155,6 +156,7 @@ export default function HomeClient({
                             )
                         }
                         railRef={railRef}
+                        introMarkers={buildIntroMarkers(data)}
                         // Documented-optional in EventLog but has no default in
                         // its destructuring, so its inferred type marks it
                         // required; pass undefined explicitly (no behavior change).

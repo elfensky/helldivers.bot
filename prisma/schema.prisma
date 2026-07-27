@@ -117,6 +117,11 @@ model h1_season {
     id                 String         @id @default(uuid(7))
     last_updated       DateTime?
     season             Int            @unique
+    /// HD1's faction reveal order, indexed by enemy id (0=Bugs, 1=Cyborgs, 2=Illuminate).
+    /// The VALUE is a 0-based rank: `0` is the faction the war started against, `1` and
+    /// `2` are mid-war arrivals, `255` means never introduced this season. Readers must
+    /// treat `0` as "present from day one" — not as "absent". Misreading it as 1-based
+    /// caused a missing arrival beat in every season's archive narrative (v0.66.0).
     introduction_order Int[]          @default([])
     points_max         Int[]          @default([])
     season_duration    Int            @default(0)

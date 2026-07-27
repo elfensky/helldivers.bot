@@ -10,21 +10,8 @@ vi.mock('next/headers', () => ({
 vi.mock('next/cache', () => ({
     revalidatePath: vi.fn(),
 }));
-vi.mock('@/shared/utils/tryCatch', () => ({
-    tryCatch: vi.fn(async (p) => {
-        try {
-            const data = await p;
-            return { data, error: null };
-        } catch (e) {
-            return { data: null, error: e };
-        }
-    }),
-}));
 vi.mock('@/update/season', () => ({
     updateSeason: vi.fn(),
-}));
-vi.mock('@/db/db', () => ({
-    default: { h1_season: { findFirst: vi.fn() } },
 }));
 
 import { auth } from '@/auth';

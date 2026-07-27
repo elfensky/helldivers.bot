@@ -1,7 +1,7 @@
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 import factions from '@/shared/enums/factions.mjs';
 import { findAllCascades } from '@/shared/utils/game/seasonAnalytics.mjs';
-import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
+import { getWarOutcome } from '@/shared/utils/game/getWarOutcome.mjs';
 import { getEventRegionLabel } from '@/shared/utils/game/getEventRegionLabel.mjs';
 import {
     PHRASES,
@@ -273,26 +273,37 @@ export function buildWarNarrative(data, telemetry = null) {
         text: pickVariant(PHRASES.opening, season, PHRASE_KEY.opening)(),
     });
 
-    // Faction arrivals (skip the first-introduced — already on the field).
+    // lastTime caps the chronicle. Computed up front so every non-outcome beat can be
+    // clamped to it: arrivals and telemetry/snapshot buckets can both fall after the
+    // final event, and an unclamped beat sorts *after* the closing outcome beat.
+    // Hoisting only the computation — no beats.push moves, so every `order` value and
+    // therefore every tie-break is unchanged.
+    const sorted = [...events].sort((a, b) => (a.start_time ?? 0) - (b.start_time ?? 0));
+    const lastTime = sorted.reduce(
+        (m, e) => Math.max(m, e.end_time ?? e.start_time ?? warStart),
+        warStart,
+    );
+    const lastDay = dayOf(lastTime, warStart);
+
+    // Faction arrivals. `introduction_order` is HD1's 0-based reveal slot: `0` is the
+    // faction the war started against (the opening beat covers it), `255` means never
+    // introduced. Mirrors buildIntroMarkers, fixed in 31ac255 — this reader was written
+    // under a 1-based assumption, so its two guards compounded and dropped the slot-1
+    // faction's arrival from every season's narrative.
     const introOrder = data?.introduction_order?.order ?? [];
     const firstSeenByEnemy = new Map(
         (data?.status ?? [])
             .filter((s) => s?.first_seen != null)
             .map((s) => [s.enemy, s.first_seen]),
     );
-    const firstIntroducedEnemy = introOrder.reduce(
-        (best, ord, enemy) =>
-            ord > 0 && (best === -1 || ord < introOrder[best]) ? enemy : best,
-        -1,
-    );
     for (let enemy = 0; enemy < introOrder.length; enemy++) {
-        if (introOrder[enemy] <= 0) continue;
-        if (enemy === firstIntroducedEnemy) continue;
+        const slot = introOrder[enemy];
+        if (slot == null || slot === 0 || slot >= 255) continue;
         const seen = firstSeenByEnemy.get(enemy);
         if (seen == null) continue;
         beats.push({
-            time: seen,
-            day: dayOf(seen, warStart),
+            time: Math.min(seen, lastTime),
+            day: Math.min(dayOf(seen, warStart), lastDay),
             order: seq++,
             text: pickVariant(PHRASES.arrival, season, enemy + 1)(factionName(enemy)),
         });
@@ -325,7 +336,6 @@ export function buildWarNarrative(data, telemetry = null) {
     }
 
     // Per-event field reports (excluding cascade-folded events).
-    const sorted = [...events].sort((a, b) => (a.start_time ?? 0) - (b.start_time ?? 0));
     for (const e of sorted) {
         if (cascadeEvents.has(e)) continue;
         if (e.start_time == null) continue;
@@ -338,15 +348,6 @@ export function buildWarNarrative(data, telemetry = null) {
             text,
         });
     }
-
-    // lastTime caps the chronicle — computed before the highlight beats so we can
-    // clamp them to it (telemetry/snapshot buckets can extend past the final
-    // event; without clamping a late collapse could sort after the outcome).
-    const lastTime = sorted.reduce(
-        (m, e) => Math.max(m, e.end_time ?? e.start_time ?? warStart),
-        warStart,
-    );
-    const lastDay = dayOf(lastTime, warStart);
 
     // NEW highlight beats (features 2-4) — each carries a `kind`; clamp time to
     // lastTime so none sorts after the closing outcome beat.
@@ -380,7 +381,7 @@ export function buildWarNarrative(data, telemetry = null) {
         beats.push({
             time: lastTime,
             day: lastDay,
-            order: seq++,
+            order: seq,
             text: describeOutcome(outcome, season),
         });
     }

@@ -11,27 +11,27 @@ export default defineConfig({
             provider: 'v8',
             reporter: ['text', 'html'],
             include: ['src/**/*.{js,jsx,mjs}'],
+            // Only two things are excluded: code we did not write, and the
+            // tests themselves. Everything else under src/ counts, tested or
+            // not — an untested file should read as 0%, not disappear.
+            //
+            // The old exclude list had three problems. (1) Four entries named
+            // files that no longer exist (src/enums/icons.mjs, enums/worlds.mjs,
+            // db/queries/initializeSeasons.mjs, app/dashboard/page.jsx) — dead
+            // config. (2) Three entries hid code that unit tests DO cover:
+            // measured on re-inclusion, src/db/db.js 10/10 statements,
+            // src/app/docs/** 49/114, src/auth.js 1/1. (3) The rest were
+            // excluded as "server-rendered, tested via e2e/smoke", which is
+            // unsatisfiable — vitest.smoke.config.mjs has no coverage block and
+            // drives a separate server process over HTTP, so no smoke test can
+            // produce a coverage record. Those files really are at 0 covered
+            // statements; excluding them shrank the divisor and inflated the
+            // ratio. Do NOT re-add any of it.
             exclude: [
+                // Prisma's generated client — machine-written, not ours.
                 'src/generated/**',
                 'src/**/*.{test,spec}.{js,jsx,mjs}',
                 'src/__tests__/**',
-                'src/enums/icons.mjs',
-                'src/enums/worlds.mjs',
-                'src/db/queries/initializeSeasons.mjs',
-                'src/db/db.js',
-                'src/shared/components/MermaidDiagram/**',
-                // Next.js pages/layouts — server-rendered, tested via e2e/smoke
-                'src/app/layout.jsx',
-                'src/app/page.jsx',
-                'src/app/opengraph-image.jsx',
-                'src/app/global-error.jsx',
-                'src/app/not-found.jsx',
-                'src/app/archives/page.jsx',
-                'src/app/dashboard/page.jsx',
-                'src/app/docs/**',
-                'src/instrumentation.js',
-                'src/instrumentation-client.js',
-                'src/auth.js',
             ],
         },
     },

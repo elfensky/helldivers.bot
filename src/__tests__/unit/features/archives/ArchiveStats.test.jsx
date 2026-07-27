@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import ArchiveStats from '@/features/archives/ArchiveStats';
 
-vi.mock('@/features/archives/getWarOutcome.mjs', () => ({
+vi.mock('@/shared/utils/game/getWarOutcome.mjs', () => ({
     getWarOutcome: vi.fn(() => ({ outcome: 'victory', reason: 'won', faction: 2 })),
 }));
 vi.mock('@/features/ministry/Hijackable', () => ({

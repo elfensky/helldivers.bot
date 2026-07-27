@@ -8,7 +8,7 @@ import { requireApiKey } from '@/shared/utils/api/requireApiKey.mjs';
 import { getClientIp } from '@/shared/utils/api/clientIp.mjs';
 import { enforceRateLimit } from '@/shared/utils/api/rateLimit.mjs';
 import { backfillAndRetry } from '@/shared/utils/api/backfillSeason.mjs';
-import { getCacheControl } from '@/config/server.mjs';
+import { getCacheControl } from '@/config/policy.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMap, computeMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { umamiTrackEvent } from '@/shared/utils/umami.mjs';

@@ -50,6 +50,7 @@ export async function reconstructCampaignStatus() {
         `,
         db.h1_event.findMany({
             where: { season: targetSeason, status: EVENT_STATUS.ACTIVE },
+            orderBy: [{ start_time: 'asc' }, { event_id: 'asc' }],
         }),
     ]);
 
@@ -115,8 +116,11 @@ export async function reconstructCampaignStatus() {
 export async function reconstructSnapshots(season) {
     if (!season) return null;
 
-    const seasonRow = await db.h1_season.findUnique({
-        where: { season },
+    // findFirst rather than findUnique so the partial-import guard can apply: an
+    // unstamped row means updateSeason died partway through, and rebroadcasting it
+    // would emit a wire payload missing events (see getCampaign._findSeason).
+    const seasonRow = await db.h1_season.findFirst({
+        where: { season, last_updated: { not: null } },
         select: {
             season: true,
             introduction_order: true,
@@ -132,7 +136,10 @@ export async function reconstructSnapshots(season) {
             where: { season },
             orderBy: [{ bucket: 'asc' }, { enemy: 'asc' }],
         }),
-        db.h1_event.findMany({ where: { season } }),
+        db.h1_event.findMany({
+            where: { season },
+            orderBy: [{ start_time: 'asc' }, { event_id: 'asc' }],
+        }),
     ]);
 
     const snapshots = groupStatusByBucket(allStatus).map(({ time, factions }) => ({

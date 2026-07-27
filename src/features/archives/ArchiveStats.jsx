@@ -2,7 +2,7 @@ import { StatCard } from '@/features/stats/StatGrid';
 import '@/features/stats/StatGrid.css';
 import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 import { formatRatio } from '@/shared/utils/format/formatRatio.mjs';
-import { getWarOutcome } from '@/features/archives/getWarOutcome.mjs';
+import { getWarOutcome } from '@/shared/utils/game/getWarOutcome.mjs';
 import Hijackable from '@/features/ministry/Hijackable';
 import factions, { FACTION_INDEX } from '@/shared/enums/factions.mjs';
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';

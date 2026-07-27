@@ -17,7 +17,7 @@ import { cleanupRateLimitWindows } from '@/shared/utils/api/rateLimit.mjs';
 // Custom header set on the very first poll of a worker session so the
 // handler can run a one-time startup pass (e.g. backfill missing seasons).
 // Mirror of WORKER_STARTUP_HEADER in public/workers/cronLogic.js — the test
-// in src/__tests__/unit/workers/cron.test.mjs asserts the two stay aligned.
+// in src/__tests__/unit/workers/cronLogic.test.mjs asserts the two stay aligned.
 // HTTP header names are case-insensitive; we read it lowercase here to
 // match what `request.headers.get(...)` normalises to.
 export const WORKER_STARTUP_HEADER = 'x-worker-startup';
@@ -156,15 +156,23 @@ export async function GET(request) {
     }
     const seasonTime = roundedPerformanceTime(start);
 
-    // Log any non-fatal warnings the orchestrators collected (upsertEventProgress
-    // and per-snapshot status upserts). They're also returned in the response
-    // body so clients can surface them, but logging here gives operators
-    // visibility without parsing the JSON envelope.
+    // Non-fatal warnings the orchestrators collected (upsertEventProgress and
+    // per-snapshot status upserts). A throw on this path reaches four channels —
+    // GlitchTip, the worker_heartbeat error the admin dashboard renders, a 500 that
+    // reddens the uptime monitor, and console.error — but a warning used to reach
+    // only console.warn, and the response body that carries them is postMessage'd
+    // into the void by the cron worker. Report them so a degrading import is visible
+    // before it becomes a failing one.
     for (const warning of [
         ...(statusData?.warnings ?? []),
         ...(seasonData?.warnings ?? []),
     ]) {
         console.warn('[update] warning:', warning.stage, warning.message);
+        reportError(new Error(warning.message), {
+            route: '/api/h1/update',
+            stage: warning.stage,
+            level: 'warning',
+        });
     }
 
     // Deferred via after(): the event-transition check + push notifications

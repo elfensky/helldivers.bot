@@ -5,7 +5,14 @@
  * `config/server.mjs` so they can be imported from anywhere — including the
  * rate limiter, which is pulled into env-less route unit tests — without
  * tripping server.mjs's eager `config = parseServerConfig()` validation.
- * `config/server.mjs` re-exports both helpers for back-compat.
+ *
+ * Convention: route modules import `getCacheControl` / `getRateLimitConfig`
+ * from HERE, not from `config/server.mjs`. Both paths are behaviourally
+ * identical (server.mjs bare-re-exports them), but this one is env-free and so
+ * import-safe in tests. Route modules that need real env still import `config`
+ * from `config/server.mjs`. Boot-time env validation is unaffected either way —
+ * it comes from `initializeEnvironmentVariables()` in `instrumentation.node.js`,
+ * not from importing `config/server.mjs`.
  *
  * @module config/policy
  */

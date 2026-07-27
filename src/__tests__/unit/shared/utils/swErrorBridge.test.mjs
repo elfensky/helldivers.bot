@@ -1,10 +1,6 @@
 import { handleSwErrorMessage } from '@/shared/utils/swErrorBridge.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
 
-vi.mock('@/shared/utils/observability.mjs', () => ({
-    reportError: vi.fn(),
-}));
-
 describe('handleSwErrorMessage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
