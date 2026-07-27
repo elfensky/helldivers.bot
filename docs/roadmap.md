@@ -368,15 +368,21 @@ git history, so start by finding that commit.
 
 ## Track E — Site Features & Easter Eggs
 
-Milestone [#18](https://github.com/elfensky/helldivers.bot/milestone/18). Three
+Milestone [#18](https://github.com/elfensky/helldivers.bot/milestone/18). Four
 issues, all independent, all optional. Pull one when you want something small
 and fun between tracks.
 
-| Issue                                                                                          | Prep                                    | Branch   |
-| ---------------------------------------------------------------------------------------------- | --------------------------------------- | -------- |
-| [#238](https://github.com/elfensky/helldivers.bot/issues/238) Admin: send custom notifications | plan                                    | worktree |
-| [#392](https://github.com/elfensky/helldivers.bot/issues/392) Ministry of Truth easter egg     | brainstorm — it's a writing problem     | worktree |
-| [#27](https://github.com/elfensky/helldivers.bot/issues/27) User Dashboard improvements        | brainstorm — 456-char body, no criteria | worktree |
+| Issue                                                                                          | Prep                                                 | Branch   |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------- |
+| [#238](https://github.com/elfensky/helldivers.bot/issues/238) Admin: send custom notifications | plan                                                 | worktree |
+| [#392](https://github.com/elfensky/helldivers.bot/issues/392) Ministry of Truth easter egg     | brainstorm — it's a writing problem                  | worktree |
+| [#471](https://github.com/elfensky/helldivers.bot/issues/471) Faction-specific vernacular      | brainstorm — the vocabulary table is the deliverable | worktree |
+| [#27](https://github.com/elfensky/helldivers.bot/issues/27) User Dashboard improvements        | brainstorm — 456-char body, no criteria              | worktree |
+
+**#471 and [#453](https://github.com/elfensky/helldivers.bot/issues/453) touch
+the same copy.** Whichever lands second should consume the other's vocabulary
+source rather than defining a second one — #453 owns the narrative phrasing
+pools, and #471 introduces per-faction wording the narrative also wants.
 
 ---
 
