@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.67.4
+
+### Changed
+
+- **Design-debate corrections to the #472 plan ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  A blinded four-model review endorsed the approach and rejected the
+  instrumentation. Seven corrections, all load-bearing:
+
+    The one that mattered most — `playerPercentileInSeason` ranked each event
+    against its **whole** season including future events, then fed that to the
+    model. The walk-forward leakage assert only compares season numbers, so the
+    leak passed it cleanly and would have made Phase 3 "beat" Phase 2 on
+    information it could never have at prediction time. It now uses an expanding
+    within-season window, with a self-check that recomputes causally and fails on
+    mismatch.
+
+    Also: censored moments are scored one-sided rather than dropped (dropping
+    removed 14.9% of attack moments and 8.5% of defend — structurally the longest
+    waits); the constant baseline is the median forward-recurrence wait rather
+    than the median gap (54.5h vs 46.8h, ~12% skill inflation); `effectiveN` and a
+    season block-bootstrap CI are reported, since 18,810 moments come from only
+    774 real intervals; the Phase 1 gate gained a permutation test with Bonferroni
+    across five variables, because one uncorrected fluke would have halted the
+    whole investigation; gaps are scoped by `(type, enemy)`; and the defend
+    estimand splits into P(chain) and conditional lull length.
+
+    Both self-checks were assembled from the plan and executed before merging.
+    Doing so caught a vacuous assertion: every synthetic timestamp in the harness
+    fixture is even, so a `t % 2` moment filter excluded nothing and the test
+    passed while proving nothing.
+
 ## 0.67.3
 
 ### Added
