@@ -67,37 +67,33 @@ PR `develop` → `main`, tag the version at the top of `CHANGELOG.md` on the mer
 commit, push the tag, merge `main` back into `develop`. The production Docker
 build only triggers on version tags — forgetting the tag means no deployment.
 
-### S0a — Dependency security backlog ⚠️
+#### The release also clears the entire Dependabot backlog
 
-- **Prep:** none
-- **Branch:** direct (chore)
-- **Blocked by:** —, but **ship it with or immediately after S0**
+GitHub reports **23 open alerts (13 high, 9 moderate, 1 low)** — but those are
+measured against `main`, which is the default branch and four versions stale.
+`develop` already fixes every one of them. Verified 2026-07-27 by resolving each
+alert's `first_patched_version` against develop's lockfile:
 
-**23 open Dependabot alerts as of 2026-07-27: 13 high, 9 moderate, 1 low.** Not
-previously tracked by any issue or milestone. Re-check the live count before
-working it:
+|                                      |  Count | How                                                                                     |
+| ------------------------------------ | -----: | --------------------------------------------------------------------------------------- |
+| Cleared by a version bump on develop | **18** | e.g. `next` 16.2.9 → 16.2.11, `better-auth` 1.6.20 → 1.6.25, `postcss` 8.5.15 → 8.5.23  |
+| Cleared because the package is gone  |  **5** | `hono`, `@hono/node-server`, `js-yaml` are in main's lockfile and absent from develop's |
+| **Still vulnerable after release**   |  **0** |                                                                                         |
+
+So there is no separate security session — shipping S0 closes the backlog,
+including the `better-auth` account-takeover and the Next.js SSRF /
+middleware-bypass advisories.
+
+**After tagging, confirm rather than assume:** alerts auto-close when the default
+branch is rescanned, which is not instant. Re-run the count and expect zero.
 
 ```
 gh api repos/elfensky/helldivers.bot/dependabot/alerts --paginate \
-  -q '[.[]|select(.state=="open")]|group_by(.security_advisory.severity)|.[]|"\(.[0].security_advisory.severity): \(length)"'
+  -q '[.[]|select(.state=="open")]|length'
 ```
 
-Two of the highs land squarely on paths this app uses, which is why this sits
-next to the release rather than in Track A:
-
-- **`better-auth`** — account takeover via pre-account hijacking. This app runs
-  BetterAuth with Discord + GitHub OAuth (§ Architecture — Auth).
-- **`next`** — SSRF in Server Actions and in rewrites, plus a Middleware/proxy
-  bypass in App Router apps. This app is App Router, uses server actions
-  throughout, and has a `/api/send` rewrite for the Umami proxy.
-
-Also high: `postcss` path traversal, `brace-expansion` DoS, `fast-uri` host
-confusion.
-
-A Next.js bump is not a rubber stamp — run the full chain plus `npm run
-test:smoke`, and re-verify the Umami proxy rewrite and the auth flow specifically,
-since those are the two surfaces the advisories touch. If a major bump is
-required, split it into its own session rather than bundling it with the rest.
+Anything still open after the rescan is a genuine finding that survived the
+bumps, and needs its own issue.
 
 ---
 
@@ -448,8 +444,8 @@ open issues.** New bugs land here by default.
 ## Suggested order, condensed
 
 ```
-S0  release the backlog      ← blocks everything
-S0a dependency security ⚠️   ← 13 high alerts, incl. auth + Next.js
+S0  release the backlog      ← blocks everything; also clears all 23
+                                Dependabot alerts (verified: 0 survive)
 S1  co-locate tests          ← before feature work adds more test files
 S2  stale-issue triage       ← ✅ done 2026-07-27
 S2a #469 map faction reveal
