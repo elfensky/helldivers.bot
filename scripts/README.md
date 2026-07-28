@@ -96,6 +96,19 @@ the findings are written up at
   defends, using only features with measured support from Phases 1/2
   (cyclic hour-of-day, weekend indicator, capped elapsed-hours). Compares
   itself against the Phase 2 numbers on the same configuration.
+- `04-train-baseline.mjs` -- Phase 4, the corrected-target follow-up
+  ([#472](https://github.com/elfensky/helldivers.bot/issues/472)). Phases
+  1-3 measured defend timing against all 4,928 defend-to-defend gaps, a
+  bimodal series dominated by ~2.5h mechanical chain gaps (a defend train
+  continues iff the previous defend FAILED -- 96.9% vs 0.1%, see
+  `lib/dataset.mjs`'s train-labelling self-check). This script retrains and
+  re-evaluates on the correct series -- train-start-to-train-start gaps only
+  (n=1,976 events / 1,816 gaps, CV 0.45 vs the pooled series' CV 1.32) --
+  using the same `walkForward` method as `02-baseline.mjs`. It also reports
+  a lull-stratified table (by `prevTrainLength`/`prevTrainFailures`) and the
+  Pearson correlation of each against the following lull's length, which
+  replaced an earlier concentration/permutation test proven invariant to the
+  data (shuffling the feature values reproduced identical output).
 
 ### Self-checks
 
@@ -113,12 +126,13 @@ rule. The in-module `assert` blocks are the test suite for this directory.
 node scripts/analysis/lib/backtest.mjs
 node --env-file=.env.development scripts/analysis/lib/dataset.mjs
 
-# the three report scripts -- all need POSTGRES_URL (DB required)
+# the report scripts -- all need POSTGRES_URL (DB required)
 node --env-file=.env.development scripts/analysis/01-trigger-hunt.mjs
 node --env-file=.env.development scripts/analysis/02-baseline.mjs
 node --env-file=.env.development scripts/analysis/03-hazard.mjs
+node --env-file=.env.development scripts/analysis/04-train-baseline.mjs
 ```
 
 `03-hazard.mjs` fits a logistic regression per (variant, evaluated season)
 across an hourly-resolution training set and takes noticeably longer to run
-than the other two -- expect it to run for several minutes.
+than the others -- expect it to run for several minutes.

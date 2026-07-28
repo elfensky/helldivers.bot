@@ -122,6 +122,36 @@ export async function loadDataset() {
                 }
             }
         }
+
+        // Train labelling. A defend train continues iff the previous defend was
+        // failed — a game mechanic, not a statistical tendency. Only the FIRST
+        // defend of a train is a forecasting target; the rest are mechanical.
+        const CHAIN_SECONDS = 600;
+        const defends = list.filter((e) => e.type === 'defend');
+        let currentLength = 0;
+        let currentFailures = 0;
+        let lastTrainLength = null;
+        let lastTrainFailures = null;
+
+        for (let i = 0; i < defends.length; i++) {
+            const prev = i > 0 ? defends[i - 1] : null;
+            const isStart =
+                prev === null || defends[i].start_time - prev.end_time > CHAIN_SECONDS;
+
+            defends[i].isTrainStart = isStart;
+            if (isStart) {
+                // Close the train that just ended, then open a new one.
+                lastTrainLength = i > 0 ? currentLength : null;
+                lastTrainFailures = i > 0 ? currentFailures : null;
+                currentLength = 0;
+                currentFailures = 0;
+            }
+            defends[i].prevTrainLength = isStart ? lastTrainLength : null;
+            defends[i].prevTrainFailures = isStart ? lastTrainFailures : null;
+
+            currentLength++;
+            if (defends[i].status === 'fail') currentFailures++;
+        }
     }
 
     // --- point-in-time status lookup --------------------------------------
@@ -343,6 +373,66 @@ if (import.meta.filename === process.argv[1]) {
     const a = makeRng(42);
     const b = makeRng(42);
     assert.equal(a(), b(), 'makeRng is not deterministic');
+
+    // Train labelling. Continuation is a game mechanic: a defend train continues
+    // iff the previous defend was FAILED (measured 96.9% vs 0.1%). These asserts
+    // pin that relationship — if labelling regresses, they fire.
+    {
+        const defends = ds.events.filter((e) => e.type === 'defend');
+        assert(defends.length > 0, 'no defend events');
+
+        const starts = defends.filter((e) => e.isTrainStart);
+        assert(
+            starts.length > 0 && starts.length < defends.length,
+            `train starts (${starts.length}) should be a proper subset of defends (${defends.length})`,
+        );
+
+        // Every season's first defend is a train start.
+        const bySeasonTrain = new Map();
+        for (const e of defends) {
+            if (!bySeasonTrain.has(e.season)) bySeasonTrain.set(e.season, []);
+            bySeasonTrain.get(e.season).push(e);
+        }
+        for (const [, list] of bySeasonTrain) {
+            assert(list[0].isTrainStart, 'a season first defend must be a train start');
+        }
+
+        // The mechanic: continuation after a SUCCESS is near-nonexistent.
+        let afterSuccessContinued = 0;
+        let afterSuccess = 0;
+        for (const [, list] of bySeasonTrain) {
+            for (let i = 1; i < list.length; i++) {
+                if (list[i - 1].status !== 'success') continue;
+                afterSuccess++;
+                if (!list[i].isTrainStart) afterSuccessContinued++;
+            }
+        }
+        assert(afterSuccess > 100, 'not enough post-success cases to check');
+        assert(
+            afterSuccessContinued / afterSuccess < 0.05,
+            `trains should not continue after a success; got ${afterSuccessContinued}/${afterSuccess}`,
+        );
+
+        // prevTrainLength is null exactly for a season's first train.
+        for (const [, list] of bySeasonTrain) {
+            const seasonStarts = list.filter((e) => e.isTrainStart);
+            assert.equal(
+                seasonStarts[0].prevTrainLength,
+                null,
+                'first train of a season must have null prevTrainLength',
+            );
+            for (const s of seasonStarts.slice(1)) {
+                assert(
+                    s.prevTrainLength >= 1,
+                    `prevTrainLength must be >= 1, got ${s.prevTrainLength}`,
+                );
+                assert(
+                    s.prevTrainFailures <= s.prevTrainLength,
+                    'prevTrainFailures cannot exceed prevTrainLength',
+                );
+            }
+        }
+    }
 
     console.log(
         `dataset self-check OK — ${ds.events.length} events, ${ds.seasons.size} seasons`,
