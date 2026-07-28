@@ -50,7 +50,7 @@ const sections = [
             { href: '/docs/brandkit', label: 'Brand Kit', track: 'docs-brandkit' },
             {
                 href: '/docs/predict',
-                label: 'Can We Predict Defends?',
+                label: 'Can We Predict Events?',
                 track: 'docs-predict',
             },
         ],

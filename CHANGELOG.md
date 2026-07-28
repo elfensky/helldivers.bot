@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.71.1
+
+### Changed
+
+- **`/docs/predict` restructured around the two event types** — "Can we predict events?", then
+  Attacks, then Defends, with the statistics moved into collapsed in-depth sections. All measured
+  numbers preserved and re-run against fresh data (5,091 defends).
+
+    Two claims were corrected against measurement rather than published as stated: attacks fire at
+    **90–100% liberation** (sectors 1–9 captured, 10 in progress — 89.3% at ≥90%), not once all ten
+    are captured; and a defend train ending because the war ended is the **minority** case — the last
+    defend of a season was a failure in only 49 of 160 seasons (30.6%). The new
+    different-faction overlap count (955 defend×attack pairs) confirms the no-concurrent-attack rule
+    is per-faction, not global.
+
+    The attack-forecasting question is answered as sound-but-unmeasured: the trigger is a known
+    threshold and liberation rate is computable for ~99.6% of moments, so extrapolation is the right
+    approach — but no forecast was built and no accuracy figure exists.
+
 ## 0.71.0
 
 ### Added
