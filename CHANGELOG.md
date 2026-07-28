@@ -19,7 +19,10 @@
   fresh run of `01-trigger-hunt.mjs`, `02-baseline.mjs`, `04-train-baseline.mjs`,
   and `05-defend-covariates.mjs` at time of writing, plus two ad-hoc queries
   (not committed) confirming the zero-overlap invariants and the exact
-  train-continuation counts.
+  train-continuation counts. Documents the `libVelocity1d`/`libVelocity3d`
+  rejection as a cross-season control-design artifact — caught only when a
+  reviewer re-ran the test by hand with same-season controls, not by the
+  committed scripts.
 
 ## 0.70.1
 
