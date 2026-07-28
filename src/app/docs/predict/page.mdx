@@ -16,7 +16,7 @@ A report on Helldivers 1 event predictability, built from every recorded event a
 **Bottom line: no countdown is shipping today, but the two event types are in very different places.**
 
 - **Attacks** are mechanically triggered — not a chance event, but a threshold on campaign progress that the game already displays. Predicting the next one is a well-founded idea that has simply never been built or measured yet.
-- **Defends** run in trains with well-established rules, but the one open question — how long the next lull runs — has been modeled, and the best model built doesn't clear the bar the project set for itself before looking at any numbers.
+- **Defends** run in trains with well-established rules, but the one open question — how long the next lull runs — has now been modeled three times, and even the best model (which watches live campaign state and beats every previous attempt) doesn't clear the bar the project set for itself before looking at any numbers. The third attempt did surface one genuinely new, placebo-tested pattern: **when any faction sits at 9 of 10 sectors captured, the galaxy goes quiet** — lulls in that assault window run ~20h longer than usual.
 
 ---
 
@@ -98,7 +98,9 @@ Everything inside the train (the self-loops above) is mechanical, not a forecast
 
 ### Predicting the next train start
 
-**How good is the best guess we could build?** The most accurate model tested predicts the wait to within about **9 hours**, typically, on a cycle that runs roughly **44 hours** end to end. A model that ignores everything and always guesses the historical average wait is off by about **12 hours**. So the smart model beats the dumb one, but not by much — both are wrong by close to a fifth of the entire cycle. That's not precise enough for a shrinking countdown bar; it's precise enough to say "usually somewhere between a day and two days," which is a sentence, not a clock.
+**How good is the best guess we could build?** The most accurate model tested — one that watches live campaign state (see the assault-window finding below) — predicts the wait to within about **8 hours**, typically, on a cycle that runs roughly **44 hours** end to end. A model that ignores everything and always guesses the historical average wait is off by about **12 hours**. So the smart model clearly beats the dumb one — by more with every attempt — but 8 hours of typical error is still close to a fifth of the entire cycle. That's not precise enough for a shrinking countdown bar; it's precise enough to say "usually somewhere between a day and two days," which is a sentence, not a clock.
+
+**The one conditioning fact that matters is visible on the map today:** if any faction has 9 of 10 sectors captured, the current lull is running long — the median wait in that state is ~55h against ~35h otherwise (+20h, placebo-tested, consistent across all four eras of the game's history). The mechanism is coherent with the attack rules above: 9 sectors is the homeworld-assault threshold, and defend trains go quiet while an assault is imminent or running.
 
 <DefendRegularityChart />
 
@@ -108,7 +110,7 @@ The pooled defend-gap series is dominated by mechanical train continuations (the
 
 The previous train's length does **not** predict how long the following lull runs — every stratum sits close to the same ~35–38h median regardless of whether the previous train was a single defend or six-plus.
 
-**Verdict: INCONCLUSIVE.** Not dead — the headline model is a materially better guess than a flat average — but not ship-worthy either. See **In depth** below for the full skill/calibration numbers and the decision gate they're measured against.
+**Verdict: INCONCLUSIVE.** Not dead — the best model now passes two of the decision gate's three legs (calibration and, for the first time, sharpness) and is a materially better guess than a flat average — but its skill still misses the pre-registered ship bar, so no countdown ships. See **In depth** below for the full skill/calibration numbers and the decision gate they're measured against.
 
 <details>
 <summary>In depth: full numbers, method, and what was tested and rejected</summary>
@@ -184,6 +186,21 @@ Calibration on the headline configuration, quartile by quartile (target vs. obse
 
 So the model is well-calibrated and clearly beats a flat guess — but it fails the **sharpness** leg of the gate (its predicted 25th–75th percentile band, 23.1h wide, is not narrower than the 22.4h spread of the raw gap distribution it's predicting) and its skill ratio, while below the "not usefully predictable" line of 0.8, sits well above the 0.6 ship bar with a tight confidence interval — this is a clean miss, not an underpowered one.
 
+### Attempt 3: conditioning on live campaign state (2026-07-28)
+
+A third attempt asked whether anything **observable at forecast time** shifts the lull, testing eight pre-declared covariates on the 1,978 train starts with within-season permutation placebos (see the sweep table below). Three survived — all pointing at the homeworld-assault window — and were fed into a state-conditional model: at every walk-forward moment, classify the world as `ATTACK` (an attack is running), `SC9` (some faction has exactly 9 of 10 sectors), `SC10`, or `NORMAL`, then estimate the remaining wait from the 200 nearest training moments *in that state* by elapsed time (with a Kaplan-Meier correction for season-end censoring — the plain version's calibration failure was in exactly the direction its documented censoring bias predicted, and both versions are reported):
+
+| Configuration | Calibration | Skill ratio [95% CI] | Median abs. error | Sharpness vs. 22.4h marginal | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| Baseline (featureless, from the table above) | PASS | 0.753 [0.732, 0.773] | 9.1h | 23.1h — not narrower | INCONCLUSIVE |
+| State-conditional, plain (v1) | FAIL (all rates low) | 0.644 [0.624, 0.666] | 7.8h | 18.9h — **narrower** | INCONCLUSIVE |
+| Season-pace adaptive | PASS | 0.787 [0.763, 0.813] | 9.5h | 24.2h — not narrower | INCONCLUSIVE |
+| **State-conditional, KM-corrected (v2)** | **PASS** | **0.648 [0.622, 0.674]** | **7.8h** | **20.4h — narrower** | **INCONCLUSIVE** |
+
+The KM configuration is the first model in this project to pass the sharpness leg, and it passes calibration — two of three gate legs, with a skill ratio a clear CI-separated step below every previous attempt. It dies on the leg the gate is strictest about: the skill-ratio CI's upper bound is 0.674 against the ≤ 0.6 ship requirement. Two caveats are disclosed with it: the winning configuration is the post-hoc best of six correlated variants (selection its CI doesn't account for — and it *still* misses), and `h1_status`'s ~daily staleness smears the state boundaries, so the true assault-window effect is likely sharper than measured — a real reason to revisit once enough high-resolution seasons (S157+, 15-minute buckets, only ~49 train starts so far) accumulate.
+
+The season-pace row also settles an untried angle from the handoff: per-season rhythm is real but weak (adjacent-season correlation ~0.35), and an online season-adaptive predictor does **not** beat the featureless baseline.
+
 ### What was tested and rejected
 
 #### Trigger hunt — does campaign state predict the event?
@@ -226,19 +243,37 @@ Seven additional variables tested against defend **train starts** specifically, 
 
 An earlier feature-engineering pass (`03-hazard.mjs`, not re-run for this page — its target, all pooled defend gaps, has since been superseded by the train-start correction) added cyclic hour-of-day, a weekend indicator, and capped elapsed-hours to a logistic hazard model. Every variant came out **worse** than the plain baseline (skill ratios 1.057–1.464, all above 1.0), and a reviewer independently re-implemented the fitter from scratch to confirm it wasn't a convergence bug. Full numbers in the [findings doc](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/findings/2026-07-27-next-event-timing.md#phase-3--features-made-it-worse-verified).
 
+#### Second covariate sweep — train-start lulls, same-season placebos built in
+
+The 2026-07-28 sweep (`06-train-covariates.mjs`) tested eight pre-declared covariates against the lull, every one under a **within-season** label permutation (an effect has to exist inside individual seasons to register — cross-season composition can't manufacture it) *and* a phase-stratified variant (permuting only within season × season-phase third — within-season calendar drift can't either). Bonferroni α = 0.00625, 2,000 seeded permutations:
+
+| # | Covariate | Observable during the lull? | Within-season effect | p (plain / phase-stratified) | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Hour-of-day of train starts | — | χ² 32.2 (df 23), rate ratios 0.79–1.31 | 0.13 (season-rotation null) | Null — the pooled χ²=128.1 was follow-up dilution |
+| 2 | Day-of-week of train starts | — | χ² 3.5 (df 6) | 0.57 | Null — no weekend effect on train starts |
+| 3 | Previous train's faction | Yes | −0.7h | 0.74 / 0.94 | Null |
+| 4 | Previous train's region = 9 | Yes | −0.3h | 1.00 / 1.00 | Null |
+| 5 | Previous train's region = 10 | Yes | **+10.1h** | **0.0005 / 0.0005** | Real — a proxy for the assault window |
+| 6 | *Next* train's region = 9 | **No** (revealed at the event) | +11.5h | 0.0005 / 0.0005 | Real structure, unusable as a feature |
+| 7 | **Max sectors captured = 9** | **Yes** | **+20.3h** | **0.0005 / 0.0005** | **The assault window — the headline finding** |
+| 8 | Attack active | Yes | −11.5h | 0.0005 / 0.0005 | Real (at moment level the state predicts *longer* remaining waits — it persists through long lulls) |
+| — | Confound check: SC9 vs SC10 | — | +20.3h | 0.0005 | SC10 is *later* in the season yet reverts to baseline — a monotone season-phase confound cannot produce this reversal |
+
+Two supporting facts tie the significant rows into one mechanism: train-start region is largely a campaign-state readout (73% of train starts fire within ±1 sector of the faction's frontier), and attacks fire at 9 of 10 sectors — so rows 5, 6, and 7 are all views of the same homeworld-assault window. There is also **no hard cooldown floor** (minimum lull 0.09h; smooth left tail in every era) — the soft p05 drift across eras (12h → 25h) is non-stationarity, not a mechanic.
+
 ### Why so many "we found it!" results didn't survive
 
 The most notable false lead was `libVelocity1d` (how fast a faction had been losing ground right before a defend), which looked significant at first glance. Here's the trap the project's own control design fell into, and how it was caught.
 
 Imagine testing whether people eat bigger dinners right before a thunderstorm. If you compare pre-storm dinners in Seattle against random, ordinary dinners in Cairo, you'll almost certainly find a difference — Seattle and Cairo just eat differently, storm or no storm. The fix is to compare like with like: pre-storm dinners in Seattle against ordinary dinners *also in Seattle*.
 
-This project's trigger-hunt controls are built the *first* way, not the second: every comparison draws its control points from the *same fractional position in other seasons' wars* — a different war, at the same "how far into the war are we" moment. That's the Cairo mistake wearing a lab coat — different wars run at different speeds, so a war-to-war difference can look like a defend-related one. That's exactly what happened with `libVelocity1d`: against cross-season controls it clears the statistical significance bar comfortably (IQR ratio 0.832, permutation p = 0.0005 for the 1-day window). What actually caught it was a reviewer re-running the identical test with exactly one thing changed — controls drawn from the event's *own* season instead of another one — at which point the effect evaporated (IQR ratio 0.998, p = 0.4838; a one-in-two-thousand result became a coin flip). That same-season check isn't in the committed scripts today — a reviewer ran it by hand. The honest lesson is that the check belongs in the code, not that the process caught this one on its own.
+This project's trigger-hunt controls are built the *first* way, not the second: every comparison draws its control points from the *same fractional position in other seasons' wars* — a different war, at the same "how far into the war are we" moment. That's the Cairo mistake wearing a lab coat — different wars run at different speeds, so a war-to-war difference can look like a defend-related one. That's exactly what happened with `libVelocity1d`: against cross-season controls it clears the statistical significance bar comfortably (IQR ratio 0.832, permutation p = 0.0005 for the 1-day window). What actually caught it was a reviewer re-running the identical test with exactly one thing changed — controls drawn from the event's *own* season instead of another one — at which point the effect evaporated (IQR ratio 0.998, p = 0.4838; a one-in-two-thousand result became a coin flip). That same-season check wasn't in the committed scripts at the time — a reviewer ran it by hand. The honest lesson is that the check belongs in the code, and as of the 2026-07-28 sweep it is: `06-train-covariates.mjs` runs every test against within-season permutation controls, so a Cairo-style artifact can no longer clear that sweep's bar.
 
 ### Method & caveats
 
 - **Walk-forward by season.** Every backtest steps a clock through held-out seasons in sequence — never trained on a season's own future.
 - **Controls are phase-matched, not season-matched.** Every control point is drawn from the same fractional position through a *different* season's war, which guards against season-calendar drift. But this design has its own complementary risk — different wars simply run at different speeds, so a cross-season difference can be about the *wars*, not the mechanic — and the `libVelocity1d`/`libVelocity3d` placebo tests above confirm that risk is real, not theoretical. Read every cross-season trigger-hunt result in this report as provisional until the gap below is closed.
-- **Top outstanding gap: no automated same-season placebo.** The check that actually falsified `libVelocity1d` was run by hand by a reviewer, not by the committed scripts. `scripts/analysis/01-trigger-hunt.mjs` and `05-defend-covariates.mjs` only implement cross-season controls today — a same-season control path is not yet wired into the pipeline. This is the single biggest gap between what the scripts check and what the published findings claim.
+- **The same-season placebo is now in the pipeline — for the current sweep.** The check that falsified `libVelocity1d` was originally run by hand by a reviewer; as of 2026-07-28, `06-train-covariates.mjs` builds every one of its tests on within-season permutation (plus a phase-stratified variant), so the second sweep's findings carry their placebo in the committed code. The remaining gap is historical: `01-trigger-hunt.mjs` and `05-defend-covariates.mjs` still implement cross-season controls only, so *their* published results remain provisional in the sense described above.
 - **Permutation tests, Bonferroni-corrected.** 2,000 permutations per test; α is divided by the number of variables tested in that sweep (5 for the trigger hunt, 7 for the covariate sweep).
 - **The decision gate was written down before any numbers existed.** Shipping a countdown required *all three*: calibration within ±0.05 of nominal at every quartile, a skill-ratio 95% CI entirely at or under 0.6, and a predicted band narrower than the unconditional gap/lull spread. Missing any one leg is enough to fail.
 - **Campaign-state resolution is coarse.** `h1_status` updates roughly once a day for 156 of the 160 seasons — only the 4 most recent seasons have 15-minute resolution. That means campaign state measured at an event's start can be up to 24 hours stale. This can only *weaken* a real trigger-hunt signal, never manufacture one.
@@ -253,6 +288,8 @@ node --env-file=.env.development scripts/analysis/01-trigger-hunt.mjs
 node --env-file=.env.development scripts/analysis/02-baseline.mjs
 node --env-file=.env.development scripts/analysis/04-train-baseline.mjs
 node --env-file=.env.development scripts/analysis/05-defend-covariates.mjs
+node --env-file=.env.development scripts/analysis/06-train-covariates.mjs
+node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
 ```
 
 Full narrative write-up: [`docs/superpowers/findings/2026-07-27-next-event-timing.md`](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/findings/2026-07-27-next-event-timing.md). Script-by-script reference: [`scripts/README.md`](https://github.com/elfensky/helldivers.bot/blob/main/scripts/README.md#analysis).

@@ -109,6 +109,30 @@ the findings are written up at
   Pearson correlation of each against the following lull's length, which
   replaced an earlier concentration/permutation test proven invariant to the
   data (shuffling the feature values reproduced identical output).
+- `05-defend-covariates.mjs` -- covariates against defend train starts that
+  `01-trigger-hunt.mjs` never tested (liberation velocity at three windows,
+  players relative to the season median, faction status, other-faction event
+  activity), using the same phase-matched-control machinery. Headline: the
+  liberation-velocity "signal" is a cross-season artifact -- redrawn with
+  same-season controls it vanishes (0.832 -> 0.998) -- and everything else
+  is null or definitional.
+- `06-train-covariates.mjs` -- the second covariate sweep, on the corrected
+  target (train-start lulls), with the same-season placebo machinery built
+  in: every test is a WITHIN-SEASON label permutation (plus a
+  phase-stratified season-x-tercile variant), so neither cross-season
+  composition nor within-season calendar drift can manufacture an effect.
+  Eight pre-declared tests under Bonferroni. Null: clock features on train
+  starts (the pooled hour-of-day effect was follow-up dilution), previous
+  train's faction, `prevRegion==9`; no hard cooldown floor. Significant and
+  observable: `maxSC==9` at lull start (+20.3h -- the homeworld-assault
+  window), attack active at lull start (-11.5h), `prevRegion==10` (+10.1h).
+- `07-train-state-model.mjs` -- feeds the 06 covariates through
+  `walkForward` as an observable moment-level state (`ATTACK` > `SC9` >
+  `SC10` > `NORMAL`): kNN-on-elapsed within state, a season-pace variant,
+  and a declared Kaplan-Meier censoring fix. Best configuration: skill
+  0.648 [0.622, 0.674], calibration PASS, sharpness PASS -- still misses
+  the pre-registered ship bar (CI upper bound <= 0.6). Verdict:
+  INCONCLUSIVE, do not ship.
 
 ### Self-checks
 
@@ -131,6 +155,9 @@ node --env-file=.env.development scripts/analysis/01-trigger-hunt.mjs
 node --env-file=.env.development scripts/analysis/02-baseline.mjs
 node --env-file=.env.development scripts/analysis/03-hazard.mjs
 node --env-file=.env.development scripts/analysis/04-train-baseline.mjs
+node --env-file=.env.development scripts/analysis/05-defend-covariates.mjs
+node --env-file=.env.development scripts/analysis/06-train-covariates.mjs
+node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
 ```
 
 `03-hazard.mjs` fits a logistic regression per (variant, evaluated season)
