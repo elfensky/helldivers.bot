@@ -19,7 +19,7 @@ const RAW = [
     { name: '1 defend', n: 671, p25: 23.0, p50: 34.7, p75: 47.0 },
     { name: '2 defends', n: 209, p25: 29.9, p50: 38.5, p75: 46.8 },
     { name: '3 defends', n: 222, p25: 29.3, p50: 37.7, p75: 45.2 },
-    { name: '4 defends', n: 209, p25: 28.7, p50: 37.2, p75: 45.3 },
+    { name: '4 defends', n: 210, p25: 28.7, p50: 37.3, p75: 45.4 },
     { name: '5 defends', n: 102, p25: 28.5, p50: 33.6, p75: 43.0 },
     { name: '6+ defends', n: 115, p25: 30.7, p50: 38.4, p75: 43.2 },
 ];
@@ -31,8 +31,9 @@ const data = RAW.map((row) => ({
     upper: row.p75 - row.p50,
 }));
 
-// Overall train-start lull median (36.8h, from 02-baseline.mjs's "Given NO
-// chain, lull length" line, n=1816) — plotted as a reference line so the
+// Overall train-start lull median (36.8h, over the full lull marginal,
+// n=1818 — see the "Lull (end of previous train -> next train start)" table
+// in the page's In Depth section) — plotted as a reference line so the
 // flatness across strata reads against a fixed anchor, not just against
 // each other.
 const OVERALL_MEDIAN = 36.8;

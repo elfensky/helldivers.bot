@@ -12,10 +12,10 @@ import {
 // Quartiles (hours), hardcoded — this is a static report, not a live view.
 //
 // "Pooled defend gaps" = hoursSincePrevEventEnd measured AT ALL DEFENDS,
-// n=4639, from `node --env-file=.env.development scripts/analysis/01-trigger-hunt.mjs`
-// (Phase 1, "EVENT TYPE: DEFEND" section): p25=0.016 p50=0.017 p75=36.117.
+// n=4642, from `node --env-file=.env.development scripts/analysis/01-trigger-hunt.mjs`
+// (Phase 1, "EVENT TYPE: DEFEND" section): p25=0.016 p50=0.017 p75=36.150.
 //
-// "Train-start gaps" = the train-start-to-train-start gap marginal, n=1817,
+// "Train-start gaps" = the train-start-to-train-start gap marginal, n=1818,
 // from `node --env-file=.env.development scripts/analysis/04-train-baseline.mjs`
 // ("Phase 4: train-start baseline — pure self-checks OK" section):
 // p25=33.6 p50=44.1 p75=56.0.
@@ -24,8 +24,8 @@ import {
 // (p75-p50), so the bar spans the full interquartile range and the color
 // seam between the two visible segments marks the median.
 const RAW = [
-    { name: 'Pooled defend gaps', n: 4639, p25: 0.016, p50: 0.017, p75: 36.117 },
-    { name: 'Train-start gaps', n: 1817, p25: 33.6, p50: 44.1, p75: 56.0 },
+    { name: 'Pooled defend gaps', n: 4642, p25: 0.016, p50: 0.017, p75: 36.15 },
+    { name: 'Train-start gaps', n: 1818, p25: 33.6, p50: 44.1, p75: 56.0 },
 ];
 
 const data = RAW.map((row) => ({

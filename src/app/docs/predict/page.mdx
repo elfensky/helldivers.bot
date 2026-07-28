@@ -2,53 +2,82 @@ import DefendRegularityChart from './DefendRegularityChartLoader';
 import LullByTrainLengthChart from './LullByTrainLengthChartLoader';
 
 export const metadata = {
-    title: 'Can We Predict Defends? | Helldivers Bot',
+    title: 'Can We Predict Events? | Helldivers Bot',
     description:
-        'Full report on Helldivers 1 defend-event predictability across 160 seasons — what triggers events, how regular they are, and why a countdown is not shipping.',
+        'Full report on Helldivers 1 event predictability across 160 seasons — attacks are a deterministic readout of campaign progress, defends run in trains with a measured but unshipped forecast.',
     alternates: { canonical: '/docs/predict' },
     openGraph: { url: '/docs/predict' },
 };
 
-# Can We Predict Defends?
+# Can we predict events?
 
-A full report on Helldivers 1 event predictability, built from every recorded event across the game's ~160-season history. Every figure below is reproduced live from the scripts in `scripts/analysis/` — see § Method & caveats below to run them yourself.
+A report on Helldivers 1 event predictability, built from every recorded event across the game's ~160-season history (6,016 events: 925 attacks, 5,091 defends). Every figure below is reproduced live from the scripts in `scripts/analysis/` — see each section's **In depth** for how to run them yourself.
 
-**Bottom line: no countdown is shipping.** Attacks don't need a prediction — they're a deterministic readout of campaign progress. Defends do need one, and the best model built for them doesn't clear the bar the project set for itself before looking at any numbers.
+**Bottom line: no countdown is shipping today, but the two event types are in very different places.**
 
----
-
-## 1. The short version
-
-**Defends come in trains, not on a timetable.** A "defend" is an enemy assault you either win or lose. Lose, and another one starts almost immediately — usually within a few minutes. Win, and the assault stops for a while, sometimes a day or two, before a fresh one begins. That "keep going or stop" behavior is a hard rule of the game, not a tendency: across every recorded defend, losing is followed by another defend starting within 10 minutes **97.1% of the time**; winning is followed by that same quick restart just **0.1%** of the time. So a run of defends — a "train" — is really one continuous fight told as several events, and it keeps running exactly as long as you keep losing.
-
-That splits "when's the next defend" into two very different questions:
-
-- **"Will this keep going?"** — solved. Look at whether you won or lost. Lost means yes, almost always. Won means no, almost always.
-- **"When does the next wave start, once this one's over?"** — not solved. This is the part anyone would actually want a countdown for, and it's the part this report is about.
-
-**How good is the best guess we could build?** The most accurate model tested predicts the wait to within about **9 hours**, typically, on a cycle that runs roughly **44 hours** end to end. A model that ignores everything and just always guesses the historical average wait is off by about **12 hours**. So the smart model is better than the dumb one, but not by much — both are wrong by close to a fifth of the entire cycle. That's not precise enough to draw a shrinking countdown bar on a dashboard; it's precise enough to say "usually somewhere between a day and two days," which is a sentence, not a clock.
-
-**Why so many "we found it!" results didn't survive.** Several variables looked, at first glance, like they predicted defends — most notably how fast a faction had been losing ground right before one started. Here's the trap the project's own control design fell into, and how it was actually caught — not by the scripts, but by a reviewer re-running the test by hand.
-
-Imagine testing whether people eat bigger dinners right before a thunderstorm. If you compare pre-storm dinners in Seattle against random, ordinary dinners in Cairo, you'll almost certainly find a difference — Seattle and Cairo just eat differently, storm or no storm. The "finding" would be entirely about which city you picked, not about storms at all. The fix is to compare like with like: pre-storm dinners in Seattle against ordinary dinners *also in Seattle*, or better, dinners at the same time of year in *other* Seattle-like cities, so the only thing that's different is the storm.
-
-This project's trigger-hunt controls are built the *first* way, not the second: every comparison draws its control points from the *same fractional position in other seasons' wars* — a different war, at the same "how far into the war are we" moment. That's the Cairo mistake wearing a lab coat — different wars run at different speeds, so a war-to-war difference can look like a defend-related one. That's exactly what happened with liberation velocity (how fast a faction was losing ground): against these cross-season controls it clears the statistical significance bar comfortably (IQR ratio 0.832, permutation p = 0.0005 for the 1-day window). What actually caught it was a reviewer re-running the identical test with exactly one thing changed — controls drawn from the event's *own* season instead of another one — at which point the effect evaporated (IQR ratio 0.998, p = 0.4838; a one-in-two-thousand result became a coin flip). That same-season check isn't in the committed scripts today — a reviewer ran it by hand. The honest lesson is that the check belongs in the code, not that the process caught this one on its own. See § What was tested and rejected below for the full accounting, including a second variable (`libVelocity3d`) that survives this particular placebo but fails two others.
+- **Attacks** are mechanically triggered — not a chance event, but a threshold on campaign progress that the game already displays. Predicting the next one is a well-founded idea that has simply never been built or measured yet.
+- **Defends** run in trains with well-established rules, but the one open question — how long the next lull runs — has been modeled, and the best model built doesn't clear the bar the project set for itself before looking at any numbers.
 
 ---
 
-## 2. Rules discovered
+## Attacks
 
-These aren't statistical patterns — they're mechanics of the game itself, confirmed against the full 160-season, 5,088-defend history.
+Attacks are mechanically triggered. Every one of the 925 recorded attacks targets the enemy homeworld, region 11 — no exceptions. They fire once the faction's own territory is nearly fully liberated:
 
-| Rule | Evidence |
+| Liberation at attack start | Attacks |
 | --- | --- |
-| **A defend train continues iff the previous defend was lost.** | Lost → next defend starts within 10 min **97.1%** of the time (3,110 / 3,203). Won → **0.1%** of the time (1 / 1,436). |
-| **Two defends never run concurrently.** | 0 overlapping pairs across 47,282 same-faction defend pairs checked (5,088 defends total). |
-| **A defend never runs while that faction has an active attack.** | 0 overlapping pairs across 9,584 same-faction defend/attack pairs checked. |
-| **A defend only occurs while the faction is `active`.** *(definitional, not discovered — a faction can't be attacked while defeated)* | 5,016 / 5,088 defends (98.6%) start with recorded status `active`; the remaining 72 (1.4%) read `hidden`, attributable to the campaign snapshot's ~1-bucket/day staleness (see § Method & caveats below), not real hidden-state defends. Never `defeated`. |
-| **Attacks are mechanically triggered, not forecast.** | Every one of 925 attacks targets the enemy homeworld, region 11 (100%). 83.6% fire at exactly 9 of 10 sectors captured; 89.3% at ≥9 of 10. Liberation at attack start clusters in an interquartile range 7.4× tighter than a matched control (IQR ratio 0.135, permutation p = 0.0005). |
+| ≥100% | 53 |
+| 90–100% | 773 |
+| 80–90% | 73 |
+| &lt;80% | 26 |
 
-### Train lifecycle
+**89.3% fire at ≥90% liberation.** In map terms that's sectors 1–9 captured with sector 10 in progress or just completing — *not* "all ten captured and then it starts."
+
+### Can we forecast the next one?
+
+The natural next question: could we watch the faction's progress rate and (predicted) player counts, and estimate when the upcoming attack will fire?
+
+- **The approach is sound.** Because the trigger is a known threshold rather than a random draw, predicting the next attack reduces to forecasting *when liberation will reach ~90%* — an extrapolation problem, not a chance problem.
+- The input for that extrapolation exists: liberation's day-over-day rate of change is computable for roughly **99.6%** of daily moments across the dataset, so there's essentially no gap in the data needed to feed a forecast.
+- **But this has never been measured.** No forecast model has been built for the attack side, and no accuracy figure exists. This is a well-founded expectation, not a demonstrated result — and it's the obvious next piece of work.
+
+Do not read "the approach is sound" as "this works" — nobody has built or backtested it yet.
+
+<details>
+<summary>In depth: the statistical test behind the threshold</summary>
+
+Phase 1 (`01-trigger-hunt.mjs`) tests whether attacks fire on a deterministic campaign-state rule, using phase-matched controls (the same fractional point through a season, drawn from *other* seasons) and a permutation test corrected for testing five variables (Bonferroni α = 0.01).
+
+| Variable | IQR ratio | p-value | Verdict |
+| --- | --- | --- | --- |
+| liberation | **0.135** | **0.0005** | **RULE-LIKE** |
+| sectorsCaptured | **0.000** | **0.0005** | **RULE-LIKE** |
+| daysIntoSeason | 0.912 | 0.0515 | No rule — this is the control check |
+| hoursSincePrevEventEnd | 0.847 | 0.0105 | No rule — barely misses the corrected α (0.01) |
+| playerPercentile | 1.004 | 0.6592 | No rule |
+
+- Liberation at attack start: p25 0.932, p50 0.961, p75 0.983 — an IQR of 0.051 against a phase-matched control IQR of 0.378, a **7.4x tighter spread**.
+- Sectors captured at attack start: 83.6% fire at exactly 9 of 10 sectors; 89.3% at ≥9 of 10 — the same threshold as the liberation-ratio table above, read a different way.
+- `daysIntoSeason` is the control that matters: if attacks merely clustered at a particular point in the season's calendar, that would look like concentration for any variable correlated with season phase, including a spurious one. Because `daysIntoSeason` stays flat (IQR ratio 0.912, p = 0.0515), the liberation/sector concentration is attributable to campaign state, not a season-phase artifact.
+- **Campaign-state resolution is coarse.** `h1_status` updates roughly once a day for 156 of the 160 seasons (only the 4 most recent have 15-minute resolution), so campaign state measured at an event's start can be up to 24 hours stale. This can only *weaken* a real signal, never manufacture one — which is why this attack-side finding (IQR ratio 0.135, comfortably surviving the caveat) is trusted.
+
+Reproduce: `node --env-file=.env.development scripts/analysis/01-trigger-hunt.mjs`
+
+</details>
+
+---
+
+## Defends
+
+A "defend" is an enemy assault you either win or lose. Defends follow five rules, each confirmed against the full 160-season, 5,091-defend history — these aren't statistical tendencies, they're mechanics of the game itself.
+
+1. **Two defends never run at the same time.** Zero overlapping pairs across 47,297 same-faction defend pairs checked.
+2. **A faction never defends while you are attacking it.** Zero overlapping pairs across 9,584 same-faction defend/attack pairs checked.
+3. **A defend and an attack on *different* factions can overlap.** 955 such pairs found (out of 19,756 different-faction defend/attack pairs checked) — so the constraint in rule 2 is per-faction, not global.
+4. **Defends only occur while a faction is active** — never while it's `hidden` (not yet introduced) or `defeated`. *(This is a consequence of how factions work, not a discovered rule.)* 5,019 / 5,091 defends (98.6%) start with recorded status `active`; the remaining 72 (1.4%) read `hidden`, attributable to the campaign snapshot's ~1-bucket/day staleness, not real hidden-state defends. Never `defeated`.
+5. **A defend train continues until the players win one.** Lose, and you get hit again almost immediately: **97.1%** of failed defends (3,112 / 3,205) chain into another defend within 10 minutes. Win, and it stops: only **0.1%** of successful defends (1 / 1,437) do the same.
+
+   *A war ending mid-train is the minority case, not a clean second rule.* It's tempting to assume a train only ends when Super Earth is defeated and a new season starts — but the last defend of a season was itself a **failure** in just **49 of 160 seasons (30.6%)**. In the other **69.4%**, the season's final train ended with a win, and the season ended some other way.
 
 ```mermaid
 flowchart LR
@@ -65,52 +94,61 @@ flowchart LR
     style C fill:#0f1a0f,stroke:#22c55e,color:#4ade80
 ```
 
-Everything inside the train (the self-loops above) is mechanical and not a forecasting target. The only open question is the length of the lull between one train ending and the next one starting — that's what §3 and §4 are about.
+Everything inside the train (the self-loops above) is mechanical, not a forecasting target. The only open question is how long the lull runs between one train ending and the next one starting.
 
----
+### Predicting the next train start
 
-## 3. The numbers
+**How good is the best guess we could build?** The most accurate model tested predicts the wait to within about **9 hours**, typically, on a cycle that runs roughly **44 hours** end to end. A model that ignores everything and always guesses the historical average wait is off by about **12 hours**. So the smart model beats the dumb one, but not by much — both are wrong by close to a fifth of the entire cycle. That's not precise enough for a shrinking countdown bar; it's precise enough to say "usually somewhere between a day and two days," which is a sentence, not a clock.
+
+<DefendRegularityChart />
+
+The pooled defend-gap series is dominated by mechanical train continuations (the mass right at zero); restricting to train starts throws those out and leaves a genuinely different, more regular distribution.
+
+<LullByTrainLengthChart />
+
+The previous train's length does **not** predict how long the following lull runs — every stratum sits close to the same ~35–38h median regardless of whether the previous train was a single defend or six-plus.
+
+**Verdict: INCONCLUSIVE.** Not dead — the headline model is a materially better guess than a flat average — but not ship-worthy either. See **In depth** below for the full skill/calibration numbers and the decision gate they're measured against.
+
+<details>
+<summary>In depth: full numbers, method, and what was tested and rejected</summary>
 
 ### Event counts
 
 | Metric | Value |
 | --- | --- |
-| Total defends (160 seasons) | 5,088 |
-| Train starts (real forecasting targets) | 1,977 (38.9%) |
-| Mechanical follow-ups (not independent targets) | 3,111 (61.1%) |
+| Total defends (160 seasons) | 5,091 |
+| Train starts (real forecasting targets) | 1,978 (38.9%) |
+| Mechanical follow-ups (not independent targets) | 3,113 (61.1%) |
 | Attacks | 925 |
 
-Train length distribution — among the 1,528 trains with both a defined predecessor and a following lull (excludes each season's first train, which has no predecessor, and any train with no successor before the season ends):
+Train length distribution — among the 1,529 trains with both a defined predecessor and a following lull (excludes each season's first train, which has no predecessor, and any train with no successor before the season ends):
 
 | Previous train length | n | Share |
 | --- | --- | --- |
 | 1 defend | 671 | 43.9% |
 | 2 defends | 209 | 13.7% |
 | 3 defends | 222 | 14.5% |
-| 4 defends | 209 | 13.7% |
+| 4 defends | 210 | 13.7% |
 | 5 defends | 102 | 6.7% |
 | 6+ defends | 115 | 7.5% |
 
 ### Regularity: pooled gaps vs. train-start gaps
 
-<DefendRegularityChart />
-
 | Series | n | p25 | median | p75 | IQR |
 | --- | --- | --- | --- | --- | --- |
-| Pooled defend gaps (any defend → next) | 4,639 | 0.02h | 0.02h | 36.1h | 36.1h |
-| Train-start-to-train-start gaps | 1,817 | 33.6h | 44.1h | 56.0h | 22.4h |
+| Pooled defend gaps (any defend → next) | 4,642 | 0.02h | 0.02h | 36.2h | 36.1h |
+| Train-start-to-train-start gaps | 1,818 | 33.6h | 44.1h | 56.0h | 22.4h |
 
-The pooled series is genuinely bimodal — half of it sits within minutes of zero (the mechanical chain restarts) and the other half stretches out into a long tail, with the middle 90% of the data spanning about 166 hours. Restricting to train starts throws out the mechanical restarts and leaves a distribution that's both centered higher (the real ~44h cycle) and roughly 40% narrower (22.4h IQR vs 36.1h). That's the chart above: the same underlying event log, read two different ways, telling two very different stories about "how regular is this."
+The pooled series is genuinely bimodal — half of it sits within minutes of zero (the mechanical chain restarts) and the other half stretches into a long tail. Restricting to train starts throws out the mechanical restarts and leaves a distribution that's both centered higher (the real ~44h cycle) and roughly 40% narrower.
 
-The specific quantity that matters for a "once you hold, the next wave is in..." claim is the **lull** — the gap from when the previous train *ends* to when the next one *starts* (not train-start to train-start, which also includes however long the previous train itself ran):
+The quantity that actually matters for a "once you hold, the next wave is in..." claim is the **lull** — the gap from when the previous train *ends* to when the next one *starts* (not train-start to train-start, which also includes however long the previous train itself ran):
 
 | Quantity | n | p25 | median | p75 |
 | --- | --- | --- | --- | --- |
-| Lull (end of previous train → next train start) | 1,816 | 27.8h | 36.8h | 46.4h |
+| Lull (end of previous train → next train start) | 1,818 | 27.8h | 36.8h | 46.4h |
 
 ### Does the previous train's length predict the wait?
-
-<LullByTrainLengthChart />
 
 No. Every stratum's lull sits close to the same ~35-38h median regardless of whether the previous train was a single defend or six-plus:
 
@@ -119,92 +157,94 @@ No. Every stratum's lull sits close to the same ~35-38h median regardless of whe
 | 1 defend | 671 | 23.0h | 34.7h | 47.0h |
 | 2 defends | 209 | 29.9h | 38.5h | 46.8h |
 | 3 defends | 222 | 29.3h | 37.7h | 45.2h |
-| 4 defends | 209 | 28.7h | 37.2h | 45.3h |
+| 4 defends | 210 | 28.7h | 37.3h | 45.4h |
 | 5 defends | 102 | 28.5h | 33.6h | 43.0h |
 | 6+ defends | 115 | 30.7h | 38.4h | 43.2h |
 
-Pearson correlation across the 1,528 trains above: `r = -0.004` for previous-train-length vs. lull, `r = -0.031` for previous-train-failures vs. lull — both well under the `|r| < 0.1` bar the project treats as "no detectable relationship." A separate correlation of previous-train-length against the **start-to-start** gap (not the lull) does show up at `r = 0.175`, but that's mechanical, not predictive: a longer previous train simply pushes its own end time — and therefore the next start-to-start measurement — later, even when the lull that follows it is exactly as random as any other lull.
+Pearson correlation across the 1,529 trains above: `r = -0.004` for previous-train-length vs. lull, `r = -0.031` for previous-train-failures vs. lull — both well under the `|r| < 0.1` bar the project treats as "no detectable relationship." A separate correlation of previous-train-length against the **start-to-start** gap (not the lull) does show up at `r = 0.176`, but that's mechanical, not predictive: a longer previous train simply pushes its own end time later — and therefore the next start-to-start measurement — even when the lull that follows it is exactly as random as any other lull.
 
 ### Prediction accuracy
 
 **Skill ratio**, in one sentence: it's the model's typical error divided by the typical error of always guessing one fixed number (the historical median wait) — 1.0 means the model is no better than that constant guess, and the project's ship bar requires the ratio's entire 95% confidence interval to sit at or under 0.6.
 
-The headline model predicts train-start-to-train-start timing directly (the corrected target, after a labelling bug that pooled real train starts together with mechanical follow-ups was found and fixed — see § Method & caveats below):
+The headline model predicts train-start-to-train-start timing directly (the corrected target, after a labelling bug that pooled real train starts together with mechanical follow-ups was found and fixed):
 
 | Configuration | Calibration | Skill ratio [95% CI] | Median abs. error vs. baseline | Sharpness (predicted band vs. marginal) | Effective N | Verdict |
 | --- | --- | --- | --- | --- | --- | --- |
-| Train starts, unrestricted moments | FAIL | 0.722 [0.697, 0.748] | 9.7h vs. 13.4h | 23.3h vs. 22.4h — **not narrower** | 1,465 | INCONCLUSIVE |
-| **Train starts, no defend active (headline)** | **PASS** | **0.753 [0.732, 0.773]** | **9.1h vs. 12.1h** | 23.1h vs. 22.4h — **not narrower** | 1,461 | **INCONCLUSIVE** |
+| Train starts, unrestricted moments | FAIL | 0.722 [0.697, 0.748] | 9.7h vs. 13.4h | 23.3h vs. 22.4h — **not narrower** | 1,466 | INCONCLUSIVE |
+| **Train starts, no defend active (headline)** | **PASS** | **0.753 [0.732, 0.773]** | **9.1h vs. 12.1h** | 23.1h vs. 22.4h — **not narrower** | 1,462 | **INCONCLUSIVE** |
 
 Calibration on the headline configuration, quartile by quartile (target vs. observed, both within the project's ±0.05 tolerance):
 
 | Quartile | Target | Observed | Within tolerance? |
 | --- | --- | --- | --- |
-| p25 | 0.250 | 0.209 | Yes (off by 0.041) |
+| p25 | 0.250 | 0.208 | Yes (off by 0.042) |
 | p50 | 0.500 | 0.485 | Yes (off by 0.015) |
 | p75 | 0.750 | 0.764 | Yes (off by 0.014) |
 
-So the model is well-calibrated and clearly beats a flat guess — but it fails the **sharpness** leg of the gate (its predicted 25th–75th percentile band, 23.1h wide, is not narrower than the 22.4h spread of the raw gap distribution it's predicting — so it isn't meaningfully tightening the range, just centering it correctly) and its skill ratio, while below the "not usefully predictable" line of 0.8, sits well above the 0.6 ship bar with a tight confidence interval — this is a clean miss, not an underpowered one. **Verdict: INCONCLUSIVE.** Not dead — a materially better model than guessing — but not ship-worthy either.
+So the model is well-calibrated and clearly beats a flat guess — but it fails the **sharpness** leg of the gate (its predicted 25th–75th percentile band, 23.1h wide, is not narrower than the 22.4h spread of the raw gap distribution it's predicting) and its skill ratio, while below the "not usefully predictable" line of 0.8, sits well above the 0.6 ship bar with a tight confidence interval — this is a clean miss, not an underpowered one.
 
----
+### What was tested and rejected
 
-## 4. What was tested and rejected
-
-### Trigger hunt — does campaign state predict the event?
+#### Trigger hunt — does campaign state predict the event?
 
 Every row compares the variable's spread (interquartile range) at real events against phase-matched controls drawn from the same fractional point in *other* seasons. A **rule-like** result requires both a large effect size (IQR ratio ≤ 0.25) *and* a permutation p-value under the Bonferroni-corrected threshold (α = 0.01 across 5 variables).
 
 | Dataset | Variable | IQR ratio | p-value | Verdict | Why (if rejected) |
 | --- | --- | --- | --- | --- | --- |
-| Defends (all 5,088) | liberation | 1.084 | 1.0000 | No rule | — |
-| Defends (all 5,088) | sectorsCaptured | 1.000 | 1.0000 | No rule | — |
-| Defends (all 5,088) | daysIntoSeason | 1.534 | 1.0000 | No rule | — |
-| Defends (all 5,088) | hoursSincePrevEventEnd | 0.352 | 0.0005 | No rule | Significant p-value, but effect size (0.352) sits above the 0.25 rule-like bar — real but too weak/diffuse to call a threshold |
-| Defends (all 5,088) | playerPercentile | 1.180 | 1.0000 | No rule | — |
-| Attacks (925) | liberation | **0.135** | **0.0005** | **RULE-LIKE** | Kept — see §2 |
-| Attacks (925) | sectorsCaptured | **0.000** | **0.0005** | **RULE-LIKE** | Kept — see §2 |
+| Defends (all 5,091) | liberation | 1.087 | 1.0000 | No rule | — |
+| Defends (all 5,091) | sectorsCaptured | 1.000 | 1.0000 | No rule | — |
+| Defends (all 5,091) | daysIntoSeason | 1.538 | 1.0000 | No rule | — |
+| Defends (all 5,091) | hoursSincePrevEventEnd | 0.354 | 0.0005 | No rule | Significant p-value, but effect size (0.354) sits above the 0.25 rule-like bar — real but too weak/diffuse to call a threshold |
+| Defends (all 5,091) | playerPercentile | 1.180 | 1.0000 | No rule | — |
+| Attacks (925) | liberation | **0.135** | **0.0005** | **RULE-LIKE** | Kept — see § Attacks |
+| Attacks (925) | sectorsCaptured | **0.000** | **0.0005** | **RULE-LIKE** | Kept — see § Attacks |
 | Attacks (925) | daysIntoSeason | 0.912 | 0.0515 | No rule | This is the control check — flat, confirming the liberation/sector signal is campaign state, not a season-calendar artifact |
 | Attacks (925) | hoursSincePrevEventEnd | 0.847 | 0.0105 | No rule | Barely misses the corrected α (0.01) |
-| Attacks (925) | playerPercentile | 0.983 | 0.5327 | No rule | — |
-| Train starts (1,977) | liberation | 1.047 | 0.9595 | No rule | Confirms dilution hypothesis rejected — restricting to train starts didn't unmask a hidden trigger |
-| Train starts (1,977) | sectorsCaptured | 1.000 | 1.0000 | No rule | — |
-| Train starts (1,977) | daysIntoSeason | 1.414 | 1.0000 | No rule | — |
-| Train starts (1,977) | hoursSincePrevEventEnd | 0.958 | 0.1629 | No rule | Also a definitional shift, not just dilution — see note below |
-| Train starts (1,977) | playerPercentile | 1.153 | 1.0000 | No rule | — |
+| Attacks (925) | playerPercentile | 1.004 | 0.6592 | No rule | — |
+| Train starts (1,978) | liberation | 1.053 | 0.9810 | No rule | Confirms dilution hypothesis rejected — restricting to train starts didn't unmask a hidden trigger |
+| Train starts (1,978) | sectorsCaptured | 1.000 | 1.0000 | No rule | — |
+| Train starts (1,978) | daysIntoSeason | 1.416 | 1.0000 | No rule | — |
+| Train starts (1,978) | hoursSincePrevEventEnd | 0.959 | 0.1634 | No rule | Also a definitional shift, not just dilution — see note below |
+| Train starts (1,978) | playerPercentile | 1.166 | 1.0000 | No rule | — |
 
-*Note on `hoursSincePrevEventEnd`:* this variable changes meaning between the pooled and train-starts rows above — the pooled column means "hours since the previous defend of any kind ended," while the train-starts column means "hours since the previous **train's** first defend ended" (mechanical follow-ups are excluded from that lookup entirely). The jump from 0.352 to 0.958 is therefore partly a definitional change, not purely evidence that dilution was masking a signal — the four campaign-state variables above (which don't have this ambiguity) land at "no rule" either way, which is the load-bearing comparison.
+*Note on `hoursSincePrevEventEnd`:* this variable changes meaning between the pooled and train-starts rows above — the pooled column means "hours since the previous defend of any kind ended," while the train-starts column means "hours since the previous **train's** first defend ended" (mechanical follow-ups are excluded from that lookup entirely). The jump from 0.354 to 0.959 is therefore partly a definitional change, not purely evidence that dilution was masking a signal — the four campaign-state variables above (which don't have this ambiguity) land at "no rule" either way, which is the load-bearing comparison.
 
-### Covariate sweep — previously untested variables
+#### Covariate sweep — previously untested variables
 
-Seven additional variables tested against defend **train starts** specifically, Bonferroni-corrected across 7 (α = 0.00714). Four cleared the Bonferroni threshold on raw p-value; **all four were subsequently rejected** — two (`libVelocity1d`, `libVelocity3d`) via same-season placebo tests a reviewer re-ran by hand, the other two on adversarial review of the raw effect — none is presented below as a trigger, and the raw effect sizes in this table should not be quoted on their own without that context:
+Seven additional variables tested against defend **train starts** specifically, Bonferroni-corrected across 7 (α = 0.00714). Four cleared the Bonferroni threshold on raw p-value; **all four were subsequently rejected** — two (`libVelocity1d`, `libVelocity3d`) via same-season placebo tests a reviewer re-ran by hand, the other two on adversarial review of the raw effect. This sweep was not re-run for this page (its findings are unaffected by the small growth in defend count since):
 
 | Variable | Type | Effect | p-value | Verdict | Why rejected |
 | --- | --- | --- | --- | --- | --- |
-| libVelocity1d (liberation gained/day) | continuous | IQR ratio 0.832 | 0.0005 | Rejected | Control-design artifact, not a trigger. The 0.832/0.0005 above is against cross-season controls; swapping to same-season controls (only the control draw changed) drops it to **0.998, p = 0.4838** — a coin flip. Two more same-season variants agree it's an artifact (random legal moments: 0.965, p=0.1139; non-overlapping shifts: 1.246, p=1.0000). p25 is 0.0000 on both sides¹, so 0.832 is really a p75-only effect, not concentration around a trigger value. |
-| libVelocity3d | continuous | IQR ratio 0.806 | 0.0005 | Rejected | Unstable, not merely small. Survives the same-season "otherwise identical" placebo (0.804, p=0.0005) but dies under same-season random legal moments (0.890, p=0.0650) and same-season non-overlapping shifts (1.114, p=0.9920 — events *wider* than controls). Direction is also incoherent with 1d: the event-side median is *lower* than controls at 1d, *higher* at 3d. (7d is null under every specification.) |
+| libVelocity1d (liberation gained/day) | continuous | IQR ratio 0.832 | 0.0005 | Rejected | Control-design artifact, not a trigger. Against cross-season controls it clears the bar comfortably; swapping to same-season controls (only the control draw changed) drops it to **0.998, p = 0.4838** — a coin flip. Two more same-season variants agree it's an artifact (random legal moments: 0.965, p=0.1139; non-overlapping shifts: 1.246, p=1.0000). |
+| libVelocity3d | continuous | IQR ratio 0.806 | 0.0005 | Rejected | Unstable, not merely small. Survives the same-season "otherwise identical" placebo (0.804, p=0.0005) but dies under same-season random legal moments (0.890, p=0.0650) and same-season non-overlapping shifts (1.114, p=0.9920 — events *wider* than controls). Direction is also incoherent with 1d: the event-side median is *lower* than controls at 1d, *higher* at 3d. |
 | libVelocity7d | continuous | IQR ratio 1.053 | 0.8501 | No rule | — |
 | pointsTakenRatio | continuous | IQR ratio 1.288 | 1.0000 | No rule | — |
 | playersRelToSeasonMedian | continuous | IQR ratio 1.603 | 1.0000 | No rule | — |
-| factionStatusActive | binary | +13.4pp at events (97.8% vs 84.4%) | 0.0005 | Rejected | Restates the definitional "must be active" rule from §2, not a fresh trigger — the ~2pp shortfall from 100% at events is snapshot staleness, not a soft rule |
-| otherFactionEventActive | binary | −34.0pp at events (9.3% vs 43.3%) | 0.0005 | Rejected | The largest raw effect in the sweep, but rejected on adversarial review along with the other three — the specific decomposition lives in an internal review report not published in this repo, so it is named here as a rejected lead, not quoted as a residual signal |
+| factionStatusActive | binary | +13.4pp at events (97.8% vs 84.4%) | 0.0005 | Rejected | Restates the definitional "must be active" rule (§ Defends, rule 4), not a fresh trigger |
+| otherFactionEventActive | binary | −34.0pp at events (9.3% vs 43.3%) | 0.0005 | Rejected | The largest raw effect in the sweep, but rejected on adversarial review along with the other three |
 
-¹ 27.0% of event-side `libVelocity1d` values and 22.2% of control-side values are exactly zero. As a check on the placebo itself (that it isn't simply breaking everything), the same same-season swap left the boolean-variable effects above (e.g. `factionStatusActive`) intact — the evaporation is specific to `libVelocity1d`.
+An earlier feature-engineering pass (`03-hazard.mjs`, not re-run for this page — its target, all pooled defend gaps, has since been superseded by the train-start correction) added cyclic hour-of-day, a weekend indicator, and capped elapsed-hours to a logistic hazard model. Every variant came out **worse** than the plain baseline (skill ratios 1.057–1.464, all above 1.0), and a reviewer independently re-implemented the fitter from scratch to confirm it wasn't a convergence bug. Full numbers in the [findings doc](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/findings/2026-07-27-next-event-timing.md#phase-3--features-made-it-worse-verified).
 
-For context: an earlier feature-engineering pass (`03-hazard.mjs`, not re-run for this page — its target, all pooled defend gaps, has since been superseded by the train-start correction) added cyclic hour-of-day, a weekend indicator, and capped elapsed-hours to a logistic hazard model. Every variant came out **worse** than the plain baseline (skill ratios 1.057–1.464, all above 1.0), and a reviewer independently re-implemented the fitter from scratch to confirm it wasn't a convergence bug. Full numbers in the [findings doc](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/findings/2026-07-27-next-event-timing.md#phase-3--features-made-it-worse-verified).
+### Why so many "we found it!" results didn't survive
 
----
+The most notable false lead was `libVelocity1d` (how fast a faction had been losing ground right before a defend), which looked significant at first glance. Here's the trap the project's own control design fell into, and how it was caught.
 
-## 5. Method & caveats
+Imagine testing whether people eat bigger dinners right before a thunderstorm. If you compare pre-storm dinners in Seattle against random, ordinary dinners in Cairo, you'll almost certainly find a difference — Seattle and Cairo just eat differently, storm or no storm. The fix is to compare like with like: pre-storm dinners in Seattle against ordinary dinners *also in Seattle*.
+
+This project's trigger-hunt controls are built the *first* way, not the second: every comparison draws its control points from the *same fractional position in other seasons' wars* — a different war, at the same "how far into the war are we" moment. That's the Cairo mistake wearing a lab coat — different wars run at different speeds, so a war-to-war difference can look like a defend-related one. That's exactly what happened with `libVelocity1d`: against cross-season controls it clears the statistical significance bar comfortably (IQR ratio 0.832, permutation p = 0.0005 for the 1-day window). What actually caught it was a reviewer re-running the identical test with exactly one thing changed — controls drawn from the event's *own* season instead of another one — at which point the effect evaporated (IQR ratio 0.998, p = 0.4838; a one-in-two-thousand result became a coin flip). That same-season check isn't in the committed scripts today — a reviewer ran it by hand. The honest lesson is that the check belongs in the code, not that the process caught this one on its own.
+
+### Method & caveats
 
 - **Walk-forward by season.** Every backtest steps a clock through held-out seasons in sequence — never trained on a season's own future.
-- **Controls are phase-matched, not season-matched.** Every control point is drawn from the same fractional position through a *different* season's war, which guards against season-calendar drift (a naive same-season or uniform-random control could let that masquerade as a real trigger). But this design has its own complementary risk — different wars simply run at different speeds, so a cross-season difference can be about the *wars*, not the mechanic — and §1/§4 confirm that risk is real, not theoretical (the `libVelocity1d`/`libVelocity3d` placebo tests). Read every cross-season trigger-hunt result in this report as provisional until the gap below is closed.
-- **Top outstanding gap: no automated same-season placebo.** The check that actually falsified `libVelocity1d` (§4) was run by hand by a reviewer, not by the committed scripts. `scripts/analysis/01-trigger-hunt.mjs` and `05-defend-covariates.mjs` only implement cross-season controls today — a same-season control path is not yet wired into the pipeline. This is the single biggest gap between what the scripts check and what the published findings claim.
-- **Permutation tests, Bonferroni-corrected.** 2,000 permutations per test; α is divided by the number of variables tested in that sweep (5 for the trigger hunt, 7 for the covariate sweep) so that testing more things doesn't inflate the false-positive rate.
+- **Controls are phase-matched, not season-matched.** Every control point is drawn from the same fractional position through a *different* season's war, which guards against season-calendar drift. But this design has its own complementary risk — different wars simply run at different speeds, so a cross-season difference can be about the *wars*, not the mechanic — and the `libVelocity1d`/`libVelocity3d` placebo tests above confirm that risk is real, not theoretical. Read every cross-season trigger-hunt result in this report as provisional until the gap below is closed.
+- **Top outstanding gap: no automated same-season placebo.** The check that actually falsified `libVelocity1d` was run by hand by a reviewer, not by the committed scripts. `scripts/analysis/01-trigger-hunt.mjs` and `05-defend-covariates.mjs` only implement cross-season controls today — a same-season control path is not yet wired into the pipeline. This is the single biggest gap between what the scripts check and what the published findings claim.
+- **Permutation tests, Bonferroni-corrected.** 2,000 permutations per test; α is divided by the number of variables tested in that sweep (5 for the trigger hunt, 7 for the covariate sweep).
 - **The decision gate was written down before any numbers existed.** Shipping a countdown required *all three*: calibration within ±0.05 of nominal at every quartile, a skill-ratio 95% CI entirely at or under 0.6, and a predicted band narrower than the unconditional gap/lull spread. Missing any one leg is enough to fail.
-- **Campaign-state resolution is coarse.** `h1_status` (the campaign snapshot table) updates roughly once a day for 156 of the 160 seasons — only the 4 most recent seasons have 15-minute resolution. That means campaign state measured at an event's start can be up to 24 hours stale. This can only *weaken* a real trigger-hunt signal, never manufacture one — which is why the attack-side finding (survives this caveat easily, IQR ratio 0.135) is trusted, while a negative defend-side result can't be read as fully ruling a trigger out.
-- **Effective N is far below the raw moment count.** The walk-forward backtest steps a clock in hourly-to-3-hourly increments, producing many near-duplicate, autocorrelated observations inside a single wait. Every confidence interval above is a season-level block-bootstrap (resampling whole seasons, not individual clock-ticks), and "effective N" in every table counts distinct target events, not clock moments.
-- **Some earlier tests were deleted, not patched, after being found degenerate.** A previous-train-length "concentration" test was found to be invariant to the data — shuffling the input reproduced identical output, and a synthetic world with a deliberately deterministic trigger still scored "no signal." A statistic that can't tell shuffled data from real data isn't evidence either way, so it was removed and replaced with the direct lull-correlation test in §3/§4, not adjusted.
-- **A labelling bug was found and fixed mid-project.** Train continuation was originally chained by season + timestamp only, without scoping to a single faction — a cross-faction pair sitting next to each other in that ordering could be mislabelled as one train continuing. Fixing this (scoping to season **and** faction) moved train-start counts from 1,976 to 1,977 and shifted the previous-train-length correlation sample from 1,816 to 1,528 pairs; every number in this report reflects the corrected labelling.
+- **Campaign-state resolution is coarse.** `h1_status` updates roughly once a day for 156 of the 160 seasons — only the 4 most recent seasons have 15-minute resolution. That means campaign state measured at an event's start can be up to 24 hours stale. This can only *weaken* a real trigger-hunt signal, never manufacture one.
+- **Effective N is far below the raw moment count.** The walk-forward backtest steps a clock in hourly-to-3-hourly increments, producing many near-duplicate, autocorrelated observations inside a single wait. Every confidence interval above is a season-level block-bootstrap (resampling whole seasons, not individual clock-ticks).
+- **Some earlier tests were deleted, not patched, after being found degenerate.** A previous-train-length "concentration" test was found to be invariant to the data — shuffling the input reproduced identical output, and a synthetic world with a deliberately deterministic trigger still scored "no signal." A statistic that can't tell shuffled data from real data isn't evidence either way, so it was removed and replaced with the direct lull-correlation test above, not adjusted.
+- **A labelling bug was found and fixed mid-project.** Train continuation was originally chained by season + timestamp only, without scoping to a single faction — a cross-faction pair sitting next to each other in that ordering could be mislabelled as one train continuing. Fixing this (scoping to season **and** faction) moved train-start counts from 1,976 to 1,977 and shifted the previous-train-length correlation sample from 1,816 to 1,528 pairs against the dataset as it stood at the time; every number in this report reflects the corrected labelling against the current, slightly larger dataset.
 
 **Reproduce everything above:**
 
@@ -217,9 +257,9 @@ node --env-file=.env.development scripts/analysis/05-defend-covariates.mjs
 
 Full narrative write-up: [`docs/superpowers/findings/2026-07-27-next-event-timing.md`](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/findings/2026-07-27-next-event-timing.md). Script-by-script reference: [`scripts/README.md`](https://github.com/elfensky/helldivers.bot/blob/main/scripts/README.md#analysis).
 
----
-
-## Cross-references
+### Cross-references
 
 - See [Architecture](/docs/architecture) for how `h1_status`, `h1_event`, and `h1_event_progress` are populated — the tables every script in this report reads from.
 - See [Data Flow](/docs/data-flow) for the bucket-upsert pattern behind `h1_status`'s ~15-minute-or-1-day resolution, referenced in the caveats above.
+
+</details>
