@@ -91,14 +91,18 @@ Given no chain, lull length runs p25 27.8h / p50 36.8h / p75 46.4h
 > **Note (2026-07-28):** "chain within 10 minutes" here is the same
 > phenomenon later identified precisely as a game mechanic, not a
 > statistical tendency — see § Train starts. This pooled trigger-hunt result
-> mixes the ~62% of defends that are mechanical train follow-ups in with the
+> mixes the 61.2% of defends that are mechanical train follow-ups in with the
 > 1,976 real train starts; if a trigger existed only for train starts, it
 > could have been masked by that dilution. It was rerun restricted to train
 > starts only and the "no rule" conclusion held (see § Train starts), so this
-> section's trigger-hunt verdict stands — but the P(chain)/lull numbers just
-> above are superseded by the train-start regularity numbers below, which
-> measure the correct unit directly instead of inferring it from a 10-minute
-> chain threshold.
+> section's trigger-hunt verdict stands. The P(chain) figure above is
+> superseded by the direct per-defend mechanic measurement in § Train
+> starts (96.9% vs 0.1%, conditioned on the previous defend's outcome
+> rather than inferred from a 10-minute threshold) — but the lull figures
+> just above are NOT superseded: they are computed over the same 1,816
+> gaps as § Train starts' regularity table and are bit-identical to that
+> section's lull figures, i.e. independent corroboration rather than
+> something the correction replaces.
 
 ## How well can defend timing be predicted?
 
@@ -242,7 +246,7 @@ game mechanic, not a statistical tendency:
 | FAILED                    | 3110 / 3208 = **96.9%** |
 | SUCCEEDED                 | 2 / 1720 = **0.1%**     |
 
-So roughly 62% of the 5,088 defend events (n=3,112) are mechanical
+So 61.2% of the 5,088 defend events (n=3,112) are mechanical
 follow-ups whose timing is dictated by the game's own continuation rule, not
 by anything forecastable, and only the **1,976 train starts** are
 forecasting targets. Every skill/calibration number in the superseded
@@ -250,15 +254,45 @@ section above was computed on the pooled 4,928-gap series (a bimodal mix of
 ~2.5h mechanical chain gaps and real inter-train waits), used to predict
 ~44h waits — the mis-specified target this correction fixes.
 
+> **Note (2026-07-28):** the 96.9% / 0.1% continuation rates and the 61.2%
+> mechanical-follow-up share above were computed directly against the
+> database for this write-up and are not derived or printed by any
+> committed script — `lib/dataset.mjs`'s train-labelling self-check
+> (`scripts/README.md`) only asserts the post-success side is below 0.05,
+> not either headline figure. Both figures are correct, but flagged here
+> under the same reproducibility standard applied elsewhere in this
+> project.
+
 ### Regularity
 
-| Series          |    n | p25   | p50   | p75   | CV       |
-| ---------------- | ---: | ----- | ----- | ----- | -------- |
-| all defends       | 4928 | 2.5h  | 2.5h  | 32.9h | 1.32     |
-| train starts       | 1816 | 33.6h | 44.1h | 56.0h | **0.45** |
+| Series               | gaps | p25   | p50   | p75   | CV       |
+| --------------------- | ---: | ----- | ----- | ----- | -------- |
+| all defends            | 4928 | 2.5h  | 2.5h  | 32.9h | 1.32     |
+| train starts (start-to-start) | 1816 | 33.6h | 44.1h | 56.0h | **0.45** |
 
 Train starts are a far more regular series than the pooled one — the CV drop
 from 1.32 to 0.45 is exactly what the bimodal-mixing hypothesis predicts.
+
+**Start-to-start is not the lull.** The row above measures gaps between
+consecutive train starts (this train's start minus the previous train's
+start), which includes however long the previous train itself ran. The
+*lull* — end of the previous train to this train's start, the quantity any
+"once you hold, the next wave is out in..." recommendation actually needs —
+is a different number, over the same 1,816 gaps:
+
+| Quantity                                            | gaps | p25   | p50   | p75   |
+| ----------------------------------------------------- | ---: | ----- | ----- | ----- |
+| Lull (end of previous train -> this train's start)      | 1816 | 27.8h | 36.8h | 46.4h |
+| Start-to-start (this start -> previous start)          | 1816 | 33.6h | 44.1h | 56.0h |
+| Inflation (start-to-start minus lull)                  | 1816 | +5.8h | +7.3h | +9.6h |
+
+The lull figures here are the same ones reported earlier under § Defends
+("given no chain, lull length" — p25 27.8h / p50 36.8h / p75 46.4h, n=1816):
+that pooled-series measurement and this train-start-only one are the same
+set, same n, bit-identical values — see § Recommendation for why that
+matters. Use the lull for "once you hold" language; the start-to-start
+figure is fine for a "~44h cycle" framing, a different and still-correct
+claim.
 
 ### Trigger hunt on train starts: still no trigger
 
@@ -351,10 +385,12 @@ stratified by prevTrainLength (lull hours per stratum):
 ```
 
 Medians run a flat 35.5h-37.9h across every stratum from L=1 to L=6+ — no
-trend with previous-train length. The Pearson correlation across all 1,816
-train starts confirms it: **r = -0.036** for `prevTrainLength` vs lull length
-(and r = -0.059 for `prevTrainFailures` vs lull length). For contrast —
-_not_ as evidence of signal — `prevTrainLength` correlates r = 0.324 with the
+trend with previous-train length. The Pearson correlation, computed across
+the 1,816 train starts that have a defined previous train (of 1,976 train
+starts total — the first train of each season has none to compare against),
+confirms it: **r = -0.036** for `prevTrainLength` vs lull length (and r =
+-0.059 for `prevTrainFailures` vs lull length). For contrast — _not_ as
+evidence of signal — `prevTrainLength` correlates r = 0.324 with the
 **start-to-start** gap (this train's start minus the previous train's
 start), but that correlation is mechanical: a longer previous train simply
 pushes its own end time later, which pushes the start-to-start gap out even
@@ -363,9 +399,23 @@ script prints this distinction explicitly, because the start-to-start
 correlation is exactly the kind of number a reader could otherwise mistake
 for signal.
 
-**VERDICT: null.** `prevTrainLength`/`prevTrainFailures` do not predict the
-following lull. No feature model was built — fitting one to a null result
-would be fitting noise, not signal.
+**No detectable relationship by a magnitude threshold — not a formal
+null result.** `04-train-baseline.mjs` tests `|r| < 0.1` on each feature's
+Pearson correlation against the lull, and documents that check itself as
+"not a formal significance test (that machinery is exactly what was just
+deleted for being degenerate)" — a plain magnitude threshold on the
+correlation coefficient, with no null distribution behind it. Pearson `r`
+also only captures linear relationships; a non-linear pattern could sit
+underneath a near-zero `r` undetected. Within that limit, both features fall
+well under the threshold, consistent with the flat `prevTrainLength` medians
+above. The `prevTrainFailures` stratification (not reproduced in full here)
+is not uniformly flat, though: p50 runs 31.9h at `prevTrainFailures=1`
+against 38.5h at `prevTrainFailures=0`, a visibly off-trend stratum worth
+disclosing rather than folding into the same "flat" characterization as the
+`prevTrainLength` table above. No feature model was built on either feature
+— a sub-0.1 correlation magnitude across the board is not grounds to fit
+one, but "null" overstates what a magnitude threshold with one off-trend
+stratum actually shows.
 
 ### Recommendation (train starts)
 
@@ -373,7 +423,7 @@ Unchanged from the pooled analysis: **do not ship a countdown.** ~9.1h
 typical error on a ~44h cycle is not a usable ETA — over a fifth of the
 predicted interval. The supportable defend surface remains descriptive:
 "trains continue while you keep losing; once you hold, the next wave is
-usually 34-56h out."
+usually 28–46h out."
 
 ## Recommendation
 
@@ -388,13 +438,18 @@ If a product surface ships anyway, the honest options are:
   assault unlocks at 9" — which is deterministic and already derivable from
   data the game exposes today. Not a prediction; a fact.
 - **Defend side:** a descriptive band, not a prediction — "trains continue
-  while you keep losing; once you hold, the next wave is usually 34–56h
+  while you keep losing; once you hold, the next wave is usually 28–46h
   out." **(Corrected 2026-07-28 — see § Train starts.** The mechanic is now
   measured directly (fail -> 96.9% continuation, success -> 0.1%) rather than
-  inferred from a 10-minute chain threshold, and the lull band is the
-  train-start gap p25–p75, 33.6h–56.0h, rounded to the nearer whole-train
-  figures above — this supersedes the earlier "chain; 28–46h out" framing,
-  which was built on the pooled/mis-specified series.)
+  inferred from a 10-minute chain threshold. The band itself is unchanged:
+  the earlier "given no chain, lull length" figures (p25 27.8h / p50 36.8h /
+  p75 46.4h, n=1,816) already were the train-start lull — the pooled-series
+  measurement and this correction's train-start-only measurement are the
+  same set, same n, bit-identical values. That makes this correction
+  independent corroboration of the 28–46h band, not a retraction of it. (Do
+  not substitute the start-to-start gap, 33.6h–56.0h, for this band — that
+  quantity includes the previous train's own duration; see § Train starts,
+  Regularity.))
 
 Either way, ~9.1h of typical error against a ~44h train-start cycle (§ Train
 starts, corrected baseline) is too coarse for a countdown — descriptive

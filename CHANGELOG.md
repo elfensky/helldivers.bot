@@ -9,7 +9,7 @@
   all 4,928 defend-to-defend gaps, a bimodal series dominated by ~2.5h
   mechanical chain gaps. Measured directly this time: a defend train
   continues iff the previous defend in it was FAILED (96.9% vs 0.1% after a
-  success) — a game mechanic, not a statistical tendency — so ~62% of
+  success) — a game mechanic, not a statistical tendency — so 61.2% of
   defend events are mechanical follow-ups and only the 1,976 train starts
   are forecasting targets (train-start gaps CV 0.45 vs the pooled series'
   1.32).
@@ -25,15 +25,22 @@
     campaign-state variables still land at "no rule").
 
     A follow-up test for whether the previous train's length/failure count
-    predicts the length of the following lull found no relationship (lull
-    medians flat at 35.5h-37.9h across every `prevTrainLength` stratum,
-    Pearson r = -0.036) — replacing an earlier version of that same test
-    that a reviewer proved was invariant to the data (shuffling the input
-    reproduced identical output) and was deleted rather than patched.
+    predicts the length of the following lull found no relationship by the
+    script's own magnitude threshold (|r| < 0.1, explicitly not a formal
+    significance test; lull medians flat at 35.5h-37.9h across every
+    `prevTrainLength` stratum, Pearson r = -0.036) — though the
+    `prevTrainFailures` stratification has one off-trend point worth noting
+    (p50 31.9h at failures=1 vs 38.5h at failures=0). Replaces an earlier
+    version of that same test that a reviewer proved was invariant to the
+    data (shuffling the input reproduced identical output) and was deleted
+    rather than patched.
 
     Recommendation unchanged: do not ship a countdown. The descriptive
-    surface is corrected to "trains continue while you keep losing; once
-    you hold, the next wave is usually 34-56h out." Full write-up at
+    surface remains "trains continue while you keep losing; once you hold,
+    the next wave is usually 28–46h out" — the v0.69.0 lull figures behind
+    that band turn out to already be the train-start lull (same n=1,816,
+    bit-identical to the corrected measurement), so this correction
+    corroborates the band rather than changing it. Full write-up at
     `docs/superpowers/findings/2026-07-27-next-event-timing.md`; the new
     script is `scripts/analysis/04-train-baseline.mjs`, documented in
     `scripts/README.md` under `## analysis/`.
