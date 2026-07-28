@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.70.1
+
+### Changed
+
+- **Defend train labelling is now scoped per `(season, enemy)`** and a covariate sweep was
+  added (`scripts/analysis/05-defend-covariates.mjs`). A defend continues its train only if
+  the preceding defend _of the same faction_ ended within 600s. 1,976 → 1,977 train starts
+  (one cross-faction pair); continuation-after-failure 96.9% → 97.1%. The `04-train-baseline`
+  headline figures are unchanged (skill 0.753 [0.732, 0.773], 9.1h, calibration PASS).
+
+    The sweep tested seven previously-untested covariates. **Adversarial review rejected all
+    four apparent positives**, and the raw effect sizes must not be quoted without their
+    decomposition — see the review notes before citing any of it. Two genuinely mechanical
+    facts did fall out: across all 5,088 defends, two defends _never_ run concurrently
+    (0 overlapping pairs), and a defend never runs while its own faction has an attack up.
+
 ## 0.70.0
 
 ### Added

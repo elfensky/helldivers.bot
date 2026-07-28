@@ -29,6 +29,22 @@ export function makeRng(seed) {
     };
 }
 
+/**
+ * Median of a numeric array (linear-interpolated at even counts). Module-
+ * private — kept minimal here rather than importing the richer `quantile`
+ * helper the analysis scripts define, since dataset.mjs stays a pure data
+ * loader with no dependency on any particular script's stats code.
+ *
+ * @param {number[]} values
+ * @returns {number|null} null for an empty array
+ */
+function median(values) {
+    if (values.length === 0) return null;
+    const s = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid];
+}
+
 function connectionString() {
     const url = process.env.POSTGRES_URL;
     assert(url, 'POSTGRES_URL is not set — run with --env-file=.env.development');
@@ -123,34 +139,46 @@ export async function loadDataset() {
             }
         }
 
-        // Train labelling. A defend train continues iff the previous defend was
-        // failed — a game mechanic, not a statistical tendency. Only the FIRST
-        // defend of a train is a forecasting target; the rest are mechanical.
+        // Train labelling. A defend train continues iff the previous defend OF
+        // THE SAME FACTION was failed — a game mechanic, not a statistical
+        // tendency. Only the FIRST defend of a train is a forecasting target;
+        // the rest are mechanical.
+        //
+        // Scoped per (season, enemy), NOT pooled across factions within a
+        // season. The original implementation chained defends purely by
+        // season + start_time order, so a Cyborg defend ending just before a
+        // Bug defend started could count as that Bug defend's "previous
+        // defend" and mislabel a cross-faction pair as one train continuing.
+        // A train is a same-faction mechanic; the predecessor that decides
+        // continuation must share the enemy.
         const CHAIN_SECONDS = 600;
-        const defends = list.filter((e) => e.type === 'defend');
-        let currentLength = 0;
-        let currentFailures = 0;
-        let lastTrainLength = null;
-        let lastTrainFailures = null;
+        for (const enemy of [0, 1, 2]) {
+            const defends = list.filter((e) => e.type === 'defend' && e.enemy === enemy);
+            let currentLength = 0;
+            let currentFailures = 0;
+            let lastTrainLength = null;
+            let lastTrainFailures = null;
 
-        for (let i = 0; i < defends.length; i++) {
-            const prev = i > 0 ? defends[i - 1] : null;
-            const isStart =
-                prev === null || defends[i].start_time - prev.end_time > CHAIN_SECONDS;
+            for (let i = 0; i < defends.length; i++) {
+                const prev = i > 0 ? defends[i - 1] : null;
+                const isStart =
+                    prev === null ||
+                    defends[i].start_time - prev.end_time > CHAIN_SECONDS;
 
-            defends[i].isTrainStart = isStart;
-            if (isStart) {
-                // Close the train that just ended, then open a new one.
-                lastTrainLength = i > 0 ? currentLength : null;
-                lastTrainFailures = i > 0 ? currentFailures : null;
-                currentLength = 0;
-                currentFailures = 0;
+                defends[i].isTrainStart = isStart;
+                if (isStart) {
+                    // Close the train that just ended, then open a new one.
+                    lastTrainLength = i > 0 ? currentLength : null;
+                    lastTrainFailures = i > 0 ? currentFailures : null;
+                    currentLength = 0;
+                    currentFailures = 0;
+                }
+                defends[i].prevTrainLength = isStart ? lastTrainLength : null;
+                defends[i].prevTrainFailures = isStart ? lastTrainFailures : null;
+
+                currentLength++;
+                if (defends[i].status === 'fail') currentFailures++;
             }
-            defends[i].prevTrainLength = isStart ? lastTrainLength : null;
-            defends[i].prevTrainFailures = isStart ? lastTrainFailures : null;
-
-            currentLength++;
-            if (defends[i].status === 'fail') currentFailures++;
         }
     }
 
@@ -229,7 +257,48 @@ export async function loadDataset() {
             :   0.5;
     }
 
-    return { events, seasons, statusAt, liberationAt, playerPercentileAt };
+    /**
+     * Player count at `t` relative to the season's OWN running median,
+     * evaluable at an ARBITRARY instant — not just a real event start —
+     * which is what makes it usable at phase-matched controls (not real
+     * events) drawn for the #472 covariate sweep.
+     *
+     * Raw player counts drift across 160 seasons of war eras, and controls
+     * are drawn from OTHER seasons than the event they match — a raw count
+     * comparison would therefore be confounded by era rather than by
+     * anything causal. Dividing by the season's own running median removes
+     * that era drift while preserving magnitude information that
+     * `playerPercentileAt`'s rank discards.
+     *
+     * @param {number} season
+     * @param {number} t unix seconds
+     * @returns {number|null} null when no event precedes-or-is-at `t`, or when
+     *   no event strictly earlier than `t` exists to build the median from
+     */
+    function playersRelToSeasonMedianAt(season, t) {
+        const list = eventsBySeason.get(season) ?? [];
+        const atOrBefore = list.filter((e) => e.start_time <= t);
+        if (atOrBefore.length === 0) return null;
+        const mine = atOrBefore.at(-1).players_at_start;
+        if (mine === null || mine === undefined) return null;
+
+        const before = list
+            .filter((e) => e.start_time < t)
+            .map((e) => e.players_at_start ?? 0);
+        if (before.length === 0) return null;
+        const m = median(before);
+        if (!(m > 0)) return null;
+        return mine / m;
+    }
+
+    return {
+        events,
+        seasons,
+        statusAt,
+        liberationAt,
+        playerPercentileAt,
+        playersRelToSeasonMedianAt,
+    };
 }
 
 if (import.meta.filename === process.argv[1]) {
@@ -369,6 +438,66 @@ if (import.meta.filename === process.argv[1]) {
         );
     }
 
+    // playersRelToSeasonMedianAt must be evaluable at an ARBITRARY instant
+    // (same requirement as playerPercentileAt, for the same reason: it has to
+    // work at phase-matched control moments, which are not real events), null
+    // before the season's first event, null exactly at the first event (no
+    // strictly-earlier event to build a median from), and must recompute to
+    // the same manual calculation at real events with a unique start_time.
+    {
+        assert.equal(
+            ds.playersRelToSeasonMedianAt(1, 0),
+            null,
+            'should be null before any event in the season',
+        );
+
+        const bySeasonRatio = new Map();
+        for (const e of ds.events) {
+            if (!bySeasonRatio.has(e.season)) bySeasonRatio.set(e.season, []);
+            bySeasonRatio.get(e.season).push(e);
+        }
+        let checkedRatio = 0;
+        outerRatio: for (const [season, list] of bySeasonRatio) {
+            assert.equal(
+                ds.playersRelToSeasonMedianAt(season, list[0].start_time),
+                null,
+                `first event of a season must have null playersRelToSeasonMedianAt (season ${season})`,
+            );
+            for (const e of list) {
+                if (list.filter((x) => x.start_time === e.start_time).length !== 1) {
+                    continue;
+                }
+                const before = list
+                    .filter((x) => x.start_time < e.start_time)
+                    .map((x) => x.players_at_start ?? 0);
+                if (before.length === 0) continue;
+                const sorted = [...before].sort((x, y) => x - y);
+                const mid = Math.floor(sorted.length / 2);
+                const expectedMedian =
+                    sorted.length % 2 === 0 ?
+                        (sorted[mid - 1] + sorted[mid]) / 2
+                    :   sorted[mid];
+                const expected =
+                    expectedMedian > 0 ?
+                        (e.players_at_start ?? 0) / expectedMedian
+                    :   null;
+                assert.equal(
+                    ds.playersRelToSeasonMedianAt(season, e.start_time),
+                    expected,
+                    `playersRelToSeasonMedianAt disagrees with manual calc at season ${season}`,
+                );
+                if (expected !== null) {
+                    assert(
+                        expected >= 0,
+                        'playersRelToSeasonMedianAt must be non-negative',
+                    );
+                }
+                if (++checkedRatio >= 200) break outerRatio;
+            }
+        }
+        assert(checkedRatio > 0, 'no unique-start events found to cross-check');
+    }
+
     // The RNG is deterministic.
     const a = makeRng(42);
     const b = makeRng(42);
@@ -387,7 +516,8 @@ if (import.meta.filename === process.argv[1]) {
             `train starts (${starts.length}) should be a proper subset of defends (${defends.length})`,
         );
 
-        // Every season's first defend is a train start.
+        // Every season's first defend is a train start (true whichever faction
+        // it belongs to, since it is also the first defend of ITS faction).
         const bySeasonTrain = new Map();
         for (const e of defends) {
             if (!bySeasonTrain.has(e.season)) bySeasonTrain.set(e.season, []);
@@ -397,10 +527,29 @@ if (import.meta.filename === process.argv[1]) {
             assert(list[0].isTrainStart, 'a season first defend must be a train start');
         }
 
+        // Labelling is scoped per (season, enemy) — grouping the invariants
+        // below the same way is what actually exercises the fix. Grouping by
+        // season alone (pooled across factions) would compare a defend
+        // against the previous defend IN TIME regardless of faction, which is
+        // exactly the bug: a cross-faction pair sitting next to each other in
+        // the pooled ordering is not a train relationship at all.
+        const bySeasonEnemyTrain = new Map();
+        for (const e of defends) {
+            const key = `${e.season}:${e.enemy}`;
+            if (!bySeasonEnemyTrain.has(key)) bySeasonEnemyTrain.set(key, []);
+            bySeasonEnemyTrain.get(key).push(e);
+        }
+        for (const [, list] of bySeasonEnemyTrain) {
+            assert(
+                list[0].isTrainStart,
+                'a (season, enemy) first defend must be a train start',
+            );
+        }
+
         // The mechanic: continuation after a SUCCESS is near-nonexistent.
         let afterSuccessContinued = 0;
         let afterSuccess = 0;
-        for (const [, list] of bySeasonTrain) {
+        for (const [, list] of bySeasonEnemyTrain) {
             for (let i = 1; i < list.length; i++) {
                 if (list[i - 1].status !== 'success') continue;
                 afterSuccess++;
@@ -413,13 +562,13 @@ if (import.meta.filename === process.argv[1]) {
             `trains should not continue after a success; got ${afterSuccessContinued}/${afterSuccess}`,
         );
 
-        // prevTrainLength is null exactly for a season's first train.
-        for (const [, list] of bySeasonTrain) {
+        // prevTrainLength is null exactly for a (season, enemy)'s first train.
+        for (const [, list] of bySeasonEnemyTrain) {
             const seasonStarts = list.filter((e) => e.isTrainStart);
             assert.equal(
                 seasonStarts[0].prevTrainLength,
                 null,
-                'first train of a season must have null prevTrainLength',
+                'first train of a (season, enemy) must have null prevTrainLength',
             );
             for (const s of seasonStarts.slice(1)) {
                 assert(
@@ -429,6 +578,23 @@ if (import.meta.filename === process.argv[1]) {
                 assert(
                     s.prevTrainFailures <= s.prevTrainLength,
                     'prevTrainFailures cannot exceed prevTrainLength',
+                );
+            }
+        }
+
+        // Cross-faction guard: a train start's isTrainStart must be true
+        // whenever the immediately-preceding SAME-FACTION defend (if any)
+        // ended more than CHAIN_SECONDS before this one starts — regardless
+        // of what happened in between for OTHER factions. This is the
+        // invariant the original bug violated.
+        const CHAIN_SECONDS_CHECK = 600;
+        for (const [, list] of bySeasonEnemyTrain) {
+            for (let i = 1; i < list.length; i++) {
+                const gap = list[i].start_time - list[i - 1].end_time;
+                assert.equal(
+                    list[i].isTrainStart,
+                    gap > CHAIN_SECONDS_CHECK,
+                    `isTrainStart disagrees with the same-faction chain gap at season ${list[i].season} enemy ${list[i].enemy}`,
                 );
             }
         }
