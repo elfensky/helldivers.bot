@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.71.2
+
+### Added
+
+- **Handoff prompt for further defend-prediction attempts**
+  (`docs/superpowers/specs/2026-07-28-defend-prediction-handoff.md`). Self-contained brief for a
+  fresh session: the established rules, every variable already rejected, the pre-registered bar,
+  and the five control-design traps. Front-loads the traps because all four false positives this
+  investigation produced came from control construction rather than modelling. Names the most
+  obvious untried angle: hour-of-day and weekend effects were measured on all 5,091 defends, 61%
+  of which are mechanical follow-ups inheriting their start time — never on train starts alone.
+
 ## 0.71.1
 
 ### Changed
