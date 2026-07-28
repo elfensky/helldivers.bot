@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`/docs/predict` — full defend-predictability report.** Publishes the #472
+  next-event-timing investigation as a docs page: an ELI14 explainer (trains vs.
+  a timetable, the Seattle/Cairo control-group analogy), the mechanics
+  discovered (97.1%/0.1% train continuation, zero overlapping same-faction
+  defends, zero same-faction defend/attack overlap, attacks gated on a 9-of-10
+  sector threshold), the full regularity/prediction-accuracy numbers (headline:
+  9.1h median error vs. a 12.1h constant baseline on a ~44h cycle, skill ratio
+  0.753 [0.732, 0.773], calibration PASS, sharpness FAIL — verdict
+  INCONCLUSIVE, no countdown ships), and every tested-and-rejected variable
+  from both the trigger hunt and the covariate sweep. Two Recharts
+  visualizations (`DefendRegularityChart`, `LullByTrainLengthChart`) carry
+  hardcoded, script-sourced quartile data. All figures re-verified against a
+  fresh run of `01-trigger-hunt.mjs`, `02-baseline.mjs`, `04-train-baseline.mjs`,
+  and `05-defend-covariates.mjs` at time of writing, plus two ad-hoc queries
+  (not committed) confirming the zero-overlap invariants and the exact
+  train-continuation counts.
+
 ## 0.70.1
 
 ### Changed

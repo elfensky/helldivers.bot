@@ -48,6 +48,11 @@ const sections = [
             { href: '/docs/utilities', label: 'Utilities', track: 'docs-utilities' },
             { href: '/docs/hd1-api', label: 'Official', track: 'docs-hd1-api' },
             { href: '/docs/brandkit', label: 'Brand Kit', track: 'docs-brandkit' },
+            {
+                href: '/docs/predict',
+                label: 'Can We Predict Defends?',
+                track: 'docs-predict',
+            },
         ],
     },
     {
