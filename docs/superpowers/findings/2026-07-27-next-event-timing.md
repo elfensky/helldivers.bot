@@ -1,7 +1,10 @@
 # Next-event timing forecast — findings
 
 **Issue:** [#472](https://github.com/elfensky/helldivers.bot/issues/472)
-**Date:** 2026-07-27 (defend verdict corrected 2026-07-28 — see § Train starts)
+**Date:** 2026-07-27 (defend verdict corrected 2026-07-28 — see § Train
+starts; third attempt added 2026-07-28 — see § Attempt 3, from the handoff
+in
+[`docs/superpowers/specs/2026-07-28-defend-prediction-handoff.md`](../specs/2026-07-28-defend-prediction-handoff.md))
 **Design doc:** [`docs/superpowers/specs/2026-07-27-next-event-timing-forecast-design.md`](../specs/2026-07-27-next-event-timing-forecast-design.md)
 **Plan:** [`docs/superpowers/plans/2026-07-27-next-event-timing-forecast.md`](../plans/2026-07-27-next-event-timing-forecast.md), [`docs/superpowers/plans/2026-07-28-defend-train-starts.md`](../plans/2026-07-28-defend-train-starts.md)
 **Scripts:** [`scripts/README.md`](../../../scripts/README.md#analysis) (`## analysis/`)
@@ -38,10 +41,13 @@ The question had two halves, and they had opposite answers.
 - **Defends have no deterministic trigger**, and the best predictive model
   built for them does not clear the pre-registered decision gate. The
   verdict is genuinely inconclusive, not dead: the corrected-target
-  configuration beats a constant baseline, just not by enough, and adding
-  features made things worse rather than better. **(Corrected 2026-07-28 —
-  see § Train starts. The verdict itself — INCONCLUSIVE, do not ship — is
-  unchanged; the skill/calibration numbers underneath it are.)**
+  configuration beats a constant baseline, just not by enough.
+  **(Corrected 2026-07-28 — see § Train starts. A third attempt the same
+  day — § Attempt 3 — found real, observable campaign-state structure (the
+  homeworld-assault window) and improved skill to 0.648 [0.622, 0.674]
+  with calibration and sharpness both passing, but the skill CI upper
+  bound still misses the pre-registered 0.6 ship bar. The verdict —
+  INCONCLUSIVE, do not ship — is unchanged through all three attempts.)**
 
 Recommendation: **do not ship a countdown or an ETA.** See § Recommendation.
 
@@ -423,7 +429,136 @@ Unchanged from the pooled analysis: **do not ship a countdown.** ~9.1h
 typical error on a ~44h cycle is not a usable ETA — over a fifth of the
 predicted interval. The supportable defend surface remains descriptive:
 "trains continue while you keep losing; once you hold, the next wave is
-usually 28–46h out."
+usually 28–46h out." **(A third attempt — § Attempt 3 below — later cut the
+typical error to 7.8h with observable campaign-state features and still
+missed the ship bar; the recommendation is unchanged.)**
+
+## Attempt 3: observable campaign state (2026-07-28)
+
+**Scripts:** `06-train-covariates.mjs` (covariate sweep with same-season
+placebos), `07-train-state-model.mjs` (state-conditional models vs. the
+gate).
+
+A third pass at the corrected target, working the untried angles from the
+handoff: clock features on train starts specifically, a cooldown floor,
+per-faction cadence, season-level effects, and region. Every test in this
+attempt carries the same-season placebo machinery the handoff demanded and
+prior positives lacked: labels are permuted WITHIN season (cross-season
+composition can't manufacture an effect), with a second phase-stratified
+variant permuting within season × season-phase tercile (within-season
+calendar drift can't either). Eight pre-declared tests, Bonferroni alpha
+0.00625, 2,000 seeded permutations each, and a degenerate-control guard
+(the permuted statistic must actually vary — the failure mode that shipped
+twice before).
+
+### The nulls, for the record
+
+- **Clock features on train starts are null.** The hour-of-day effect
+  measured on all defends (chi-squared 128.1, df=23) does not survive
+  restriction to the 1,978 train starts: exposure-corrected chi-squared
+  32.2 (df=23) with a season-rotation permutation p=0.13, day-of-week
+  chi-squared 3.5 at p=0.57. The rotation null preserves each season's
+  entire internal structure (gaps, trains, exposure shape) and destroys
+  only clock alignment — an iid chi-squared null would be anticonservative
+  here. Hourly rate ratios span 0.79–1.31: even the point pattern is weak.
+  The pooled effect was mechanical-follow-up dilution, and the old hazard
+  model (Phase 3) was right to find these features useless.
+- **No hard cooldown floor.** Lull minimum 0.09h (cross-faction
+  near-simultaneous train starts exist in every era); p01=3.7h, smooth left
+  tail. The p05 drifts up across eras (12.3h → 24.7h, S1-40 → S121-160) —
+  soft non-stationary tightening, not a mechanic.
+- **Previous train's faction: null** (within-season delta −0.7h, p=0.74).
+- **prevRegion==9: null** (−0.3h, p=1.0) — region 9 is where lulls END
+  (see below), not a property that carries forward.
+- **Season-level random effects: real but too weak to matter.** Split-half
+  correlation of per-season median gaps r=0.30; an online season-pace
+  predictor (M=3 pseudo-gap shrinkage) scored skill 0.787 [0.763, 0.813] —
+  no better than the featureless baseline's 0.753.
+
+### The signal: the homeworld-assault window
+
+Three observable-at-forecast-time covariates survive both placebo variants
+at p=0.0005 (the permutation floor), all pointing at one mechanism:
+
+| Covariate (at lull start)         | Within-season delta | Phase-stratified | n (label) |
+| ---------------------------------- | ------------------: | ---------------: | --------: |
+| `maxSC == 9` (assault window)        |            +20.3h |          +20.3h |       251 |
+| attack active (any faction)          |            −11.5h |          −11.5h |       206 |
+| `prevRegion == 10`                   |            +10.1h |          +10.1h |       185 |
+
+`maxSC` is the maximum sectors-captured across the three factions at the
+moment the lull begins. Attacks fire at 9 of 10 sectors (§ Attacks), so
+`maxSC==9` marks the window where a homeworld assault is imminent — and
+train starts go quiet in it: lull p50 55.1h vs 34.8h elsewhere. The
+designated confound check kills the season-phase explanation: `maxSC==10`
+lulls are LATER in the season than `maxSC==9` lulls yet revert to baseline
+(34.8h) — a monotone "late season is slower" drift cannot produce a spike
+at 9 that reverses at 10. The `curRegion==9` structure (+11.5h, p=0.0005;
+lulls that end in a region-9 train start are longer and much more
+dispersed) is the same phenomenon seen from the other side — train-start
+region is largely a campaign-state readout (73% of train starts fire
+within ±1 of `sectorsCaptured+1`) — but it is NOT observable during the
+lull and is reported as structure, not as a feature.
+
+At moment level (the frame a predictor actually conditions in), the
+separation is large at fixed elapsed: with 0–24h elapsed, median remaining
+wait in the SC9 state runs 48–54h against 23–30h in NORMAL; the ATTACK
+state runs 20–29h against NORMAL's 7–14h at 24h+ elapsed.
+
+### The gate result
+
+`07-train-state-model.mjs` feeds that state (precedence ATTACK > SC9 >
+SC10 > NORMAL, evaluated fresh at every walk-forward moment from
+information observable at that moment) into a k-nearest-neighbours
+conditional wait estimator (K=200 on elapsed, within state; cells under 30
+fall back to the pooled sample), through the same `walkForward` harness,
+moment filter, and pre-registered gate as `04-train-baseline.mjs`. The
+plain fit dropped right-censored training moments — a bias declared in the
+script header before the first run, direction predicted (fitted waits too
+short) — and the first run confirmed it exactly: skill 0.644 [0.624,
+0.666] but calibration FAIL with all three rates low (0.188/0.442/0.722).
+The single declared v2 fix, standard for precisely this defect, was
+Kaplan-Meier product-limit quantiles over the same neighbourhoods with
+censored moments included; nothing else changed and both versions are in
+the output.
+
+| Configuration    | Skill ratio | 95% CI         | Calibration       | Band vs 22.4h marginal |
+| ----------------- | ----------: | -------------- | ----------------- | ---------------------- |
+| BASELINE (04)     |       0.753 | [0.732, 0.773] | PASS              | 23.1h — NOT narrower   |
+| STATE (v1)        |       0.644 | [0.624, 0.666] | FAIL (low)        | 18.9h — narrower       |
+| SEASON-SCALE      |       0.787 | [0.763, 0.813] | PASS              | 24.2h — NOT narrower   |
+| STATE × SCALE     |       0.649 | [0.626, 0.675] | PASS              | 19.7h — narrower       |
+| **STATE-KM (v2)** |   **0.648** | [0.622, 0.674] | **PASS**          | **20.4h — narrower**   |
+| STATE-KM × SCALE  |       0.669 | [0.644, 0.697] | PASS              | 21.3h — narrower       |
+
+STATE-KM is the first model in this project to pass the sharpness leg, and
+it passes calibration — two of the three gate legs, with a skill ratio a
+clear CI-separated step below the previous best (0.648 vs 0.753; median
+absolute error 7.8h vs 9.1h, against the constant baseline's 12.1h). The
+third leg is the bar it dies on: the skill-ratio CI upper bound is 0.674,
+and the pre-registered ship requirement is ≤ 0.6. **Verdict: INCONCLUSIVE
+— do not ship.** Nowhere near the 0.8 dead bar either; the signal is real,
+just not deep enough for a countdown.
+
+Two caveats, disclosed rather than buried. First, six configurations were
+evaluated and STATE-KM is the post-hoc best of correlated variants — its
+CI does not account for that selection, which can only flatter it, and it
+still misses the bar. Second, `h1_status` staleness (up to 24h for 156 of
+160 seasons) smears the `maxSC` state boundaries, so the true assault-
+window effect is likely SHARPER than measured here — a genuine reason a
+future attempt with fresher state data (S157+ has ~15-minute buckets, but
+only ~49 train starts so far) could do better, and the honest framing is
+"insufficient data at the required freshness," not "no signal."
+
+### What this changes about the recommendation
+
+Nothing, for shipping: 7.8h typical error on a ~44h cycle is still too
+coarse for a countdown, and the gate was missed on the leg it was designed
+to be strict about. What it does change is the descriptive story the data
+supports, which now has a mechanistic third clause: trains continue while
+you keep losing; once you hold, the next wave is usually 28–46h out —
+**unless a faction sits at 9 of 10 sectors, in which case the galaxy goes
+quiet (p50 ~55h) until the homeworld assault resolves.**
 
 ## Recommendation
 
@@ -451,9 +586,14 @@ If a product surface ships anyway, the honest options are:
   quantity includes the previous train's own duration; see § Train starts,
   Regularity.))
 
-Either way, ~9.1h of typical error against a ~44h train-start cycle (§ Train
-starts, corrected baseline) is too coarse for a countdown — descriptive
-language, not a number, is what the data supports.
+Either way, even the best model's ~7.8h typical error against a ~44h
+train-start cycle (§ Attempt 3, STATE-KM) is too coarse for a countdown —
+descriptive language, not a number, is what the data supports. Attempt 3
+adds one mechanistic clause the descriptive surface can honestly carry:
+when a faction sits at 9 of 10 sectors (the homeworld-assault window),
+lulls run ~20h longer than usual (p50 ~55h vs ~35h) — observable directly
+from campaign state, placebo-tested, and coherent with the attack
+mechanics in § Attacks.
 
 ## Method caveats
 

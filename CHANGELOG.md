@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.72.0
+
+### Added
+
+- **Third defend-prediction attempt: the homeworld-assault window** (#472). A second covariate
+  sweep (`scripts/analysis/06-train-covariates.mjs`) tests eight pre-declared covariates against
+  train-start lulls with the same-season placebo machinery the handoff called for — every test is
+  a within-season label permutation plus a phase-stratified variant, with a degenerate-control
+  guard. Clock features on train starts, previous-train faction, and prevRegion==9 are null; no
+  hard cooldown floor exists. Three observable covariates survive at p=0.0005: `maxSC==9` at lull
+  start (+20.3h — some faction one sector from the homeworld assault; lulls run ~55h vs ~35h),
+  attack active (−11.5h), and prevRegion==10 (+10.1h). A designated SC9-vs-SC10 check rules out a
+  season-phase confound (SC10 is later yet reverts to baseline).
+- **State-conditional train-start model** (`scripts/analysis/07-train-state-model.mjs`): kNN on
+  elapsed within the observable moment state (ATTACK > SC9 > SC10 > NORMAL) through the existing
+  `walkForward` harness, with a declared Kaplan-Meier censoring fix (v1 kept in the output). Best
+  configuration: skill 0.648 [0.622, 0.674] vs the previous best 0.753 [0.732, 0.773], calibration
+  PASS, sharpness PASS (20.4h band vs 22.4h marginal — the first model to pass that leg). The
+  pre-registered ship bar (skill CI upper bound ≤ 0.6) is still missed: **verdict INCONCLUSIVE,
+  no countdown ships.** Typical error 7.8h on a ~44h cycle.
+
+### Changed
+
+- **`/docs/predict` updated with the third attempt**: the assault-window finding surfaced as the
+  one map-visible conditioning fact, the second covariate sweep table (same-season placebos built
+  in), the state-model gate table, and the "no automated same-season placebo" caveat rewritten —
+  that gap is closed for the new sweep, remaining only for the historical 01/05 scripts. Findings
+  doc gains § Attempt 3; `scripts/README.md` documents 05–07 (05 was previously missing).
+
 ## 0.71.2
 
 ### Added
