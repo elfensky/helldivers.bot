@@ -1,6 +1,8 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
+import '@/features/galaxy/EventCard.css';
 import { dayOf } from '@/shared/utils/game/warClock.mjs';
 
 /**
@@ -25,9 +27,12 @@ function localTime(t) {
 }
 
 /**
- * Live likelihood window for the next defend wave. Band, never a countdown:
- * copy always says "likely", numbers are the calibrated 50% band and the
- * reliability-checked within-24h probability from waveModel.mjs.
+ * Live likelihood window for the next defend wave, rendered in the same
+ * sector-card skeleton as the faction cards (EventCard.css — imported
+ * directly so the classes don't depend on an EventCard rendering first).
+ * Band, never a countdown: the range is the calibrated 50% band and the
+ * meta row carries the reliability-checked within-24h/48h probabilities
+ * from waveModel.mjs.
  *
  * @param {object} props
  * @param {ReturnType<typeof import('./waveForecast.mjs').waveForecast>} props.forecast
@@ -44,68 +49,100 @@ export default function NextWaveCard({ forecast, warStart, now }) {
         warStart != null ?
             ` · War Day ${dayOf(from, warStart)}–${dayOf(to, warStart)}`
         :   '';
-    const title = `${localTime(from)} – ${localTime(to)} (your time)${warDays} · ${Math.round(p48 * 100)}% within 48h · typical miss ±8h`;
+    const title =
+        `${localTime(from)} – ${localTime(to)} (your time)${warDays}` +
+        ` · likely window (50% band) · typical miss ±8h` +
+        (runningLong ?
+            ' · a faction is 1 sector from homeworld assault — waves pause in this window'
+        :   '');
 
     const axisHours = Math.max(48, Math.ceil(p75 / 12) * 12);
-    const left = `${(p25 / axisHours) * 100}%`;
-    const width = `${((p75 - p25) / axisHours) * 100}%`;
+    const range = formatRange(p25, p75);
+    const state =
+        [runningLong && 'RUNNING LONG', imminent && 'IMMINENT']
+            .filter(Boolean)
+            .join(' · ') || null;
 
-    // Inline: the unlayered .card border rule beats Tailwind's layered border utilities, so border-r-* classes silently lose the cascade here.
     return (
         <div
-            className="card p-3"
-            style={{ borderRight: 'var(--card-accent-width) solid var(--color-primary)' }}
+            className="sector-card"
+            style={
+                /** @type {React.CSSProperties} */ ({
+                    '--accent-color': 'var(--color-primary)',
+                })
+            }
             suppressHydrationWarning
         >
-            <div className="flex items-baseline justify-between gap-2">
-                <span className="font-mono text-small tracking-widest text-text-muted">
-                    NEXT DEFEND WAVE
-                </span>
-                <span className="flex items-center gap-2">
-                    {imminent && (
-                        <span className="border border-primary px-1 font-mono text-small text-primary">
-                            IMMINENT
-                        </span>
-                    )}
-                    {runningLong && (
-                        <span className="border border-warning px-1 font-mono text-small text-warning">
-                            RUNNING LONG
-                        </span>
-                    )}
+            <div className="sector-card-content">
+                <div className="sector-card-header">
+                    <Image src="/icons/superearth.webp" alt="" width={16} height={16} />
+                    <span
+                        className="sector-card-action"
+                        style={{ color: 'var(--color-primary)' }}
+                    >
+                        Predicted
+                    </span>
+                    <span className="sector-card-title">Wave</span>
                     <Link
                         href="/docs/predict"
                         data-umami-event="dashboard-wave-window-docs"
-                        className="font-mono text-small text-text-muted underline"
+                        aria-label="How is this computed?"
+                        title="How is this computed?"
+                        className="ml-auto font-mono text-small text-text-muted no-underline"
                     >
-                        how?
+                        ⓘ
                     </Link>
-                </span>
+                </div>
+                <div className="sector-card-bar-label-row">
+                    <span className="sector-card-bar-label">LIKELIHOOD_WINDOW</span>
+                    {state && (
+                        <span
+                            className="sector-card-bar-label"
+                            style={{
+                                color:
+                                    runningLong ? 'var(--color-warning)' : (
+                                        'var(--color-primary)'
+                                    ),
+                            }}
+                        >
+                            {state}
+                        </span>
+                    )}
+                </div>
+                <div className="sector-card-bar-wrap">
+                    <div
+                        className="sector-card-bar"
+                        role="img"
+                        aria-label={`Next wave likely in ${range}`}
+                    >
+                        <div
+                            className="sector-card-bar-fill"
+                            style={{
+                                marginLeft: `${(p25 / axisHours) * 100}%`,
+                                width: `${((p75 - p25) / axisHours) * 100}%`,
+                                background: 'var(--color-primary)',
+                            }}
+                        />
+                    </div>
+                    <span
+                        className="sector-card-pct"
+                        title={title}
+                        suppressHydrationWarning
+                    >
+                        {range}
+                    </span>
+                </div>
+                <div className="sector-card-meta">
+                    <span className="sector-card-points">
+                        {Math.round(p24 * 100)}% within 24h
+                    </span>
+                    <span className="sector-card-sep">&middot;</span>
+                    <span className="sector-card-points">
+                        {Math.round(p48 * 100)}% within 48h
+                    </span>
+                </div>
             </div>
-            <p className="mt-1 mb-1! text-body">
-                likely in{' '}
-                <b
-                    className="font-mono text-primary"
-                    title={title}
-                    suppressHydrationWarning
-                >
-                    {formatRange(p25, p75)}
-                </b>{' '}
-                <span className="text-text-muted">
-                    · {Math.round(p24 * 100)}% within 24h
-                </span>
-            </p>
-            <div className="relative h-2 bg-surface-3">
-                <span
-                    className="absolute inset-y-0 bg-primary opacity-85"
-                    style={{ left, width }}
-                />
-            </div>
-            {runningLong && (
-                <p className="mt-1 mb-0! font-mono text-small text-text-muted">
-                    A faction is 1 sector from homeworld assault — waves pause in this
-                    window
-                </p>
-            )}
+            <div className="sector-card-accent" />
         </div>
     );
 }

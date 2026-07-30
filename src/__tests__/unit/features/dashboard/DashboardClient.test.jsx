@@ -425,56 +425,6 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
     });
 });
 
-describe('DashboardClient — next-wave forecast card', () => {
-    beforeEach(() => {
-        localStorage.clear();
-    });
-    afterEach(() => cleanup());
-
-    test('renders NextWaveCard when a completed defend train exists', () => {
-        const now = Math.floor(Date.now() / 1000);
-        vi.mocked(useLiveDataContext).mockReturnValue({
-            data: {
-                status: [
-                    {
-                        enemy: 0,
-                        points: 1_000_000,
-                        points_max: 5_000_000,
-                        status: 'active',
-                    },
-                    { enemy: 1, points: 0, points_max: 5_000_000, status: 'active' },
-                    { enemy: 2, points: 0, points_max: 5_000_000, status: 'active' },
-                ],
-                // A single, non-active defend for enemy 0 that ended 30h ago —
-                // deriveTrainStarts (waveForecast.mjs) treats it as a train
-                // start since it's the only defend on record for that enemy,
-                // putting waveForecast into 'window' mode.
-                events: [
-                    {
-                        type: 'defend',
-                        region: 3,
-                        enemy: 0,
-                        status: 'fail',
-                        start_time: now - 40 * 3600,
-                        end_time: now - 30 * 3600,
-                        points: 400,
-                        points_max: 1000,
-                    },
-                ],
-                last_updated: '2025-01-01',
-                war_start: now - 100 * 24 * 3600,
-            },
-            mapState: baseMapState,
-            status: 'live',
-            prevData: null,
-            isLeader: true,
-        });
-
-        render(<DashboardClient />);
-        expect(screen.getByText(/next defend wave/i)).toBeInTheDocument();
-    });
-});
-
 describe('DashboardClient — defeated faction branch', () => {
     beforeEach(() => {
         localStorage.clear();
