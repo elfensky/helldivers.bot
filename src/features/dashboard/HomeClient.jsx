@@ -6,6 +6,8 @@ import ComponentErrorBoundary from '@/shared/components/ComponentErrorBoundary';
 import Galaxy from '@/features/galaxy/Galaxy';
 import DashboardClient from '@/features/dashboard/DashboardClient';
 import EventLog from '@/features/timeline/EventLog';
+import NextWaveCard from '@/features/dashboard/NextWaveCard';
+import { waveForecast } from '@/features/dashboard/waveForecast.mjs';
 import { buildIntroMarkers } from '@/features/timeline/buildIntroMarkers.mjs';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 import { useScrollEvent } from '@/shared/hooks/useScrollEvent.mjs';
@@ -111,6 +113,10 @@ export default function HomeClient({
     const events = data?.events ?? [];
     const pulseDelays = computePulseDelays(events);
     const { selectedEvent, railRef } = useScrollEvent(events);
+    // Next-wave forecast — recomputed every poll-driven render; renders as
+    // the event log's "FUTURE" group (null forecast → no group at all).
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const forecast = waveForecast(data, nowSeconds);
     // Mobile-only: toggle whether the galaxy map is `position: sticky` so
     // it pins at the top as the user scrolls. Default off — map scrolls
     // away with the hero like normal flow; user pins it via the FAB.
@@ -157,6 +163,15 @@ export default function HomeClient({
                         }
                         railRef={railRef}
                         introMarkers={buildIntroMarkers(data)}
+                        futureSlot={
+                            forecast.mode === 'window' ?
+                                <NextWaveCard
+                                    forecast={forecast}
+                                    warStart={data?.war_start ?? null}
+                                    now={nowSeconds}
+                                />
+                            :   null
+                        }
                         // Documented-optional in EventLog but has no default in
                         // its destructuring, so its inferred type marks it
                         // required; pass undefined explicitly (no behavior change).
