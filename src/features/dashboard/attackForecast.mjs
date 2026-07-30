@@ -1,0 +1,172 @@
+/**
+ * attackForecast — per-faction assault ETA from the live payload.
+ *
+ * Attacks are deterministic: one fires within minutes of a faction's campaign
+ * reaching `points_max` (see /docs/predict § Attacks). So the forecast is
+ * arithmetic the client can do, plus two calibration tables it cannot derive,
+ * which ship in attackModel.mjs.
+ *
+ *     eta = (points_max − points) / rate − readingAge
+ *     shown = eta × {r25, r50, r75} for this remaining-fraction band
+ *
+ * Total function: every failure path returns { mode: 'hidden', reason }
+ * rather than throwing, so the card degrades to exactly its old meta row.
+ */
+import defaultModel from '@/features/dashboard/attackModel.mjs';
+import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
+
+const HOUR = 3600;
+
+/**
+ * @param {object} model candidate attack model
+ * @returns {boolean} true when it carries usable band and day-of-week tables
+ */
+export function isValidModel(model) {
+    if (!model || !Array.isArray(model.bands) || !Array.isArray(model.dow)) return false;
+    if (model.dow.length !== 7 || !model.dow.every((f) => Number.isFinite(f) && f > 0)) {
+        return false;
+    }
+    if (!model.ratios) return false;
+    for (let b = 0; b < model.bands.length; b++) {
+        const r = model.ratios[b];
+        if (!r) return false;
+        if (![r.r25, r.r50, r.r75].every((x) => Number.isFinite(x) && x > 0))
+            return false;
+        if (!(r.r25 <= r.r50 && r.r50 <= r.r75)) return false;
+    }
+    return true;
+}
+
+/**
+ * Index of the remaining-fraction band containing `frac`.
+ *
+ * @param {number} frac remaining points as a fraction of points_max
+ * @param {number[]} bands band edges from the model
+ * @returns {number} band index
+ */
+export function bandOf(frac, bands) {
+    for (let i = 0; i < bands.length; i++) if (frac < bands[i]) return i;
+    return bands.length - 1;
+}
+
+/**
+ * Campaign points for a faction ~`hoursAgo` before `nowSeconds`, read from the
+ * season's snapshot history.
+ *
+ * `snapshots` is POSITIONAL — `data[enemy]` — unlike `status`, which is keyed
+ * by an explicit `.enemy`. Mixing the two conventions up is a bug this repo has
+ * already shipped once (see getCampaign.mjs), so this reads only `snapshots`.
+ *
+ * @param {{time: number, data: object[]}[]} snapshots ascending by time
+ * @param {number} enemy faction id
+ * @param {number} at unix seconds
+ * @returns {{points: number, time: number}|null} latest snapshot at or before `at`
+ */
+export function pointsAt(snapshots, enemy, at) {
+    let best = null;
+    for (const snap of snapshots) {
+        if (snap.time > at) break;
+        const row = snap.data?.[enemy];
+        if (row && Number.isFinite(Number(row.points))) {
+            best = { points: Number(row.points), time: snap.time };
+        }
+    }
+    return best;
+}
+
+/**
+ * Assault ETA for one faction.
+ *
+ * @param {object} data the live campaign payload
+ * @param {number} enemy faction id (0 bugs, 1 cyborgs, 2 illuminate)
+ * @param {number} nowSeconds unix seconds
+ * @param {object} [model] the committed calibration tables
+ * @returns {{mode: 'window', p25: number, p50: number, p75: number,
+ *   remaining: number, imminent: boolean}
+ *   | {mode: 'hidden', reason: 'no-data'|'attack-active'|'complete'|'stalled'|'beyond-window'}}
+ */
+export function attackForecast(data, enemy, nowSeconds, model = defaultModel) {
+    if (
+        !data ||
+        !Array.isArray(data.status) ||
+        !Array.isArray(data.snapshots) ||
+        !isValidModel(model)
+    ) {
+        return { mode: 'hidden', reason: 'no-data' };
+    }
+
+    // An assault already running against this faction makes the question moot,
+    // and mirrors the `filtered` configuration the model was measured under.
+    const attackActive = (data.events ?? []).some(
+        (e) =>
+            e.type === EVENT_TYPE.ATTACK &&
+            e.status === EVENT_STATUS.ACTIVE &&
+            e.enemy === enemy,
+    );
+    if (attackActive) return { mode: 'hidden', reason: 'attack-active' };
+
+    const row = data.status.find((r) => r.enemy === enemy);
+    if (!row || !(Number(row.points_max) > 0)) {
+        return { mode: 'hidden', reason: 'no-data' };
+    }
+
+    const pointsMax = Number(row.points_max);
+    const remaining = pointsMax - Number(row.points);
+    if (!(remaining > 0)) return { mode: 'hidden', reason: 'complete' };
+
+    const then = pointsAt(
+        data.snapshots,
+        enemy,
+        nowSeconds - model.meta.rateWindowHours * HOUR,
+    );
+    const now = pointsAt(data.snapshots, enemy, nowSeconds);
+    if (!then || !now || !(now.time > then.time)) {
+        return { mode: 'hidden', reason: 'no-data' };
+    }
+
+    const spanHours = (now.time - then.time) / HOUR;
+    const ratePerHour = (now.points - then.points) / spanHours;
+    // A front that is not moving has no arrival time, and silence is the honest
+    // output. Measured at ~38-47% of moments across history.
+    if (!(ratePerHour > 0)) return { mode: 'hidden', reason: 'stalled' };
+
+    let etaHours = remaining / ratePerHour;
+
+    // Day-of-week correction. Campaign pace runs ~29% faster on the busiest day
+    // than the quietest, and a 24h rate window carries yesterday's weekday into
+    // a forecast about tomorrow's.
+    const meanFactor = (from, to) => {
+        let sum = 0;
+        let n = 0;
+        for (let t = from; t < to; t += 6 * HOUR) {
+            sum += model.dow[new Date(t * 1000).getUTCDay()];
+            n++;
+        }
+        return n > 0 ? sum / n : 1;
+    };
+    const horizon = Math.min(Math.max(etaHours, 1), 48);
+    const adj =
+        meanFactor(then.time, now.time) /
+        meanFactor(nowSeconds, nowSeconds + horizon * HOUR);
+    if (adj > 0) etaHours *= adj;
+
+    // Anchor at now, not at the reading: `remaining / rate` otherwise answers
+    // "how long from when the reading was taken".
+    etaHours -= (nowSeconds - now.time) / HOUR;
+    etaHours = Math.max(etaHours, model.meta.minEtaHours);
+
+    const r = model.ratios[bandOf(remaining / pointsMax, model.bands)];
+    const p50 = etaHours * r.r50;
+    if (!(p50 < model.meta.displayHours)) {
+        return { mode: 'hidden', reason: 'beyond-window' };
+    }
+
+    return {
+        mode: 'window',
+        p25: etaHours * r.r25,
+        p50,
+        p75: etaHours * r.r75,
+        remaining,
+        imminent: p50 < 4,
+    };
+}
