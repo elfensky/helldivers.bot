@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.74.2
+
+### Changed
+
+- **Roadmap:** added S3a for [#476](https://github.com/elfensky/helldivers.bot/issues/476)
+  (Space Mono never loads), flagged as a site-wide typography decision rather than a
+  one-line import.
+
 ## 0.74.1
 
 ### Fixed
@@ -10,7 +18,7 @@
 
 ### Known issues
 
-- **`--font-mono` never loads.** `layout.css` declares `'Space Mono', monospace` but
+- **`--font-mono` never loads** ([#476](https://github.com/elfensky/helldivers.bot/issues/476)). `layout.css` declares `'Space Mono', monospace` but
   `layout.jsx` only imports `Space_Grotesk` and `Inter` from `next/font/google`, so every
   mono element on the site — card points, countdowns, pace indicators, bar labels — falls
   back to the browser's default monospace (8.43px advance rather than Space Mono's metrics).

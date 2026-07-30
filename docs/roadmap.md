@@ -151,6 +151,28 @@ than widening the shared contract, and verify the live map is unchanged.
 
 Latent — unreachable via `getCampaign` today. Fix plus one regression test.
 
+### S3a — Space Mono never loads ([#476](https://github.com/elfensky/helldivers.bot/issues/476))
+
+- **Prep:** none to diagnose, but **measure before merging** — this is a
+  site-wide typography change, not a one-line import
+- **Branch:** worktree (visual blast radius across every mono element)
+
+`layout.css` declares `--font-mono: 'Space Mono', monospace` but `layout.jsx`
+only imports `Space_Grotesk` and `Inter`, so every mono element — card points,
+countdowns, pace indicators, bar labels, StatGrid values — has always rendered
+in the browser default. Verified against season 160: `document.fonts` carries no
+Space Mono, and `0`/`M`/`i` all measure 8.4297px on a real `.sector-card-points`.
+
+**The decision is which way to resolve it, and that is a design call.** Loading
+the real face changes the width of every mono element on the site; Space Mono is
+wider and more distinctive than the default, so column fits and the
+`flex-wrap` on `.sector-card-meta` shift with it. The alternative — dropping
+`'Space Mono'` from the declaration — admits that the design has been tuned
+against the fallback for its whole life, and is the smaller change.
+
+Either way, measure the affected rows before and after rather than merging on
+the assumption that the intended font is the right one.
+
 ### S4 — Post-deploy SEO verification ([#389](https://github.com/elfensky/helldivers.bot/issues/389))
 
 - **Prep:** none
