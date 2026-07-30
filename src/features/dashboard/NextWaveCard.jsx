@@ -50,10 +50,12 @@ export default function NextWaveCard({ forecast, warStart, now }) {
     const left = `${(p25 / axisHours) * 100}%`;
     const width = `${((p75 - p25) / axisHours) * 100}%`;
 
+    // Inline: the unlayered .card border rule beats Tailwind's layered border utilities, so border-r-* classes silently lose the cascade here.
     return (
         <div
             className="card p-3"
             style={{ borderRight: 'var(--card-accent-width) solid var(--color-primary)' }}
+            suppressHydrationWarning
         >
             <div className="flex items-baseline justify-between gap-2">
                 <span className="font-mono text-small tracking-widest text-text-muted">
@@ -81,7 +83,11 @@ export default function NextWaveCard({ forecast, warStart, now }) {
             </div>
             <p className="mt-1 mb-1! text-body">
                 likely in{' '}
-                <b className="font-mono text-primary" title={title}>
+                <b
+                    className="font-mono text-primary"
+                    title={title}
+                    suppressHydrationWarning
+                >
                     {formatRange(p25, p75)}
                 </b>{' '}
                 <span className="text-text-muted">

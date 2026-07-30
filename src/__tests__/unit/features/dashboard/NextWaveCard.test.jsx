@@ -89,4 +89,16 @@ describe('NextWaveCard', () => {
         expect(link).toHaveAttribute('href', '/docs/predict');
         expect(link).toHaveAttribute('data-umami-event', 'dashboard-wave-window-docs');
     });
+
+    test('band fill geometry matches percentile-based positioning', () => {
+        const { container } = render(
+            <NextWaveCard
+                forecast={windowForecast({ p25: 12, p75: 36 })}
+                warStart={WAR_START}
+                now={NOW}
+            />,
+        );
+        const bandFill = container.querySelector('.relative > span');
+        expect(bandFill).toHaveStyle({ left: '25%', width: '50%' });
+    });
 });

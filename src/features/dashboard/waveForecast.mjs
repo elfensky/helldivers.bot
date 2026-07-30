@@ -9,7 +9,7 @@ import defaultModel from '@/features/dashboard/waveModel.mjs';
 import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 const CHAIN_SECONDS = 600;
-const SECTOR_COUNT = 10;
+const SECTOR_COUNT = 10; // mirrors SECTOR_COUNT in scripts/analysis/lib/dataset.mjs (client code cannot import from scripts/)
 export const IMMINENT_THRESHOLD = 0.51;
 
 /**
