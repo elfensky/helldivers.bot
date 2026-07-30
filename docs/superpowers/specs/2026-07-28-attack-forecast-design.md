@@ -149,9 +149,12 @@ Not a new component. A fourth conditional in `EventCard`'s existing meta row, wh
 renders `points · countdown · pace`:
 
 ```
-⚔ ASSAULT ETA 4-16H
+ASSAULT ETA 4-16H
 ```
 
+- **No glyph.** A ⚔ was tried and dropped: U+2694 is absent from Space Mono, so it fell
+  back to another family at an 8.43px advance against the font's uniform 7px, breaking the
+  monospace grid and rendering as a faint × at 14px. The label is self-describing.
 - **Range, not a countdown.** p25–p75. The median goes in `title`.
 - **Shown only when p50 is under a display threshold**, default 24h. Purely a UX choice —
   it does not restrict the data feeding the model, which uses all 160 seasons. Make it a

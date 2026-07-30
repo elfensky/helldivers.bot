@@ -1,11 +1,28 @@
 # Changelog
 
+## 0.74.1
+
+### Fixed
+
+- **Crossed-swords glyph dropped from the assault ETA line.** At 14px U+2694 renders as a
+  faint × rather than legible crossed swords, so it conveyed nothing. The label is
+  self-describing without it.
+
+### Known issues
+
+- **`--font-mono` never loads.** `layout.css` declares `'Space Mono', monospace` but
+  `layout.jsx` only imports `Space_Grotesk` and `Inter` from `next/font/google`, so every
+  mono element on the site — card points, countdowns, pace indicators, bar labels — falls
+  back to the browser's default monospace (8.43px advance rather than Space Mono's metrics).
+  Pre-existing and unrelated to this release; noted here because it was found while
+  verifying the assault line.
+
 ## 0.74.0
 
 ### Added
 
 - **Assault ETA on the faction cards.** Attacks are now forecastable, and the faction card's
-  meta row carries a `⚔ Assault ETA 4-16h` line when one is expected within a day. A range,
+  meta row carries a `Assault ETA 4-16h` line when one is expected within a day. A range,
   never a countdown — the measured window is ~21h wide a day out and ~5h wide inside four
   hours, so a single ticking number would claim precision the model does not have. The
   median sits in the `title`. Backed by a committed calibration table
