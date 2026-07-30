@@ -75,7 +75,12 @@ export default function NextWaveCard({ forecast, warStart, now }) {
         >
             <div className="sector-card-content">
                 <div className="sector-card-header">
-                    <Image src="/icons/superearth.webp" alt="" width={16} height={16} />
+                    {/* 14x16, not 16x16: superearth.webp is 1000x1142, so a square box
+                        forces the browser to stretch height to preserve the ratio
+                        (next/image warns, and the icon renders 16x18.5). These
+                        dimensions match the source ratio and the 16px height of the
+                        square faction icons in the sibling cards. */}
+                    <Image src="/icons/superearth.webp" alt="" width={14} height={16} />
                     <span
                         className="sector-card-action"
                         style={{ color: 'var(--color-primary)' }}

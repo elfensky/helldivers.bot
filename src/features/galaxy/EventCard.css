@@ -40,6 +40,15 @@
     min-width: 0;
 }
 
+/* Keep the icon at its declared size when the header runs out of room —
+ * .sector-card-action opts out of shrinking just below for the same
+ * reason. (This is not what caused the next/image aspect-ratio warning
+ * on the wave card; that was superearth.webp being 1000x1142 while the
+ * component asked for a square 16x16.) */
+.sector-card-header img {
+    flex: none;
+}
+
 .sector-card-action {
     font-family: var(--font-body, sans-serif);
     font-size: var(--text-h3);

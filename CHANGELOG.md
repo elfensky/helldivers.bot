@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.75.0
+
+### Changed
+
+- **Assault ETA window widened to 48 hours.** The line renders when the median estimate
+  falls under 48h rather than 24h. Moving it out improved every measure at once, which is
+  the campaign-state resolution showing through — `h1_status` runs at ~1 bucket/day for most
+  of the record, so a 24-hour display window is exactly where the input is least able to
+  support an estimate. Coverage 91.5–95.2% → **93.6–96.0%**, false-alarm rate 86.1–94.4% →
+  **91.4–97.1%**, and the median hit rate when showing 0.456–0.526 → **0.496–0.535** against
+  a nominal 0.500. Both analysis scripts, the emitted model and `/docs/predict` move
+  together, so the published numbers describe the shipped configuration.
+
+### Fixed
+
+- **Wave-card icon rendered at the wrong aspect ratio.** `superearth.webp` is 1000×1142 but
+  `NextWaveCard` asked for a square 16×16, so the browser preserved the source ratio and
+  drew it 16×18.5 — the `next/image` "width or height modified, but not the other" warning
+  that fired on every render. Now 14×16, matching the source ratio and the 16px height of
+  the square faction icons beside it.
+
 ## 0.74.2
 
 ### Changed
