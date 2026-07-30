@@ -8,7 +8,7 @@
 
 **Attacks are deterministic.** One fires within minutes of a faction's campaign reaching
 full points — `points == points_max`, the exact integer. Established by
-`scripts/analysis/08-attack-trigger.mjs`, three falsifiable tests:
+`scripts/analysis/09-attack-trigger.mjs`, three falsifiable tests:
 
 | Age of campaign reading | Attacks | Median liberation at attack start |
 | --- | --- | --- |
@@ -78,7 +78,7 @@ must not carry a number claiming backtested accuracy.
 
 ## Model
 
-`scripts/analysis/09-attack-eta.mjs`, following the `02-baseline.mjs` idiom: pure-function
+`scripts/analysis/10-attack-eta.mjs`, following the `02-baseline.mjs` idiom: pure-function
 self-checks at the top (no DB), `loadDataset()`, a CONFIGS loop through `walkForward`, then
 the gate print.
 
@@ -178,14 +178,14 @@ Already applied in this branch:
 - The "coarse resolution can only weaken a signal" caveat corrected: it cannot manufacture
   a signal from noise, but it can convert a hard rule into a publishable distribution.
 
-Still to do once `09-attack-eta.mjs` runs: the forecast-accuracy numbers and the defend
+Still to do once `10-attack-eta.mjs` runs: the forecast-accuracy numbers and the defend
 re-run after the baseline fix.
 
 ## Verification
 
 `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build` — all four.
 Plus `node scripts/analysis/lib/dataset.mjs`, `node scripts/analysis/lib/backtest.mjs`,
-and `node --env-file=.env.development scripts/analysis/08-attack-trigger.mjs`.
+and `node --env-file=.env.development scripts/analysis/09-attack-trigger.mjs`.
 
 ## Out of scope
 

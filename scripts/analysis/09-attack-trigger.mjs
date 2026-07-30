@@ -1,5 +1,5 @@
 /**
- * 08-attack-trigger.mjs — is the attack trigger deterministic?
+ * 09-attack-trigger.mjs — is the attack trigger deterministic?
  *
  * The published finding (`/docs/predict`, before this script existed) was that
  * attacks fire at ~90-98% liberation, with a p25/p50/p75 "trigger band". This
@@ -17,7 +17,7 @@
  *   3. Trigger lag — for the 15-minute-resolution seasons, the gap between the
  *      first bucket at full points and the attack start.
  *
- * Run: node --env-file=.env.development scripts/analysis/08-attack-trigger.mjs
+ * Run: node --env-file=.env.development scripts/analysis/09-attack-trigger.mjs
  */
 
 import assert from 'node:assert/strict';
@@ -247,7 +247,7 @@ console.log(
 
 console.log(
     '\nConsequence for forecasting: there is no threshold to estimate. The open\n' +
-        'question is entirely how fast points climbs — see 09-attack-eta.mjs.\n',
+        'question is entirely how fast points climbs — see 10-attack-eta.mjs.\n',
 );
 
 await client.end();

@@ -1,7 +1,7 @@
 /**
- * 09-attack-eta.mjs — how well does (points_max - points) / rate predict an attack?
+ * 10-attack-eta.mjs — how well does (points_max - points) / rate predict an attack?
  *
- * `08-attack-trigger.mjs` established that attacks fire within minutes of
+ * `09-attack-trigger.mjs` established that attacks fire within minutes of
  * `points == points_max`. The threshold is therefore a KNOWN CONSTANT, not a
  * distribution to estimate, and the whole forecasting problem collapses to:
  *
@@ -27,7 +27,7 @@
  *    heavy-tailed and mechanically correlated with `eta` as `remaining -> 0`,
  *    so a single pooled {r25, r50, r75} is invalid.
  *
- * Run: node --env-file=.env.development scripts/analysis/09-attack-eta.mjs
+ * Run: node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
  */
 
 import assert from 'node:assert/strict';
@@ -370,7 +370,7 @@ const FACTIONS = [
 console.log('\n=== Phase 9: attack ETA from a known threshold ===\n');
 console.log(`  eta = (points_max - points) / rate,  rate over ${RATE_WINDOW_HOURS}h`);
 console.log(
-    `  Trigger is exact (08-attack-trigger.mjs) — the error budget is entirely pace.\n`,
+    `  Trigger is exact (09-attack-trigger.mjs) — the error budget is entirely pace.\n`,
 );
 
 const VARIANTS = [

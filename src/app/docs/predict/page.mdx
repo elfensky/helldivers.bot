@@ -78,7 +78,7 @@ eta = (points_max − points) / rate
 
 Everything on the right-hand side except `rate` is known exactly and in real time. So the entire forecasting problem — and the entire error budget — lives in estimating how fast a campaign is gaining points.
 
-**Measured, and it works.** `09-attack-eta.mjs` backtests that formula walk-forward by season against all 925 attacks, using a 24-hour pace window:
+**Measured, and it works.** `10-attack-eta.mjs` backtests that formula walk-forward by season against all 925 attacks, using a 24-hour pace window:
 
 | Faction | Effective N | Skill ratio [95% CI] | Median error vs. baseline | Sharpness vs. marginal |
 | --- | --- | --- | --- | --- |
@@ -180,7 +180,7 @@ Public holidays were not tested and are not worth testing: the game's history co
 Reproduce:
 
 ```
-node --env-file=.env.development scripts/analysis/09-attack-eta.mjs
+node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
 ```
 
 </details>
@@ -411,8 +411,8 @@ node --env-file=.env.development scripts/analysis/02-baseline.mjs
 node --env-file=.env.development scripts/analysis/04-train-baseline.mjs
 node --env-file=.env.development scripts/analysis/05-defend-covariates.mjs
 node --env-file=.env.development scripts/analysis/06-train-covariates.mjs
-node --env-file=.env.development scripts/analysis/08-attack-trigger.mjs
-node --env-file=.env.development scripts/analysis/09-attack-eta.mjs
+node --env-file=.env.development scripts/analysis/09-attack-trigger.mjs
+node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
 node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
 ```
 
