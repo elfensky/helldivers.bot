@@ -96,11 +96,13 @@ The intended use is a heads-up, not a countdown, so it is scored as an alert. Bo
 
 | Faction | Fires before…​ | …​an attack follows within 2× the upper bound | Verdict |
 | --- | --- | --- | --- |
-| Bugs | 92.6% of attacks | 87.4% of showing moments | PASS |
-| Cyborgs | 90.6% | 96.4% | PASS |
-| Illuminate | 94.4% | 94.3% | PASS |
+| Bugs | 93.6% of attacks | 92.0% of showing moments | PASS |
+| Cyborgs | 96.9% | 97.4% | PASS |
+| Illuminate | 96.8% | 95.7% | PASS |
 
-Against bars of 70% and 80% respectively. And the window does tighten as the attack approaches — this is the model's own output, on the moments a UI would render:
+Against bars of 70% and 80% respectively, with the line rendering when the median estimate falls under **48 hours**.
+
+**Why 48 and not 24.** The threshold was 24h first, and moving it out improved every measure at once — coverage, false-alarm rate, and calibration. That is the campaign-state resolution showing through: `h1_status` runs at ~1 bucket/day for most of the record, so a 24-hour display window is exactly the regime where the input is least able to support an estimate. Restricted to the moments a UI renders, the median hit rate moved from 0.456–0.526 to **0.496–0.535** against a nominal 0.500 — Cyborgs at 0.496 is very nearly exact. A wider window also means the line appears more often and is correspondingly less of an event; 48h is the point where the data can carry the claim. And the window does tighten as the attack approaches — this is the model's own output, on the moments a UI would render:
 
 | When it says | It shows | Width | The attack actually came |
 | --- | --- | --- | --- |
@@ -163,11 +165,11 @@ What it *did* improve is calibration in the regime a UI would render — the num
 
 | When showing (nominal p25 0.250 / p50 0.500) | Without | With day-of-week |
 | --- | --- | --- |
-| Bugs | 0.298 / 0.525 | **0.210 / 0.456** |
-| Cyborgs | 0.320 / 0.544 | **0.252 / 0.503** |
-| Illuminate | 0.331 / 0.568 | **0.290 / 0.526** |
+| Bugs | 0.294 / 0.553 | **0.219 / 0.507** |
+| Cyborgs | 0.297 / 0.538 | **0.251 / 0.496** |
+| Illuminate | 0.318 / 0.579 | **0.276 / 0.535** |
 
-So the correction makes the displayed window more *honest* without making the central estimate more *accurate*. For a heads-up, that is the trade worth taking, and it is kept. Coverage improves too — the line fires before 91.5–95.2% of attacks, up from 90.6–94.4%.
+So the correction makes the displayed window more *honest* without making the central estimate more *accurate*. For a heads-up, that is the trade worth taking, and it is kept. Coverage improves too — the line fires before 93.6–96.0% of attacks.
 
 Public holidays were not tested and are not worth testing: the game's history contains a handful of them.
 

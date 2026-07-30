@@ -35,7 +35,7 @@ import { loadDataset, HOUR } from './lib/dataset.mjs';
 import { walkForward, quantileOf } from './lib/backtest.mjs';
 
 const RATE_WINDOW_HOURS = 24;
-const DISPLAY_HOURS = 24; // the UI only renders a line when p50 is under this
+const DISPLAY_HOURS = 48; // the UI only renders a line when p50 is under this
 
 /**
  * Remaining-fraction band edges. Attacks fire at remaining = 0, so the

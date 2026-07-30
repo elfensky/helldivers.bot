@@ -40,7 +40,7 @@ import { loadDataset, HOUR } from './lib/dataset.mjs';
 import { quantileOf } from './lib/backtest.mjs';
 
 const RATE_WINDOW_HOURS = 24;
-const DISPLAY_HOURS = 24;
+const DISPLAY_HOURS = 48;
 const STEP_HOURS = 3;
 const MIN_RATIO_SAMPLES = 30;
 const MIN_DOW_SAMPLES = 50;
