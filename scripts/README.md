@@ -133,6 +133,12 @@ the findings are written up at
   0.648 [0.622, 0.674], calibration PASS, sharpness PASS -- still misses
   the pre-registered ship bar (CI upper bound <= 0.6). Verdict:
   INCONCLUSIVE, do not ship.
+- `08-emit-wave-model.mjs` -- emits the committed lookup table behind the
+  dashboard's next-wave card (`src/features/dashboard/waveModel.mjs`): the
+  attempt-3 STATE-KM estimator fit on full history, one row per observable
+  state x 1h elapsed bin, plus within-24h/48h probabilities. Refuses to emit
+  unless quantiles are monotone and the predicted probabilities are reliable
+  against history (deciles within ±0.10, overall ±0.05).
 
 ### Self-checks
 
@@ -158,6 +164,7 @@ node --env-file=.env.development scripts/analysis/04-train-baseline.mjs
 node --env-file=.env.development scripts/analysis/05-defend-covariates.mjs
 node --env-file=.env.development scripts/analysis/06-train-covariates.mjs
 node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
+node --env-file=.env.development scripts/analysis/08-emit-wave-model.mjs
 ```
 
 `03-hazard.mjs` fits a logistic regression per (variant, evaluated season)

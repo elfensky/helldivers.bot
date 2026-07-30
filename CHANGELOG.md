@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.73.0
+
+### Added
+
+- **Next-wave likelihood card on the dashboard** (`NextWaveCard`): a faction-neutral
+  band-not-countdown forecast for the next defend wave — "likely in 14–32h · 63%
+  within 24h" — computed from a committed state×elapsed quantile table
+  (`scripts/analysis/08-emit-wave-model.mjs`, the #472 attempt-3 STATE-KM model fit on
+  full history, with a reliability self-check that refuses to emit miscalibrated
+  probabilities). Hidden while a wave runs; IMMINENT badge at ≥51% within 24h;
+  RUNNING LONG badge + explainer during the homeworld-assault window (maxSC==9).
+  Updates on the existing 10s live poll; no API or DB changes.
+
 ## 0.72.0
 
 ### Added
