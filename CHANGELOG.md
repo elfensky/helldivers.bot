@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Next-wave card redesigned and relocated** (follow-up to 0.73.0, per owner review): now
+  rendered in the same `sector-card` skeleton as the faction cards (Super Earth icon +
+  "Predicted Wave" header, `LIKELIHOOD_WINDOW` label row with RUNNING LONG / IMMINENT state,
+  band bar with the window range in the stat slot, within-24h/48h sureties as the meta row,
+  ⓘ docs link) and moved out of the Season section into the **top of the event log under a
+  "FUTURE" day-group** — the log now reads future → today → history. `EventLog` gains an
+  optional `futureSlot` prop (homepage-only; archives unchanged); placement follows the sort
+  order (top when newest-first, bottom when oldest-first).
+
 ## 0.73.0
 
 ### Added

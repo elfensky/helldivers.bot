@@ -32,17 +32,23 @@ describe('NextWaveCard', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
-    test('renders the band headline and surety', () => {
-        render(
+    test('renders the sector-card header, range, and sureties', () => {
+        const { container } = render(
             <NextWaveCard forecast={windowForecast()} warStart={WAR_START} now={NOW} />,
         );
-        expect(screen.getByText(/likely in/i)).toBeInTheDocument();
+        expect(screen.getByText('Predicted')).toBeInTheDocument();
+        expect(screen.getByText('Wave')).toBeInTheDocument();
         expect(screen.getByText(/14–32h/)).toBeInTheDocument();
         expect(screen.getByText(/63% within 24h/i)).toBeInTheDocument();
-        expect(screen.getByText(/next defend wave/i)).toBeInTheDocument();
+        expect(screen.getByText(/91% within 48h/i)).toBeInTheDocument();
+        expect(screen.getByText('LIKELIHOOD_WINDOW')).toBeInTheDocument();
+        // Same skeleton as the faction cards, gold accent column included.
+        expect(container.querySelector('.sector-card')).not.toBeNull();
+        expect(container.querySelector('.sector-card-accent')).not.toBeNull();
+        expect(container.querySelector('img[src*="superearth"]')).not.toBeNull();
     });
 
-    test('IMMINENT badge follows the flag', () => {
+    test('IMMINENT state label follows the flag', () => {
         const { rerender } = render(
             <NextWaveCard forecast={windowForecast()} warStart={WAR_START} now={NOW} />,
         );
@@ -57,19 +63,35 @@ describe('NextWaveCard', () => {
         expect(screen.queryByText('IMMINENT')).not.toBeInTheDocument();
     });
 
-    test('RUNNING LONG badge + explainer in the SC9 state', () => {
+    test('RUNNING LONG state label + assault explainer in the hover title (SC9)', () => {
         render(
             <NextWaveCard
-                forecast={windowForecast({ state: 'SC9', runningLong: true })}
+                forecast={windowForecast({
+                    state: 'SC9',
+                    runningLong: true,
+                    imminent: false,
+                })}
                 warStart={WAR_START}
                 now={NOW}
             />,
         );
         expect(screen.getByText('RUNNING LONG')).toBeInTheDocument();
-        expect(screen.getByText(/homeworld assault/i)).toBeInTheDocument();
+        const range = screen.getByText(/14–32h/);
+        expect(range.getAttribute('title')).toMatch(/homeworld assault/i);
     });
 
-    test('hover title carries absolute times, war day, 48h surety, typical miss', () => {
+    test('combined RUNNING LONG · IMMINENT state label when both flags set', () => {
+        render(
+            <NextWaveCard
+                forecast={windowForecast({ runningLong: true, imminent: true })}
+                warStart={WAR_START}
+                now={NOW}
+            />,
+        );
+        expect(screen.getByText('RUNNING LONG · IMMINENT')).toBeInTheDocument();
+    });
+
+    test('hover title carries absolute times, war day, band label, typical miss', () => {
         render(
             <NextWaveCard forecast={windowForecast()} warStart={WAR_START} now={NOW} />,
         );
@@ -77,7 +99,7 @@ describe('NextWaveCard', () => {
         expect(range).toHaveAttribute('title');
         const title = range.getAttribute('title');
         expect(title).toMatch(/War Day \d+/);
-        expect(title).toMatch(/91% within 48h/);
+        expect(title).toMatch(/50% band/);
         expect(title).toMatch(/typical miss ±8h/);
     });
 
@@ -85,7 +107,7 @@ describe('NextWaveCard', () => {
         render(
             <NextWaveCard forecast={windowForecast()} warStart={WAR_START} now={NOW} />,
         );
-        const link = screen.getByRole('link', { name: /how\?/i });
+        const link = screen.getByRole('link', { name: /how is this computed/i });
         expect(link).toHaveAttribute('href', '/docs/predict');
         expect(link).toHaveAttribute('data-umami-event', 'dashboard-wave-window-docs');
     });
@@ -98,7 +120,7 @@ describe('NextWaveCard', () => {
                 now={NOW}
             />,
         );
-        const bandFill = container.querySelector('.relative > span');
-        expect(bandFill).toHaveStyle({ left: '25%', width: '50%' });
+        const bandFill = container.querySelector('.sector-card-bar-fill');
+        expect(bandFill).toHaveStyle({ marginLeft: '25%', width: '50%' });
     });
 });

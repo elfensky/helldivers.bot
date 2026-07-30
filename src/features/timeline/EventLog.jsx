@@ -40,6 +40,10 @@ import { FACTION_SLUG_BY_ID } from '@/shared/enums/factions.mjs';
  *   distinct faction-colored divider. The homepage passes nothing, so
  *   with the default empty array the output is byte-for-byte identical
  *   to before — the live dashboard is unaffected.
+ * - `futureSlot` (optional, default `null`): homepage-only forecast content
+ *   (the NextWaveCard) rendered as its own "FUTURE" day-group. Placed
+ *   chronologically: before the day groups when sorting newest-first,
+ *   after them when sorting oldest-first. Archives passes nothing.
  *
  * @param {object} props - Component props.
  * @param {Array} [props.events] - Full event list, unsorted.
@@ -53,6 +57,7 @@ import { FACTION_SLUG_BY_ID } from '@/shared/enums/factions.mjs';
  * @param {object} [props.railRef] - Forwarded to the scrolling container.
  * @param {string} [props.layout] - Layout mode (`'grid'` or `'stack'`).
  * @param {Array<{kind:'intro', enemy:number, name:string, time:number, day:number, isWarStart:boolean}>} [props.introMarkers] - Intro markers (`buildIntroMarkers`).
+ * @param {import('react').ReactNode} [props.futureSlot] - Forecast content rendered as a "FUTURE" day-group.
  */
 export default function EventLog({
     events,
@@ -66,6 +71,7 @@ export default function EventLog({
     railRef,
     layout = 'grid',
     introMarkers = [],
+    futureSlot = null,
 }) {
     const [sortOrder, toggleSortOrder] = useEventLogSort(initialSortOrder);
     // Tag intro markers with `start_time` (their `time`) so they flow through
@@ -101,7 +107,7 @@ export default function EventLog({
                     />
                 </div>
 
-                {groups.length === 0 ?
+                {groups.length === 0 && !futureSlot ?
                     <p className="event-log-empty">No events recorded yet.</p>
                 :   <div
                         className={
@@ -111,6 +117,12 @@ export default function EventLog({
                         }
                         ref={railRef}
                     >
+                        {/* sortOrder can be undefined before the cookie-backed
+                            preference hydrates — treat anything but 'asc' as
+                            newest-first, matching groupEventsByDay's default. */}
+                        {futureSlot && sortOrder !== 'asc' && (
+                            <FutureGroup>{futureSlot}</FutureGroup>
+                        )}
                         {groups.map((group) => {
                             // Intro markers carry no win/loss outcome; count
                             // only real events for the day summary.
@@ -175,10 +187,32 @@ export default function EventLog({
                                 </Fragment>
                             );
                         })}
+                        {futureSlot && sortOrder === 'asc' && (
+                            <FutureGroup>{futureSlot}</FutureGroup>
+                        )}
                     </div>
                 }
             </div>
         </section>
+    );
+}
+
+/**
+ * The forecast's day-group: same skeleton as a date group, labeled FUTURE so
+ * the log reads chronologically (future → today → yesterday when sorting
+ * newest-first). No win/loss summary — nothing has happened yet.
+ *
+ * @param {object} props - Component props.
+ * @param {import('react').ReactNode} props.children - Forecast content.
+ */
+function FutureGroup({ children }) {
+    return (
+        <div className="event-log-day">
+            <div className="event-log-day-header">
+                <span className="event-log-day-label">FUTURE</span>
+            </div>
+            <div className="event-log-day-grid">{children}</div>
+        </div>
     );
 }
 
