@@ -15,7 +15,7 @@ A report on Helldivers 1 event predictability, built from every recorded event a
 
 **Bottom line: no countdown is shipping, and none will — but a likelihood window for defends is live on the dashboard, and attacks have now cleared the bar for one too.**
 
-- **Attacks** are **deterministic**: one fires within minutes of a faction's campaign reaching full points (`points == points_max`). There is no threshold to estimate — it is a constant the game already displays. Forecasting one therefore reduces entirely to forecasting *pace*, which has not been measured yet. An earlier version of this page reported a soft "trigger band" around 90–98%; that was an artifact of coarse sampling and is corrected below.
+- **Attacks** are **deterministic**: one fires within minutes of a faction's campaign reaching full points (`points == points_max`). There is no threshold to estimate — it is a constant the game already displays. Forecasting one therefore reduces entirely to forecasting *pace* — and that now works: skill ratios of 0.23–0.33 against a 0.6 bar, the first models in this project to clear the gate they were measured against. An earlier version of this page reported a soft "trigger band" around 90–98%; that was an artifact of coarse sampling and is corrected below.
 - **Defends** run in trains with well-established rules, but the one open question — how long the next lull runs — has now been modeled three times, and even the best model (which watches live campaign state and beats every previous attempt) doesn't clear the bar the project set for itself before looking at any numbers. The third attempt did surface one genuinely new, placebo-tested pattern: **when any faction sits at 9 of 10 sectors captured, the galaxy goes quiet** — lulls in that assault window run ~20h longer than usual.
 
 ---
@@ -155,7 +155,21 @@ Short windows are far worse, not better — at 15-minute buckets a 30-minute rat
 | --- | --- | --- | --- | --- | --- | --- |
 | 1.19 | 1.19 | 1.00 | 0.95 | 0.93 | 0.92 | 0.92 |
 
-A 29% swing between the busiest and quietest days. (Sunday and Monday lead because a daily bucket reports the day before it, so weekend play lands there.) Applying an hour-of-week correction cuts the pace error from 23.5% to **18.6%** — but that figure is *in-sample*, learned on the same data it was scored against, so it is an upper bound on the real benefit. A walk-forward implementation is the obvious next piece of work. Public holidays were not tested and are not worth testing: the game's history contains a handful of them.
+A 29% swing between the busiest and quietest days. (Sunday and Monday lead because a daily bucket reports the day before it, so weekend play lands there.) Applying an hour-of-week correction cuts the *pace* error from 23.5% to **18.6%** — but that figure is in-sample, learned on the same data it was scored against.
+
+**Implemented walk-forward, most of that gain does not survive, and what does survive shows up somewhere unexpected.** Learning day-of-week factors from training seasons only (day, not hour — for 156 of 160 seasons a status transition spans a whole day, so attributing it to one hour would be fiction) leaves the skill ratio a wash: Bugs 0.270 → 0.275, Cyborgs 0.233 → 0.232, Illuminate 0.325 → 0.271, with heavily overlapping intervals. Better pace prediction did not translate into a better median ETA.
+
+What it *did* improve is calibration in the regime a UI would render — the numbers a player would actually read:
+
+| When showing (nominal p25 0.250 / p50 0.500) | Without | With day-of-week |
+| --- | --- | --- |
+| Bugs | 0.298 / 0.525 | **0.210 / 0.456** |
+| Cyborgs | 0.320 / 0.544 | **0.252 / 0.503** |
+| Illuminate | 0.331 / 0.568 | **0.290 / 0.526** |
+
+So the correction makes the displayed window more *honest* without making the central estimate more *accurate*. For a heads-up, that is the trade worth taking, and it is kept. Coverage improves too — the line fires before 91.5–95.2% of attacks, up from 90.6–94.4%.
+
+Public holidays were not tested and are not worth testing: the game's history contains a handful of them.
 
 **Caveats.**
 

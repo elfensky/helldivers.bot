@@ -146,7 +146,7 @@ const MIN_ETA_HOURS = 0.25;
  * @param {boolean} correctStaleness anchor the ETA at `t` rather than at the bucket
  * @returns {{etaHours: number, remainingFrac: number}|null}
  */
-function rawEta(season, enemy, t, correctStaleness) {
+function rawEta(season, enemy, t, correctStaleness, paceAdjust = null) {
     const pointsMax = ds.seasons.get(season)?.pointsMax?.[enemy] ?? 0;
     if (!(pointsMax > 0)) return null;
 
@@ -167,6 +167,26 @@ function rawEta(season, enemy, t, correctStaleness) {
     if (!(ratePerHour > 0)) return null; // stalled or retreating
 
     let etaHours = remaining / ratePerHour;
+
+    // Day-of-week correction, applied as a one-step iteration: the horizon it
+    // needs to average over is the ETA itself, so the uncorrected ETA picks the
+    // window and the adjusted rate then produces the final answer. Availability
+    // is unaffected — the multiplier is strictly positive — which is why
+    // `momentFilter` can decide with the unadjusted call and stay non-circular.
+    if (paceAdjust) {
+        const horizon = Math.min(Math.max(etaHours, 1), 48);
+        const adj = paceAdjust(
+            Number(stThen.bucket),
+            Number(stNow.bucket),
+            t,
+            t + horizon * HOUR,
+        );
+        // eta = remaining / (rate * ahead/past) = eta_raw * (past/ahead), and
+        // `adj` IS past/ahead — so this multiplies. Dividing here inverts the
+        // correction: a faster week ahead would push the arrival LATER.
+        if (adj > 0) etaHours *= adj;
+    }
+
     if (correctStaleness) etaHours -= (t - Number(stNow.bucket)) / HOUR;
     if (etaHours < MIN_ETA_HOURS) etaHours = MIN_ETA_HOURS;
 
@@ -176,6 +196,86 @@ function rawEta(season, enemy, t, correctStaleness) {
 /** Is an attack against this faction already running at `t`? */
 function attackActive(t, seasonEvents) {
     return seasonEvents.some((e) => e.start_time <= t && e.end_time > t);
+}
+
+// --- day-of-week pace pattern ---------------------------------------------
+
+/**
+ * Campaign pace has a weekly rhythm — measured across all 160 seasons, the
+ * busiest day runs ~29% faster than the quietest. A 24-hour rate window covers
+ * roughly one day, so it carries *yesterday's* day-of-week into a forecast
+ * about tomorrow's, and that mismatch is correctable.
+ *
+ * Only DAY of week, not hour: for 156 of 160 seasons a status transition spans
+ * a whole day, so attributing it to one hour would be fiction. Hour-of-day is
+ * computable on S157+ alone and mostly cancels inside a 24h window anyway.
+ *
+ * Factors accumulate walk-forward, one season folded in at a time.
+ *
+ * @returns {{foldThrough: (s: number) => void, adjuster: () => Function}}
+ */
+function makeDowPattern() {
+    const byDow = Array.from({ length: 7 }, () => []);
+    let through = 0;
+
+    function fold(season) {
+        for (const enemy of [0, 1, 2]) {
+            const series = ds.statusSeries(season, enemy);
+            if (series.length < 3) continue;
+            const local = [];
+            for (let i = 1; i < series.length; i++) {
+                const dt =
+                    (Number(series[i].bucket) - Number(series[i - 1].bucket)) / HOUR;
+                if (dt <= 0) continue;
+                const pace =
+                    (Number(series[i].points) - Number(series[i - 1].points)) / dt;
+                if (pace > 0) {
+                    local.push({
+                        dow: new Date(Number(series[i].bucket) * 1000).getUTCDay(),
+                        pace,
+                    });
+                }
+            }
+            if (local.length < 5) continue;
+            // Normalise to this campaign's OWN median. points_max and player
+            // populations differ by orders of magnitude across 160 seasons;
+            // pooling raw paces would measure era, not weekday.
+            const m = quantileOf(
+                local.map((x) => x.pace),
+                0.5,
+            );
+            if (!(m > 0)) continue;
+            for (const x of local) byDow[x.dow].push(x.pace / m);
+        }
+    }
+
+    return {
+        foldThrough(testSeason) {
+            for (let s = through + 1; s < testSeason; s++) fold(s);
+            through = Math.max(through, testSeason - 1);
+            assert(
+                through < testSeason,
+                `leakage: day-of-week pattern folded season ${through} while testing ${testSeason}`,
+            );
+        },
+        adjuster() {
+            const f = byDow.map((v) => (v.length >= 50 ? (quantileOf(v, 0.5) ?? 1) : 1));
+            const meanOver = (from, to) => {
+                let sum = 0;
+                let n = 0;
+                for (let t = from; t < to; t += 6 * HOUR) {
+                    sum += f[new Date(t * 1000).getUTCDay()];
+                    n++;
+                }
+                return n > 0 ? sum / n : 1;
+            };
+            return (winFrom, winTo, fwdFrom, fwdTo) => {
+                const past = meanOver(winFrom, winTo);
+                const ahead = meanOver(fwdFrom, fwdTo);
+                return past > 0 ? past / ahead : 1;
+            };
+        },
+    };
 }
 
 // --- fit -------------------------------------------------------------------
@@ -192,9 +292,10 @@ function attackActive(t, seasonEvents) {
  * @param {number} enemy
  * @param {number} stepHours must match the evaluation clock exactly
  * @param {boolean} correctStaleness anchor ETAs at the evaluation moment
+ * @param {object|null} dowPattern walk-forward day-of-week learner, or null
  * @returns {Function} a fitPredictor for walkForward
  */
-function makeFitPredictor(enemy, stepHours, correctStaleness) {
+function makeFitPredictor(enemy, stepHours, correctStaleness, dowPattern) {
     /** @type {Map<number, number[]>} band index -> observed wait/eta ratios */
     const ratiosByBand = new Map();
     let accumulatedThrough = 0; // highest season folded into the table
@@ -206,12 +307,12 @@ function makeFitPredictor(enemy, stepHours, correctStaleness) {
         attacksBySeason.get(e.season).push(e);
     }
 
-    function foldSeason(season) {
+    function foldSeason(season, adjust) {
         const list = attacksBySeason.get(season);
         const span = ds.seasons.get(season);
         if (!list || !span) return;
         for (let t = span.firstStart; t <= span.lastEnd; t += stepHours * HOUR) {
-            const eta = rawEta(season, enemy, t, correctStaleness);
+            const eta = rawEta(season, enemy, t, correctStaleness, adjust);
             if (!eta) continue;
             const next = list.find((e) => e.start_time > t);
             if (!next) continue; // right-censored — no observed ratio
@@ -223,7 +324,10 @@ function makeFitPredictor(enemy, stepHours, correctStaleness) {
     }
 
     return function fitPredictor(trainEvents, ctx) {
-        for (let s = accumulatedThrough + 1; s < ctx.testSeason; s++) foldSeason(s);
+        if (dowPattern) dowPattern.foldThrough(ctx.testSeason);
+        const adjust = dowPattern ? dowPattern.adjuster() : null;
+        for (let s = accumulatedThrough + 1; s < ctx.testSeason; s++)
+            foldSeason(s, adjust);
         accumulatedThrough = Math.max(accumulatedThrough, ctx.testSeason - 1);
         assert(
             accumulatedThrough < ctx.testSeason,
@@ -239,7 +343,7 @@ function makeFitPredictor(enemy, stepHours, correctStaleness) {
         const pooled = ratioQuantiles([...ratiosByBand.values()].flat());
 
         return function predict(moment) {
-            const eta = rawEta(moment.season, enemy, moment.t, correctStaleness);
+            const eta = rawEta(moment.season, enemy, moment.t, correctStaleness, adjust);
             // momentFilter guarantees this is non-null; the guard is for the
             // warm-up moments the harness evaluates before the filter applies.
             if (!eta) return { p25: 0, p50: 0, p75: 0 };
@@ -270,8 +374,9 @@ console.log(
 );
 
 const VARIANTS = [
-    { key: 'corrected', correct: true },
-    { key: 'uncorrected', correct: false },
+    { key: 'corrected', correct: true, dow: false },
+    { key: 'corrected+dow', correct: true, dow: true },
+    { key: 'uncorrected', correct: false, dow: false },
 ];
 
 const results = [];
@@ -288,7 +393,12 @@ for (const v of VARIANTS) {
             type: 'attack',
             enemy: f.enemy,
             stepHours: STEP_HOURS,
-            fitPredictor: makeFitPredictor(f.enemy, STEP_HOURS, v.correct),
+            fitPredictor: makeFitPredictor(
+                f.enemy,
+                STEP_HOURS,
+                v.correct,
+                v.dow ? makeDowPattern() : null,
+            ),
             momentFilter,
         });
         results.push({
