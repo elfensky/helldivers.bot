@@ -51,7 +51,10 @@ export default function NextWaveCard({ forecast, warStart, now }) {
     const width = `${((p75 - p25) / axisHours) * 100}%`;
 
     return (
-        <div className="card border-r-[6px] border-r-primary p-3">
+        <div
+            className="card p-3"
+            style={{ borderRight: 'var(--card-accent-width) solid var(--color-primary)' }}
+        >
             <div className="flex items-baseline justify-between gap-2">
                 <span className="font-mono text-small tracking-widest text-text-muted">
                     NEXT DEFEND WAVE
