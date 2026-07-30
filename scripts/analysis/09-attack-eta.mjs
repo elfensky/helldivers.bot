@@ -400,6 +400,38 @@ for (const r of results) {
     );
 }
 
+// --- band shape: does the window narrow as the attack approaches? ---------
+
+console.log('\n--- What the UI would actually show, Bugs / corrected ---\n');
+console.log('  says (p50)     shown range      width    true wait p50   n');
+{
+    const recs = results
+        .find((r) => r.label === 'Bugs / corrected')
+        .summary.records.filter((x) => x.wait !== null && x.q50 < DISPLAY_HOURS);
+    const EDGES = [0, 4, 8, 12, 16, 20, 24];
+    for (let i = 0; i < EDGES.length - 1; i++) {
+        const chunk = recs.filter((x) => x.q50 >= EDGES[i] && x.q50 < EDGES[i + 1]);
+        if (chunk.length === 0) continue;
+        const q = (k) =>
+            quantileOf(
+                chunk.map((x) => x[k]),
+                0.5,
+            ) ?? 0;
+        console.log(
+            `  ${EDGES[i]}-${EDGES[i + 1]}h`.padEnd(15) +
+                `${q('q25').toFixed(1)}-${q('q75').toFixed(1)}h`.padEnd(17) +
+                `${(q('q75') - q('q25')).toFixed(1)}h`.padEnd(9) +
+                `${(
+                    quantileOf(
+                        chunk.map((x) => x.wait),
+                        0.5,
+                    ) ?? 0
+                ).toFixed(1)}h`.padEnd(16) +
+                chunk.length,
+        );
+    }
+}
+
 // --- reliability (marginal calibration can hide stratum-level failure) -----
 
 console.log('\n--- Reliability by predicted-p50 decile, Bugs / corrected ---\n');
