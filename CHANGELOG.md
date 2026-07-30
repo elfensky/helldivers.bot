@@ -5,7 +5,7 @@
 ### Added
 
 - **Assault ETA on the faction cards.** Attacks are now forecastable, and the faction card's
-  meta row carries a `⚔ Assault ETA 4-16h` line when one is expected within a day. A range,
+  meta row carries a `Assault ETA 4-16h` line when one is expected within a day. A range,
   never a countdown — the measured window is ~21h wide a day out and ~5h wide inside four
   hours, so a single ticking number would claim precision the model does not have. The
   median sits in the `title`. Backed by a committed calibration table

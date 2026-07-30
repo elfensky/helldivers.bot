@@ -166,7 +166,7 @@ function AssaultEta({ forecast }) {
             title={`Median estimate ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`}
             suppressHydrationWarning
         >
-            &#9876; Assault ETA {lo}-{hi}h
+            Assault ETA {lo}-{hi}h
         </span>
     );
 }
