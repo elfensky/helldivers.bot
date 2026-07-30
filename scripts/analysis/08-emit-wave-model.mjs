@@ -25,7 +25,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadDataset, HOUR, SECTOR_COUNT } from './lib/dataset.mjs';
-import { quantileOf } from './lib/backtest.mjs';
 
 const KNN_K = 200;
 const MIN_CELL = 30;
