@@ -9,6 +9,8 @@ import DefeatedCard from '@/features/galaxy/DefeatedCard';
 import { highlightSector, clearSectorHighlight } from '@/features/galaxy/sectorLink.mjs';
 import FactionTabs from '@/shared/components/FactionTabs';
 import RegionsViewToggle from '@/features/dashboard/RegionsViewToggle';
+import NextWaveCard from '@/features/dashboard/NextWaveCard';
+import { waveForecast } from '@/features/dashboard/waveForecast.mjs';
 import StatGrid from '@/features/stats/StatGrid';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
 import { evaluateProgress } from '@/features/stats/evaluateProgress.mjs';
@@ -98,6 +100,8 @@ export default function DashboardClient({
     const events = /** @type {LiveEvent[]} */ (sortEventsByRecent(data?.events));
     const pulseDelays = computePulseDelays(data?.events);
     const isCampaignView = regionsView === 'campaign';
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const forecast = waveForecast(data, nowSeconds);
 
     const superEarthDefendEvent = events?.find(
         (e) =>
@@ -302,6 +306,11 @@ export default function DashboardClient({
                     <RegionsViewToggle value={regionsView} onChange={setRegionsView} />
                 </div>
                 <ComponentErrorBoundary name="Regions">
+                    <NextWaveCard
+                        forecast={forecast}
+                        warStart={data.war_start}
+                        now={nowSeconds}
+                    />
                     <ul className="sector-grid list-none p-0">
                         {factionIndices.map(renderFrontierCard)}
                         {factionIndices.map(renderHomeworldCard)}

@@ -104,9 +104,9 @@ describe('waveForecast hidden modes', () => {
             'no-data',
         );
         expect(waveForecast(makeData(), NOW, null).reason).toBe('no-data');
-        expect(
-            waveForecast(makeData(), NOW, { meta: {}, states: {} }).reason,
-        ).toBe('no-data');
+        expect(waveForecast(makeData(), NOW, { meta: {}, states: {} }).reason).toBe(
+            'no-data',
+        );
     });
 });
 
