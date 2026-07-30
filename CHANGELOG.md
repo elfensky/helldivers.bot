@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.74.0
+
+### Added
+
+- **Assault ETA on the faction cards.** Attacks are now forecastable, and the faction card's
+  meta row carries a `⚔ Assault ETA 4-16h` line when one is expected within a day. A range,
+  never a countdown — the measured window is ~21h wide a day out and ~5h wide inside four
+  hours, so a single ticking number would claim precision the model does not have. The
+  median sits in the `title`. Backed by a committed calibration table
+  (`11-emit-attack-model.mjs` → `attackModel.mjs`) and a total pure `attackForecast()` that
+  degrades to `{ mode: 'hidden' }` on stalled fronts, running assaults, or missing data.
+
+### Changed
+
+- **`/docs/predict` § Attacks rewritten — a published finding was wrong.** The report
+  claimed attacks fire at ~90–98% liberation, with a p25/p50/p75 "trigger band". That was an
+  artifact of this project's own sampling rate: `h1_status` runs at ~1 bucket/day for 156 of
+  160 seasons, and a hard threshold read through a lagging sensor smears downward into
+  exactly that spread. **Attacks fire within minutes of `points == points_max`, exactly.**
+  Median liberation at attack start by age of the reading: 94.28% (<24h) → 100.00% (<15min).
+  Corrected explicitly rather than silently replaced, including the page's own "not 'all ten
+  captured and then it starts'" claim, which was backwards.
+- **Defend figures refreshed** after a harness fix (below). Headline baseline 0.753 → 0.789,
+  state-conditional 0.644 → 0.675, KM-corrected 0.648 → 0.679, season-pace 0.787 → 0.825. No
+  verdict changed; the season-pace row's verdict is corrected to NOT USEFULLY PREDICTABLE,
+  which is what its interval now says.
+- **`.sector-card-meta` wraps.** The assault span needs `white-space: nowrap`, which makes it
+  incompressible; measured against the running app, with a pace indicator also in the row it
+  overflowed by 25px at a 300px card and 65px at 260px.
+
+### Fixed
+
+- **`forwardRecurrenceMedian` ignored `momentFilter`.** The constant baseline was fit over
+  the unfiltered season span while the model was scored on filtered moments, so every
+  `momentFilter` configuration's skill ratio was partly measuring the filter rather than the
+  model.
+- **Backtest reliability gaps.** The gate's calibration leg pools every moment, so a model
+  can pass it while being miscalibrated in every stratum with the errors cancelling. Added a
+  by-decile reliability table (which immediately caught an anchoring bug in the attack ETA),
+  horizon-clamp rates (a sharpness PASS can otherwise be an artifact of quantiles truncating
+  at the horizon), and per-moment records so callers can compute alert-quality metrics.
+
 ## 0.73.1
 
 ### Changed

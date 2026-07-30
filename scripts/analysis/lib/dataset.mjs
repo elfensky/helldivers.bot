@@ -291,10 +291,27 @@ export async function loadDataset() {
         return mine / m;
     }
 
+    /**
+     * The full status series for one (season, enemy), ascending by bucket.
+     *
+     * `statusAt` answers point queries, but a consumer learning a *temporal
+     * pattern* (pace by day of week, say) needs the actual observations —
+     * stepping a clock and calling `statusAt` would resample the same bucket
+     * many times over and weight slow days by however long they were stale.
+     *
+     * @param {number} season
+     * @param {number} enemy
+     * @returns {object[]} the stored rows, or an empty array
+     */
+    function statusSeries(season, enemy) {
+        return statusIndex.get(`${season}:${enemy}`) ?? [];
+    }
+
     return {
         events,
         seasons,
         statusAt,
+        statusSeries,
         liberationAt,
         playerPercentileAt,
         playersRelToSeasonMedianAt,

@@ -393,3 +393,85 @@ describe('EventCard (campaign view)', () => {
         expect(container.querySelector('.sector-card-countdown')).not.toBeNull();
     });
 });
+
+describe('EventCard — assault ETA line', () => {
+    const base = {
+        action: 'capturing',
+        region: 'Fenrir III',
+        percent: 71,
+        points: 4_100_000,
+        pointsMax: 6_700_000,
+        factionIndex: 0,
+    };
+
+    it('renders nothing when no forecast is supplied', () => {
+        render(<EventCard {...base} />);
+        expect(screen.queryByText(/assault eta/i)).toBeNull();
+    });
+
+    it('renders nothing when the forecast is hidden', () => {
+        render(
+            <EventCard
+                {...base}
+                assaultForecast={{ mode: 'hidden', reason: 'stalled' }}
+            />,
+        );
+        expect(screen.queryByText(/assault eta/i)).toBeNull();
+    });
+
+    it('renders a range, not a countdown', () => {
+        render(
+            <EventCard
+                {...base}
+                assaultForecast={{
+                    mode: 'window',
+                    p25: 4.2,
+                    p50: 9.4,
+                    p75: 16.3,
+                    imminent: false,
+                }}
+            />,
+        );
+        const el = screen.getByText(/assault eta/i);
+        expect(el.textContent).toMatch(/4-16h/);
+        // The median belongs in the title, not the visible line — showing three
+        // numbers in a 12px mono row is a puzzle, and showing one implies a
+        // precision the model does not have.
+        expect(el.textContent).not.toMatch(/9\.4/);
+        expect(el.getAttribute('title')).toMatch(/9\.4h/);
+    });
+
+    it('marks an imminent assault with the danger modifier', () => {
+        render(
+            <EventCard
+                {...base}
+                assaultForecast={{
+                    mode: 'window',
+                    p25: 1,
+                    p50: 2,
+                    p75: 3,
+                    imminent: true,
+                }}
+            />,
+        );
+        expect(screen.getByText(/assault eta/i).className).toContain(
+            'sector-card-assault--imminent',
+        );
+    });
+
+    it('never shows a negative lower bound', () => {
+        render(
+            <EventCard
+                {...base}
+                assaultForecast={{
+                    mode: 'window',
+                    p25: -3,
+                    p50: 1,
+                    p75: 5,
+                    imminent: true,
+                }}
+            />,
+        );
+        expect(screen.getByText(/assault eta/i).textContent).toMatch(/0-5h/);
+    });
+});

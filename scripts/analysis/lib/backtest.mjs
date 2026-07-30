@@ -37,9 +37,13 @@ export function quantileOf(values, q) {
  * @param {object[]} trainEvents matching events from training seasons
  * @param {Map<number, object>} seasons
  * @param {number} stepHours
+ * @param {((t: number, seasonEvents: object[]) => boolean)|null} momentFilter the SAME
+ *   filter the evaluation loop applies. Without it the constant is fit to the
+ *   unfiltered moment distribution while the model is scored on the filtered one,
+ *   so the skill ratio partly measures the filter rather than the model.
  * @returns {number}
  */
-function forwardRecurrenceMedian(trainEvents, seasons, stepHours) {
+function forwardRecurrenceMedian(trainEvents, seasons, stepHours, momentFilter = null) {
     const bySeason = new Map();
     for (const e of trainEvents) {
         if (!bySeason.has(e.season)) bySeason.set(e.season, []);
@@ -51,6 +55,7 @@ function forwardRecurrenceMedian(trainEvents, seasons, stepHours) {
         const span = seasons.get(season);
         if (!span) continue;
         for (let t = span.firstStart; t <= span.lastEnd; t += stepHours * HOUR) {
+            if (momentFilter && !momentFilter(t, list)) continue;
             const next = list.find((e) => e.start_time > t);
             if (next) waits.push((next.start_time - t) / HOUR);
         }
@@ -116,6 +121,8 @@ export function walkForward({
     const records = [];
     let warmupSkipped = 0;
     let censoredUnknown = 0;
+    let clampedUpper = 0;
+    let clampedBand = 0;
 
     for (const testSeason of evalSeasons) {
         const trainEvents = matching.filter((e) => e.season < testSeason);
@@ -143,7 +150,12 @@ export function walkForward({
             }
         }
         // Forward-recurrence median, NOT median gap. See the note above.
-        const baselineConstant = forwardRecurrenceMedian(trainEvents, seasons, stepHours);
+        const baselineConstant = forwardRecurrenceMedian(
+            trainEvents,
+            seasons,
+            stepHours,
+            momentFilter,
+        );
 
         const predict = fitPredictor(trainEvents, {
             testSeason,
@@ -179,6 +191,12 @@ export function walkForward({
             const q25 = Math.min(p.p25, horizonHours);
             const q50 = Math.min(p.p50, horizonHours);
             const q75 = Math.min(p.p75, horizonHours);
+            // A record whose p25 also clamps contributes a band of width ZERO to
+            // `sharpnessHours`. Enough of those and the sharpness leg reports a
+            // PASS that is purely an artifact of the horizon, so the rate is
+            // surfaced rather than left implicit.
+            if (p.p75 > horizonHours) clampedUpper++;
+            if (p.p25 > horizonHours) clampedBand++;
 
             if (next) {
                 const wait = (next.start_time - t) / HOUR;
@@ -329,7 +347,41 @@ export function walkForward({
 
     const widths = records.map((r) => r.q75 - r.q25);
 
+    /**
+     * Reliability by predicted-p50 decile. `calibrationFor` pools every record,
+     * so it is a MARGINAL check: a model can pass it while being badly
+     * miscalibrated in every stratum, with the errors cancelling. This splits
+     * the same hit rate by predicted magnitude so that cancellation is visible.
+     * Diagnostic only — not a gate leg.
+     */
+    function reliabilityByDecile() {
+        const scored = records.filter((r) => r.wait !== null);
+        if (scored.length === 0) return [];
+        const sorted = [...scored].sort((a, b) => a.q50 - b.q50);
+        const perBin = Math.ceil(sorted.length / 10);
+        const bins = [];
+        for (let i = 0; i < sorted.length; i += perBin) {
+            const chunk = sorted.slice(i, i + perBin);
+            if (chunk.length === 0) continue;
+            bins.push({
+                decile: bins.length + 1,
+                n: chunk.length,
+                p50Low: chunk[0].q50,
+                p50High: chunk.at(-1).q50,
+                observed: chunk.filter((r) => r.wait < r.q50).length / chunk.length,
+            });
+        }
+        return bins;
+    }
+
     return {
+        // Per-moment records, so callers can compute metrics the summary does
+        // not cover (e.g. an alert-quality bar: did a forecast fire before each
+        // target event, and how often was it followed by one).
+        records,
+        clampRateUpper: records.length > 0 ? clampedUpper / records.length : 0,
+        clampRateBand: records.length > 0 ? clampedBand / records.length : 0,
+        reliability: reliabilityByDecile(),
         moments: records.length,
         uncensored: records.filter((r) => r.wait !== null).length,
         censoredScored: records.filter((r) => r.wait === null && r.absErr !== null)

@@ -12,6 +12,7 @@ export default [
         ignores: [
             'src/generated/**',
             'src/features/dashboard/waveModel.mjs', // emitted by scripts/analysis/08
+            'src/features/dashboard/attackModel.mjs', // emitted by scripts/analysis/11
             '.next/**',
             'public/sw.js',
             'public/workers/**',
