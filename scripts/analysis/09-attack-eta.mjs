@@ -119,31 +119,58 @@ function pointsAt(season, enemy, t) {
     return st ? Number(st.points) : null;
 }
 
+/** Never emit an ETA below this; the campaign may already be complete. */
+const MIN_ETA_HOURS = 0.25;
+
 /**
- * The raw ETA in hours: remaining points divided by the trailing 24h pace.
+ * The raw ETA in hours: remaining points divided by recent pace.
  * Returns null when no forecast is possible — unknown state, a stalled or
  * retreating front (`rate <= 0`), or an already-complete campaign.
+ *
+ * **Staleness anchoring.** `points` comes from the last bucket at or before
+ * `t`, which for 156 of 160 seasons can be up to 24h old. `remaining / rate` is
+ * therefore the wait measured from *when the reading was taken*, not from `t`.
+ * The correction falls out algebraically — extrapolating the reading forward at
+ * the same rate is identical to subtracting the reading's age:
+ *
+ *     (max - points - rate*age) / rate  ==  (max - points)/rate - age
+ *
+ * Uncorrected, the median historical reading age is ~12h, so ETAs in the
+ * sub-24h display regime were inflated by roughly their own magnitude. Live the
+ * age is ~15 min and the correction is negligible — which is exactly why this
+ * shows up as a backtest artifact rather than a production one.
  *
  * @param {number} season
  * @param {number} enemy
  * @param {number} t unix seconds
+ * @param {boolean} correctStaleness anchor the ETA at `t` rather than at the bucket
  * @returns {{etaHours: number, remainingFrac: number}|null}
  */
-function rawEta(season, enemy, t) {
+function rawEta(season, enemy, t, correctStaleness) {
     const pointsMax = ds.seasons.get(season)?.pointsMax?.[enemy] ?? 0;
     if (!(pointsMax > 0)) return null;
 
-    const now = pointsAt(season, enemy, t);
-    const then = pointsAt(season, enemy, t - RATE_WINDOW_HOURS * HOUR);
-    if (now === null || then === null) return null;
+    const stNow = ds.statusAt(season, enemy, t);
+    const stThen = ds.statusAt(season, enemy, t - RATE_WINDOW_HOURS * HOUR);
+    if (!stNow || !stThen) return null;
 
+    const now = Number(stNow.points);
     const remaining = pointsMax - now;
     if (remaining <= 0) return null; // already complete; the attack has fired
 
-    const ratePerHour = (now - then) / RATE_WINDOW_HOURS;
+    // Divide by the ACTUAL span between the two readings, not the nominal 24h.
+    // On daily buckets the two rarely sit exactly a day apart, and using the
+    // nominal window silently misreports the pace by that discrepancy.
+    const spanHours = (Number(stNow.bucket) - Number(stThen.bucket)) / HOUR;
+    if (!(spanHours > 0)) return null;
+    const ratePerHour = (now - Number(stThen.points)) / spanHours;
     if (!(ratePerHour > 0)) return null; // stalled or retreating
 
-    return { etaHours: remaining / ratePerHour, remainingFrac: remaining / pointsMax };
+    let etaHours = remaining / ratePerHour;
+    if (correctStaleness) etaHours -= (t - Number(stNow.bucket)) / HOUR;
+    if (etaHours < MIN_ETA_HOURS) etaHours = MIN_ETA_HOURS;
+
+    return { etaHours, remainingFrac: remaining / pointsMax };
 }
 
 /** Is an attack against this faction already running at `t`? */
@@ -164,9 +191,10 @@ function attackActive(t, seasonEvents) {
  *
  * @param {number} enemy
  * @param {number} stepHours must match the evaluation clock exactly
+ * @param {boolean} correctStaleness anchor ETAs at the evaluation moment
  * @returns {Function} a fitPredictor for walkForward
  */
-function makeFitPredictor(enemy, stepHours) {
+function makeFitPredictor(enemy, stepHours, correctStaleness) {
     /** @type {Map<number, number[]>} band index -> observed wait/eta ratios */
     const ratiosByBand = new Map();
     let accumulatedThrough = 0; // highest season folded into the table
@@ -183,7 +211,7 @@ function makeFitPredictor(enemy, stepHours) {
         const span = ds.seasons.get(season);
         if (!list || !span) return;
         for (let t = span.firstStart; t <= span.lastEnd; t += stepHours * HOUR) {
-            const eta = rawEta(season, enemy, t);
+            const eta = rawEta(season, enemy, t, correctStaleness);
             if (!eta) continue;
             const next = list.find((e) => e.start_time > t);
             if (!next) continue; // right-censored — no observed ratio
@@ -211,7 +239,7 @@ function makeFitPredictor(enemy, stepHours) {
         const pooled = ratioQuantiles([...ratiosByBand.values()].flat());
 
         return function predict(moment) {
-            const eta = rawEta(moment.season, enemy, moment.t);
+            const eta = rawEta(moment.season, enemy, moment.t, correctStaleness);
             // momentFilter guarantees this is non-null; the guard is for the
             // warm-up moments the harness evaluates before the filter applies.
             if (!eta) return { p25: 0, p50: 0, p75: 0 };
@@ -241,25 +269,35 @@ console.log(
     `  Trigger is exact (08-attack-trigger.mjs) — the error budget is entirely pace.\n`,
 );
 
+const VARIANTS = [
+    { key: 'corrected', correct: true },
+    { key: 'uncorrected', correct: false },
+];
+
 const results = [];
-for (const f of FACTIONS) {
-    for (const variant of ['filtered', 'unrestricted']) {
+for (const v of VARIANTS) {
+    for (const f of FACTIONS) {
         const momentFilter = (t, seasonEvents) => {
             if (seasonEvents.length === 0) return false;
-            if (variant === 'filtered' && attackActive(t, seasonEvents)) return false;
-            return rawEta(seasonEvents[0].season, f.enemy, t) !== null;
+            if (attackActive(t, seasonEvents)) return false;
+            return rawEta(seasonEvents[0].season, f.enemy, t, v.correct) !== null;
         };
-
         const summary = walkForward({
             events: ds.events,
             seasons: ds.seasons,
             type: 'attack',
             enemy: f.enemy,
             stepHours: STEP_HOURS,
-            fitPredictor: makeFitPredictor(f.enemy, STEP_HOURS),
+            fitPredictor: makeFitPredictor(f.enemy, STEP_HOURS, v.correct),
             momentFilter,
         });
-        results.push({ label: `${f.name} / ${variant}`, f, variant, summary });
+        results.push({
+            label: `${f.name} / ${v.key}`,
+            f,
+            variant: 'filtered',
+            correct: v.correct,
+            summary,
+        });
     }
 }
 
@@ -272,7 +310,7 @@ for (const f of FACTIONS) {
     for (const [season, span] of ds.seasons) {
         for (let t = span.firstStart; t <= span.lastEnd; t += STEP_HOURS * HOUR) {
             total++;
-            if (!rawEta(season, f.enemy, t)) none++;
+            if (!rawEta(season, f.enemy, t, true)) none++;
         }
     }
     console.log(
@@ -328,7 +366,7 @@ console.log('\n--- Alert bar (the bar this feeds a heads-up UI against) ---');
 console.log(`    Line renders when p50 < ${DISPLAY_HOURS}h.`);
 console.log('    [1] fires before >=70% of attacks   [2] followed within 2x p75 >=80%\n');
 
-for (const r of results.filter((x) => x.variant === 'filtered')) {
+for (const r of results) {
     const recs = r.summary.records.filter((x) => x.wait !== null);
     const targets = new Set(recs.map((x) => x.target));
     const fired = new Set(recs.filter((x) => x.q50 < DISPLAY_HOURS).map((x) => x.target));
@@ -364,8 +402,8 @@ for (const r of results.filter((x) => x.variant === 'filtered')) {
 
 // --- reliability (marginal calibration can hide stratum-level failure) -----
 
-console.log('\n--- Reliability by predicted-p50 decile, Bugs / filtered ---\n');
-const bugs = results.find((r) => r.label === 'Bugs / filtered');
+console.log('\n--- Reliability by predicted-p50 decile, Bugs / corrected ---\n');
+const bugs = results.find((r) => r.label === 'Bugs / corrected');
 console.log('  decile   n     predicted p50 range     observed   nominal 0.500');
 for (const b of bugs.summary.reliability) {
     const off = Math.abs(b.observed - 0.5);
