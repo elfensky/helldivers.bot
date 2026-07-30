@@ -1,223 +1,203 @@
 # Attack forecast — design
 
-**Date:** 2026-07-28
-**Status:** design approved, plan pending
-**Supersedes nothing.** Extends the #472 next-event-timing work to the attack side.
+**Date:** 2026-07-28 (rewritten 2026-07-30)
+**Status:** trigger established; rate model designed, not built
 **Related:** [`2026-07-27-next-event-timing-forecast-design.md`](2026-07-27-next-event-timing-forecast-design.md), `/docs/predict`
 
-## Why
+## The finding that rewrote this spec
 
-`/docs/predict` says of attacks: *"the approach is sound… but this has never been
-measured. No forecast model has been built for the attack side, and no accuracy figure
-exists."* This design measures it.
+**Attacks are deterministic.** One fires within minutes of a faction's campaign reaching
+full points — `points == points_max`, the exact integer. Established by
+`scripts/analysis/08-attack-trigger.mjs`, three falsifiable tests:
 
-The published finding it builds on: attacks are mechanically triggered on campaign
-progress. Liberation at attack start is p25 0.932 / p50 0.961 / p75 0.983; 89.3% fire at
-≥90% liberation; IQR ratio 0.135 against phase-matched controls, permutation p = 0.0005.
-
-## The question
-
-**Does liberation forecast attacks better than season phase alone?**
-
-Not "how accurate is an attack ETA." Measured against the database, attacks average
-**2.17 per (season, faction)** (min 1, max 7, n = 427 faction-seasons). With ~2 targets
-per faction-season, "predict the wait to the next attack" is very close to "predict where
-you are in the season" — and `daysIntoSeason` is the trigger hunt's own control variable,
-included precisely because season-phase correlation can manufacture concentration for a
-spurious variable. A forecast with no equivalent control is not interpretable.
-
-## Measurements that shaped this design
-
-Run against the dev database on 2026-07-28, before any modelling:
-
-| Measurement | Value |
-| --- | --- |
-| Attacks per (season, faction) | mean **2.17** (min 1, max 7, n = 427) |
-| `h1_status` median bucket gap, S<157 | **24.00h** (n = 12,666) |
-| `h1_status` median bucket gap, S157+ | **0.25h** (n = 21,762) |
-| Sign of 1-bucket (~1-day) liberation change, S<157 | 61.5% positive · 26.1% zero · 12.4% negative |
-| Sign of 3-bucket (~3-day) change, S<157 | 60.6% positive · 16.7% zero · 22.7% negative |
-
-Two consequences drove the design away from its first draft:
-
-1. **`v ≤ 0` on ~39% of moments, at both windows** (38.5% at 1d, 39.4% at 3d). Widening
-   the window trades "zero" for "negative"; it does not improve the usable fraction. A
-   velocity-ETA model that falls back on `v ≤ 0` is the fallback model on two moments in
-   five, by construction. Velocity is therefore an appendix, not the headline, and the
-   1d/3d sweep is dropped — there was nothing for it to discover.
-2. **Liberation is not monotone.** Roughly one 3-day window in five shows net *loss*.
-   `(L* − L)/v` presumes steady progress toward a threshold; the process lacks that shape.
-
-## Models
-
-All four run through the existing `walkForward()` harness — walk-forward by season,
-right-censoring aware, season-level block bootstrap, leakage asserts.
-
-| # | Model | Role |
+| Age of campaign reading | Attacks | Median liberation at attack start |
 | --- | --- | --- |
-| 1 | `phase` — elapsed days since `firstStart`, binned at 1-day width with a ≥30-day overflow bin, empirical wait lookup | **Control.** Must be beaten. |
-| 2 | `liberation` — liberation binned (0.05 wide, plus a ≥1.0 overflow bin), empirical wait lookup | **The claim.** |
-| 3 | `liberation-shuffled` — model 2 with liberation permuted within season | **Placebo.** Must fail. |
-| 4 | `eta` — `(L* − L)/v`, `v > 0` moments only, ratio quantiles learned **per liberation band** | **Appendix.** |
+| <15 min | 13 | **100.00%** |
+| <1h | 23 | 99.69% |
+| <6h | 170 | 98.87% |
+| <12h | 182 | 97.37% |
+| <24h | 537 | 94.28% |
 
-**Model 1 uses elapsed days, not fraction-through-season.** `spanSeconds` derives from
-`lastEnd` (`dataset.mjs:98-105`), so a fractional-phase feature leaks the season's end
-into the predictor.
+Twelve of the thirteen freshest readings sit within 0.1% of full; seven are at
+`points_max` exactly. Season 20's Bug campaign was **46 points short of 763,240 sixty-two
+seconds before its attack began**. Trigger lag on the 15-minute seasons: 1–14 minutes,
+median 3.0 (n = 7).
 
-**Model 2 bin widening:** bins with <30 observations widen to nearest non-empty
-neighbours, ultimately to the pooled wait distribution.
+The earlier "trigger band" (p25 0.932 / p50 0.961 / p75 0.983) was `h1_status`'s ~daily
+sampling smearing a hard threshold downward. `/docs/predict` is corrected in the same
+branch as this spec.
 
-**Model 3 is the load-bearing addition.** `/docs/predict` names the absent automated
-same-season placebo as *"the single biggest gap between what the scripts check and what
-the published findings claim."* Shuffling liberation within season, refitting, and
-requiring failure closes that gap for the attack side.
+### What this deleted from the previous design
 
-**Model 4 is never blended with model 2.** It is evaluated strictly on `v > 0` moments
-and reported alongside model 2 restricted to *those same moments*. The rejected first
-draft used model 2 as model 4's fallback, which would have made "does velocity add
-anything" unanswerable: a 39% fallback rate means the blended model is largely the
-fallback wearing the ETA's name. Ratio quantiles are learned per liberation band because
-`wait / rawEta` is heavy-tailed as `rawEta → 0` and is mechanically correlated with
-`rawEta` — a single pooled `{r25, r50, r75}` is invalid.
+Gone, and not because they were badly designed — because the question they answered is
+now answered exactly: the liberation-binned lookup model, the `L*` threshold estimate,
+the p25/p50/p75 trigger band, the ratio calibration, the season-phase control model, the
+within-season shuffle placebo, the pooled `min(ETA_i)` construction, and the 18-row run
+matrix. There is no threshold to learn and no "is the signal real" question to answer.
 
-## Run matrix — 18 rows
+## The remaining problem
 
-- `{phase, liberation}` × 3 factions × `{filtered, unrestricted}` = 12
-- `liberation-shuffled` × 3 factions, filtered = 3
-- `eta` × 3 factions, filtered, `v > 0` only = 3. Each of these rows *also* prints
-  `liberation` re-scored on that row's own `v > 0` moment subset, as a paired comparison
-  inside the row — not as a fourth set of rows.
+```
+eta = (points_max − points) / rate
+```
 
-**Filtered** excludes moments where an attack against that faction is already active.
-**Unrestricted** runs anyway: if the verdict flips between them, the filtered result is a
-conditioned result, not a general attack-timing one, and the page must say so.
+Every term but `rate` is a known constant, readable in real time. **The entire forecasting
+problem and the entire error budget now live in estimating pace.**
 
-**Pooled ("next attack against anyone") is dropped.** `min(ETA_i)` is not a valid pooled
-quantile — `S_pooled(t) = ∏S_i(t) ≤ min_i S_i(t)`, so the true pooled median is *earlier*
-than `min_i(median_i)`; the construction predicts too late and calibration lands above
-nominal. Rebuilding it properly (multiply per-bin empirical survival curves, invert)
-assumes faction independence, which does not hold — factions share a player base and a
-season. Per-faction is the deliverable and the page will say so plainly.
+### What makes it hard
 
-Every result is additionally **stratified by status resolution** (S<157 vs S157+) as a
-diagnostic, since the two populations differ by ~100× in bucket cadence.
+Two facts, both measured:
+
+- **Pace is not steady.** On the current season's 15-minute data, a faction's rate over
+  the last hour can differ from its 3-day average by an order of magnitude (Cyborgs:
+  86.4 %/day over 1h vs 5.4 %/day over 3d). Roughly one 3-day window in five shows net
+  *negative* progress.
+- **Short windows are unbackestable.** Share of moments with `rate <= 0`:
+
+  | window | 15-min data (S157+) | daily data (S<157) |
+  | --- | --- | --- |
+  | 1h | **16.2%** | uncomputable — both endpoints land in one bucket |
+  | 6h | 17.7% | uncomputable |
+  | 24h | 22.7% | 38.5% |
+  | 3d | 36.5% | 39.4% |
+
+  A 1-hour window is usable 84% of the time and is the better live model — but it cannot
+  be validated, because 156 of 160 seasons have daily buckets and S157–160 contain
+  **8 attacks total**.
+
+### The resolution
+
+**Ship the configuration history can validate.** Use a **24-hour rate window**: computable
+on all 160 seasons (925 attacks to test against) *and* computable live. Live it is measured
+from fresh 15-minute endpoints instead of two stale daily snapshots — the same feature,
+less noise. That makes the backtested accuracy an honest floor rather than a hopeful
+extrapolation, because live conditions strictly improve the input rather than changing it.
+
+Shorter-window rates may be **displayed** as observed context (they are real and live), but
+must not carry a number claiming backtested accuracy.
+
+## Model
+
+`scripts/analysis/09-attack-eta.mjs`, following the `02-baseline.mjs` idiom: pure-function
+self-checks at the top (no DB), `loadDataset()`, a CONFIGS loop through `walkForward`, then
+the gate print.
+
+**Predictor.** At moment `t` for faction `f`:
+
+```
+remaining = points_max[f] − points(f, t)
+rate      = (points(f, t) − points(f, t − 24h)) / 24h
+eta       = remaining / rate
+```
+
+Quantiles come from the empirical distribution of `true_wait / eta` on training seasons,
+learned **per remaining-fraction band** (not pooled — the ratio is heavy-tailed and
+mechanically correlated with `eta` as `remaining → 0`).
+
+**Degenerate cases.** `rate <= 0`, or `eta` beyond the horizon: emit no forecast. Do not
+substitute a fallback model — a blended predictor makes "does this work" unanswerable.
+The script reports the no-forecast rate per config; it is expected near 23%.
+
+**Configs.** 3 factions × {filtered, unrestricted}, where filtered excludes moments with an
+attack already active against that faction. Six rows. No pooled target — per-faction is the
+deliverable, and `min` of per-faction quantiles is not a valid pooled quantile.
+
+## Success bar — written before running anything
+
+The published three-leg gate was written for a countdown. The product this feeds is a
+**heads-up** ("assault coming, pay attention"), so it is scored as an alert. Both bars are
+reported; the alert bar governs shipping.
+
+**Alert bar (governs):**
+
+1. The line fires before **≥70%** of attacks.
+2. When it fires, an attack follows within **2× the upper bound ≥80%** of the time.
+
+**Gate (reported, not governing):** calibration ±0.05 at each quartile, skill-ratio 95% CI,
+sharpness vs. the config's own marginal.
+
+**Sanity check (binding):** the windowed-rate model must beat a constant-rate baseline
+(each season's own median rate to date). If it does not, the rate window is doing no work.
+
+This bar is recorded here *before* the model exists. Relaxing it after seeing results is
+the failure mode this project has repeatedly refused; if the numbers argue for a different
+bar, that argument gets made in writing against this text.
 
 ## Harness changes — `scripts/analysis/lib/backtest.mjs`
 
 | Change | Kind |
 | --- | --- |
-| `forwardRecurrenceMedian` respects `momentFilter` | **Behavioural — changes published numbers** |
+| `forwardRecurrenceMedian` respects `momentFilter` | **Behavioural — changes published defend numbers** |
 | Report horizon-clamp rate | Additive |
 | Report reliability table (calibration by predicted-p50 decile) | Additive |
-| Extract `seasonMoments(span, stepHours)` shared by fit and eval loops | Refactor |
 
-**The baseline fix changes the published defend result.** `baselineConstant`
-(`backtest.mjs:146`) is currently computed by walking the *unfiltered* season span while
-`momentFilter` applies only inside the eval loop (`backtest.mjs:166`) — so for any
-filtered config the skill ratio partly measures the filter. `02-baseline.mjs` and
-`04-train-baseline.mjs` must be re-run and `/docs/predict`'s defend numbers updated to
-whatever the corrected run produces, with a note that a harness bug was found and fixed.
-The defend verdict (INCONCLUSIVE) is unlikely to flip — 0.753 sits far from the 0.6 bar —
-but the numbers will move and the page must not keep stale ones.
+`baselineConstant` (`backtest.mjs:146`) is computed by walking the *unfiltered* season span
+while `momentFilter` applies only inside the eval loop (`backtest.mjs:166`), so for any
+filtered config the skill ratio partly measures the filter. Fixing it requires re-running
+`02-baseline.mjs`, `04-train-baseline.mjs` and `07-train-state-model.mjs`, and updating
+`/docs/predict`'s defend numbers.
 
-**Why the clamp rate matters.** `backtest.mjs:180-182` clamps all three quantiles to
-`horizonHours = 1500`, and `sharpnessHours` is `median(q75 − q25)` (`backtest.mjs:330,363`).
-A record whose quantiles all clamp contributes width 0. If a majority clamp, the median
-band width collapses toward zero and the sharpness leg reports PASS on an artifact.
-**Threshold: a clamp rate above 10% marks that config's sharpness leg UNREADABLE**, and
-the script prints it as such rather than PASS or FAIL.
+The clamp rate matters because `backtest.mjs:180-182` clamps all quantiles to
+`horizonHours`, and `sharpnessHours` is `median(q75 − q25)` — a record whose quantiles all
+clamp contributes width 0, so majority clamping can make the sharpness leg report PASS on
+an artifact. **A clamp rate above 10% marks that config's sharpness UNREADABLE**, printed
+as such rather than PASS or FAIL.
 
-**Why the reliability table matters.** `calibrationFor` (`backtest.mjs:233-246`) pools
-every record, so it is a marginal check. A model can pass it while being miscalibrated in
-every liberation stratum with the errors cancelling.
+## UI — one line in the existing faction card
 
-**Sharpness marginal** is computed in the new script, not the harness: for a filtered
-config it is the distribution of **attack-end → next-attack-start** gaps, not raw
-start-to-start, mirroring `02-baseline.mjs:227-259`. Using start-to-start would inflate
-the marginal and make the sharpness leg trivially passable.
+Not a new component. A fourth conditional in `EventCard`'s existing meta row, which already
+renders `points · countdown · pace`:
 
-## New script — `scripts/analysis/06-attack-forecast.mjs`
+```
+⚔ ASSAULT ETA 4-16H
+```
 
-Follows the `02-baseline.mjs` idiom: pure-function self-checks at the top (no DB), then
-`loadDataset()`, then a CONFIGS loop through `walkForward`, then the gate print.
+- **Range, not a countdown.** p25–p75. The median goes in `title`.
+- **Shown only when p50 is under a display threshold**, default 24h. Purely a UX choice —
+  it does not restrict the data feeding the model, which uses all 160 seasons. Make it a
+  named constant so it can be widened while observing it live.
+- **`flex-wrap: wrap` on `.sector-card-meta`.** Measured: the span needs
+  `white-space: nowrap`, which makes it incompressible, and with a `PaceIndicator` also in
+  the row it overflows by 25px at a 300px card and 65px at 260px. The wrap takes overflow
+  to 0 at every width.
+- **No empty state needed.** A stalled front produces no sub-threshold estimate, so the
+  line simply does not render.
 
-**Closure over `ds`.** `fitPredictor(trainEvents, ctx)` receives only
-`{testSeason, trainGaps, baselineConstant}` (`backtest.mjs:148-152`). The lookup models
-need `seasons` and `liberationAt`, so they close over the loaded dataset.
-
-**Incremental bin accumulation.** `fitPredictor` runs once per eval season
-(`backtest.mjs:120,148`), and a naive lookup fit is O(trainSeasons × span/stepHours) —
-~10⁴ season-walks across the run. Bins accumulate as a prefix over ascending eval
-seasons instead, with an assert that the accumulator never holds a season ≥ `testSeason`.
-
-**Shared clock.** Both the fit loop and `walkForward`'s eval loop use `seasonMoments()`,
-so fit-time bins and eval-time moments cannot silently diverge.
-
-**`libVelocity` moves** from `05-defend-covariates.mjs:195` into `lib/dataset.mjs`,
-exported as a pure function (so `05`'s fake-injection self-check still works) and exposed
-on the loaded dataset as `libVelocityAt` alongside `liberationAt`.
-
-## Decision gate
-
-Unchanged, all three legs required: calibration within ±0.05 at p25/p50/p75; skill-ratio
-95% CI entirely at or under 0.6; predicted band narrower than the config's own marginal.
-
-Additional pass conditions specific to this design, applied before the gate is read:
-
-- `liberation` must beat `phase` on skill ratio. If it does not, the result is about
-  season calendar, not the attack mechanic, and no gate verdict is meaningful.
-- `liberation-shuffled` must **fail**. If the placebo passes, the pipeline is fitting
-  something other than liberation and every other row is void.
-- Sharpness is reported as unreadable wherever the horizon-clamp rate is material.
-
-## Self-check — must be non-vacuous
-
-The project deleted a prior test for being invariant to its input. The equivalent trap
-here is a lookup pipeline that scores well on any binned variable. The self-check
-therefore requires **both** directions, no DB needed:
-
-1. A synthetic world with a deterministic liberation→attack threshold, where models 1–2
-   **recover** it (skill ratio well under 1, calibration near nominal).
-2. The same world with liberation shuffled within season, where they **fail**
-   (skill ratio ≈ 1).
-
-Plus pure-function checks: bin widening, per-band ratio quantiles, quantile ordering,
-and the incremental accumulator matching a from-scratch fit.
+Live-only. On an archived season the attack either happened or did not.
 
 ## Documentation
 
-`src/app/docs/predict/page.mdx`:
+Already applied in this branch:
 
-- Rewrite § Attacks → "Can we forecast the next one?" with measured numbers, replacing
-  the "never been measured / approach is sound" text.
-- Update the bottom-line bullet.
-- Add an `<details>` in-depth block: the 18-row table (effective N, calibration, sharpness
-  vs. marginal, MAE vs. baseline, skill ratio + CI, clamp rate, verdict), the reliability
-  table, the resolution stratification, and the placebo result.
-- Record the ~39% `v ≤ 0` finding as the reason velocity ETA is an appendix.
-- Update the defend numbers after the baseline fix, noting the harness bug.
-- Update the "top outstanding gap" caveat: the same-season placebo now exists for attacks.
-- Add `06-attack-forecast.mjs` to the reproduce list and to `scripts/README.md`.
+- `/docs/predict` § Attacks rewritten around the deterministic trigger, including the
+  staleness gradient, the thirteen fresh readings, and the trigger-lag measurement.
+- The four corrected claims called out explicitly rather than silently replaced.
+- The defend side's Attempt-3 mechanism corrected: `SC9` is the window in which an assault
+  is *pending*, not the trigger itself. This strengthens the finding — the SC9-vs-SC10
+  reversal now has a mechanism (at SC10 the assault has already fired).
+- The "coarse resolution can only weaken a signal" caveat corrected: it cannot manufacture
+  a signal from noise, but it can convert a hard rule into a publishable distribution.
 
-Charts are out of scope. If the result warrants a visual, it is a follow-up issue.
+Still to do once `09-attack-eta.mjs` runs: the forecast-accuracy numbers and the defend
+re-run after the baseline fix.
 
 ## Verification
 
-`npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build` — all four must
-pass. Plus: `node scripts/analysis/lib/dataset.mjs`, `node scripts/analysis/lib/backtest.mjs`,
-and `node --env-file=.env.development scripts/analysis/06-attack-forecast.mjs`.
+`npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build` — all four.
+Plus `node scripts/analysis/lib/dataset.mjs`, `node scripts/analysis/lib/backtest.mjs`,
+and `node --env-file=.env.development scripts/analysis/08-attack-trigger.mjs`.
 
 ## Out of scope
 
-- Shipping any user-facing countdown or API field. If the gate passes, that is a separate
-  issue.
-- Re-running `05-defend-covariates.mjs`; its findings are unaffected.
-- Any change to the defend model itself beyond re-running it under the corrected baseline.
+- Shipping the UI line before the alert bar is met.
+- Any short-window (<24h) rate model as a *predictor*.
+- Re-running `05-defend-covariates.mjs` — unaffected.
 
 ## Provenance
 
-Design revised after an adversarial multi-model review (Codex, Antigravity, Sonnet 4.6,
-Opus 5; blinded/independent). All four rejected the first draft. Unanimous findings:
-the model-A-as-fallback blend, the pooled `min(ETA_i)` construction, the pooled
-ratio-calibration degeneracy, and the unmeasurability of velocity at ~1 bucket/day.
-Transcript: `~/.claude-octopus/debates/no-session/001-attack-eta-design/`.
+The first draft of this spec built a liberation-threshold model with a velocity ETA and was
+revised after an adversarial multi-model review (Codex, Antigravity, Sonnet 4.6, Opus 5).
+It was then discarded entirely when the user pointed out that attacks trigger at full
+points, which measurement confirmed. The published "trigger band" the whole design was
+built around was an artifact of the project's own sampling rate. Debate transcript:
+`~/.claude-octopus/debates/no-session/001-attack-eta-design/`.
