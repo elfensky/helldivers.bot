@@ -5,6 +5,7 @@ import Hijackable from '@/features/ministry/Hijackable';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import LastUpdated from '@/shared/components/LastUpdated';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
+import { attackForecast } from '@/features/dashboard/attackForecast.mjs';
 import DefeatedCard from '@/features/galaxy/DefeatedCard';
 import { highlightSector, clearSectorHighlight } from '@/features/galaxy/sectorLink.mjs';
 import FactionTabs from '@/shared/components/FactionTabs';
@@ -210,6 +211,11 @@ export default function DashboardClient({
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
                     endTime={activeEvent?.end_time}
+                    assaultForecast={attackForecast(
+                        data,
+                        index,
+                        Math.floor(Date.now() / 1000),
+                    )}
                     pulseDelay={
                         activeEvent ?
                             pulseDelays.get(`${activeEvent.enemy}-${activeEvent.region}`)

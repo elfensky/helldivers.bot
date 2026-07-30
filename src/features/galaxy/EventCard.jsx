@@ -134,6 +134,43 @@ function PaceIndicator({ pace }) {
     );
 }
 
+/**
+ * The discriminated result of `attackForecast`. Declared locally rather than
+ * imported so this presentational component keeps no dependency on the
+ * dashboard feature that computes it.
+ *
+ * @typedef {{mode: 'window', p25: number, p50: number, p75: number, imminent: boolean}
+ *   | {mode: 'hidden', reason: string}} AssaultForecast
+ */
+
+/**
+ * Assault ETA, rendered as one more middot-separated item in the meta row.
+ *
+ * A range, never a countdown: `/docs/predict` measures the window at ~21h wide
+ * a day out and ~5h wide inside four hours, so a single ticking number would
+ * claim precision the model does not have. The median goes in the title
+ * attribute for anyone who wants it.
+ *
+ * @param {object} props
+ * @param {{mode: 'window', p25: number, p50: number, p75: number, imminent: boolean}} props.forecast
+ */
+function AssaultEta({ forecast }) {
+    const lo = Math.max(0, Math.round(forecast.p25));
+    const hi = Math.round(forecast.p75);
+    return (
+        <span
+            className={
+                'sector-card-assault' +
+                (forecast.imminent ? ' sector-card-assault--imminent' : '')
+            }
+            title={`Median estimate ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`}
+            suppressHydrationWarning
+        >
+            &#9876; Assault ETA {lo}-{hi}h
+        </span>
+    );
+}
+
 export default function EventCard({
     action,
     region,
@@ -147,6 +184,7 @@ export default function EventCard({
     pulseDelay,
     view = 'sector',
     factionMap,
+    assaultForecast = /** @type {AssaultForecast|null} */ (null),
 }) {
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = !!endTime;
@@ -247,6 +285,12 @@ export default function EventCard({
                         <>
                             <span className="sector-card-sep">&middot;</span>
                             <PaceIndicator pace={pace} />
+                        </>
+                    )}
+                    {assaultForecast?.mode === 'window' && (
+                        <>
+                            <span className="sector-card-sep">&middot;</span>
+                            <AssaultEta forecast={assaultForecast} />
                         </>
                     )}
                 </div>

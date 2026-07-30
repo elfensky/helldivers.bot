@@ -108,6 +108,26 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
+    /* The assault-ETA span carries white-space: nowrap so a range like
+     * "4-16H" never breaks mid-number, which makes it incompressible.
+     * Measured against the running app at 14px Space Mono: with a
+     * PaceIndicator also in this row it overflows by 25px at a 300px card
+     * and 65px at 260px. Wrapping takes that to 0 at every width and costs
+     * nothing on rows that already fit. */
+    flex-wrap: wrap;
+}
+
+.sector-card-assault {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--text-small);
+    font-weight: 600;
+    color: var(--color-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.sector-card-assault--imminent {
+    color: var(--color-danger);
 }
 
 .sector-card-points {
