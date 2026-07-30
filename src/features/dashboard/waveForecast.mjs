@@ -17,7 +17,7 @@ export const IMMINENT_THRESHOLD = 0.51;
  * (scripts/analysis/lib/dataset.mjs): a defend starts a new train iff no
  * SAME-FACTION defend ended within CHAIN_SECONDS before it starts.
  *
- * @param {{enemy: number, start_time: number, end_time: number}[]} defends
+ * @param {{enemy: number, start_time: number, end_time: number}[]} defends season defend events, any order
  * @returns {{enemy: number, start_time: number, end_time: number}[]} train
  *   starts, ascending by start_time
  */
