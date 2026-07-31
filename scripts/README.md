@@ -173,6 +173,35 @@ the findings are written up at
   exclusion, SC9-window targeting (61.4%, within-season permutation
   placebo), and the honest remainder: near-random among active factions;
   per-faction recency/liberation/sector rules all at chance.
+- `14-counterattack-delta.mjs` -- is the counterattack DELAY mechanical?
+  Slot-aware delta from a fail-resolved assault's end to the counterattack
+  train start, pre-registered criterion (slot-free CV < 0.25 OR p95-p05 <
+  6h). Verdict: MECHANICAL -- 467/474 slot-free deltas < 10min (p05-p95 =
+  0.0h); queued cases (1 occupied + 43 double-queued) fire wide, which is
+  exactly why the pooled histogram is never the headline. Also commits the
+  concurrency table (defend-defend 0, same-faction defend-attack 0, cross
+  955, attack-attack 375, max 3 simultaneous) and the Steam-guide checks:
+  fail-resolved assaults are exact 48.0h timeouts (544/544), defends cap at
+  2h30m, the defend hazard is fully GATED during assaults (0
+  non-counterattack starts in ~24,651h of assault-active lull time), and
+  counterattacks land on region 9 (97.8%).
+- `15-counterattack-target.mjs` -- the THIRD target correction: excludes
+  the ~487 counterattack train starts (2h label window) and re-runs the
+  featureless baseline + STATE-KM through the pre-registered gate on the
+  corrected series, sharpness comparator recomputed from the corrected
+  marginal (22.0h). Result: STATE-KM skill 0.625 [0.599-0.664], calibration
+  and sharpness FAIL => INCONCLUSIVE -- the corrected target is HARDER
+  unconditionally (assault epochs put a long tail on the free series). Also
+  refits the 13 gamma on split populations: free lulls NET of
+  assault-gated time fit gamma(k~8.8, theta~3.6h), CV 0.336 -- 13's k~4.4
+  was counterattack-contaminated.
+- `16-counterattack-pipeline.mjs` -- the mechanistic composite vs the KM
+  table on ATTACK/SC9 moments (pre-registered comparison, original
+  all-waves target). ATTACK branch: predicted wait = earliest active
+  assault start + 48h; median |err| 0.0h vs STATE-KM's 9.2h (ratio 0.002,
+  CI upper < 1, win rate 0.894) -- the pipeline wins outright. SC9 branch
+  (pace-ETA + 48h): not better (ratio 1.296, CI 0.72-2.54) -- ETA noise
+  dominates the deterministic tail.
 
 ### Self-checks
 
@@ -204,6 +233,9 @@ node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
 node --env-file=.env.development scripts/analysis/11-emit-attack-model.mjs
 node --env-file=.env.development scripts/analysis/13-scheduler-shape.mjs
 node --env-file=.env.development scripts/analysis/12-faction-choice.mjs
+node --env-file=.env.development scripts/analysis/14-counterattack-delta.mjs
+node --env-file=.env.development scripts/analysis/15-counterattack-target.mjs
+node --env-file=.env.development scripts/analysis/16-counterattack-pipeline.mjs
 ```
 
 `03-hazard.mjs` fits a logistic regression per (variant, evaluated season)

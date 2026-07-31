@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Counterattack timing investigation (#480):** the defend train that follows
+  a failed homeworld assault is mechanically scheduled — fail-resolved
+  assaults are exact 48.0h timeouts (544/544) and the counterattack train
+  starts within 10 minutes of the timeout when the defend slot is free
+  (467/474, p05–p95 = 0.0h; queued cases fire late and are measured
+  separately). The defend hazard is fully gated during assaults (all 178
+  train starts during an assault are counterattacks; 0 free waves in
+  24,651h of assault-active lull time), and counterattacks land on region 9
+  (97.8%). New scripts: `14-counterattack-delta.mjs` (slot-aware delta +
+  concurrency census + Steam-guide checks), `15-counterattack-target.mjs`
+  (third target correction — 487 counterattack starts excluded, gate re-run:
+  STATE-KM 0.625 [0.599–0.664], calibration + sharpness FAIL, verdict
+  INCONCLUSIVE unchanged; scheduler refit on free lulls net of gated time:
+  gamma(k≈8.8, θ≈3.6h), CV 0.336), `16-counterattack-pipeline.mjs`
+  (pre-registered composite: during an assault, "next wave = assault start
+  + 48h" beats the shipped KM table 0.0h vs 9.2h median error; from the SC9
+  window it does not). `lib/dataset.mjs` now labels `isCounterattack` on
+  defend train starts (labelling only, chain rule untouched).
+
+### Changed
+
+- `/docs/predict/defend` rewritten in part: rules 7–8 (immediate
+  counterattack, assault-gated clock), the decontaminated scheduler
+  reconstruction, and a new "counterattack clock" section with the
+  corrected-target gate table. Findings doc gains § Counterattack timing.
+
 ## 0.78.1
 
 ### Added

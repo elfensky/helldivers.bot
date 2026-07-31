@@ -7,7 +7,7 @@ import LiveConcurrency from './LiveConcurrency';
 export const metadata = {
     title: 'Predicting Defend Waves | Helldivers Bot',
     description:
-        'How the defend-wave likelihood window was built: three modeling attempts, placebo-tested covariates, a reverse-engineered gamma scheduler, and the pre-registered gate that kept a countdown from shipping.',
+        'How the defend-wave likelihood window was built: four modeling attempts, placebo-tested covariates, a reverse-engineered gamma scheduler with a deterministic counterattack clock, and the pre-registered gate that kept a countdown from shipping.',
     alternates: { canonical: '/docs/predict/defend' },
     openGraph: { url: '/docs/predict/defend' },
 };
@@ -15,7 +15,7 @@ export const revalidate = 3600;
 
 # Can we predict defends?
 
-Partially — and honestly. Defend waves ride one global, hidden timer, and after three modeling attempts we can put a calibrated likelihood window on the next one, but not a countdown. This page is the whole story: the rules of the game, two attempts that measured the wrong thing or hit a wall, the placebo discipline that killed four false discoveries, and a reverse-engineering of the scheduler itself.
+Partially — and honestly. Defend waves ride one global, hidden timer, and after four modeling attempts we can put a calibrated likelihood window on the next one, but not a countdown — except for one wave in four, the counterattack, which turns out to run on a deterministic clock. This page is the whole story: the rules of the game, attempts that measured the wrong thing or hit a wall, the placebo discipline that killed four false discoveries, and a reverse-engineering of the scheduler itself.
 
 ## How we predict it
 
@@ -65,6 +65,13 @@ The concurrency side of those rules is not a frozen claim — it is recomputed f
 <LiveConcurrency />
 
 There is a sixth rule, found later than the other five while working out which faction each wave targets: **a failed homeworld assault is always answered.** In every one of the 179 recorded lulls that began with a homeworld assault still running and ultimately failing, the next defend wave hit the faction that had been assaulted — 179/179, a deterministic sequencing mechanic, not a tendency. Assaults that *succeed* show the mirror image, 0/27, for the dull reason that winning removes the faction from the game. And when no assault is in play but exactly one faction sits one sector from triggering one, that faction is the likely-but-not-certain next target: 189 of 308 such lulls, 61.4%, against a within-season permutation placebo at p = 0.0005. *(reproduce: `12-faction-choice.mjs`)*
+
+A Discord question ("is the cooldown always the same, with the defend just waiting for an appropriate time to begin?") pushed rule 6 one step further in 2026-07-31, and the answer splits it into two more rules, both sharper than the hunch:
+
+7. **A failed assault is answered *immediately*.** Every fail-resolved homeworld assault in history ran **exactly 48.0 hours** — 544 of 544 within ±30 minutes of the timeout; assaults that succeed end early, when their points fill. And when the defend slot is free at that moment, the counterattack train starts **within 10 minutes** of the timeout: 467 of 474 cases, p05–p95 spread 0.0h. (Measured slot-aware, because queued cases genuinely wait: when two assaults fail with overlapping pending windows, the second counterattack fires ~37h late at the median — the single defend slot serializes them.) The counterattack lands on region 9 in 97.8% of cases, which also explains most of the region-9 dominance among train starts.
+8. **No free wave ever starts while an assault is running.** Of 1,819 train starts, 178 began with an assault active — and all 178 are counterattacks. Zero random waves in 24,651 hours of assault-active lull time, against 34.9 starts per 1,000 hours in assault-free time. The scheduler's clock is *gated* for the duration of every assault.
+
+*(reproduce: `14-counterattack-delta.mjs` — which also re-verifies the concurrency census and rules 7–8 on every run)*
 
 With the rules fixed, the forecasting problem collapses to a single number: how long does the lull run? Our first attempt managed to get even the question wrong.
 
@@ -217,15 +224,18 @@ Put on a game developer's hat. Somewhere in the Helldivers 1 server there is a f
 
 Two details pin the survivor down further. The timer anchors on the train's *end*, not its start: the correlation between a train's duration and the following lull is r = −0.027, and a start-anchored timer would force it strongly negative, because long trains would eat into their own lull. And a fixed timer — the k → ∞ corner of the gamma family — is ruled out by the same CV of 0.476; the k = 50 preset in the explorer below shows how badly it misses.
 
-If we had to reconstruct the code, it would read:
+If we had to reconstruct the code, it would read (updated 2026-07-31 — the original fit, k ≈ 4.4, θ ≈ 8.9h, was made on *all* lulls, before rules 7–8 showed that ~26% of them are mechanical counterattack lulls and that the clock pauses during assaults; refit on free lulls net of assault-gated time, the delay is visibly tighter):
 
 ```
 onTrainEnd(result == WIN):
-    nextWaveAt = now + sampleGamma(k ≈ 4.4, θ ≈ 8.9h)   // mean ≈ 39h, CV ≈ 0.48
-    faction    = pickFaction()                          // drawn at spawn — see below
+    nextWaveAt = now + sampleGamma(k ≈ 8.8, θ ≈ 3.6h)   // mean ≈ 32h, CV ≈ 0.34
+    // clock GATED while any homeworld assault runs (rule 8)
+
+onAssaultTimeout(48h, result == FAIL):
+    spawnDefendTrain(faction = assaulted, region = 9)    // immediately (rule 7)
 ```
 
-A KS distance of 0.073 does not prove the developers typed the word *gamma* — a delay built from a few exponential stages leaves the same fingerprint — but it rules out everything else on the list. This is the real lull histogram from the live database — drag k and watch the memoryless hypothesis miss (frozen tables above were computed a day earlier at 1,978 starts / 1,818 lulls — the dataset grows as wars end):
+A KS distance of 0.073 (0.077 for the decontaminated refit) does not prove the developers typed the word *gamma* — a delay built from a few exponential stages leaves the same fingerprint — but it rules out everything else on the list. This is the real lull histogram from the live database — drag k and watch the memoryless hypothesis miss (frozen tables above were computed a day earlier at 1,978 starts / 1,818 lulls — the dataset grows as wars end):
 
 <GammaExplorerSection />
 
@@ -239,11 +249,26 @@ Outside those regimes the draw is close to unpredictable. The transition matrix 
 
 The timing side independently confirms the drawing order: if each faction ran its own timer, per-faction cycles would look *cleaner* than the pooled series. It is the opposite — per-faction start-to-start CVs sit at 0.768–0.783 while the pooled series sits at 0.447 — so there is **one global clock**, and the faction is chosen only when the wave spawns. *(reproduce: `12-faction-choice.mjs` · `13-scheduler-shape.mjs`)*
 
+## The counterattack clock (the third target correction)
+
+Rules 7 and 8 are not just lore — they change what this page's models should have been predicting, for the third time. Attempt 1 unknowingly modeled the chain mechanic; the 2026-07-31 finding shows every attempt since has been unknowingly modeling the *counterattack* mechanic too: **487 of 1,979 train starts (24.6%) are counterattacks**, waves whose timing is fully determined by an assault's 48h timeout, not by the scheduler's dice. So the honest statistical target — waves the gamma clock actually draws — is the remaining 1,492.
+
+Re-running the whole gate on that corrected series (baseline and state-model both, sharpness comparator recomputed from the corrected series' own spread):
+
+| Configuration | Calibration | Skill ratio [95% CI] | Median abs. error | Sharpness vs. 22.0h corrected marginal | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| Baseline (featureless, corrected target) | FAIL | 0.840 [0.793, 0.947] | 15.8h vs. 18.9h | 49.1h — not narrower | INCONCLUSIVE |
+| State-conditional KM (corrected target) | FAIL | 0.625 [0.599, 0.664] | 11.8h vs. 18.9h | 47.4h — not narrower | INCONCLUSIVE |
+
+The corrected target is *harder*, not easier: a free wave sometimes has to wait out an entire assault epoch (a 48h timeout plus the counterattack train it spawns) before the clock even resumes, which puts a long right tail on the series that no tested model turns into a calibrated narrow band. The relative skill improves (0.625 is the best ratio the project has produced) but calibration and sharpness both fail. **The verdict is unchanged through what is now a fourth attempt: INCONCLUSIVE, no countdown for free waves.**
+
+The flip side is that the *mechanical* quarter of the target is now essentially solved. On walk-forward moments where an assault was running, predicting "the next wave lands at the assault's start + 48h" scores a **median error of 0.0h against the shipped KM table's 9.2h** (7,282 paired moments across 130 seasons, win rate 89.4%) — honestly conditional on the assault failing, which is the ~59% base-rate outcome, and known the instant the timeout passes. The same trick does *not* work one state earlier: chaining the attack-ETA model into the 48h timeout from the SC9 window is no better than the KM table (ratio 1.296, CI spanning 1), because pace-forecast noise swamps the deterministic tail. *(reproduce: `15-counterattack-target.mjs` · `16-counterattack-pipeline.mjs`)*
+
 ## What ships
 
 The dashboard's next-wave card is the distillation of everything above, in three moves: classify the moment (ATTACK, SC9, SC10 or NORMAL — the three observables from the top of this page), look up the Kaplan-Meier remaining-wait table for that state at the current elapsed hour, and render the 50% band with its within-24h/48h probabilities — plus two badges: **imminent**, when the within-24h probability crosses its threshold, and **running long**, whenever the state is SC9 and a longer-than-usual wait is the expected outcome rather than a surprise.
 
-Its honesty rules are hard-coded: it says *likely*, never *will*; it renders a band, never a countdown; it hides entirely while a wave is active instead of inventing precision; and the typical ±8h miss is printed on the card itself. That is the deal defends offer — a calibrated window, not a clock. Attacks offer a much better deal: a deterministic trigger and a forecast that cleared every leg of the same gate. <a href="/docs/predict/attack" data-umami-event="docs-predict-attack">That is the solved half of this report →</a>
+Its honesty rules are hard-coded: it says *likely*, never *will*; it renders a band, never a countdown; it hides entirely while a wave is active instead of inventing precision; and the typical ±8h miss is printed on the card itself. That is the deal defends offer — a calibrated window, not a clock. (With one exception earned above: *during a homeworld assault*, "if this assault fails, the counterattack lands the moment it times out" **is** a clock — a deterministic mechanic, not a model — and surfacing it on the card is tracked as follow-up work.) Attacks offer a much better deal: a deterministic trigger and a forecast that cleared every leg of the same gate. <a href="/docs/predict/attack" data-umami-event="docs-predict-attack">That is the solved half of this report →</a>
 
 <details>
 <summary>In depth: trigger hunts, method & caveats, and reproduction</summary>
@@ -330,6 +355,9 @@ node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
 node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
 node --env-file=.env.development scripts/analysis/12-faction-choice.mjs
 node --env-file=.env.development scripts/analysis/13-scheduler-shape.mjs
+node --env-file=.env.development scripts/analysis/14-counterattack-delta.mjs
+node --env-file=.env.development scripts/analysis/15-counterattack-target.mjs
+node --env-file=.env.development scripts/analysis/16-counterattack-pipeline.mjs
 ```
 
 Full narrative write-up: [`docs/superpowers/findings/2026-07-27-next-event-timing.md`](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/findings/2026-07-27-next-event-timing.md). Script-by-script reference: [`scripts/README.md`](https://github.com/elfensky/helldivers.bot/blob/main/scripts/README.md#analysis).
