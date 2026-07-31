@@ -121,7 +121,7 @@ export function walkForward({
      *
      * @type {{season: number, t: number, target: string, wait: number|null,
      *          censorAt: number|null, p25: number, p50: number, p75: number,
-     *          absErr: number|null, baselineAbsErr: number|null}[]} */
+               absErr: number|null, baselineAbsErr: number|null}[]} */
     const records = [];
     let warmupSkipped = 0;
     let censoredUnknown = 0;

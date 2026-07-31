@@ -25,6 +25,20 @@ handoff builds on).
 
 ## What is already established (do not re-derive)
 
+- **Concurrency rules (the Discord "only 1 defend at once" point —
+  session-probe verified 2026-07-31; your committed script must reproduce
+  these):** two defends NEVER co-run — 0 overlapping pairs, same-faction
+  AND cross-faction, across the full history. A defend never co-runs with
+  an attack on the SAME faction (0 of 9,584 pairs). A defend CAN co-run
+  with an attack on a DIFFERENT faction (955 pairs). Attack-attack co-runs
+  are COMMON: 375 overlapping pairs, including 53 boundary-moments of all
+  THREE factions under simultaneous homeworld assault (first in S5) and
+  129 boundary-moments of 2 attacks + 1 defend (first in S23) — the
+  maximum simultaneous event count ever observed is 3, and no composition
+  ever contains two defends. Consequence for this mission: two (or three)
+  concurrent failed assaults queue MULTIPLE counterattacks on the single
+  defend slot — count and handle that case explicitly in the delta work
+  below.
 - **The counterattack rule** (`scripts/analysis/12-faction-choice.mjs`,
   committed, self-checking): among lulls that began with a homeworld
   assault in progress, every assault that resolved FAILED was followed by a
@@ -63,16 +77,26 @@ handoff builds on).
 
 ## The questions, in order
 
-1. **Measure the counterattack delay directly.** For each of the ~179
-   fail-resolved assaults: `delta = counterattack train start_time −
-   attack end_time`. Distribution: n, min, p05/p25/p50/p75/p95, CV,
-   histogram. Also measure it for the SC9→assault pipeline pieces:
-   assault duration itself (fail-resolved attacks' end−start).
+1. **Measure the counterattack delay, slot-aware.** For each fail-resolved
+   assault: `delta_raw = counterattack train start_time − attack end_time`
+   (event times only — second-resolution). Then split by the state of the
+   global defend slot at attack end: (a) SLOT FREE — no defend active
+   anywhere; (b) SLOT OCCUPIED — another faction's train is running (the
+   955-overlap rule makes this a real population; also count the
+   double-queue case where a second failed assault is pending). For (b)
+   additionally measure `delta_queue = counterattack start − occupying
+   train's end`. The mechanical hypothesis predicts a tight delta in (a)
+   and a tight delta_queue in (b); pooling them would smear a real
+   mechanic into a fake distribution. Report n, min, p05/p25/p50/p75/p95,
+   CV, histogram PER SUBSET. Also measure assault duration (fail-resolved
+   end−start) — the Discord hunch ("attack cooldown constant, defend
+   waits") decomposes into which component carries the variance.
    **Pre-register the "mechanical" criterion before looking:** the project
    suggests delta CV < 0.25 OR p95−p05 < 6h ⇒ mechanical (cf. the chain
-   rule's 10-minute window); state yours in the script header and hold to
-   it. The Discord hunch ("attack cooldown constant, defend waits") maps
-   to: is `delta` tight while normal lulls are gamma-wide?
+   rule's 10-minute window), evaluated on subset (a); state yours in the
+   script header and hold to it. Also verify + print the concurrency
+   counts from § Established (defend-defend, defend-attack, attack-attack,
+   max simultaneous events) — the Discord thread gets exact numbers.
 2. **If mechanical (or even semi-mechanical): correct the target.**
    Exclude counterattack trains from the forecasting series (exactly as
    mechanical follow-ups were excluded in the attempt-2 correction) and
@@ -144,9 +168,18 @@ mission:
 4. **Staleness:** `h1_status` is ~daily for 156/160 seasons; attack
    start/end times come from `h1_event` (event-sourced, second-resolution,
    NOT smeared) — use event times, not status buckets, for the delta.
-5. **Small n:** ~179 deltas. Report CIs (season-level bootstrap if you
+5. **Small n:** ~179 deltas, and the slot-free/slot-occupied split makes
+   each subset smaller. Report CIs (season-level bootstrap if you
    walk-forward), never bare points; effective N discipline per
    `lib/backtest.mjs`.
+6. **The queueing confound.** The global one-defend slot means a
+   mechanical delay plus occasional queueing looks bimodal or long-tailed
+   when pooled — a naive pooled delta could "refute" a mechanic that is
+   actually exact. The slot-aware split in question 1 exists precisely to
+   prevent this; do not skip it, and never let the pooled histogram be the
+   headline number. Two concurrent failed assaults (if attack-attack
+   overlap is confirmed) queue two counterattacks — handle or explicitly
+   exclude-and-count that case.
 
 ## Rules of engagement
 
