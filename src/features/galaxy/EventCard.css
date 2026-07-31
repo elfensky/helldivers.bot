@@ -179,6 +179,9 @@
     font-family: var(--font-mono, monospace);
     font-size: var(--text-small);
     color: var(--color-text-muted);
+    /* Time-left is the row's state readout — right edge, like the pace
+     * indicator in the bar-label row above it. */
+    margin-left: auto;
 }
 
 .sector-card-defeated {
