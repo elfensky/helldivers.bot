@@ -15,7 +15,12 @@ must be inferred from a points-delta arrow (`▲ 8.1K`) plus a countdown.
 
 1. **Measure first.** New ETA ranges ship only with a measured track record.
    Sector-boundary crossings are backtested across all 160 seasons (thousands
-   of crossings vs 760 attacks) before any sector range renders.
+   of crossings vs 760 attacks) before any sector range renders. (amended
+   2026-07-31: fit/eval restricted to high-resolution seasons — daily buckets
+   cannot resolve an hours-scale target; approved; 2026-07-31 second ruling:
+   only 4 high-res seasons exist (effN=1 after walk-forward training) —
+   sector ETA ships median-only, the measured range follows when script 13's
+   gate becomes evaluable)
 2. **Event cards fold the verdict into the pace arrow.** The existing
    `PaceIndicator` (`▲ 8.1K`) is *replaced* on event cards by a time-domain
    verdict: `▲ on track · done ~3h` (green) / `▼ behind · done ~5h` (red).
