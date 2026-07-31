@@ -406,7 +406,7 @@ describe('EventCard — assault ETA line', () => {
 
     it('renders nothing when no forecast is supplied', () => {
         render(<EventCard {...base} />);
-        expect(screen.queryByText(/assault in/i)).toBeNull();
+        expect(screen.queryByText(/ETA ~/)).toBeNull();
     });
 
     it('renders nothing when the forecast is hidden', () => {
@@ -416,7 +416,7 @@ describe('EventCard — assault ETA line', () => {
                 assaultForecast={{ mode: 'hidden', reason: 'stalled' }}
             />,
         );
-        expect(screen.queryByText(/assault in/i)).toBeNull();
+        expect(screen.queryByText(/ETA ~/)).toBeNull();
     });
 
     it('renders the median first with the percentile range in parens', () => {
@@ -432,7 +432,7 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        const el = screen.getByText(/assault in/i);
+        const el = screen.getByText(/ETA ~/);
         // Median-first (rounded, ~-prefixed), range keeps it honest. Never a
         // symmetric ± — the window is asymmetric near campaign completion.
         expect(el.textContent).toMatch(/~9h \(4-16h\)/);
@@ -453,7 +453,7 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        expect(screen.getByText(/assault in/i).className).toContain(
+        expect(screen.getByText(/ETA ~/).className).toContain(
             'sector-card-assault--imminent',
         );
     });
@@ -471,6 +471,6 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        expect(screen.getByText(/assault in/i).textContent).toMatch(/~1h \(0-5h\)/);
+        expect(screen.getByText(/ETA ~/).textContent).toMatch(/~1h \(0-5h\)/);
     });
 });
