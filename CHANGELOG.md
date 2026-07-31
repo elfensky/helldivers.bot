@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.82.3
+
+### Fixed
+
+- **Last-sector ETA unified**: in the final sector the next boundary is the
+  campaign end, so sector view now shows the calibrated attack window
+  (`ETA ~2h (1-3h)`) instead of an uncalibrated median (`~1h`) for the same
+  target one toggle away.
+
 ## 0.82.2
 
 ### Changed

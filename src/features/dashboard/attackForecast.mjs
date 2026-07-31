@@ -188,12 +188,18 @@ export function attackForecast(data, enemy, nowSeconds, model = defaultModel) {
  * gates: hidden while ANY active event exists for the faction (defends freeze
  * the campaign; during attacks the campaign is complete).
  *
+ * In the LAST sector the next boundary IS the campaign end — the calibrated
+ * attack model exists for exactly that target, so this defers to
+ * `attackForecast` (window mode) rather than showing an uncalibrated median
+ * for the same number one card-toggle away.
+ *
  * @param {object} data the live campaign payload
  * @param {number} enemy faction id
  * @param {number} nowSeconds unix seconds
  * @param {object} [model] used for its `dow` pace table only
  * @returns {{mode:'median', p50:number, remaining:number, imminent:boolean}
- *   | {mode:'hidden', reason:'no-data'|'event-active'|'complete'|'stalled'|'beyond-window'}}
+ *   | {mode:'window', p25:number, p50:number, p75:number, remaining:number, imminent:boolean}
+ *   | {mode:'hidden', reason:'no-data'|'event-active'|'complete'|'stalled'|'beyond-window'|'attack-active'}}
  */
 export function sectorForecast(data, enemy, nowSeconds, model = defaultModel) {
     if (
@@ -219,6 +225,9 @@ export function sectorForecast(data, enemy, nowSeconds, model = defaultModel) {
 
     const pps = pointsMax / SECTOR_COUNT;
     const boundary = (Math.trunc(points / pps) + 1) * pps;
+    if (boundary >= pointsMax) {
+        return attackForecast(data, enemy, nowSeconds, model);
+    }
     const remaining = boundary - points;
 
     const then = pointsAt(
