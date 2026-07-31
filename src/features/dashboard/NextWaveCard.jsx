@@ -89,7 +89,7 @@ export default function NextWaveCard({ forecast, warStart, now }) {
                     </span>
                     <span className="sector-card-title">Wave</span>
                     <Link
-                        href="/docs/predict"
+                        href="/docs/predict/defend"
                         data-umami-event="dashboard-wave-window-docs"
                         aria-label="How is this computed?"
                         title="How is this computed?"

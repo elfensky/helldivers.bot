@@ -108,7 +108,7 @@ describe('NextWaveCard', () => {
             <NextWaveCard forecast={windowForecast()} warStart={WAR_START} now={NOW} />,
         );
         const link = screen.getByRole('link', { name: /how is this computed/i });
-        expect(link).toHaveAttribute('href', '/docs/predict');
+        expect(link).toHaveAttribute('href', '/docs/predict/defend');
         expect(link).toHaveAttribute('data-umami-event', 'dashboard-wave-window-docs');
     });
 
