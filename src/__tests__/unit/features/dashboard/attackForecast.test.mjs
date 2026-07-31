@@ -109,9 +109,20 @@ describe('pointsAt', () => {
 
 describe('attackForecast', () => {
     it('computes the window from remaining points and pace', () => {
-        // 1000 points left, 1000 gained over 24h => 1 pt/h => eta 1000h.
-        // Well beyond the display window, so it must stay hidden.
-        const far = attackForecast(payload(), 0, NOW, flatModel);
+        // 1000 points left, 1000 gained over 24h => ~42 pt/h => eta 24h.
+        // Multi-hour ETAs now show (day formatting handles the far end);
+        // only the 30-day sanity cap hides.
+        const day = attackForecast(payload(), 0, NOW, flatModel);
+        expect(day.mode).toBe('window');
+        expect(day.p50).toBeCloseTo(24, 0);
+
+        // 1000 left at 1 pt/h => eta 1000h — beyond the 720h cap, hidden.
+        const far = attackForecast(
+            payload({ points: 9000, pointsThen: 8976 }),
+            0,
+            NOW,
+            flatModel,
+        );
         expect(far).toEqual({ mode: 'hidden', reason: 'beyond-window' });
 
         // 100 left at 1000/24h => eta ~2.4h, inside the window.
@@ -257,7 +268,7 @@ describe('attackForecast', () => {
         if (f.mode === 'window') {
             expect(f.p25).toBeLessThanOrEqual(f.p50);
             expect(f.p50).toBeLessThanOrEqual(f.p75);
-            expect(f.p50).toBeLessThan(real.meta.displayHours);
+            expect(f.p50).toBeLessThan(720); // FAR_CAP_HOURS
         }
     });
 });
