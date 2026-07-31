@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.82.1
+
+### Changed
+
+- **ETA ranges write a shared unit once**: `(4-16h)` / `(30-54m)` instead of
+  `(4h-16h)`; mixed-unit ranges keep per-bound suffixes (`(30m-2h)`).
+
 ## 0.82.0
 
 ### Added

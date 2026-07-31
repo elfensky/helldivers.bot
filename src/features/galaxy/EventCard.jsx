@@ -157,6 +157,20 @@ function formatEtaHours(h) {
 }
 
 /**
+ * Range with the unit written once when both bounds share it: `4-16h`,
+ * `30-55m` — and per-bound only when mixed: `30m-2h`.
+ *
+ * @param {number} lo hours
+ * @param {number} hi hours
+ * @returns {string}
+ */
+function formatEtaRange(lo, hi) {
+    const a = formatEtaHours(lo);
+    const b = formatEtaHours(hi);
+    return a.slice(-1) === b.slice(-1) ? `${a.slice(0, -1)}-${b}` : `${a}-${b}`;
+}
+
+/**
  * ETA line, rendered as one more middot-separated item in the meta row.
  *
  * Median-first with the range in parens for window forecasts: `~9h (4-16h)`.
@@ -175,7 +189,7 @@ function EtaLine({ forecast }) {
     const med = formatEtaHours(forecast.p50);
     const range =
         forecast.mode === 'window' ?
-            ` (${formatEtaHours(forecast.p25)}-${formatEtaHours(forecast.p75)})`
+            ` (${formatEtaRange(forecast.p25, forecast.p75)})`
         :   ''; // mode 'median' — no unmeasured parens (sector ETA, see spec ruling)
     const title =
         forecast.mode === 'window' ?

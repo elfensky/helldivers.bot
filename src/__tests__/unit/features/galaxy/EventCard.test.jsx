@@ -432,7 +432,7 @@ describe('EventCard — assault ETA line', () => {
         const el = screen.getByText(/ETA ~/);
         // Median-first (rounded, ~-prefixed), range keeps it honest. Never a
         // symmetric ± — the window is asymmetric near campaign completion.
-        expect(el.textContent).toMatch(/~9h \(4h-16h\)/);
+        expect(el.textContent).toMatch(/~9h \(4-16h\)/);
         expect(el.textContent).not.toMatch(/±/);
         expect(el.getAttribute('title')).toMatch(/9\.4h/);
     });
@@ -484,8 +484,8 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        // 0.66h → ~40m, range 30m-54m
-        expect(screen.getByText(/ETA ~/).textContent).toMatch(/~40m \(30m-54m\)/);
+        // 0.66h → ~40m, range 30-54m (shared unit written once)
+        expect(screen.getByText(/ETA ~/).textContent).toMatch(/~40m \(30-54m\)/);
     });
 
     it('renders a median-only forecast without a range', () => {
