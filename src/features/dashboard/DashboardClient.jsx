@@ -211,7 +211,7 @@ export default function DashboardClient({
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
                     endTime={activeEvent?.end_time}
-                    assaultForecast={attackForecast(
+                    etaForecast={attackForecast(
                         data,
                         index,
                         Math.floor(Date.now() / 1000),
