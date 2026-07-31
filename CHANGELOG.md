@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.76.0
+
+### Changed
+
+- **Assault line moved to the subtitle row and reworded.** Now reads
+  `SECTOR_PROGRESS · Assault in 14-25h` on the bar-label row rather than sitting in the meta
+  row below, and "ETA" became "in". The label and forecast are grouped so the row's
+  `space-between` still pushes the pace indicator to the right edge.
+
 ## 0.75.0
 
 ### Changed
