@@ -17,6 +17,7 @@ const windowForecast = (overrides = {}) => ({
     imminent: true,
     runningLong: false,
     lastTrainStart: NOW - 20 * 3600,
+    counterattackAt: null,
     ...overrides,
 });
 
@@ -110,6 +111,47 @@ describe('NextWaveCard', () => {
         const link = screen.getByRole('link', { name: /how is this computed/i });
         expect(link).toHaveAttribute('href', '/docs/predict/defend');
         expect(link).toHaveAttribute('data-umami-event', 'dashboard-wave-window-docs');
+    });
+
+    test('no counterattack line without counterattackAt', () => {
+        render(
+            <NextWaveCard forecast={windowForecast()} warStart={WAR_START} now={NOW} />,
+        );
+        expect(screen.queryByText(/if the assault fails/i)).not.toBeInTheDocument();
+    });
+
+    test('counterattack line renders the failure-conditional clock (ATTACK)', () => {
+        render(
+            <NextWaveCard
+                forecast={windowForecast({
+                    state: 'ATTACK',
+                    counterattackAt: NOW + 31 * 3600,
+                })}
+                warStart={WAR_START}
+                now={NOW}
+            />,
+        );
+        const line = screen.getByText(/if the assault fails/i);
+        expect(line.textContent).toMatch(/counterattack/i);
+        expect(line.textContent).toMatch(/in ~31h/);
+        // The mechanic explainer rides the hover title.
+        expect(line.getAttribute('title')).toMatch(/exactly 48h/i);
+    });
+
+    test('counterattack clock in the past reads as imminent', () => {
+        render(
+            <NextWaveCard
+                forecast={windowForecast({
+                    state: 'ATTACK',
+                    counterattackAt: NOW - 600,
+                })}
+                warStart={WAR_START}
+                now={NOW}
+            />,
+        );
+        expect(screen.getByText(/if the assault fails/i).textContent).toMatch(
+            /imminent/i,
+        );
     });
 
     test('band fill geometry matches percentile-based positioning', () => {

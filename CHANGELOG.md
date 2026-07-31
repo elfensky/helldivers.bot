@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Counterattack clock on the next-wave card (#482):** while a homeworld
+  assault is active, the dashboard's Predicted Wave card shows a second meta
+  line — "if the assault fails · counterattack ⟨time⟩ (in ~Xh)" — computed
+  as the earliest active assault's start + 48h (`counterattackAt` in
+  `waveForecast.mjs`). A deterministic mechanic from #480 (median backtest
+  error 0.0h vs the KM band's 9.2h during assaults), not a model: the KM
+  likelihood band stays primary, the clock line is conditional on the
+  assault failing (~59% base rate), and it reads "imminent" once the
+  timeout has passed. Mechanic explainer rides the hover title;
+  `/docs/predict/defend` § What ships updated to match.
+
 ## 0.79.0
 
 ### Added

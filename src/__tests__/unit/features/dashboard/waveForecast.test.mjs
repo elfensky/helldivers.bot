@@ -194,4 +194,63 @@ describe('waveForecast window mode', () => {
     test('IMMINENT_THRESHOLD is the spec value', () => {
         expect(IMMINENT_THRESHOLD).toBe(0.51);
     });
+
+    test('counterattackAt is null outside ATTACK state', () => {
+        expect(waveForecast(makeData(), NOW, MODEL).counterattackAt).toBeNull();
+    });
+
+    test('ATTACK state exposes the assault-timeout counterattack clock', () => {
+        const data = makeData();
+        data.events.push({
+            type: 'attack',
+            enemy: 0,
+            region: 11,
+            start_time: NOW - 2 * HOUR,
+            end_time: NOW + 46 * HOUR,
+            status: 'active',
+        });
+        const f = waveForecast(data, NOW, MODEL);
+        expect(f.state).toBe('ATTACK');
+        expect(f.counterattackAt).toBe(NOW - 2 * HOUR + 48 * HOUR);
+    });
+
+    test('two concurrent assaults: the EARLIEST timeout wins', () => {
+        const data = makeData();
+        data.events.push(
+            {
+                type: 'attack',
+                enemy: 0,
+                region: 11,
+                start_time: NOW - 10 * HOUR,
+                end_time: NOW + 38 * HOUR,
+                status: 'active',
+            },
+            {
+                type: 'attack',
+                enemy: 1,
+                region: 11,
+                start_time: NOW - 2 * HOUR,
+                end_time: NOW + 46 * HOUR,
+                status: 'active',
+            },
+        );
+        expect(waveForecast(data, NOW, MODEL).counterattackAt).toBe(
+            NOW - 10 * HOUR + 48 * HOUR,
+        );
+    });
+
+    test('resolved (non-active) attacks do not produce a counterattack clock', () => {
+        const data = makeData();
+        data.events.push({
+            type: 'attack',
+            enemy: 0,
+            region: 11,
+            start_time: NOW - 60 * HOUR,
+            end_time: NOW - 12 * HOUR,
+            status: 'fail',
+        });
+        const f = waveForecast(data, NOW, MODEL);
+        expect(f.state).toBe('NORMAL');
+        expect(f.counterattackAt).toBeNull();
+    });
 });

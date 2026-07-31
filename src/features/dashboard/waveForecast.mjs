@@ -11,6 +11,11 @@ import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 const CHAIN_SECONDS = 600;
 const SECTOR_COUNT = 10; // mirrors SECTOR_COUNT in scripts/analysis/lib/dataset.mjs (client code cannot import from scripts/)
 export const IMMINENT_THRESHOLD = 0.51;
+// Every fail-resolved homeworld assault in history ran exactly 48.0h (544/544)
+// and its counterattack train started within minutes of the timeout
+// (scripts/analysis/14-counterattack-delta.mjs, #480) — so during an assault
+// the failure-conditional next wave is a deterministic clock, not a model.
+export const ASSAULT_TIMEOUT_SECONDS = 48 * 3600;
 
 /**
  * Train-start derivation — the same rule as the #472 analysis
@@ -58,7 +63,8 @@ function isValidModel(model) {
  * @param {object} [model] injectable for tests; defaults to the committed model
  * @returns {{mode: 'window', p25: number, p50: number, p75: number,
  *   p24: number, p48: number, state: string, imminent: boolean,
- *   runningLong: boolean, lastTrainStart: number}
+ *   runningLong: boolean, lastTrainStart: number,
+ *   counterattackAt: number | null}
  *   | {mode: 'hidden', reason: 'wave-active'|'no-train-yet'|'no-data'}}
  */
 export function waveForecast(data, nowSeconds, model = defaultModel) {
@@ -81,9 +87,17 @@ export function waveForecast(data, nowSeconds, model = defaultModel) {
     const last = starts.at(-1);
     if (!last) return { mode: 'hidden', reason: 'no-train-yet' };
 
-    const attackActive = data.events.some(
+    const activeAttacks = data.events.filter(
         (e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.ACTIVE,
     );
+    const attackActive = activeAttacks.length > 0;
+    // Earliest active assault's 48h timeout: the moment its counterattack
+    // lands if the assault fails. Deterministic (see ASSAULT_TIMEOUT_SECONDS);
+    // with several assaults running, the earliest one resolves first.
+    const counterattackAt =
+        attackActive ?
+            Math.min(...activeAttacks.map((e) => e.start_time)) + ASSAULT_TIMEOUT_SECONDS
+        :   null;
     const scs = data.status
         .filter((r) => r.points_max > 0)
         .map((r) => Math.trunc(r.points / (r.points_max / SECTOR_COUNT)));
@@ -109,5 +123,6 @@ export function waveForecast(data, nowSeconds, model = defaultModel) {
         imminent: row.p24 >= IMMINENT_THRESHOLD,
         runningLong: state === 'SC9',
         lastTrainStart: last.start_time,
+        counterattackAt,
     };
 }
