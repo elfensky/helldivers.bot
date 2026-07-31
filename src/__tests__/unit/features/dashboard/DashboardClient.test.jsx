@@ -181,7 +181,7 @@ describe('DashboardClient — base rendering', () => {
     test('renders Season header with view toggle', () => {
         render(<DashboardClient />);
         expect(screen.getByText('Season 42')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /sector|campaign/i })).toBeDefined();
+        expect(screen.getByRole('button', { name: /sector|faction/i })).toBeDefined();
     });
 
     test('regions toggle defaults to sector view (EventCard receives view="sector")', () => {
@@ -221,13 +221,13 @@ describe('DashboardClient — regions view toggle persistence', () => {
 
     test('initializes regions view from initialRegionsView prop', () => {
         render(<DashboardClient initialRegionsView="campaign" />);
-        const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+        const props = getCardProps('event-card-0-FACTION_PROGRESS');
         expect(props?.view).toBe('campaign');
     });
 
     test('clicking toggle persists new value to cookie', () => {
         render(<DashboardClient />);
-        const toggle = screen.getByRole('button', { name: /switch to campaign/i });
+        const toggle = screen.getByRole('button', { name: /switch to faction/i });
         fireEvent.click(toggle);
         expect(document.cookie).toContain('hd1-regions-view=campaign');
     });
@@ -292,9 +292,10 @@ describe('DashboardClient — Super Earth defense branch', () => {
         // SE card is event-focused — view prop stays undefined (defaults to 'sector')
         expect(seCard.view).toBeUndefined();
 
-        // Non-defenders still get their normal frontier cards
-        expect(getCardProps('event-card-1-SECTOR_PROGRESS')).not.toBeNull();
-        expect(getCardProps('event-card-2-SECTOR_PROGRESS')).not.toBeNull();
+        // Non-defenders still get their normal frontier cards (campaign label
+        // in campaign view)
+        expect(getCardProps('event-card-1-FACTION_PROGRESS')).not.toBeNull();
+        expect(getCardProps('event-card-2-FACTION_PROGRESS')).not.toBeNull();
     });
 });
 
@@ -412,10 +413,10 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
 
         render(<DashboardClient initialRegionsView="campaign" />);
         await waitFor(() => {
-            const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+            const props = getCardProps('event-card-0-FACTION_PROGRESS');
             expect(props?.view).toBe('campaign');
         });
-        const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+        const props = getCardProps('event-card-0-FACTION_PROGRESS');
         expect(props.points).toBe(3_200_000);
         expect(props.pointsMax).toBe(5_000_000);
         // factionMap must be forwarded in campaign view so the card can
@@ -494,7 +495,7 @@ describe('DashboardClient — view-dependent ETA & event verdicts', () => {
         cleanup();
 
         render(<DashboardClient initialRegionsView="campaign" />);
-        const campaignProps = getCardProps('event-card-0-SECTOR_PROGRESS');
+        const campaignProps = getCardProps('event-card-0-FACTION_PROGRESS');
         expect(campaignProps.etaForecastMode).toBe('window');
     });
 
