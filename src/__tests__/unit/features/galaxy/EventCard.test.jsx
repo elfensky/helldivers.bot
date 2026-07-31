@@ -419,7 +419,7 @@ describe('EventCard — assault ETA line', () => {
         expect(screen.queryByText(/assault in/i)).toBeNull();
     });
 
-    it('renders a range, not a countdown', () => {
+    it('renders the median first with the percentile range in parens', () => {
         render(
             <EventCard
                 {...base}
@@ -433,11 +433,10 @@ describe('EventCard — assault ETA line', () => {
             />,
         );
         const el = screen.getByText(/assault in/i);
-        expect(el.textContent).toMatch(/4-16h/);
-        // The median belongs in the title, not the visible line — showing three
-        // numbers in a 12px mono row is a puzzle, and showing one implies a
-        // precision the model does not have.
-        expect(el.textContent).not.toMatch(/9\.4/);
+        // Median-first (rounded, ~-prefixed), range keeps it honest. Never a
+        // symmetric ± — the window is asymmetric near campaign completion.
+        expect(el.textContent).toMatch(/~9h \(4-16h\)/);
+        expect(el.textContent).not.toMatch(/±/);
         expect(el.getAttribute('title')).toMatch(/9\.4h/);
     });
 
@@ -472,6 +471,6 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        expect(screen.getByText(/assault in/i).textContent).toMatch(/0-5h/);
+        expect(screen.getByText(/assault in/i).textContent).toMatch(/~1h \(0-5h\)/);
     });
 });

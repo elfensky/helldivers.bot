@@ -146,10 +146,10 @@ function PaceIndicator({ pace }) {
 /**
  * Assault ETA, rendered as one more middot-separated item in the meta row.
  *
- * A range, never a countdown: `/docs/predict` measures the window at ~21h wide
- * a day out and ~5h wide inside four hours, so a single ticking number would
- * claim precision the model does not have. The median goes in the title
- * attribute for anyone who wants it.
+ * Median-first with the range in parens: `~9h (4-16h)`. The `~` and the range
+ * keep the single number honest — still not a countdown. NOT a `±` form: the
+ * window is asymmetric (near campaign completion p75 runs up to 2x the median,
+ * see /docs/predict), and a symmetric spread would understate the late side.
  *
  * @param {object} props
  * @param {{mode: 'window', p25: number, p50: number, p75: number, imminent: boolean}} props.forecast
@@ -157,6 +157,7 @@ function PaceIndicator({ pace }) {
 function AssaultEta({ forecast }) {
     const lo = Math.max(0, Math.round(forecast.p25));
     const hi = Math.round(forecast.p75);
+    const med = Math.max(0, Math.round(forecast.p50));
     return (
         <span
             className={
@@ -166,7 +167,7 @@ function AssaultEta({ forecast }) {
             title={`Median estimate ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`}
             suppressHydrationWarning
         >
-            Assault in {lo}-{hi}h
+            Assault in ~{med}h ({lo}-{hi}h)
         </span>
     );
 }
