@@ -254,11 +254,14 @@ export default function DashboardClient({
                 e.status === EVENT_STATUS.ACTIVE,
         );
 
-        // In campaign view this card's bar becomes the 11-segment overview
-        // (segments 1-10 from mapState, segment 11 from the active homeworld
-        // attack). During an actual homeworld assault, the frontier card for
-        // this faction returns null (all sectors captured → computeFrontier
-        // → null), so this homeworld card is the faction's primary card.
+        // During an actual homeworld assault this card is an event-focused
+        // interrupt, like the Super Earth defense card: single event bar
+        // ("Capturing {homeworld}"), regardless of the view toggle — the
+        // 11-segment faction overview is hidden while the event runs. The
+        // frontier card for this faction returns null anyway (all sectors
+        // captured → computeFrontier → null), so this is the faction's
+        // primary card. Only in the no-event fallback (stale mapState) does
+        // campaign view still show the segments.
         return (
             <li key={`attack-${index}`} {...sectorHoverProps(index, HOMEWORLD_REGION)}>
                 <EventCard
@@ -287,8 +290,10 @@ export default function DashboardClient({
                             pulseDelays.get(`${attackEvent.enemy}-${attackEvent.region}`)
                         :   undefined
                     }
-                    view={regionsView}
-                    factionMap={isCampaignView ? mapState[index] : undefined}
+                    view={attackEvent ? 'sector' : regionsView}
+                    factionMap={
+                        !attackEvent && isCampaignView ? mapState[index] : undefined
+                    }
                 />
             </li>
         );

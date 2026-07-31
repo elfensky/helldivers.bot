@@ -367,19 +367,22 @@ describe('DashboardClient — homeworld card suppression', () => {
         );
     });
 
-    test('campaign view homeworld card receives view=campaign + factionMap', async () => {
+    test('active attack keeps the card event-focused even in campaign view', async () => {
         setupHomeworldAttack();
         render(<DashboardClient initialRegionsView="campaign" />);
-        // When all 10 sectors are captured and the homeworld is under attack,
-        // the frontier card returns null (computeFrontier → null) and the
-        // homeworld card becomes the faction's primary card. In campaign view
-        // it must carry the 11-segment bar, so we pass view + factionMap.
+        // An active homeworld assault is an event-focused interrupt (like the
+        // Super Earth defense card): single event bar, no 11-segment faction
+        // overview, regardless of the view toggle.
         await waitFor(() => {
             const props = getCardProps('event-card-0-HOMEWORLD_ASSAULT');
-            expect(props?.view).toBe('campaign');
+            expect(props?.view).toBe('sector');
         });
         const props = getCardProps('event-card-0-HOMEWORLD_ASSAULT');
-        expect(props.hasFactionMap).toBe(true);
+        expect(props.hasFactionMap).toBe(false);
+        // The bar carries the EVENT's progress, and the verdict tracks it.
+        expect(props.points).toBe(300);
+        expect(props.pointsMax).toBe(1000);
+        expect(props.eventVerdictMode).toBe('verdict');
     });
 });
 
