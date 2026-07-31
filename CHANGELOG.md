@@ -1,5 +1,47 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`/docs/predict` split into a hub plus two subpages** (`/docs/predict/attack`,
+  `/docs/predict/defend`), per [#478](https://github.com/elfensky/helldivers.bot/issues/478).
+  The combined report had grown past the point a single page could serve both a skimmer and
+  a reader who wants the full derivation, so the hub is now a two-card summary — attacks
+  "solved", defends "partially, honestly" — each linking out to its own page, with matching
+  entries added to the docs sidebar and the dashboard `NextWaveCard`'s ⓘ link retargeted from
+  `/docs/predict` to `/docs/predict/defend`.
+- **Defend explainer rewritten TLDR-first, blog style**
+  (`src/app/docs/predict/defend/page.mdx`), leading with the six mechanics found across the
+  investigation — including a newly documented sixth: **a failed homeworld assault is always
+  answered** (179/179 recorded lulls that began with a still-running, ultimately-failed
+  homeworld assault saw the next wave hit the assaulted faction; the mirror case, a
+  *succeeded* assault, is 0/27 by definition since the faction is removed from the game).
+  When no assault is in play, the SC9-window rule calls the target 61.4% of the time (189/308,
+  within-season permutation placebo, p = 0.0005). The page's live-numbers footer (lull count,
+  train starts, seasons) now refreshes hourly straight from the database instead of quoting
+  the static counts frozen at analysis time.
+- **`GammaExplorer`** (`src/app/docs/predict/defend/GammaExplorer.jsx` +
+  `GammaExplorerSection.jsx`): an interactive fit of the reverse-engineered lull scheduler
+  against the live lull-length histogram. A slider drags the shape parameter k with preset
+  jump buttons, live-updating a KS-distance readout against the real distribution pulled via
+  `computeDefendStats` (`src/app/docs/predict/defend/liveStats.mjs`). Demonstrates the
+  finding underneath it: one global, end-anchored gamma(k≈4.4, θ≈8.9h) delay timer beats
+  every rival shape (KS 0.073, three times closer than the next-best candidate), and the
+  k→∞ fixed-timer corner the page calls out is visibly wrong against the real data.
+- **Two new analysis scripts** backing the above figures, listed in `scripts/README.md`:
+  `12-faction-choice.mjs` (the counterattack rule, SC9-window targeting, and the honest
+  near-random remainder once both are excluded) and `13-scheduler-shape.mjs` (distribution
+  forensics discriminating six candidate scheduler shapes — KS vs. exponential/gamma/uniform,
+  tick combs, per-faction-vs-pooled CV, wave-index stationarity — landing on the single
+  global gamma-delay clock with faction drawn at spawn).
+- **Counterattack-lull handoff spec**
+  (`docs/superpowers/specs/2026-07-31-counterattack-lull-handoff.md`): frames Discord
+  feedback (a failed homeworld assault auto-triggering a counterattack train) as a
+  potential fourth defend-prediction attempt — the attack-fail→train delta, a
+  pre-registered mechanical criterion, a corrected-target gate re-run, and the
+  SC9→assault→counterattack pipeline model — for whenever that thread gets picked back up.
+
 ## 0.76.0
 
 ### Changed
