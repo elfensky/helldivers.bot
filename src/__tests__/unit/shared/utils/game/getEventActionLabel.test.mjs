@@ -2,9 +2,9 @@ import { describe, expect, test } from 'vitest';
 import { getEventActionLabel } from '@/shared/utils/game/getEventActionLabel.mjs';
 
 describe('getEventActionLabel', () => {
-    test('attack active → "Attacking"', () => {
+    test('attack active → "Capturing"', () => {
         expect(getEventActionLabel({ type: 'attack', status: 'active' })).toBe(
-            'Attacking',
+            'Capturing',
         );
     });
 
