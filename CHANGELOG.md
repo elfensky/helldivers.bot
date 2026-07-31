@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.78.1
+
+### Added
+
+- **Faction-players attack-ETA experiment (attempt 4)** (#479):
+  `scripts/analysis/12-faction-players-eta.mjs` compares the shipped dow model
+  against per-faction player-telemetry rate variants (crude ratio control,
+  points-per-player^α-hour, hour-of-week player pattern) walk-forward on
+  S157–160, paired on identical moments. Verdict: the documented-harmful crude
+  ratio reproduces as worse (+2.4h pooled); the best variant (pph α=0.7) is
+  directionally better (−1.0h pooled, wins both Cyborg seasons) but at
+  effN 2–3 per faction the shipped model is kept. Reruns unchanged as each new
+  war adds a telemetry season. Supporting lib changes:
+  `loadDataset({statistics})` + `playersAt`/`statisticSeries`/`statSeasons`
+  accessors, walkForward `allowNoPriorEvent` flag and per-record `t` for
+  paired cross-variant scoring. (Analysis commits landed inside the 0.77.1 and
+  0.78.0 merges from a parallel session; recorded here.)
+- **Attempt-4 verdict on `/docs/predict/attack`**: "Revisited with faction
+  telemetry" block after the what-did-not-help table, plus the script-12
+  reproduce line.
+
 ## 0.78.0
 
 ### Added

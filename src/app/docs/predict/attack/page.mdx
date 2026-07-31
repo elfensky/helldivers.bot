@@ -149,6 +149,8 @@ Short windows are far worse, not better — at 15-minute buckets a 30-minute rat
 | × (current players / 24h average players) | 28.1% |
 | points-per-mission × recent mission rate | 27.0% |
 
+**Revisited with faction telemetry (attempt 4).** The player idea got a second, fairer trial once four seasons of 15-minute per-faction player counts existed (S157–160): walk-forward, every variant scored on identical moments, paired against the shipped model. The crude ratio above reproduced as worse (+2.4h median paired error, pooled). The smarter forms — points per player<sup>α</sup>-hour integrated over a predicted player curve, and the day-of-week table replaced by the faction's own hour-of-week player pattern — were *directionally* promising at best: the best variant (α = 0.7) came out −1.0h pooled and won both Cyborg seasons, but with only 2–3 scorable attacks per faction that is a coin read, not a result. The shipped model stays; the experiment reruns unchanged as each new war adds a telemetry season.
+
 **What did help, and is not yet implemented.** Campaign pace has a strong weekly rhythm — across all 160 seasons, normalising each campaign to its own median pace:
 
 | Sun | Mon | Sat | Tue | Wed | Thu | Fri |
@@ -181,6 +183,7 @@ Reproduce:
 
 ```
 node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
+node --env-file=.env.development scripts/analysis/12-faction-players-eta.mjs
 ```
 
 </details>
