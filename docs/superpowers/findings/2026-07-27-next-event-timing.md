@@ -560,6 +560,29 @@ you keep losing; once you hold, the next wave is usually 28–46h out —
 **unless a faction sits at 9 of 10 sectors, in which case the galaxy goes
 quiet (p50 ~55h) until the homeworld assault resolves.**
 
+## Scheduler shape (2026-07-31)
+
+**Script:** `13-scheduler-shape.mjs`. Reverse-engineering framing: which
+game-dev implementation produces the observed lulls? Fingerprints measured
+on the full history (transcribe the script's printed values here — n, CV,
+the three KS distances, fitted k/theta, per-faction vs pooled CV):
+
+- Memoryless per-tick spawning: dead (KS vs exponential 0.314; CV 0.476
+  against the memoryless CV of 1).
+- Cooldown + uniform roll: dead (KS 0.240).
+- Coarse scheduler tick: dead (train-start timestamps carry full
+  second-level entropy; no comb at 15min/1h wall-clock or 0.5-6h relative).
+- k-stage accumulator / gamma delay: fits (KS 0.073 at k 4.4, theta 8.9h).
+- Per-faction independent timers: dead — per-faction cycles are NOISIER
+  (CV 0.768, 0.783, 0.777) than the pooled series (CV 0.447); superposition signature of
+  ONE global clock with the faction drawn at spawn.
+- Fixed schedule table: dead (lull CV flat across wave index).
+- End-anchored: r(prev train duration, lull) -0.027 (near zero).
+
+Reconstructed: `onTrainEnd(WIN): nextWaveAt = now + Gamma(k≈4.4, θ≈8.9h)`,
+faction chosen at spawn (see § Faction choice), with the assault-window
+pause and counterattack override layered on top.
+
 ## Recommendation
 
 **Do not ship a countdown or an ETA.** Neither event type supports one:

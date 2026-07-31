@@ -139,6 +139,12 @@ the findings are written up at
   state x 1h elapsed bin, plus within-24h/48h probabilities. Refuses to emit
   unless quantiles are monotone and the predicted probabilities are reliable
   against history (deciles within ±0.10, overall ±0.05).
+- `13-scheduler-shape.mjs` -- distribution forensics on the train-start lull:
+  discriminates six candidate scheduler implementations by shape (KS vs
+  exponential/gamma/uniform), tick combs, per-faction-vs-pooled CV, and
+  wave-index stationarity. Verdict: one global end-anchored timer with a
+  gamma(k~4-5) delay; faction drawn at spawn. Forensic-descriptive -- the
+  discriminations rest on order-of-magnitude gaps, not p-values.
 
 ### Self-checks
 
@@ -165,6 +171,7 @@ node --env-file=.env.development scripts/analysis/05-defend-covariates.mjs
 node --env-file=.env.development scripts/analysis/06-train-covariates.mjs
 node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
 node --env-file=.env.development scripts/analysis/08-emit-wave-model.mjs
+node --env-file=.env.development scripts/analysis/13-scheduler-shape.mjs
 ```
 
 `03-hazard.mjs` fits a logistic regression per (variant, evaluated season)
