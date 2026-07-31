@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.84.0
+
+### Added
+
+- **Attempt 5: outcome-conditioned composite (#486)** — a null, recorded in
+  full. New measurements (`17-assault-outcome.mjs`): P(fail | assault still
+  running) climbs 0.59→0.97 toward the 48h timeout; the shipped
+  on-track/behind verdict is near-decisive on assault outcomes (on-track
+  past 35% elapsed never failed, 0/260 moments) but rests on only 7 attacks
+  with progress history; a WON assault releases the paused defend clock
+  immediately (next free wave at p50 0.0h after success, vs a fresh ~34h
+  draw after counterattack trains); counterattack trains are harder to stop
+  (first-defend win 22.6% vs 46.7%, duration p50 7.3h vs 2.5h). The
+  pre-registered composite (`18-outcome-composite.mjs`) posts the project's
+  first sub-0.6 skill point estimate (0.588 [0.559–0.621]) but fails
+  calibration + sharpness and is flat vs STATE-KM on paired uncensored
+  ATTACK moments (ratio 1.045, CI 0.81–1.11): DO NOT ADOPT. No model or
+  card changes; revisit when ~30+ S157+ assaults with progress history
+  exist. `/docs/predict/defend` and the findings doc updated.
+
 ## 0.83.6
 
 ### Changed

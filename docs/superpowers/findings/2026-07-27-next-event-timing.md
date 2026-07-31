@@ -732,6 +732,59 @@ reads slightly generous). On SC9-state moments (pace-ETA + 48h): ratio
 deterministic tail. `lib/dataset.mjs` now labels `isCounterattack` on
 train starts (labelling only; the chain rule is untouched).
 
+### Attempt 5: the outcome-conditioned composite (2026-08-01)
+
+**Scripts:** `17-assault-outcome.mjs`, `18-outcome-composite.mjs`. Issue
+#486. Motivation (community feedback again): a counterattack is a regular
+defend — win it and the train is one ~2.5h event — and the assault's own
+progress (the `eventForecast.mjs` on-track/behind verdict shipped for the
+event cards, #483) partially predicts whether the counterattack happens
+at all. So model the whole epoch: P(fail | state) × (timeout →
+counterattack train → fresh draw) + P(success | state) × (early end →
+clock release).
+
+The measurements (`17-assault-outcome.mjs`), each new:
+
+- **P(fail | assault still running at elapsed e)** climbs 0.588 → 0.966
+  between e=0 and e=47h (successes end early, fails only at the timeout;
+  stable across history halves) — observable in real time with no
+  progress data.
+- **The pace verdict is close to decisive but unfundable**: replaying the
+  shipped verdict rule on `h1_event_progress`, an on-track assault past
+  35% elapsed NEVER failed (0/260 moment-level observations) while
+  behind-pace assaults failed ~68–73% — but only **7 attacks** have
+  progress history (S157+). Same class as the player-telemetry verdict:
+  directionally strong, insufficient N, revisit as seasons accumulate.
+- **The gated clock releases on victory.** The wait from a
+  SUCCESS-resolved assault's end to the next free wave spikes at zero
+  (p25 = p50 = 0.0h, n=166; KS 0.733 against the fresh-draw
+  distribution) — consistent with the free clock having FIRED during the
+  assault's gated window and the held wave releasing the moment the gate
+  opens. After a counterattack train, by contrast, the next wait looks
+  like a fresh end-anchored draw (KS 0.161 vs after-normal-train).
+- **Counterattack trains are harder to stop than normal trains**:
+  first-defend win rate 0.226 vs 0.467, single-defend share 22.6% vs
+  53.5%, median length 3 vs 1 defends, duration p50 7.3h vs 2.5h —
+  consistent with their near-exclusive region-9 placement.
+
+The model (`18-outcome-composite.mjs`, pre-registered: Monte-Carlo
+mixture over the fail/success branches at ATTACK moments, STATE-KM
+everywhere else, all components fit walk-forward; the n=7 verdict signal
+declared OUT): overall skill **0.588 [0.559, 0.621]** — the first
+sub-0.6 point estimate in project history — but calibration FAILs
+(0.169/0.409/0.693), sharpness FAILs, and the honest cell-level read is
+flat: on paired UNCENSORED ATTACK moments the composite scores 40.9h vs
+STATE-KM's 39.1h (ratio 1.045, CI [0.812, 1.108]). The overall skill gain
+comes disproportionately from censored lower-bound moments — weak
+evidence by construction. **DO NOT ADOPT (pre-registered rule); attempt 5
+concludes as a null.** The mechanism knowledge is real but the OUTCOME
+uncertainty dominates the median at ATTACK moments — the success and fail
+branches sit ~60h apart and P(fail)≈0.6 cannot pick a side. The signal
+that would pick it (the pace verdict) is the n=7 one. When enough S157+
+assaults with progress history accumulate (~30+ events), re-run 17 § 2
+and, if it holds, re-run 18 with the verdict folded into P(fail) — that
+is the single identified path forward, and it is data, not modelling.
+
 ## Recommendation
 
 **Do not ship a countdown or an ETA.** Neither event type supports one:
