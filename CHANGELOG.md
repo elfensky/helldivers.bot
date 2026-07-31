@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.83.6
+
+### Changed
+
+- **Event log wording unified**: active attacks read "Capturing {region}"
+  (was "Attacking"), matching cards and toasts; completed entries keep
+  their past-tense Captured/Lost/Defended forms.
+
 ## 0.83.5
 
 ### Changed

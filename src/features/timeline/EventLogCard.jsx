@@ -187,7 +187,7 @@ function schema(event, type) {
         return {
             '@context': 'https://schema.org',
             '@type': 'Event',
-            name: `Attacking ${capital}`,
+            name: `Capturing ${capital}`,
             description: `The Helldivers have launched an assault on ${capital} in the ${region}. Join the fight to liberate this sector from ${faction} control!`,
             startDate: new Date(event.start_time * 1000),
             endDate: new Date(event.end_time * 1000),
