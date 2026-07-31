@@ -6,8 +6,10 @@
 
 - **Repo conformance sweep.** Added a version-bump gate workflow (advisory, PR-triggered).
   `AGENTS.md` is now the real agent file with `CLAUDE.md` symlinked to it (the symlink previously
-  pointed the other way). Removed the stray `.node-version` (mise.toml is the single node pin).
-  `graphify-out/` is generated locally and git-ignored. Dependabot security updates and
+  pointed the other way). (`.node-version` was **kept** — it is CI-load-bearing: `ci.yml` and
+  `main-pr-docker-smoke.yml` pin Node via `node-version-file`, so mise.toml is not the single pin;
+  consolidating that is a separate decision.) `graphify-out/` is generated locally and git-ignored.
+  Dependabot security updates and
   secret-scanning push protection enabled repo-side; default branch set to `develop`. Secret
   scanning stays on GitGuardian (`.gitguardian.yaml`) — no gitleaks added here. No version bump —
   notes accumulate under Unreleased.
