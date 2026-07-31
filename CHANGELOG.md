@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.78.3
+
+### Changed
+
+- **Assault line shortened**: `ETA ~9h (4-16h)` instead of
+  `Assault in ~9h (4-16h)`; "Assault ETA" context moved into the title
+  tooltip.
+
 ## 0.78.2
 
 ### Changed

@@ -164,10 +164,10 @@ function AssaultEta({ forecast }) {
                 'sector-card-assault' +
                 (forecast.imminent ? ' sector-card-assault--imminent' : '')
             }
-            title={`Median estimate ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`}
+            title={`Assault ETA — median ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`}
             suppressHydrationWarning
         >
-            Assault in ~{med}h ({lo}-{hi}h)
+            ETA ~{med}h ({lo}-{hi}h)
         </span>
     );
 }
