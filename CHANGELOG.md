@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.78.2
+
+### Changed
+
+- **Assault ETA line is median-first**: `Assault in ~9h (4-16h)` instead of
+  `Assault in 4-16h` — the median moves from the title attribute into the
+  visible line, with the 25th–75th percentile range in parens. Deliberately
+  not a symmetric `±` form: the window is asymmetric near campaign completion
+  (p75 up to 2× the median), and `±` would understate the late side.
+
 ## 0.78.1
 
 ### Added
