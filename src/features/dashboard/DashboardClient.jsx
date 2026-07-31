@@ -307,7 +307,7 @@ export default function DashboardClient({
                     campaign progress as they battle the Bugs, Cyborgs, and Illuminate for
                     peace, liberty, and managed democracy.
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col items-start gap-2">
                     <LastUpdated lastUpdated={data.last_updated} />
                     <NotificationToggle />
                 </div>
