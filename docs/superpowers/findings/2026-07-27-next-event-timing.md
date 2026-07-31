@@ -560,6 +560,61 @@ you keep losing; once you hold, the next wave is usually 28–46h out —
 **unless a faction sits at 9 of 10 sectors, in which case the galaxy goes
 quiet (p50 ~55h) until the homeworld assault resolves.**
 
+## Faction choice (2026-07-31)
+
+**Script:** `12-faction-choice.mjs`. `13-scheduler-shape.mjs` (above) answers
+WHEN the next train starts; this answers WHICH of the three factions it
+hits. Every lull is partitioned, at its own start (t0), into three
+mutually exclusive buckets: an assault active at t0 (split by its FINAL
+status), no assault but exactly one faction at `sectorsCaptured==9` (the
+assault window from Attempt 3), or the residual.
+
+- **Counterattack rule — a sequencing MECHANIC, not a statistical
+  tendency** (same epistemic class as "a train continues iff the previous
+  defend failed", § Train starts). Among lulls with a FAILED homeworld
+  assault active at their start, the next wave hit that same faction
+  **179/179 = 1.0000**. `succeeded` assaults are a definitional exclusion
+  check, not a competing rule: **0/27** — the faction that just won cannot
+  be the next target.
+- **SC9-window targeting is statistical**, and real but modest: among
+  lulls with no active assault and exactly one faction sitting at
+  `sectorsCaptured==9`, the next wave targeted that faction **189/308 =
+  0.6136** — well above the 1/3 chance rate. A within-season permutation
+  placebo (2,000 draws, degenerate-control spread guard) gives **p=0.0005**
+  (the permutation floor), so cross-season composition cannot be
+  manufacturing this.
+- **The honest remainder is near-random.** Once neither condition holds
+  (n=1,305), five naive per-faction rules were scored for accuracy:
+  majority class 0.3640, same-as-previous 0.4429, most-overdue-for-a-defend
+  among active factions 0.3588 (n=967), highest-liberation among active
+  factions 0.3533 (n=1121), and majority-among-active-status (predict the
+  lone active faction when only one is active, else fall back to the
+  overall majority) 0.4245. None of these clears any bar that would make it
+  useful as a forecasting rule — the closest, same-as-previous and
+  majority-among-active, sit in the low-to-mid 0.4s against a 1/3 chance
+  floor for a three-way choice, not the kind of separation the assault
+  mechanics show.
+- **Transition matrix P(next | prev)** (n=1,819, all lulls):
+
+  | prev \ next  |  Bugs | Cyborgs | Illuminate |     n |
+  | ------------ | ----: | ------: | ---------: | ----: |
+  | Bugs         | 0.334 |   0.361 |      0.305 |   548 |
+  | Cyborgs      | 0.246 |   0.410 |      0.344 |   663 |
+  | Illuminate   | 0.291 |   0.311 |      0.398 |   608 |
+
+  Base rate (marginal `next`): Bugs 0.288, Cyborgs 0.362, Illuminate 0.350.
+  Every faction is somewhat more likely to repeat than the base rate would
+  predict (a mild positive autocorrelation, consistent with
+  same-as-previous scoring above the naive 1/3), but none of the
+  off-diagonal entries approach the near-1.0 concentration the
+  counterattack mechanic produces.
+
+**Bottom line:** faction choice has exactly one deterministic rule
+(counterattack, a mechanic) and one real but modest statistical tilt (the
+SC9 assault window). Outside both, which faction gets hit next is close to
+a coin flip among the three — no per-faction recency, liberation, or
+sector-progress rule tried here beats chance by a useful margin.
+
 ## Scheduler shape (2026-07-31)
 
 **Script:** `13-scheduler-shape.mjs`. Reverse-engineering framing: which

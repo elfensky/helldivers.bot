@@ -145,6 +145,12 @@ the findings are written up at
   wave-index stationarity. Verdict: one global end-anchored timer with a
   gamma(k~4-5) delay; faction drawn at spawn. Forensic-descriptive -- the
   discriminations rest on order-of-magnitude gaps, not p-values.
+- `12-faction-choice.mjs` -- which faction the next wave hits. The
+  counterattack rule (a FAILED homeworld assault is always followed by a
+  wave on that faction -- print the exact count), succeeded-assault
+  exclusion, SC9-window targeting (~58%, within-season permutation
+  placebo), and the honest remainder: near-random among active factions;
+  per-faction recency/liberation/sector rules all at chance.
 
 ### Self-checks
 
@@ -172,6 +178,7 @@ node --env-file=.env.development scripts/analysis/06-train-covariates.mjs
 node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
 node --env-file=.env.development scripts/analysis/08-emit-wave-model.mjs
 node --env-file=.env.development scripts/analysis/13-scheduler-shape.mjs
+node --env-file=.env.development scripts/analysis/12-faction-choice.mjs
 ```
 
 `03-hazard.mjs` fits a logistic regression per (variant, evaluated season)
