@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Repo conformance sweep.** Added a version-bump gate workflow (advisory, PR-triggered).
+  `AGENTS.md` is now the real agent file with `CLAUDE.md` symlinked to it (the symlink previously
+  pointed the other way). Removed the stray `.node-version` (mise.toml is the single node pin).
+  `graphify-out/` is generated locally and git-ignored. Dependabot security updates and
+  secret-scanning push protection enabled repo-side; default branch set to `develop`. Secret
+  scanning stays on GitGuardian (`.gitguardian.yaml`) — no gitleaks added here. No version bump —
+  notes accumulate under Unreleased.
+
 ## 0.84.0
 
 ### Added

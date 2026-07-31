@@ -72,3 +72,6 @@ docs/superpowers/archive
 verify-*.png
 scorecard.png
 .claude/skills/
+
+# graphify graph (generated locally)
+graphify-out/
