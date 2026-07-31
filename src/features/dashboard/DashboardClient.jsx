@@ -5,7 +5,8 @@ import Hijackable from '@/features/ministry/Hijackable';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import LastUpdated from '@/shared/components/LastUpdated';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
-import { attackForecast } from '@/features/dashboard/attackForecast.mjs';
+import { attackForecast, sectorForecast } from '@/features/dashboard/attackForecast.mjs';
+import { eventForecast } from '@/features/dashboard/eventForecast.mjs';
 import DefeatedCard from '@/features/galaxy/DefeatedCard';
 import { highlightSector, clearSectorHighlight } from '@/features/galaxy/sectorLink.mjs';
 import FactionTabs from '@/shared/components/FactionTabs';
@@ -138,6 +139,10 @@ export default function DashboardClient({
                         factionIndex={index}
                         pace={evaluateProgress(superEarthDefendEvent)}
                         endTime={superEarthDefendEvent.end_time}
+                        eventVerdict={eventForecast(
+                            superEarthDefendEvent,
+                            Math.floor(Date.now() / 1000),
+                        )}
                         pulseDelay={pulseDelays.get(`${index}-0`)}
                         // Sector-view (default) card — factionMap is only read
                         // in campaign view, so undefined is intentional here.
@@ -211,11 +216,16 @@ export default function DashboardClient({
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
                     endTime={activeEvent?.end_time}
-                    etaForecast={attackForecast(
-                        data,
-                        index,
-                        Math.floor(Date.now() / 1000),
-                    )}
+                    etaForecast={
+                        isCampaignView ?
+                            attackForecast(data, index, Math.floor(Date.now() / 1000))
+                        :   sectorForecast(data, index, Math.floor(Date.now() / 1000))
+                    }
+                    eventVerdict={
+                        activeEvent ?
+                            eventForecast(activeEvent, Math.floor(Date.now() / 1000))
+                        :   null
+                    }
                     pulseDelay={
                         activeEvent ?
                             pulseDelays.get(`${activeEvent.enemy}-${activeEvent.region}`)
@@ -262,6 +272,11 @@ export default function DashboardClient({
                     factionIndex={index}
                     pace={attackEvent ? evaluateProgress(attackEvent) : null}
                     endTime={attackEvent?.end_time}
+                    eventVerdict={
+                        attackEvent ?
+                            eventForecast(attackEvent, Math.floor(Date.now() / 1000))
+                        :   null
+                    }
                     pulseDelay={
                         attackEvent ?
                             pulseDelays.get(`${attackEvent.enemy}-${attackEvent.region}`)
