@@ -2,6 +2,7 @@ import DefendRegularityChart from './DefendRegularityChartLoader';
 import LullByTrainLengthChart from './LullByTrainLengthChartLoader';
 import LiveNowChip from './LiveNowChip';
 import GammaExplorerSection from './GammaExplorerSection';
+import LiveConcurrency from './LiveConcurrency';
 
 export const metadata = {
     title: 'Predicting Defend Waves | Helldivers Bot',
@@ -58,6 +59,10 @@ flowchart LR
 ```
 
 Everything inside the train (the self-loops above) is mechanical, not a forecasting target. The only open question is how long the lull runs between one train ending and the next one starting.
+
+The concurrency side of those rules is not a frozen claim — it is recomputed from the event log every hour, so future research (ours or yours) can cite the current census as proof rather than a snapshot. Three homeworld assaults have run simultaneously, and so have two assaults plus a defend; two defends at once has never happened, not once:
+
+<LiveConcurrency />
 
 There is a sixth rule, found later than the other five while working out which faction each wave targets: **a failed homeworld assault is always answered.** In every one of the 179 recorded lulls that began with a homeworld assault still running and ultimately failing, the next defend wave hit the faction that had been assaulted — 179/179, a deterministic sequencing mechanic, not a tendency. Assaults that *succeed* show the mirror image, 0/27, for the dull reason that winning removes the faction from the game. And when no assault is in play but exactly one faction sits one sector from triggering one, that faction is the likely-but-not-certain next target: 189 of 308 such lulls, 61.4%, against a within-season permutation placebo at p = 0.0005. *(reproduce: `12-faction-choice.mjs`)*
 

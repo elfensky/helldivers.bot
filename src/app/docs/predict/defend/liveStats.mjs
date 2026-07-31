@@ -249,3 +249,98 @@ export async function getEventCounts() {
 
     return { defends, attacks, seasons: seasonRows.length };
 }
+
+/**
+ * Pairwise event-concurrency census — the live proof behind the "one defend
+ * at a time" rule and its siblings. Pure; pairs are only compared within a
+ * season (events of different wars can't co-run by construction).
+ *
+ * @param {{season: number, type: string, enemy: number, start_time: number, end_time: number}[]} allEvents
+ * @returns {{
+ *   defendDefend: {overlaps: number, checked: number},
+ *   defendAttackSame: {overlaps: number, checked: number},
+ *   defendAttackCross: {overlaps: number, checked: number},
+ *   attackAttack: {overlaps: number, checked: number},
+ *   maxSimultaneous: number,
+ *   compositions: {key: string, moments: number, firstSeason: number}[],
+ * }}
+ */
+export function computeConcurrencyStats(allEvents) {
+    const bySeason = new Map();
+    for (const e of allEvents) {
+        if (!bySeason.has(e.season)) bySeason.set(e.season, []);
+        bySeason.get(e.season).push(e);
+    }
+
+    const tally = {
+        defendDefend: { overlaps: 0, checked: 0 },
+        defendAttackSame: { overlaps: 0, checked: 0 },
+        defendAttackCross: { overlaps: 0, checked: 0 },
+        attackAttack: { overlaps: 0, checked: 0 },
+    };
+    let maxSimultaneous = 0;
+    const comps = new Map();
+
+    for (const [season, list] of bySeason) {
+        for (let i = 0; i < list.length; i++) {
+            for (let j = i + 1; j < list.length; j++) {
+                const a = list[i];
+                const b = list[j];
+                const bucket =
+                    a.type === 'defend' && b.type === 'defend' ? tally.defendDefend
+                    : a.type === 'attack' && b.type === 'attack' ? tally.attackAttack
+                    : a.enemy === b.enemy ? tally.defendAttackSame
+                    : tally.defendAttackCross;
+                bucket.checked++;
+                if (a.start_time < b.end_time && b.start_time < a.end_time) {
+                    bucket.overlaps++;
+                }
+            }
+        }
+        // Sweep event boundaries for simultaneity compositions.
+        const times = [...new Set(list.flatMap((e) => [e.start_time, e.end_time]))];
+        for (const t of times) {
+            const active = list.filter((e) => e.start_time <= t && e.end_time > t);
+            if (active.length < 2) continue;
+            if (active.length > maxSimultaneous) maxSimultaneous = active.length;
+            const key = active
+                .map((e) => (e.type === 'attack' ? 'attack' : 'defend'))
+                .sort()
+                .join(' + ');
+            if (!comps.has(key)) comps.set(key, { moments: 0, firstSeason: season });
+            const c = comps.get(key);
+            c.moments++;
+            if (season < c.firstSeason) c.firstSeason = season;
+        }
+    }
+
+    return {
+        ...tally,
+        maxSimultaneous,
+        compositions: [...comps.entries()]
+            .map(([key, v]) => ({ key, ...v }))
+            .sort((x, y) => y.moments - x.moments),
+    };
+}
+
+/**
+ * DB-backed wrapper for `computeConcurrencyStats` — hourly ISR via the
+ * page's `revalidate`, deduped per render via `cache()`.
+ *
+ * @returns {Promise<ReturnType<typeof computeConcurrencyStats>>}
+ */
+export const getConcurrencyStats = cache(async function getConcurrencyStats() {
+    'use server';
+
+    const allEvents = await db.h1_event.findMany({
+        select: {
+            season: true,
+            type: true,
+            enemy: true,
+            start_time: true,
+            end_time: true,
+        },
+        orderBy: [{ season: 'asc' }, { start_time: 'asc' }],
+    });
+    return computeConcurrencyStats(allEvents);
+});

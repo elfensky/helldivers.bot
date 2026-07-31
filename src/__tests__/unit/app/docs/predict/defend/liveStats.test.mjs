@@ -1,4 +1,7 @@
-import { computeDefendStats } from '@/app/docs/predict/defend/liveStats.mjs';
+import {
+    computeDefendStats,
+    computeConcurrencyStats,
+} from '@/app/docs/predict/defend/liveStats.mjs';
 
 const HOUR = 3600;
 const NOW = 1000000;
@@ -148,5 +151,51 @@ describe('computeDefendStats — now.forecast / now.lastTrainStart', () => {
 
         expect(stats.now.forecast).toEqual({ mode: 'hidden', reason: 'no-train-yet' });
         expect(stats.now.lastTrainStart).toBeNull();
+    });
+});
+
+describe('computeConcurrencyStats', () => {
+    const ev = (season, type, enemy, start, end) => ({
+        season,
+        type,
+        enemy,
+        start_time: start,
+        end_time: end,
+    });
+
+    test('counts overlaps per category and finds triple simultaneity', () => {
+        const events = [
+            // Season 1: three attacks all overlapping 100-200 => a+a+a, 3 aa pairs
+            ev(1, 'attack', 0, 100, 300),
+            ev(1, 'attack', 1, 150, 250),
+            ev(1, 'attack', 2, 120, 220),
+            // plus a defend starting after attacks 1 and 2 ended (260), so it
+            // overlaps only attack enemy 0 [100-300] => exactly 1 da-cross pair
+            ev(1, 'defend', 1, 260, 400),
+        ];
+        const s = computeConcurrencyStats(events);
+        expect(s.attackAttack.overlaps).toBe(3);
+        expect(s.defendDefend.overlaps).toBe(0);
+        expect(s.defendAttackCross.overlaps).toBe(1);
+        expect(s.defendAttackSame.overlaps).toBe(0); // attack enemy1 ended (250) before the defend began (260)
+        expect(s.maxSimultaneous).toBe(3);
+        const aaa = s.compositions.find((c) => c.key === 'attack + attack + attack');
+        expect(aaa).toBeDefined();
+        expect(aaa.firstSeason).toBe(1);
+    });
+
+    test('cross-season events never pair', () => {
+        const events = [ev(1, 'defend', 0, 100, 200), ev(2, 'defend', 1, 150, 250)];
+        const s = computeConcurrencyStats(events);
+        expect(s.defendDefend.checked).toBe(0);
+        expect(s.defendDefend.overlaps).toBe(0);
+        expect(s.maxSimultaneous).toBe(0);
+    });
+
+    test('adjacent (touching) intervals do not overlap', () => {
+        const events = [ev(1, 'defend', 0, 100, 200), ev(1, 'defend', 1, 200, 300)];
+        const s = computeConcurrencyStats(events);
+        expect(s.defendDefend.checked).toBe(1);
+        expect(s.defendDefend.overlaps).toBe(0);
     });
 });

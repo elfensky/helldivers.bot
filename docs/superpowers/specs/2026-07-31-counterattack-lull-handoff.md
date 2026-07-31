@@ -75,6 +75,37 @@ handoff builds on).
   reliability-gated. If the target changes, this needs regeneration and
   the card's honesty text re-checking.
 
+## Community prior art — the Steam guide (verify, don't trust)
+
+Players have independently inferred much of this mechanic set:
+https://steamcommunity.com/sharedfiles/filedetails/?id=3764548664 — treat
+it as hypotheses with unknown provenance, not evidence. Cross-checked
+against our measurements (2026-07-31):
+
+- CONFIRMED by our data: "winning a defense prevents random defenses
+  24-48h across all factions, avg ~36h" (= our global-clock lull, p50
+  36.8h); "counter-offensive defense after a failed attack" (= 179/179);
+  "three Attack Events at once, or any combination" (= 53 triple-assault
+  moments, 129 of 2 attacks + 1 defend); "defend faction randomly selected
+  from remaining factions" (= residual near-random among active).
+- OPEN and mission-relevant — TEST THESE: (a) guide claim: "random
+  defenses CANNOT trigger while an Attack Event is active, except
+  automatic/counter-offensive defenses." We have 955 defend-attack
+  co-runs, but co-running is not the same as TRIGGERED-during — measure
+  P(train starts | attack active) vs the co-run population (a defend that
+  started before the attack explains a co-run). If the claim holds, the
+  defend hazard is gated during ALL assaults and the ATTACK state's long
+  remaining waits are partly mechanical — this reshapes both the delta
+  design and the state model. (b) Guide claims fixed durations: defends
+  2h30m (or points met; Super Earth 48h), attacks 48h (or points met) —
+  cheap to verify from h1_event durations, and a fixed 48h attack duration
+  would make the SC9->assault->counterattack pipeline even more
+  deterministic. (c) "Losing an attack automatically causes sector 10 to
+  fall and triggers a counter-offensive defense on sector 9" — check
+  counterattack trains' regions (our region-9 dominance, 703/1978 train
+  starts, is consistent) and whether "automatically" shows up as a tight
+  delta.
+
 ## The questions, in order
 
 1. **Measure the counterattack delay, slot-aware.** For each fail-resolved
