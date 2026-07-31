@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.82.2
+
+### Changed
+
+- **Faction view labeling**: the 11-segment view's frontier card subtitle now
+  reads `FACTION_PROGRESS` (was `SECTOR_PROGRESS` in both views) and the view
+  toggle says "faction view". Internal view value stays `campaign` for
+  preference/analytics continuity.
+
 ## 0.82.1
 
 ### Changed

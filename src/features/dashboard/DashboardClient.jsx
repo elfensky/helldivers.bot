@@ -204,7 +204,12 @@ export default function DashboardClient({
             <li key={`frontier-${index}`} {...sectorHoverProps(index, frontier.sector)}>
                 <EventCard
                     action={isDefending ? 'defending' : 'capturing'}
-                    barLabel={isDefending ? 'CAPITAL_DEFENSE' : 'SECTOR_PROGRESS'}
+                    barLabel={
+                        isDefending ? 'CAPITAL_DEFENSE'
+                        : isCampaignView ?
+                            'FACTION_PROGRESS'
+                        :   'SECTOR_PROGRESS'
+                    }
                     region={frontier.region}
                     percent={
                         isDefending && activeEvent ?

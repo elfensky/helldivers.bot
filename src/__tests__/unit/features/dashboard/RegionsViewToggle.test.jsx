@@ -62,7 +62,7 @@ describe('RegionsViewToggle', () => {
         );
         expect(screen.getByRole('button')).toHaveAttribute(
             'aria-label',
-            expect.stringMatching(/campaign/i),
+            expect.stringMatching(/faction/i),
         );
 
         rerender(<RegionsViewToggle value="campaign" onChange={() => {}} />);
