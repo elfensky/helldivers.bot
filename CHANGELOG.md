@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.83.2
+
+### Changed
+
+- **Event ETA aligned with every other ETA**: active event cards show
+  `ETA ~3d` in the left label group (yellow, next to the subtitle) and the
+  `▲/▼ + points` pace indicator returns to the right edge — replacing the
+  right-aligned "on track/behind · done ~Xh" verdict text. Stalled events
+  show the pace arrow only.
+
 ## 0.83.1
 
 ### Fixed

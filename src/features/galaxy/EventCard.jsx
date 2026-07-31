@@ -217,23 +217,26 @@ function EtaLine({ forecast }) {
 }
 
 /**
- * Pace verdict for an active event — replaces the plain PaceIndicator when
- * `eventForecast` has resolved a verdict (mode 'verdict'). Danger-red when
- * behind or stalled, success-green when on track.
+ * Completion ETA for an active event, in the same left-aligned style as the
+ * campaign/sector `EtaLine` — one consistent ETA treatment across every
+ * card. On-pace/behind stays the PaceIndicator's job (▲/▼ + points amount)
+ * on the right edge, as before.
  *
  * @param {object} props
- * @param {{etaHours: number|null, onTrack: boolean, stalled: boolean}} props.verdict
+ * @param {{etaHours: number|null, stalled: boolean}} props.eta
  */
-function EventVerdict({ verdict }) {
-    const cls = verdict.onTrack ? 'sector-card-verdict--ok' : 'sector-card-verdict--bad';
-    const text =
-        verdict.stalled ? '▼ behind · stalled'
-        : verdict.onTrack ?
-            `▲ on track · done ~${formatEtaHours(/** @type {number} */ (verdict.etaHours))}`
-        :   `▼ behind · done ~${formatEtaHours(/** @type {number} */ (verdict.etaHours))}`;
+function EventEta({ eta }) {
+    const hours = /** @type {number} */ (eta.etaHours);
     return (
-        <span className={`sector-card-verdict ${cls}`} suppressHydrationWarning>
-            {text}
+        <span
+            className={
+                'sector-card-assault' +
+                (hours < 1 ? ' sector-card-assault--imminent' : '')
+            }
+            title="Completion at the average pace since the event started."
+            suppressHydrationWarning
+        >
+            ETA ~{formatEtaHours(hours)}
         </span>
     );
 }
@@ -252,10 +255,13 @@ export default function EventCard({
     view = 'sector',
     factionMap,
     etaForecast = /** @type {AssaultForecast|null} */ (null),
-    eventVerdict = /** @type {{mode: 'verdict', etaHours: number|null, onTrack: boolean, stalled: boolean}|{mode: 'hidden'}|null} */ (
+    eventEta = /** @type {{mode: 'verdict', etaHours: number|null, onTrack: boolean, stalled: boolean}|{mode: 'hidden'}|null} */ (
         null
     ),
 }) {
+    // Stalled events have no ETA to show; the pace indicator carries "behind".
+    const showEventEta =
+        eventEta?.mode === 'verdict' && !eventEta.stalled && eventEta.etaHours !== null;
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = !!endTime;
     const isDefending = action === 'defending';
@@ -295,7 +301,8 @@ export default function EventCard({
                 </div>
                 {(barLabel ||
                     etaForecast?.mode === 'window' ||
-                    etaForecast?.mode === 'median') && (
+                    etaForecast?.mode === 'median' ||
+                    showEventEta) && (
                     <div className="sector-card-bar-label-row">
                         {/* Label and forecast are grouped so the row's
                             space-between still pushes the pace indicator to the
@@ -313,19 +320,21 @@ export default function EventCard({
                                     <EtaLine forecast={etaForecast} />
                                 </>
                             )}
+                            {showEventEta && (
+                                <>
+                                    {barLabel && (
+                                        <span className="sector-card-sep">&middot;</span>
+                                    )}
+                                    <EventEta eta={eventEta} />
+                                </>
+                            )}
                         </span>
-                        {eventVerdict?.mode === 'verdict' ?
+                        {pace && (
                             <>
                                 <span className="sector-card-sep">&middot;</span>
-                                <EventVerdict verdict={eventVerdict} />
+                                <PaceIndicator pace={pace} />
                             </>
-                        :   pace && (
-                                <>
-                                    <span className="sector-card-sep">&middot;</span>
-                                    <PaceIndicator pace={pace} />
-                                </>
-                            )
-                        }
+                        )}
                     </div>
                 )}
                 <div className="sector-card-bar-wrap">
@@ -375,18 +384,12 @@ export default function EventCard({
                             <EventCountdown endTime={endTime} />
                         </>
                     )}
-                    {!barLabel &&
-                        (eventVerdict?.mode === 'verdict' ?
-                            <>
-                                <span className="sector-card-sep">&middot;</span>
-                                <EventVerdict verdict={eventVerdict} />
-                            </>
-                        :   pace && (
-                                <>
-                                    <span className="sector-card-sep">&middot;</span>
-                                    <PaceIndicator pace={pace} />
-                                </>
-                            ))}
+                    {!barLabel && pace && (
+                        <>
+                            <span className="sector-card-sep">&middot;</span>
+                            <PaceIndicator pace={pace} />
+                        </>
+                    )}
                 </div>
             </div>
             <div

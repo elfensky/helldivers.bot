@@ -60,7 +60,7 @@ vi.mock('@/features/galaxy/EventCard', async () => {
                     pointsMax: props.pointsMax,
                     hasFactionMap: props.factionMap != null,
                     etaForecastMode: props.etaForecast?.mode ?? null,
-                    eventVerdictMode: props.eventVerdict?.mode ?? null,
+                    eventEtaMode: props.eventEta?.mode ?? null,
                 })}
             />
         ),
@@ -382,7 +382,7 @@ describe('DashboardClient — homeworld card suppression', () => {
         // The bar carries the EVENT's progress, and the verdict tracks it.
         expect(props.points).toBe(300);
         expect(props.pointsMax).toBe(1000);
-        expect(props.eventVerdictMode).toBe('verdict');
+        expect(props.eventEtaMode).toBe('verdict');
     });
 });
 
@@ -544,7 +544,7 @@ describe('DashboardClient — view-dependent ETA & event verdicts', () => {
         render(<DashboardClient />);
         const props = getCardProps('event-card-0-CAPITAL_DEFENSE');
         expect(props).not.toBeNull();
-        expect(props.eventVerdictMode).toBe('verdict');
+        expect(props.eventEtaMode).toBe('verdict');
     });
 });
 
