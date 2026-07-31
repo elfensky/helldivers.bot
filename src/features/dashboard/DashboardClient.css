@@ -7,23 +7,12 @@
 
 /* === Sector Grid (campaign cards) === */
 
+/* Single column at every width: the 3-across layout (480-1024px) cramped
+ * the cards enough to truncate their subtitles, so faction cards always
+ * stack under each other. */
 .sector-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 0.5rem;
     width: 100%;
-}
-
-@media (min-width: 480px) {
-    .sector-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-    }
-}
-
-/* === Desktop: single-column sidebar content === */
-
-@media (min-width: 1024px) {
-    .sector-grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
 }

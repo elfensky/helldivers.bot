@@ -157,33 +157,9 @@
  * Toast right-border accent — rendered as a real <span> inside the toast
  * content (not pseudo-elements on the toast <li>), because Sonner reserves
  * ::before (swipe hit area) and ::after (expanded gap bridge) on the <li>.
- *
- * The span contains two stacked pseudo-element layers:
- *   ::before = solid faction-colored base (always visible)
- *   ::after  = alert-color overlay that blinks via opacity
- *
- * Two identical keyframes force the browser to restart the animation when
- * Sonner re-renders a toast in-place (same React key).
+ * Solid faction color, no animation — the flashing state signal lives in
+ * the title's action word (.toast-action-flash), matching the cards.
  */
-@keyframes border-flash-a {
-    0%,
-    100% {
-        opacity: 0;
-    }
-    50% {
-        opacity: 1;
-    }
-}
-@keyframes border-flash-b {
-    0%,
-    100% {
-        opacity: 0;
-    }
-    50% {
-        opacity: 1;
-    }
-}
-
 .toast-accent {
     position: absolute;
     top: 0;
@@ -191,28 +167,14 @@
     width: 4px;
     height: 100%;
     pointer-events: none;
-}
-/* Base layer — solid faction color, always visible */
-.toast-accent::before {
-    content: '';
-    position: absolute;
-    inset: 0;
     background-color: var(--faction-color);
 }
-/* Alert overlay — fades in/out over the base */
-.toast-accent::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-color: var(--alert-color, var(--faction-color));
-    opacity: 0;
-}
-.toast-accent--a::after {
-    animation: border-flash-a var(--duration-pulse-fast) ease-in-out infinite;
-    animation-delay: var(--pulse-delay, 0s);
-}
-.toast-accent--b::after {
-    animation: border-flash-b var(--duration-pulse-fast) ease-in-out infinite;
+
+/* The toast title's action word ("Capturing") — alert-colored and pulsing,
+ * exactly like the card title's action word. */
+.toast-action-flash {
+    color: var(--alert-color, var(--color-danger));
+    animation: action-flash var(--duration-pulse-fast) ease-in-out infinite;
     animation-delay: var(--pulse-delay, 0s);
 }
 

@@ -45,9 +45,9 @@ afterEach(() => {
 describe('toastLabel — attack events', () => {
     const attackEvent = { enemy: 0, region: 5, type: 'attack' };
 
-    test('event_started: title says "Attacking <region>"; subtitle confirms attack started', () => {
+    test('event_started: title says "Capturing <region>"; subtitle confirms attack started', () => {
         const { title, subtitle } = toastLabel('event_started', attackEvent);
-        expect(title).toBe('Attacking Region-5');
+        expect(title).toBe('Capturing Region-5');
         expect(subtitle).toBe('Attack event started');
     });
 
@@ -63,9 +63,9 @@ describe('toastLabel — attack events', () => {
         expect(subtitle).toBe('Attack event lost');
     });
 
-    test('catch_up: title says "Attacking <region>" (matches event_started but with progress subtitle)', () => {
+    test('catch_up: title says "Capturing <region>" (matches event_started but with progress subtitle)', () => {
         const { title, subtitle } = toastLabel('catch_up', attackEvent);
-        expect(title).toBe('Attacking Region-5');
+        expect(title).toBe('Capturing Region-5');
         expect(subtitle).toBe('Attack event in progress');
     });
 });
@@ -199,30 +199,13 @@ describe('showEventToast — style wiring', () => {
     });
 });
 
-describe('showEventToast — flashToggle alternates accent class', () => {
-    test('consecutive calls alternate the accent suffix between "a" and "b" (forces CSS animation restart)', () => {
-        // The JSX passed to toast() is a <ToastContent> element; the
-        // accentClass we want is on its props (the source's `toast(<ToastContent
-        // event={...} kind={...} accentClass={accentClass} />, ...)`).
-        // flashToggle is module-level so the toggle survives across calls
-        // within a test file.
-        for (let i = 0; i < 4; i += 1) {
-            showEventToast(
-                { event_id: i, enemy: 0, region: 1, type: 'attack' },
-                'event_started',
-            );
-        }
-
-        const accentClasses = toast.mock.calls.map(([jsx]) => jsx.props.accentClass);
-
-        // Each adjacent pair must differ — that's the only contract
-        // (the absolute a/b assignment depends on module-load history).
-        expect(accentClasses[0]).not.toBe(accentClasses[1]);
-        expect(accentClasses[1]).not.toBe(accentClasses[2]);
-        expect(accentClasses[2]).not.toBe(accentClasses[3]);
-        // Both classes always start with "toast-accent toast-accent--"
-        for (const c of accentClasses) {
-            expect(c).toMatch(/^toast-accent toast-accent--[ab]$/);
-        }
+describe('showEventToast — accent is static, the title action word flashes', () => {
+    test('ToastContent carries no accent alternation props (accent is a static span)', () => {
+        showEventToast(
+            { event_id: 1, enemy: 0, region: 1, type: 'attack' },
+            'event_started',
+        );
+        const [jsx] = toast.mock.calls.at(-1);
+        expect(jsx.props.accentClass).toBeUndefined();
     });
 });
