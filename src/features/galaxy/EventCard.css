@@ -81,6 +81,16 @@
     font-size: var(--text-small);
     text-transform: uppercase;
     color: var(--color-text-muted);
+    /* When the row runs out of room, the static label truncates — never the
+     * ETA beside it, which is the informative part. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.sector-card-bar-label-group .sector-card-assault {
+    flex: none;
 }
 
 .sector-card-bar-label-group {

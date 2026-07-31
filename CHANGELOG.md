@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.83.3
+
+### Fixed
+
+- **ETA never truncates in narrow card rows**: at tablet widths the static
+  subtitle (`SECTOR_PROGRESS`) now ellipsizes instead of clipping the ETA
+  beside it.
+
 ## 0.83.2
 
 ### Changed
