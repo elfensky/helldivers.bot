@@ -139,7 +139,7 @@ export default function DashboardClient({
                         factionIndex={index}
                         pace={evaluateProgress(superEarthDefendEvent)}
                         endTime={superEarthDefendEvent.end_time}
-                        eventVerdict={eventForecast(
+                        eventEta={eventForecast(
                             superEarthDefendEvent,
                             Math.floor(Date.now() / 1000),
                         )}
@@ -226,7 +226,7 @@ export default function DashboardClient({
                             attackForecast(data, index, Math.floor(Date.now() / 1000))
                         :   sectorForecast(data, index, Math.floor(Date.now() / 1000))
                     }
-                    eventVerdict={
+                    eventEta={
                         activeEvent ?
                             eventForecast(activeEvent, Math.floor(Date.now() / 1000))
                         :   null
@@ -280,7 +280,7 @@ export default function DashboardClient({
                     factionIndex={index}
                     pace={attackEvent ? evaluateProgress(attackEvent) : null}
                     endTime={attackEvent?.end_time}
-                    eventVerdict={
+                    eventEta={
                         attackEvent ?
                             eventForecast(attackEvent, Math.floor(Date.now() / 1000))
                         :   null

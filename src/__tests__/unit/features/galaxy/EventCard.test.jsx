@@ -523,8 +523,8 @@ describe('EventCard — assault ETA line', () => {
         expect(el.textContent).not.toMatch(/\(/); // no unmeasured parens
     });
 
-    it('renders the event verdict instead of the pace indicator', () => {
-        render(
+    it('renders the event ETA left-aligned beside the label, pace on the right', () => {
+        const { container } = render(
             <EventCard
                 {...base}
                 barLabel="CAPITAL_DEFENSE"
@@ -536,7 +536,7 @@ describe('EventCard — assault ETA line', () => {
                     currentRate: 1,
                     requiredRate: 1,
                 }}
-                eventVerdict={{
+                eventEta={{
                     mode: 'verdict',
                     etaHours: 3.2,
                     onTrack: true,
@@ -544,37 +544,24 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        const verdict = screen.getByText(/on track/);
-        expect(verdict.textContent).toMatch(/▲ on track · done ~3h/);
-        expect(verdict.className).toContain('sector-card-verdict--ok');
-        // pace indicator suppressed when a verdict shows
-        expect(screen.queryByText(/8.1K/)).toBeNull();
+        // Event ETA lives in the left label group, same style as every ETA.
+        const group = container.querySelector('.sector-card-bar-label-group');
+        const eta = group.querySelector('.sector-card-assault');
+        expect(eta.textContent).toMatch(/ETA ~3h/);
+        // The pace indicator (▲/▼ + amount) is back on the right, as before.
+        const row = container.querySelector('.sector-card-bar-label-row');
+        expect(row.querySelector('.sector-card-pace')).not.toBeNull();
+        expect(row.textContent).toContain('8,100');
     });
 
-    it('renders behind and stalled verdicts in danger styling', () => {
-        const { rerender } = render(
+    it('shows no event ETA when stalled; pace still renders', () => {
+        const { container } = render(
             <EventCard
                 {...base}
                 barLabel="CAPITAL_DEFENSE"
                 endTime={1_800_000_000}
-                eventVerdict={{
-                    mode: 'verdict',
-                    etaHours: 5,
-                    onTrack: false,
-                    stalled: false,
-                }}
-            />,
-        );
-        expect(screen.getByText(/behind/).textContent).toMatch(/▼ behind · done ~5h/);
-        expect(screen.getByText(/behind/).className).toContain(
-            'sector-card-verdict--bad',
-        );
-        rerender(
-            <EventCard
-                {...base}
-                barLabel="CAPITAL_DEFENSE"
-                endTime={1_800_000_000}
-                eventVerdict={{
+                pace={{ status: 'behind', delta: 5200 }}
+                eventEta={{
                     mode: 'verdict',
                     etaHours: null,
                     onTrack: false,
@@ -582,6 +569,7 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        expect(screen.getByText(/behind/).textContent).toMatch(/▼ behind · stalled/);
+        expect(container.querySelector('.sector-card-assault')).toBeNull();
+        expect(container.querySelector('.sector-card-pace')).not.toBeNull();
     });
 });
