@@ -202,6 +202,26 @@ the findings are written up at
   CI upper < 1, win rate 0.894) -- the pipeline wins outright. SC9 branch
   (pace-ETA + 48h): not better (ratio 1.296, CI 0.72-2.54) -- ETA noise
   dominates the deterministic tail.
+- `17-assault-outcome.mjs` -- attempt-5 measurements: P(fail | assault
+  still running at elapsed e) survival curve (0.59 -> 0.97, stable across
+  history halves); pace-verdict conditioning replayed with the shipped
+  eventForecast rule on h1_event_progress (on-track past 35% elapsed NEVER
+  failed, 0/260 moments; behind ~70% fail -- but only 7 attacks have
+  progress history, exploratory); post-epoch draw provenance (after a
+  counterattack train: fresh end-anchored draw, KS 0.161 vs normal; after
+  a SUCCESS assault: spike at 0h, p50=0.0 -- the gated clock releases on
+  victory, KS 0.733); counterattack trains are harder to stop
+  (first-defend win 0.226 vs 0.467, median length 3 vs 1, duration p50
+  7.3h vs 2.5h).
+- `18-outcome-composite.mjs` -- attempt 5: pre-registered Monte-Carlo
+  mixture for the ATTACK cell (fail branch: rest-of-timeout +
+  counterattack-train + fresh draw; success branch: conditional duration +
+  release spike), STATE-KM elsewhere, all components walk-forward. Overall
+  skill 0.588 [0.559-0.621] (first sub-0.6 point estimate) but
+  calibration + sharpness FAIL, and the paired UNCENSORED ATTACK-moment
+  comparison vs STATE-KM is flat (ratio 1.045, CI 0.81-1.11): DO NOT
+  ADOPT. Outcome uncertainty dominates; the verdict signal that would
+  resolve it is the n=7 one. Null, by the pre-registered rule.
 
 ### Self-checks
 
@@ -236,6 +256,8 @@ node --env-file=.env.development scripts/analysis/12-faction-choice.mjs
 node --env-file=.env.development scripts/analysis/14-counterattack-delta.mjs
 node --env-file=.env.development scripts/analysis/15-counterattack-target.mjs
 node --env-file=.env.development scripts/analysis/16-counterattack-pipeline.mjs
+node --env-file=.env.development scripts/analysis/17-assault-outcome.mjs
+node --env-file=.env.development scripts/analysis/18-outcome-composite.mjs
 ```
 
 `03-hazard.mjs` fits a logistic regression per (variant, evaluated season)
