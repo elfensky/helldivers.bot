@@ -115,9 +115,13 @@ export function walkForward({
     // One record per evaluated moment. Keeping them in a flat list (rather than
     // parallel arrays) is what makes the season-level block bootstrap cheap.
     /**
-     * @type {{season: number, target: string, wait: number|null, censorAt: number|null,
-     *          p25: number, p50: number, p75: number, absErr: number|null,
-               baselineAbsErr: number|null}[]} */
+     * `t` is the evaluated clock moment — the key that lets callers pair the
+     * SAME moment across separate walkForward runs (`${season}:${t}`) for a
+     * paired-error comparison between predictor variants.
+     *
+     * @type {{season: number, t: number, target: string, wait: number|null,
+     *          censorAt: number|null, p25: number, p50: number, p75: number,
+               absErr: number|null, baselineAbsErr: number|null}[]} */
     const records = [];
     let warmupSkipped = 0;
     let censoredUnknown = 0;
@@ -202,6 +206,7 @@ export function walkForward({
                 const wait = (next.start_time - t) / HOUR;
                 records.push({
                     season: testSeason,
+                    t,
                     target: `${testSeason}:${next.start_time}`,
                     wait,
                     censorAt: null,
@@ -217,6 +222,7 @@ export function walkForward({
                 if (censorAt <= 0) continue;
                 records.push({
                     season: testSeason,
+                    t,
                     target: `${testSeason}:censored`,
                     wait: null,
                     censorAt,
@@ -463,6 +469,18 @@ if (import.meta.filename === process.argv[1]) {
         good.medianAbsErrorHours < 0.001,
         `oracle should be near-exact, got ${good.medianAbsErrorHours}`,
     );
+
+    // Every record carries the evaluated moment `t`, and `(season, t)` is
+    // unique — the invariant paired cross-variant comparisons rely on.
+    {
+        const keys = new Set();
+        for (const r of good.records) {
+            assert(Number.isFinite(r.t), 'record is missing a finite t');
+            const key = `${r.season}:${r.t}`;
+            assert(!keys.has(key), `duplicate record moment ${key}`);
+            keys.add(key);
+        }
+    }
     assert(good.skillRatio < 0.5, `oracle skill ratio too high: ${good.skillRatio}`);
     assert(good.sharpnessHours === 0, 'oracle bands should have zero width');
 

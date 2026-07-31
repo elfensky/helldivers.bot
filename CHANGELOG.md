@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.77.1
+
+### Changed
+
+- **Counterattack-lull handoff v2** (Discord follow-ups): the delta measurement is now
+  slot-aware (the one-defend-at-a-time rule means queued counterattacks would smear a
+  mechanical delay when pooled — measure slot-free and slot-occupied subsets
+  separately), adds verification of attack-attack overlaps and the max-simultaneous-events
+  question (owner recalls 2 attacks + 1 defend at once), and a new queueing-confound trap.
+
 ## 0.77.0
 
 ### Added

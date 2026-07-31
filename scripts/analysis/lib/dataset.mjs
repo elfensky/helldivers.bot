@@ -56,13 +56,17 @@ function connectionString() {
  * Load every row this analysis needs, in three queries, and attach the derived
  * per-event fields the phases share.
  *
+ * @param {{statistics?: boolean}} [options] when `statistics` is truthy, also
+ *   load per-faction player telemetry from h1_statistic (S157+ only — a fourth
+ *   query the pre-existing scripts never pay for)
  * @returns {Promise<object>} dataset
  */
-export async function loadDataset() {
+export async function loadDataset(options = {}) {
     const client = new pg.Client({ connectionString: connectionString() });
     await client.connect();
 
     let eventRows, statusRows, seasonRows;
+    let statisticRows = [];
     try {
         ({ rows: eventRows } = await client.query(
             `SELECT season, type, event_id, start_time, end_time, region, enemy,
@@ -78,6 +82,13 @@ export async function loadDataset() {
         ({ rows: seasonRows } = await client.query(
             `SELECT season, points_max FROM h1_season ORDER BY season`,
         ));
+        if (options.statistics) {
+            ({ rows: statisticRows } = await client.query(
+                `SELECT season, enemy, bucket, time, players
+                   FROM h1_statistic
+                  ORDER BY season, enemy, bucket`,
+            ));
+        }
     } finally {
         await client.end();
     }
@@ -191,17 +202,15 @@ export async function loadDataset() {
     }
 
     /**
-     * Most recent status bucket at or before `t`, or null if none exists.
-     * For 156 of 160 seasons the answer can be up to 24h stale — h1_status
-     * runs at ~1 bucket/day outside S157–160.
+     * The row with the largest `bucket <= t` in a bucket-ascending array, or
+     * null when the array is empty or starts after `t`. Shared by the status
+     * and statistic point lookups.
      *
-     * @param {number} season the season number
-     * @param {number} enemy the enemy faction (0=Bugs, 1=Cyborgs, 2=Illuminate)
-     * @param {number} t unix seconds timestamp
+     * @param {object[]|undefined} rows ascending by bucket
+     * @param {number} t unix seconds
      * @returns {object|null}
      */
-    function statusAt(season, enemy, t) {
-        const rows = statusIndex.get(`${season}:${enemy}`);
+    function latestBucketAtOrBefore(rows, t) {
         if (!rows || rows.length === 0 || rows[0].bucket > t) return null;
         let lo = 0;
         let hi = rows.length - 1;
@@ -216,6 +225,66 @@ export async function loadDataset() {
             }
         }
         return best;
+    }
+
+    /**
+     * Most recent status bucket at or before `t`, or null if none exists.
+     * For 156 of 160 seasons the answer can be up to 24h stale — h1_status
+     * runs at ~1 bucket/day outside S157–160.
+     *
+     * @param {number} season the season number
+     * @param {number} enemy the enemy faction (0=Bugs, 1=Cyborgs, 2=Illuminate)
+     * @param {number} t unix seconds timestamp
+     * @returns {object|null}
+     */
+    function statusAt(season, enemy, t) {
+        return latestBucketAtOrBefore(statusIndex.get(`${season}:${enemy}`), t);
+    }
+
+    // --- point-in-time player telemetry lookup (statistics option) ---------
+    const statisticIndex = new Map();
+    for (const row of statisticRows) {
+        const key = `${row.season}:${row.enemy}`;
+        if (!statisticIndex.has(key)) statisticIndex.set(key, []);
+        statisticIndex.get(key).push(row);
+    }
+
+    /**
+     * Most recent statistic bucket at or before `t`, or null if none exists.
+     * Empty unless the dataset was loaded with `{ statistics: true }` — and
+     * even then only S157+ has rows; the caller owns any staleness policy,
+     * mirroring `statusAt`.
+     *
+     * @param {number} season
+     * @param {number} enemy
+     * @param {number} t unix seconds
+     * @returns {object|null} `{season, enemy, bucket, time, players}` or null
+     */
+    function playersAt(season, enemy, t) {
+        return latestBucketAtOrBefore(statisticIndex.get(`${season}:${enemy}`), t);
+    }
+
+    /**
+     * The full statistic series for one (season, enemy), ascending by bucket —
+     * the temporal-pattern counterpart of `statusSeries` (see its note on why
+     * point queries cannot substitute for the raw observations).
+     *
+     * @param {number} season
+     * @param {number} enemy
+     * @returns {object[]} the stored rows, or an empty array
+     */
+    function statisticSeries(season, enemy) {
+        return statisticIndex.get(`${season}:${enemy}`) ?? [];
+    }
+
+    /**
+     * Seasons that have any statistic rows, ascending. Consumers derive their
+     * telemetry evaluation window from this rather than hardcoding S157+.
+     *
+     * @returns {number[]}
+     */
+    function statSeasons() {
+        return [...new Set(statisticRows.map((r) => r.season))].sort((a, b) => a - b);
     }
 
     /**
@@ -312,6 +381,9 @@ export async function loadDataset() {
         seasons,
         statusAt,
         statusSeries,
+        playersAt,
+        statisticSeries,
+        statSeasons,
         liberationAt,
         playerPercentileAt,
         playersRelToSeasonMedianAt,
@@ -614,6 +686,62 @@ if (import.meta.filename === process.argv[1]) {
                     `isTrainStart disagrees with the same-faction chain gap at season ${list[i].season} enemy ${list[i].enemy}`,
                 );
             }
+        }
+    }
+
+    // --- statistics option -------------------------------------------------
+    // A second load with the flag on: the default load above must stay
+    // statistics-free (accessors present but empty), and the flagged load must
+    // produce a causal, well-ordered player telemetry index.
+    {
+        assert.equal(
+            ds.statSeasons().length,
+            0,
+            'default load must not carry statistics',
+        );
+        assert.equal(ds.playersAt(157, 0, 4102444800), null);
+
+        const dss = await loadDataset({ statistics: true });
+        const statSeasons = dss.statSeasons();
+        assert(statSeasons.length > 0, 'no statistic seasons loaded');
+
+        let highRes = 0;
+        for (const season of statSeasons) {
+            for (const enemy of [0, 1, 2]) {
+                const series = dss.statisticSeries(season, enemy);
+                for (let i = 0; i < series.length; i++) {
+                    assert(series[i].players >= 0, 'negative player count');
+                    if (i > 0) {
+                        assert(
+                            series[i - 1].bucket < series[i].bucket,
+                            `unsorted statistic buckets in season ${season}`,
+                        );
+                    }
+                }
+                if (series.length > 50) highRes++;
+            }
+        }
+        assert(
+            highRes > 0,
+            'no (season, enemy) series has >50 buckets — telemetry is not high-res',
+        );
+
+        // playersAt never returns a future bucket, is null before the first
+        // bucket, and agrees with a linear scan on a sample.
+        const someSeason = statSeasons[0];
+        const someSeries = dss.statisticSeries(someSeason, 0);
+        assert(someSeries.length > 0, 'first stat season has no Bugs series');
+        assert.equal(
+            dss.playersAt(someSeason, 0, someSeries[0].bucket - 1),
+            null,
+            'playersAt should be null before all buckets',
+        );
+        for (let i = 0; i < someSeries.length; i += 97) {
+            const t = someSeries[i].bucket + 60;
+            const hit = dss.playersAt(someSeason, 0, t);
+            assert(hit && hit.bucket <= t, 'playersAt returned a future bucket');
+            const expected = someSeries.filter((r) => r.bucket <= t).at(-1);
+            assert.equal(hit.bucket, expected.bucket, 'playersAt disagrees with scan');
         }
     }
 
