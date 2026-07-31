@@ -191,6 +191,34 @@ export async function loadDataset(options = {}) {
                 if (defends[i].status === 'fail') currentFailures++;
             }
         }
+
+        // Counterattack labelling. A fail-resolved homeworld assault (which
+        // always runs its full 48h timeout) is followed by a defend train on
+        // that same faction, starting within minutes of the assault's end
+        // when the global defend slot is free — a sequencing mechanic, same
+        // epistemic class as the chain rule above (measured in
+        // `14-counterattack-delta.mjs`: 467/474 slot-free deltas < 10min,
+        // p05–p95 = 0.0h). Such train starts carry no scheduler randomness
+        // and are NOT free forecasting targets. The 2h window matches
+        // `15-counterattack-target.mjs`'s pre-declared label; queued
+        // counterattacks that fire late (double-queue cases, p50 ~37h) stay
+        // unflagged on purpose — their timing is still a scheduler draw.
+        // Labelling only: the chain rule above is untouched.
+        const COUNTERATTACK_WINDOW_SECONDS = 7200;
+        const failedAttacks = list.filter(
+            (e) => e.type === 'attack' && e.status === 'fail',
+        );
+        for (const e of list) {
+            if (e.type !== 'defend') continue;
+            e.isCounterattack =
+                e.isTrainStart === true &&
+                failedAttacks.some(
+                    (a) =>
+                        a.enemy === e.enemy &&
+                        e.start_time - a.end_time >= 0 &&
+                        e.start_time - a.end_time <= COUNTERATTACK_WINDOW_SECONDS,
+                );
+        }
     }
 
     // --- point-in-time status lookup --------------------------------------
@@ -684,6 +712,46 @@ if (import.meta.filename === process.argv[1]) {
                     list[i].isTrainStart,
                     gap > CHAIN_SECONDS_CHECK,
                     `isTrainStart disagrees with the same-faction chain gap at season ${list[i].season} enemy ${list[i].enemy}`,
+                );
+            }
+        }
+
+        // Counterattack labelling: the flag only ever sits on a train start,
+        // is common enough to matter (~490 of ~1979 train starts as of
+        // 2026-07), and re-derives from the same-season fail-resolved
+        // attacks on a sample — for flagged AND unflagged starts.
+        {
+            const flagged = defends.filter((e) => e.isCounterattack);
+            assert(
+                flagged.length > 400,
+                `expected ~490 counterattack train starts, got ${flagged.length}`,
+            );
+            for (const e of flagged) {
+                assert(e.isTrainStart, 'isCounterattack must imply isTrainStart');
+            }
+            const attacksBySeasonCheck = new Map();
+            for (const a of ds.events) {
+                if (a.type !== 'attack' || a.status !== 'fail') continue;
+                if (!attacksBySeasonCheck.has(a.season)) {
+                    attacksBySeasonCheck.set(a.season, []);
+                }
+                attacksBySeasonCheck.get(a.season).push(a);
+            }
+            const sampled = defends
+                .filter((e) => e.isTrainStart)
+                .filter((_, i) => i % 13 === 0);
+            assert(sampled.length > 0, 'no train starts sampled');
+            for (const e of sampled) {
+                const expected = (attacksBySeasonCheck.get(e.season) ?? []).some(
+                    (a) =>
+                        a.enemy === e.enemy &&
+                        e.start_time - a.end_time >= 0 &&
+                        e.start_time - a.end_time <= 7200,
+                );
+                assert.equal(
+                    e.isCounterattack,
+                    expected,
+                    `isCounterattack disagrees with re-derivation at season ${e.season}`,
                 );
             }
         }
