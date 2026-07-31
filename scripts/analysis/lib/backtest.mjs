@@ -89,7 +89,9 @@ function forwardRecurrenceMedian(trainEvents, seasons, stepHours, momentFilter =
  * constant-baseline error), and `skillRatio`/`skillRatioCI` (their ratio and
  * its 95% season-block-bootstrap CI).
  *
- * @param {object} options
+ * @param {object} options `allowNoPriorEvent` additionally evaluates moments
+ *   before a season's first matching event (predict receives `lastEvent: null`)
+ *   — only valid for predictors that never read `moment.lastEvent`.
  * @returns {object} summary
  */
 export function walkForward({
@@ -103,6 +105,7 @@ export function walkForward({
     horizonHours = 1500,
     bootstrapSamples = 200,
     momentFilter = null,
+    allowNoPriorEvent = false,
 }) {
     const matching = events
         .filter((e) => e.type === type && (enemy === undefined || e.enemy === enemy))
@@ -184,14 +187,19 @@ export function walkForward({
             // Before the season's first matching event there is no meaningful
             // "time since last event" — falling back to the previous season's
             // last event would feed the predictor a multi-month elapsed value.
+            // `allowNoPriorEvent` opts a predictor that never reads
+            // `moment.lastEvent` (e.g. a points-rate forecast) into these
+            // moments: they have a perfectly well-defined next event, and for
+            // seasons with a single matching event they are the ONLY
+            // uncensored moments the season can contribute.
             const lastEvent = seasonEvents.filter((e) => e.start_time <= t).at(-1);
-            if (!lastEvent) {
+            if (!lastEvent && !allowNoPriorEvent) {
                 warmupSkipped++;
                 continue;
             }
 
             const next = seasonEvents.find((e) => e.start_time > t);
-            const p = predict({ t, season: testSeason, enemy, lastEvent });
+            const p = predict({ t, season: testSeason, enemy, lastEvent: lastEvent ?? null });
             const q25 = Math.min(p.p25, horizonHours);
             const q50 = Math.min(p.p50, horizonHours);
             const q75 = Math.min(p.p75, horizonHours);
@@ -593,6 +601,46 @@ if (import.meta.filename === process.argv[1]) {
         capturedBaseline !== null && capturedBaseline < 8,
         `baseline should be forward-recurrence (~5h), got ${capturedBaseline}`,
     );
+
+    // allowNoPriorEvent must open up the pre-first-event moments (and only
+    // those): a lastEvent-blind predictor gains moments, warmup drops to zero,
+    // and every gained moment still has a well-defined target. The oracle
+    // world starts its span AT the first event, so a dedicated fixture puts
+    // the season start 50h earlier — the real dataset does this whenever
+    // another event type opens the season before the first attack.
+    {
+        const warmupSeasons = new Map(
+            [...seasons].map(([s, span]) => [
+                s,
+                { ...span, firstStart: span.firstStart - 50 * 3600 },
+            ]),
+        );
+        const constant = () => () => ({ p25: 5, p50: 5, p75: 5 });
+        const closed = walkForward({
+            events,
+            seasons: warmupSeasons,
+            type: 'attack',
+            enemy: 0,
+            fitPredictor: constant,
+            bootstrapSamples: 0,
+        });
+        const open = walkForward({
+            events,
+            seasons: warmupSeasons,
+            type: 'attack',
+            enemy: 0,
+            fitPredictor: constant,
+            bootstrapSamples: 0,
+            allowNoPriorEvent: true,
+        });
+        assert(open.moments > closed.moments, 'allowNoPriorEvent gained no moments');
+        assert.equal(open.warmupSkipped, 0, 'allowNoPriorEvent still skipped warmup');
+        assert.equal(
+            open.moments,
+            closed.moments + closed.warmupSkipped,
+            'allowNoPriorEvent changed moments beyond the warmup set',
+        );
+    }
 
     // momentFilter must actually exclude moments. Filter on the first half of
     // each season — NOT on `t % 2`, because every synthetic timestamp here is
