@@ -32,7 +32,11 @@ function localTime(t) {
  * directly so the classes don't depend on an EventCard rendering first).
  * Band, never a countdown: the range is the calibrated 50% band and the
  * meta row carries the reliability-checked within-24h/48h probabilities
- * from waveModel.mjs.
+ * from waveModel.mjs. The one exception is a mechanic, not a model: during
+ * an active homeworld assault a second meta row shows the
+ * failure-conditional counterattack time (assault start + 48h — see
+ * `counterattackAt` in waveForecast.mjs and /docs/predict/defend, rules
+ * 7–8), which is deterministic and therefore allowed to be a clock.
  *
  * @param {object} props
  * @param {ReturnType<typeof import('./waveForecast.mjs').waveForecast>} props.forecast
@@ -42,7 +46,7 @@ function localTime(t) {
 export default function NextWaveCard({ forecast, warStart, now }) {
     if (forecast?.mode !== 'window') return null;
 
-    const { p25, p75, p24, p48, imminent, runningLong } = forecast;
+    const { p25, p75, p24, p48, imminent, runningLong, counterattackAt } = forecast;
     const from = now + p25 * 3600;
     const to = now + p75 * 3600;
     const warDays =
@@ -146,6 +150,20 @@ export default function NextWaveCard({ forecast, warStart, now }) {
                         {Math.round(p48 * 100)}% within 48h
                     </span>
                 </div>
+                {counterattackAt != null && (
+                    <div className="sector-card-meta">
+                        <span
+                            className="sector-card-points"
+                            title="Deterministic mechanic, not a model: every failed homeworld assault in recorded history ran exactly 48h and its counterattack landed within minutes of the timeout. Only fires if the assault fails — a won assault removes the faction instead."
+                            suppressHydrationWarning
+                        >
+                            if the assault fails &middot; counterattack{' '}
+                            {counterattackAt > now ?
+                                `${localTime(counterattackAt)} (in ~${Math.max(1, Math.round((counterattackAt - now) / 3600))}h)`
+                            :   'imminent'}
+                        </span>
+                    </div>
+                )}
             </div>
             <div className="sector-card-accent" />
         </div>
