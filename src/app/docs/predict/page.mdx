@@ -7,12 +7,16 @@ export const metadata = {
 };
 export const revalidate = 3600;
 
+import HubCounts from './HubCounts';
+
 # Can we predict events?
 
 A two-part report on Helldivers 1 event predictability, built from every
 recorded event across the game's ~160-season history and refreshed hourly
 from the live database. Short answer: **attacks yes, defends partially —
 and the difference is the whole story.**
+
+<HubCounts />
 
 ## ⚔️ Attacks — solved
 
@@ -36,7 +40,7 @@ to ship a countdown (the pre-registered bar was missed and respected).
 
 ---
 
-Both pages mix two kinds of numbers, visually distinguished: live
-distribution figures pulled hourly from the database, and static backtest
-verdicts each reproducible from a committed script in
+This hub and the defend page carry live figures refreshed hourly from the
+database (labeled as such); backtest verdicts everywhere are static, each
+reproducible from a committed script in
 [`scripts/analysis/`](https://github.com/elfensky/helldivers.bot/tree/main/scripts/README.md).

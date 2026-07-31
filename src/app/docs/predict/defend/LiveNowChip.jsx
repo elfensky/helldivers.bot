@@ -15,7 +15,8 @@ export default async function LiveNowChip() {
     if (forecast.mode !== 'window') {
         return (
             <p className="border border-ghost bg-surface-1 px-3 py-2 font-mono text-small text-text-muted">
-                Right now: a wave is in progress — the window returns when it resolves.{' '}
+                Right now: the window isn&apos;t available — most likely a wave is in
+                progress; it returns when the lull begins.{' '}
                 <span className="text-primary">live · refreshes hourly</span>
             </p>
         );

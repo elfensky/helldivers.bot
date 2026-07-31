@@ -220,7 +220,7 @@ onTrainEnd(result == WIN):
     faction    = pickFaction()                          // drawn at spawn — see below
 ```
 
-A KS distance of 0.073 does not prove the developers typed the word *gamma* — a delay built from a few exponential stages leaves the same fingerprint — but it rules out everything else on the list. This is the real lull histogram from the live database — drag k and watch the memoryless hypothesis miss:
+A KS distance of 0.073 does not prove the developers typed the word *gamma* — a delay built from a few exponential stages leaves the same fingerprint — but it rules out everything else on the list. This is the real lull histogram from the live database — drag k and watch the memoryless hypothesis miss (frozen tables above were computed a day earlier at 1,978 starts / 1,818 lulls — the dataset grows as wars end):
 
 <GammaExplorerSection />
 
@@ -230,7 +230,7 @@ Which leaves `pickFaction()` as the one line still unexplained.
 
 Mostly, the sixth rule answers it. If the lull began with a homeworld assault that goes on to fail, the next wave hits the assaulted faction — 179/179, deterministic. If the assault succeeded, that faction is gone and trivially cannot be the target (0/27). If no assault is in play but exactly one faction sits at 9 of 10 sectors, bet on it and you will be right 61.4% of the time (189/308, within-season placebo p = 0.0005).
 
-Outside those regimes the draw is close to unpredictable. The transition matrix shows a mild same-again tilt — after a Cyborg wave the next one is Cyborgs 41.0% of the time against a 36.2% base rate, with Bugs at 33.4% vs 28.8% and Illuminate at 39.8% vs 35.0% — so "same faction again" is the best residual rule at 44.3% accuracy, "majority among active-status factions" manages 42.4%, and the three other simple rules tried (most-overdue faction, highest liberation, majority class) all land at 35–36%. Nothing rule-like survives out there.
+Outside those regimes the draw is close to unpredictable. The transition matrix — computed over all 1,819 lulls, regardless of assault or SC9 state — shows a mild same-again tilt: after a Cyborg wave the next one is Cyborgs 41.0% of the time against a 36.2% base rate, with Bugs at 33.4% vs 28.8% and Illuminate at 39.8% vs 35.0%. Restricted to the honest-remainder population above (n=1,305, outside both the counterattack and SC9-window regimes), five naive per-faction rules were scored directly on that narrower set: "same faction again" comes out best at 44.3% accuracy, "majority among active-status factions" manages 42.4%, and the other three (most-overdue faction, highest liberation, majority class) land at 35–36%. Nothing rule-like survives out there.
 
 The timing side independently confirms the drawing order: if each faction ran its own timer, per-faction cycles would look *cleaner* than the pooled series. It is the opposite — per-faction start-to-start CVs sit at 0.768–0.783 while the pooled series sits at 0.447 — so there is **one global clock**, and the faction is chosen only when the wave spawns. *(reproduce: `12-faction-choice.mjs` · `13-scheduler-shape.mjs`)*
 

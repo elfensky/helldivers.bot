@@ -619,8 +619,7 @@ sector-progress rule tried here beats chance by a useful margin.
 
 **Script:** `13-scheduler-shape.mjs`. Reverse-engineering framing: which
 game-dev implementation produces the observed lulls? Fingerprints measured
-on the full history (transcribe the script's printed values here — n, CV,
-the three KS distances, fitted k/theta, per-faction vs pooled CV):
+on the full history:
 
 - Memoryless per-tick spawning: dead (KS vs exponential 0.314; CV 0.476
   against the memoryless CV of 1).

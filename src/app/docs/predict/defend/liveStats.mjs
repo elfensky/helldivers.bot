@@ -183,7 +183,13 @@ export function computeDefendStats(
 export const getDefendLiveStats = cache(async function getDefendLiveStats() {
     'use server';
 
-    const seasonAgg = await db.h1_season.aggregate({ _max: { season: true } });
+    // `last_updated: { not: null }` excludes an in-progress season import — mirrors
+    // `src/db/queries/getCampaign.mjs`'s `_findSeason` guard against serving a
+    // partially-seeded season.
+    const seasonAgg = await db.h1_season.aggregate({
+        where: { last_updated: { not: null } },
+        _max: { season: true },
+    });
     const targetSeason = seasonAgg._max.season;
 
     const defendRows = await db.h1_event.findMany({

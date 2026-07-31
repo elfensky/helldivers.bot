@@ -138,7 +138,7 @@ export default function GammaExplorer({ bins, binWidthH, n, meanH, fittedK }) {
                     htmlFor="gamma-k-slider"
                     style={{ display: 'block', marginBottom: 4 }}
                 >
-                    k = {k.toFixed(2)} (θ = {theta.toFixed(2)}h) — KS distance{' '}
+                    k = {k.toFixed(2)} (θ = {theta.toFixed(2)}h) — KS distance (binned){' '}
                     {ks.toFixed(3)}
                 </label>
                 <input
@@ -166,6 +166,7 @@ export default function GammaExplorer({ bins, binWidthH, n, meanH, fittedK }) {
             >
                 <button
                     type="button"
+                    className="border border-ghost bg-surface-2 px-2 py-1 font-mono text-small text-text hover:border-primary"
                     onClick={() => {
                         setK(1);
                         trackFirstInteraction();
@@ -175,6 +176,7 @@ export default function GammaExplorer({ bins, binWidthH, n, meanH, fittedK }) {
                 </button>
                 <button
                     type="button"
+                    className="border border-ghost bg-surface-2 px-2 py-1 font-mono text-small text-text hover:border-primary"
                     onClick={() => {
                         setK(fittedK);
                         trackFirstInteraction();
@@ -184,6 +186,7 @@ export default function GammaExplorer({ bins, binWidthH, n, meanH, fittedK }) {
                 </button>
                 <button
                     type="button"
+                    className="border border-ghost bg-surface-2 px-2 py-1 font-mono text-small text-text hover:border-primary"
                     onClick={() => {
                         setK(K_MAX);
                         trackFirstInteraction();

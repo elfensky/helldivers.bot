@@ -139,6 +139,28 @@ the findings are written up at
   state x 1h elapsed bin, plus within-24h/48h probabilities. Refuses to emit
   unless quantiles are monotone and the predicted probabilities are reliable
   against history (deciles within ±0.10, overall ±0.05).
+- `09-attack-trigger.mjs` -- tests whether the attack trigger is exactly
+  `points == points_max`, with the published liberation "trigger band" as the
+  competing hypothesis (an artifact of `h1_status`'s ~1-bucket/day staleness
+  smearing a hard threshold into a plausible-looking spread). Three checks: a
+  staleness gradient (liberation-at-attack vs. reading age), every attack with
+  a <15-minute-old reading listed individually, and trigger lag for the
+  15-minute-resolution seasons.
+- `10-attack-eta.mjs` -- once `09-attack-trigger.mjs` establishes the
+  threshold as a known constant, the forecast collapses to
+  `eta = (points_max - points) / rate`, so this script measures how well a
+  24-hour pace window predicts it (chosen because shorter windows are
+  unbacktestable against 156 of 160 seasons' daily buckets), with no fallback
+  model for `rate <= 0` moments and per-remaining-fraction ratio quantiles
+  (pooling would be invalid since `wait / eta` is heavy-tailed near
+  `remaining -> 0`).
+- `11-emit-attack-model.mjs` -- emits the committed constants behind the
+  dashboard's assault-ETA line (`src/features/dashboard/attackModel.mjs`):
+  per-remaining-fraction band ratio multipliers and day-of-week pace factors
+  from `10-attack-eta.mjs`, fit on full history. Refuses to emit unless the
+  multipliers are finite/positive/monotone, the day-of-week table actually
+  varies, and a full-history replay clears the same alert bar the
+  walk-forward run was held to.
 - `13-scheduler-shape.mjs` -- distribution forensics on the train-start lull:
   discriminates six candidate scheduler implementations by shape (KS vs
   exponential/gamma/uniform), tick combs, per-faction-vs-pooled CV, and
@@ -147,8 +169,8 @@ the findings are written up at
   discriminations rest on order-of-magnitude gaps, not p-values.
 - `12-faction-choice.mjs` -- which faction the next wave hits. The
   counterattack rule (a FAILED homeworld assault is always followed by a
-  wave on that faction -- print the exact count), succeeded-assault
-  exclusion, SC9-window targeting (~58%, within-season permutation
+  wave on that faction -- 179/179 in the current dataset), succeeded-assault
+  exclusion, SC9-window targeting (61.4%, within-season permutation
   placebo), and the honest remainder: near-random among active factions;
   per-faction recency/liberation/sector rules all at chance.
 
@@ -177,6 +199,9 @@ node --env-file=.env.development scripts/analysis/05-defend-covariates.mjs
 node --env-file=.env.development scripts/analysis/06-train-covariates.mjs
 node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
 node --env-file=.env.development scripts/analysis/08-emit-wave-model.mjs
+node --env-file=.env.development scripts/analysis/09-attack-trigger.mjs
+node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
+node --env-file=.env.development scripts/analysis/11-emit-attack-model.mjs
 node --env-file=.env.development scripts/analysis/13-scheduler-shape.mjs
 node --env-file=.env.development scripts/analysis/12-faction-choice.mjs
 ```
