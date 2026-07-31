@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sectorForecast } from '@/features/dashboard/attackForecast.mjs';
+import { sectorForecast, attackForecast } from '@/features/dashboard/attackForecast.mjs';
 
 const HOUR = 3600;
 const NOW = 1_800_000_000;
@@ -63,5 +63,16 @@ describe('sectorForecast', () => {
         const f = sectorForecast(makeData({ points: 495_000 }), 0, NOW, model);
         expect(f.mode).toBe('median');
         expect(f.imminent).toBe(true);
+    });
+
+    it('defers to the calibrated attack forecast in the last sector', () => {
+        // 950k of 1.0M → next boundary IS the campaign end; the sector line
+        // must be the same calibrated window the campaign view shows.
+        const data = makeData({ points: 950_000 });
+        const f = sectorForecast(data, 0, NOW, model);
+        expect(f).toEqual(attackForecast(data, 0, NOW, model));
+        expect(f.mode).toBe('window');
+        // 50k remaining at 10k/h = 5h; fixture ratios are 1s
+        expect(f.p50).toBeCloseTo(5, 0);
     });
 });
