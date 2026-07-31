@@ -166,7 +166,7 @@ function AssaultEta({ forecast }) {
             title={`Median estimate ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`}
             suppressHydrationWarning
         >
-            Assault ETA {lo}-{hi}h
+            Assault in {lo}-{hi}h
         </span>
     );
 }
@@ -223,9 +223,24 @@ export default function EventCard({
                     </span>
                     <span className="sector-card-title">{region}</span>
                 </div>
-                {barLabel && (
+                {(barLabel || assaultForecast?.mode === 'window') && (
                     <div className="sector-card-bar-label-row">
-                        <span className="sector-card-bar-label">{barLabel}</span>
+                        {/* Label and forecast are grouped so the row's
+                            space-between still pushes the pace indicator to the
+                            right edge rather than spreading three items evenly. */}
+                        <span className="sector-card-bar-label-group">
+                            {barLabel && (
+                                <span className="sector-card-bar-label">{barLabel}</span>
+                            )}
+                            {assaultForecast?.mode === 'window' && (
+                                <>
+                                    {barLabel && (
+                                        <span className="sector-card-sep">&middot;</span>
+                                    )}
+                                    <AssaultEta forecast={assaultForecast} />
+                                </>
+                            )}
+                        </span>
                         {pace && (
                             <>
                                 <span className="sector-card-sep">&middot;</span>
@@ -285,12 +300,6 @@ export default function EventCard({
                         <>
                             <span className="sector-card-sep">&middot;</span>
                             <PaceIndicator pace={pace} />
-                        </>
-                    )}
-                    {assaultForecast?.mode === 'window' && (
-                        <>
-                            <span className="sector-card-sep">&middot;</span>
-                            <AssaultEta forecast={assaultForecast} />
                         </>
                     )}
                 </div>

@@ -406,7 +406,7 @@ describe('EventCard — assault ETA line', () => {
 
     it('renders nothing when no forecast is supplied', () => {
         render(<EventCard {...base} />);
-        expect(screen.queryByText(/assault eta/i)).toBeNull();
+        expect(screen.queryByText(/assault in/i)).toBeNull();
     });
 
     it('renders nothing when the forecast is hidden', () => {
@@ -416,7 +416,7 @@ describe('EventCard — assault ETA line', () => {
                 assaultForecast={{ mode: 'hidden', reason: 'stalled' }}
             />,
         );
-        expect(screen.queryByText(/assault eta/i)).toBeNull();
+        expect(screen.queryByText(/assault in/i)).toBeNull();
     });
 
     it('renders a range, not a countdown', () => {
@@ -432,7 +432,7 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        const el = screen.getByText(/assault eta/i);
+        const el = screen.getByText(/assault in/i);
         expect(el.textContent).toMatch(/4-16h/);
         // The median belongs in the title, not the visible line — showing three
         // numbers in a 12px mono row is a puzzle, and showing one implies a
@@ -454,7 +454,7 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        expect(screen.getByText(/assault eta/i).className).toContain(
+        expect(screen.getByText(/assault in/i).className).toContain(
             'sector-card-assault--imminent',
         );
     });
@@ -472,6 +472,6 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        expect(screen.getByText(/assault eta/i).textContent).toMatch(/0-5h/);
+        expect(screen.getByText(/assault in/i).textContent).toMatch(/0-5h/);
     });
 });
