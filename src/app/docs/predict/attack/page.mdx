@@ -1,0 +1,186 @@
+export const metadata = {
+    title: 'Predicting Attacks | Helldivers Bot',
+    description:
+        'How Helldivers 1 homeworld attacks are forecast: a deterministic full-points trigger plus a pace estimate, backtested walk-forward against 925 recorded attacks and clearing the project\'s pre-registered accuracy bar.',
+    alternates: { canonical: '/docs/predict/attack' },
+    openGraph: { url: '/docs/predict/attack' },
+};
+
+# Can we predict attacks?
+
+**TLDR — how we predict attacks:** an attack fires the moment a faction's
+campaign hits full points — `points == points_max`, exactly, within minutes
+(an earlier version of this report thought it was a fuzzy "90–98% band";
+that was our own daily-resolution sensor smearing a hard rule, and the
+correction is documented below). So the forecast is just arithmetic:
+`eta = (points_max − points) / rate`, with a day-of-week correction to the
+pace. Backtested walk-forward it clears every leg of the project's
+pre-registered gate — skill 0.23–0.33 against a 0.6 bar — and ships on the
+dashboard as an assault heads-up line. It never becomes a clock: the window
+is ~21h wide a day out, ~5h wide two hours out. <a href="/docs/predict/defend" data-umami-event="docs-predict-defend">How the defend side
+compares →</a>
+
+Attacks are **deterministic**. An attack on a faction's homeworld fires within minutes of that faction's campaign reaching full points — `points == points_max`, the exact integer. Every one of the 925 recorded attacks targets region 11, the enemy homeworld; none fires early.
+
+There is no threshold to estimate and no distribution to model. The trigger is a constant already stored in `h1_season.points_max`.
+
+### This corrects an earlier version of this page
+
+An earlier version of this report described a **trigger band** — liberation at attack start of p25 0.932 / p50 0.961 / p75 0.983, "89.3% fire at ≥90% liberation", "83.6% fire at exactly 9 of 10 sectors", and the explicit claim that this was *"not 'all ten captured and then it starts.'"*
+
+It is exactly "all ten captured and then it starts." Those figures measured the sensor, not the game.
+
+`h1_status` runs at roughly one bucket per day for 156 of the 160 seasons, so campaign state read at an attack's start could be up to 24 hours stale. A hard threshold viewed through a lagging sensor smears downward into precisely the spread that got published. Sorting the same 925 attacks by how fresh the reading was makes it plain:
+
+| Age of the campaign reading | Attacks | Median liberation at attack start |
+| --- | --- | --- |
+| &lt;15 min | 13 | **100.00%** |
+| &lt;1h | 23 | 99.69% |
+| &lt;6h | 170 | 98.87% |
+| &lt;12h | 182 | 97.37% |
+| &lt;24h | 537 | 94.28% |
+
+The "band" was a staleness gradient. Read fresh, the trigger is a point.
+
+The thirteen freshest readings are more convincing individually than any median, because the residual shortfalls scale with how early the reading was taken:
+
+| Season | Enemy | Reading age | Points / max | Short by | Liberation |
+| --- | --- | --- | --- | --- | --- |
+| 17 | 2 | 723s | 1,018,465 / 1,020,040 | 1,575 | 99.846% |
+| 20 | 0 | **62s** | 763,194 / 763,240 | **46** | **99.994%** |
+| 30 | 1 | 421s | 547,798 / 548,210 | 412 | 99.925% |
+| 60 | 1 | 482s | 636,241 / 636,530 | 289 | 99.955% |
+| 106 | 2 | 781s | 325,657 / 325,740 | 83 | 99.975% |
+| 143 | 2 | 361s | 253,842 / 253,910 | 68 | 99.973% |
+| 158 | 0 | 841s | 356,240 / 356,240 | **0** | **100.000%** |
+| 158 | 1 | 121s | 275,790 / 275,790 | **0** | **100.000%** |
+| 158 | 2 | 421s | 147,470 / 147,470 | **0** | **100.000%** |
+| 158 | 2 | 541s | 147,470 / 147,470 | **0** | **100.000%** |
+| 159 | 0 | 121s | 280,970 / 280,970 | **0** | **100.000%** |
+| 159 | 1 | 61s | 325,480 / 325,480 | **0** | **100.000%** |
+| 159 | 2 | 182s | 202,300 / 202,300 | **0** | **100.000%** |
+
+Twelve of thirteen sit within 0.1% of full. Season 20's Bug campaign was **46 points short of 763,240 sixty-two seconds before the attack began** — a sensor catching the last seconds of a climb, not a threshold with slack in it. The six sub-100% rows are all pre-S157 seasons whose whole campaign is covered by 13–43 buckets; their shortfall tracks their reading age, exactly as a hard threshold predicts.
+
+### How soon after reaching full points?
+
+For the four seasons with 15-minute resolution, the gap between the first bucket at full points and the attack's start is **1 to 14 minutes, median 3.0** (n = 7). Since a bucket can be up to 15 minutes wide, these are upper bounds. The trigger is effectively immediate.
+
+### Can we forecast the next one?
+
+With the trigger known exactly, forecasting an attack stops being a question about the trigger and becomes a question about **pace**:
+
+```
+eta = (points_max − points) / rate
+```
+
+Everything on the right-hand side except `rate` is known exactly and in real time. So the entire forecasting problem — and the entire error budget — lives in estimating how fast a campaign is gaining points.
+
+**Measured, and it works.** `10-attack-eta.mjs` backtests that formula walk-forward by season against all 925 attacks, using a 24-hour pace window:
+
+| Faction | Effective N | Skill ratio [95% CI] | Median error vs. baseline | Sharpness vs. marginal |
+| --- | --- | --- | --- | --- |
+| Bugs | 94 | **0.270** [0.203, 0.356] | 17.3h vs. 64.0h | 69.6h vs. 90.4h — narrower |
+| Cyborgs | 96 | **0.233** [0.186, 0.311] | 18.9h vs. 81.3h | 85.5h vs. 94.0h — narrower |
+| Illuminate | 125 | **0.325** [0.246, 0.392] | 19.9h vs. 61.3h | 69.9h vs. 88.4h — narrower |
+
+Every confidence interval sits far below the project's 0.6 ship bar, and every configuration passes the sharpness leg. For scale: the best defend model ever built reached 0.679 [0.651, 0.707] and failed. **This is the first thing in this project to clear the gate it was measured against**, and it does so because the trigger is exact — the model is only forecasting pace, not guessing at a threshold.
+
+The forecast is not available at every moment. Roughly **38–47%** of moments emit nothing at all, because a stalled or retreating front (`rate <= 0`) gives no arrival time. A front that is not moving has no ETA, and the honest output is silence.
+
+### What a player would actually see
+
+The intended use is a heads-up, not a countdown, so it is scored as an alert. Both bars were written down before the model was run:
+
+| Faction | Fires before…​ | …​an attack follows within 2× the upper bound | Verdict |
+| --- | --- | --- | --- |
+| Bugs | 93.6% of attacks | 92.0% of showing moments | PASS |
+| Cyborgs | 96.9% | 97.4% | PASS |
+| Illuminate | 96.8% | 95.7% | PASS |
+
+Against bars of 70% and 80% respectively, with the line rendering when the median estimate falls under **48 hours**.
+
+**Why 48 and not 24.** The threshold was 24h first, and moving it out improved every measure at once — coverage, false-alarm rate, and calibration. That is the campaign-state resolution showing through: `h1_status` runs at ~1 bucket/day for most of the record, so a 24-hour display window is exactly the regime where the input is least able to support an estimate. Restricted to the moments a UI renders, the median hit rate moved from 0.456–0.526 to **0.496–0.535** against a nominal 0.500 — Cyborgs at 0.496 is very nearly exact. A wider window also means the line appears more often and is correspondingly less of an event; 48h is the point where the data can carry the claim. And the window does tighten as the attack approaches — this is the model's own output, on the moments a UI would render:
+
+| When it says | It shows | Width | The attack actually came |
+| --- | --- | --- | --- |
+| ~2h | 0.8–5.6h | 4.8h | 2.5h |
+| ~6h | 4.3–12.6h | 8.3h | 6.0h |
+| ~10h | 7.8–19.2h | 11.5h | 9.2h |
+| ~14h | 10.7–25.0h | 14.3h | 12.9h |
+| ~18h | 13.8–31.4h | 17.7h | 16.0h |
+| ~22h | 17.2–38.3h | 21.1h | 20.8h |
+
+A day out the window is ~21 hours wide; a couple of hours out it is ~5. **It never becomes a clock.** The width tracks the estimate itself, so the display goes `17–38h` → `8–19h` → `1–6h` and stops. Curiously the *relative* uncertainty is slightly worse close in — roughly 1× the estimate a day out, 2× a couple of hours out — which is the daily-bucket staleness biting hardest when little remains to conquer.
+
+<details>
+<summary>In depth: the anchoring bug, the rate window, and what did not help</summary>
+
+**An anchoring bug, found by the reliability table.** The first run passed every headline number while being badly wrong exactly where it mattered. Restricted to moments a UI would render, the p50 hit rate was 0.650–0.701 against a nominal 0.500 — the model was predicting consistently *later* than reality.
+
+The cause was not the model. `points` is read from the last bucket at or before the evaluation moment, up to 24 hours old, so `remaining / rate` answered *"how long from when the reading was taken"* rather than *"how long from now."* The correction is algebraic — extrapolating the stale reading forward at the same rate is identical to subtracting its age:
+
+```
+(max − points − rate × age) / rate  ==  (max − points) / rate − age
+```
+
+Median historical reading age is ~12h, so sub-24h forecasts were inflated by roughly their own magnitude, which is why the damage concentrated in the display regime. After the fix:
+
+| p50 hit rate when showing (nominal 0.500) | Before | After |
+| --- | --- | --- |
+| Bugs | 0.650 | 0.525 |
+| Cyborgs | 0.678 | 0.544 |
+| Illuminate | 0.701 | 0.568 |
+
+The worst reliability decile moved from 0.701 to 0.460. This is the only defect the gate's calibration leg could not have caught on its own: that leg pools every moment, so a model can pass it while being miscalibrated in every stratum with the errors cancelling. The by-decile reliability table exists because of this, and earned its place on first use.
+
+**The rate window was chosen empirically, without using a single attack.** "Which window best predicts near-future pace" is answerable on all 21,849 high-resolution status rows, which sidesteps the fact that only 8 attacks have ever been recorded at 15-minute resolution. Median error predicting the next six hours of pace:
+
+| Window | 30 min | 1h | 3h | 6h | 12h | **24h** | 48h | 72h |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Error | 42.8% | 34.4% | 28.7% | 28.9% | 29.4% | **23.7%** | 24.5% | 24.5% |
+
+Short windows are far worse, not better — at 15-minute buckets a 30-minute rate is a difference of two readings and mostly noise. Longer than a day is no better either. Blending a short window into the long one helps by 0.6pp at a 20% weight, which does not justify the complexity.
+
+**What did not help.** Both use telemetry already stored in `h1_statistic`, and both made the forecast *worse* than the plain 24-hour rate (23.5%):
+
+| Adjustment | Error |
+| --- | --- |
+| × (current players / 24h average players) | 28.1% |
+| points-per-mission × recent mission rate | 27.0% |
+
+**What did help, and is not yet implemented.** Campaign pace has a strong weekly rhythm — across all 160 seasons, normalising each campaign to its own median pace:
+
+| Sun | Mon | Sat | Tue | Wed | Thu | Fri |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1.19 | 1.19 | 1.00 | 0.95 | 0.93 | 0.92 | 0.92 |
+
+A 29% swing between the busiest and quietest days. (Sunday and Monday lead because a daily bucket reports the day before it, so weekend play lands there.) Applying an hour-of-week correction cuts the *pace* error from 23.5% to **18.6%** — but that figure is in-sample, learned on the same data it was scored against.
+
+**Implemented walk-forward, most of that gain does not survive, and what does survive shows up somewhere unexpected.** Learning day-of-week factors from training seasons only (day, not hour — for 156 of 160 seasons a status transition spans a whole day, so attributing it to one hour would be fiction) leaves the skill ratio a wash: Bugs 0.270 → 0.275, Cyborgs 0.233 → 0.232, Illuminate 0.325 → 0.271, with heavily overlapping intervals. Better pace prediction did not translate into a better median ETA.
+
+What it *did* improve is calibration in the regime a UI would render — the numbers a player would actually read:
+
+| When showing (nominal p25 0.250 / p50 0.500) | Without | With day-of-week |
+| --- | --- | --- |
+| Bugs | 0.294 / 0.553 | **0.219 / 0.507** |
+| Cyborgs | 0.297 / 0.538 | **0.251 / 0.496** |
+| Illuminate | 0.318 / 0.579 | **0.276 / 0.535** |
+
+So the correction makes the displayed window more *honest* without making the central estimate more *accurate*. For a heads-up, that is the trade worth taking, and it is kept. Coverage improves too — the line fires before 93.6–96.0% of attacks.
+
+Public holidays were not tested and are not worth testing: the game's history contains a handful of them.
+
+**Caveats.**
+
+- **Effective N is 94–125 per faction**, not 925. Attacks average 2.17 per faction-season, so most clock moments share a target.
+- **The calibration leg flips between factions** (two of three pass, differently before and after the anchoring fix). At this effective N that is noise, not signal, and it should not be read as a result either way.
+- **The live model is better fed than the backtested one.** Historical campaign state is up to 24 hours stale; live it is 15 minutes. The same feature measured with less noise makes the backtested error a floor rather than an estimate — but with 8 high-resolution attacks that cannot be demonstrated, only argued.
+
+Reproduce:
+
+```
+node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
+```
+
+</details>

@@ -53,6 +53,16 @@ const sections = [
                 label: 'Can We Predict Events?',
                 track: 'docs-predict',
             },
+            {
+                href: '/docs/predict/attack',
+                label: 'Predicting Attacks',
+                track: 'docs-predict-attack',
+            },
+            {
+                href: '/docs/predict/defend',
+                label: 'Predicting Defends',
+                track: 'docs-predict-defend',
+            },
         ],
     },
     {
