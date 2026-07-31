@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.83.1
+
+### Fixed
+
+- **Active attack card stays event-focused in faction view**: during a
+  homeworld assault the card shows the single event bar
+  (`Capturing {homeworld}`) with the event verdict, regardless of the view
+  toggle — no more 11-segment faction overview mixed with an event-level
+  verdict. Matches the Super Earth defense card's interrupt behavior.
+
 ## 0.83.0
 
 ### Added
