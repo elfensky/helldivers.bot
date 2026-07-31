@@ -411,10 +411,7 @@ describe('EventCard — assault ETA line', () => {
 
     it('renders nothing when the forecast is hidden', () => {
         render(
-            <EventCard
-                {...base}
-                assaultForecast={{ mode: 'hidden', reason: 'stalled' }}
-            />,
+            <EventCard {...base} etaForecast={{ mode: 'hidden', reason: 'stalled' }} />,
         );
         expect(screen.queryByText(/ETA ~/)).toBeNull();
     });
@@ -423,7 +420,7 @@ describe('EventCard — assault ETA line', () => {
         render(
             <EventCard
                 {...base}
-                assaultForecast={{
+                etaForecast={{
                     mode: 'window',
                     p25: 4.2,
                     p50: 9.4,
@@ -435,7 +432,7 @@ describe('EventCard — assault ETA line', () => {
         const el = screen.getByText(/ETA ~/);
         // Median-first (rounded, ~-prefixed), range keeps it honest. Never a
         // symmetric ± — the window is asymmetric near campaign completion.
-        expect(el.textContent).toMatch(/~9h \(4-16h\)/);
+        expect(el.textContent).toMatch(/~9h \(4h-16h\)/);
         expect(el.textContent).not.toMatch(/±/);
         expect(el.getAttribute('title')).toMatch(/9\.4h/);
     });
@@ -444,7 +441,7 @@ describe('EventCard — assault ETA line', () => {
         render(
             <EventCard
                 {...base}
-                assaultForecast={{
+                etaForecast={{
                     mode: 'window',
                     p25: 1,
                     p50: 2,
@@ -462,7 +459,7 @@ describe('EventCard — assault ETA line', () => {
         render(
             <EventCard
                 {...base}
-                assaultForecast={{
+                etaForecast={{
                     mode: 'window',
                     p25: -3,
                     p50: 1,
@@ -471,6 +468,102 @@ describe('EventCard — assault ETA line', () => {
                 }}
             />,
         );
-        expect(screen.getByText(/ETA ~/).textContent).toMatch(/~1h \(0-5h\)/);
+        expect(screen.getByText(/ETA ~/).textContent).toMatch(/~1h \(0m-5h\)/);
+    });
+
+    it('renders minutes below one hour', () => {
+        render(
+            <EventCard
+                {...base}
+                etaForecast={{
+                    mode: 'window',
+                    p25: 0.5,
+                    p50: 0.66,
+                    p75: 0.9,
+                    imminent: true,
+                }}
+            />,
+        );
+        // 0.66h → ~40m, range 30m-54m
+        expect(screen.getByText(/ETA ~/).textContent).toMatch(/~40m \(30m-54m\)/);
+    });
+
+    it('renders a median-only forecast without a range', () => {
+        render(
+            <EventCard
+                {...base}
+                etaForecast={{
+                    mode: 'median',
+                    p50: 0.66,
+                    remaining: 5000,
+                    imminent: true,
+                }}
+            />,
+        );
+        const el = screen.getByText(/ETA ~/);
+        expect(el.textContent).toMatch(/ETA ~40m/);
+        expect(el.textContent).not.toMatch(/\(/); // no unmeasured parens
+    });
+
+    it('renders the event verdict instead of the pace indicator', () => {
+        render(
+            <EventCard
+                {...base}
+                barLabel="CAPITAL_DEFENSE"
+                endTime={1_800_000_000}
+                pace={{
+                    status: 'ahead',
+                    delta: 8100,
+                    deltaPercent: 4,
+                    currentRate: 1,
+                    requiredRate: 1,
+                }}
+                eventVerdict={{
+                    mode: 'verdict',
+                    etaHours: 3.2,
+                    onTrack: true,
+                    stalled: false,
+                }}
+            />,
+        );
+        const verdict = screen.getByText(/on track/);
+        expect(verdict.textContent).toMatch(/▲ on track · done ~3h/);
+        expect(verdict.className).toContain('sector-card-verdict--ok');
+        // pace indicator suppressed when a verdict shows
+        expect(screen.queryByText(/8.1K/)).toBeNull();
+    });
+
+    it('renders behind and stalled verdicts in danger styling', () => {
+        const { rerender } = render(
+            <EventCard
+                {...base}
+                barLabel="CAPITAL_DEFENSE"
+                endTime={1_800_000_000}
+                eventVerdict={{
+                    mode: 'verdict',
+                    etaHours: 5,
+                    onTrack: false,
+                    stalled: false,
+                }}
+            />,
+        );
+        expect(screen.getByText(/behind/).textContent).toMatch(/▼ behind · done ~5h/);
+        expect(screen.getByText(/behind/).className).toContain(
+            'sector-card-verdict--bad',
+        );
+        rerender(
+            <EventCard
+                {...base}
+                barLabel="CAPITAL_DEFENSE"
+                endTime={1_800_000_000}
+                eventVerdict={{
+                    mode: 'verdict',
+                    etaHours: null,
+                    onTrack: false,
+                    stalled: true,
+                }}
+            />,
+        );
+        expect(screen.getByText(/behind/).textContent).toMatch(/▼ behind · stalled/);
     });
 });

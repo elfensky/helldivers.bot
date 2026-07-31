@@ -135,39 +135,85 @@ function PaceIndicator({ pace }) {
 }
 
 /**
- * The discriminated result of `attackForecast`. Declared locally rather than
- * imported so this presentational component keeps no dependency on the
- * dashboard feature that computes it.
+ * The discriminated result of `attackForecast` or `sectorForecast`. Declared
+ * locally rather than imported so this presentational component keeps no
+ * dependency on the dashboard feature that computes it. Covers both the
+ * percentile-window shape (attack/homeworld assaults) and the median-only
+ * shape (sector ETAs, whose range hasn't shipped yet — see script 13).
  *
  * @typedef {{mode: 'window', p25: number, p50: number, p75: number, imminent: boolean}
+ *   | {mode: 'median', p50: number, remaining: number, imminent: boolean}
  *   | {mode: 'hidden', reason: string}} AssaultForecast
  */
 
 /**
- * Assault ETA, rendered as one more middot-separated item in the meta row.
+ * @param {number} h hours
+ * @returns {string} whole hours at >=1h, whole minutes below ("40m")
+ */
+function formatEtaHours(h) {
+    const clamped = Math.max(0, h);
+    if (clamped < 1) return `${Math.round(clamped * 60)}m`;
+    return `${Math.round(clamped)}h`;
+}
+
+/**
+ * ETA line, rendered as one more middot-separated item in the meta row.
  *
- * Median-first with the range in parens: `~9h (4-16h)`. The `~` and the range
- * keep the single number honest — still not a countdown. NOT a `±` form: the
- * window is asymmetric (near campaign completion p75 runs up to 2x the median,
- * see /docs/predict), and a symmetric spread would understate the late side.
+ * Median-first with the range in parens for window forecasts: `~9h (4-16h)`.
+ * The `~` and the range keep the single number honest — still not a
+ * countdown. NOT a `±` form: the window is asymmetric (near campaign
+ * completion p75 runs up to 2x the median, see /docs/predict), and a
+ * symmetric spread would understate the late side. Median-only forecasts
+ * (sector ETAs) render without a range — an unmeasured spread would be
+ * worse than none.
  *
  * @param {object} props
- * @param {{mode: 'window', p25: number, p50: number, p75: number, imminent: boolean}} props.forecast
+ * @param {{mode: 'window', p25: number, p50: number, p75: number, imminent: boolean}
+ *   | {mode: 'median', p50: number, remaining: number, imminent: boolean}} props.forecast
  */
-function AssaultEta({ forecast }) {
-    const lo = Math.max(0, Math.round(forecast.p25));
-    const hi = Math.round(forecast.p75);
-    const med = Math.max(0, Math.round(forecast.p50));
+function EtaLine({ forecast }) {
+    const med = formatEtaHours(forecast.p50);
+    const range =
+        forecast.mode === 'window' ?
+            ` (${formatEtaHours(forecast.p25)}-${formatEtaHours(forecast.p75)})`
+        :   ''; // mode 'median' — no unmeasured parens (sector ETA, see spec ruling)
+    const title =
+        forecast.mode === 'window' ?
+            `Assault ETA — median ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`
+        :   `Median estimate ${forecast.p50.toFixed(1)}h. Range ships once calibrated (script 13).`;
     return (
         <span
             className={
                 'sector-card-assault' +
                 (forecast.imminent ? ' sector-card-assault--imminent' : '')
             }
-            title={`Assault ETA — median ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`}
+            title={title}
             suppressHydrationWarning
         >
-            ETA ~{med}h ({lo}-{hi}h)
+            ETA ~{med}
+            {range}
+        </span>
+    );
+}
+
+/**
+ * Pace verdict for an active event — replaces the plain PaceIndicator when
+ * `eventForecast` has resolved a verdict (mode 'verdict'). Danger-red when
+ * behind or stalled, success-green when on track.
+ *
+ * @param {object} props
+ * @param {{etaHours: number|null, onTrack: boolean, stalled: boolean}} props.verdict
+ */
+function EventVerdict({ verdict }) {
+    const cls = verdict.onTrack ? 'sector-card-verdict--ok' : 'sector-card-verdict--bad';
+    const text =
+        verdict.stalled ? '▼ behind · stalled'
+        : verdict.onTrack ?
+            `▲ on track · done ~${formatEtaHours(/** @type {number} */ (verdict.etaHours))}`
+        :   `▼ behind · done ~${formatEtaHours(/** @type {number} */ (verdict.etaHours))}`;
+    return (
+        <span className={`sector-card-verdict ${cls}`} suppressHydrationWarning>
+            {text}
         </span>
     );
 }
@@ -185,7 +231,10 @@ export default function EventCard({
     pulseDelay,
     view = 'sector',
     factionMap,
-    assaultForecast = /** @type {AssaultForecast|null} */ (null),
+    etaForecast = /** @type {AssaultForecast|null} */ (null),
+    eventVerdict = /** @type {{mode: 'verdict', etaHours: number|null, onTrack: boolean, stalled: boolean}|{mode: 'hidden'}|null} */ (
+        null
+    ),
 }) {
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = !!endTime;
@@ -224,7 +273,9 @@ export default function EventCard({
                     </span>
                     <span className="sector-card-title">{region}</span>
                 </div>
-                {(barLabel || assaultForecast?.mode === 'window') && (
+                {(barLabel ||
+                    etaForecast?.mode === 'window' ||
+                    etaForecast?.mode === 'median') && (
                     <div className="sector-card-bar-label-row">
                         {/* Label and forecast are grouped so the row's
                             space-between still pushes the pace indicator to the
@@ -233,21 +284,28 @@ export default function EventCard({
                             {barLabel && (
                                 <span className="sector-card-bar-label">{barLabel}</span>
                             )}
-                            {assaultForecast?.mode === 'window' && (
+                            {(etaForecast?.mode === 'window' ||
+                                etaForecast?.mode === 'median') && (
                                 <>
                                     {barLabel && (
                                         <span className="sector-card-sep">&middot;</span>
                                     )}
-                                    <AssaultEta forecast={assaultForecast} />
+                                    <EtaLine forecast={etaForecast} />
                                 </>
                             )}
                         </span>
-                        {pace && (
+                        {eventVerdict?.mode === 'verdict' ?
                             <>
                                 <span className="sector-card-sep">&middot;</span>
-                                <PaceIndicator pace={pace} />
+                                <EventVerdict verdict={eventVerdict} />
                             </>
-                        )}
+                        :   pace && (
+                                <>
+                                    <span className="sector-card-sep">&middot;</span>
+                                    <PaceIndicator pace={pace} />
+                                </>
+                            )
+                        }
                     </div>
                 )}
                 <div className="sector-card-bar-wrap">
@@ -297,12 +355,18 @@ export default function EventCard({
                             <EventCountdown endTime={endTime} />
                         </>
                     )}
-                    {!barLabel && pace && (
-                        <>
-                            <span className="sector-card-sep">&middot;</span>
-                            <PaceIndicator pace={pace} />
-                        </>
-                    )}
+                    {!barLabel &&
+                        (eventVerdict?.mode === 'verdict' ?
+                            <>
+                                <span className="sector-card-sep">&middot;</span>
+                                <EventVerdict verdict={eventVerdict} />
+                            </>
+                        :   pace && (
+                                <>
+                                    <span className="sector-card-sep">&middot;</span>
+                                    <PaceIndicator pace={pace} />
+                                </>
+                            ))}
                 </div>
             </div>
             <div

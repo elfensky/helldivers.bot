@@ -17,6 +17,16 @@ import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 
 const HOUR = 3600;
 
+const SECTOR_COUNT = 10;
+/**
+ * Sector display gates. In code, not the model: no calibrated sector table
+ * exists yet (scripts/analysis/13-sector-eta.mjs is the future grading tool —
+ * only 4 high-res seasons exist, effN=1 after walk-forward training), so the
+ * sector forecast is MEDIAN-ONLY raw arithmetic until that gate is evaluable.
+ */
+const SECTOR_DISPLAY_HOURS = 8;
+const SECTOR_MIN_ETA_HOURS = 1 / 12; // 5 minutes
+
 /**
  * @param {object} model candidate attack model
  * @returns {boolean} true when it carries usable band and day-of-week tables
@@ -169,4 +179,84 @@ export function attackForecast(data, enemy, nowSeconds, model = defaultModel) {
         remaining,
         imminent: p50 < 4,
     };
+}
+
+/**
+ * Median ETA until the faction's NEXT SECTOR boundary (points_max/10 steps) —
+ * the sector-view counterpart of `attackForecast`. Same rate/dow/staleness
+ * core, but median-only (no p25/p75: unmeasured ranges are not shown). Own
+ * gates: hidden while ANY active event exists for the faction (defends freeze
+ * the campaign; during attacks the campaign is complete).
+ *
+ * @param {object} data the live campaign payload
+ * @param {number} enemy faction id
+ * @param {number} nowSeconds unix seconds
+ * @param {object} [model] used for its `dow` pace table only
+ * @returns {{mode:'median', p50:number, remaining:number, imminent:boolean}
+ *   | {mode:'hidden', reason:'no-data'|'event-active'|'complete'|'stalled'|'beyond-window'}}
+ */
+export function sectorForecast(data, enemy, nowSeconds, model = defaultModel) {
+    if (
+        !data ||
+        !Array.isArray(data.status) ||
+        !Array.isArray(data.snapshots) ||
+        !isValidModel(model)
+    ) {
+        return { mode: 'hidden', reason: 'no-data' };
+    }
+    const eventActive = (data.events ?? []).some(
+        (e) => e.status === EVENT_STATUS.ACTIVE && e.enemy === enemy,
+    );
+    if (eventActive) return { mode: 'hidden', reason: 'event-active' };
+
+    const row = data.status.find((r) => r.enemy === enemy);
+    if (!row || !(Number(row.points_max) > 0)) {
+        return { mode: 'hidden', reason: 'no-data' };
+    }
+    const pointsMax = Number(row.points_max);
+    const points = Number(row.points);
+    if (points >= pointsMax) return { mode: 'hidden', reason: 'complete' };
+
+    const pps = pointsMax / SECTOR_COUNT;
+    const boundary = (Math.trunc(points / pps) + 1) * pps;
+    const remaining = boundary - points;
+
+    const then = pointsAt(
+        data.snapshots,
+        enemy,
+        nowSeconds - model.meta.rateWindowHours * HOUR,
+    );
+    const now = pointsAt(data.snapshots, enemy, nowSeconds);
+    if (!then || !now || !(now.time > then.time)) {
+        return { mode: 'hidden', reason: 'no-data' };
+    }
+    const spanHours = (now.time - then.time) / HOUR;
+    const ratePerHour = (now.points - then.points) / spanHours;
+    if (!(ratePerHour > 0)) return { mode: 'hidden', reason: 'stalled' };
+
+    let etaHours = remaining / ratePerHour;
+    // Day-of-week correction — same one-step iteration as attackForecast; the
+    // attack model's dow table is the shared pace pattern.
+    const meanFactor = (from, to) => {
+        let sum = 0;
+        let n = 0;
+        for (let t = from; t < to; t += 6 * HOUR) {
+            sum += model.dow[new Date(t * 1000).getUTCDay()];
+            n++;
+        }
+        return n > 0 ? sum / n : 1;
+    };
+    const horizon = Math.min(Math.max(etaHours, 1), 48);
+    const adj =
+        meanFactor(then.time, now.time) /
+        meanFactor(nowSeconds, nowSeconds + horizon * HOUR);
+    if (adj > 0) etaHours *= adj;
+
+    etaHours -= (nowSeconds - now.time) / HOUR;
+    const p50 = Math.max(etaHours, SECTOR_MIN_ETA_HOURS);
+
+    if (!(p50 < SECTOR_DISPLAY_HOURS)) {
+        return { mode: 'hidden', reason: 'beyond-window' };
+    }
+    return { mode: 'median', p50, remaining, imminent: p50 < 1 };
 }

@@ -164,6 +164,18 @@
     font-weight: 600;
 }
 
+.sector-card-verdict {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--text-small);
+    white-space: nowrap;
+}
+.sector-card-verdict--ok {
+    color: var(--color-success);
+}
+.sector-card-verdict--bad {
+    color: var(--color-danger);
+}
+
 .sector-card-countdown {
     font-family: var(--font-mono, monospace);
     font-size: var(--text-small);

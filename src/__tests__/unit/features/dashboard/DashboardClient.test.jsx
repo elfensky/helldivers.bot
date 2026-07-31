@@ -8,6 +8,36 @@ vi.mock('@/features/notifications/NotificationToggle', () => ({
     default: () => null,
 }));
 
+// Sentinel forecasts distinguish which function DashboardClient called: real
+// attackForecast/sectorForecast both need `data.snapshots` + a calibrated
+// model, neither of which these fixtures carry, so without stubbing them out
+// every fixture would collapse to the same `{mode:'hidden', reason:'no-data'}`
+// regardless of which one ran.
+vi.mock('@/features/dashboard/attackForecast.mjs', () => ({
+    attackForecast: vi.fn(() => ({
+        mode: 'window',
+        p25: 1,
+        p50: 2,
+        p75: 3,
+        remaining: 100,
+        imminent: false,
+    })),
+    sectorForecast: vi.fn(() => ({
+        mode: 'median',
+        p50: 1,
+        remaining: 10,
+        imminent: false,
+    })),
+}));
+vi.mock('@/features/dashboard/eventForecast.mjs', () => ({
+    eventForecast: vi.fn(() => ({
+        mode: 'verdict',
+        etaHours: 2,
+        onTrack: true,
+        stalled: false,
+    })),
+}));
+
 // Capture-style mock: each EventCard render emits a <div> carrying the
 // props it received as JSON. Tests can then query and parse to inspect
 // exactly what the parent passed in (view, points, factionMap, barLabel…).
@@ -29,6 +59,8 @@ vi.mock('@/features/galaxy/EventCard', async () => {
                     points: props.points,
                     pointsMax: props.pointsMax,
                     hasFactionMap: props.factionMap != null,
+                    etaForecastMode: props.etaForecast?.mode ?? null,
+                    eventVerdictMode: props.eventVerdict?.mode ?? null,
                 })}
             />
         ),
@@ -422,6 +454,93 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
         // pointsPerSector = 500K; sectorsEarned = 6; pointsIntoFrontier = 200K
         expect(props.points).toBe(200_000);
         expect(props.pointsMax).toBe(500_000);
+    });
+});
+
+describe('DashboardClient — view-dependent ETA & event verdicts', () => {
+    beforeEach(() => {
+        localStorage.clear();
+        vi.mocked(useLiveDataContext).mockReturnValue({
+            data: {
+                status: [
+                    {
+                        enemy: 0,
+                        points: 1_000_000,
+                        points_max: 5_000_000,
+                        status: 'active',
+                    },
+                    { enemy: 1, points: 0, points_max: 5_000_000, status: 'active' },
+                    { enemy: 2, points: 0, points_max: 5_000_000, status: 'active' },
+                ],
+                events: [],
+                last_updated: '2025-01-01',
+                season: 42,
+            },
+            mapState: baseMapState,
+            status: 'live',
+            prevData: null,
+            isLeader: true,
+        });
+    });
+
+    afterEach(() => cleanup());
+
+    test('passes the sector forecast in sector view and the attack forecast in campaign view', () => {
+        // Sector view is the persisted default.
+        render(<DashboardClient />);
+        const sectorProps = getCardProps('event-card-0-SECTOR_PROGRESS');
+        expect(sectorProps.etaForecastMode).toBe('median');
+
+        cleanup();
+
+        render(<DashboardClient initialRegionsView="campaign" />);
+        const campaignProps = getCardProps('event-card-0-SECTOR_PROGRESS');
+        expect(campaignProps.etaForecastMode).toBe('window');
+    });
+
+    test('passes an event verdict for the active defend event', () => {
+        vi.mocked(useLiveDataContext).mockReturnValue({
+            data: {
+                status: [
+                    {
+                        enemy: 0,
+                        points: 200_000,
+                        points_max: 1_000_000,
+                        status: 'active',
+                    },
+                    { enemy: 1, points: 0, points_max: 5_000_000, status: 'active' },
+                    { enemy: 2, points: 0, points_max: 5_000_000, status: 'active' },
+                ],
+                events: [
+                    {
+                        type: 'defend',
+                        region: 3,
+                        enemy: 0,
+                        status: 'active',
+                        start_time: 100,
+                        end_time: Math.floor(Date.now() / 1000) + 3600,
+                        points: 100,
+                        points_max: 1000,
+                    },
+                ],
+                last_updated: '2025-01-01',
+                season: 42,
+            },
+            mapState: {
+                ...baseMapState,
+                0: makeDashboardMap({
+                    3: { event: 'active', status: 'active', percent: 10 },
+                }),
+            },
+            status: 'live',
+            prevData: null,
+            isLeader: true,
+        });
+
+        render(<DashboardClient />);
+        const props = getCardProps('event-card-0-CAPITAL_DEFENSE');
+        expect(props).not.toBeNull();
+        expect(props.eventVerdictMode).toBe('verdict');
     });
 });
 

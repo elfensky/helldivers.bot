@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.82.0
+
+### Added
+
+- **View-dependent frontier ETA** (#483): in sector view the card's ETA targets
+  the next sector boundary (`ETA ~40m`, median-only — the measured range
+  follows via #484 once enough high-res seasons exist for script 13's gate);
+  campaign view keeps the calibrated assault ETA (`ETA ~11h (9h-16h)`).
+- **Event pace verdicts**: active defend/attack/Super Earth cards replace the
+  points-delta pace arrow with a time verdict — `▲ on track · done ~3h` /
+  `▼ behind · done ~5h` / `▼ behind · stalled` — from `eventForecast`
+  (average pace since event start vs deadline, anti-flicker margin 0.2
+  measured by `scripts/analysis/14-event-verdict-margin.mjs` on 125 events).
+- **Analysis**: script 13 (sector-crossing backtest — gate honestly
+  unevaluable at 4 high-res seasons, committed as the future grading tool),
+  script 14 (verdict margin), `loadDataset({eventProgress})` option.
+
+### Changed
+
+- **ETA line formatting**: sub-hour values render as minutes (`~40m`,
+  fixing the `~0h` edge); range bounds carry their own unit (`(4h-16h)`).
+  `EventCard`'s `assaultForecast` prop renamed to `etaForecast`.
+
 ## 0.81.0
 
 ### Added
