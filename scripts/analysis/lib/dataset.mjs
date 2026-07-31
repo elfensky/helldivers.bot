@@ -56,9 +56,12 @@ function connectionString() {
  * Load every row this analysis needs, in three queries, and attach the derived
  * per-event fields the phases share.
  *
- * @param {{statistics?: boolean}} [options] when `statistics` is truthy, also
- *   load per-faction player telemetry from h1_statistic (S157+ only — a fourth
- *   query the pre-existing scripts never pay for)
+ * @param {{statistics?: boolean, eventProgress?: boolean}} [options] when
+ *   `statistics` is truthy, also load per-faction player telemetry from
+ *   h1_statistic (S157+ only — a fourth query the pre-existing scripts never
+ *   pay for); when `eventProgress` is truthy, also load per-event progression
+ *   from h1_event_progress (S157+ only — the #483 event-verdict-margin
+ *   measurement's fifth query)
  * @returns {Promise<object>} dataset
  */
 export async function loadDataset(options = {}) {
@@ -67,6 +70,7 @@ export async function loadDataset(options = {}) {
 
     let eventRows, statusRows, seasonRows;
     let statisticRows = [];
+    let eventProgressRows = [];
     try {
         ({ rows: eventRows } = await client.query(
             `SELECT season, type, event_id, start_time, end_time, region, enemy,
@@ -87,6 +91,13 @@ export async function loadDataset(options = {}) {
                 `SELECT season, enemy, bucket, time, players
                    FROM h1_statistic
                   ORDER BY season, enemy, bucket`,
+            ));
+        }
+        if (options.eventProgress) {
+            ({ rows: eventProgressRows } = await client.query(
+                `SELECT type, event_id, bucket, time, points
+                   FROM h1_event_progress
+                  ORDER BY type, event_id, bucket`,
             ));
         }
     } finally {
@@ -388,6 +399,28 @@ export async function loadDataset(options = {}) {
         return mine / m;
     }
 
+    // --- per-event progression lookup (eventProgress option) ---------------
+    const eventProgressIndex = new Map();
+    for (const row of eventProgressRows) {
+        const key = `${row.type}:${row.event_id}`;
+        if (!eventProgressIndex.has(key)) eventProgressIndex.set(key, []);
+        eventProgressIndex.get(key).push(row);
+    }
+
+    /**
+     * The full progression series for one (type, event_id), ascending by
+     * bucket — the h1_event_progress counterpart of `statisticSeries`. Empty
+     * unless the dataset was loaded with `{ eventProgress: true }` — and even
+     * then only S157+ has rows, mirroring `statisticSeries`/`statSeasons`.
+     *
+     * @param {string} type 'attack' | 'defend'
+     * @param {number} eventId
+     * @returns {object[]} the stored rows, or an empty array
+     */
+    function eventProgressSeries(type, eventId) {
+        return eventProgressIndex.get(`${type}:${eventId}`) ?? [];
+    }
+
     /**
      * The full status series for one (season, enemy), ascending by bucket.
      *
@@ -412,6 +445,7 @@ export async function loadDataset(options = {}) {
         playersAt,
         statisticSeries,
         statSeasons,
+        eventProgressSeries,
         liberationAt,
         playerPercentileAt,
         playersRelToSeasonMedianAt,
@@ -811,6 +845,39 @@ if (import.meta.filename === process.argv[1]) {
             const expected = someSeries.filter((r) => r.bucket <= t).at(-1);
             assert.equal(hit.bucket, expected.bucket, 'playersAt disagrees with scan');
         }
+    }
+
+    // --- eventProgress option -----------------------------------------------
+    // Same shape as the statistics-option block above: the default load must
+    // stay eventProgress-free (accessor present but empty), and the flagged
+    // load must produce well-ordered, non-negative per-event series.
+    {
+        assert.equal(
+            ds.eventProgressSeries('defend', -1).length,
+            0,
+            'default load must not carry event progress',
+        );
+
+        const dse = await loadDataset({ eventProgress: true });
+        let longestSeries = 0;
+        let seriesFound = 0;
+        for (const e of dse.events) {
+            const series = dse.eventProgressSeries(e.type, e.event_id);
+            if (series.length === 0) continue;
+            seriesFound++;
+            longestSeries = Math.max(longestSeries, series.length);
+            for (let i = 0; i < series.length; i++) {
+                assert(series[i].points >= 0, 'negative points in event progress');
+                if (i > 0) {
+                    assert(
+                        series[i - 1].bucket < series[i].bucket,
+                        `unsorted event-progress buckets for ${e.type}:${e.event_id}`,
+                    );
+                }
+            }
+        }
+        assert(seriesFound > 0, 'no event has an event-progress series');
+        assert(longestSeries > 3, 'no event-progress series has more than 3 rows');
     }
 
     console.log(
