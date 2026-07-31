@@ -148,12 +148,14 @@ function PaceIndicator({ pace }) {
 
 /**
  * @param {number} h hours
- * @returns {string} whole hours at >=1h, whole minutes below ("40m")
+ * @returns {string} whole days at >=48h ("5d"), whole hours at >=1h, whole
+ *   minutes below ("40m")
  */
 function formatEtaHours(h) {
     const clamped = Math.max(0, h);
     if (clamped < 1) return `${Math.round(clamped * 60)}m`;
-    return `${Math.round(clamped)}h`;
+    if (clamped < 48) return `${Math.round(clamped)}h`;
+    return `${Math.round(clamped / 24)}d`;
 }
 
 /**
@@ -191,10 +193,14 @@ function EtaLine({ forecast }) {
         forecast.mode === 'window' ?
             ` (${formatEtaRange(forecast.p25, forecast.p75)})`
         :   ''; // mode 'median' — no unmeasured parens (sector ETA, see spec ruling)
+    // Beyond the validated 48h window the figures are the same arithmetic and
+    // measured ratios, but were never separately validated out there — say so.
+    const rough = forecast.p50 >= 48 ? ' Rough at multi-day range.' : '';
     const title =
-        forecast.mode === 'window' ?
+        (forecast.mode === 'window' ?
             `Assault ETA — median ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`
-        :   `Median estimate ${forecast.p50.toFixed(1)}h. Range ships once calibrated (script 13).`;
+        :   `Median estimate ${forecast.p50.toFixed(1)}h. Range ships once calibrated (script 13).`) +
+        rough;
     return (
         <span
             className={

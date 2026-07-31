@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.83.0
+
+### Added
+
+- **Multi-day ETAs**: far-off fronts now show rough day figures instead of
+  nothing — `ETA ~5d (4-8d)` on the campaign line (the measured relative
+  ratios scale the range naturally), `ETA ~3d` median-only on the sector
+  line. The 48h display window is replaced by a 30-day sanity cap
+  (`FAR_CAP_HOURS`); the tooltip flags "Rough at multi-day range" beyond
+  the validated 48h. Stalled fronts (zero 24h pace) still show nothing.
+
 ## 0.82.3
 
 ### Fixed

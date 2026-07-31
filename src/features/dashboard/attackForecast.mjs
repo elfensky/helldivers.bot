@@ -19,13 +19,20 @@ const HOUR = 3600;
 
 const SECTOR_COUNT = 10;
 /**
- * Sector display gates. In code, not the model: no calibrated sector table
- * exists yet (scripts/analysis/13-sector-eta.mjs is the future grading tool —
- * only 4 high-res seasons exist, effN=1 after walk-forward training), so the
- * sector forecast is MEDIAN-ONLY raw arithmetic until that gate is evaluable.
+ * Sector gates. In code, not the model: no calibrated sector table exists yet
+ * (scripts/analysis/13-sector-eta.mjs is the future grading tool — only 4
+ * high-res seasons exist, effN=1 after walk-forward training), so the sector
+ * forecast is MEDIAN-ONLY raw arithmetic until that gate is evaluable.
  */
-const SECTOR_DISPLAY_HOURS = 8;
 const SECTOR_MIN_ETA_HOURS = 1 / 12; // 5 minutes
+
+/**
+ * Sanity cap on any displayed ETA. Multi-day estimates render (as rough
+ * day figures — the band ratios are relative, so their measured spread
+ * scales with the horizon), but past a month the pace is so low the number
+ * is astrology and the line hides instead.
+ */
+const FAR_CAP_HOURS = 720; // 30 days
 
 /**
  * @param {object} model candidate attack model
@@ -167,7 +174,7 @@ export function attackForecast(data, enemy, nowSeconds, model = defaultModel) {
 
     const r = model.ratios[bandOf(remaining / pointsMax, model.bands)];
     const p50 = etaHours * r.r50;
-    if (!(p50 < model.meta.displayHours)) {
+    if (!(p50 < FAR_CAP_HOURS)) {
         return { mode: 'hidden', reason: 'beyond-window' };
     }
 
@@ -264,7 +271,7 @@ export function sectorForecast(data, enemy, nowSeconds, model = defaultModel) {
     etaHours -= (nowSeconds - now.time) / HOUR;
     const p50 = Math.max(etaHours, SECTOR_MIN_ETA_HOURS);
 
-    if (!(p50 < SECTOR_DISPLAY_HOURS)) {
+    if (!(p50 < FAR_CAP_HOURS)) {
         return { mode: 'hidden', reason: 'beyond-window' };
     }
     return { mode: 'median', p50, remaining, imminent: p50 < 1 };

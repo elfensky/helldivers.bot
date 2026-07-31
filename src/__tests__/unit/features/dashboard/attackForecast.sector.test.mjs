@@ -47,9 +47,30 @@ describe('sectorForecast', () => {
         expect(f).toEqual({ mode: 'hidden', reason: 'event-active' });
     });
 
-    it('hides beyond the sector display window', () => {
-        // 401k → 99k remaining at 10k/h ≈ 9.9h > 8h window
+    it('shows multi-hour medians (the old 8h window is gone)', () => {
+        // 401k → 99k remaining at 10k/h ≈ 9.9h — now shown
         const f = sectorForecast(makeData({ points: 401_000 }), 0, NOW, model);
+        expect(f.mode).toBe('median');
+        expect(f.p50).toBeCloseTo(9.9, 0);
+    });
+
+    it('hides beyond the 30-day sanity cap', () => {
+        // 100 pts/h pace: 99k to the boundary ≈ 990h > 720h cap
+        const snapshots = [];
+        for (let i = 30; i >= 0; i--) {
+            snapshots.push({
+                time: NOW - i * HOUR,
+                data: [{ points: 401_000 - i * 100, points_taken: 0, status: 'active' }],
+            });
+        }
+        const slow = {
+            status: [
+                { enemy: 0, points: 401_000, points_max: 1_000_000, status: 'active' },
+            ],
+            snapshots,
+            events: [],
+        };
+        const f = sectorForecast(slow, 0, NOW, model);
         expect(f).toEqual({ mode: 'hidden', reason: 'beyond-window' });
     });
 

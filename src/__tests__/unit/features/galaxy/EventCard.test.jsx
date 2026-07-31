@@ -488,6 +488,24 @@ describe('EventCard — assault ETA line', () => {
         expect(screen.getByText(/ETA ~/).textContent).toMatch(/~40m \(30-54m\)/);
     });
 
+    it('renders multi-day forecasts in days with a rough-range title', () => {
+        render(
+            <EventCard
+                {...base}
+                etaForecast={{
+                    mode: 'window',
+                    p25: 96,
+                    p50: 120,
+                    p75: 192,
+                    imminent: false,
+                }}
+            />,
+        );
+        const el = screen.getByText(/ETA ~/);
+        expect(el.textContent).toMatch(/~5d \(4-8d\)/);
+        expect(el.getAttribute('title')).toMatch(/Rough at multi-day range/);
+    });
+
     it('renders a median-only forecast without a range', () => {
         render(
             <EventCard
