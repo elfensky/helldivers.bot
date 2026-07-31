@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.83.4
+
+### Changed
+
+- **Event countdown right-aligned**: the "time left" readout on event cards
+  sits at the meta row's right edge, mirroring the pace indicator above it.
+
 ## 0.83.3
 
 ### Fixed

@@ -378,12 +378,7 @@ export default function EventCard({
                     <span className="sector-card-points">
                         <AnimatedStat value={points} /> / {formatNumber(pointsMax)}
                     </span>
-                    {endTime && (
-                        <>
-                            <span className="sector-card-sep">&middot;</span>
-                            <EventCountdown endTime={endTime} />
-                        </>
-                    )}
+                    {endTime && <EventCountdown endTime={endTime} />}
                     {!barLabel && pace && (
                         <>
                             <span className="sector-card-sep">&middot;</span>
