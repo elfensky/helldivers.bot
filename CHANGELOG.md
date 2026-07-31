@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.80.0
+
+### Added
+
+- **"Why the window is lopsided" on `/docs/predict/attack`**: explains the
+  `arrival = work ÷ pace` skew (division table + surge-capped/stall-unbounded
+  supply argument) and why the dashboard shows `~median (range)` rather than a
+  symmetric `±`. Includes `EtaSkewExplainer` — an interactive Recharts
+  hyperbola with a draggable pace multiplier and half/double presets
+  (lazy-loaded, `docs-eta-skew-explore` umami event).
+
+### Changed
+
+- **`/docs/predict/attack` reworded to facts-and-doubt voice**: findings and
+  their uncertainty stated directly (trigger-is-a-point sensor evidence,
+  staleness anchoring, adjustments that carry no signal, per-faction player
+  telemetry as promising-but-unproven), dropping the past-correction
+  narrative framing.
+
 ## 0.79.0
 
 ### Added
