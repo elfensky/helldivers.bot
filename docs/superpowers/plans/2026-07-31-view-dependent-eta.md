@@ -225,7 +225,17 @@ Ref #<issue>"
 
 ---
 
-### Task 3: Emit the `sector` section into `attackModel.mjs`
+### Task 3: Emit the `sector` section into `attackModel.mjs` — **SKIPPED (ruling 2026-07-31)**
+
+> Only 4 high-resolution seasons exist; script 13's walk-forward gate is
+> unevaluable (effN=1). Andrei ruled: sector ETA ships MEDIAN-ONLY with no
+> `sector` model section; the range follows when the gate becomes evaluable
+> (follow-up issue in Task 9). Everything below in this task is retained for
+> that future work but MUST NOT be executed now.
+
+<details><summary>Original task (deferred)</summary>
+
+### Task 3 (original): Emit the `sector` section into `attackModel.mjs`
 
 **Files:**
 - Modify: `scripts/analysis/11-emit-attack-model.mjs` (add sector fit + guards; keep existing attack fit untouched)
@@ -269,6 +279,8 @@ git commit -m "feat(analysis): emit calibrated sector section into attackModel
 
 Ref #<issue>"
 ```
+
+</details>
 
 ---
 
@@ -331,13 +343,15 @@ Ref #<issue>"
 - Modify: `src/features/dashboard/attackForecast.mjs`
 - Test: `src/__tests__/unit/features/dashboard/attackForecast.sector.test.mjs` (new qualifier file; existing `attackForecast.test.mjs` MUST pass unmodified)
 
-**Interfaces:**
-- Consumes: `attackModel.mjs` `sector` section (Task 3 shape).
+**Interfaces (amended 2026-07-31 — median-only ruling):**
+- Consumes: `attackModel.mjs` top-level `dow` table only (no `sector` section exists).
 - Produces:
   `sectorForecast(data, enemy, nowSeconds, model = defaultModel)` →
-  `{mode:'window', p25:number, p50:number, p75:number, remaining:number, imminent:boolean}`
-  `| {mode:'hidden', reason:'no-data'|'no-model'|'event-active'|'complete'|'stalled'|'beyond-window'}`.
-  (Same window shape as `attackForecast` so `EventCard`'s `EtaLine` renders either without caring.) `imminent: p50 < 1`.
+  `{mode:'median', p50:number, remaining:number, imminent:boolean}`
+  `| {mode:'hidden', reason:'no-data'|'event-active'|'complete'|'stalled'|'beyond-window'}`.
+  `imminent: p50 < 1`. Task 7's `EtaLine` renders `mode:'median'` without parens.
+  Constants live in `attackForecast.mjs`: `SECTOR_DISPLAY_HOURS = 8`,
+  `SECTOR_MIN_ETA_HOURS = 1 / 12`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -367,29 +381,24 @@ function makeData({ points = 430_000, events = [] } = {}) {
 }
 
 const model = {
-    // minimal valid attack part (isValidModel requires it)
+    // minimal valid attack model (isValidModel requires it); flat dow so the
+    // day-of-week correction is a no-op in these fixtures
     bands: [0.02, 0.05, 0.1, 0.2, 0.4, 1.01],
     dow: [1, 1, 1, 1, 1, 1, 1],
     ratios: Object.fromEntries(
         [0, 1, 2, 3, 4, 5].map((b) => [b, { r25: 1, r50: 1, r75: 1 }]),
     ),
     meta: { rateWindowHours: 24, displayHours: 48, minEtaHours: 0.25 },
-    sector: {
-        bands: [0.1, 0.25, 0.5, 0.75, 1.01],
-        ratios: Object.fromEntries(
-            [0, 1, 2, 3, 4].map((b) => [b, { r25: 0.8, r50: 1, r75: 1.5 }]),
-        ),
-        meta: { rateWindowHours: 24, displayHours: 8, minEtaHours: 1 / 12 },
-    },
 };
 
 describe('sectorForecast', () => {
     it('targets the next sector boundary, not the campaign end', () => {
         // 430k of 1.0M → next boundary 500k → 70k remaining at 10k/h = 7h
         const f = sectorForecast(makeData(), 0, NOW, model);
-        expect(f.mode).toBe('window');
+        expect(f.mode).toBe('median');
         expect(f.p50).toBeCloseTo(7, 0);
         expect(f.remaining).toBe(70_000);
+        expect(f.imminent).toBe(false);
     });
 
     it('hides while any event is active for the faction', () => {
@@ -398,12 +407,6 @@ describe('sectorForecast', () => {
         ];
         const f = sectorForecast(makeData({ events }), 0, NOW, model);
         expect(f).toEqual({ mode: 'hidden', reason: 'event-active' });
-    });
-
-    it('hides without a sector section in the model', () => {
-        const { sector: _sector, ...attackOnly } = model;
-        const f = sectorForecast(makeData(), 0, NOW, attackOnly);
-        expect(f).toEqual({ mode: 'hidden', reason: 'no-model' });
     });
 
     it('hides beyond the sector display window', () => {
@@ -417,10 +420,11 @@ describe('sectorForecast', () => {
         expect(f).toEqual({ mode: 'hidden', reason: 'complete' });
     });
 
-    it('applies the sector band ratios to the window', () => {
-        const f = sectorForecast(makeData(), 0, NOW, model);
-        expect(f.p25).toBeCloseTo(f.p50 * 0.8, 5);
-        expect(f.p75).toBeCloseTo(f.p50 * 1.5, 5);
+    it('marks a sub-hour estimate imminent', () => {
+        // 495k → 5k remaining at 10k/h = 0.5h
+        const f = sectorForecast(makeData({ points: 495_000 }), 0, NOW, model);
+        expect(f.mode).toBe('median');
+        expect(f.imminent).toBe(true);
     });
 });
 ```
@@ -436,47 +440,37 @@ In `attackForecast.mjs` (keep `attackForecast`, `isValidModel`, `bandOf`, `point
 
 ```js
 const SECTOR_COUNT = 10;
-
 /**
- * @param {object} sector candidate sector section of the model
- * @returns {boolean} true when it carries a usable band table
+ * Sector display gates. In code, not the model: no calibrated sector table
+ * exists yet (scripts/analysis/13-sector-eta.mjs is the future grading tool —
+ * only 4 high-res seasons exist, effN=1 after walk-forward training), so the
+ * sector forecast is MEDIAN-ONLY raw arithmetic until that gate is evaluable.
  */
-export function isValidSectorModel(sector) {
-    if (!sector || !Array.isArray(sector.bands) || !sector.ratios || !sector.meta) {
-        return false;
-    }
-    for (let b = 0; b < sector.bands.length; b++) {
-        const r = sector.ratios[b];
-        if (!r) return false;
-        if (![r.r25, r.r50, r.r75].every((x) => Number.isFinite(x) && x > 0))
-            return false;
-        if (!(r.r25 <= r.r50 && r.r50 <= r.r75)) return false;
-    }
-    return [sector.meta.rateWindowHours, sector.meta.displayHours, sector.meta.minEtaHours]
-        .every((x) => Number.isFinite(x) && x > 0);
-}
+const SECTOR_DISPLAY_HOURS = 8;
+const SECTOR_MIN_ETA_HOURS = 1 / 12; // 5 minutes
 
 /**
- * ETA until the faction's NEXT SECTOR boundary (points_max/10 steps) — the
- * sector-view counterpart of `attackForecast`. Same rate/dow/staleness core,
- * own calibration table (`model.sector`, fitted on sector crossings by
- * scripts/analysis/11-emit-attack-model.mjs), own gates: hidden while ANY
- * active event exists for the faction (defends freeze the campaign; during
- * attacks the campaign is complete).
+ * Median ETA until the faction's NEXT SECTOR boundary (points_max/10 steps) —
+ * the sector-view counterpart of `attackForecast`. Same rate/dow/staleness
+ * core, but median-only (no p25/p75: unmeasured ranges are not shown). Own
+ * gates: hidden while ANY active event exists for the faction (defends freeze
+ * the campaign; during attacks the campaign is complete).
  *
  * @param {object} data the live campaign payload
  * @param {number} enemy faction id
  * @param {number} nowSeconds unix seconds
- * @param {object} [model]
- * @returns {{mode:'window', p25:number, p50:number, p75:number, remaining:number,
- *   imminent:boolean} | {mode:'hidden', reason:string}}
+ * @param {object} [model] used for its `dow` pace table only
+ * @returns {{mode:'median', p50:number, remaining:number, imminent:boolean}
+ *   | {mode:'hidden', reason:'no-data'|'event-active'|'complete'|'stalled'|'beyond-window'}}
  */
 export function sectorForecast(data, enemy, nowSeconds, model = defaultModel) {
-    if (!data || !Array.isArray(data.status) || !Array.isArray(data.snapshots)) {
+    if (
+        !data ||
+        !Array.isArray(data.status) ||
+        !Array.isArray(data.snapshots) ||
+        !isValidModel(model)
+    ) {
         return { mode: 'hidden', reason: 'no-data' };
-    }
-    if (!isValidSectorModel(model?.sector)) {
-        return { mode: 'hidden', reason: 'no-model' };
     }
     const eventActive = (data.events ?? []).some(
         (e) => e.status === EVENT_STATUS.ACTIVE && e.enemy === enemy,
@@ -495,9 +489,8 @@ export function sectorForecast(data, enemy, nowSeconds, model = defaultModel) {
     const boundary = (Math.trunc(points / pps) + 1) * pps;
     const remaining = boundary - points;
 
-    const sector = model.sector;
     const then = pointsAt(
-        data.snapshots, enemy, nowSeconds - sector.meta.rateWindowHours * HOUR,
+        data.snapshots, enemy, nowSeconds - model.meta.rateWindowHours * HOUR,
     );
     const now = pointsAt(data.snapshots, enemy, nowSeconds);
     if (!then || !now || !(now.time > then.time)) {
@@ -526,25 +519,16 @@ export function sectorForecast(data, enemy, nowSeconds, model = defaultModel) {
     if (adj > 0) etaHours *= adj;
 
     etaHours -= (nowSeconds - now.time) / HOUR;
-    etaHours = Math.max(etaHours, sector.meta.minEtaHours);
+    const p50 = Math.max(etaHours, SECTOR_MIN_ETA_HOURS);
 
-    const r = sector.ratios[bandOf(remaining / pps, sector.bands)];
-    const p50 = etaHours * r.r50;
-    if (!(p50 < sector.meta.displayHours)) {
+    if (!(p50 < SECTOR_DISPLAY_HOURS)) {
         return { mode: 'hidden', reason: 'beyond-window' };
     }
-    return {
-        mode: 'window',
-        p25: etaHours * r.r25,
-        p50,
-        p75: etaHours * r.r75,
-        remaining,
-        imminent: p50 < 1,
-    };
+    return { mode: 'median', p50, remaining, imminent: p50 < 1 };
 }
 ```
 
-Note: `bandOf(frac, bands)` is the existing exported helper — it takes edges as its second argument, so it serves both tables. The `meanFactor` duplication with `attackForecast` is acceptable (12 lines); if extracting, name it `dowAdjust(model, thenTime, nowTime, nowSeconds, etaHours)` and use it from both — implementer's judgment, both fine.
+Note: the `meanFactor` duplication with `attackForecast` is acceptable (12 lines); if extracting, name it `dowAdjust(model, thenTime, nowTime, nowSeconds, etaHours)` and use it from both — implementer's judgment, both fine.
 
 - [ ] **Step 4: Run new + existing tests**
 
@@ -747,6 +731,18 @@ it('renders minutes below one hour', () => {
     expect(screen.getByText(/ETA ~/).textContent).toMatch(/~40m \(30m-54m\)/);
 });
 
+it('renders a median-only forecast without a range', () => {
+    render(
+        <EventCard
+            {...base}
+            etaForecast={{ mode: 'median', p50: 0.66, remaining: 5000, imminent: true }}
+        />,
+    );
+    const el = screen.getByText(/ETA ~/);
+    expect(el.textContent).toMatch(/ETA ~40m/);
+    expect(el.textContent).not.toMatch(/\(/); // no unmeasured parens
+});
+
 it('renders the event verdict instead of the pace indicator', () => {
     render(
         <EventCard
@@ -808,16 +804,18 @@ function formatEtaHours(h) {
 }
 ```
 
-`AssaultEta` → `EtaLine` (same JSX, formatted values):
+`AssaultEta` → `EtaLine` (same JSX shell, formatted values, two modes):
 
 ```jsx
-const lo = formatEtaHours(forecast.p25);
-const hi = formatEtaHours(forecast.p75);
 const med = formatEtaHours(forecast.p50);
-// … ETA ~{med} ({lo}-{hi})
+const range =
+    forecast.mode === 'window' ?
+        ` (${formatEtaHours(forecast.p25)}-${formatEtaHours(forecast.p75)})`
+    :   ''; // mode 'median' — no unmeasured parens (sector ETA, see spec ruling)
+// … ETA ~{med}{range}
 ```
 
-(the `h`/`m` suffix is now inside each formatted value, so the literal `h` after `{med}` and `{hi}` is removed; title attribute unchanged).
+(the `h`/`m` suffix is now inside each formatted value, so the literal `h` after `{med}` and `{hi}` is removed; title attribute unchanged for 'window', and for 'median' it reads `Median estimate ${forecast.p50.toFixed(1)}h. Range ships once calibrated (script 13).`). Every render gate that checks `etaForecast?.mode === 'window'` (bar-label row condition and the `(barLabel || …)` wrapper) must accept `'median'` too — grep the file for `mode === 'window'`.
 
 New verdict element, rendered in the bar-label row in PaceIndicator's slot:
 
@@ -1032,6 +1030,14 @@ git commit -m "Merge feature/view-dependent-eta into develop (vX.Y.0)"
 git push origin develop
 git worktree remove .worktrees/feature-view-dependent-eta
 git branch -d feature/view-dependent-eta
+```
+
+- [ ] **Step 3b: File the follow-up issue for the sector range**
+
+```bash
+gh issue create --title "Sector ETA: add measured range when script 13's gate becomes evaluable" \
+  --label enhancement --milestone "Engineering Health" \
+  --body "Sector-view ETA shipped median-only (#483): only 4 high-res seasons exist, walk-forward training leaves effN=1 — the range gate (recall ≥0.70 / precision ≥0.80) is unevaluable. Re-run \`node --env-file=.env.development scripts/analysis/13-sector-eta.mjs\` around S165+; when the gate passes, execute the deferred Task 3 of docs/superpowers/plans/2026-07-31-view-dependent-eta.md (emit sector section) and restore range display in EtaLine (mode 'window' path already exists)."
 ```
 
 - [ ] **Step 4: Close the issue**
