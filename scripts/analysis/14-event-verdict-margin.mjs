@@ -1,0 +1,330 @@
+/**
+ * 14-event-verdict-margin.mjs — how much anti-flicker slack does the Task 7
+ * event-verdict rule need before it stops oscillating without losing
+ * accuracy?
+ *
+ * The dashboard's event cards fold the pace indicator into a completion
+ * verdict (`▲ on track` / `▼ behind`, see
+ * docs/superpowers/specs/2026-07-31-view-dependent-eta-design.md). The rule
+ * compares a rate-based completion ETA against the time actually remaining;
+ * evaluated bucket-to-bucket with no slack it can flip on noise alone. This
+ * script replays the EXACT Task 7 rule against every completed defend/attack
+ * event with enough `h1_event_progress` history (S157+ only) to measure both
+ * halves of that trade-off — accuracy against the real outcome, and how often
+ * the verdict flips within a single event — across a small margin grid, and
+ * recommends the smallest margin that stops the flickering without giving up
+ * accuracy.
+ *
+ * Rule under test (must match Task 7's implementation verbatim):
+ *
+ *     etaHours   = (points_max - points) / (points / (t - start_time)) / 3600
+ *     onTrack    = etaHours <= remainingHours * (1 + margin)
+ *     remainingHours = (end_time - t) / 3600
+ *
+ * i.e. the average rate is measured since the event's own start (not a
+ * rolling window — no new data beyond the event row itself, matching the
+ * spec's "computable from the event row alone" constraint for Task 7).
+ *
+ * Design choices:
+ *
+ *  - **Qualifying events**: status `success` or `fail` (the only two outcomes
+ *    a verdict can be scored against — an event still in progress has no
+ *    ground truth), type `defend` or `attack`, with >= 3 progress buckets
+ *    strictly between start and end (the brief's floor for a event to have
+ *    any temporal shape to replay).
+ *  - **Skip the first 10% of the event.** The rate `points / (t - start)`
+ *    is dominated by whatever happened in the first few minutes when `t` is
+ *    close to `start_time` — a single early bucket can imply a wildly wrong
+ *    rate. This is the same class of problem `10-attack-eta.mjs` solves with
+ *    a rolling rate window; here there is no window (event row only), so the
+ *    fix is to not evaluate too close to the start.
+ *  - **Flip rate is per-event, not per-moment.** A margin that flips 0-1
+ *    times per event is "stable"; the accuracy number alone can't see this —
+ *    an event that flips back and forth around the true outcome can still
+ *    score high average accuracy while being unusable as a live indicator.
+ *
+ * Ref #483
+ *
+ * Run: node --env-file=.env.development scripts/analysis/14-event-verdict-margin.mjs
+ */
+
+import assert from 'node:assert/strict';
+import { loadDataset, HOUR } from './lib/dataset.mjs';
+import { quantileOf } from './lib/backtest.mjs';
+
+const MARGINS = [0, 0.05, 0.1, 0.15, 0.2, 0.3];
+const SKIP_FRACTION = 0.1; // skip the first 10% of the event's duration
+const MIN_PROGRESS_BUCKETS = 3;
+const MIN_QUALIFYING_EVENTS = 10;
+const ACCURACY_TOLERANCE = 0.02; // 2 percentage points
+const DEFAULT_MARGIN = 0.1;
+
+/**
+ * The Task 7 verdict rule, verbatim. `t` must be strictly after `start_time`
+ * (callers are expected to have already skipped the warm-up window).
+ *
+ * @param {number} points current event points
+ * @param {number} pointsMax the event's points_max
+ * @param {number} startTime event start_time (unix seconds)
+ * @param {number} endTime event end_time (unix seconds) — the deadline
+ * @param {number} t the replay instant (unix seconds), start_time < t < end_time
+ * @param {number} margin slack fraction added to the remaining-time budget
+ * @returns {boolean} true when the completion ETA is within budget
+ */
+function verdictAt(points, pointsMax, startTime, endTime, t, margin) {
+    const elapsed = t - startTime;
+    assert(elapsed > 0, 'verdictAt requires t strictly after start_time');
+    const rate = points / elapsed;
+    const remaining = pointsMax - points;
+    const etaHours = rate > 0 ? remaining / rate / HOUR : Infinity;
+    const remainingHours = (endTime - t) / HOUR;
+    return etaHours <= remainingHours * (1 + margin);
+}
+
+/**
+ * The progress-series moments this script replays for one event: strictly
+ * between start and end, and past the first `SKIP_FRACTION` of its duration.
+ *
+ * @param {{start_time: number, end_time: number}} event
+ * @param {{bucket: number, points: number}[]} series ascending by bucket
+ * @returns {{bucket: number, points: number}[]}
+ */
+function eventMoments(event, series) {
+    const duration = event.end_time - event.start_time;
+    const skipBefore = event.start_time + SKIP_FRACTION * duration;
+    return series.filter(
+        (r) =>
+            r.bucket > event.start_time &&
+            r.bucket < event.end_time &&
+            r.bucket > skipBefore,
+    );
+}
+
+/**
+ * Number of verdict changes between consecutive moments (bucket-ascending).
+ *
+ * @param {boolean[]} verdicts
+ * @returns {number}
+ */
+function countFlips(verdicts) {
+    let flips = 0;
+    for (let i = 1; i < verdicts.length; i++) {
+        if (verdicts[i] !== verdicts[i - 1]) flips++;
+    }
+    return flips;
+}
+
+/**
+ * Events eligible for the margin sweep: completed defend/attack events with
+ * >= MIN_PROGRESS_BUCKETS progress rows strictly between start and end.
+ *
+ * @param {object} ds dataset loaded with `{ eventProgress: true }`
+ * @returns {{event: object, series: object[]}[]}
+ */
+function qualifyingEvents(ds) {
+    const out = [];
+    for (const e of ds.events) {
+        if (e.type !== 'defend' && e.type !== 'attack') continue;
+        if (e.status !== 'success' && e.status !== 'fail') continue;
+        const series = ds
+            .eventProgressSeries(e.type, e.event_id)
+            .filter((r) => r.bucket > e.start_time && r.bucket < e.end_time);
+        if (series.length >= MIN_PROGRESS_BUCKETS) out.push({ event: e, series });
+    }
+    return out;
+}
+
+/**
+ * Sweep every margin over the pre-selected (event, moments) pairs and return
+ * one summary row per margin.
+ *
+ * @param {{event: object, moments: object[]}[]} replayed events with their
+ *   post-skip moments already resolved (so every margin sees the identical
+ *   moment set — only the verdict threshold changes)
+ * @returns {{margin: number, accuracy: number, flipMedian: number, nEvents: number, nMoments: number}[]}
+ */
+function sweepMargins(replayed) {
+    return MARGINS.map((margin) => {
+        let correct = 0;
+        let moments = 0;
+        const flipsPerEvent = [];
+        for (const { event, moments: series } of replayed) {
+            const outcomeOnTrack = event.status === 'success';
+            const verdicts = series.map((r) =>
+                verdictAt(
+                    r.points,
+                    event.points_max,
+                    event.start_time,
+                    event.end_time,
+                    r.bucket,
+                    margin,
+                ),
+            );
+            for (const v of verdicts) {
+                moments++;
+                if (v === outcomeOnTrack) correct++;
+            }
+            flipsPerEvent.push(countFlips(verdicts));
+        }
+        return {
+            margin,
+            accuracy: moments > 0 ? correct / moments : 0,
+            flipMedian: quantileOf(flipsPerEvent, 0.5) ?? 0,
+            nEvents: replayed.length,
+            nMoments: moments,
+        };
+    });
+}
+
+/**
+ * Smallest margin whose flip median is <= 1 and whose accuracy is within
+ * `ACCURACY_TOLERANCE` of the best accuracy across the grid.
+ *
+ * @param {{margin: number, accuracy: number, flipMedian: number}[]} rows
+ * @returns {number|null} null when no margin qualifies
+ */
+function recommendMargin(rows) {
+    const bestAccuracy = Math.max(...rows.map((r) => r.accuracy));
+    const qualifying = rows.filter(
+        (r) => r.flipMedian <= 1 && bestAccuracy - r.accuracy <= ACCURACY_TOLERANCE,
+    );
+    if (qualifying.length === 0) return null;
+    return Math.min(...qualifying.map((r) => r.margin));
+}
+
+// --- self-checks on the pure functions (no DB) ----------------------------
+{
+    const T = 100 * HOUR; // 100h event
+    const pointsMax = 1000;
+
+    // A perfectly linear event that reaches pointsMax exactly at end_time:
+    // average rate since start is CONSTANT and exactly matches what's
+    // needed, so etaHours == remainingHours at every instant. Every margin
+    // >= 0 calls this onTrack, at every bucket — zero flips.
+    const exactSeries = Array.from({ length: 20 }, (_, i) => {
+        const t = ((i + 1) / 21) * T; // strictly inside (0, T)
+        return { bucket: t, points: pointsMax * (t / T) };
+    });
+    const exactEvent = { start_time: 0, end_time: T, points_max: pointsMax };
+    const exactMoments = eventMoments(exactEvent, exactSeries);
+    assert(exactMoments.length > 3, 'exact-rate synthetic should have several moments');
+    const exactVerdicts01 = exactMoments.map((r) =>
+        verdictAt(r.points, pointsMax, 0, T, r.bucket, 0.1),
+    );
+    assert(
+        exactVerdicts01.every((v) => v === true),
+        'a perfectly on-schedule event must be onTrack at margin 0.1',
+    );
+    assert.equal(countFlips(exactVerdicts01), 0, 'on-schedule event must not flip');
+
+    // An event accumulating at exactly HALF the required rate: it can never
+    // catch up, so it must read as behind at every margin in the grid.
+    const halfSeries = Array.from({ length: 20 }, (_, i) => {
+        const t = ((i + 1) / 21) * T;
+        return { bucket: t, points: 0.5 * pointsMax * (t / T) };
+    });
+    const halfMoments = eventMoments(exactEvent, halfSeries);
+    assert(halfMoments.length > 3, 'half-rate synthetic should have several moments');
+    for (const margin of MARGINS) {
+        const verdicts = halfMoments.map((r) =>
+            verdictAt(r.points, pointsMax, 0, T, r.bucket, margin),
+        );
+        assert(
+            verdicts.every((v) => v === false),
+            `half-rate event must read behind at margin ${margin}`,
+        );
+    }
+
+    // eventMoments respects the 10% skip and the strict start/end bounds.
+    const boundarySeries = [
+        { bucket: 0, points: 0 }, // at start_time — excluded
+        { bucket: 0.05 * T, points: 5 }, // inside the skip window — excluded
+        { bucket: 0.5 * T, points: 500 }, // included
+        { bucket: T, points: 1000 }, // at end_time — excluded
+    ];
+    const boundaryMoments = eventMoments(exactEvent, boundarySeries);
+    assert.equal(
+        boundaryMoments.length,
+        1,
+        'eventMoments must apply skip + strict bounds',
+    );
+    assert.equal(boundaryMoments[0].bucket, 0.5 * T);
+
+    // countFlips counts transitions, not raw verdict count.
+    assert.equal(countFlips([true, true, true]), 0);
+    assert.equal(countFlips([true, false, true]), 2);
+    assert.equal(countFlips([]), 0);
+    assert.equal(countFlips([true]), 0);
+
+    // recommendMargin: the smallest margin meeting both bars.
+    assert.equal(
+        recommendMargin([
+            { margin: 0, accuracy: 0.9, flipMedian: 3 },
+            { margin: 0.05, accuracy: 0.9, flipMedian: 2 },
+            { margin: 0.1, accuracy: 0.89, flipMedian: 1 },
+            { margin: 0.2, accuracy: 0.7, flipMedian: 0 },
+        ]),
+        0.1,
+    );
+    assert.equal(
+        recommendMargin([
+            { margin: 0, accuracy: 0.5, flipMedian: 5 },
+            { margin: 0.05, accuracy: 0.5, flipMedian: 4 },
+        ]),
+        null,
+        'no margin under the flip bar must return null',
+    );
+}
+
+// --- data --------------------------------------------------------------
+
+const ds = await loadDataset({ eventProgress: true });
+const qualifying = qualifyingEvents(ds);
+
+const replayed = qualifying
+    .map(({ event, series }) => ({ event, moments: eventMoments(event, series) }))
+    .filter((r) => r.moments.length > 0);
+
+console.log('\n=== Script 14: event-verdict margin measurement ===\n');
+console.log('  Rule (Task 7): onTrack = etaHours <= remainingHours * (1 + margin)');
+console.log(
+    '    etaHours = (points_max - points) / (points / (t - start_time)) / 3600\n',
+);
+console.log(
+    `  Qualifying events: defend/attack, status success|fail, >= ${MIN_PROGRESS_BUCKETS} progress`,
+);
+console.log(
+    `  buckets strictly between start/end. Replay skips the first ${SKIP_FRACTION * 100}% of`,
+);
+console.log('  each event (rate is meaningless immediately after start).\n');
+
+console.log(`  qualifying events (progress-bucket floor):        ${qualifying.length}`);
+console.log(`  events with >= 1 usable moment after the skip:    ${replayed.length}\n`);
+
+if (replayed.length < MIN_QUALIFYING_EVENTS) {
+    console.log(
+        `  INSUFFICIENT DATA — only ${replayed.length} qualifying events (need >= ${MIN_QUALIFYING_EVENTS}).\n`,
+    );
+    console.log(`INSUFFICIENT DATA — use default ${DEFAULT_MARGIN}\n`);
+    process.exit(0);
+}
+
+const rows = sweepMargins(replayed);
+
+console.log('  margin   accuracy   flip median   n events   n moments');
+for (const r of rows) {
+    console.log(
+        `  ${r.margin.toFixed(2).padStart(5)}    ${(r.accuracy * 100).toFixed(1).padStart(5)}%     ` +
+            `${r.flipMedian.toFixed(1).padStart(9)}     ${String(r.nEvents).padStart(7)}    ${String(r.nMoments).padStart(8)}`,
+    );
+}
+
+const recommended = recommendMargin(rows);
+
+console.log('');
+if (recommended === null) {
+    console.log(`  No margin in the grid clears the flip-median <= 1 bar.`);
+    console.log(`INSUFFICIENT DATA — use default ${DEFAULT_MARGIN}\n`);
+} else {
+    console.log(`RECOMMENDED VERDICT_MARGIN = ${recommended}\n`);
+}
