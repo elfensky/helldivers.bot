@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.83.5
+
+### Changed
+
+- **Faction cards always stack** — the cramped 3-across layout between
+  480-1024px is gone; single column at every width below the desktop
+  sidebar.
+- **Calm accent rails** — card and toast accent bars stay solid faction
+  color; the flashing state signal lives only in the title's action word.
+- **Toast wording matches the cards** — `Capturing {region}` (toasts and
+  push notifications, was "Attacking"), with the action word pulsing like
+  the card titles.
+
 ## 0.83.4
 
 ### Changed

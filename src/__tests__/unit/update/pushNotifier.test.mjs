@@ -32,7 +32,7 @@ describe('buildPayload', () => {
 
     test('uses region-centric title for attack started', () => {
         const payload = JSON.parse(buildPayload(bugAttackStarted));
-        expect(payload.title).toBe('Attacking Wise Region');
+        expect(payload.title).toBe('Capturing Wise Region');
     });
 
     test('uses region-centric title for defend won', () => {

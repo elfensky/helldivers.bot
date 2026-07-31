@@ -9,17 +9,6 @@
         opacity 0.2s ease;
 }
 
-.sector-card-accent-flash {
-    position: relative;
-}
-.sector-card-accent-flash::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--color-danger);
-    animation: action-flash var(--duration-pulse-fast) ease-in-out infinite;
-    animation-delay: var(--pulse-delay, 0s);
-}
 
 .sector-card-content {
     padding: 0.5rem 0.75rem;

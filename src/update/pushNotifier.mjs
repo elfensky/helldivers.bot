@@ -28,7 +28,7 @@ export function buildPayload(change) {
     const isDefend = change.event.type === EVENT_TYPE.DEFEND;
 
     const titles = {
-        event_started: isDefend ? `${region} under attack` : `Attacking ${region}`,
+        event_started: isDefend ? `${region} under attack` : `Capturing ${region}`,
         event_won: isDefend ? `${region} defended` : `${region} captured`,
         event_lost: isDefend ? `${region} lost` : `${region} held`,
     };

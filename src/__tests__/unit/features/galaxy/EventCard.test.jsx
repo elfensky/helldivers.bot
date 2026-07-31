@@ -62,8 +62,12 @@ describe('EventCard (sector view — default)', () => {
         );
         expect(screen.getByText('Defending')).toBeDefined();
         expect(screen.getByText('CAPITAL_DEFENSE')).toBeDefined();
+        // Accent stays solid faction color; the flash lives in the title word.
         const accent = container.querySelector('.sector-card-accent');
-        expect(accent.className).toContain('sector-card-accent-flash');
+        expect(accent.className).not.toContain('sector-card-accent-flash');
+        expect(container.querySelector('.sector-card-action').className).toContain(
+            'sector-card-action-flash',
+        );
     });
 
     test('renders homeworld assault state', () => {
@@ -78,7 +82,10 @@ describe('EventCard (sector view — default)', () => {
         expect(screen.getByText('Capturing')).toBeDefined();
         expect(screen.getByText('HOMEWORLD_ASSAULT')).toBeDefined();
         const accent = container.querySelector('.sector-card-accent');
-        expect(accent.className).toContain('sector-card-accent-flash');
+        expect(accent.className).not.toContain('sector-card-accent-flash');
+        expect(container.querySelector('.sector-card-action').className).toContain(
+            'sector-card-action-flash',
+        );
     });
 
     test('no alert icon in any state', () => {

@@ -387,11 +387,9 @@ export default function EventCard({
                     )}
                 </div>
             </div>
-            <div
-                className={
-                    'sector-card-accent' + (isEvent ? ' sector-card-accent-flash' : '')
-                }
-            />
+            {/* Accent stays solid faction color — the flashing state signal
+                lives in the title's action word, not here. */}
+            <div className="sector-card-accent" />
         </div>
     );
 }

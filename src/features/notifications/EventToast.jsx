@@ -20,10 +20,10 @@ export function toastLabel(kind, event) {
     const isDefend = event.type === EVENT_TYPE.DEFEND;
 
     const titles = {
-        event_started: isDefend ? `${region} under attack` : `Attacking ${region}`,
+        event_started: isDefend ? `${region} under attack` : `Capturing ${region}`,
         event_won: isDefend ? `${region} defended` : `${region} captured`,
         event_lost: isDefend ? `${region} lost` : `${region} held`,
-        catch_up: isDefend ? `${region} under attack` : `Attacking ${region}`,
+        catch_up: isDefend ? `${region} under attack` : `Capturing ${region}`,
     };
 
     const subtitles = {
@@ -40,29 +40,36 @@ export function toastLabel(kind, event) {
 }
 
 /** Build the JSX element passed as Sonner's first argument. */
-function ToastContent({ event, kind, accentClass }) {
+function ToastContent({ event, kind }) {
     const { title, subtitle } = toastLabel(kind, event);
     const icon = factions[event.enemy]?.icon;
+
+    // Live-event titles pulse their action word, matching the card titles.
+    const FLASH_PREFIX = 'Capturing ';
+    const flashes =
+        (kind === 'event_started' || kind === 'catch_up') &&
+        title.startsWith(FLASH_PREFIX);
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {icon && <Image src={icon} alt="" width={24} height={24} />}
             <div>
-                <div style={{ fontWeight: 600 }}>{title}</div>
+                <div style={{ fontWeight: 600 }}>
+                    {flashes ?
+                        <>
+                            <span className="toast-action-flash">Capturing</span>{' '}
+                            {title.slice(FLASH_PREFIX.length)}
+                        </>
+                    :   title}
+                </div>
                 <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                     {subtitle}
                 </div>
             </div>
-            <span className={accentClass} />
+            <span className="toast-accent" />
         </div>
     );
 }
-
-/**
- * Module-level toggle that alternates between 'a' and 'b' to force
- * CSS animation restart when Sonner re-renders a toast in-place.
- */
-let flashToggle = false;
 
 /**
  * Show (or replace) an event toast with faction-colored blinking accent border.
@@ -71,7 +78,7 @@ let flashToggle = false;
  * @param {EventChangeKind} kind - Event lifecycle stage the toast represents.
  * @param {object}  [opts] - Optional toast appearance overrides.
  * @param {number}  [opts.duration]    - Sonner duration (default Infinity).
- * @param {string}  [opts.alertColor]  - Blink overlay color (default danger).
+ * @param {string}  [opts.alertColor]  - Action-word flash color (default danger).
  * @param {number}  [opts.pulseDelay]  - Animation delay in seconds for per-event offset.
  * @param {import('sonner').ToastT['onDismiss']} [opts.onDismiss]  - Called when toast is dismissed.
  */
@@ -86,9 +93,6 @@ export function showEventToast(
     } = {},
 ) {
     const factionColor = FACTION_COLORS[event.enemy];
-    flashToggle = !flashToggle;
-    const suffix = flashToggle ? 'a' : 'b';
-    const accentClass = `toast-accent toast-accent--${suffix}`;
 
     // CSS custom properties aren't in the CSSProperties type — cast intentionally.
     const style = /** @type {import('react').CSSProperties & Record<string, string>} */ ({
@@ -97,7 +101,7 @@ export function showEventToast(
     });
     if (pulseDelay != null) style['--pulse-delay'] = `${pulseDelay}s`;
 
-    toast(<ToastContent event={event} kind={kind} accentClass={accentClass} />, {
+    toast(<ToastContent event={event} kind={kind} />, {
         id: `event-${event.event_id}`,
         duration,
         style,
