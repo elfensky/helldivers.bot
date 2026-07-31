@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Live concurrency census on `/docs/predict/defend`** (`LiveConcurrency` +
+  `computeConcurrencyStats`): every same-season event pair in the database, recomputed
+  hourly — defend↔defend (never observed, 0 overlaps), same-faction defend↔attack (never),
+  cross-faction defend↔attack and attack↔attack (common), and the max-simultaneity record
+  (3 events: both triple-assault and 2-attacks+1-defend compositions, with first seasons).
+  Citable live proof for research instead of frozen claims.
+
+### Changed
+
+- **Counterattack-lull handoff v3**: adds the community Steam guide as cross-checked prior
+  art — four claims confirmed by our measurements, three promoted to test targets (defend
+  hazard gated during assaults; fixed 2.5h/48h event durations; counterattack lands at
+  sector 9 "automatically").
+
 ## 0.77.1
 
 ### Changed

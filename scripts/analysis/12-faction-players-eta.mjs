@@ -150,7 +150,13 @@ function playerHoursBetween(series, t0, t1, alpha) {
  * @param {number} [maxHours]
  * @returns {number} hours from startT
  */
-function etaFromPphCrossing(remaining, ratePph, expectedPowAlphaAt, startT, maxHours = 1500) {
+function etaFromPphCrossing(
+    remaining,
+    ratePph,
+    expectedPowAlphaAt,
+    startT,
+    maxHours = 1500,
+) {
     let acc = 0;
     for (let h = 0; h < maxHours; h++) {
         const gain = ratePph * expectedPowAlphaAt(startT + (h + 0.5) * HOUR);
@@ -299,7 +305,10 @@ function makeHowPattern(seriesForSeason) {
 
     // etaFromPphCrossing reduces to remaining/(rate*players^α) when expected
     // players are constant.
-    assert.equal(etaFromPphCrossing(600, 2, () => 100, 0), 3);
+    assert.equal(
+        etaFromPphCrossing(600, 2, () => 100, 0),
+        3,
+    );
 
     // Pattern causality: a query at t must be computable from strictly-earlier
     // buckets only, and a flat series yields factor 1 after burn-in.
@@ -508,7 +517,11 @@ function rawEtaVariant(season, enemy, t, mode) {
         if (mode.kind === 'v3') {
             const { factor } = mode.pat.at(season, t);
             const horizon = Math.min(Math.max(etaHours, 1), 48);
-            const past = meanFactorOver(factor, Number(stThen.bucket), Number(stNow.bucket));
+            const past = meanFactorOver(
+                factor,
+                Number(stThen.bucket),
+                Number(stNow.bucket),
+            );
             const ahead = meanFactorOver(factor, t, t + horizon * HOUR);
             const adj = ahead > 0 ? Math.pow(past / ahead, mode.alpha) : 1;
             if (adj > 0) etaHours *= adj;
@@ -666,9 +679,7 @@ for (const f of FACTIONS) {
                 return false;
             }
             const series = ds.statisticSeries(season, f.enemy);
-            if (
-                playerHoursBetween(series, t - RATE_WINDOW_HOURS * HOUR, t, 1) === null
-            ) {
+            if (playerHoursBetween(series, t - RATE_WINDOW_HOURS * HOUR, t, 1) === null) {
                 return false;
             }
         }
@@ -732,9 +743,7 @@ for (const r of results) {
 // --- paired comparison vs V0 ----------------------------------------------
 
 console.log('\n--- Paired Δ|err| vs V0 (negative = variant better) ---\n');
-console.log(
-    '  Identical moments, per record: |err_variant| − |err_V0|. Season-block',
-);
+console.log('  Identical moments, per record: |err_variant| − |err_V0|. Season-block');
 console.log(
     '  bootstrap CI over the paired median — coarse over ≤4 seasons, by design.\n',
 );
@@ -820,7 +829,9 @@ for (const f of FACTIONS) {
         });
         console.log(
             `${r.label.padEnd(28)} ${String(p.deltas.length).padStart(5)}  ` +
-                `${med >= 0 ? '+' : ''}${med.toFixed(2)}h [${ci[0].toFixed(2)}, ${ci[1].toFixed(2)}]`.padEnd(26) +
+                `${med >= 0 ? '+' : ''}${med.toFixed(2)}h [${ci[0].toFixed(2)}, ${ci[1].toFixed(2)}]`.padEnd(
+                    26,
+                ) +
                 `${wins}/${perSeason.length - wins}  ` +
                 perSeason.map((x) => `${x.season}${x.win ? '+' : '-'}`).join(' '),
         );
@@ -833,9 +844,7 @@ console.log('\n--- Alert bar (fires when p50 < 48h; calibration when showing) --
 for (const r of results) {
     const recs = r.summary.records.filter((x) => x.wait !== null);
     const targets = new Set(recs.map((x) => x.target));
-    const fired = new Set(
-        recs.filter((x) => x.q50 < DISPLAY_HOURS).map((x) => x.target),
-    );
+    const fired = new Set(recs.filter((x) => x.q50 < DISPLAY_HOURS).map((x) => x.target));
     const showing = recs.filter((x) => x.q50 < DISPLAY_HOURS);
     const honoured = showing.filter((x) => x.wait < 2 * x.q75);
     const recall = targets.size > 0 ? fired.size / targets.size : 0;
@@ -869,8 +878,8 @@ console.log(
 );
 
 for (const f of FACTIONS) {
-    const effN = results.find((r) => r.f.enemy === f.enemy && r.v.kind === 'v0')
-        .summary.effectiveN;
+    const effN = results.find((r) => r.f.enemy === f.enemy && r.v.kind === 'v0').summary
+        .effectiveN;
     if (effN < 30) {
         console.log(
             `  [2] ${f.name}: effN=${effN} — INSUFFICIENT N, directional only, do not conclude.`,
@@ -902,9 +911,8 @@ console.log('');
 const QUALIFY_EFFN = 30;
 const winners = paired.filter((x) => {
     if (x.v.kind === 'v1') return false;
-    const effN = results.find(
-        (r) => r.f.enemy === x.f.enemy && r.v.kind === 'v0',
-    ).summary.effectiveN;
+    const effN = results.find((r) => r.f.enemy === x.f.enemy && r.v.kind === 'v0').summary
+        .effectiveN;
     return (
         x.med < 0 &&
         x.perSeason.length >= 2 &&
@@ -926,9 +934,7 @@ if (winners.length > 0) {
     );
 }
 
-console.log(
-    '\n  Decision rule: swap the shipped model only if [1] holds, some variant',
-);
+console.log('\n  Decision rule: swap the shipped model only if [1] holds, some variant');
 console.log(
     '  clears [3], AND the result survives being read at the N in [2]. Otherwise:',
 );

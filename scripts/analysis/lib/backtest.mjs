@@ -199,7 +199,12 @@ export function walkForward({
             }
 
             const next = seasonEvents.find((e) => e.start_time > t);
-            const p = predict({ t, season: testSeason, enemy, lastEvent: lastEvent ?? null });
+            const p = predict({
+                t,
+                season: testSeason,
+                enemy,
+                lastEvent: lastEvent ?? null,
+            });
             const q25 = Math.min(p.p25, horizonHours);
             const q50 = Math.min(p.p50, horizonHours);
             const q75 = Math.min(p.p75, horizonHours);
