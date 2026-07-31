@@ -4,7 +4,10 @@
 **Date:** 2026-07-27 (defend verdict corrected 2026-07-28 — see § Train
 starts; third attempt added 2026-07-28 — see § Attempt 3, from the handoff
 in
-[`docs/superpowers/specs/2026-07-28-defend-prediction-handoff.md`](../specs/2026-07-28-defend-prediction-handoff.md))
+[`docs/superpowers/specs/2026-07-28-defend-prediction-handoff.md`](../specs/2026-07-28-defend-prediction-handoff.md);
+counterattack timing + third target correction added 2026-07-31 — see
+§ Counterattack timing, from
+[`docs/superpowers/specs/2026-07-31-counterattack-lull-handoff.md`](../specs/2026-07-31-counterattack-lull-handoff.md))
 **Design doc:** [`docs/superpowers/specs/2026-07-27-next-event-timing-forecast-design.md`](../specs/2026-07-27-next-event-timing-forecast-design.md)
 **Plan:** [`docs/superpowers/plans/2026-07-27-next-event-timing-forecast.md`](../plans/2026-07-27-next-event-timing-forecast.md), [`docs/superpowers/plans/2026-07-28-defend-train-starts.md`](../plans/2026-07-28-defend-train-starts.md)
 **Scripts:** [`scripts/README.md`](../../../scripts/README.md#analysis) (`## analysis/`)
@@ -635,7 +638,99 @@ on the full history:
 
 Reconstructed: `onTrainEnd(WIN): nextWaveAt = now + Gamma(k≈4.4, θ≈8.9h)`,
 faction chosen at spawn (see § Faction choice), with the assault-window
-pause and counterattack override layered on top.
+pause and counterattack override layered on top. **(Superseded in part by
+§ Counterattack timing, 2026-07-31: the gamma above was fit on ALL lulls,
+~26% of which turn out to be mechanical counterattack lulls, and the free
+clock is GATED during assaults. The clean free-clock fit is gamma(k≈8.8,
+θ≈3.6h) on free lulls net of assault-active time — see below.)**
+
+## Counterattack timing (2026-07-31)
+
+**Scripts:** `14-counterattack-delta.mjs`, `15-counterattack-target.mjs`,
+`16-counterattack-pipeline.mjs`. **Origin:** Discord feedback (SomeDoggo,
+RS13): "My hunch is the cooldown to attack is always the same, but the
+defend event just waits for an appropriate time to begin." Handoff:
+[`docs/superpowers/specs/2026-07-31-counterattack-lull-handoff.md`](../specs/2026-07-31-counterattack-lull-handoff.md).
+
+§ Faction choice established that a fail-resolved homeworld assault is
+always followed by a wave on that faction (179/179). This asks whether the
+mechanic also fixes the TIMING — and it does, more sharply than the Discord
+hunch dared:
+
+- **The counterattack fires the moment the assault fails.** For the 474
+  fail-resolved assaults that ended with the global defend slot free (and
+  no second counterattack pending), delta = counterattack train start −
+  assault end: **467/474 within 10 minutes** (p05–p95 = 0.0h; 0 exactly-0s
+  values, so this is a real immediate fire seen through a polled event
+  log, not a shared-timestamp artifact; 7 outliers 6–44h). The
+  pre-registered criterion (slot-free CV < 0.25 OR p95−p05 < 6h) is met on
+  the span leg. Measured slot-aware because pooling would smear the
+  mechanic: the 43 double-queued cases (two assaults' pending windows
+  overlapping) fire wide (p50 36.8h), and the 1 slot-occupied case waited
+  27.9h after the occupying train ended — queue releases are NOT
+  immediate; only the slot-free fire is.
+- **Fail-resolved assaults are exact 48.0h timeouts** — 544/544 within
+  ±30min (p05 = p95 = 48.0h, CV 0.000). Successes end early (p50 37.0h —
+  points met). So "assault fails" is observable in real time as "the
+  assault reached its 48h timeout", and the whole chain is deterministic:
+  assault start (points == points_max, § Attacks) → +48h timeout →
+  counterattack within minutes. The Discord decomposition lands entirely
+  on one side: the attack cooldown carries ZERO variance and the defend
+  does NOT wait — both components are constants.
+- **The defend hazard is fully gated during assaults** (Steam-guide claim,
+  confirmed): 178/1,819 train starts began while an assault was active and
+  **all 178 are counterattacks** — 0 free waves in 24,651h of
+  assault-active lull exposure (vs 34.9 starts/1000h in assault-free lull
+  time). The 955 defend-attack co-runs are all attacks starting during an
+  already-running defend, never the reverse.
+- **Counterattack trains land on region 9**: 487/498 (97.8%), the rest
+  region 10 — the guide's "counter-offensive defense on sector 9",
+  confirmed. This also explains most of the region-9 dominance among train
+  starts (region 9 is only 14.6% among non-counterattack starts).
+- Defend durations: capped at 2h30m (p50 = p75 = p95 = 2.5h; 67% within
+  ±6min of the cap — the rest resolved early on points). Region-0 defends
+  run ~48h (p75 = 48h), consistent with the guide's "Super Earth 48h"
+  slot. The concurrency table for the Discord thread is committed in
+  `14-counterattack-delta.mjs`: defend-defend overlaps 0/120,082 pairs,
+  same-faction defend-attack 0/9,584, cross-faction 955/19,756,
+  attack-attack 375/2,936; max 3 simultaneous events (53 triple-assault
+  boundary moments since S5, 129 of 2 attacks + 1 defend since S23; no
+  composition ever holds two defends).
+
+**The third target correction** (`15-counterattack-target.mjs`): 487 of
+1,979 train starts are counterattacks (labelled with a pre-declared 2h
+window; delayed queue releases stay in the target — their timing is still
+a scheduler draw). Baseline and STATE-KM were both re-run on the corrected
+1,492-start series, sharpness comparator recomputed from the corrected
+marginal (IQR 22.0h): STATE-KM skill **0.625 [0.599, 0.664]** vs its own
+corrected baseline, calibration FAIL (0.184/0.441/0.729), sharpness FAIL
+(band 47.4h vs 22.0h). **Verdict: INCONCLUSIVE — do not ship, unchanged.**
+The corrected target is unconditionally HARDER than the old one: free
+waves must wait out entire assault epochs (48h timeout + counterattack
+train), putting a long right tail on the free series that no tested state
+model turns into a calibrated narrow band.
+
+**Scheduler shape, refit on split populations:** free-ending lulls net of
+assault-gated time fit **gamma(k≈8.8, θ≈3.6h)** (mean ~32h, CV 0.336, KS
+0.077) — visibly tighter than 13's contaminated all-lull fit (k≈4.4, CV
+0.476). The reconstructed design is now:
+`onTrainEnd(WIN): nextWaveAt = now + Gamma(k≈8.8, θ≈3.6h)`, clock gated
+while any assault runs, counterattack fired immediately on assault
+timeout, faction drawn at spawn.
+
+**The pipeline comparison** (`16-counterattack-pipeline.mjs`,
+pre-registered): on ATTACK-state moments, predicting "next wave = earliest
+active assault's start + 48h" scores median |err| **0.0h vs the KM
+table's 9.2h** (ratio 0.002, season-bootstrap CI upper < 1, win rate
+0.894 across 7,282 paired moments in 130 seasons) — the KM table is not
+the right tool during an assault; the mechanic is. The honest error mass
+is the ~41% of assaults that resolve success (the wave then comes later
+from the free clock), plus 1,203 censored moments skipped (assaults
+running into season end — disproportionately successes, so the win rate
+reads slightly generous). On SC9-state moments (pace-ETA + 48h): ratio
+1.296, CI [0.72, 2.54] — NOT better; ETA noise dominates the
+deterministic tail. `lib/dataset.mjs` now labels `isCounterattack` on
+train starts (labelling only; the chain rule is untouched).
 
 ## Recommendation
 
@@ -671,6 +766,16 @@ when a faction sits at 9 of 10 sectors (the homeworld-assault window),
 lulls run ~20h longer than usual (p50 ~55h vs ~35h) — observable directly
 from campaign state, placebo-tested, and coherent with the attack
 mechanics in § Attacks.
+
+**Addendum (2026-07-31, § Counterattack timing):** there is now exactly one
+defend forecast that IS ship-grade, and it is a mechanic, not a model:
+while a homeworld assault is running, "if this assault fails, the
+counterattack lands the moment it times out (assault start + 48h)" —
+median error 0.0h on 7,282 backtested moments, honestly conditional on the
+~59%-base-rate failure. That is a deterministic countdown of the same
+epistemic class as the attack readout, and a product surface may carry it
+as a fact. The statistical model's verdict for FREE waves is unchanged
+through all four attempts: INCONCLUSIVE, do not ship.
 
 ## Method caveats
 
