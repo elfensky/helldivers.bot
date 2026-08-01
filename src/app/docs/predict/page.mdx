@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Can We Predict Events? | Helldivers Bot',
+    title: 'Predictions | Helldivers Bot',
     description:
-        'Can Helldivers 1 events be predicted? Attacks: yes — deterministic trigger, forecast ships. Defends: partially — a calibrated likelihood window ships, a countdown does not.',
+        'How the dashboard forecasts Helldivers 1 events, in plain language: attacks are arithmetic on a deterministic trigger, defends are three known mechanics plus one honest dice roll. Detailed methods on the Attacks and Defends pages.',
     alternates: { canonical: '/docs/predict' },
     openGraph: { url: '/docs/predict' },
 };
@@ -9,38 +9,88 @@ export const revalidate = 3600;
 
 import HubCounts from './HubCounts';
 
-# Can we predict events?
+# Predictions
 
-A two-part report on Helldivers 1 event predictability, built from every
-recorded event across the game's ~160-season history and refreshed hourly
-from the live database. Short answer: **attacks yes, defends partially —
-and the difference is the whole story.**
+Everything the dashboard forecasts, explained without the math. The detailed
+methods — every model, every failed attempt, every number's origin — live on
+the <a href="/docs/predict/attack" data-umami-event="docs-predict-attack">Attacks</a> and
+<a href="/docs/predict/defend" data-umami-event="docs-predict-defend">Defends</a> pages.
+Short version: **attacks are solved; defends are one dice roll wrapped in
+mechanics we've fully mapped.**
 
 <HubCounts />
 
-## ⚔️ Attacks — solved
+## ⚔️ Attacks: arithmetic, not fortune-telling
 
-Attacks are **deterministic**: one fires within minutes of a faction's
-campaign reaching full points. Forecasting one is arithmetic plus a pace
-estimate, it clears the project's pre-registered accuracy gate
-(skill 0.23–0.33 vs a 0.6 bar), and it ships on the dashboard as the
-assault heads-up line.
+A homeworld assault is not random. It fires **the moment a faction's
+campaign bar fills** — the instant the last of its 10 sectors completes.
+We've checked this against every attack across ~160 recorded wars: it's a
+hard trigger, not a tendency.
 
-**<a href="/docs/predict/attack" data-umami-event="docs-predict-attack">Read how the attack forecast works →</a>**
+That turns "when is the next assault?" into a school problem:
 
-## 🛡️ Defends — partially, honestly
+> **time left = points still needed ÷ how fast points are moving**
 
-Defend waves ride one global, hidden timer. Three modeling attempts, a
-placebo-tested covariate sweep, and a reverse-engineering of the
-scheduler's shape got typical error down to ~8h on a ~44h cycle — enough
-to ship the calibrated **likelihood window** on the dashboard, not enough
-to ship a countdown (the pre-registered bar was missed and respected).
+The dashboard measures the pace over the last 24 hours, corrects for how old
+the latest reading is and for the weekly rhythm (weekends run faster), and
+shows the answer as a window rather than a single number — asymmetric on
+purpose, because arrival = work ÷ pace, and a slowdown delays the arrival
+more than an equal speedup hastens it. Backtested war by war, this forecast
+passed the project's pre-registered accuracy bar outright, which is why it
+gets to be a real ETA on the dashboard.
 
-**<a href="/docs/predict/defend" data-umami-event="docs-predict-defend">Read the full defend story — how we got the closest →</a>**
+For an assault that's already running, the event cards add a **completion
+verdict** (▲ on track / ▼ behind): at the average pace so far, does the bar
+fill before the 48-hour deadline?
+
+**<a href="/docs/predict/attack" data-umami-event="docs-predict-attack">Full method: pace windows, staleness anchoring, why the window is lopsided →</a>**
+
+## 🛡️ Defends: three mechanics and one dice roll
+
+Defend waves _look_ random. Most of the pattern turns out to be machinery,
+measured across 5,000+ recorded defends:
+
+1. **The chain.** Lose a defend and the next one starts within minutes
+   (~97% of the time). Win, and the "train" ends. Everything inside a train
+   is mechanical — only the _first_ wave of a train needs forecasting.
+2. **The counterattack clock.** A failed homeworld assault always runs
+   exactly **48 hours**, and the moment it times out a counterattack lands
+   on that same faction — within minutes, every time in recorded history.
+   While an assault is running, the dashboard shows this as a real
+   countdown: _"if the assault fails, counterattack at ⟨time⟩."_ That line
+   is a mechanic, not a model.
+3. **The gate.** No random defend ever starts while an assault is running —
+   the hidden invasion timer is paused. Win the assault and the held timer
+   releases: the next wave often lands within minutes of the victory.
+4. **The dice roll.** Strip all of that away and what's left is one global
+   hidden timer: after a train ends, the next free wave arrives ~32 hours
+   later on average, with genuine randomness no model has beaten — five
+   modeling attempts, each judged against a pre-registered bar, each miss
+   recorded on the Defends page.
+
+So the dashboard's **Predicted Wave card** does the only honest thing: it
+classifies the current moment (assault running? a faction one sector from
+triggering one? normal?), looks up every moment in ~160 wars that looked the
+same, and shows where the middle 50% of those waits landed — _"likely in
+14–32h · 63% within 24h"_ — a calibrated band, never a fake countdown. The
+one countdown it does show is mechanic #2, conditional phrasing included.
+
+**<a href="/docs/predict/defend" data-umami-event="docs-predict-defend">Full story: five attempts, the placebo discipline, the reverse-engineered scheduler →</a>**
+
+## What would make these better
+
+Data, not cleverness. The open improvements are tracked as issues and
+blocked on history accumulating: outcome-conditioning the counterattack
+forecast needs ~30+ assaults with minute-level progress capture
+([#487](https://github.com/elfensky/helldivers.bot/issues/487)), and the
+attack-side refinements wait on more high-resolution seasons
+([#481](https://github.com/elfensky/helldivers.bot/issues/481),
+[#477](https://github.com/elfensky/helldivers.bot/issues/477),
+[#484](https://github.com/elfensky/helldivers.bot/issues/484)).
 
 ---
 
-This hub and the defend page carry live figures refreshed hourly from the
+This hub and the detail pages carry live figures refreshed hourly from the
 database (labeled as such); backtest verdicts everywhere are static, each
 reproducible from a committed script in
 [`scripts/analysis/`](https://github.com/elfensky/helldivers.bot/tree/main/scripts/README.md).

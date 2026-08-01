@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Added
+
+- **Predictions docs section.** The docs sidebar gains a dedicated
+  "Predictions" section (Summary / Attacks / Defends), pulled out of
+  Reference. `/docs/predict` is rewritten as a plain-language summary of
+  *how* each forecast is computed — attacks as arithmetic on the
+  deterministic full-points trigger (pace window, staleness anchoring,
+  lopsided window, completion verdict), defends as three mapped mechanics
+  (chain, counterattack clock, assault gate) plus the one honest dice roll
+  behind the calibrated band — with the detailed methods staying on the
+  attack/defend subpages. Data-gated follow-ups linked (#487, #481, #477,
+  #484); #487 filed as the pre-registered attempt-6 plan
+  (verdict-conditioned P(fail), blocked on ~30+ progress-tracked assaults).
+
 ### Changed
 
 - **Repo conformance sweep.** Added a version-bump gate workflow (advisory, PR-triggered).
