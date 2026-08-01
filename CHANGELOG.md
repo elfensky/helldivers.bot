@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Predicted Wave card reads like the assault ETA (#488):** median-first
+  text `~20h (14-32h)` (same minutes/hours/days and unit-once formatting as
+  the attack line) instead of the range-only `14–32h`; the bar graph gains a
+  primary-color median tick at p50 with the p25–p75 band dimmed to a subtle
+  layer; hover title leads with the median's absolute time.
+- `/docs/predict` gains **The rule book** (all ten confirmed mechanics in
+  one list) and a **Sources** section crediting the community Steam guide
+  whose claims we verified; the defend page links the guide where rules 7–8
+  are introduced and its card description matches the new median-first
+  rendering.
+
 ## 0.85.0
 
 ### Added

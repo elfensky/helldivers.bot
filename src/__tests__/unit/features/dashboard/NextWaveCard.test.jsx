@@ -39,7 +39,7 @@ describe('NextWaveCard', () => {
         );
         expect(screen.getByText('Predicted')).toBeInTheDocument();
         expect(screen.getByText('Wave')).toBeInTheDocument();
-        expect(screen.getByText(/14–32h/)).toBeInTheDocument();
+        expect(screen.getByText(/~23h \(14-32h\)/)).toBeInTheDocument();
         expect(screen.getByText(/63% within 24h/i)).toBeInTheDocument();
         expect(screen.getByText(/91% within 48h/i)).toBeInTheDocument();
         expect(screen.getByText('LIKELIHOOD_WINDOW')).toBeInTheDocument();
@@ -77,7 +77,7 @@ describe('NextWaveCard', () => {
             />,
         );
         expect(screen.getByText('RUNNING LONG')).toBeInTheDocument();
-        const range = screen.getByText(/14–32h/);
+        const range = screen.getByText(/~23h \(14-32h\)/);
         expect(range.getAttribute('title')).toMatch(/homeworld assault/i);
     });
 
@@ -96,9 +96,10 @@ describe('NextWaveCard', () => {
         render(
             <NextWaveCard forecast={windowForecast()} warStart={WAR_START} now={NOW} />,
         );
-        const range = screen.getByText(/14–32h/);
+        const range = screen.getByText(/~23h \(14-32h\)/);
         expect(range).toHaveAttribute('title');
         const title = range.getAttribute('title');
+        expect(title).toMatch(/^median /);
         expect(title).toMatch(/War Day \d+/);
         expect(title).toMatch(/50% band/);
         expect(title).toMatch(/typical miss ±8h/);
@@ -157,12 +158,28 @@ describe('NextWaveCard', () => {
     test('band fill geometry matches percentile-based positioning', () => {
         const { container } = render(
             <NextWaveCard
-                forecast={windowForecast({ p25: 12, p75: 36 })}
+                forecast={windowForecast({ p25: 12, p50: 24, p75: 36 })}
                 warStart={WAR_START}
                 now={NOW}
             />,
         );
         const bandFill = container.querySelector('.sector-card-bar-fill');
         expect(bandFill).toHaveStyle({ marginLeft: '25%', width: '50%' });
+        // The band is the subtle layer; the median tick carries the accent.
+        expect(bandFill).toHaveStyle({ opacity: '0.35' });
+        const tick = container.querySelector('.sector-card-bar-median');
+        expect(tick).not.toBeNull();
+        expect(tick).toHaveStyle({ left: '50%', width: '2px' });
+    });
+
+    test('range text is median-first like the assault ETA line', () => {
+        render(
+            <NextWaveCard
+                forecast={windowForecast({ p25: 12, p50: 24, p75: 36 })}
+                warStart={WAR_START}
+                now={NOW}
+            />,
+        );
+        expect(screen.getByText('~24h (12-36h)')).toBeInTheDocument();
     });
 });

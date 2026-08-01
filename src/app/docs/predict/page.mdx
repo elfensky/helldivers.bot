@@ -71,11 +71,57 @@ measured across 5,000+ recorded defends:
 So the dashboard's **Predicted Wave card** does the only honest thing: it
 classifies the current moment (assault running? a faction one sector from
 triggering one? normal?), looks up every moment in ~160 wars that looked the
-same, and shows where the middle 50% of those waits landed — _"likely in
-14–32h · 63% within 24h"_ — a calibrated band, never a fake countdown. The
-one countdown it does show is mechanic #2, conditional phrasing included.
+same, and shows the median with the middle-50% window around it —
+_"~20h (14-32h) · 63% within 24h"_ — a calibrated band, never a fake
+countdown. The one countdown it does show is mechanic #2, conditional
+phrasing included.
 
 **<a href="/docs/predict/defend" data-umami-event="docs-predict-defend">Full story: five attempts, the placebo discipline, the reverse-engineered scheduler →</a>**
+
+## The rule book
+
+Every rule below is confirmed against the full recorded history (the exact
+counts, and the committed script that re-verifies each one, are on the
+detail pages):
+
+1. **Two defends never run at the same time.** Zero overlaps across 120,000+
+   defend pairs — there is a single global "invasion slot."
+2. **A faction never defends while you're assaulting its homeworld.**
+   Cross-faction overlap is fine (a defend and a *different* faction's
+   assault co-run routinely).
+3. **At most three events run at once** — up to three simultaneous assaults,
+   or two assaults plus one defend. Never two defends.
+4. **The chain:** a lost defend is followed by another within ~10 minutes
+   (~97%); a won defend ends the train.
+5. **Assaults trigger deterministically** the instant a faction's campaign
+   bar fills (9 of 10 sectors is therefore the "assault pending" window,
+   and defend waves go quiet through it).
+6. **Failed assaults last exactly 48 hours** — a timeout, 544 of 544 in
+   history. Won assaults end early, when their points fill.
+7. **A failed assault is answered immediately:** the counterattack lands on
+   that faction within minutes of the timeout, almost always on region 9 —
+   and counterattack trains are harder to stop than normal ones (players
+   win the first defend ~23% vs ~47%).
+8. **The invasion timer is gated during assaults:** no random defend has
+   ever started while an assault was running.
+9. **Victory releases the held timer:** after a won assault, the next wave
+   often lands within minutes — the timer had already fired and was waiting
+   for the gate to open.
+10. **The free waves are genuinely random:** one global timer, ~32h average
+    delay (gamma-shaped), faction drawn at spawn — mostly evenly, with a
+    ~61% tilt toward a faction sitting one sector from its assault.
+
+## Sources
+
+Prior art credited: much of the mechanic set was independently inferred by
+the community — notably
+[this Steam guide](https://steamcommunity.com/sharedfiles/filedetails/?id=3764548664)
+— which we treated as hypotheses and verified against the event log (its
+48h/2h30m durations, the assault gate, and the region-9 counterattack all
+confirmed; exact numbers on the Defends page). Original findings
+(counterattack timing, victory release, the scheduler's gamma shape) are
+ours, each reproducible from
+[`scripts/analysis/`](https://github.com/elfensky/helldivers.bot/tree/main/scripts/README.md).
 
 ## What would make these better
 

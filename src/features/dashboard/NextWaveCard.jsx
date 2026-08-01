@@ -6,12 +6,33 @@ import '@/features/galaxy/EventCard.css';
 import { dayOf } from '@/shared/utils/game/warClock.mjs';
 
 /**
- * @param {number} p25 hours
- * @param {number} p75 hours
- * @returns {string} e.g. "14–32h"
+ * Hours formatter — mirrors EventCard.jsx's `formatEtaHours` (module-private
+ * there; galaxy and dashboard features stay decoupled) so the wave ETA reads
+ * exactly like the assault ETA: minutes below 1h, whole hours below 48h,
+ * whole days beyond.
+ *
+ * @param {number} h hours
+ * @returns {string}
  */
-function formatRange(p25, p75) {
-    return `${Math.round(p25)}–${Math.round(p75)}h`;
+function formatEtaHours(h) {
+    const clamped = Math.max(0, h);
+    if (clamped < 1) return `${Math.round(clamped * 60)}m`;
+    if (clamped < 48) return `${Math.round(clamped)}h`;
+    return `${Math.round(clamped / 24)}d`;
+}
+
+/**
+ * Range with the unit written once when both bounds share it — mirrors
+ * EventCard.jsx's `formatEtaRange`: `14-32h`, `30m-2h` when mixed.
+ *
+ * @param {number} lo hours
+ * @param {number} hi hours
+ * @returns {string}
+ */
+function formatEtaRange(lo, hi) {
+    const a = formatEtaHours(lo);
+    const b = formatEtaHours(hi);
+    return a.slice(-1) === b.slice(-1) ? `${a.slice(0, -1)}-${b}` : `${a}-${b}`;
 }
 
 /**
@@ -46,7 +67,7 @@ function localTime(t) {
 export default function NextWaveCard({ forecast, warStart, now }) {
     if (forecast?.mode !== 'window') return null;
 
-    const { p25, p75, p24, p48, imminent, runningLong, counterattackAt } = forecast;
+    const { p25, p50, p75, p24, p48, imminent, runningLong, counterattackAt } = forecast;
     const from = now + p25 * 3600;
     const to = now + p75 * 3600;
     const warDays =
@@ -54,14 +75,14 @@ export default function NextWaveCard({ forecast, warStart, now }) {
             ` · War Day ${dayOf(from, warStart)}–${dayOf(to, warStart)}`
         :   '';
     const title =
-        `${localTime(from)} – ${localTime(to)} (your time)${warDays}` +
+        `median ${localTime(now + p50 * 3600)} · window ${localTime(from)} – ${localTime(to)} (your time)${warDays}` +
         ` · likely window (50% band) · typical miss ±8h` +
         (runningLong ?
             ' · a faction is 1 sector from homeworld assault — waves pause in this window'
         :   '');
 
     const axisHours = Math.max(48, Math.ceil(p75 / 12) * 12);
-    const range = formatRange(p25, p75);
+    const range = `~${formatEtaHours(p50)} (${formatEtaRange(p25, p75)})`;
     const state =
         [runningLong && 'RUNNING LONG', imminent && 'IMMINENT']
             .filter(Boolean)
@@ -122,13 +143,30 @@ export default function NextWaveCard({ forecast, warStart, now }) {
                     <div
                         className="sector-card-bar"
                         role="img"
-                        aria-label={`Next wave likely in ${range}`}
+                        aria-label={`Next wave ETA ${range}`}
+                        style={{ position: 'relative' }}
                     >
+                        {/* p25-p75 band, deliberately subtle — the median tick
+                            below carries the accent, matching the assault
+                            line's median-first reading. */}
                         <div
                             className="sector-card-bar-fill"
                             style={{
                                 marginLeft: `${(p25 / axisHours) * 100}%`,
                                 width: `${((p75 - p25) / axisHours) * 100}%`,
+                                background: 'var(--color-primary)',
+                                opacity: 0.35,
+                            }}
+                        />
+                        <div
+                            aria-hidden="true"
+                            className="sector-card-bar-median"
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                bottom: 0,
+                                left: `${(p50 / axisHours) * 100}%`,
+                                width: '2px',
                                 background: 'var(--color-primary)',
                             }}
                         />
