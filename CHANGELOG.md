@@ -10,9 +10,9 @@
   `main-pr-docker-smoke.yml` pin Node via `node-version-file`, so mise.toml is not the single pin;
   consolidating that is a separate decision.) `graphify-out/` is generated locally and git-ignored.
   Dependabot security updates and
-  secret-scanning push protection enabled repo-side; default branch set to `develop`. Secret
-  scanning stays on GitGuardian (`.gitguardian.yaml`) — no gitleaks added here. No version bump —
-  notes accumulate under Unreleased.
+  secret-scanning push protection enabled repo-side; default branch set to `develop`. Removed
+  `.gitguardian.yaml` — secret scanning is now GitHub-native (push protection + secret scanning +
+  CodeQL), no third-party scanner. No version bump — notes accumulate under Unreleased.
 
 ## 0.84.0
 
