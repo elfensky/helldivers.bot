@@ -1,17 +1,6 @@
 # Changelog
 
-## 0.85.1
-
-### Fixed
-
-- **Stranded thousands separator in animated stats.** `AnimatedStat` now
-  remounts the slot counter when the formatted *shape* changes (`###` →
-  `#,###` → `#.#M`). react-slot-counter keys its separator spans off the
-  previous value's length, so a live update from `1,600` to `600` could leave
-  the comma behind and render `,600` — visible on the homeworld-assault event
-  card's pace indicator. Digit-only ticks keep the same key and still animate.
-
-## Unreleased
+## 0.86.0
 
 ### Changed
 
@@ -25,6 +14,17 @@
   whose claims we verified; the defend page links the guide where rules 7–8
   are introduced and its card description matches the new median-first
   rendering.
+
+## 0.85.1
+
+### Fixed
+
+- **Stranded thousands separator in animated stats.** `AnimatedStat` now
+  remounts the slot counter when the formatted *shape* changes (`###` →
+  `#,###` → `#.#M`). react-slot-counter keys its separator spans off the
+  previous value's length, so a live update from `1,600` to `600` could leave
+  the comma behind and render `,600` — visible on the homeworld-assault event
+  card's pace indicator. Digit-only ticks keep the same key and still animate.
 
 ## 0.85.0
 
