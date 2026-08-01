@@ -15,6 +15,22 @@ const sections = [
         ],
     },
     {
+        label: 'Predictions',
+        items: [
+            { href: '/docs/predict', label: 'Summary', track: 'docs-predict' },
+            {
+                href: '/docs/predict/attack',
+                label: 'Attacks',
+                track: 'docs-predict-attack',
+            },
+            {
+                href: '/docs/predict/defend',
+                label: 'Defends',
+                track: 'docs-predict-defend',
+            },
+        ],
+    },
+    {
         label: 'Architecture',
         items: [
             {
@@ -48,21 +64,6 @@ const sections = [
             { href: '/docs/utilities', label: 'Utilities', track: 'docs-utilities' },
             { href: '/docs/hd1-api', label: 'Official', track: 'docs-hd1-api' },
             { href: '/docs/brandkit', label: 'Brand Kit', track: 'docs-brandkit' },
-            {
-                href: '/docs/predict',
-                label: 'Can We Predict Events?',
-                track: 'docs-predict',
-            },
-            {
-                href: '/docs/predict/attack',
-                label: 'Predicting Attacks',
-                track: 'docs-predict-attack',
-            },
-            {
-                href: '/docs/predict/defend',
-                label: 'Predicting Defends',
-                track: 'docs-predict-defend',
-            },
         ],
     },
     {
