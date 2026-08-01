@@ -75,6 +75,12 @@ export default function AnimatedStat({
 
     return (
         <SlotCounter
+            // ponytail: remount whenever the formatted *shape* changes ("###" ->
+            // "#,###" -> "#.#M"). react-slot-counter keys its separator spans off
+            // the previous value's length, so a 1,600 -> 600 change can strand the
+            // comma in the DOM and render ",600". Digit-only changes keep the same
+            // key, so ordinary ticks still animate.
+            key={formatted.replace(/[0-9]/g, '#')}
             value={formatted}
             startValue={initialValue}
             startValueOnce
