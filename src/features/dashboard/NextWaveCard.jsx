@@ -48,45 +48,72 @@ function localTime(t) {
 }
 
 /**
- * Live likelihood window for the next defend wave, rendered in the same
- * sector-card skeleton as the faction cards (EventCard.css — imported
- * directly so the classes don't depend on an EventCard rendering first).
- * Band, never a countdown: the range is the calibrated 50% band and the
- * meta row carries the reliability-checked within-24h/48h probabilities
- * from waveModel.mjs. The one exception is a mechanic, not a model: during
- * an active homeworld assault a second meta row shows the
- * failure-conditional counterattack time (assault start + 48h — see
- * `counterattackAt` in waveForecast.mjs and /docs/predict/defend, rules
- * 7–8), which is deterministic and therefore allowed to be a clock.
+ * The counteroffensive clock line — pace-conditional phrasing around the
+ * deterministic timeout (counterattackForecast.mjs). The pace wording is a
+ * projection of the assault's own on-track/behind verdict (the same ▲/▼ the
+ * event card shows), never a probability: the verdict-to-outcome link is
+ * deliberately unquantified until enough progress-tracked assaults exist
+ * (#487).
+ *
+ * @param {object} props
+ * @param {{at: number, pace: 'on_track'|'behind'|'stalled'|null}} props.counter
+ * @param {number} props.now unix seconds
+ */
+function CounterattackLine({ counter, now }) {
+    const when =
+        counter.at > now ?
+            `${localTime(counter.at)} (in ~${formatEtaHours((counter.at - now) / 3600)})`
+        :   'imminent';
+    const lead =
+        counter.pace === 'on_track' ? 'assault on pace to succeed'
+        : counter.pace === 'behind' || counter.pace === 'stalled' ? 'assault behind pace'
+        : 'if the assault fails';
+    const tail =
+        counter.pace === 'on_track' ?
+            ` · counterattack ${when} only if pace collapses`
+        :   ` · counterattack ${when}`;
+    return (
+        <div className="sector-card-meta">
+            <span
+                className="sector-card-points"
+                title="Deterministic mechanic, not a model: every failed homeworld assault in recorded history ran exactly 48h and its counterattack landed within minutes of the timeout. Only fires if the assault fails — a won assault removes the faction instead. Pace wording projects the assault's current rate (the same on-track/behind verdict as the event card)."
+                suppressHydrationWarning
+            >
+                {lead}
+                {tail}
+            </span>
+        </div>
+    );
+}
+
+/**
+ * The dashboard's prediction card, driven by two STANDALONE forecasts that
+ * own different regimes (see /docs/predict/defend, rules 7-8):
+ *
+ *  - `forecast` (waveForecast.mjs) — the FREE-wave likelihood band, present
+ *    only while the scheduler's dice are actually rolling (no assault, no
+ *    active defend). Band, never a countdown.
+ *  - `counter` (counterattackForecast.mjs) — the counteroffensive clock,
+ *    present only while an assault runs (when the free clock is gated).
+ *    Deterministic, so it IS allowed to be a clock, phrased conditionally
+ *    on the assault failing.
+ *
+ * The two are never shown from the same regime: an active assault hides the
+ * band and shows the clock; otherwise the band shows and the clock is
+ * hidden. Rendered in the same sector-card skeleton as the faction cards
+ * (EventCard.css — imported directly so the classes don't depend on an
+ * EventCard rendering first).
  *
  * @param {object} props
  * @param {ReturnType<typeof import('./waveForecast.mjs').waveForecast>} props.forecast
+ * @param {ReturnType<typeof import('./counterattackForecast.mjs').counterattackForecast>} [props.counter]
  * @param {number | null} props.warStart unix seconds anchor for war-day labels
  * @param {number} props.now unix seconds
  */
-export default function NextWaveCard({ forecast, warStart, now }) {
-    if (forecast?.mode !== 'window') return null;
-
-    const { p25, p50, p75, p24, p48, imminent, runningLong, counterattackAt } = forecast;
-    const from = now + p25 * 3600;
-    const to = now + p75 * 3600;
-    const warDays =
-        warStart != null ?
-            ` · War Day ${dayOf(from, warStart)}–${dayOf(to, warStart)}`
-        :   '';
-    const title =
-        `median ${localTime(now + p50 * 3600)} · window ${localTime(from)} – ${localTime(to)} (your time)${warDays}` +
-        ` · likely window (50% band) · typical miss ±8h` +
-        (runningLong ?
-            ' · a faction is 1 sector from homeworld assault — waves pause in this window'
-        :   '');
-
-    const axisHours = Math.max(48, Math.ceil(p75 / 12) * 12);
-    const range = `~${formatEtaHours(p50)} (${formatEtaRange(p25, p75)})`;
-    const state =
-        [runningLong && 'RUNNING LONG', imminent && 'IMMINENT']
-            .filter(Boolean)
-            .join(' · ') || null;
+export default function NextWaveCard({ forecast, counter, warStart, now }) {
+    const hasWindow = forecast?.mode === 'window';
+    const hasClock = counter?.mode === 'clock';
+    if (!hasWindow && !hasClock) return null;
 
     return (
         <div
@@ -123,87 +150,120 @@ export default function NextWaveCard({ forecast, warStart, now }) {
                         ⓘ
                     </Link>
                 </div>
-                <div className="sector-card-bar-label-row">
-                    <span className="sector-card-bar-label">LIKELIHOOD_WINDOW</span>
-                    {state && (
+                {hasWindow ?
+                    <WaveWindow forecast={forecast} warStart={warStart} now={now} />
+                :   <div className="sector-card-bar-label-row">
+                        <span className="sector-card-bar-label">COUNTERATTACK_CLOCK</span>
                         <span
                             className="sector-card-bar-label"
-                            style={{
-                                color:
-                                    runningLong ? 'var(--color-warning)' : (
-                                        'var(--color-primary)'
-                                    ),
-                            }}
+                            style={{ color: 'var(--color-warning)' }}
                         >
-                            {state}
-                        </span>
-                    )}
-                </div>
-                <div className="sector-card-bar-wrap">
-                    <div
-                        className="sector-card-bar"
-                        role="img"
-                        aria-label={`Next wave ETA ${range}`}
-                        style={{ position: 'relative' }}
-                    >
-                        {/* p25-p75 band, deliberately subtle — the median tick
-                            below carries the accent, matching the assault
-                            line's median-first reading. */}
-                        <div
-                            className="sector-card-bar-fill"
-                            style={{
-                                marginLeft: `${(p25 / axisHours) * 100}%`,
-                                width: `${((p75 - p25) / axisHours) * 100}%`,
-                                background: 'var(--color-primary)',
-                                opacity: 0.35,
-                            }}
-                        />
-                        <div
-                            aria-hidden="true"
-                            className="sector-card-bar-median"
-                            style={{
-                                position: 'absolute',
-                                top: 0,
-                                bottom: 0,
-                                left: `${(p50 / axisHours) * 100}%`,
-                                width: '2px',
-                                background: 'var(--color-primary)',
-                            }}
-                        />
-                    </div>
-                    <span
-                        className="sector-card-pct"
-                        title={title}
-                        suppressHydrationWarning
-                    >
-                        {range}
-                    </span>
-                </div>
-                <div className="sector-card-meta">
-                    <span className="sector-card-points">
-                        {Math.round(p24 * 100)}% within 24h
-                    </span>
-                    <span className="sector-card-sep">&middot;</span>
-                    <span className="sector-card-points">
-                        {Math.round(p48 * 100)}% within 48h
-                    </span>
-                </div>
-                {counterattackAt != null && (
-                    <div className="sector-card-meta">
-                        <span
-                            className="sector-card-points"
-                            title="Deterministic mechanic, not a model: every failed homeworld assault in recorded history ran exactly 48h and its counterattack landed within minutes of the timeout. Only fires if the assault fails — a won assault removes the faction instead."
-                            suppressHydrationWarning
-                        >
-                            if the assault fails &middot; counterattack{' '}
-                            {counterattackAt > now ?
-                                `${localTime(counterattackAt)} (in ~${Math.max(1, Math.round((counterattackAt - now) / 3600))}h)`
-                            :   'imminent'}
+                            ASSAULT RUNNING
                         </span>
                     </div>
-                )}
+                }
+                {hasClock && <CounterattackLine counter={counter} now={now} />}
             </div>
             <div className="sector-card-accent" />
         </div>
+    );
+}
+
+/**
+ * The free-wave band: label row, median-tick bar, and the within-24h/48h
+ * meta row. Split out so the clock-only regime renders without it.
+ *
+ * @param {object} props
+ * @param {{p25: number, p50: number, p75: number, p24: number, p48: number,
+ *   imminent: boolean, runningLong: boolean}} props.forecast
+ * @param {number | null} props.warStart
+ * @param {number} props.now
+ */
+function WaveWindow({ forecast, warStart, now }) {
+    const { p25, p50, p75, p24, p48, imminent, runningLong } = forecast;
+    const from = now + p25 * 3600;
+    const to = now + p75 * 3600;
+    const warDays =
+        warStart != null ?
+            ` · War Day ${dayOf(from, warStart)}–${dayOf(to, warStart)}`
+        :   '';
+    const title =
+        `median ${localTime(now + p50 * 3600)} · window ${localTime(from)} – ${localTime(to)} (your time)${warDays}` +
+        ` · likely window (50% band) · typical miss ±8h` +
+        (runningLong ?
+            ' · a faction is 1 sector from homeworld assault — waves pause in this window'
+        :   '');
+
+    const axisHours = Math.max(48, Math.ceil(p75 / 12) * 12);
+    const range = `~${formatEtaHours(p50)} (${formatEtaRange(p25, p75)})`;
+    const state =
+        [runningLong && 'RUNNING LONG', imminent && 'IMMINENT']
+            .filter(Boolean)
+            .join(' · ') || null;
+
+    return (
+        <>
+            <div className="sector-card-bar-label-row">
+                <span className="sector-card-bar-label">LIKELIHOOD_WINDOW</span>
+                {state && (
+                    <span
+                        className="sector-card-bar-label"
+                        style={{
+                            color:
+                                runningLong ? 'var(--color-warning)' : (
+                                    'var(--color-primary)'
+                                ),
+                        }}
+                    >
+                        {state}
+                    </span>
+                )}
+            </div>
+            <div className="sector-card-bar-wrap">
+                <div
+                    className="sector-card-bar"
+                    role="img"
+                    aria-label={`Next wave ETA ${range}`}
+                    style={{ position: 'relative' }}
+                >
+                    {/* p25-p75 band, deliberately subtle — the median tick
+                        below carries the accent, matching the assault
+                        line's median-first reading. */}
+                    <div
+                        className="sector-card-bar-fill"
+                        style={{
+                            marginLeft: `${(p25 / axisHours) * 100}%`,
+                            width: `${((p75 - p25) / axisHours) * 100}%`,
+                            background: 'var(--color-primary)',
+                            opacity: 0.35,
+                        }}
+                    />
+                    <div
+                        aria-hidden="true"
+                        className="sector-card-bar-median"
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            bottom: 0,
+                            left: `${(p50 / axisHours) * 100}%`,
+                            width: '2px',
+                            background: 'var(--color-primary)',
+                        }}
+                    />
+                </div>
+                <span className="sector-card-pct" title={title} suppressHydrationWarning>
+                    {range}
+                </span>
+            </div>
+            <div className="sector-card-meta">
+                <span className="sector-card-points">
+                    {Math.round(p24 * 100)}% within 24h
+                </span>
+                <span className="sector-card-sep">&middot;</span>
+                <span className="sector-card-points">
+                    {Math.round(p48 * 100)}% within 48h
+                </span>
+            </div>
+        </>
     );
 }

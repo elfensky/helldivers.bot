@@ -425,4 +425,58 @@ describe('HomeClient — next-wave forecast wiring', () => {
         render(<HomeClient />);
         expect(screen.queryByText('Predicted')).not.toBeInTheDocument();
     });
+
+    test('during an assault the card shows the counterattack clock, not the band', () => {
+        const now = Math.floor(Date.now() / 1000);
+        vi.mocked(useLiveDataContext).mockReturnValue({
+            data: {
+                status: [
+                    {
+                        enemy: 0,
+                        points: 5_000_000,
+                        points_max: 5_000_000,
+                        status: 'active',
+                    },
+                    { enemy: 1, points: 0, points_max: 5_000_000, status: 'active' },
+                    { enemy: 2, points: 0, points_max: 5_000_000, status: 'active' },
+                ],
+                events: [
+                    // A finished defend train plus a RUNNING assault: the
+                    // free clock is gated (waveForecast hides), the
+                    // counteroffensive clock takes over.
+                    {
+                        event_id: 9,
+                        type: 'defend',
+                        region: 3,
+                        enemy: 0,
+                        status: 'fail',
+                        start_time: now - 40 * 3600,
+                        end_time: now - 30 * 3600,
+                        points: 400,
+                        points_max: 1000,
+                    },
+                    {
+                        event_id: 10,
+                        type: 'attack',
+                        region: 11,
+                        enemy: 0,
+                        status: 'active',
+                        start_time: now - 20 * 3600,
+                        end_time: now + 28 * 3600,
+                        points: 100_000,
+                        points_max: 1_000_000,
+                    },
+                ],
+                war_start: now - 100 * 24 * 3600,
+            },
+            mapState: { fromLive: true },
+            status: 'live',
+            prevData: null,
+            isLeader: false,
+        });
+        render(<HomeClient />);
+        expect(screen.getByText('Predicted')).toBeInTheDocument();
+        expect(screen.getByText('COUNTERATTACK_CLOCK')).toBeInTheDocument();
+        expect(screen.queryByText('LIKELIHOOD_WINDOW')).not.toBeInTheDocument();
+    });
 });
