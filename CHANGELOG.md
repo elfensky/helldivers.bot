@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.87.0
+
+### Changed
+
+- **Wave prediction split into two standalone forecasts (#489):**
+  `waveForecast` now owns ONLY the free waves — it hides (`assault-active`)
+  while a homeworld assault runs, since the invasion timer is gated then
+  (rule 8) and the waveModel ATTACK rows were dressing a gate up as a
+  distribution. The counteroffensive is its own module,
+  `counterattackForecast.mjs`: deterministic clock (earliest active assault
+  start + 48h) qualified by the assault's live pace verdict (reusing the
+  shipped `eventForecast` rule) — "assault behind pace · counterattack ⟨t⟩"
+  vs "assault on pace to succeed · counterattack ⟨t⟩ only if pace
+  collapses"; pace projection wording only, never a probability (#487).
+  The card renders whichever regime owns the moment: the calibrated band
+  outside assaults, a COUNTERATTACK_CLOCK view (no band) during them.
+  Docs updated to describe the split.
+
 ## 0.86.0
 
 ### Changed

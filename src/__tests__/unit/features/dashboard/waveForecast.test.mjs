@@ -141,7 +141,7 @@ describe('waveForecast window mode', () => {
         expect(f.imminent).toBe(false); // 0.2 < IMMINENT_THRESHOLD
     });
 
-    test('an active ATTACK outranks SC9', () => {
+    test('an active assault hides the free-wave band (gated clock, rule 8)', () => {
         const data = makeData({
             status: [
                 { enemy: 0, points: 9200, points_max: 10000, status: 'active' },
@@ -157,7 +157,10 @@ describe('waveForecast window mode', () => {
             end_time: NOW + 10 * HOUR,
             status: 'active',
         });
-        expect(waveForecast(data, NOW, MODEL).state).toBe('ATTACK');
+        expect(waveForecast(data, NOW, MODEL)).toEqual({
+            mode: 'hidden',
+            reason: 'assault-active',
+        });
     });
 
     test('elapsed clamps to the last bin and negative elapsed to bin 0', () => {
@@ -195,51 +198,7 @@ describe('waveForecast window mode', () => {
         expect(IMMINENT_THRESHOLD).toBe(0.51);
     });
 
-    test('counterattackAt is null outside ATTACK state', () => {
-        expect(waveForecast(makeData(), NOW, MODEL).counterattackAt).toBeNull();
-    });
-
-    test('ATTACK state exposes the assault-timeout counterattack clock', () => {
-        const data = makeData();
-        data.events.push({
-            type: 'attack',
-            enemy: 0,
-            region: 11,
-            start_time: NOW - 2 * HOUR,
-            end_time: NOW + 46 * HOUR,
-            status: 'active',
-        });
-        const f = waveForecast(data, NOW, MODEL);
-        expect(f.state).toBe('ATTACK');
-        expect(f.counterattackAt).toBe(NOW - 2 * HOUR + 48 * HOUR);
-    });
-
-    test('two concurrent assaults: the EARLIEST timeout wins', () => {
-        const data = makeData();
-        data.events.push(
-            {
-                type: 'attack',
-                enemy: 0,
-                region: 11,
-                start_time: NOW - 10 * HOUR,
-                end_time: NOW + 38 * HOUR,
-                status: 'active',
-            },
-            {
-                type: 'attack',
-                enemy: 1,
-                region: 11,
-                start_time: NOW - 2 * HOUR,
-                end_time: NOW + 46 * HOUR,
-                status: 'active',
-            },
-        );
-        expect(waveForecast(data, NOW, MODEL).counterattackAt).toBe(
-            NOW - 10 * HOUR + 48 * HOUR,
-        );
-    });
-
-    test('resolved (non-active) attacks do not produce a counterattack clock', () => {
+    test('resolved (non-active) attacks do not hide the band', () => {
         const data = makeData();
         data.events.push({
             type: 'attack',
@@ -250,7 +209,11 @@ describe('waveForecast window mode', () => {
             status: 'fail',
         });
         const f = waveForecast(data, NOW, MODEL);
+        expect(f.mode).toBe('window');
         expect(f.state).toBe('NORMAL');
-        expect(f.counterattackAt).toBeNull();
+    });
+
+    test('the forecast carries no counterattack fields — that is counterattackForecast.mjs', () => {
+        expect('counterattackAt' in waveForecast(makeData(), NOW, MODEL)).toBe(false);
     });
 });

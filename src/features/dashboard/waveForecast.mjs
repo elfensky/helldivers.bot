@@ -1,6 +1,13 @@
 /**
- * waveForecast — pure lookup from the live payload into the committed
- * next-wave model (waveModel.mjs, emitted by scripts/analysis/08).
+ * waveForecast — the FREE-wave forecast: pure lookup from the live payload
+ * into the committed next-wave model (waveModel.mjs, emitted by
+ * scripts/analysis/08), for moments when the scheduler's dice are actually
+ * rolling. During a homeworld assault the game's invasion timer is GATED
+ * (zero free waves have ever started mid-assault — /docs/predict/defend,
+ * rule 8), so this function goes quiet then; the deterministic
+ * counteroffensive clock is a SEPARATE prediction problem and lives in
+ * counterattackForecast.mjs. The waveModel ATTACK rows are therefore no
+ * longer consulted here.
  *
  * Total function: every failure path returns { mode: 'hidden', reason }
  * rather than throwing, so the dashboard degrades to exactly its old UI.
@@ -11,11 +18,6 @@ import { EVENT_TYPE, EVENT_STATUS } from '@/shared/enums/events.mjs';
 const CHAIN_SECONDS = 600;
 const SECTOR_COUNT = 10; // mirrors SECTOR_COUNT in scripts/analysis/lib/dataset.mjs (client code cannot import from scripts/)
 export const IMMINENT_THRESHOLD = 0.51;
-// Every fail-resolved homeworld assault in history ran exactly 48.0h (544/544)
-// and its counterattack train started within minutes of the timeout
-// (scripts/analysis/14-counterattack-delta.mjs, #480) — so during an assault
-// the failure-conditional next wave is a deterministic clock, not a model.
-export const ASSAULT_TIMEOUT_SECONDS = 48 * 3600;
 
 /**
  * Train-start derivation — the same rule as the #472 analysis
@@ -63,9 +65,9 @@ function isValidModel(model) {
  * @param {object} [model] injectable for tests; defaults to the committed model
  * @returns {{mode: 'window', p25: number, p50: number, p75: number,
  *   p24: number, p48: number, state: string, imminent: boolean,
- *   runningLong: boolean, lastTrainStart: number,
- *   counterattackAt: number | null}
- *   | {mode: 'hidden', reason: 'wave-active'|'no-train-yet'|'no-data'}}
+ *   runningLong: boolean, lastTrainStart: number}
+ *   | {mode: 'hidden',
+ *      reason: 'wave-active'|'assault-active'|'no-train-yet'|'no-data'}}
  */
 export function waveForecast(data, nowSeconds, model = defaultModel) {
     if (
@@ -83,28 +85,27 @@ export function waveForecast(data, nowSeconds, model = defaultModel) {
         return { mode: 'hidden', reason: 'wave-active' };
     }
 
+    // The free clock is gated while any assault runs (rule 8) — there is no
+    // free wave to forecast, and the counteroffensive clock is
+    // counterattackForecast.mjs's job.
+    if (
+        data.events.some(
+            (e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.ACTIVE,
+        )
+    ) {
+        return { mode: 'hidden', reason: 'assault-active' };
+    }
+
     const starts = deriveTrainStarts(defends);
     const last = starts.at(-1);
     if (!last) return { mode: 'hidden', reason: 'no-train-yet' };
 
-    const activeAttacks = data.events.filter(
-        (e) => e.type === EVENT_TYPE.ATTACK && e.status === EVENT_STATUS.ACTIVE,
-    );
-    const attackActive = activeAttacks.length > 0;
-    // Earliest active assault's 48h timeout: the moment its counterattack
-    // lands if the assault fails. Deterministic (see ASSAULT_TIMEOUT_SECONDS);
-    // with several assaults running, the earliest one resolves first.
-    const counterattackAt =
-        attackActive ?
-            Math.min(...activeAttacks.map((e) => e.start_time)) + ASSAULT_TIMEOUT_SECONDS
-        :   null;
     const scs = data.status
         .filter((r) => r.points_max > 0)
         .map((r) => Math.trunc(r.points / (r.points_max / SECTOR_COUNT)));
     const maxSC = scs.length > 0 ? Math.max(...scs) : null;
     const state =
-        attackActive ? 'ATTACK'
-        : maxSC === 9 ? 'SC9'
+        maxSC === 9 ? 'SC9'
         : maxSC === 10 ? 'SC10'
         : 'NORMAL';
 
@@ -123,6 +124,5 @@ export function waveForecast(data, nowSeconds, model = defaultModel) {
         imminent: row.p24 >= IMMINENT_THRESHOLD,
         runningLong: state === 'SC9',
         lastTrainStart: last.start_time,
-        counterattackAt,
     };
 }

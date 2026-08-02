@@ -68,13 +68,15 @@ measured across 5,000+ recorded defends:
    modeling attempts, each judged against a pre-registered bar, each miss
    recorded on the Defends page.
 
-So the dashboard's **Predicted Wave card** does the only honest thing: it
-classifies the current moment (assault running? a faction one sector from
-triggering one? normal?), looks up every moment in ~160 wars that looked the
-same, and shows the median with the middle-50% window around it —
-_"~20h (14-32h) · 63% within 24h"_ — a calibrated band, never a fake
-countdown. The one countdown it does show is mechanic #2, conditional
-phrasing included.
+So the dashboard's **Predicted Wave card** runs two separate forecasts,
+because these are two different problems. **No assault running:** it looks
+up every moment in ~160 wars that looked like this one and shows the median
+with the middle-50% window around it — _"~20h (14-32h) · 63% within 24h"_ —
+a calibrated band, never a fake countdown. **Assault running:** the dice are
+paused (mechanic #3), so the band steps aside and the card shows mechanic
+#2's deterministic clock instead — _"counterattack ⟨time⟩"_ — phrased
+through the assault's live pace: _"behind pace"_ means expect it, _"on pace
+to succeed"_ means only if the players falter.
 
 **<a href="/docs/predict/defend" data-umami-event="docs-predict-defend">Full story: five attempts, the placebo discipline, the reverse-engineered scheduler →</a>**
 

@@ -17,15 +17,24 @@ const windowForecast = (overrides = {}) => ({
     imminent: true,
     runningLong: false,
     lastTrainStart: NOW - 20 * 3600,
-    counterattackAt: null,
+    ...overrides,
+});
+
+const hiddenCounter = { mode: 'hidden', reason: 'no-assault' };
+const clockCounter = (overrides = {}) => ({
+    mode: 'clock',
+    at: NOW + 31 * 3600,
+    assaultStart: NOW - 17 * 3600,
+    pace: null,
     ...overrides,
 });
 
 describe('NextWaveCard', () => {
-    test('renders nothing when hidden', () => {
+    test('renders nothing when both forecasts are hidden', () => {
         const { container } = render(
             <NextWaveCard
                 forecast={{ mode: 'hidden', reason: 'wave-active' }}
+                counter={{ mode: 'hidden', reason: 'wave-active' }}
                 warStart={WAR_START}
                 now={NOW}
             />,
@@ -114,38 +123,73 @@ describe('NextWaveCard', () => {
         expect(link).toHaveAttribute('data-umami-event', 'dashboard-wave-window-docs');
     });
 
-    test('no counterattack line without counterattackAt', () => {
-        render(
-            <NextWaveCard forecast={windowForecast()} warStart={WAR_START} now={NOW} />,
-        );
-        expect(screen.queryByText(/if the assault fails/i)).not.toBeInTheDocument();
-    });
-
-    test('counterattack line renders the failure-conditional clock (ATTACK)', () => {
+    test('no counterattack line when the counter forecast is hidden', () => {
         render(
             <NextWaveCard
-                forecast={windowForecast({
-                    state: 'ATTACK',
-                    counterattackAt: NOW + 31 * 3600,
-                })}
+                forecast={windowForecast()}
+                counter={hiddenCounter}
                 warStart={WAR_START}
                 now={NOW}
             />,
         );
+        expect(screen.queryByText(/counterattack/i)).not.toBeInTheDocument();
+    });
+
+    test('clock-only regime: no band, COUNTERATTACK_CLOCK label, conditional line', () => {
+        const { container } = render(
+            <NextWaveCard
+                forecast={{ mode: 'hidden', reason: 'assault-active' }}
+                counter={clockCounter()}
+                warStart={WAR_START}
+                now={NOW}
+            />,
+        );
+        expect(screen.getByText('COUNTERATTACK_CLOCK')).toBeInTheDocument();
+        expect(screen.getByText('ASSAULT RUNNING')).toBeInTheDocument();
+        expect(screen.queryByText('LIKELIHOOD_WINDOW')).not.toBeInTheDocument();
+        expect(container.querySelector('.sector-card-bar')).toBeNull();
         const line = screen.getByText(/if the assault fails/i);
-        expect(line.textContent).toMatch(/counterattack/i);
-        expect(line.textContent).toMatch(/in ~31h/);
+        expect(line.textContent).toMatch(/counterattack .* \(in ~31h\)/);
         // The mechanic explainer rides the hover title.
         expect(line.getAttribute('title')).toMatch(/exactly 48h/i);
+    });
+
+    test('pace-conditional wording follows the assault verdict', () => {
+        const { rerender } = render(
+            <NextWaveCard
+                forecast={{ mode: 'hidden', reason: 'assault-active' }}
+                counter={clockCounter({ pace: 'behind' })}
+                warStart={WAR_START}
+                now={NOW}
+            />,
+        );
+        expect(screen.getByText(/assault behind pace/i)).toBeInTheDocument();
+        rerender(
+            <NextWaveCard
+                forecast={{ mode: 'hidden', reason: 'assault-active' }}
+                counter={clockCounter({ pace: 'on_track' })}
+                warStart={WAR_START}
+                now={NOW}
+            />,
+        );
+        const line = screen.getByText(/assault on pace to succeed/i);
+        expect(line.textContent).toMatch(/only if pace collapses/i);
+        rerender(
+            <NextWaveCard
+                forecast={{ mode: 'hidden', reason: 'assault-active' }}
+                counter={clockCounter({ pace: 'stalled' })}
+                warStart={WAR_START}
+                now={NOW}
+            />,
+        );
+        expect(screen.getByText(/assault behind pace/i)).toBeInTheDocument();
     });
 
     test('counterattack clock in the past reads as imminent', () => {
         render(
             <NextWaveCard
-                forecast={windowForecast({
-                    state: 'ATTACK',
-                    counterattackAt: NOW - 600,
-                })}
+                forecast={{ mode: 'hidden', reason: 'assault-active' }}
+                counter={clockCounter({ at: NOW - 600 })}
                 warStart={WAR_START}
                 now={NOW}
             />,
