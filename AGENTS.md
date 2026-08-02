@@ -246,3 +246,4 @@ For every phase or feature, use the `/superpowers:brainstorming` skill to explor
 | Authentication & roles             | [`/docs/authentication`](/docs/authentication)            |
 | Frontend design system & tokens    | [`/docs/brandkit`](/docs/brandkit) + `src/app/layout.css` |
 | Official HD1 API reference         | [`/docs/hd1-api`](/docs/hd1-api)                          |
+| Predictions investigation handoff  | [`docs/superpowers/predictions-handoff.md`](docs/superpowers/predictions-handoff.md) — living doc; read first before any prediction/analysis work |
