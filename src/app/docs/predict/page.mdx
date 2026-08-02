@@ -20,6 +20,19 @@ mechanics we've fully mapped.**
 
 <HubCounts />
 
+## Two kinds of prediction
+
+Everything on this page falls into one of two boxes, and the site never
+mixes them up — one is **mechanical** (a game rule we measured, worth a
+real countdown), the other requires **actual prediction** (a model judged
+against a pre-registered accuracy bar, worth a band at best):
+
+| | 🔩 Mechanical (clocks) | 🎲 Statistical (models) |
+| --- | --- | --- |
+| What | Assault trigger at full points · 48h assault timeout · counteroffensive fire · defend chain · assault gate | Assault-start ETA (pace) · free-wave timing · which faction is next |
+| Typical error | **~0 — minutes** (48h timeout: 544/544 exact; counterattack within 10 min: 467/474; backtested 0.0h vs the statistical model's 9.2h during assaults) | Assault ETA: **passed the bar** (3–4× better than naive, ships as an ETA). Free waves: **±8h typical** on a ~44h cycle — five modeling attempts, bar never met, ships as a band |
+| Honest caveat | The counteroffensive is conditional: it fires only if the assault fails (~59% of the time — the pace verdict tells you which way it's leaning) | A band is a band: "~20h (14-32h) · 63% within 24h", calibrated to hold at those rates, never a countdown |
+
 ## ⚔️ Attacks: arithmetic, not fortune-telling
 
 A homeworld assault is not random. It fires **the moment a faction's

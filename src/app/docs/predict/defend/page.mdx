@@ -273,6 +273,25 @@ The dashboard's next-wave card is driven by **two standalone forecasts, because 
 - **The free-wave band** (`waveForecast`) runs while the scheduler's dice are actually rolling — no assault, no active defend. It classifies the moment (SC9, SC10 or NORMAL), looks up the Kaplan-Meier remaining-wait table for that state at the current elapsed hour, and renders the median (the accent tick on the bar) with the 50% band around it in a subtler tone, plus the within-24h/48h probabilities — and two badges: **imminent**, when the within-24h probability crosses its threshold, and **running long**, whenever the state is SC9. During an assault it goes quiet on purpose: rule 8 says the invasion timer is paused, so a statistical band there would be dressing up a gate as a distribution.
 - **The counteroffensive clock** (`counterattackForecast`) runs only while an assault is active — the regime the band just vacated. It is a mechanic, not a model: *"counterattack ⟨assault start + 48h⟩"* (earliest assault first when several run), phrased through the assault's own live pace verdict — *"assault behind pace · counterattack ⟨t⟩"* when the bar is not filling in time, *"assault on pace to succeed · counterattack ⟨t⟩ only if pace collapses"* when it is. The pace wording is the same ▲/▼ projection the event cards already show, deliberately never a probability (the verdict-to-outcome link waits on data — see the follow-ups below).
 
+### The two forecasts, by the numbers
+
+| | Counteroffensive clock (mechanical) | Free-wave band (statistical) |
+| --- | --- | --- |
+| Timing source | 48.0h timeout, exact in 544/544 fails; counterattack within 10 min of it (467/474 slot-free, p05–p95 = 0.0h) | Kaplan-Meier table over ~160 wars, by state × elapsed hour |
+| Backtested error | Median **0.0h** vs the statistical model's 9.2h on the same 7,282 assault moments (win rate 89.4%) | Median miss **~8h** on a ~44h cycle; band calibrated within ±0.05 at every quartile |
+| The catch | Conditional on the assault failing (~59% base rate; won assaults remove the faction instead) | Five modeling attempts, best skill CI [0.559, 0.621] against the ≤0.6 ship bar — never met, so band, not countdown |
+
+### What the clock borrows from the attack side
+
+The counteroffensive forecast contains no new statistics — it is assembled entirely from the <a href="/docs/predict/attack" data-umami-event="docs-predict-attack">attack page's</a> machinery:
+
+| Piece | Origin | Status |
+| --- | --- | --- |
+| *When an assault will start* | Deterministic full-points trigger + the pace-window ETA (the shipped assault ETA line) | Passed the gate; ships |
+| *How long a failing assault runs* | The exact 48h timeout | A constant, not a forecast |
+| *Will it fail at all* | The on-track/behind completion verdict (`eventForecast`, the same ▲/▼ on the event cards) | Reused verbatim as the clock's conditional wording |
+| *Chaining ETA → timeout from the SC9 window* | Tested (`16-counterattack-pipeline.mjs`) | **Rejected** — pace-forecast noise swamps the deterministic tail (ratio 1.296, CI spanning 1); the clock only speaks once the assault has actually started |
+
 Its honesty rules are hard-coded: it says *likely*, never *will*; it renders a band, never a countdown; it hides entirely while a wave is active instead of inventing precision; and the typical ±8h miss is printed on the card itself. That is the deal defends offer — a calibrated window, not a clock. (With one exception earned above: *during a homeworld assault*, "if this assault fails, the counterattack lands the moment it times out" **is** a clock — a deterministic mechanic, not a model — and the card shows exactly that line, conditional phrasing included, whenever an assault is active.) Attacks offer a much better deal: a deterministic trigger and a forecast that cleared every leg of the same gate. <a href="/docs/predict/attack" data-umami-event="docs-predict-attack">That is the solved half of this report →</a>
 
 <details>

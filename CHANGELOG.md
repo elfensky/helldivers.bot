@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Living predictions handoff** (#490):
+  `docs/superpowers/predictions-handoff.md` — the single entry point for a
+  fresh session: current verdicts, the mechanical-vs-statistical divide,
+  all ten confirmed mechanics with numbers and proving scripts, the full
+  01–18 script inventory with verdicts, the pre-registered gate, a
+  ten-item traps catalog, scripts conventions, the shipped-artifact map,
+  and the data-gated open issues. Referenced from AGENTS.md § Reference
+  Docs ("read first before any prediction/analysis work").
+- **Mechanical vs statistical, by the numbers, on the site:**
+  `/docs/predict` gains a "Two kinds of prediction" comparison table
+  (clock ~0 error, 544/544 and 467/474; band ±8h typical, five attempts,
+  CI vs the 0.6 bar); `/docs/predict/defend` gains "The two forecasts, by
+  the numbers" and "What the clock borrows from the attack side" —
+  documenting that the counteroffensive forecast reuses the attack stack
+  (deterministic trigger + pace ETA + 48h constant + the eventForecast
+  verdict) and that the SC9 ETA→timeout chain was tested and rejected.
+
 ## 0.87.0
 
 ### Changed
