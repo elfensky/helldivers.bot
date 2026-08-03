@@ -92,6 +92,69 @@ export function pointsAt(snapshots, enemy, at) {
 }
 
 /**
+ * The shared "points remaining ÷ pace" core: rate over the model's snapshot
+ * window → day-of-week correction → staleness anchor. Used by both
+ * `attackForecast` (target = campaign end) and `sectorForecast` (target =
+ * next sector boundary) — same arithmetic, different `remaining`. Callers
+ * apply their OWN floor (`model.meta.minEtaHours` vs `SECTOR_MIN_ETA_HOURS`)
+ * because the two floors are measured differently.
+ *
+ * `eventForecast.mjs` is deliberately NOT a consumer: its rate is the
+ * average since the event started (event points, no snapshots, no dow, no
+ * staleness), and that exact math is what script 14b validated — sharing
+ * code would change nothing but risk the calibrated predicate.
+ *
+ * @param {object} data the live campaign payload (needs `.snapshots`)
+ * @param {number} enemy faction id
+ * @param {number} nowSeconds unix seconds
+ * @param {object} model calibration tables (rate window + dow)
+ * @param {number} remaining points to the caller's target
+ * @returns {{etaHours: number}|{reason: 'no-data'|'stalled'}} pre-floor ETA
+ */
+function paceEtaHours(data, enemy, nowSeconds, model, remaining) {
+    const then = pointsAt(
+        data.snapshots,
+        enemy,
+        nowSeconds - model.meta.rateWindowHours * HOUR,
+    );
+    const now = pointsAt(data.snapshots, enemy, nowSeconds);
+    if (!then || !now || !(now.time > then.time)) {
+        return { reason: 'no-data' };
+    }
+
+    const spanHours = (now.time - then.time) / HOUR;
+    const ratePerHour = (now.points - then.points) / spanHours;
+    // A front that is not moving has no arrival time, and silence is the honest
+    // output. Measured at ~38-47% of moments across history.
+    if (!(ratePerHour > 0)) return { reason: 'stalled' };
+
+    let etaHours = remaining / ratePerHour;
+
+    // Day-of-week correction. Campaign pace runs ~29% faster on the busiest day
+    // than the quietest, and a 24h rate window carries yesterday's weekday into
+    // a forecast about tomorrow's.
+    const meanFactor = (from, to) => {
+        let sum = 0;
+        let n = 0;
+        for (let t = from; t < to; t += 6 * HOUR) {
+            sum += model.dow[new Date(t * 1000).getUTCDay()];
+            n++;
+        }
+        return n > 0 ? sum / n : 1;
+    };
+    const horizon = Math.min(Math.max(etaHours, 1), 48);
+    const adj =
+        meanFactor(then.time, now.time) /
+        meanFactor(nowSeconds, nowSeconds + horizon * HOUR);
+    if (adj > 0) etaHours *= adj;
+
+    // Anchor at now, not at the reading: `remaining / rate` otherwise answers
+    // "how long from when the reading was taken".
+    etaHours -= (nowSeconds - now.time) / HOUR;
+    return { etaHours };
+}
+
+/**
  * Assault ETA for one faction.
  *
  * @param {object} data the live campaign payload
@@ -131,46 +194,9 @@ export function attackForecast(data, enemy, nowSeconds, model = defaultModel) {
     const remaining = pointsMax - Number(row.points);
     if (!(remaining > 0)) return { mode: 'hidden', reason: 'complete' };
 
-    const then = pointsAt(
-        data.snapshots,
-        enemy,
-        nowSeconds - model.meta.rateWindowHours * HOUR,
-    );
-    const now = pointsAt(data.snapshots, enemy, nowSeconds);
-    if (!then || !now || !(now.time > then.time)) {
-        return { mode: 'hidden', reason: 'no-data' };
-    }
-
-    const spanHours = (now.time - then.time) / HOUR;
-    const ratePerHour = (now.points - then.points) / spanHours;
-    // A front that is not moving has no arrival time, and silence is the honest
-    // output. Measured at ~38-47% of moments across history.
-    if (!(ratePerHour > 0)) return { mode: 'hidden', reason: 'stalled' };
-
-    let etaHours = remaining / ratePerHour;
-
-    // Day-of-week correction. Campaign pace runs ~29% faster on the busiest day
-    // than the quietest, and a 24h rate window carries yesterday's weekday into
-    // a forecast about tomorrow's.
-    const meanFactor = (from, to) => {
-        let sum = 0;
-        let n = 0;
-        for (let t = from; t < to; t += 6 * HOUR) {
-            sum += model.dow[new Date(t * 1000).getUTCDay()];
-            n++;
-        }
-        return n > 0 ? sum / n : 1;
-    };
-    const horizon = Math.min(Math.max(etaHours, 1), 48);
-    const adj =
-        meanFactor(then.time, now.time) /
-        meanFactor(nowSeconds, nowSeconds + horizon * HOUR);
-    if (adj > 0) etaHours *= adj;
-
-    // Anchor at now, not at the reading: `remaining / rate` otherwise answers
-    // "how long from when the reading was taken".
-    etaHours -= (nowSeconds - now.time) / HOUR;
-    etaHours = Math.max(etaHours, model.meta.minEtaHours);
+    const pace = paceEtaHours(data, enemy, nowSeconds, model, remaining);
+    if (!('etaHours' in pace)) return { mode: 'hidden', reason: pace.reason };
+    const etaHours = Math.max(pace.etaHours, model.meta.minEtaHours);
 
     const r = model.ratios[bandOf(remaining / pointsMax, model.bands)];
     const p50 = etaHours * r.r50;
@@ -237,39 +263,9 @@ export function sectorForecast(data, enemy, nowSeconds, model = defaultModel) {
     }
     const remaining = boundary - points;
 
-    const then = pointsAt(
-        data.snapshots,
-        enemy,
-        nowSeconds - model.meta.rateWindowHours * HOUR,
-    );
-    const now = pointsAt(data.snapshots, enemy, nowSeconds);
-    if (!then || !now || !(now.time > then.time)) {
-        return { mode: 'hidden', reason: 'no-data' };
-    }
-    const spanHours = (now.time - then.time) / HOUR;
-    const ratePerHour = (now.points - then.points) / spanHours;
-    if (!(ratePerHour > 0)) return { mode: 'hidden', reason: 'stalled' };
-
-    let etaHours = remaining / ratePerHour;
-    // Day-of-week correction — same one-step iteration as attackForecast; the
-    // attack model's dow table is the shared pace pattern.
-    const meanFactor = (from, to) => {
-        let sum = 0;
-        let n = 0;
-        for (let t = from; t < to; t += 6 * HOUR) {
-            sum += model.dow[new Date(t * 1000).getUTCDay()];
-            n++;
-        }
-        return n > 0 ? sum / n : 1;
-    };
-    const horizon = Math.min(Math.max(etaHours, 1), 48);
-    const adj =
-        meanFactor(then.time, now.time) /
-        meanFactor(nowSeconds, nowSeconds + horizon * HOUR);
-    if (adj > 0) etaHours *= adj;
-
-    etaHours -= (nowSeconds - now.time) / HOUR;
-    const p50 = Math.max(etaHours, SECTOR_MIN_ETA_HOURS);
+    const pace = paceEtaHours(data, enemy, nowSeconds, model, remaining);
+    if (!('etaHours' in pace)) return { mode: 'hidden', reason: pace.reason };
+    const p50 = Math.max(pace.etaHours, SECTOR_MIN_ETA_HOURS);
 
     if (!(p50 < FAR_CAP_HOURS)) {
         return { mode: 'hidden', reason: 'beyond-window' };
