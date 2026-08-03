@@ -8,6 +8,8 @@ export const metadata = {
 export const revalidate = 3600;
 
 import HubCounts from './HubCounts';
+import LiveOutcomeNow from './LiveOutcomeNow';
+import VerdictAccuracyChart from './VerdictAccuracyChartLoader';
 
 # Predictions
 
@@ -52,11 +54,44 @@ more than an equal speedup hastens it. Backtested war by war, this forecast
 passed the project's pre-registered accuracy bar outright, which is why it
 gets to be a real ETA on the dashboard.
 
-For an assault that's already running, the event cards add a **completion
-verdict** (▲ on track / ▼ behind): at the average pace so far, does the bar
-fill before the 48-hour deadline?
+The same division powers the **sector ETA** on faction cards — aimed one
+sector boundary early instead of at the campaign's end (details on the
+Attacks page).
 
 **<a href="/docs/predict/attack" data-umami-event="docs-predict-attack">Full method: pace windows, staleness anchoring, why the window is lopsided →</a>**
+
+## 🔮 While an event runs: the outcome verdict
+
+Every live event — a 150-minute defend or a 48-hour assault — resolves one
+of exactly two ways, and they end at *different times*: a **loss runs out
+the clock** (the countdown on the card is the loss time), a **win ends
+early**, the moment the points fill (rule 6 below). So the cards don't show
+a bare fill ETA; they name the outcome:
+
+- **On track** → _"Holds ~2h"_ on a defend, _"Taken ~12h"_ on an assault —
+  the fill ETA **is** the win time, and it beats the countdown.
+- **Behind pace** → _"Falls"_ / _"Fails"_ — no number, because the loss
+  time is already on the card: it's the countdown itself.
+
+The math is one line — at the average pace since the event started, does
+the bar fill before the deadline? — and it's the **same predicate** that
+drives the ▲/▼ pace delta on the right of the bar (the two can never
+disagree; a contract test pins it). Replayed over every completed event
+with minute-level progress history (130 events, 2,193 rendered moments),
+the verdict calls the final outcome correctly **91.6%** of the time, and it
+sharpens as the event ages:
+
+<VerdictAccuracyChart />
+
+The shaded band is why the cards stay silent for the first quarter of every
+event: that early, the since-start pace is still dominated by the opening
+minutes (~72% accuracy — barely better than the base rate), so the verdict
+is hidden rather than shown flickering. Past 60% elapsed it's calling
+96–99% correctly.
+
+What the shipped functions say right now:
+
+<LiveOutcomeNow />
 
 ## 🛡️ Defends: three mechanics and one dice roll
 

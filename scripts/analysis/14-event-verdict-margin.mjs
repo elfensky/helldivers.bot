@@ -128,11 +128,17 @@ function nominalDeadline(event) {
  * @param {{start_time: number, end_time: number}} event
  * @param {{bucket: number, points: number}[]} series ascending by bucket
  * @param {number} [deadline] nominal deadline; defaults to the recorded end
+ * @param {number} [skipFraction] override for the warm-up skip (0 = keep all)
  * @returns {{bucket: number, points: number}[]}
  */
-function eventMoments(event, series, deadline = event.end_time) {
+function eventMoments(
+    event,
+    series,
+    deadline = event.end_time,
+    skipFraction = SKIP_FRACTION,
+) {
     const duration = deadline - event.start_time;
-    const skipBefore = event.start_time + SKIP_FRACTION * duration;
+    const skipBefore = event.start_time + skipFraction * duration;
     return series.filter(
         (r) =>
             r.bucket > event.start_time &&
@@ -220,6 +226,48 @@ function sweepMargins(replayed) {
             nMoments: moments,
         };
     });
+}
+
+/**
+ * Verdict accuracy at margin 0 binned by elapsed fraction of the NOMINAL
+ * duration — the numbers behind the shipped MIN_ELAPSED_FRACTION gate and
+ * the /docs/predict accuracy chart. Replays ALL moments (no warm-up skip)
+ * so the below-gate bins show exactly the noise the gate hides.
+ *
+ * @param {{event: object, moments: object[], deadline: number}[]} replayed
+ *   moment sets WITHOUT the warm-up skip
+ * @param {number} binCount
+ * @returns {{binStart: number, accuracy: number, n: number}[]} one row per
+ *   non-empty bin; binStart is the bin's lower elapsed fraction
+ */
+function accuracyByElapsedBin(replayed, binCount = 10) {
+    const correct = Array(binCount).fill(0);
+    const total = Array(binCount).fill(0);
+    for (const { event, moments, deadline } of replayed) {
+        const outcomeOnTrack = event.status === 'success';
+        const duration = deadline - event.start_time;
+        for (const r of moments) {
+            const frac = (r.bucket - event.start_time) / duration;
+            const bin = Math.min(Math.floor(frac * binCount), binCount - 1);
+            const v = verdictAt(
+                r.points,
+                event.points_max,
+                event.start_time,
+                deadline,
+                r.bucket,
+                0,
+            );
+            total[bin]++;
+            if (v === outcomeOnTrack) correct[bin]++;
+        }
+    }
+    return total
+        .map((n, i) => ({
+            binStart: i / binCount,
+            accuracy: n > 0 ? correct[i] / n : 0,
+            n,
+        }))
+        .filter((row) => row.n > 0);
 }
 
 /**
@@ -341,6 +389,32 @@ function recommendMargin(rows) {
         'an over-long win falls back to its recorded duration',
     );
 
+    // accuracyByElapsedBin: a half-rate FAILED event is verdict-correct
+    // (behind) at every moment, so every non-empty bin reads accuracy 1; and
+    // skipFraction 0 keeps the early moments the sweep drops.
+    const halfAll = eventMoments(exactEvent, halfSeries, T, 0);
+    assert(
+        halfAll.length > halfMoments.length,
+        'skipFraction 0 must include the warm-up moments',
+    );
+    const halfBins = accuracyByElapsedBin([
+        {
+            event: { ...exactEvent, status: 'fail' },
+            moments: halfAll,
+            deadline: T,
+        },
+    ]);
+    assert(halfBins.length > 0, 'binning must produce non-empty bins');
+    assert(
+        halfBins.every((b) => b.accuracy === 1),
+        'half-rate failed event is correct in every bin',
+    );
+    assert.equal(
+        halfBins.reduce((s, b) => s + b.n, 0),
+        halfAll.length,
+        'every moment lands in exactly one bin',
+    );
+
     // countFlips counts transitions, not raw verdict count.
     assert.equal(countFlips([true, true, true]), 0);
     assert.equal(countFlips([true, false, true]), 2);
@@ -412,6 +486,25 @@ for (const r of rows) {
         `  ${r.margin.toFixed(2).padStart(5)}    ${(r.accuracy * 100).toFixed(1).padStart(5)}%     ` +
             `${r.flipMedian.toFixed(1).padStart(9)}  ${r.flipP90.toFixed(1).padStart(9)}     ` +
             `${String(r.nEvents).padStart(7)}    ${String(r.nMoments).padStart(8)}`,
+    );
+}
+
+// Accuracy by elapsed decile at the shipped margin (0), warm-up included —
+// the /docs/predict chart numbers and the case for the 25% render gate.
+const replayedAll = qualifying
+    .map(({ event, series, deadline }) => ({
+        event,
+        deadline,
+        moments: eventMoments(event, series, deadline, 0),
+    }))
+    .filter((r) => r.moments.length > 0);
+const bins = accuracyByElapsedBin(replayedAll);
+
+console.log('\n  accuracy by elapsed decile (margin 0, no warm-up skip):');
+console.log('  elapsed     accuracy   n moments');
+for (const b of bins) {
+    console.log(
+        `  ${(b.binStart * 100).toFixed(0).padStart(3)}-${((b.binStart + 0.1) * 100).toFixed(0).padStart(3)}%     ${(b.accuracy * 100).toFixed(1).padStart(6)}%    ${String(b.n).padStart(8)}`,
     );
 }
 
