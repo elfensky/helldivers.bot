@@ -1,5 +1,61 @@
 # Changelog
 
+## 0.88.1
+
+### Added
+
+- **/docs/predict documents the in-event outcome verdict and the sector
+  ETA.** The hub gains a "While an event runs" section with a
+  verdict-accuracy-by-elapsed chart (from script 14b's new decile table) and
+  a live worked example (`LiveOutcomeNow`, hourly ISR) running the shipped
+  `eventForecast` / `sectorForecast` / `counterattackForecast` on the
+  current campaign; the attack page documents the assault-run verdict
+  (script 17's conditioning table) and the previously undocumented sector
+  ETA.
+- **Contract test pinning pace/verdict agreement.** At `VERDICT_MARGIN = 0`
+  the ▲/▼ pace indicator's `behind` and the verdict's `!onTrack` are the
+  same inequality; `paceVerdict.contract.test.mjs` sweeps ~4,700 moments to
+  keep them from drifting apart.
+
+### Changed
+
+- **`attackForecast.mjs` deduplicated.** `attackForecast` and
+  `sectorForecast` shared a verbatim ~40-line rate/dow/staleness block; it
+  is now one module-private `paceEtaHours` helper (behavior-identical, both
+  test files untouched).
+- **Stale `evaluateProgress` docs corrected** (utilities doc claimed a
+  string return; faq/JSDoc claimed a symmetric ±10% buffer — it is
+  upper-only).
+
+### Fixed
+
+- **Event cards showed the capture ETA instead of the outcome.** An event
+  ends one of two ways, at two different times: a loss runs the timer out
+  (3,179 of 3,260 failed defends at exactly 150 min; 545 of 545 failed
+  assaults at exactly 48h), a win ends early the moment points fill. The card
+  showed only the fill ETA, unlabelled — so a defend that was going to fall
+  advertised an ETA hours past its own deadline. The slot now names the
+  outcome: `Holds ~12m` / `Taken ~9h` when the bar will fill in time,
+  `Falls` / `Fails` when it won't. The losing verdict carries no duration
+  because the countdown beside it already is the loss time.
+- **The verdict's anti-flicker margin was calibrated against a deadline that
+  never existed.** `14-event-verdict-margin.mjs` replayed won events against
+  their *rewritten* early `end_time`, biasing the rule toward "behind" on
+  exactly the events that succeeded. Replaying against the nominal timer
+  instead, the verdict is 91.6% accurate (130 events / 2,193 moments) rather
+  than 79.5%, and `VERDICT_MARGIN` drops 0.2 → **0** — the slack was
+  compensating for the bias, not for flicker (flip p90 0.1 at margin 0,
+  against 1.0 at every non-zero margin). `17-assault-outcome.mjs` carried the
+  same bias and was re-run; its published reading strengthens rather than
+  moves. Recorded as trap 11 in the predictions handoff.
+
+### Added
+
+- **Event verdicts stay hidden for the first 25% of an event**
+  (`MIN_ELAPSED_FRACTION`), where the since-start average rate is still noise
+  — verdict accuracy runs ~73% in the opening quarter against 92.4% past
+  halfway and 99.7% in the final quarter.
+
 ## 0.88.0
 
 ### Added

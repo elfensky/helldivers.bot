@@ -217,26 +217,54 @@ function EtaLine({ forecast }) {
 }
 
 /**
- * Completion ETA for an active event, in the same left-aligned style as the
- * campaign/sector `EtaLine` — one consistent ETA treatment across every
- * card. On-pace/behind stays the PaceIndicator's job (▲/▼ + points amount)
+ * How an active event is going to END, in the same left-aligned style as the
+ * campaign/sector `EtaLine`.
+ *
+ * The two outcomes land at different times, so only one of them needs a
+ * number. A loss lands on the deadline — which the `EventCountdown` beside
+ * this is already counting down to — so the losing verdict is a word, not a
+ * second copy of the same duration. A win lands *early*, when the points
+ * fill, so that one carries its ETA.
+ *
+ * On-pace/behind detail stays the PaceIndicator's job (▲/▼ + points amount)
  * on the right edge, as before.
  *
+ * Danger red is reserved for the losing verdict here — deliberately NOT the
+ * `--imminent` modifier the assault ETA uses. A win landing inside the hour
+ * is good news, and painting it the same red as "Falls" would make the two
+ * outcomes indistinguishable at a glance on exactly the cards that matter
+ * most. On this line, red means one thing: this event is going to be lost.
+ *
  * @param {object} props
- * @param {{etaHours: number|null, stalled: boolean}} props.eta
+ * @param {{etaHours: number|null, onTrack: boolean, stalled: boolean}} props.eta
+ * @param {boolean} props.isDefending
  */
-function EventEta({ eta }) {
+function EventEta({ eta, isDefending }) {
+    if (!eta.onTrack) {
+        return (
+            <span
+                className="sector-card-assault sector-card-assault--imminent"
+                title={
+                    'At the average pace since the event started, the bar will not fill ' +
+                    'before the timer runs out. The countdown is the time left.'
+                }
+                suppressHydrationWarning
+            >
+                {isDefending ? 'Falls' : 'Fails'}
+            </span>
+        );
+    }
     const hours = /** @type {number} */ (eta.etaHours);
     return (
         <span
-            className={
-                'sector-card-assault' +
-                (hours < 1 ? ' sector-card-assault--imminent' : '')
+            className="sector-card-assault"
+            title={
+                'At the average pace since the event started, the bar fills before the ' +
+                'timer runs out — the event ends early, at this ETA.'
             }
-            title="Completion at the average pace since the event started."
             suppressHydrationWarning
         >
-            ETA ~{formatEtaHours(hours)}
+            {isDefending ? 'Holds' : 'Taken'} ~{formatEtaHours(hours)}
         </span>
     );
 }
@@ -255,13 +283,13 @@ export default function EventCard({
     view = 'sector',
     factionMap,
     etaForecast = /** @type {AssaultForecast|null} */ (null),
-    eventEta = /** @type {{mode: 'verdict', etaHours: number|null, onTrack: boolean, stalled: boolean}|{mode: 'hidden'}|null} */ (
+    eventEta = /** @type {{mode: 'verdict', etaHours: number|null, remainingHours: number, onTrack: boolean, stalled: boolean}|{mode: 'hidden'}|null} */ (
         null
     ),
 }) {
-    // Stalled events have no ETA to show; the pace indicator carries "behind".
-    const showEventEta =
-        eventEta?.mode === 'verdict' && !eventEta.stalled && eventEta.etaHours !== null;
+    // Every verdict renders now, stalled included: a stalled event is behind by
+    // definition, and the behind branch needs no ETA to say so.
+    const showEventEta = eventEta?.mode === 'verdict';
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = !!endTime;
     const isDefending = action === 'defending';
@@ -325,7 +353,7 @@ export default function EventCard({
                                     {barLabel && (
                                         <span className="sector-card-sep">&middot;</span>
                                     )}
-                                    <EventEta eta={eventEta} />
+                                    <EventEta eta={eventEta} isDefending={isDefending} />
                                 </>
                             )}
                         </span>

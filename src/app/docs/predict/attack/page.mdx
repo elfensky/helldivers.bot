@@ -109,6 +109,57 @@ Against bars of 70% and 80% respectively, with the line rendering when the media
 
 A day out the window is ~21 hours wide; a couple of hours out it is ~5. **It never becomes a clock.** The width tracks the estimate itself, so the display goes `17–38h` → `8–19h` → `1–6h` and stops. Curiously the *relative* uncertainty is slightly worse close in — roughly 1× the estimate a day out, 2× a couple of hours out — which is the daily-bucket staleness biting hardest when little remains to conquer.
 
+### While the assault runs
+
+Once the assault fires, the question flips from *when* to *how it ends*, and
+the event card switches to the [outcome verdict](/docs/predict): at the
+average pace since the assault started, does its bar fill inside the 48-hour
+timeout? On track → _"Taken ~12h"_; behind → _"Fails"_ (the countdown already
+shows the loss time).
+
+The verdict is unusually decisive on assaults. Conditioning the outcome on
+the live pace (script 17, S157+ progress history, 8 assaults so far):
+
+| Elapsed | P(fail) if on track | P(fail) if behind |
+| --- | --- | --- |
+| 10–35% | 0.000 (n=77) | 0.672 (n=58) |
+| 35–60% | 0.000 (n=149) | 0.652 (n=198) |
+| 60–85% | 0.000 (n=77) | 1.000 (n=144) |
+| 85–100% | 0.000 (n=20) | 1.000 (n=87) |
+
+**No on-track moment has ever preceded a failed assault** — in any elapsed
+bin — while a behind reading fails about two-thirds of the time early and
+always past 60% elapsed. Read direction, not precision: the moment counts
+are autocorrelated within events and only 8 assaults have progress history.
+Quantifying this into the counterattack clock is
+[#487](https://github.com/elfensky/helldivers.bot/issues/487), blocked until
+~30 assaults have progress capture.
+
+## The sector ETA — the same arithmetic, one boundary early
+
+The faction cards' sector view shows an `ETA ~9h` line toward the **next
+sector boundary** — the same `remaining ÷ pace` computation as the assault
+ETA (literally the same code path, `paceEtaHours` in
+`attackForecast.mjs`), aimed at the next `points_max / 10` step instead of
+the campaign's end. Same 24-hour rate window, same day-of-week correction,
+same staleness anchoring.
+
+Two honest differences from the assault window:
+
+- **Median only, no range.** The band ratios that turn the assault estimate
+  into a calibrated `(10–25h)` window were measured against one target —
+  full campaign completion. No equivalent table exists yet for sector
+  boundaries (the grading script needs more high-resolution seasons,
+  [#484](https://github.com/elfensky/helldivers.bot/issues/484)), and an
+  unmeasured range is not shown.
+- **Hidden during any active event for that faction.** Defends freeze the
+  campaign bar; during an assault the campaign is already complete.
+
+In the **last sector** the next boundary *is* the campaign end — exactly the
+target the calibrated assault model was measured on — so the card defers to
+the full assault window rather than showing an uncalibrated median for the
+same number.
+
 ## Why the window is lopsided
 
 The dashboard shows the forecast as `ETA ~14h (10–25h)` — a median with an
