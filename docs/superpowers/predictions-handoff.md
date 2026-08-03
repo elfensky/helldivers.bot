@@ -5,7 +5,7 @@ session) picking up the HD1 event-prediction work. Read this first; follow
 pointers for depth. **Keep it living:** every attempt, correction, or
 shipped artifact updates this file in the same branch.
 
-**Last updated:** 2026-08-03 (v0.87.0 — forecast split, #489)
+**Last updated:** 2026-08-03 (verdict/sector docs + paceEtaHours dedup, after v0.88.0)
 **Issue trail:** #472 → #479 → #480 → #482 → #483 → #486 → #487 (open,
 data-gated) → #488 → #489
 **Full narrative record:**
@@ -194,8 +194,18 @@ env-sourced `build`. Work in worktrees off `develop` (§ CLAUDE.md).
 | `waveForecast.mjs` | FREE-wave band; hides `assault-active` (gate) / `wave-active` | `waveModel.mjs` (08; ATTACK rows now unused) |
 | `counterattackForecast.mjs` | Counteroffensive clock + pace qualifier | 48h constant (14) + `eventForecast.mjs` |
 | `eventForecast.mjs` | Win/loss outcome verdict, margin 0, hidden below 25% elapsed | 14b |
-| `attackForecast.mjs` / `attackModel.mjs` | Assault-start ETA line | 10/11 |
+| `attackForecast.mjs` / `attackModel.mjs` | Assault-start ETA line + `sectorForecast` (next-boundary median, same `paceEtaHours` core, median-only until 13b's gate is evaluable) | 10/11 |
 | `NextWaveCard.jsx` | Renders whichever regime owns the moment | both forecasts |
+
+Notes (2026-08-03): the rate/dow/staleness block is deduplicated into a
+module-private `paceEtaHours` in `attackForecast.mjs` (behavior-identical,
+tests untouched). `evaluateProgress`'s 'behind' is ALGEBRAICALLY the
+complement of `eventForecast.onTrack` at margin 0 (p < M·e/T ⟺ fill ETA >
+time left) — the ▲/▼ indicator and the Falls/Fails verdict cannot disagree;
+pinned by `paceVerdict.contract.test.mjs`. Script 14b now also prints
+accuracy by elapsed decile (no-skip), feeding the /docs/predict chart.
+Published: hub "While an event runs" section (+ `LiveOutcomeNow` live
+example), attack page "While the assault runs" + "The sector ETA".
 
 ## Data clocks — open, blocked on history accumulating
 

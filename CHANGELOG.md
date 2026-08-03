@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+### Added
+
+- **/docs/predict documents the in-event outcome verdict and the sector
+  ETA.** The hub gains a "While an event runs" section with a
+  verdict-accuracy-by-elapsed chart (from script 14b's new decile table) and
+  a live worked example (`LiveOutcomeNow`, hourly ISR) running the shipped
+  `eventForecast` / `sectorForecast` / `counterattackForecast` on the
+  current campaign; the attack page documents the assault-run verdict
+  (script 17's conditioning table) and the previously undocumented sector
+  ETA.
+- **Contract test pinning pace/verdict agreement.** At `VERDICT_MARGIN = 0`
+  the ▲/▼ pace indicator's `behind` and the verdict's `!onTrack` are the
+  same inequality; `paceVerdict.contract.test.mjs` sweeps ~4,700 moments to
+  keep them from drifting apart.
+
+### Changed
+
+- **`attackForecast.mjs` deduplicated.** `attackForecast` and
+  `sectorForecast` shared a verbatim ~40-line rate/dow/staleness block; it
+  is now one module-private `paceEtaHours` helper (behavior-identical, both
+  test files untouched).
+- **Stale `evaluateProgress` docs corrected** (utilities doc claimed a
+  string return; faq/JSDoc claimed a symmetric ±10% buffer — it is
+  upper-only).
+
 ### Fixed
 
 - **Event cards showed the capture ETA instead of the outcome.** An event
