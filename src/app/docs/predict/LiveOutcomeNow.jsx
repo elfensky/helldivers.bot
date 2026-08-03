@@ -40,7 +40,7 @@ function factionLine(data, enemy, now) {
         if (v.mode !== 'verdict') {
             return `${kind} running (${elapsedPct}% elapsed) — verdict hidden: ${v.reason === 'too-early' ? 'below the 25% gate' : v.reason}`;
         }
-        if (v.stalled)
+        if (v.stalled || v.etaHours === null)
             return `${kind} running (${elapsedPct}% elapsed) — stalled, heading for the timer`;
         if (!v.onTrack) {
             return `${kind} running (${elapsedPct}% elapsed) — behind pace, projected to fail in ${fmtHours(v.remainingHours)}`;
