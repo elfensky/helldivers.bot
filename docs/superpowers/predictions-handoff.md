@@ -13,6 +13,19 @@ data-gated) → #488 → #489
 **Per-script reference:** [`scripts/README.md`](../../scripts/README.md)
 (§ analysis/) **Published story:** `/docs/predict` (+ `/attack`, `/defend`)
 
+**Register split (2026-08-03):** the public `/docs/predict` pages are
+deliberately plain-language ("pass mark", "fairness check", "typical
+miss") — statistical terminology and full scorecards (skill ratios, CIs,
+calibration quartiles, KS distances, IQR ratios, Bonferroni/permutation
+protocol) live ONLY here, in the findings doc, and in the scripts' own
+output. When updating the public pages, keep them jargon-free and translate
+via: gate → pass mark; walk-forward → "each war forecast only from the wars
+before it"; calibration → "the percentages come true at their advertised
+rates"; skill ratio ≤0.6 → "reliably ~40%+ better than guessing the
+average"; placebo/permutation → "same-war shuffle / fairness check";
+KM/censoring → "careful about wars that ended mid-wait"; IQR → "middle
+half".
+
 ---
 
 ## TL;DR state

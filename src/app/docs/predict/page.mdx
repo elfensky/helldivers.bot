@@ -26,14 +26,15 @@ mechanics we've fully mapped.**
 
 Everything on this page falls into one of two boxes, and the site never
 mixes them up — one is **mechanical** (a game rule we measured, worth a
-real countdown), the other requires **actual prediction** (a model judged
-against a pre-registered accuracy bar, worth a band at best):
+real countdown), the other requires **actual prediction** (a guess that had
+to beat a pass mark we wrote down *before* testing, worth a time window at
+best):
 
 | | 🔩 Mechanical (clocks) | 🎲 Statistical (models) |
 | --- | --- | --- |
 | What | Assault trigger at full points · 48h assault timeout · counteroffensive fire · defend chain · assault gate | Assault-start ETA (pace) · free-wave timing · which faction is next |
-| Typical error | **~0 — minutes** (48h timeout: 544/544 exact; counterattack within 10 min: 467/474; backtested 0.0h vs the statistical model's 9.2h during assaults) | Assault ETA: **passed the bar** (3–4× better than naive, ships as an ETA). Free waves: **±8h typical** on a ~44h cycle — five modeling attempts, bar never met, ships as a band |
-| Honest caveat | The counteroffensive is conditional: it fires only if the assault fails (~59% of the time — the pace verdict tells you which way it's leaning) | A band is a band: "~20h (14-32h) · 63% within 24h", calibrated to hold at those rates, never a countdown |
+| Typical error | **~0 — minutes** (48h timeout: 544/544 exact; counterattack within 10 min: 467/474; replayed against history it beat the statistical model 0.0h to 9.2h during assaults) | Assault ETA: **passed the mark** (3–4× better than just guessing the average, so it ships as a real ETA). Free waves: **±8h typical** on a ~44h cycle — five attempts, mark never met, ships as a window |
+| Honest caveat | The counteroffensive is conditional: it fires only if the assault fails (~59% of the time — the pace verdict tells you which way it's leaning) | A window is a window: "~20h (14-32h) · 63% within 24h" — we've checked against history that those percentages actually come true at those rates, and it's never dressed up as a countdown |
 
 ## ⚔️ Attacks: arithmetic, not fortune-telling
 
@@ -50,9 +51,10 @@ The dashboard measures the pace over the last 24 hours, corrects for how old
 the latest reading is and for the weekly rhythm (weekends run faster), and
 shows the answer as a window rather than a single number — asymmetric on
 purpose, because arrival = work ÷ pace, and a slowdown delays the arrival
-more than an equal speedup hastens it. Backtested war by war, this forecast
-passed the project's pre-registered accuracy bar outright, which is why it
-gets to be a real ETA on the dashboard.
+more than an equal speedup hastens it. We replayed this forecast against
+every recorded war as if it were running live, and it beat the pass mark we
+had written down beforehand — which is why it gets to be a real ETA on the
+dashboard.
 
 The same division powers the **sector ETA** on faction cards — aimed one
 sector boundary early instead of at the campaign's end (details on the
@@ -74,20 +76,20 @@ a bare fill ETA; they name the outcome:
   time is already on the card: it's the countdown itself.
 
 The math is one line — at the average pace since the event started, does
-the bar fill before the deadline? — and it's the **same predicate** that
-drives the ▲/▼ pace delta on the right of the bar (the two can never
-disagree; a contract test pins it). Replayed over every completed event
-with minute-level progress history (130 events, 2,193 rendered moments),
-the verdict calls the final outcome correctly **91.6%** of the time, and it
-sharpens as the event ages:
+the bar fill before the deadline? — and it's the **same comparison** that
+drives the ▲/▼ pace arrow on the right of the bar, so the two can never
+disagree (an automated test keeps them locked together). Replayed over
+every completed event with minute-level progress history (130 events,
+2,193 rendered moments), the verdict calls the final outcome correctly
+**91.6%** of the time, and it sharpens as the event ages:
 
 <VerdictAccuracyChart />
 
 The shaded band is why the cards stay silent for the first quarter of every
-event: that early, the since-start pace is still dominated by the opening
-minutes (~72% accuracy — barely better than the base rate), so the verdict
-is hidden rather than shown flickering. Past 60% elapsed it's calling
-96–99% correctly.
+event: that early, the average pace is still dominated by whatever happened
+in the opening minutes (~72% accuracy — barely better than a blind guess),
+so the verdict is hidden rather than shown flickering. Past 60% elapsed
+it's calling 96–99% correctly.
 
 What the shipped functions say right now:
 
@@ -113,14 +115,15 @@ measured across 5,000+ recorded defends:
 4. **The dice roll.** Strip all of that away and what's left is one global
    hidden timer: after a train ends, the next free wave arrives ~32 hours
    later on average, with genuine randomness no model has beaten — five
-   modeling attempts, each judged against a pre-registered bar, each miss
-   recorded on the Defends page.
+   attempts, each scored against the same pass mark written down in
+   advance, each miss recorded on the Defends page.
 
 So the dashboard's **Predicted Wave card** runs two separate forecasts,
 because these are two different problems. **No assault running:** it looks
-up every moment in ~160 wars that looked like this one and shows the median
-with the middle-50% window around it — _"~20h (14-32h) · 63% within 24h"_ —
-a calibrated band, never a fake countdown. **Assault running:** the dice are
+up every moment in ~160 wars that looked like this one and shows the
+middle estimate with the middle-50% window around it — _"~20h (14-32h) ·
+63% within 24h"_ — percentages that verifiably come true at those rates,
+never a fake countdown. **Assault running:** the dice are
 paused (mechanic #3), so the band steps aside and the card shows mechanic
 #2's deterministic clock instead — _"counterattack ⟨time⟩"_ — phrased
 through the assault's live pace: _"behind pace"_ means expect it, _"on pace
