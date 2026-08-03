@@ -530,53 +530,110 @@ describe('EventCard — assault ETA line', () => {
         expect(el.textContent).not.toMatch(/\(/); // no unmeasured parens
     });
 
-    it('renders the event ETA left-aligned beside the label, pace on the right', () => {
-        const { container } = render(
+    /**
+     * @param {object} eventEta
+     * @param {object} [extra] props merged over the event-card defaults
+     */
+    function renderEventCard(eventEta, extra = {}) {
+        return render(
             <EventCard
                 {...base}
                 barLabel="CAPITAL_DEFENSE"
                 endTime={1_800_000_000}
-                pace={{
-                    status: 'ahead',
-                    delta: 8100,
-                    deltaPercent: 4,
-                    currentRate: 1,
-                    requiredRate: 1,
-                }}
-                eventEta={{
-                    mode: 'verdict',
-                    etaHours: 3.2,
-                    onTrack: true,
-                    stalled: false,
-                }}
+                eventEta={eventEta}
+                {...extra}
             />,
         );
-        // Event ETA lives in the left label group, same style as every ETA.
+    }
+
+    const onTrack = {
+        mode: 'verdict',
+        etaHours: 3.2,
+        remainingHours: 6,
+        onTrack: true,
+        stalled: false,
+    };
+    const behind = {
+        mode: 'verdict',
+        etaHours: 12,
+        remainingHours: 4,
+        onTrack: false,
+        stalled: false,
+    };
+
+    it('renders the win ETA left-aligned beside the label, pace on the right', () => {
+        const { container } = renderEventCard(onTrack, {
+            pace: {
+                status: 'ahead',
+                delta: 8100,
+                deltaPercent: 4,
+                currentRate: 1,
+                requiredRate: 1,
+            },
+        });
+        // The verdict lives in the left label group, same style as every ETA.
         const group = container.querySelector('.sector-card-bar-label-group');
         const eta = group.querySelector('.sector-card-assault');
-        expect(eta.textContent).toMatch(/ETA ~3h/);
+        expect(eta.textContent).toMatch(/Taken ~3h/);
         // The pace indicator (▲/▼ + amount) is back on the right, as before.
         const row = container.querySelector('.sector-card-bar-label-row');
         expect(row.querySelector('.sector-card-pace')).not.toBeNull();
         expect(row.textContent).toContain('8,100');
     });
 
-    it('shows no event ETA when stalled; pace still renders', () => {
-        const { container } = render(
-            <EventCard
-                {...base}
-                barLabel="CAPITAL_DEFENSE"
-                endTime={1_800_000_000}
-                pace={{ status: 'behind', delta: 5200 }}
-                eventEta={{
-                    mode: 'verdict',
-                    etaHours: null,
-                    onTrack: false,
-                    stalled: true,
-                }}
-            />,
+    it('names the outcome per event type when on track to finish early', () => {
+        const capture = renderEventCard(onTrack);
+        expect(
+            capture.container.querySelector('.sector-card-assault').textContent,
+        ).toMatch(/Taken ~3h/);
+        capture.unmount();
+
+        const defend = renderEventCard(onTrack, { action: 'defending' });
+        expect(
+            defend.container.querySelector('.sector-card-assault').textContent,
+        ).toMatch(/Holds ~3h/);
+    });
+
+    it('never paints a win in the loss colour, even inside the hour', () => {
+        const { container } = renderEventCard(
+            { ...onTrack, etaHours: 0.65, remainingHours: 1 },
+            { action: 'defending' },
         );
-        expect(container.querySelector('.sector-card-assault')).toBeNull();
+        const el = container.querySelector('.sector-card-assault');
+        expect(el.textContent).toMatch(/Holds ~39m/);
+        expect(el.className).not.toContain('sector-card-assault--imminent');
+    });
+
+    it('states the loss without repeating the countdown when behind', () => {
+        for (const [action, word] of [
+            ['defending', 'Falls'],
+            ['capturing', 'Fails'],
+        ]) {
+            const { container, unmount } = renderEventCard(behind, { action });
+            const el = container.querySelector('.sector-card-assault');
+            expect(el.textContent).toBe(word);
+            // The EventCountdown beside it already carries the deadline — a
+            // second copy of the same duration would be noise.
+            expect(el.textContent).not.toMatch(/\d/);
+            // Red is the loss, not "imminent": a win inside the hour must not
+            // wear the same colour as a defeat.
+            expect(el.className).toContain('sector-card-assault--imminent');
+            unmount();
+        }
+    });
+
+    it('calls a stalled event behind rather than hiding it; pace still renders', () => {
+        const { container } = renderEventCard(
+            {
+                mode: 'verdict',
+                etaHours: null,
+                remainingHours: 4,
+                onTrack: false,
+                stalled: true,
+            },
+            { action: 'defending', pace: { status: 'behind', delta: 5200 } },
+        );
+        expect(container.querySelector('.sector-card-assault').textContent).toBe('Falls');
         expect(container.querySelector('.sector-card-pace')).not.toBeNull();
     });
 });

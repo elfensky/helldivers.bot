@@ -38,8 +38,13 @@ import { quantileOf } from './lib/backtest.mjs';
 // The shipped verdict rule's constants — duplicated verbatim from
 // src/features/dashboard/eventForecast.mjs / 14-event-verdict-margin.mjs
 // (scripts cannot import src's `@/` alias).
-const VERDICT_MARGIN = 0.2;
-const SKIP_FRACTION = 0.1;
+const VERDICT_MARGIN = 0;
+const SKIP_FRACTION = 0.25;
+// A won assault's end_time is the moment its points filled, not the deadline
+// it was racing — every assault runs a 48h timeout. Replaying a win against
+// its own early end would hand it a deadline that never existed live. See
+// trap 11 in docs/superpowers/predictions-handoff.md.
+const ASSAULT_TIMEOUT = 48 * HOUR;
 const MIN_PROGRESS_BUCKETS = 3;
 
 // --- pure helpers ------------------------------------------------------------
@@ -218,7 +223,8 @@ console.log('\n=== 2. verdict conditioning (S157+ h1_event_progress, EXPLORATORY
         let behindFail = 0;
         let behindN = 0;
         for (const a of qualifying) {
-            const dur = a.end_time - a.start_time;
+            const deadline = a.start_time + ASSAULT_TIMEOUT;
+            const dur = ASSAULT_TIMEOUT;
             const series = ds
                 .eventProgressSeries('attack', a.event_id)
                 .filter((r) => r.time > a.start_time && r.time < a.end_time);
@@ -229,7 +235,7 @@ console.log('\n=== 2. verdict conditioning (S157+ h1_event_progress, EXPLORATORY
                     Number(r.points),
                     Number(a.points_max),
                     a.start_time,
-                    a.end_time,
+                    deadline,
                     r.time,
                 );
                 if (onTrack) {

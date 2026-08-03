@@ -33,8 +33,10 @@ describe('eventForecast', () => {
         expect(v.etaHours).toBeCloseTo(10, 5);
     });
 
-    it('stays on track inside the anti-flicker margin', () => {
-        // ETA slightly past the deadline but within remaining*(1+margin)
+    it('stays on track right up to the margin boundary', () => {
+        // Measured VERDICT_MARGIN is 0, so this is the deadline itself; the
+        // arithmetic stays written against the constant so re-calibrating the
+        // script (see its header) does not silently invalidate the test.
         const remainingH = 4;
         const etaTargetH = remainingH * (1 + VERDICT_MARGIN) - 0.01;
         // rate = points/elapsed = points/2h ; eta = (120k-points)/rate = etaTarget
@@ -49,9 +51,34 @@ describe('eventForecast', () => {
         expect(v).toEqual({
             mode: 'verdict',
             etaHours: null,
+            remainingHours: 4,
             onTrack: false,
             stalled: true,
         });
+    });
+
+    it('returns the deadline distance alongside the fill ETA', () => {
+        // A loss lands on end_time and a win lands on etaHours; the card needs
+        // both to say which one it is talking about.
+        const v = eventForecast(makeEvent(), NOW);
+        expect(v.remainingHours).toBeCloseTo(4, 5);
+    });
+
+    it('hides the verdict until the event clears the elapsed-fraction gate', () => {
+        // 6h event: the gate sits at 1h30m elapsed.
+        const justUnder = makeEvent({
+            start_time: NOW - 1.4 * H,
+            end_time: NOW + 4.6 * H,
+        });
+        expect(eventForecast(justUnder, NOW)).toEqual({
+            mode: 'hidden',
+            reason: 'too-early',
+        });
+        const justOver = makeEvent({
+            start_time: NOW - 1.6 * H,
+            end_time: NOW + 4.4 * H,
+        });
+        expect(eventForecast(justOver, NOW).mode).toBe('verdict');
     });
 
     it('hides non-active, expired, complete and zero-elapsed events', () => {

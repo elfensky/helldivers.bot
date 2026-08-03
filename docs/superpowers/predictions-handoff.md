@@ -123,7 +123,7 @@ descriptions: [`scripts/README.md`](../../scripts/README.md).
 | 13 | scheduler-shape | Which scheduler design fits the lulls | Gamma accumulator; global end-anchored clock (contaminated fit — see 15) |
 | 13b | sector-eta | Next-sector ETA backtest | Gate not yet evaluable (#484) |
 | 14 | counterattack-delta | Is the counterattack delay mechanical? | **MECHANICAL** (criterion met); concurrency census; Steam-guide checks |
-| 14b | event-verdict-margin | Anti-flicker slack for the pace verdict | Margin 0.2 shipped in `eventForecast.mjs` |
+| 14b | event-verdict-margin | Anti-flicker slack for the pace verdict | **Margin 0** + 25% elapsed gate shipped in `eventForecast.mjs`; verdict is 91.6% accurate (130 events / 2,193 moments) once the deadline bias is corrected — see trap below |
 | 15 | counterattack-target | 3rd target correction + gate re-run + gamma refit | STATE-KM 0.625 [0.599–0.664], cal+sharp FAIL → INCONCLUSIVE; clean gamma(k≈8.8, θ≈3.6h) |
 | 16 | counterattack-pipeline | Mechanistic composite vs KM table | ATTACK branch WINS (0.0h vs 9.2h); SC9 branch REJECTED |
 | 17 | assault-outcome | P(fail\|elapsed), verdict conditioning, clock provenance, counterattack trains | The attempt-5 measurement set (see mechanics 4/5/7/10) |
@@ -168,6 +168,14 @@ degenerate-control check before it is believed.
    times (`h1_event`, second-resolution) for deltas, never status buckets.
 10. **Timestamp artifacts** — an exactly-0s delta spike would be
     event-sourcing, not mechanics; check granularity (14 § a does).
+11. **A won event's `end_time` is not its deadline** (2026-08-03, cost script
+    14b ~7 accuracy points and a wrong shipped constant) — wins are recorded
+    at the moment their points filled, losses at the timer's expiry. Any
+    replay that treats `end_time` as "the deadline this event was racing"
+    silently hands every success a deadline that never existed and biases the
+    rule toward "behind" on exactly the events that succeeded. Reconstruct the
+    nominal timer (150 min defends, 48h assaults) — `nominalDeadline` in 14b.
+    Anything replaying live-card logic over finished events inherits this.
 
 ## Conventions (scripts/)
 
@@ -185,7 +193,7 @@ env-sourced `build`. Work in worktrees off `develop` (§ CLAUDE.md).
 | --- | --- | --- |
 | `waveForecast.mjs` | FREE-wave band; hides `assault-active` (gate) / `wave-active` | `waveModel.mjs` (08; ATTACK rows now unused) |
 | `counterattackForecast.mjs` | Counteroffensive clock + pace qualifier | 48h constant (14) + `eventForecast.mjs` |
-| `eventForecast.mjs` | On-track/behind completion verdict, margin 0.2 | 14b |
+| `eventForecast.mjs` | Win/loss outcome verdict, margin 0, hidden below 25% elapsed | 14b |
 | `attackForecast.mjs` / `attackModel.mjs` | Assault-start ETA line | 10/11 |
 | `NextWaveCard.jsx` | Renders whichever regime owns the moment | both forecasts |
 

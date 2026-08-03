@@ -111,8 +111,14 @@ detail pages):
 5. **Assaults trigger deterministically** the instant a faction's campaign
    bar fills (9 of 10 sectors is therefore the "assault pending" window,
    and defend waves go quiet through it).
-6. **Failed assaults last exactly 48 hours** — a timeout, 544 of 544 in
-   history. Won assaults end early, when their points fill.
+6. **Losses run out the clock; wins end early.** Failed assaults last exactly
+   48 hours — a timeout, 544 of 544 in history — and failed defends run their
+   full timer too, 3,179 of 3,260 at exactly 150 minutes. Wins are the
+   opposite: they end the moment the points fill (1,681 of 1,833 won defends
+   finish inside the timer; won assaults at a median 37h). So while an event
+   is live, its countdown is the **loss** time and its fill ETA is the **win**
+   time — which is why the event cards name the outcome instead of showing a
+   bare ETA.
 7. **A failed assault is answered immediately:** the counterattack lands on
    that faction within minutes of the timeout, almost always on region 9 —
    and counterattack trains are harder to stop than normal ones (players
