@@ -3,7 +3,7 @@ import EtaSkewExplainer from './EtaSkewExplainerLoader';
 export const metadata = {
     title: 'Predicting Attacks | Helldivers Bot',
     description:
-        'How Helldivers 1 homeworld attacks are forecast: a deterministic full-points trigger plus a pace estimate, backtested walk-forward against 925 recorded attacks and clearing the project\'s pre-registered accuracy bar.',
+        'How Helldivers 1 homeworld attacks are forecast: an exact full-points trigger plus a pace estimate, replayed against 925 recorded attacks and beating the pass mark set before testing.',
     alternates: { canonical: '/docs/predict/attack' },
     openGraph: { url: '/docs/predict/attack' },
 };
@@ -14,15 +14,16 @@ export const metadata = {
 campaign hits full points — `points == points_max`, exactly, within minutes.
 So the forecast is just arithmetic:
 `eta = (points_max − points) / rate`, with a day-of-week correction to the
-pace. Backtested walk-forward it clears every leg of the project's
-pre-registered gate — skill 0.23–0.33 against a 0.6 bar — and ships on the
+pace. Replayed against all ~160 recorded wars as if it were running live,
+it's typically 3–4× closer than just guessing the historical average —
+clearing the pass mark we wrote down before testing — and ships on the
 dashboard as an assault heads-up line. It never becomes a clock: the window
 is ~21h wide a day out, ~5h wide two hours out. <a href="/docs/predict/defend" data-umami-event="docs-predict-defend">How the defend side
 compares →</a>
 
 Attacks are **deterministic**. An attack on a faction's homeworld fires within minutes of that faction's campaign reaching full points — `points == points_max`, the exact integer. Every one of the 925 recorded attacks targets region 11, the enemy homeworld; none fires early.
 
-There is no threshold to estimate and no distribution to model. The trigger is a constant already stored in `h1_season.points_max`.
+There is nothing fuzzy to estimate about the trigger itself. It's a constant the game already tells us, stored in `h1_season.points_max`.
 
 ### The trigger is a point, not a band
 
@@ -72,31 +73,31 @@ eta = (points_max − points) / rate
 
 Everything on the right-hand side except `rate` is known exactly and in real time. So the entire forecasting problem — and the entire error budget — lives in estimating how fast a campaign is gaining points.
 
-**Measured, and it works.** `10-attack-eta.mjs` backtests that formula walk-forward by season against all 925 attacks, using a 24-hour pace window:
+**Measured, and it works.** We replayed that formula against all 925 recorded attacks as if it were running live — always forecasting each war using only the wars before it, never letting it peek at its own future. Its typical miss, next to the dumbest possible guess (always saying the historical average):
 
-| Faction | Effective N | Skill ratio [95% CI] | Median error vs. baseline | Sharpness vs. marginal |
-| --- | --- | --- | --- | --- |
-| Bugs | 94 | **0.270** [0.203, 0.356] | 17.3h vs. 64.0h | 69.6h vs. 90.4h — narrower |
-| Cyborgs | 96 | **0.233** [0.186, 0.311] | 18.9h vs. 81.3h | 85.5h vs. 94.0h — narrower |
-| Illuminate | 125 | **0.325** [0.246, 0.392] | 19.9h vs. 61.3h | 69.9h vs. 88.4h — narrower |
+| Faction | Typical miss (this forecast) | Typical miss (just guess the average) |
+| --- | --- | --- |
+| Bugs | **17.3h** | 64.0h |
+| Cyborgs | **18.9h** | 81.3h |
+| Illuminate | **19.9h** | 61.3h |
 
-Every confidence interval sits far below the project's 0.6 ship bar, and every configuration passes the sharpness leg. For scale: the best defend model ever built reached 0.679 [0.651, 0.707] and failed. **This is the first thing in this project to clear the gate it was measured against**, and it does so because the trigger is exact — the model is only forecasting pace, not guessing at a threshold.
+That's 3–4× better across the board, and the window it draws is genuinely narrower than the raw spread of history — both requirements of the pass mark this project wrote down before running any model. For scale: the best defend model ever built got only ~1.5× better than the dumb guess and failed that mark. **This is the first thing in this project to clear the mark it was measured against**, and it does so because the trigger is exact — the model is only forecasting pace, not guessing at a threshold. (The full statistical scorecards live in the [investigation handoff](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/predictions-handoff.md) and re-print on every run of `10-attack-eta.mjs`.)
 
 The forecast is not available at every moment. Roughly **38–47%** of moments emit nothing at all, because a stalled or retreating front (`rate <= 0`) gives no arrival time. A front that is not moving has no ETA, and the honest output is silence.
 
 ### What a player would actually see
 
-The intended use is a heads-up, not a countdown, so it is scored as an alert. Both bars were written down before the model was run:
+The intended use is a heads-up, not a countdown, so we scored it like an alarm — and wrote down the two pass marks (70% and 80%) before running it:
 
-| Faction | Fires before…​ | …​an attack follows within 2× the upper bound | Verdict |
+| Faction | The alarm went off before…​ | …​and when it went off, an attack really followed soon | Verdict |
 | --- | --- | --- | --- |
-| Bugs | 93.6% of attacks | 92.0% of showing moments | PASS |
+| Bugs | 93.6% of attacks | 92.0% of the time | PASS |
 | Cyborgs | 96.9% | 97.4% | PASS |
 | Illuminate | 96.8% | 95.7% | PASS |
 
-Against bars of 70% and 80% respectively, with the line rendering when the median estimate falls under **48 hours**.
+The line shows up on the dashboard whenever the middle estimate falls under **48 hours**.
 
-**Why 48 and not 24.** The threshold was 24h first, and moving it out improved every measure at once — coverage, false-alarm rate, and calibration. That is the campaign-state resolution showing through: `h1_status` runs at ~1 bucket/day for most of the record, so a 24-hour display window is exactly the regime where the input is least able to support an estimate. Restricted to the moments a UI renders, the median hit rate moved from 0.456–0.526 to **0.496–0.535** against a nominal 0.500 — Cyborgs at 0.496 is very nearly exact. A wider window also means the line appears more often and is correspondingly less of an event; 48h is the point where the data can carry the claim. And the window does tighten as the attack approaches — this is the model's own output, on the moments a UI would render:
+**Why 48 and not 24.** The threshold was 24h first, and moving it out improved everything at once: the alarm fired before more attacks, cried wolf less, and its "sooner than X" claims came true closer to the honest 50% a middle estimate should hit (it moved from ~46–53% to ~50–54%). The reason is the data itself: for most of recorded history the campaign state updates only about once a day, so a 24-hour warning window is exactly where the input is blurriest. And the window does tighten as the attack approaches — this is the model's own output, on the moments a player would actually see:
 
 | When it says | It shows | Width | The attack actually came |
 | --- | --- | --- | --- |
@@ -117,23 +118,24 @@ average pace since the assault started, does its bar fill inside the 48-hour
 timeout? On track → _"Taken ~12h"_; behind → _"Fails"_ (the countdown already
 shows the loss time).
 
-The verdict is unusually decisive on assaults. Conditioning the outcome on
-the live pace (script 17, S157+ progress history, 8 assaults so far):
+The verdict is unusually decisive on assaults. Splitting every recorded
+moment by what the verdict said at the time (8 assaults with minute-level
+history so far):
 
-| Elapsed | P(fail) if on track | P(fail) if behind |
+| How far in | Said "on track" — how often it still failed | Said "behind" — how often it failed |
 | --- | --- | --- |
-| 10–35% | 0.000 (n=77) | 0.672 (n=58) |
-| 35–60% | 0.000 (n=149) | 0.652 (n=198) |
-| 60–85% | 0.000 (n=77) | 1.000 (n=144) |
-| 85–100% | 0.000 (n=20) | 1.000 (n=87) |
+| 10–35% | never (0 of 77 readings) | 67% (of 58) |
+| 35–60% | never (0 of 149) | 65% (of 198) |
+| 60–85% | never (0 of 77) | 100% (of 144) |
+| 85–100% | never (0 of 20) | 100% (of 87) |
 
-**No on-track moment has ever preceded a failed assault** — in any elapsed
-bin — while a behind reading fails about two-thirds of the time early and
-always past 60% elapsed. Read direction, not precision: the moment counts
-are autocorrelated within events and only 8 assaults have progress history.
-Quantifying this into the counterattack clock is
-[#487](https://github.com/elfensky/helldivers.bot/issues/487), blocked until
-~30 assaults have progress capture.
+**An on-track reading has never been followed by a failed assault** — at
+any stage — while a behind reading fails about two-thirds of the time early
+and always past 60% elapsed. Read this as a strong direction, not a precise
+percentage: one assault contributes many readings, and only 8 assaults have
+this kind of history so far. Folding it into the counterattack clock is
+[#487](https://github.com/elfensky/helldivers.bot/issues/487), waiting
+until ~30 assaults have been recorded at this detail.
 
 ## The sector ETA — the same arithmetic, one boundary early
 
@@ -146,19 +148,19 @@ same staleness anchoring.
 
 Two honest differences from the assault window:
 
-- **Median only, no range.** The band ratios that turn the assault estimate
-  into a calibrated `(10–25h)` window were measured against one target —
-  full campaign completion. No equivalent table exists yet for sector
-  boundaries (the grading script needs more high-resolution seasons,
-  [#484](https://github.com/elfensky/helldivers.bot/issues/484)), and an
-  unmeasured range is not shown.
+- **One number, no range.** The measured ratios that turn the assault
+  estimate into a trustworthy `(10–25h)` window were checked against one
+  target only — full campaign completion. Nobody has yet measured the
+  equivalent for sector boundaries (that needs more high-resolution
+  seasons, [#484](https://github.com/elfensky/helldivers.bot/issues/484)),
+  and a range we haven't measured is a range we don't show.
 - **Hidden during any active event for that faction.** Defends freeze the
   campaign bar; during an assault the campaign is already complete.
 
-In the **last sector** the next boundary *is* the campaign end — exactly the
-target the calibrated assault model was measured on — so the card defers to
-the full assault window rather than showing an uncalibrated median for the
-same number.
+In the **last sector** the next boundary *is* the campaign end — exactly
+the target the assault forecast was measured against — so the card switches
+to the full assault window rather than showing an unmeasured single number
+for the same thing.
 
 ## Why the window is lopsided
 
@@ -200,68 +202,17 @@ the `(10–25h)` range is the same information, told honestly.
 <details>
 <summary>In depth: the pace estimate, its corrections, and what carries no signal</summary>
 
-**Staleness anchoring.** `points` is read from the last bucket at or before the evaluation moment — up to 24 hours old in the historical record — so raw `remaining / rate` answers *"how long from when the reading was taken"*, not *"how long from now."* The correction is algebraic: extrapolating the stale reading forward at the same rate is identical to subtracting its age.
+**The reading is old, so we correct for its age.** The campaign state we read can be up to 24 hours stale in the historical record (about 12 hours typically), so raw `remaining ÷ pace` answers *"how long from when the reading was taken"*, not *"how long from now."* The fix is simple — subtract the reading's age — and it matters most exactly in the under-48h regime where the line actually shows. Without it, "sooner than X" claims came true 65–70% of the time instead of the honest ~50% a middle estimate should hit; with it, 52–57%.
 
-```
-(max − points − rate × age) / rate  ==  (max − points) / rate − age
-```
+**The 24-hour pace window was picked by measurement, not taste.** Asking "which window best predicts the next six hours of pace?" can be answered on all 21,849 high-resolution status readings — no attacks needed. Short windows lose badly (a 30-minute rate at this resolution is the difference of two readings, mostly noise: ~43% pace error vs ~24% at 24h), and windows longer than a day gain nothing.
 
-Median historical reading age is ~12h, so the anchor matters most exactly in the sub-24h display regime. The when-showing p50 hit rate, against a nominal 0.500:
+**Things that sound smart but don't help.** Multiplying the pace by "current players ÷ average players", or rebuilding it from points-per-mission × mission rate, both test *worse* than the plain 24-hour rate — the pace over a window already contains the players who produced it, so layering a player multiplier on top double-counts them. A gentler per-faction player adjustment looks slightly better in the four seasons that have the data, but only 2–3 scorable attacks per faction exist at that resolution — far too few to act on. The shipped model stands; the comparison re-runs as each new war lands.
 
-| p50 hit rate when showing (nominal 0.500) | Unanchored | Anchored |
-| --- | --- | --- |
-| Bugs | 0.650 | 0.525 |
-| Cyborgs | 0.678 | 0.544 |
-| Illuminate | 0.701 | 0.568 |
+**The day-of-week correction.** Campaign pace has a strong weekly rhythm — the busiest days run ~29% faster than the quietest (weekends, essentially — the daily buckets shift the labels onto Sunday/Monday). Fed into the forecast honestly (learned only from past wars, never the one being forecast), it doesn't make the central guess more accurate — but it makes the displayed *window* more honest: the "sooner than X" percentages land closer to their advertised rates, and the alarm fires before ~94–96% of attacks. For a heads-up line, honesty of the window is the thing worth buying. Public holidays were not tested — the game's history contains a handful of them, nowhere near enough to measure.
 
-One methodological note worth keeping: the headline calibration figure pools every moment, so a model can score well on it while being miscalibrated in every stratum with the errors cancelling. Calibration is therefore also checked by predicted-magnitude decile, which is what makes anchoring effects like this visible at all.
+**Honest limits.** Attacks average ~2 per faction per war, so the real sample is ~94–125 independent attacks per faction, not 925 — small enough that some secondary checks wobble between factions, which we read as noise, not signal. And the live forecast is better-fed than the replay that graded it (live state updates every 15 minutes; historical state was daily), so the replay's error is more likely a ceiling than a floor — but with only 8 high-resolution attacks, that's an argument, not a demonstration.
 
-**The rate window was chosen empirically, without using a single attack.** "Which window best predicts near-future pace" is answerable on all 21,849 high-resolution status rows, which sidesteps the fact that only 8 attacks have ever been recorded at 15-minute resolution. Median error predicting the next six hours of pace:
-
-| Window | 30 min | 1h | 3h | 6h | 12h | **24h** | 48h | 72h |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Error | 42.8% | 34.4% | 28.7% | 28.9% | 29.4% | **23.7%** | 24.5% | 24.5% |
-
-Short windows are far worse, not better — at 15-minute buckets a 30-minute rate is a difference of two readings and mostly noise. Longer than a day is no better either. Blending a short window into the long one helps by 0.6pp at a 20% weight, which does not justify the complexity.
-
-**Adjustments that carry no signal.** Two telemetry-based adjustments from `h1_statistic` test *worse* than the plain 24-hour rate (23.5% pace error). The points-rate over a window already embodies the players who produced it, so layering a player multiplier on top double-counts:
-
-| Adjustment | Error |
-| --- | --- |
-| × (current players / 24h average players) | 28.1% |
-| points-per-mission × recent mission rate | 27.0% |
-
-**Per-faction player telemetry — promising, unproven.** Four seasons of 15-minute per-faction player counts exist (S157–160), enough for a walk-forward comparison of player-based pace variants against the shipped model, every variant scored on identical moments. The facts: the crude ratio above tests worse here too (+2.4h median paired error, pooled); a dampened points-per-player<sup>α</sup>-hour form at α = 0.7 tests *better* (−1.0h pooled, better in both Cyborg seasons). The doubt: only 2–3 scorable attacks per faction exist at this resolution, far too few to conclude anything. The shipped model stands; the comparison reruns unchanged as each new war adds a telemetry season.
-
-**The day-of-week correction.** Campaign pace has a strong weekly rhythm — across all 160 seasons, normalising each campaign to its own median pace:
-
-| Sun | Mon | Sat | Tue | Wed | Thu | Fri |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1.19 | 1.19 | 1.00 | 0.95 | 0.93 | 0.92 | 0.92 |
-
-A 29% swing between the busiest and quietest days. (Sunday and Monday lead because a daily bucket reports the day before it, so weekend play lands there.) In-sample, an hour-of-week correction cuts the *pace* error from 23.5% to **18.6%** — a figure to distrust on principle, since it is learned on the same data it is scored against.
-
-Measured honestly — factors learned from training seasons only, day rather than hour because for 156 of 160 seasons a status transition spans a whole day — the skill ratio is a wash: Bugs 0.270 → 0.275, Cyborgs 0.233 → 0.232, Illuminate 0.325 → 0.271, with heavily overlapping intervals. Better pace prediction does not translate into a better median ETA.
-
-What the correction *does* improve is calibration in the regime a UI renders — the numbers a player actually reads:
-
-| When showing (nominal p25 0.250 / p50 0.500) | Without | With day-of-week |
-| --- | --- | --- |
-| Bugs | 0.294 / 0.553 | **0.219 / 0.507** |
-| Cyborgs | 0.297 / 0.538 | **0.251 / 0.496** |
-| Illuminate | 0.318 / 0.579 | **0.276 / 0.535** |
-
-So the correction makes the displayed window more *honest* without making the central estimate more *accurate*. For a heads-up, that is the trade worth taking, and it is kept. Coverage improves too — the line fires before 93.6–96.0% of attacks.
-
-Public holidays were not tested and are not worth testing: the game's history contains a handful of them.
-
-**Caveats.**
-
-- **Effective N is 94–125 per faction**, not 925. Attacks average 2.17 per faction-season, so most clock moments share a target.
-- **The calibration leg flips between factions** (two of three pass, and which two depends on configuration). At this effective N that is noise, not signal, and it should not be read as a result either way.
-- **The live model is better fed than the backtested one.** Historical campaign state is up to 24 hours stale; live it is 15 minutes. The same feature measured with less noise makes the backtested error a floor rather than an estimate — but with 8 high-resolution attacks that cannot be demonstrated, only argued.
-
-Reproduce:
+Full statistical detail — the scorecards, confidence intervals, and every rejected variant — lives in the [investigation handoff](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/predictions-handoff.md) and reprints on every run of:
 
 ```
 node --env-file=.env.development scripts/analysis/10-attack-eta.mjs

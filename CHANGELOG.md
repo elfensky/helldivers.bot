@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **/docs/predict pages rewritten in plain language.** All three prediction
+  pages now explain the same facts without statistical jargon (pass mark,
+  fairness check, typical miss, middle half); the precise protocol and
+  scorecards remain in the investigation handoff, the findings doc, and the
+  analysis scripts. The handoff gains a register-split note with the
+  translation glossary.
+
 ## 0.88.1
 
 ### Added
