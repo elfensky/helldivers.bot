@@ -27,11 +27,11 @@ If you see **"Notifications unavailable"**, your browser does not support the No
 
 ## How does progress tracking work?
 
-The `evaluateProgress()` function determines whether the community is ahead, behind, or on track during a campaign event. It compares actual progress against a linear expected pace, with a 10% buffer zone.
+The `evaluateProgress()` function determines whether the community is ahead, behind, or on track during a campaign event. It compares actual progress against a linear expected pace, with a 10% buffer on the upside only.
 
 - **Ahead** — actual points exceed the expected pace plus the buffer
-- **On Track** — actual points are within the buffer zone of expected pace
-- **Behind** — actual points fall below the expected pace minus the buffer
+- **On Track** — actual points are between the expected pace and the buffer
+- **Behind** — actual points fall below the expected pace (no buffer on the downside — any shortfall reports)
 
 Drag the sliders below to explore how different scenarios affect the evaluation:
 
