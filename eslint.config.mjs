@@ -20,6 +20,11 @@ export default [
             'coverage/**',
             'dist/**',
             '.serwist/**',
+            // Each worktree holds a full copy of src/, so without this a lint
+            // run in the main checkout also lints every branch checked out
+            // under .worktrees/ — results would depend on which worktrees
+            // happen to exist.
+            '.worktrees/**',
         ],
     },
 

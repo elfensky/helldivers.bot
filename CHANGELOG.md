@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.89.1
+
+### Fixed
+
+- **ESLint no longer lints worktrees.** `.worktrees/**` is now ignored — each
+  worktree holds a full copy of `src/`, so a lint run in the main checkout was
+  also linting every branch checked out there (496 warnings vs the 316 the
+  checkout actually owns), making output depend on which worktrees existed.
+
 ## 0.89.0
 
 ### Added
