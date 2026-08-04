@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.88.3
+
+### Changed
+
+- **/docs/predict hub gains a data-status table** — which forecasts are final (at their ceiling) vs which upgrade as high-detail wars accumulate, in plain language.
+
 ## 0.88.2
 
 ### Changed
