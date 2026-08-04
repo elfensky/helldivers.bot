@@ -50,6 +50,10 @@ jobs:
               with:
                   name: visual-diffs
                   path: .vitest-attachments/
+                  # Vitest writes them to a dot-directory, which the action
+                  # skips by default — without this the upload silently
+                  # matches nothing and the job fails with no evidence.
+                  include-hidden-files: true
                   if-no-files-found: ignore
 
     test:
