@@ -71,6 +71,10 @@ docs/superpowers/archive
 # Temporary verification screenshots
 verify-*.png
 scorecard.png
+
+# Visual regression failure artifacts (the baselines themselves ARE committed)
+**/__screenshots__/**/*-actual.png
+**/__screenshots__/**/*-diff.png
 .claude/skills/
 
 # graphify graph (generated locally)

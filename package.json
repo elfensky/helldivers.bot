@@ -17,6 +17,8 @@
         "test:e2e": "vitest run --config vitest.smoke.config.mjs",
         "test:smoke": "vitest run --config vitest.smoke.config.mjs",
         "test:all": "vitest run && vitest run --config vitest.smoke.config.mjs",
+        "test:visual": "./scripts/visual-tests.sh",
+        "test:visual:update": "./scripts/visual-tests.sh --update",
         "update:safe": "npx npm-check-updates --cooldown 7d -u && npm install"
     },
     "dependencies": {
@@ -55,6 +57,8 @@
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
         "@types/node": "^24.13.3",
+        "@vitest/browser": "^4.1.10",
+        "@vitest/browser-playwright": "^4.1.10",
         "@vitest/coverage-v8": "^4.1.9",
         "babel-plugin-react-compiler": "^1.0.0",
         "chokidar-cli": "^3.0.0",
@@ -67,6 +71,7 @@
         "eslint-plugin-react-hooks": "^7.1.1",
         "globals": "^17.7.0",
         "jsdom": "^29.1.1",
+        "playwright": "^1.62.1",
         "prettier": "^3.8.4",
         "prettier-plugin-tailwindcss": "^0.8.0",
         "prisma": "^7.8.0",
