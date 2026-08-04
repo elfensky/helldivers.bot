@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.90.0
+
+### Changed
+
+- **Full dependency update pass**, superseding dependabot PRs #491, #492 and #451.
+  Notables: `next` 16.2.9 → 16.2.12, `react`/`react-dom` 19.2.7 → 19.2.8,
+  `@prisma/*` + `prisma` 7.8.0 → 7.9.1, `better-auth` 1.6.20 → 1.6.25,
+  `@sentry/nextjs` 10.60.0 → 10.68.0, `recharts` 3.9.0 → 3.10.1,
+  `mermaid` 11.15.0 → 11.16.0, `tailwindcss` 4.3.0 → 4.3.3,
+  `jsdom` 29 → 30, `vitest` 4.1.6 → 4.1.10. GitHub Actions bumped in step
+  (checkout 7.0.1, setup-node 7.0.0, codeql-action 4.37.4, docker/\* current).
+
+### Fixed
+
+- **Both open high-severity advisories cleared** — `brace-expansion` 5.0.8 → 5.0.9
+  (DoS via unbounded intermediate arrays) and `fast-uri` 3.1.4 → 3.1.5 (host
+  confusion via backslash authority introducer). `npm audit` now reports 0.
+- **Visual regression runner reinstalls on lockfile change.** Its `node_modules`
+  Docker volume is shared across checkouts, so a dependency bump was previously
+  screenshotted against the *previous* dependency tree and passed — worse than
+  not testing. It now stamps the lockfile and re-runs `npm ci` when it differs.
+
+### Held back
+
+- **`typescript` stays on 6.x.** TypeScript 7 removes `ts.ObjectFlags.Intrinsic`,
+  which `ts-api-utils` reads, so the whole typescript-eslint chain (via
+  `eslint-plugin-react-x`) crashes on load — and TS 7's inference changes produce
+  268 new errors in `npm run typecheck`. Revisit once typescript-eslint ships TS 7
+  support.
+- **`@types/node` stays on 24.x.** `mise.toml` and `.node-version` pin the runtime
+  to Node 24; types from 26 would describe APIs that do not exist at runtime.
+
 ## 0.89.1
 
 ### Fixed
