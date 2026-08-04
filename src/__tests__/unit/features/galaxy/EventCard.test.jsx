@@ -350,11 +350,17 @@ describe('EventCard (campaign view)', () => {
         expect(bar.getAttribute('aria-valuemax')).toBe('11');
     });
 
-    test('card title stays as `region` prop — not overridden in campaign view', () => {
-        render(<EventCard {...campaignProps} region="Ross System" />);
+    test('header is just the faction name in campaign view — no action word', () => {
+        render(<EventCard {...campaignProps} factionIndex={1} region="Ross System" />);
+        expect(screen.getByText('Cyborgs')).toBeDefined();
+        expect(screen.queryByText('Ross System')).toBeNull();
+        expect(screen.queryByText('Capturing')).toBeNull();
+    });
+
+    test('active events keep the action word and region name', () => {
+        render(<EventCard {...campaignProps} region="Ross System" endTime={9e9} />);
+        expect(screen.getByText('Capturing')).toBeDefined();
         expect(screen.getByText('Ross System')).toBeDefined();
-        expect(screen.queryByText(/campaign ·/i)).toBeNull();
-        expect(screen.queryByText(/homeworld ·/i)).toBeNull();
     });
 
     test('points meta displays the points/pointsMax passed by the parent', () => {
