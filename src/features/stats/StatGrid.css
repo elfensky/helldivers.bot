@@ -1,6 +1,5 @@
 .stat-grid {
     display: grid;
-    padding-left: 24px;
     /* Container-driven wrap: each card gets a 11rem (176px) minimum track
      * and fills 1fr beyond that. Cards wrap whenever the container can't
      * fit another 11rem track — no media queries needed. `minmax(0, 1fr)`
