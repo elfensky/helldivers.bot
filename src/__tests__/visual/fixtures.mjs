@@ -58,7 +58,9 @@ export function makeMapState() {
 }
 
 /**
- * One `h1_statistic` row, with the fields StatGrid reads.
+ * One row of `data.status` — DashboardClient passes this same array to
+ * StatGrid as `live`, so each row carries campaign progress *and* the
+ * telemetry fields StatGrid reads.
  *
  * @param {number} enemy - Faction index 0-2.
  * @param {object} [overrides]
@@ -66,6 +68,9 @@ export function makeMapState() {
 export function makeStatRow(enemy, overrides = {}) {
     return {
         enemy,
+        points: 1_000_000 + enemy * 700_000,
+        points_max: 5_000_000,
+        status: 'active',
         players: 4_000 + enemy * 137,
         kills: 300_000_000 + enemy * 11_000_000,
         deaths: 9_000_000 + enemy * 250_000,
@@ -86,20 +91,12 @@ export function makeStatRow(enemy, overrides = {}) {
 export function liveStore(overrides = {}) {
     return {
         data: {
-            status: [
-                {
-                    enemy: 0,
-                    points: 1_000_000,
-                    points_max: 5_000_000,
-                    status: 'active',
-                },
-                { enemy: 1, points: 0, points_max: 5_000_000, status: 'active' },
-                { enemy: 2, points: 2_400_000, points_max: 5_000_000, status: 'active' },
-            ],
-            statistics: [makeStatRow(0), makeStatRow(1), makeStatRow(2)],
+            status: [makeStatRow(0), makeStatRow(1), makeStatRow(2)],
             events: [],
             last_updated: '2026-01-15',
             season: 42,
+            season_duration: 30 * 24 * HOUR,
+            war_start: NOW_S - 30 * 24 * HOUR,
         },
         mapState: makeMapState(),
         status: 'live',

@@ -40,6 +40,12 @@ export default defineConfig({
                 import.meta.dirname,
                 './src/__tests__/visual/stubs/nextLink.jsx',
             ),
+            // The Sentry SDK touches `process.env` at import time, which no
+            // browser has. Reached from ComponentErrorBoundary.
+            '@sentry/nextjs': path.resolve(
+                import.meta.dirname,
+                './src/__tests__/visual/stubs/sentry.mjs',
+            ),
         },
     },
 });
