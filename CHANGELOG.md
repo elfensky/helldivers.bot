@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.90.1
+
+### Changed
+
+- **Faction-view event cards show the faction name, not "Capturing <region>".**
+  The campaign bar spans the whole campaign, so an action word belonging to a
+  single sector was misleading there. Active events are unchanged — they keep
+  their action word and place name, because they really are about a place. The
+  progress bar's `aria-label` follows the same title.
+
 ## 0.90.0
 
 ### Changed

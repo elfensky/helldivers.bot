@@ -7,6 +7,7 @@ import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.mjs';
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
 import { CAMPAIGN_STATUS, EVENT_STATUS, MAP_STATUS } from '@/shared/enums/events.mjs';
+import factions from '@/shared/enums/factions.mjs';
 import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 
 const passThrough = (v) => (v == null ? '—' : String(v));
@@ -300,6 +301,12 @@ export default function EventCard({
     const isCampaign = view === 'campaign';
     const { captured } = isCampaign ? countCapturedRegions(factionMap) : { captured: 0 };
 
+    // Faction view's bar spans the whole campaign, so the header is just the
+    // faction name — no "Capturing", which belongs to a single sector. Active
+    // events keep their action word and place name; they're about a place.
+    const isFactionTitle = isCampaign && !isEvent;
+    const title = isFactionTitle ? factions[factionIndex]?.name || region : region;
+
     const cardStyle = /** @type {React.CSSProperties} */ ({
         '--accent-color': color,
         '--faction-color': color,
@@ -316,16 +323,18 @@ export default function EventCard({
                         width={16}
                         height={16}
                     />
-                    <span
-                        className={
-                            'sector-card-action' +
-                            (isEvent ? ' sector-card-action-flash' : '')
-                        }
-                        style={titleColor ? { color: titleColor } : undefined}
-                    >
-                        {isDefending ? 'Defending' : 'Capturing'}
-                    </span>
-                    <span className="sector-card-title">{region}</span>
+                    {!isFactionTitle && (
+                        <span
+                            className={
+                                'sector-card-action' +
+                                (isEvent ? ' sector-card-action-flash' : '')
+                            }
+                            style={titleColor ? { color: titleColor } : undefined}
+                        >
+                            {isDefending ? 'Defending' : 'Capturing'}
+                        </span>
+                    )}
+                    <span className="sector-card-title">{title}</span>
                 </div>
                 {(barLabel ||
                     etaForecast?.mode === 'window' ||
@@ -369,7 +378,7 @@ export default function EventCard({
                     <div
                         className="sector-card-bar"
                         role="progressbar"
-                        aria-label={`${region} ${action} progress`}
+                        aria-label={`${title} ${action} progress`}
                         aria-valuenow={isCampaign ? captured : safePct}
                         aria-valuemin={0}
                         aria-valuemax={isCampaign ? 11 : 100}
