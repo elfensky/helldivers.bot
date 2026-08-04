@@ -184,14 +184,24 @@ ours, each reproducible from
 
 ## What would make these better
 
-Data, not cleverness. The open improvements are tracked as issues and
-blocked on history accumulating: outcome-conditioning the counterattack
-forecast needs ~30+ assaults with minute-level progress capture
-([#487](https://github.com/elfensky/helldivers.bot/issues/487)), and the
-attack-side refinements wait on more high-resolution seasons
-([#481](https://github.com/elfensky/helldivers.bot/issues/481),
-[#477](https://github.com/elfensky/helldivers.bot/issues/477),
-[#484](https://github.com/elfensky/helldivers.bot/issues/484)).
+Data, not cleverness — and it matters *which* data. The game only started
+recording minute-by-minute event progress a few wars ago, so anything that
+needs that detailed footage is working from a handful of examples, while
+everything built on the ~160-war event log is already as good as it can
+get. Where each forecast stands:
+
+| Forecast | Status | Waiting on |
+| --- | --- | --- |
+| **Counterattack clock** | **Final** — it's a game rule, exact to the minute | Nothing |
+| **Free-wave window** | **Final** — the randomness is the game's, not ours; five modeling attempts confirmed a tighter window isn't hiding in more cleverness | Nothing — the honest window *is* the ceiling |
+| **Outcome verdict (Holds/Falls wording)** | **Works today** (91.6% right, measured on 130 events) | Nothing for the wording itself |
+| Verdict → real percentages ("this assault will very likely fail") | Held back — the pattern looks decisive but we've only watched **8 assaults** in enough detail, and this project has been fooled by small samples five times | ~30 closely-watched assaults ([#487](https://github.com/elfensky/helldivers.bot/issues/487)) — grows by ~2 per war, for free |
+| Assault-start ETA | Good (3–4× better than guessing) — could sharpen modestly | A few more high-detail wars ([#481](https://github.com/elfensky/helldivers.bot/issues/481), [#477](https://github.com/elfensky/helldivers.bot/issues/477)) |
+| Sector ETA | Single estimate only — an honest range needs measuring | More high-detail wars ([#484](https://github.com/elfensky/helldivers.bot/issues/484)) |
+
+Nothing above gets *worse* by waiting — the shipped forecasts already use
+everything the current record supports. The rows marked final are done;
+the rest upgrade themselves as wars end.
 
 ---
 
