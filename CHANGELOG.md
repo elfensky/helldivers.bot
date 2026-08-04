@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.89.0
+
+### Added
+
+- **Visual regression tests.** `npm run test:visual` screenshots `DashboardClient`
+  (desktop + mobile), `EventCard` (attack + defend), and `StatGrid` in Vitest's
+  browser mode and compares them against committed baselines. Components mount
+  with literal fixture data through `LiveDataContext` — no server, no database,
+  no third-party service. Baselines are generated inside the Playwright Docker
+  image so they reproduce across machines; `npm run test:visual:update` rewrites
+  them. Not part of `test:unit`.
+- **CI gate for visual regressions.** A `Visual Regression` job runs the same
+  suite in the same Playwright image on every PR and push to `main`/`develop`,
+  uploading actual/diff PNGs as an artifact when a baseline fails.
+
 ## 0.88.3
 
 ### Changed

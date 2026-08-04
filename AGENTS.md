@@ -24,6 +24,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Use git worktrees** for parallel development on separate branches.
 - **Vitest:** `npm run test:unit` (single run), `npm run test:coverage` (with coverage).
 - **Smoke tests:** `npm run test:smoke` (`test:e2e` is an alias) — plain Vitest + `fetch` against a running server, no Playwright and no browser. Requires a server on `:3000` or `TEST_SERVER_URL`; it **fails** if none is reachable (`SMOKE_ALLOW_SKIP=1` to skip instead).
+- **Visual regression:** `npm run test:visual` (compare) / `npm run test:visual:update` (rewrite baselines) — Vitest browser mode, run inside the Playwright Docker image because baseline PNGs are platform-specific. Tests live in `src/__tests__/visual/`, baselines are committed. Not part of `test:unit`. See `/docs/testing`.
 - Commands are in `package.json` (`npm run` to list). Env vars are in `.example.env`.
 - **The unit test tree mirrors the source tree.** See § Test Layout below — put a new test at the mirrored path of the module it covers, or `npm run test:unit` fails.
 - **Progressive env vars:** Only `POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL` are required. Auth, analytics, and `BUCKET_SIZE` (timeseries bucket width) are optional — see `.example.env` section headers.
