@@ -14,6 +14,44 @@ permissions:
     contents: read
 
 jobs:
+    # Independent of "Test & Build" — no shared state, no build artifact, and a
+    # failure here means "the UI moved", not "the app is broken". Runs in
+    # parallel so it never delays the smoke gate.
+    visual:
+        name: Visual Regression
+        runs-on: ubuntu-latest
+        # The exact image scripts/visual-tests.sh uses locally, and that is the
+        # whole point: baseline PNGs are platform-specific, so rendering here
+        # must match rendering on a developer's machine byte for byte. A bare
+        # ubuntu-latest runner with `playwright install` has different fonts and
+        # would fail every baseline on noise. This tag, the `playwright`
+        # devDependency, and the script must move together.
+        container: mcr.microsoft.com/playwright:v1.62.1-noble
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.0
+
+            # No setup-node: the image already ships the Node version pinned in
+            # .node-version, and the visual suite needs no Prisma client.
+            - name: Install dependencies
+              run: npm ci
+
+            # Not `npm run test:visual` — that script launches this same image
+            # through docker, and this job is already inside it.
+            - name: Compare against committed baselines
+              run: npx vitest run --config vitest.visual.config.mjs
+
+            # Actual + diff PNGs, so a failure is reviewable without reproducing
+            # it locally.
+            - name: Upload diffs on failure
+              if: failure()
+              uses: actions/upload-artifact@v7.0.1
+              with:
+                  name: visual-diffs
+                  path: .vitest-attachments/
+                  if-no-files-found: ignore
+
     test:
         name: Test & Build
         runs-on: ubuntu-latest

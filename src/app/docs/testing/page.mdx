@@ -277,7 +277,9 @@ npm run test:visual:update   # accept current rendering as the new baselines
 
 Determinism comes from four things, all in `src/__tests__/visual/setup.mjs` and the config: a frozen `Date` (`vi.useFakeTimers({ toFake: ['Date'] })`, so `setTimeout`/rAF still work), a global rule zeroing every animation and transition, explicit `page.viewport()` per test, and literal fixtures. Aliased stubs replace `next/image`, `next/link`, and `@sentry/nextjs`, none of which work outside a Next runtime.
 
-When a baseline changes, review the diff PNG under `.vitest-attachments/` before accepting it. Visual tests are not part of `npm run test:unit` and do not run in CI yet.
+When a baseline changes, review the diff PNG under `.vitest-attachments/` before accepting it. Visual tests are not part of `npm run test:unit`.
+
+**In CI:** the `Visual Regression` job in `.github/workflows/ci.yml` runs on every PR and push to `main`/`develop`, inside the same Playwright image (as a job `container:`, so it calls `vitest` directly rather than the Docker script). On failure it uploads the actual/diff PNGs as a `visual-diffs` artifact. The image tag appears in three places — the CI job, `scripts/visual-tests.sh`, and the `playwright` devDependency — and all three must move together, or CI and local runs stop agreeing on what a pixel looks like.
 
 ---
 
