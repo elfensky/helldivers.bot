@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.90.2
+
+### Changed
+
+- **Roadmap reconciled against the code (2026-08-05).** The file still described
+  `develop` as nine versions ahead of `main`; it is twenty-three. Rewrote the
+  release section with the real gap, recorded the prediction arc (#472–#490)
+  that shipped without ever appearing on a track, retired the Dependabot
+  section (verified 0 open alerts and a clean `npm audit`), and separated the
+  prediction follow-ups that are blocked on more seasons from work that is
+  actually startable.
+- **Added S0a, a post-release error-triage session.** Every error currently in
+  GlitchTip is against `v0.67.1` code, so the triage has to follow the release
+  rather than precede it — with the exception of #495, which is unchanged on
+  `develop` and broken regardless.
+
+### Fixed
+
+- Nothing in the app. Two production bugs were filed rather than fixed here:
+  [#495](https://github.com/elfensky/helldivers.bot/issues/495) (`Map.groupBy`
+  breaks the timeline on Firefox 115 ESR) and
+  [#496](https://github.com/elfensky/helldivers.bot/issues/496) (React #418
+  hydration mismatch on `/`, ~266 production events).
+
 ## 0.90.1
 
 ### Changed
@@ -29,7 +53,7 @@
   confusion via backslash authority introducer). `npm audit` now reports 0.
 - **Visual regression runner reinstalls on lockfile change.** Its `node_modules`
   Docker volume is shared across checkouts, so a dependency bump was previously
-  screenshotted against the *previous* dependency tree and passed — worse than
+  screenshotted against the _previous_ dependency tree and passed — worse than
   not testing. It now stamps the lockfile and re-runs `npm ci` when it differs.
 
 ### Held back
@@ -123,7 +147,7 @@
   because the countdown beside it already is the loss time.
 - **The verdict's anti-flicker margin was calibrated against a deadline that
   never existed.** `14-event-verdict-margin.mjs` replayed won events against
-  their *rewritten* early `end_time`, biasing the rule toward "behind" on
+  their _rewritten_ early `end_time`, biasing the rule toward "behind" on
   exactly the events that succeeded. Replaying against the nominal timer
   instead, the verdict is 91.6% accurate (130 events / 2,193 moments) rather
   than 79.5%, and `VERDICT_MARGIN` drops 0.2 → **0** — the slack was
@@ -198,7 +222,7 @@
 ### Fixed
 
 - **Stranded thousands separator in animated stats.** `AnimatedStat` now
-  remounts the slot counter when the formatted *shape* changes (`###` →
+  remounts the slot counter when the formatted _shape_ changes (`###` →
   `#,###` → `#.#M`). react-slot-counter keys its separator spans off the
   previous value's length, so a live update from `1,600` to `600` could leave
   the comma behind and render `,600` — visible on the homeworld-assault event
@@ -211,7 +235,7 @@
 - **Predictions docs section.** The docs sidebar gains a dedicated
   "Predictions" section (Summary / Attacks / Defends), pulled out of
   Reference. `/docs/predict` is rewritten as a plain-language summary of
-  *how* each forecast is computed — attacks as arithmetic on the
+  _how_ each forecast is computed — attacks as arithmetic on the
   deterministic full-points trigger (pace window, staleness anchoring,
   lopsided window, completion verdict), defends as three mapped mechanics
   (chain, counterattack clock, assault gate) plus the one honest dice roll
@@ -401,7 +425,6 @@
   telemetry as promising-but-unproven), dropping the past-correction
   narrative framing.
 
-
 ## 0.79.0
 
 ### Added
@@ -421,9 +444,9 @@
   INCONCLUSIVE unchanged; scheduler refit on free lulls net of gated time:
   gamma(k≈8.8, θ≈3.6h), CV 0.336), `16-counterattack-pipeline.mjs`
   (pre-registered composite: during an assault, "next wave = assault start
-  + 48h" beats the shipped KM table 0.0h vs 9.2h median error; from the SC9
-  window it does not). `lib/dataset.mjs` now labels `isCounterattack` on
-  defend train starts (labelling only, chain rule untouched).
+    - 48h" beats the shipped KM table 0.0h vs 9.2h median error; from the SC9
+      window it does not). `lib/dataset.mjs` now labels `isCounterattack` on
+      defend train starts (labelling only, chain rule untouched).
 
 ### Changed
 
@@ -449,7 +472,6 @@
   visible line, with the 25th–75th percentile range in parens. Deliberately
   not a symmetric `±` form: the window is asymmetric near campaign completion
   (p75 up to 2× the median), and `±` would understate the late side.
-
 
 ## 0.78.1
 
@@ -516,7 +538,7 @@
   investigation — including a newly documented sixth: **a failed homeworld assault is always
   answered** (179/179 recorded lulls that began with a still-running, ultimately-failed
   homeworld assault saw the next wave hit the assaulted faction; the mirror case, a
-  *succeeded* assault, is 0/27 by definition since the faction is removed from the game).
+  _succeeded_ assault, is 0/27 by definition since the faction is removed from the game).
   When no assault is in play, the SC9-window rule calls the target 61.4% of the time (189/308,
   within-season permutation placebo, p = 0.0005). The page's live-numbers footer (lull count,
   train starts, seasons) now refreshes hourly straight from the database instead of quoting
