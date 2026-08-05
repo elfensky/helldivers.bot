@@ -84,7 +84,22 @@ jobs:
               with:
                   context: .
                   file: ./Dockerfile.migrate
-                  platforms: linux/amd64,linux/arm64
+                  # amd64 only — NOT an oversight. `prisma generate` dies under
+                  # QEMU aarch64 emulation with `qemu: uncaught target signal 4
+                  # (Illegal instruction)`, exit 132: Prisma's engine binary uses
+                  # instructions QEMU doesn't implement. The amd64 leg of the same
+                  # build succeeds. Adding arm64 here (8b5b2058, two hours after
+                  # v0.67.1 was tagged) was speculative prep for the Pi swarm and
+                  # broke the first release that tried it — v0.90.4, where the app
+                  # image published fine and this one failed, leaving no migrate
+                  # image for the tag.
+                  #
+                  # The app image (Dockerfile.app) still builds both arches; only
+                  # Prisma is affected. To restore arm64 here, the QEMU problem has
+                  # to be solved first — newer binfmt (`docker/setup-qemu-action`
+                  # with `image: tonistiigi/binfmt:latest`) or a native arm64
+                  # runner — and verified on a real tag, not assumed.
+                  platforms: linux/amd64
                   push: true
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:${{ github.ref_name }}

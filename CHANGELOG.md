@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.90.5
+
+### Fixed
+
+- **The migrate image is built for amd64 only again — v0.90.4's release build
+  failed without it.** `prisma generate` dies under QEMU aarch64 emulation with
+  `qemu: uncaught target signal 4 (Illegal instruction)` (exit 132); Prisma's
+  engine binary uses instructions QEMU does not implement. The amd64 leg of the
+  same build succeeds and generates the client fine.
+
+  arm64 was added to `build-migrate` in 8b5b2058, two hours after v0.67.1 was
+  tagged, as prep for the Pi swarm — so **v0.90.4 was the first release that
+  ever attempted it**, and it broke: the app image published for both arches,
+  the migrate image published for none, and `github-release` was skipped. Every
+  previously published migrate image (v0.67.1, v0.65.3, v0.65.2) is amd64-only,
+  so this restores the configuration that has shipped every release to date
+  rather than inventing a new one.
+
+  The app image still builds amd64 + arm64 — only Prisma is affected. Restoring
+  arm64 for migrate needs the QEMU problem solved first (newer binfmt via
+  `tonistiigi/binfmt:latest`, or a native arm64 runner) and verified on a real
+  tag.
+
 ## 0.90.4
 
 ### Changed
