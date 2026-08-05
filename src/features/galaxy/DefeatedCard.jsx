@@ -17,10 +17,16 @@ export default function DefeatedCard({
     let timing = '—';
     if (startTime && endTime) {
         const duration = formatDuration(endTime - startTime);
+        // Pin the timezone, not just the locale. Production renders in UTC; a
+        // visitor in any other zone re-formats the same instant locally, and an
+        // endTime near their midnight yields a different date than the server
+        // sent — a hydration mismatch (#496). UTC is the game's canonical
+        // clock, matching CascadeLogCard and groupEventsByDay.
         const date = new Date(endTime * 1000).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
+            timeZone: 'UTC',
         });
         timing = `${duration} · ${date}`;
     }
