@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.90.3
+
+### Fixed
+
+- **Sourcemaps never reached GlitchTip — two bugs, both silent
+  ([#496](https://github.com/elfensky/helldivers.bot/issues/496)).** Every
+  production stack frame has been minified since error tracking was wired up.
+  The credentials were fine and the upload did run; it failed twice per build
+  and nobody could see it.
+    - `SENTRY_PROJECT` was the project's **display name** (`helldivers.bot`),
+      not its **slug** (`helldiversbot`). `sentry-cli` resolves
+      `/api/0/projects/<org>/<project>/`, so release creation 404'd with
+      `Project not found` on every build. Fixed in `.env.development`; the
+      `SENTRY_PROJECT` repository secret needs the same correction.
+    - `silent: true` in `withSentryConfig` suppressed `console.error`, not just
+      info logs (`bundler-plugin-core` `logger.js:5217`), so both failures were
+      swallowed by every CI build. Removed — upload errors are now visible in
+      build logs, and the plugin still does not fail the build.
+
+  A **third** fault remains and is not in this repo: the GlitchTip server
+  rejects every upload with
+  `[Errno 13] Permission denied: '/code/uploads/file_blobs'`. Its media volume
+  is not writable by the container user. Until that is fixed on the host, no
+  sourcemap can be stored regardless of what this repo sends.
+
+- **Two hydration mismatches from unpinned timezones
+  ([#496](https://github.com/elfensky/helldivers.bot/issues/496)).** Both
+  formatted a timestamp with a pinned *locale* but no pinned *timezone*.
+  Production renders in UTC, so any visitor outside UTC re-formatted the same
+  instant into a different string and React discarded the tree (#418).
+    - `DefeatedCard` (rendered on the **dashboard**) printed a date with no
+      `timeZone`. Reproduced: a UTC server sends `Jul 23, 2025`, a
+      Europe/Warsaw visitor renders `Jul 24, 2025`. Europe/Warsaw is the
+      timezone of every reporter in #496.
+    - `EventLogCard`'s absolute time line (rendered on **/archives**) printed
+      an hour with no `timeZone`. Reproduced in a real browser: server
+      `Jul 23, 2026, 09:03` vs client `Jul 22, 2026, 21:03`.
+
+  Both now pin `timeZone: 'UTC'`, matching `CascadeLogCard`, `StatGrid` and
+  `groupEventsByDay`. Covered by new hydration tests that render in one
+  timezone and hydrate in another.
+
+  This does **not** yet close #496. Its ~266 events are all against v0.67.1,
+  where `DefeatedCard` carried the same defect — but attributing them requires
+  post-release data, and `NextWaveCard`, the suspect named in the issue, was
+  cleared: it did not exist at v0.67.1, and its `suppressHydrationWarning` does
+  hold across two adjacent text children (now asserted, with a control).
+
 ## 0.90.2
 
 ### Changed
