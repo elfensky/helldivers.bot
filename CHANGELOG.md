@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **Sourcemaps never reached GlitchTip — two bugs, both silent
+  ([#496](https://github.com/elfensky/helldivers.bot/issues/496)).** Every
+  production stack frame has been minified since error tracking was wired up.
+  The credentials were fine and the upload did run; it failed twice per build
+  and nobody could see it.
+    - `SENTRY_PROJECT` was the project's **display name** (`helldivers.bot`),
+      not its **slug** (`helldiversbot`). `sentry-cli` resolves
+      `/api/0/projects/<org>/<project>/`, so release creation 404'd with
+      `Project not found` on every build. Fixed in `.env.development`; the
+      `SENTRY_PROJECT` repository secret needs the same correction.
+    - `silent: true` in `withSentryConfig` suppressed `console.error`, not just
+      info logs (`bundler-plugin-core` `logger.js:5217`), so both failures were
+      swallowed by every CI build. Removed — upload errors are now visible in
+      build logs, and the plugin still does not fail the build.
+
+  A **third** fault remains and is not in this repo: the GlitchTip server
+  rejects every upload with
+  `[Errno 13] Permission denied: '/code/uploads/file_blobs'`. Its media volume
+  is not writable by the container user. Until that is fixed on the host, no
+  sourcemap can be stored regardless of what this repo sends.
+
 ## 0.90.2
 
 ### Changed
