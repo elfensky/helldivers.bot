@@ -114,7 +114,7 @@ Re-count after the release and act on what survives.
 
 | Finding                                                                                              | Events | Status after release                                                        |
 | ---------------------------------------------------------------------------------------------------- | -----: | --------------------------------------------------------------------------- |
-| React #418 hydration mismatch on `/` ([#496](https://github.com/elfensky/helldivers.bot/issues/496)) |   ~266 | **Unknown** — largest production error; re-count before debugging           |
+| React #418 hydration mismatch on `/` ([#496](https://github.com/elfensky/helldivers.bot/issues/496)) |   ~266 | **One cause fixed in v0.90.3, still re-count** — see below                  |
 | `Map.groupBy is not a function` ([#495](https://github.com/elfensky/helldivers.bot/issues/495))      |      1 | **Still broken** — the code is unchanged on develop; fix regardless         |
 | `ChunkLoadError` (~25 issues, ~60 events)                                                            |    ~60 | **Expected to drop** — stale-chunk reloads; a 23-version gap maximizes them |
 | Notification toggle stuck loading ([#485](https://github.com/elfensky/helldivers.bot/issues/485))    |      — | **Unknown** — filed against 0.67.1, re-verify in production                 |
@@ -124,10 +124,34 @@ and `groupCascadesBySeason.mjs` still call it on the client, so Firefox 115 ESR
 (the last Firefox for Windows 7/8) loses the timeline today and will still lose
 it after the release.
 
-**Also fix the diagnostics, not just the bugs.** Every GlitchTip stack frame is
-minified (`1a6wskabkk_qg.js:20:208102`) — sourcemaps are not reaching GlitchTip.
-Wiring that up first makes #496 and every future production error far cheaper to
-diagnose. Worth doing inside this session.
+**Diagnostics — done in v0.90.3, one blocker left.** Sourcemaps were not
+reaching GlitchTip for three reasons, none of them the wiring (which was always
+correct) and none of them a missing debug-ID feature (GlitchTip is 6.1.4 and
+its `chunk-upload` endpoint accepts `artifact_bundles`):
+
+1. `SENTRY_PROJECT` held the project's display name (`helldivers.bot`) instead
+   of its slug (`helldiversbot`), so `releases new` 404'd on every build. Fixed
+   in `.env.development` and in the repository secret.
+2. `silent: true` in `withSentryConfig` suppresses `console.error`, not just
+   info, so both failures were invisible in every CI build. Removed.
+3. **Still open — [#497](https://github.com/elfensky/helldivers.bot/issues/497).**
+   The GlitchTip server cannot write its own upload directory:
+   `[Errno 13] Permission denied: '/code/uploads/file_blobs'`. A host-side
+   volume-ownership fix, not a repo fix.
+
+**Frames will stay minified until #497 lands.** If #418 survives the release,
+fix #497 before trying to debug it — that is the whole point of having done
+this first.
+
+**#496 — one contributing cause already fixed.** `DefeatedCard` (dashboard,
+present at v0.67.1) formatted its date with a pinned locale but no pinned
+timezone and no `suppressHydrationWarning`: a UTC server renders
+`Jul 23, 2025` where a Europe/Warsaw visitor renders `Jul 24, 2025`, which is
+exactly the reporter profile on the issue. Fixed in v0.90.3, with a sibling in
+`EventLogCard`'s absolute time line on `/archives`. `NextWaveCard`, the suspect
+the issue named, is **cleared** — it did not exist at v0.67.1, and its
+`suppressHydrationWarning` does hold across two adjacent text children.
+This is not proof it produced all ~266 events, so the re-count still governs.
 
 The remaining `ReferenceError`s in GlitchTip (`factions is not defined`,
 `eventVerdict is not defined`, `NextWaveCard is not defined`) carry deployment
