@@ -4,7 +4,8 @@ Execution order for open work. GitHub Issues stays the source of truth for
 _what_ — this file is the source of truth for _when_, and for how to slice the
 work into sessions.
 
-Regenerate the state table when it drifts:
+**Last reconciled against the code: 2026-08-05** (`develop` @ `v0.90.1`,
+`main` @ `v0.67.1`). Regenerate the state table when it drifts:
 `gh issue list --state open --json number,title,milestone`
 
 ---
@@ -49,13 +50,29 @@ commit), and close the issue with an implementation comment.
 
 ---
 
-## Now — unblock the release
+## Now — unblock the release (again)
 
-`develop` is **74 commits and nine versions** (0.65.4 → 0.67.1) ahead of `main`,
-which is still tagged `v0.65.3`. `main` is fully contained in `develop`
-(0 commits behind), so the release PR is a clean merge with no conflicts to
-resolve. Nothing else should start until this ships, because every subsequent
-version bump compounds the gap.
+`develop` is **196 commits and 23 versions** (0.68.0 → 0.90.1) ahead of `main`,
+which is still tagged `v0.67.1`. `main` is fully contained in `develop`
+(0 commits behind), so the release PR is a clean merge with no conflicts.
+
+This is the same blocker the previous edition of this file opened with. It was
+cleared once (v0.65.3 → v0.67.1) and has since reopened at three times the size,
+because ~23 versions of feature work shipped to `develop` and none of it was
+tagged. **The lesson is in the cadence, not the merge:** release when the gap is
+a handful of versions, not when it is twenty-three.
+
+### What accumulated on `develop` and has never reached production
+
+None of it is on a roadmap track — it was all unplanned work taken between
+sessions, which is the other reason this file drifted:
+
+| Arc                                                | Versions       | Issues                                                    |
+| -------------------------------------------------- | -------------- | --------------------------------------------------------- |
+| Event/wave prediction (defend + attack)            | 0.72 → 0.88    | #472, #475, #478, #479, #480, #482, #483, #486, #488–#490 |
+| Visual regression suite + CI gate                  | 0.89.0         | —                                                         |
+| Full dependency pass, both high advisories cleared | 0.90.0         | —                                                         |
+| Assorted fixes                                     | 0.89.1, 0.90.1 | —                                                         |
 
 ### S0 — Release the develop backlog
 
@@ -63,37 +80,59 @@ version bump compounds the gap.
 - **Branch:** direct (release PR)
 - **Blocked by:** —
 
-PR `develop` → `main`, tag the version at the top of `CHANGELOG.md` on the merge
-commit, push the tag, merge `main` back into `develop`. The production Docker
-build only triggers on version tags — forgetting the tag means no deployment.
+PR `develop` → `main`, tag `v0.90.1` on the merge commit, push the tag, merge
+`main` back into `develop`. The production Docker build only triggers on version
+tags — forgetting the tag means no deployment.
 
-#### The release also clears the entire Dependabot backlog
+**Nothing else should start until this ships**, and for a sharper reason than
+last time: every production error currently in GlitchTip is against `v0.67.1`
+code. Debugging any of them before the release means debugging code that is 23
+versions dead. See S0a.
 
-GitHub reports **23 open alerts (13 high, 9 moderate, 1 low)** — but those are
-measured against `main`, which is the default branch and four versions stale.
-`develop` already fixes every one of them. Verified 2026-07-27 by resolving each
-alert's `first_patched_version` against develop's lockfile:
+#### Dependabot is clear — that section is retired
 
-|                                      |  Count | How                                                                                     |
-| ------------------------------------ | -----: | --------------------------------------------------------------------------------------- |
-| Cleared by a version bump on develop | **18** | e.g. `next` 16.2.9 → 16.2.11, `better-auth` 1.6.20 → 1.6.25, `postcss` 8.5.15 → 8.5.23  |
-| Cleared because the package is gone  |  **5** | `hono`, `@hono/node-server`, `js-yaml` are in main's lockfile and absent from develop's |
-| **Still vulnerable after release**   |  **0** |                                                                                         |
-
-So there is no separate security session — shipping S0 closes the backlog,
-including the `better-auth` account-takeover and the Next.js SSRF /
-middleware-bypass advisories.
-
-**After tagging, confirm rather than assume:** alerts auto-close when the default
-branch is rescanned, which is not instant. Re-run the count and expect zero.
+Verified 2026-08-05: **0 open Dependabot alerts** against `main`, and
+`npm audit` on `develop` reports **0 vulnerabilities**. The v0.67.1 release
+cleared the 23-alert backlog, and v0.90.0's dependency pass cleared both high
+advisories that appeared after it. Re-check at release time, but there is no
+standing security debt:
 
 ```
 gh api repos/elfensky/helldivers.bot/dependabot/alerts --paginate \
-  -q '[.[]|select(.state=="open")]|length'
+  -q '[.[]|select(.state=="open")]|length'   # expect 0
+npm audit --audit-level=moderate             # expect 0
 ```
 
-Anything still open after the rescan is a genuine finding that survived the
-bumps, and needs its own issue.
+### S0a — Post-release error triage
+
+- **Prep:** none — but **wait ~48h after S0 tags** for `dpl=0-90-x` events
+- **Branch:** direct (bugfix)
+- **Blocked by:** S0
+
+GlitchTip's unresolved list is dominated by errors that may already be fixed.
+Re-count after the release and act on what survives.
+
+| Finding                                                                                              | Events | Status after release                                                        |
+| ---------------------------------------------------------------------------------------------------- | -----: | --------------------------------------------------------------------------- |
+| React #418 hydration mismatch on `/` ([#496](https://github.com/elfensky/helldivers.bot/issues/496)) |   ~266 | **Unknown** — largest production error; re-count before debugging           |
+| `Map.groupBy is not a function` ([#495](https://github.com/elfensky/helldivers.bot/issues/495))      |      1 | **Still broken** — the code is unchanged on develop; fix regardless         |
+| `ChunkLoadError` (~25 issues, ~60 events)                                                            |    ~60 | **Expected to drop** — stale-chunk reloads; a 23-version gap maximizes them |
+| Notification toggle stuck loading ([#485](https://github.com/elfensky/helldivers.bot/issues/485))    |      — | **Unknown** — filed against 0.67.1, re-verify in production                 |
+
+`Map.groupBy` (#495) is the one that does **not** wait: `groupEventsByDay.mjs`
+and `groupCascadesBySeason.mjs` still call it on the client, so Firefox 115 ESR
+(the last Firefox for Windows 7/8) loses the timeline today and will still lose
+it after the release.
+
+**Also fix the diagnostics, not just the bugs.** Every GlitchTip stack frame is
+minified (`1a6wskabkk_qg.js:20:208102`) — sourcemaps are not reaching GlitchTip.
+Wiring that up first makes #496 and every future production error far cheaper to
+diagnose. Worth doing inside this session.
+
+The remaining `ReferenceError`s in GlitchTip (`factions is not defined`,
+`eventVerdict is not defined`, `NextWaveCard is not defined`) carry deployment
+ids `0-72-0` / `0-83-1` / `0-85-0` — versions that only ever existed on
+`develop`. They are local dev HMR artifacts, not production. Ignore them.
 
 ---
 
@@ -181,6 +220,23 @@ the assumption that the intended font is the right one.
 
 Rich Results, Schema validator, Search Console. Verification pass, likely
 zero-to-small code change.
+
+### Parked — prediction follow-ups waiting on data, not on appetite
+
+The prediction arc (#472–#490) closed with three issues that are deliberately
+**not schedulable**: they are blocked on the game producing more seasons, and
+no amount of session time moves them. Do not pick these up on a quiet day —
+check the gate first, and if it isn't met, put them back.
+
+| Issue                                                                                         | Unblocks when                        |
+| --------------------------------------------------------------------------------------------- | ------------------------------------ |
+| [#481](https://github.com/elfensky/helldivers.bot/issues/481) Attack ETA attempt 4b           | ~S165+ reached                       |
+| [#484](https://github.com/elfensky/helldivers.bot/issues/484) Sector ETA measured range       | script 13's gate becomes evaluable   |
+| [#487](https://github.com/elfensky/helldivers.bot/issues/487) Defend attempt 6                | ~30+ progress-tracked assaults exist |
+| [#477](https://github.com/elfensky/helldivers.bot/issues/477) Assault ETA band width (Icebox) | ~S172                                |
+
+`docs/superpowers/predictions-handoff.md` is the living record for all of these
+— read it before touching any prediction work, per CLAUDE.md.
 
 ---
 
@@ -292,7 +348,10 @@ Rewrite each against the real tables. While you're there, record the data
 reality below in each issue — not to cut features, but so nobody plans one
 without knowing its reach.
 
-#### Measured coverage (queried 2026-07-27)
+#### Measured coverage (queried 2026-07-27, still current 2026-08-05)
+
+The current season is **still 160** and still active, so no new season has
+closed since the measurement below — the counts stand as written.
 
 | Table          | Seasons | Notes                                               |
 | -------------- | ------: | --------------------------------------------------- |
@@ -488,12 +547,13 @@ open issues.** New bugs land here by default.
 ## Suggested order, condensed
 
 ```
-S0  release the backlog      ← blocks everything; also clears all 23
-                                Dependabot alerts (verified: 0 survive)
+S0  release the backlog      ← blocks everything; 23 versions unshipped
+S0a post-release triage      ← re-count GlitchTip; #495 fixes regardless
 S1  co-locate tests          ← before feature work adds more test files
 S2  stale-issue triage       ← ✅ done 2026-07-27
 S2a #469 map faction reveal
 S3  #459 null crash
+S3a #476 Space Mono          ← measure before merging
 S5  #42 design tokens        ← before S6/S7
 S8  …S15  Loadout Builder    ← the main feature arc
 S16 squad mode              ← committed; S9 must design the hash for it
@@ -507,3 +567,9 @@ S23 staging deploy          ← gated on the homelab Pi swarm, not appetite
 S4, S6, S7, Track E and the Track D independents slot in wherever there's
 appetite. Track C and Track D touch disjoint parts of the codebase, so they can
 run in parallel worktrees if two sessions are in flight.
+
+**Track A has not moved since 2026-07-27.** S1, S2a, S3, S3a and S4 were all
+startable then and are all still open now — the ~23 versions that shipped in
+between went entirely to unplanned prediction work. That is a fine outcome for
+one arc and a bad pattern for three; if the next arc is also unplanned, add it
+to this file when it starts rather than reconstructing it afterwards.
