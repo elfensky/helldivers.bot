@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Roadmap § S0a squared against v0.90.3.** It still described sourcemaps as
+  unwired and #496 as untouched. Records the three real upload faults (two
+  fixed, [#497](https://github.com/elfensky/helldivers.bot/issues/497) open),
+  that frames stay minified until #497 lands, and that `DefeatedCard` was a
+  confirmed #418 cause while `NextWaveCard` is cleared.
+
 ## 0.90.3
 
 ### Fixed
