@@ -17,11 +17,11 @@ jobs:
             image_missing: ${{ steps.check.outputs.missing }}
         steps:
             - name: Checkout code
-              uses: actions/checkout@v7.0.0
+              uses: actions/checkout@v7.0.1
 
             - name: Detect migration-related changes
               id: filter
-              uses: dorny/paths-filter@v4.0.1
+              uses: dorny/paths-filter@v4.0.2
               with:
                   filters: |
                       migrate:
@@ -46,23 +46,27 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
-              uses: actions/checkout@v7.0.0
+              uses: actions/checkout@v7.0.1
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v4.2.0
 
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v4.1.0
+              uses: docker/setup-buildx-action@v4.2.0
 
             - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v4.2.0
+              uses: docker/login-action@v4.6.0
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push MIGRATE
-              uses: docker/build-push-action@v7.2.0
+              uses: docker/build-push-action@v7.3.0
               with:
                   context: .
                   file: ./Dockerfile.migrate
+                  platforms: linux/amd64,linux/arm64
                   push: true
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
@@ -72,24 +76,27 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
-              uses: actions/checkout@v7.0.0
+              uses: actions/checkout@v7.0.1
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v4.2.0
 
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v4.1.0
+              uses: docker/setup-buildx-action@v4.2.0
 
             - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v4.2.0
+              uses: docker/login-action@v4.6.0
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push APP
-              uses: docker/build-push-action@v7.2.0
+              uses: docker/build-push-action@v7.3.0
               with:
                   context: .
                   file: ./Dockerfile.app
-                  #   platforms: linux/amd64,linux/arm64
+                  platforms: linux/amd64,linux/arm64
                   push: true
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
@@ -107,6 +114,68 @@ jobs:
                       sentry_url=${{ vars.SENTRY_URL }}
                       sentry_org=${{ secrets.SENTRY_ORG }}
                       sentry_project=${{ secrets.SENTRY_PROJECT }}
+
+    # ⚠️ DRAFT / UNTESTED until a self-hosted runner exists on a Pi swarm manager.
+    # GitHub's cloud runners cannot reach the home-LAN cluster; this job runs on
+    # the runner installed there. See deploy/README.md for the open TODOs.
+    deploy-staging:
+        needs: [build-app, build-migrate]
+        # DORMANT until the swarm + self-hosted runner exist. Flip repo variable
+        # STAGING_DEPLOY_ENABLED=true to activate (without it the job skips cleanly
+        # instead of hanging "pending" waiting for a runner that isn't there).
+        # Runs even when build-migrate was skipped — the existing :staging migrate
+        # image is reused. Skips if the app build failed.
+        if: ${{ !cancelled() && needs.build-app.result == 'success' && vars.STAGING_DEPLOY_ENABLED == 'true' }}
+        runs-on: self-hosted
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Log in to GHCR
+              run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            - name: Maintenance banner ON (optional — skipped if Kuma unset)
+              if: ${{ vars.KUMA_URL != '' }}
+              run: |
+                  npm i socket.io-client@4 --no-save --silent
+                  node .github/scripts/kuma-maintenance.mjs start
+              env:
+                  KUMA_URL: ${{ vars.KUMA_URL }}
+                  KUMA_USERNAME: ${{ secrets.KUMA_USERNAME }}
+                  KUMA_PASSWORD: ${{ secrets.KUMA_PASSWORD }}
+                  KUMA_MONITOR_IDS: ${{ vars.KUMA_STAGING_MONITOR_IDS }}
+
+            - name: Run migrations (one-shot, before the stack)
+              run: |
+                  docker pull ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
+                  docker run --rm \
+                    -e POSTGRES_URL="${{ secrets.STAGING_POSTGRES_URL }}" \
+                    ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
+
+            - name: Deploy the stack
+              run: |
+                  docker pull ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
+                  docker stack deploy --with-registry-auth -c deploy/stack.staging.yml helldivers
+
+            - name: Wait for the app service to converge (healthy)
+              run: |
+                  for i in $(seq 1 30); do
+                    reps=$(docker service ls --filter name=helldivers_app --format '{{.Replicas}}')
+                    echo "helldivers_app: ${reps:-pending}"
+                    [ "$reps" = "1/1" ] && exit 0
+                    sleep 10
+                  done
+                  echo "::error::app service did not converge"; docker service ps helldivers_app --no-trunc; exit 1
+
+            - name: Maintenance banner OFF (always)
+              if: ${{ always() && vars.KUMA_URL != '' }}
+              run: |
+                  npm i socket.io-client@4 --no-save --silent
+                  node .github/scripts/kuma-maintenance.mjs end
+              env:
+                  KUMA_URL: ${{ vars.KUMA_URL }}
+                  KUMA_USERNAME: ${{ secrets.KUMA_USERNAME }}
+                  KUMA_PASSWORD: ${{ secrets.KUMA_PASSWORD }}
 
     cleanup:
         needs: [build-migrate, build-app]

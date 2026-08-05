@@ -10,9 +10,14 @@ import { EVENT_STATUS } from '@/shared/enums/events.mjs';
  * tapers (actual rate < linear). This is intentional; treat the output as
  * "how we're doing against a simple yardstick," not "will we make it."
  *
- * A ±10% buffer around the linear target keeps small fluctuations from
+ * A +10% upper buffer on the linear target keeps small fluctuations from
  * flipping the label between 'ahead' and 'on_track'. 'behind' has no buffer
  * — any shortfall is reported.
+ *
+ * At VERDICT_MARGIN = 0 the 'behind' predicate here is algebraically the
+ * complement of eventForecast's `onTrack` (p < M·e/T ⟺ fill ETA > time
+ * left), so the ▲/▼ indicator and the Falls/Fails verdict cannot disagree —
+ * pinned by paceVerdict.contract.test.mjs.
  *
  * Returns null if the event is not active or the time window is degenerate.
  *

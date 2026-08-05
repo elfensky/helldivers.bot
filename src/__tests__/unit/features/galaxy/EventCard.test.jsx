@@ -62,8 +62,12 @@ describe('EventCard (sector view — default)', () => {
         );
         expect(screen.getByText('Defending')).toBeDefined();
         expect(screen.getByText('CAPITAL_DEFENSE')).toBeDefined();
+        // Accent stays solid faction color; the flash lives in the title word.
         const accent = container.querySelector('.sector-card-accent');
-        expect(accent.className).toContain('sector-card-accent-flash');
+        expect(accent.className).not.toContain('sector-card-accent-flash');
+        expect(container.querySelector('.sector-card-action').className).toContain(
+            'sector-card-action-flash',
+        );
     });
 
     test('renders homeworld assault state', () => {
@@ -78,7 +82,10 @@ describe('EventCard (sector view — default)', () => {
         expect(screen.getByText('Capturing')).toBeDefined();
         expect(screen.getByText('HOMEWORLD_ASSAULT')).toBeDefined();
         const accent = container.querySelector('.sector-card-accent');
-        expect(accent.className).toContain('sector-card-accent-flash');
+        expect(accent.className).not.toContain('sector-card-accent-flash');
+        expect(container.querySelector('.sector-card-action').className).toContain(
+            'sector-card-action-flash',
+        );
     });
 
     test('no alert icon in any state', () => {
@@ -343,11 +350,17 @@ describe('EventCard (campaign view)', () => {
         expect(bar.getAttribute('aria-valuemax')).toBe('11');
     });
 
-    test('card title stays as `region` prop — not overridden in campaign view', () => {
-        render(<EventCard {...campaignProps} region="Ross System" />);
+    test('header is just the faction name in campaign view — no action word', () => {
+        render(<EventCard {...campaignProps} factionIndex={1} region="Ross System" />);
+        expect(screen.getByText('Cyborgs')).toBeDefined();
+        expect(screen.queryByText('Ross System')).toBeNull();
+        expect(screen.queryByText('Capturing')).toBeNull();
+    });
+
+    test('active events keep the action word and region name', () => {
+        render(<EventCard {...campaignProps} region="Ross System" endTime={9e9} />);
+        expect(screen.getByText('Capturing')).toBeDefined();
         expect(screen.getByText('Ross System')).toBeDefined();
-        expect(screen.queryByText(/campaign ·/i)).toBeNull();
-        expect(screen.queryByText(/homeworld ·/i)).toBeNull();
     });
 
     test('points meta displays the points/pointsMax passed by the parent', () => {
@@ -391,5 +404,242 @@ describe('EventCard (campaign view)', () => {
         expect(container.querySelector('.sector-card-pace')).not.toBeNull();
         expect(container.querySelector('.sector-card-pace').textContent).toContain('500');
         expect(container.querySelector('.sector-card-countdown')).not.toBeNull();
+    });
+});
+
+describe('EventCard — assault ETA line', () => {
+    const base = {
+        action: 'capturing',
+        region: 'Fenrir III',
+        percent: 71,
+        points: 4_100_000,
+        pointsMax: 6_700_000,
+        factionIndex: 0,
+    };
+
+    it('renders nothing when no forecast is supplied', () => {
+        render(<EventCard {...base} />);
+        expect(screen.queryByText(/ETA ~/)).toBeNull();
+    });
+
+    it('renders nothing when the forecast is hidden', () => {
+        render(
+            <EventCard {...base} etaForecast={{ mode: 'hidden', reason: 'stalled' }} />,
+        );
+        expect(screen.queryByText(/ETA ~/)).toBeNull();
+    });
+
+    it('renders the median first with the percentile range in parens', () => {
+        render(
+            <EventCard
+                {...base}
+                etaForecast={{
+                    mode: 'window',
+                    p25: 4.2,
+                    p50: 9.4,
+                    p75: 16.3,
+                    imminent: false,
+                }}
+            />,
+        );
+        const el = screen.getByText(/ETA ~/);
+        // Median-first (rounded, ~-prefixed), range keeps it honest. Never a
+        // symmetric ± — the window is asymmetric near campaign completion.
+        expect(el.textContent).toMatch(/~9h \(4-16h\)/);
+        expect(el.textContent).not.toMatch(/±/);
+        expect(el.getAttribute('title')).toMatch(/9\.4h/);
+    });
+
+    it('marks an imminent assault with the danger modifier', () => {
+        render(
+            <EventCard
+                {...base}
+                etaForecast={{
+                    mode: 'window',
+                    p25: 1,
+                    p50: 2,
+                    p75: 3,
+                    imminent: true,
+                }}
+            />,
+        );
+        expect(screen.getByText(/ETA ~/).className).toContain(
+            'sector-card-assault--imminent',
+        );
+    });
+
+    it('never shows a negative lower bound', () => {
+        render(
+            <EventCard
+                {...base}
+                etaForecast={{
+                    mode: 'window',
+                    p25: -3,
+                    p50: 1,
+                    p75: 5,
+                    imminent: true,
+                }}
+            />,
+        );
+        expect(screen.getByText(/ETA ~/).textContent).toMatch(/~1h \(0m-5h\)/);
+    });
+
+    it('renders minutes below one hour', () => {
+        render(
+            <EventCard
+                {...base}
+                etaForecast={{
+                    mode: 'window',
+                    p25: 0.5,
+                    p50: 0.66,
+                    p75: 0.9,
+                    imminent: true,
+                }}
+            />,
+        );
+        // 0.66h → ~40m, range 30-54m (shared unit written once)
+        expect(screen.getByText(/ETA ~/).textContent).toMatch(/~40m \(30-54m\)/);
+    });
+
+    it('renders multi-day forecasts in days with a rough-range title', () => {
+        render(
+            <EventCard
+                {...base}
+                etaForecast={{
+                    mode: 'window',
+                    p25: 96,
+                    p50: 120,
+                    p75: 192,
+                    imminent: false,
+                }}
+            />,
+        );
+        const el = screen.getByText(/ETA ~/);
+        expect(el.textContent).toMatch(/~5d \(4-8d\)/);
+        expect(el.getAttribute('title')).toMatch(/Rough at multi-day range/);
+    });
+
+    it('renders a median-only forecast without a range', () => {
+        render(
+            <EventCard
+                {...base}
+                etaForecast={{
+                    mode: 'median',
+                    p50: 0.66,
+                    remaining: 5000,
+                    imminent: true,
+                }}
+            />,
+        );
+        const el = screen.getByText(/ETA ~/);
+        expect(el.textContent).toMatch(/ETA ~40m/);
+        expect(el.textContent).not.toMatch(/\(/); // no unmeasured parens
+    });
+
+    /**
+     * @param {object} eventEta
+     * @param {object} [extra] props merged over the event-card defaults
+     */
+    function renderEventCard(eventEta, extra = {}) {
+        return render(
+            <EventCard
+                {...base}
+                barLabel="CAPITAL_DEFENSE"
+                endTime={1_800_000_000}
+                eventEta={eventEta}
+                {...extra}
+            />,
+        );
+    }
+
+    const onTrack = {
+        mode: 'verdict',
+        etaHours: 3.2,
+        remainingHours: 6,
+        onTrack: true,
+        stalled: false,
+    };
+    const behind = {
+        mode: 'verdict',
+        etaHours: 12,
+        remainingHours: 4,
+        onTrack: false,
+        stalled: false,
+    };
+
+    it('renders the win ETA left-aligned beside the label, pace on the right', () => {
+        const { container } = renderEventCard(onTrack, {
+            pace: {
+                status: 'ahead',
+                delta: 8100,
+                deltaPercent: 4,
+                currentRate: 1,
+                requiredRate: 1,
+            },
+        });
+        // The verdict lives in the left label group, same style as every ETA.
+        const group = container.querySelector('.sector-card-bar-label-group');
+        const eta = group.querySelector('.sector-card-assault');
+        expect(eta.textContent).toMatch(/Taken ~3h/);
+        // The pace indicator (▲/▼ + amount) is back on the right, as before.
+        const row = container.querySelector('.sector-card-bar-label-row');
+        expect(row.querySelector('.sector-card-pace')).not.toBeNull();
+        expect(row.textContent).toContain('8,100');
+    });
+
+    it('names the outcome per event type when on track to finish early', () => {
+        const capture = renderEventCard(onTrack);
+        expect(
+            capture.container.querySelector('.sector-card-assault').textContent,
+        ).toMatch(/Taken ~3h/);
+        capture.unmount();
+
+        const defend = renderEventCard(onTrack, { action: 'defending' });
+        expect(
+            defend.container.querySelector('.sector-card-assault').textContent,
+        ).toMatch(/Holds ~3h/);
+    });
+
+    it('never paints a win in the loss colour, even inside the hour', () => {
+        const { container } = renderEventCard(
+            { ...onTrack, etaHours: 0.65, remainingHours: 1 },
+            { action: 'defending' },
+        );
+        const el = container.querySelector('.sector-card-assault');
+        expect(el.textContent).toMatch(/Holds ~39m/);
+        expect(el.className).not.toContain('sector-card-assault--imminent');
+    });
+
+    it('states the loss without repeating the countdown when behind', () => {
+        for (const [action, word] of [
+            ['defending', 'Falls'],
+            ['capturing', 'Fails'],
+        ]) {
+            const { container, unmount } = renderEventCard(behind, { action });
+            const el = container.querySelector('.sector-card-assault');
+            expect(el.textContent).toBe(word);
+            // The EventCountdown beside it already carries the deadline — a
+            // second copy of the same duration would be noise.
+            expect(el.textContent).not.toMatch(/\d/);
+            // Red is the loss, not "imminent": a win inside the hour must not
+            // wear the same colour as a defeat.
+            expect(el.className).toContain('sector-card-assault--imminent');
+            unmount();
+        }
+    });
+
+    it('calls a stalled event behind rather than hiding it; pace still renders', () => {
+        const { container } = renderEventCard(
+            {
+                mode: 'verdict',
+                etaHours: null,
+                remainingHours: 4,
+                onTrack: false,
+                stalled: true,
+            },
+            { action: 'defending', pace: { status: 'behind', delta: 5200 } },
+        );
+        expect(container.querySelector('.sector-card-assault').textContent).toBe('Falls');
+        expect(container.querySelector('.sector-card-pace')).not.toBeNull();
     });
 });

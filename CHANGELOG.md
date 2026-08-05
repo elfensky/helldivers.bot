@@ -1,5 +1,1035 @@
 # Changelog
 
+## 0.90.4
+
+### Changed
+
+- **Roadmap § S0a squared against v0.90.3.** It still described sourcemaps as
+  unwired and #496 as untouched. Records the three real upload faults (two
+  fixed, [#497](https://github.com/elfensky/helldivers.bot/issues/497) open),
+  that frames stay minified until #497 lands, and that `DefeatedCard` was a
+  confirmed #418 cause while `NextWaveCard` is cleared.
+
+## 0.90.3
+
+### Fixed
+
+- **Sourcemaps never reached GlitchTip — two bugs, both silent
+  ([#496](https://github.com/elfensky/helldivers.bot/issues/496)).** Every
+  production stack frame has been minified since error tracking was wired up.
+  The credentials were fine and the upload did run; it failed twice per build
+  and nobody could see it.
+    - `SENTRY_PROJECT` was the project's **display name** (`helldivers.bot`),
+      not its **slug** (`helldiversbot`). `sentry-cli` resolves
+      `/api/0/projects/<org>/<project>/`, so release creation 404'd with
+      `Project not found` on every build. Fixed in `.env.development`; the
+      `SENTRY_PROJECT` repository secret needs the same correction.
+    - `silent: true` in `withSentryConfig` suppressed `console.error`, not just
+      info logs (`bundler-plugin-core` `logger.js:5217`), so both failures were
+      swallowed by every CI build. Removed — upload errors are now visible in
+      build logs, and the plugin still does not fail the build.
+
+  A **third** fault remains and is not in this repo: the GlitchTip server
+  rejects every upload with
+  `[Errno 13] Permission denied: '/code/uploads/file_blobs'`. Its media volume
+  is not writable by the container user. Until that is fixed on the host, no
+  sourcemap can be stored regardless of what this repo sends.
+
+- **Two hydration mismatches from unpinned timezones
+  ([#496](https://github.com/elfensky/helldivers.bot/issues/496)).** Both
+  formatted a timestamp with a pinned *locale* but no pinned *timezone*.
+  Production renders in UTC, so any visitor outside UTC re-formatted the same
+  instant into a different string and React discarded the tree (#418).
+    - `DefeatedCard` (rendered on the **dashboard**) printed a date with no
+      `timeZone`. Reproduced: a UTC server sends `Jul 23, 2025`, a
+      Europe/Warsaw visitor renders `Jul 24, 2025`. Europe/Warsaw is the
+      timezone of every reporter in #496.
+    - `EventLogCard`'s absolute time line (rendered on **/archives**) printed
+      an hour with no `timeZone`. Reproduced in a real browser: server
+      `Jul 23, 2026, 09:03` vs client `Jul 22, 2026, 21:03`.
+
+  Both now pin `timeZone: 'UTC'`, matching `CascadeLogCard`, `StatGrid` and
+  `groupEventsByDay`. Covered by new hydration tests that render in one
+  timezone and hydrate in another.
+
+  This does **not** yet close #496. Its ~266 events are all against v0.67.1,
+  where `DefeatedCard` carried the same defect — but attributing them requires
+  post-release data, and `NextWaveCard`, the suspect named in the issue, was
+  cleared: it did not exist at v0.67.1, and its `suppressHydrationWarning` does
+  hold across two adjacent text children (now asserted, with a control).
+
+## 0.90.2
+
+### Changed
+
+- **Roadmap reconciled against the code (2026-08-05).** The file still described
+  `develop` as nine versions ahead of `main`; it is twenty-three. Rewrote the
+  release section with the real gap, recorded the prediction arc (#472–#490)
+  that shipped without ever appearing on a track, retired the Dependabot
+  section (verified 0 open alerts and a clean `npm audit`), and separated the
+  prediction follow-ups that are blocked on more seasons from work that is
+  actually startable.
+- **Added S0a, a post-release error-triage session.** Every error currently in
+  GlitchTip is against `v0.67.1` code, so the triage has to follow the release
+  rather than precede it — with the exception of #495, which is unchanged on
+  `develop` and broken regardless.
+
+### Fixed
+
+- Nothing in the app. Two production bugs were filed rather than fixed here:
+  [#495](https://github.com/elfensky/helldivers.bot/issues/495) (`Map.groupBy`
+  breaks the timeline on Firefox 115 ESR) and
+  [#496](https://github.com/elfensky/helldivers.bot/issues/496) (React #418
+  hydration mismatch on `/`, ~266 production events).
+
+## 0.90.1
+
+### Changed
+
+- **Faction-view event cards show the faction name, not "Capturing <region>".**
+  The campaign bar spans the whole campaign, so an action word belonging to a
+  single sector was misleading there. Active events are unchanged — they keep
+  their action word and place name, because they really are about a place. The
+  progress bar's `aria-label` follows the same title.
+
+## 0.90.0
+
+### Changed
+
+- **Full dependency update pass**, superseding dependabot PRs #491, #492 and #451.
+  Notables: `next` 16.2.9 → 16.2.12, `react`/`react-dom` 19.2.7 → 19.2.8,
+  `@prisma/*` + `prisma` 7.8.0 → 7.9.1, `better-auth` 1.6.20 → 1.6.25,
+  `@sentry/nextjs` 10.60.0 → 10.68.0, `recharts` 3.9.0 → 3.10.1,
+  `mermaid` 11.15.0 → 11.16.0, `tailwindcss` 4.3.0 → 4.3.3,
+  `jsdom` 29 → 30, `vitest` 4.1.6 → 4.1.10. GitHub Actions bumped in step
+  (checkout 7.0.1, setup-node 7.0.0, codeql-action 4.37.4, docker/\* current).
+
+### Fixed
+
+- **Both open high-severity advisories cleared** — `brace-expansion` 5.0.8 → 5.0.9
+  (DoS via unbounded intermediate arrays) and `fast-uri` 3.1.4 → 3.1.5 (host
+  confusion via backslash authority introducer). `npm audit` now reports 0.
+- **Visual regression runner reinstalls on lockfile change.** Its `node_modules`
+  Docker volume is shared across checkouts, so a dependency bump was previously
+  screenshotted against the _previous_ dependency tree and passed — worse than
+  not testing. It now stamps the lockfile and re-runs `npm ci` when it differs.
+
+### Held back
+
+- **`typescript` stays on 6.x.** TypeScript 7 removes `ts.ObjectFlags.Intrinsic`,
+  which `ts-api-utils` reads, so the whole typescript-eslint chain (via
+  `eslint-plugin-react-x`) crashes on load — and TS 7's inference changes produce
+  268 new errors in `npm run typecheck`. Revisit once typescript-eslint ships TS 7
+  support.
+- **`@types/node` stays on 24.x.** `mise.toml` and `.node-version` pin the runtime
+  to Node 24; types from 26 would describe APIs that do not exist at runtime.
+
+## 0.89.1
+
+### Fixed
+
+- **ESLint no longer lints worktrees.** `.worktrees/**` is now ignored — each
+  worktree holds a full copy of `src/`, so a lint run in the main checkout was
+  also linting every branch checked out there (496 warnings vs the 316 the
+  checkout actually owns), making output depend on which worktrees existed.
+
+## 0.89.0
+
+### Added
+
+- **Visual regression tests.** `npm run test:visual` screenshots `DashboardClient`
+  (desktop + mobile), `EventCard` (attack + defend), and `StatGrid` in Vitest's
+  browser mode and compares them against committed baselines. Components mount
+  with literal fixture data through `LiveDataContext` — no server, no database,
+  no third-party service. Baselines are generated inside the Playwright Docker
+  image so they reproduce across machines; `npm run test:visual:update` rewrites
+  them. Not part of `test:unit`.
+- **CI gate for visual regressions.** A `Visual Regression` job runs the same
+  suite in the same Playwright image on every PR and push to `main`/`develop`,
+  uploading actual/diff PNGs as an artifact when a baseline fails.
+
+## 0.88.3
+
+### Changed
+
+- **/docs/predict hub gains a data-status table** — which forecasts are final (at their ceiling) vs which upgrade as high-detail wars accumulate, in plain language.
+
+## 0.88.2
+
+### Changed
+
+- **/docs/predict pages rewritten in plain language.** All three prediction
+  pages now explain the same facts without statistical jargon (pass mark,
+  fairness check, typical miss, middle half); the precise protocol and
+  scorecards remain in the investigation handoff, the findings doc, and the
+  analysis scripts. The handoff gains a register-split note with the
+  translation glossary.
+
+## 0.88.1
+
+### Added
+
+- **/docs/predict documents the in-event outcome verdict and the sector
+  ETA.** The hub gains a "While an event runs" section with a
+  verdict-accuracy-by-elapsed chart (from script 14b's new decile table) and
+  a live worked example (`LiveOutcomeNow`, hourly ISR) running the shipped
+  `eventForecast` / `sectorForecast` / `counterattackForecast` on the
+  current campaign; the attack page documents the assault-run verdict
+  (script 17's conditioning table) and the previously undocumented sector
+  ETA.
+- **Contract test pinning pace/verdict agreement.** At `VERDICT_MARGIN = 0`
+  the ▲/▼ pace indicator's `behind` and the verdict's `!onTrack` are the
+  same inequality; `paceVerdict.contract.test.mjs` sweeps ~4,700 moments to
+  keep them from drifting apart.
+
+### Changed
+
+- **`attackForecast.mjs` deduplicated.** `attackForecast` and
+  `sectorForecast` shared a verbatim ~40-line rate/dow/staleness block; it
+  is now one module-private `paceEtaHours` helper (behavior-identical, both
+  test files untouched).
+- **Stale `evaluateProgress` docs corrected** (utilities doc claimed a
+  string return; faq/JSDoc claimed a symmetric ±10% buffer — it is
+  upper-only).
+
+### Fixed
+
+- **Event cards showed the capture ETA instead of the outcome.** An event
+  ends one of two ways, at two different times: a loss runs the timer out
+  (3,179 of 3,260 failed defends at exactly 150 min; 545 of 545 failed
+  assaults at exactly 48h), a win ends early the moment points fill. The card
+  showed only the fill ETA, unlabelled — so a defend that was going to fall
+  advertised an ETA hours past its own deadline. The slot now names the
+  outcome: `Holds ~12m` / `Taken ~9h` when the bar will fill in time,
+  `Falls` / `Fails` when it won't. The losing verdict carries no duration
+  because the countdown beside it already is the loss time.
+- **The verdict's anti-flicker margin was calibrated against a deadline that
+  never existed.** `14-event-verdict-margin.mjs` replayed won events against
+  their _rewritten_ early `end_time`, biasing the rule toward "behind" on
+  exactly the events that succeeded. Replaying against the nominal timer
+  instead, the verdict is 91.6% accurate (130 events / 2,193 moments) rather
+  than 79.5%, and `VERDICT_MARGIN` drops 0.2 → **0** — the slack was
+  compensating for the bias, not for flicker (flip p90 0.1 at margin 0,
+  against 1.0 at every non-zero margin). `17-assault-outcome.mjs` carried the
+  same bias and was re-run; its published reading strengthens rather than
+  moves. Recorded as trap 11 in the predictions handoff.
+
+### Added
+
+- **Event verdicts stay hidden for the first 25% of an event**
+  (`MIN_ELAPSED_FRACTION`), where the since-start average rate is still noise
+  — verdict accuracy runs ~73% in the opening quarter against 92.4% past
+  halfway and 99.7% in the final quarter.
+
+## 0.88.0
+
+### Added
+
+- **Living predictions handoff** (#490):
+  `docs/superpowers/predictions-handoff.md` — the single entry point for a
+  fresh session: current verdicts, the mechanical-vs-statistical divide,
+  all ten confirmed mechanics with numbers and proving scripts, the full
+  01–18 script inventory with verdicts, the pre-registered gate, a
+  ten-item traps catalog, scripts conventions, the shipped-artifact map,
+  and the data-gated open issues. Referenced from AGENTS.md § Reference
+  Docs ("read first before any prediction/analysis work").
+- **Mechanical vs statistical, by the numbers, on the site:**
+  `/docs/predict` gains a "Two kinds of prediction" comparison table
+  (clock ~0 error, 544/544 and 467/474; band ±8h typical, five attempts,
+  CI vs the 0.6 bar); `/docs/predict/defend` gains "The two forecasts, by
+  the numbers" and "What the clock borrows from the attack side" —
+  documenting that the counteroffensive forecast reuses the attack stack
+  (deterministic trigger + pace ETA + 48h constant + the eventForecast
+  verdict) and that the SC9 ETA→timeout chain was tested and rejected.
+
+## 0.87.0
+
+### Changed
+
+- **Wave prediction split into two standalone forecasts (#489):**
+  `waveForecast` now owns ONLY the free waves — it hides (`assault-active`)
+  while a homeworld assault runs, since the invasion timer is gated then
+  (rule 8) and the waveModel ATTACK rows were dressing a gate up as a
+  distribution. The counteroffensive is its own module,
+  `counterattackForecast.mjs`: deterministic clock (earliest active assault
+  start + 48h) qualified by the assault's live pace verdict (reusing the
+  shipped `eventForecast` rule) — "assault behind pace · counterattack ⟨t⟩"
+  vs "assault on pace to succeed · counterattack ⟨t⟩ only if pace
+  collapses"; pace projection wording only, never a probability (#487).
+  The card renders whichever regime owns the moment: the calibrated band
+  outside assaults, a COUNTERATTACK_CLOCK view (no band) during them.
+  Docs updated to describe the split.
+
+## 0.86.0
+
+### Changed
+
+- **Predicted Wave card reads like the assault ETA (#488):** median-first
+  text `~20h (14-32h)` (same minutes/hours/days and unit-once formatting as
+  the attack line) instead of the range-only `14–32h`; the bar graph gains a
+  primary-color median tick at p50 with the p25–p75 band dimmed to a subtle
+  layer; hover title leads with the median's absolute time.
+- `/docs/predict` gains **The rule book** (all ten confirmed mechanics in
+  one list) and a **Sources** section crediting the community Steam guide
+  whose claims we verified; the defend page links the guide where rules 7–8
+  are introduced and its card description matches the new median-first
+  rendering.
+
+## 0.85.1
+
+### Fixed
+
+- **Stranded thousands separator in animated stats.** `AnimatedStat` now
+  remounts the slot counter when the formatted _shape_ changes (`###` →
+  `#,###` → `#.#M`). react-slot-counter keys its separator spans off the
+  previous value's length, so a live update from `1,600` to `600` could leave
+  the comma behind and render `,600` — visible on the homeworld-assault event
+  card's pace indicator. Digit-only ticks keep the same key and still animate.
+
+## 0.85.0
+
+### Added
+
+- **Predictions docs section.** The docs sidebar gains a dedicated
+  "Predictions" section (Summary / Attacks / Defends), pulled out of
+  Reference. `/docs/predict` is rewritten as a plain-language summary of
+  _how_ each forecast is computed — attacks as arithmetic on the
+  deterministic full-points trigger (pace window, staleness anchoring,
+  lopsided window, completion verdict), defends as three mapped mechanics
+  (chain, counterattack clock, assault gate) plus the one honest dice roll
+  behind the calibrated band — with the detailed methods staying on the
+  attack/defend subpages. Data-gated follow-ups linked (#487, #481, #477,
+  #484); #487 filed as the pre-registered attempt-6 plan
+  (verdict-conditioned P(fail), blocked on ~30+ progress-tracked assaults).
+
+### Changed
+
+- **Repo conformance sweep.** Added a version-bump gate workflow (advisory, PR-triggered).
+  `AGENTS.md` is now the real agent file with `CLAUDE.md` symlinked to it (the symlink previously
+  pointed the other way). (`.node-version` was **kept** — it is CI-load-bearing: `ci.yml` and
+  `main-pr-docker-smoke.yml` pin Node via `node-version-file`, so mise.toml is not the single pin;
+  consolidating that is a separate decision.) `graphify-out/` is generated locally and git-ignored.
+  Dependabot security updates and
+  secret-scanning push protection enabled repo-side; default branch set to `develop`. Removed
+  `.gitguardian.yaml` — secret scanning is now GitHub-native (push protection + secret scanning +
+  CodeQL), no third-party scanner. No version bump — notes accumulate under Unreleased.
+
+## 0.84.0
+
+### Added
+
+- **Attempt 5: outcome-conditioned composite (#486)** — a null, recorded in
+  full. New measurements (`17-assault-outcome.mjs`): P(fail | assault still
+  running) climbs 0.59→0.97 toward the 48h timeout; the shipped
+  on-track/behind verdict is near-decisive on assault outcomes (on-track
+  past 35% elapsed never failed, 0/260 moments) but rests on only 7 attacks
+  with progress history; a WON assault releases the paused defend clock
+  immediately (next free wave at p50 0.0h after success, vs a fresh ~34h
+  draw after counterattack trains); counterattack trains are harder to stop
+  (first-defend win 22.6% vs 46.7%, duration p50 7.3h vs 2.5h). The
+  pre-registered composite (`18-outcome-composite.mjs`) posts the project's
+  first sub-0.6 skill point estimate (0.588 [0.559–0.621]) but fails
+  calibration + sharpness and is flat vs STATE-KM on paired uncensored
+  ATTACK moments (ratio 1.045, CI 0.81–1.11): DO NOT ADOPT. No model or
+  card changes; revisit when ~30+ S157+ assaults with progress history
+  exist. `/docs/predict/defend` and the findings doc updated.
+
+## 0.83.6
+
+### Changed
+
+- **Event log wording unified**: active attacks read "Capturing {region}"
+  (was "Attacking"), matching cards and toasts; completed entries keep
+  their past-tense Captured/Lost/Defended forms.
+
+## 0.83.5
+
+### Changed
+
+- **Faction cards always stack** — the cramped 3-across layout between
+  480-1024px is gone; single column at every width below the desktop
+  sidebar.
+- **Calm accent rails** — card and toast accent bars stay solid faction
+  color; the flashing state signal lives only in the title's action word.
+- **Toast wording matches the cards** — `Capturing {region}` (toasts and
+  push notifications, was "Attacking"), with the action word pulsing like
+  the card titles.
+
+## 0.83.4
+
+### Changed
+
+- **Event countdown right-aligned**: the "time left" readout on event cards
+  sits at the meta row's right edge, mirroring the pace indicator above it.
+
+## 0.83.3
+
+### Fixed
+
+- **ETA never truncates in narrow card rows**: at tablet widths the static
+  subtitle (`SECTOR_PROGRESS`) now ellipsizes instead of clipping the ETA
+  beside it.
+
+## 0.83.2
+
+### Changed
+
+- **Event ETA aligned with every other ETA**: active event cards show
+  `ETA ~3d` in the left label group (yellow, next to the subtitle) and the
+  `▲/▼ + points` pace indicator returns to the right edge — replacing the
+  right-aligned "on track/behind · done ~Xh" verdict text. Stalled events
+  show the pace arrow only.
+
+## 0.83.1
+
+### Fixed
+
+- **Active attack card stays event-focused in faction view**: during a
+  homeworld assault the card shows the single event bar
+  (`Capturing {homeworld}`) with the event verdict, regardless of the view
+  toggle — no more 11-segment faction overview mixed with an event-level
+  verdict. Matches the Super Earth defense card's interrupt behavior.
+
+## 0.83.0
+
+### Added
+
+- **Multi-day ETAs**: far-off fronts now show rough day figures instead of
+  nothing — `ETA ~5d (4-8d)` on the campaign line (the measured relative
+  ratios scale the range naturally), `ETA ~3d` median-only on the sector
+  line. The 48h display window is replaced by a 30-day sanity cap
+  (`FAR_CAP_HOURS`); the tooltip flags "Rough at multi-day range" beyond
+  the validated 48h. Stalled fronts (zero 24h pace) still show nothing.
+
+## 0.82.3
+
+### Fixed
+
+- **Last-sector ETA unified**: in the final sector the next boundary is the
+  campaign end, so sector view now shows the calibrated attack window
+  (`ETA ~2h (1-3h)`) instead of an uncalibrated median (`~1h`) for the same
+  target one toggle away.
+
+## 0.82.2
+
+### Changed
+
+- **Faction view labeling**: the 11-segment view's frontier card subtitle now
+  reads `FACTION_PROGRESS` (was `SECTOR_PROGRESS` in both views) and the view
+  toggle says "faction view". Internal view value stays `campaign` for
+  preference/analytics continuity.
+
+## 0.82.1
+
+### Changed
+
+- **ETA ranges write a shared unit once**: `(4-16h)` / `(30-54m)` instead of
+  `(4h-16h)`; mixed-unit ranges keep per-bound suffixes (`(30m-2h)`).
+
+## 0.82.0
+
+### Added
+
+- **View-dependent frontier ETA** (#483): in sector view the card's ETA targets
+  the next sector boundary (`ETA ~40m`, median-only — the measured range
+  follows via #484 once enough high-res seasons exist for script 13's gate);
+  campaign view keeps the calibrated assault ETA (`ETA ~11h (9h-16h)`).
+- **Event pace verdicts**: active defend/attack/Super Earth cards replace the
+  points-delta pace arrow with a time verdict — `▲ on track · done ~3h` /
+  `▼ behind · done ~5h` / `▼ behind · stalled` — from `eventForecast`
+  (average pace since event start vs deadline, anti-flicker margin 0.2
+  measured by `scripts/analysis/14-event-verdict-margin.mjs` on 125 events).
+- **Analysis**: script 13 (sector-crossing backtest — gate honestly
+  unevaluable at 4 high-res seasons, committed as the future grading tool),
+  script 14 (verdict margin), `loadDataset({eventProgress})` option.
+
+### Changed
+
+- **ETA line formatting**: sub-hour values render as minutes (`~40m`,
+  fixing the `~0h` edge); range bounds carry their own unit (`(4h-16h)`).
+  `EventCard`'s `assaultForecast` prop renamed to `etaForecast`.
+
+## 0.81.0
+
+### Added
+
+- **Counterattack clock on the next-wave card (#482):** while a homeworld
+  assault is active, the dashboard's Predicted Wave card shows a second meta
+  line — "if the assault fails · counterattack ⟨time⟩ (in ~Xh)" — computed
+  as the earliest active assault's start + 48h (`counterattackAt` in
+  `waveForecast.mjs`). A deterministic mechanic from #480 (median backtest
+  error 0.0h vs the KM band's 9.2h during assaults), not a model: the KM
+  likelihood band stays primary, the clock line is conditional on the
+  assault failing (~59% base rate), and it reads "imminent" once the
+  timeout has passed. Mechanic explainer rides the hover title;
+  `/docs/predict/defend` § What ships updated to match.
+
+## 0.80.0
+
+### Added
+
+- **"Why the window is lopsided" on `/docs/predict/attack`**: explains the
+  `arrival = work ÷ pace` skew (division table + surge-capped/stall-unbounded
+  supply argument) and why the dashboard shows `~median (range)` rather than a
+  symmetric `±`. Includes `EtaSkewExplainer` — an interactive Recharts
+  hyperbola with a draggable pace multiplier and half/double presets
+  (lazy-loaded, `docs-eta-skew-explore` umami event).
+
+### Changed
+
+- **`/docs/predict/attack` reworded to facts-and-doubt voice**: findings and
+  their uncertainty stated directly (trigger-is-a-point sensor evidence,
+  staleness anchoring, adjustments that carry no signal, per-faction player
+  telemetry as promising-but-unproven), dropping the past-correction
+  narrative framing.
+
+## 0.79.0
+
+### Added
+
+- **Counterattack timing investigation (#480):** the defend train that follows
+  a failed homeworld assault is mechanically scheduled — fail-resolved
+  assaults are exact 48.0h timeouts (544/544) and the counterattack train
+  starts within 10 minutes of the timeout when the defend slot is free
+  (467/474, p05–p95 = 0.0h; queued cases fire late and are measured
+  separately). The defend hazard is fully gated during assaults (all 178
+  train starts during an assault are counterattacks; 0 free waves in
+  24,651h of assault-active lull time), and counterattacks land on region 9
+  (97.8%). New scripts: `14-counterattack-delta.mjs` (slot-aware delta +
+  concurrency census + Steam-guide checks), `15-counterattack-target.mjs`
+  (third target correction — 487 counterattack starts excluded, gate re-run:
+  STATE-KM 0.625 [0.599–0.664], calibration + sharpness FAIL, verdict
+  INCONCLUSIVE unchanged; scheduler refit on free lulls net of gated time:
+  gamma(k≈8.8, θ≈3.6h), CV 0.336), `16-counterattack-pipeline.mjs`
+  (pre-registered composite: during an assault, "next wave = assault start
+    - 48h" beats the shipped KM table 0.0h vs 9.2h median error; from the SC9
+      window it does not). `lib/dataset.mjs` now labels `isCounterattack` on
+      defend train starts (labelling only, chain rule untouched).
+
+### Changed
+
+- `/docs/predict/defend` rewritten in part: rules 7–8 (immediate
+  counterattack, assault-gated clock), the decontaminated scheduler
+  reconstruction, and a new "counterattack clock" section with the
+  corrected-target gate table. Findings doc gains § Counterattack timing.
+
+## 0.78.3
+
+### Changed
+
+- **Assault line shortened**: `ETA ~9h (4-16h)` instead of
+  `Assault in ~9h (4-16h)`; "Assault ETA" context moved into the title
+  tooltip.
+
+## 0.78.2
+
+### Changed
+
+- **Assault ETA line is median-first**: `Assault in ~9h (4-16h)` instead of
+  `Assault in 4-16h` — the median moves from the title attribute into the
+  visible line, with the 25th–75th percentile range in parens. Deliberately
+  not a symmetric `±` form: the window is asymmetric near campaign completion
+  (p75 up to 2× the median), and `±` would understate the late side.
+
+## 0.78.1
+
+### Added
+
+- **Faction-players attack-ETA experiment (attempt 4)** (#479):
+  `scripts/analysis/12-faction-players-eta.mjs` compares the shipped dow model
+  against per-faction player-telemetry rate variants (crude ratio control,
+  points-per-player^α-hour, hour-of-week player pattern) walk-forward on
+  S157–160, paired on identical moments. Verdict: the documented-harmful crude
+  ratio reproduces as worse (+2.4h pooled); the best variant (pph α=0.7) is
+  directionally better (−1.0h pooled, wins both Cyborg seasons) but at
+  effN 2–3 per faction the shipped model is kept. Reruns unchanged as each new
+  war adds a telemetry season. Supporting lib changes:
+  `loadDataset({statistics})` + `playersAt`/`statisticSeries`/`statSeasons`
+  accessors, walkForward `allowNoPriorEvent` flag and per-record `t` for
+  paired cross-variant scoring. (Analysis commits landed inside the 0.77.1 and
+  0.78.0 merges from a parallel session; recorded here.)
+- **Attempt-4 verdict on `/docs/predict/attack`**: "Revisited with faction
+  telemetry" block after the what-did-not-help table, plus the script-12
+  reproduce line.
+
+## 0.78.0
+
+### Added
+
+- **Live concurrency census on `/docs/predict/defend`** (`LiveConcurrency` +
+  `computeConcurrencyStats`): every same-season event pair in the database, recomputed
+  hourly — defend↔defend (never observed, 0 overlaps), same-faction defend↔attack (never),
+  cross-faction defend↔attack and attack↔attack (common), and the max-simultaneity record
+  (3 events: both triple-assault and 2-attacks+1-defend compositions, with first seasons).
+  Citable live proof for research instead of frozen claims.
+
+### Changed
+
+- **Counterattack-lull handoff v3**: adds the community Steam guide as cross-checked prior
+  art — four claims confirmed by our measurements, three promoted to test targets (defend
+  hazard gated during assaults; fixed 2.5h/48h event durations; counterattack lands at
+  sector 9 "automatically").
+
+## 0.77.1
+
+### Changed
+
+- **Counterattack-lull handoff v2** (Discord follow-ups): the delta measurement is now
+  slot-aware (the one-defend-at-a-time rule means queued counterattacks would smear a
+  mechanical delay when pooled — measure slot-free and slot-occupied subsets
+  separately), adds verification of attack-attack overlaps and the max-simultaneous-events
+  question (owner recalls 2 attacks + 1 defend at once), and a new queueing-confound trap.
+
+## 0.77.0
+
+### Added
+
+- **`/docs/predict` split into a hub plus two subpages** (`/docs/predict/attack`,
+  `/docs/predict/defend`), per [#478](https://github.com/elfensky/helldivers.bot/issues/478).
+  The combined report had grown past the point a single page could serve both a skimmer and
+  a reader who wants the full derivation, so the hub is now a two-card summary — attacks
+  "solved", defends "partially, honestly" — each linking out to its own page, with matching
+  entries added to the docs sidebar and the dashboard `NextWaveCard`'s ⓘ link retargeted from
+  `/docs/predict` to `/docs/predict/defend`.
+- **Defend explainer rewritten TLDR-first, blog style**
+  (`src/app/docs/predict/defend/page.mdx`), leading with the six mechanics found across the
+  investigation — including a newly documented sixth: **a failed homeworld assault is always
+  answered** (179/179 recorded lulls that began with a still-running, ultimately-failed
+  homeworld assault saw the next wave hit the assaulted faction; the mirror case, a
+  _succeeded_ assault, is 0/27 by definition since the faction is removed from the game).
+  When no assault is in play, the SC9-window rule calls the target 61.4% of the time (189/308,
+  within-season permutation placebo, p = 0.0005). The page's live-numbers footer (lull count,
+  train starts, seasons) now refreshes hourly straight from the database instead of quoting
+  the static counts frozen at analysis time.
+- **`GammaExplorer`** (`src/app/docs/predict/defend/GammaExplorer.jsx` +
+  `GammaExplorerSection.jsx`): an interactive fit of the reverse-engineered lull scheduler
+  against the live lull-length histogram. A slider drags the shape parameter k with preset
+  jump buttons, live-updating a KS-distance readout against the real distribution pulled via
+  `computeDefendStats` (`src/app/docs/predict/defend/liveStats.mjs`). Demonstrates the
+  finding underneath it: one global, end-anchored gamma(k≈4.4, θ≈8.9h) delay timer beats
+  every rival shape (KS 0.073, three times closer than the next-best candidate), and the
+  k→∞ fixed-timer corner the page calls out is visibly wrong against the real data.
+- **Two new analysis scripts** backing the above figures, listed in `scripts/README.md`:
+  `12-faction-choice.mjs` (the counterattack rule, SC9-window targeting, and the honest
+  near-random remainder once both are excluded) and `13-scheduler-shape.mjs` (distribution
+  forensics discriminating six candidate scheduler shapes — KS vs. exponential/gamma/uniform,
+  tick combs, per-faction-vs-pooled CV, wave-index stationarity — landing on the single
+  global gamma-delay clock with faction drawn at spawn).
+- **Counterattack-lull handoff spec**
+  (`docs/superpowers/specs/2026-07-31-counterattack-lull-handoff.md`): frames Discord
+  feedback (a failed homeworld assault auto-triggering a counterattack train) as a
+  potential fourth defend-prediction attempt — the attack-fail→train delta, a
+  pre-registered mechanical criterion, a corrected-target gate re-run, and the
+  SC9→assault→counterattack pipeline model — for whenever that thread gets picked back up.
+
+## 0.76.0
+
+### Changed
+
+- **Assault line moved to the subtitle row and reworded.** Now reads
+  `SECTOR_PROGRESS · Assault in 14-25h` on the bar-label row rather than sitting in the meta
+  row below, and "ETA" became "in". The label and forecast are grouped so the row's
+  `space-between` still pushes the pace indicator to the right edge.
+
+## 0.75.0
+
+### Changed
+
+- **Assault ETA window widened to 48 hours.** The line renders when the median estimate
+  falls under 48h rather than 24h. Moving it out improved every measure at once, which is
+  the campaign-state resolution showing through — `h1_status` runs at ~1 bucket/day for most
+  of the record, so a 24-hour display window is exactly where the input is least able to
+  support an estimate. Coverage 91.5–95.2% → **93.6–96.0%**, false-alarm rate 86.1–94.4% →
+  **91.4–97.1%**, and the median hit rate when showing 0.456–0.526 → **0.496–0.535** against
+  a nominal 0.500. Both analysis scripts, the emitted model and `/docs/predict` move
+  together, so the published numbers describe the shipped configuration.
+
+### Fixed
+
+- **Wave-card icon rendered at the wrong aspect ratio.** `superearth.webp` is 1000×1142 but
+  `NextWaveCard` asked for a square 16×16, so the browser preserved the source ratio and
+  drew it 16×18.5 — the `next/image` "width or height modified, but not the other" warning
+  that fired on every render. Now 14×16, matching the source ratio and the 16px height of
+  the square faction icons beside it.
+
+## 0.74.2
+
+### Changed
+
+- **Roadmap:** added S3a for [#476](https://github.com/elfensky/helldivers.bot/issues/476)
+  (Space Mono never loads), flagged as a site-wide typography decision rather than a
+  one-line import.
+
+## 0.74.1
+
+### Fixed
+
+- **Crossed-swords glyph dropped from the assault ETA line.** At 14px U+2694 renders as a
+  faint × rather than legible crossed swords, so it conveyed nothing. The label is
+  self-describing without it.
+
+### Known issues
+
+- **`--font-mono` never loads** ([#476](https://github.com/elfensky/helldivers.bot/issues/476)). `layout.css` declares `'Space Mono', monospace` but
+  `layout.jsx` only imports `Space_Grotesk` and `Inter` from `next/font/google`, so every
+  mono element on the site — card points, countdowns, pace indicators, bar labels — falls
+  back to the browser's default monospace (8.43px advance rather than Space Mono's metrics).
+  Pre-existing and unrelated to this release; noted here because it was found while
+  verifying the assault line.
+
+## 0.74.0
+
+### Added
+
+- **Assault ETA on the faction cards.** Attacks are now forecastable, and the faction card's
+  meta row carries a `Assault ETA 4-16h` line when one is expected within a day. A range,
+  never a countdown — the measured window is ~21h wide a day out and ~5h wide inside four
+  hours, so a single ticking number would claim precision the model does not have. The
+  median sits in the `title`. Backed by a committed calibration table
+  (`11-emit-attack-model.mjs` → `attackModel.mjs`) and a total pure `attackForecast()` that
+  degrades to `{ mode: 'hidden' }` on stalled fronts, running assaults, or missing data.
+
+### Changed
+
+- **`/docs/predict` § Attacks rewritten — a published finding was wrong.** The report
+  claimed attacks fire at ~90–98% liberation, with a p25/p50/p75 "trigger band". That was an
+  artifact of this project's own sampling rate: `h1_status` runs at ~1 bucket/day for 156 of
+  160 seasons, and a hard threshold read through a lagging sensor smears downward into
+  exactly that spread. **Attacks fire within minutes of `points == points_max`, exactly.**
+  Median liberation at attack start by age of the reading: 94.28% (<24h) → 100.00% (<15min).
+  Corrected explicitly rather than silently replaced, including the page's own "not 'all ten
+  captured and then it starts'" claim, which was backwards.
+- **Defend figures refreshed** after a harness fix (below). Headline baseline 0.753 → 0.789,
+  state-conditional 0.644 → 0.675, KM-corrected 0.648 → 0.679, season-pace 0.787 → 0.825. No
+  verdict changed; the season-pace row's verdict is corrected to NOT USEFULLY PREDICTABLE,
+  which is what its interval now says.
+- **`.sector-card-meta` wraps.** The assault span needs `white-space: nowrap`, which makes it
+  incompressible; measured against the running app, with a pace indicator also in the row it
+  overflowed by 25px at a 300px card and 65px at 260px.
+
+### Fixed
+
+- **`forwardRecurrenceMedian` ignored `momentFilter`.** The constant baseline was fit over
+  the unfiltered season span while the model was scored on filtered moments, so every
+  `momentFilter` configuration's skill ratio was partly measuring the filter rather than the
+  model.
+- **Backtest reliability gaps.** The gate's calibration leg pools every moment, so a model
+  can pass it while being miscalibrated in every stratum with the errors cancelling. Added a
+  by-decile reliability table (which immediately caught an anchoring bug in the attack ETA),
+  horizon-clamp rates (a sharpness PASS can otherwise be an artifact of quantiles truncating
+  at the horizon), and per-moment records so callers can compute alert-quality metrics.
+
+## 0.73.1
+
+### Changed
+
+- **Next-wave card redesigned and relocated** (follow-up to 0.73.0, per owner review): now
+  rendered in the same `sector-card` skeleton as the faction cards (Super Earth icon +
+  "Predicted Wave" header, `LIKELIHOOD_WINDOW` label row with RUNNING LONG / IMMINENT state,
+  band bar with the window range in the stat slot, within-24h/48h sureties as the meta row,
+  ⓘ docs link) and moved out of the Season section into the **top of the event log under a
+  "FUTURE" day-group** — the log now reads future → today → history. `EventLog` gains an
+  optional `futureSlot` prop (homepage-only; archives unchanged); placement follows the sort
+  order (top when newest-first, bottom when oldest-first).
+
+## 0.73.0
+
+### Added
+
+- **Next-wave likelihood card on the dashboard** (`NextWaveCard`): a faction-neutral
+  band-not-countdown forecast for the next defend wave — "likely in 14–32h · 63%
+  within 24h" — computed from a committed state×elapsed quantile table
+  (`scripts/analysis/08-emit-wave-model.mjs`, the #472 attempt-3 STATE-KM model fit on
+  full history, with a reliability self-check that refuses to emit miscalibrated
+  probabilities). Hidden while a wave runs; IMMINENT badge at ≥51% within 24h;
+  RUNNING LONG badge + explainer during the homeworld-assault window (maxSC==9).
+  Updates on the existing 10s live poll; no API or DB changes.
+
+## 0.72.0
+
+### Added
+
+- **Third defend-prediction attempt: the homeworld-assault window** (#472). A second covariate
+  sweep (`scripts/analysis/06-train-covariates.mjs`) tests eight pre-declared covariates against
+  train-start lulls with the same-season placebo machinery the handoff called for — every test is
+  a within-season label permutation plus a phase-stratified variant, with a degenerate-control
+  guard. Clock features on train starts, previous-train faction, and prevRegion==9 are null; no
+  hard cooldown floor exists. Three observable covariates survive at p=0.0005: `maxSC==9` at lull
+  start (+20.3h — some faction one sector from the homeworld assault; lulls run ~55h vs ~35h),
+  attack active (−11.5h), and prevRegion==10 (+10.1h). A designated SC9-vs-SC10 check rules out a
+  season-phase confound (SC10 is later yet reverts to baseline).
+- **State-conditional train-start model** (`scripts/analysis/07-train-state-model.mjs`): kNN on
+  elapsed within the observable moment state (ATTACK > SC9 > SC10 > NORMAL) through the existing
+  `walkForward` harness, with a declared Kaplan-Meier censoring fix (v1 kept in the output). Best
+  configuration: skill 0.648 [0.622, 0.674] vs the previous best 0.753 [0.732, 0.773], calibration
+  PASS, sharpness PASS (20.4h band vs 22.4h marginal — the first model to pass that leg). The
+  pre-registered ship bar (skill CI upper bound ≤ 0.6) is still missed: **verdict INCONCLUSIVE,
+  no countdown ships.** Typical error 7.8h on a ~44h cycle.
+
+### Changed
+
+- **`/docs/predict` updated with the third attempt**: the assault-window finding surfaced as the
+  one map-visible conditioning fact, the second covariate sweep table (same-season placebos built
+  in), the state-model gate table, and the "no automated same-season placebo" caveat rewritten —
+  that gap is closed for the new sweep, remaining only for the historical 01/05 scripts. Findings
+  doc gains § Attempt 3; `scripts/README.md` documents 05–07 (05 was previously missing).
+
+## 0.71.2
+
+### Added
+
+- **Handoff prompt for further defend-prediction attempts**
+  (`docs/superpowers/specs/2026-07-28-defend-prediction-handoff.md`). Self-contained brief for a
+  fresh session: the established rules, every variable already rejected, the pre-registered bar,
+  and the five control-design traps. Front-loads the traps because all four false positives this
+  investigation produced came from control construction rather than modelling. Names the most
+  obvious untried angle: hour-of-day and weekend effects were measured on all 5,091 defends, 61%
+  of which are mechanical follow-ups inheriting their start time — never on train starts alone.
+
+## 0.71.1
+
+### Changed
+
+- **`/docs/predict` restructured around the two event types** — "Can we predict events?", then
+  Attacks, then Defends, with the statistics moved into collapsed in-depth sections. All measured
+  numbers preserved and re-run against fresh data (5,091 defends).
+
+    Two claims were corrected against measurement rather than published as stated: attacks fire at
+    **90–100% liberation** (sectors 1–9 captured, 10 in progress — 89.3% at ≥90%), not once all ten
+    are captured; and a defend train ending because the war ended is the **minority** case — the last
+    defend of a season was a failure in only 49 of 160 seasons (30.6%). The new
+    different-faction overlap count (955 defend×attack pairs) confirms the no-concurrent-attack rule
+    is per-faction, not global.
+
+    The attack-forecasting question is answered as sound-but-unmeasured: the trigger is a known
+    threshold and liberation rate is computable for ~99.6% of moments, so extrapolation is the right
+    approach — but no forecast was built and no accuracy figure exists.
+
+## 0.71.0
+
+### Added
+
+- **`/docs/predict` — full defend-predictability report.** Publishes the #472
+  next-event-timing investigation as a docs page: an ELI14 explainer (trains vs.
+  a timetable, the Seattle/Cairo control-group analogy), the mechanics
+  discovered (97.1%/0.1% train continuation, zero overlapping same-faction
+  defends, zero same-faction defend/attack overlap, attacks gated on a 9-of-10
+  sector threshold), the full regularity/prediction-accuracy numbers (headline:
+  9.1h median error vs. a 12.1h constant baseline on a ~44h cycle, skill ratio
+  0.753 [0.732, 0.773], calibration PASS, sharpness FAIL — verdict
+  INCONCLUSIVE, no countdown ships), and every tested-and-rejected variable
+  from both the trigger hunt and the covariate sweep. Two Recharts
+  visualizations (`DefendRegularityChart`, `LullByTrainLengthChart`) carry
+  hardcoded, script-sourced quartile data. All figures re-verified against a
+  fresh run of `01-trigger-hunt.mjs`, `02-baseline.mjs`, `04-train-baseline.mjs`,
+  and `05-defend-covariates.mjs` at time of writing, plus two ad-hoc queries
+  (not committed) confirming the zero-overlap invariants and the exact
+  train-continuation counts. Documents the `libVelocity1d`/`libVelocity3d`
+  rejection as a cross-season control-design artifact — caught only when a
+  reviewer re-ran the test by hand with same-season controls, not by the
+  committed scripts.
+
+## 0.70.1
+
+### Changed
+
+- **Defend train labelling is now scoped per `(season, enemy)`** and a covariate sweep was
+  added (`scripts/analysis/05-defend-covariates.mjs`). A defend continues its train only if
+  the preceding defend _of the same faction_ ended within 600s. 1,976 → 1,977 train starts
+  (one cross-faction pair); continuation-after-failure 96.9% → 97.1%. The `04-train-baseline`
+  headline figures are unchanged (skill 0.753 [0.732, 0.773], 9.1h, calibration PASS).
+
+    The sweep tested seven previously-untested covariates. **Adversarial review rejected all
+    four apparent positives**, and the raw effect sizes must not be quoted without their
+    decomposition — see the review notes before citing any of it. Two genuinely mechanical
+    facts did fall out: across all 5,088 defends, two defends _never_ run concurrently
+    (0 overlapping pairs), and a defend never runs while its own faction has an attack up.
+
+## 0.70.0
+
+### Added
+
+- **Defend train-start analysis, correcting the v0.69.0 defend verdict ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  v0.69.0's defend predictor was measured against a mis-specified target:
+  all 4,928 defend-to-defend gaps, a bimodal series dominated by ~2.5h
+  mechanical chain gaps. Measured directly this time: a defend train
+  continues iff the previous defend in it was FAILED (96.9% vs 0.1% after a
+  success) — a game mechanic, not a statistical tendency — so 61.2% of
+  defend events are mechanical follow-ups and only the 1,976 train starts
+  are forecasting targets (train-start gaps CV 0.45 vs the pooled series'
+  1.32).
+
+    Retrained and re-evaluated on the corrected target: skill ratio 0.753
+    (95% CI [0.732, 0.773], effective N 1461), median absolute error 9.1h
+    vs a constant baseline's 12.1h. Calibration now PASSES (it FAILED
+    against the old target); sharpness (23.1h) is still not narrower than
+    the train-start gap IQR (22.4h). Verdict unchanged: **INCONCLUSIVE** —
+    clears neither the 0.6 ship bar nor the 0.8 dead bar. The trigger hunt
+    was re-run restricted to train starts only to rule out dilution
+    masking a trigger in the pooled run; it found none (all four
+    campaign-state variables still land at "no rule").
+
+    A follow-up test for whether the previous train's length/failure count
+    predicts the length of the following lull found no relationship by the
+    script's own magnitude threshold (|r| < 0.1, explicitly not a formal
+    significance test; lull medians flat at 35.5h-37.9h across every
+    `prevTrainLength` stratum, Pearson r = -0.036) — though the
+    `prevTrainFailures` stratification has one off-trend point worth noting
+    (p50 31.9h at failures=1 vs 38.5h at failures=0). Replaces an earlier
+    version of that same test that a reviewer proved was invariant to the
+    data (shuffling the input reproduced identical output) and was deleted
+    rather than patched.
+
+    Recommendation unchanged: do not ship a countdown. The descriptive
+    surface remains "trains continue while you keep losing; once you hold,
+    the next wave is usually 28–46h out" — the v0.69.0 lull figures behind
+    that band turn out to already be the train-start lull (same n=1,816,
+    bit-identical to the corrected measurement), so this correction
+    corroborates the band rather than changing it. Full write-up at
+    `docs/superpowers/findings/2026-07-27-next-event-timing.md`; the new
+    script is `scripts/analysis/04-train-baseline.mjs`, documented in
+    `scripts/README.md` under `## analysis/`.
+
+## 0.69.0
+
+### Added
+
+- **Next-event timing forecast investigation, findings recorded ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  The question split into two halves with opposite answers. Attacks are
+  mechanically triggered, not a forecasting problem: all 925 target the enemy
+  homeworld, 83.6% fire at exactly 9 of 10 sectors captured, and liberation at
+  attack start has an IQR of 0.051 against a phase-matched control IQR of
+  0.378 (permutation p=0.0005, Bonferroni alpha 0.01 across five variables).
+  "When is the next attack" reduces to "when will players capture 9 sectors"
+  — a campaign-progress readout, already derivable, not a forecast.
+
+    Defends have no deterministic trigger and campaign state does not drive
+    them (all four campaign-state variables land at "no rule", p=1.0000). The
+    only variable carrying signal is time since the previous event. 63.1% of
+    defends chain within 10 minutes of the previous one ending; given no
+    chain, the lull runs p25 27.8h / p50 36.8h / p75 46.4h. A features-free
+    empirical residual-life model scores a skill ratio of 0.628–0.770
+    depending on configuration — better than a constant baseline, but the
+    project's pre-registered decision gate (calibration within ±0.05 at each
+    quartile, skill-ratio CI upper bound <= 0.6) is not cleared by either.
+    Adding evidence-backed features (cyclic hour-of-day, weekend, capped
+    elapsed time) in a logistic hazard model made it worse, not better —
+    skill ratios of 1.057–1.464, confirmed genuine rather than a bug by a
+    dedicated review that cleared five artifact hypotheses and re-implemented
+    the fitter independently.
+
+    Recommendation: do not ship a countdown or an ETA. The honest surface, if
+    any, is a progress readout on the attack side ("N of 10 sectors captured")
+    and a descriptive band on the defend side ("defends typically chain; when
+    they don't, the next one is usually 28–46h out") — explicitly not a
+    prediction. Full write-up at
+    `docs/superpowers/findings/2026-07-27-next-event-timing.md`; the five
+    analysis scripts behind the numbers are documented in `scripts/README.md`
+    under `## analysis/`.
+
+## 0.68.0
+
+### Added
+
+- **Staging deploy pipeline to the Raspberry Pi Docker Swarm ([#474](https://github.com/elfensky/helldivers.bot/issues/474)).**
+  A `deploy-staging` job (self-hosted runner), a Swarm stack manifest (`deploy/stack.staging.yml`),
+  and an Uptime Kuma maintenance-banner script (`.github/scripts/kuma-maintenance.mjs`). The job is
+  **dormant** until the repo variable `STAGING_DEPLOY_ENABLED=true`, so it merges safely before the
+  cluster exists (it skips instead of hanging for a missing runner). Scaffold is DRAFT/untested until
+  a real run — open TODOs in `deploy/README.md`.
+- **`*_FILE` environment convention (`hydrateFileSecrets`).** Populates `<KEY>` from a `<KEY>_FILE`
+  path before validation, so Docker/Swarm secrets reach the app as files under `/run/secrets/*`
+  rather than plaintext env vars (which leak into `docker inspect`, logs, and error reports). A
+  directly-set `<KEY>` still wins, so local `.env` is untouched. Unit-tested.
+
+## 0.67.6
+
+### Added
+
+- Roadmap **Track G** ([#474](https://github.com/elfensky/helldivers.bot/issues/474)): staging
+  deploy of the app to the homelab Raspberry Pi Docker Swarm, gated on the cluster + a
+  self-hosted runner being up. The pipeline scaffold and the `*_FILE` Swarm-secrets bridge
+  live on `feature/deploy-rpi-staging`.
+
+## 0.67.5
+
+### Changed
+
+- **Docker images are now built multi-arch (`linux/amd64` + `linux/arm64`).**
+  Both the staging (`develop`) and release (tag) workflows set up QEMU and build
+  the app and migrate images for arm64 as well, so they run on the Raspberry Pi
+  swarm nodes and not just amd64 hosts. arm64 is cross-built under emulation; if
+  the `next build` step proves too slow, the follow-up is native arm64 runners
+  (`ubuntu-24.04-arm`, free for this public repo).
+
+## 0.67.4
+
+### Changed
+
+- **Design-debate corrections to the #472 plan ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  A blinded four-model review endorsed the approach and rejected the
+  instrumentation. Seven corrections, all load-bearing:
+
+    The one that mattered most — `playerPercentileInSeason` ranked each event
+    against its **whole** season including future events, then fed that to the
+    model. The walk-forward leakage assert only compares season numbers, so the
+    leak passed it cleanly and would have made Phase 3 "beat" Phase 2 on
+    information it could never have at prediction time. It now uses an expanding
+    within-season window, with a self-check that recomputes causally and fails on
+    mismatch.
+
+    Also: censored moments are scored one-sided rather than dropped (dropping
+    removed 14.9% of attack moments and 8.5% of defend — structurally the longest
+    waits); the constant baseline is the median forward-recurrence wait rather
+    than the median gap (54.5h vs 46.8h, ~12% skill inflation); `effectiveN` and a
+    season block-bootstrap CI are reported, since 18,810 moments come from only
+    774 real intervals; the Phase 1 gate gained a permutation test with Bonferroni
+    across five variables, because one uncorrected fluke would have halted the
+    whole investigation; gaps are scoped by `(type, enemy)`; and the defend
+    estimand splits into P(chain) and conditional lull length.
+
+    Both self-checks were assembled from the plan and executed before merging.
+    Doing so caught a vacuous assertion: every synthetic timestamp in the harness
+    fixture is even, so a `t % 2` moment filter excluded nothing and the test
+    passed while proving nothing.
+
+## 0.67.3
+
+### Added
+
+- **Implementation plan for the next-event timing forecast ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  `docs/superpowers/plans/2026-07-27-next-event-timing-forecast.md` — seven tasks
+  with runnable code for a shared loader, a walk-forward backtest harness, the
+  trigger hunt, the renewal baseline, and the feature hazard model.
+
+    Task 3 is a decision gate rather than code: if the trigger hunt shows attacks
+    fire on a campaign-state rule, the modelling tasks are never written. The
+    harness carries one assert that matters more than the rest — no training row
+    may come from a season at or after the test season, since leakage there
+    produces beautiful, wrong numbers.
+
+## 0.67.2
+
+### Added
+
+- **Design spec for the next-event timing forecast ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).**
+  `docs/superpowers/specs/2026-07-27-next-event-timing-forecast-design.md` records
+  what the event log can actually support before any modelling starts: 6,013 events
+  across all 160 seasons, but `h1_status` runs at ~1 bucket/day for 156 of them, so
+  only 11 of 925 attacks have more than one status reading in the preceding 24h. A
+  fine-grained "faction progress speed" feature therefore does not exist historically.
+
+    The plan leads with a trigger hunt rather than a model — if HD1 fires attacks at a
+    liberation threshold, it is a rule and there is nothing to forecast. A
+    renewal-hazard baseline follows as the yardstick, and features only if the cheap
+    rungs measurably miss. The decision gate (calibration, sharpness, skill ratio) is
+    written down before the numbers exist, so "not usefully predictable" stays an
+    acceptable outcome.
+
+- `docs/roadmap.md` entry tracking [#471](https://github.com/elfensky/helldivers.bot/issues/471)
+  under Track E. (Merged in `8c63b02`, which named v0.67.2 in its message without
+  bumping the version — recorded here under the number it claimed.)
+
 ## 0.67.1
 
 ### Added

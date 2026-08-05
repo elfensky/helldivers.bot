@@ -192,7 +192,10 @@ const withMDX = createMDX({
 const finalConfig = withMDX(nextConfig);
 export default process.env.SENTRY_AUTH_TOKEN ?
     withSentryConfig(finalConfig, {
-        silent: true,
+        // No `silent: true`. It suppresses console.error as well as info
+        // (bundler-plugin-core logger.js), which hid two hard sourcemap-upload
+        // failures for every build between 2026-07-23 and 2026-08-05 — the
+        // reason every GlitchTip stack frame is minified. See #496.
         authToken: process.env.SENTRY_AUTH_TOKEN,
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,

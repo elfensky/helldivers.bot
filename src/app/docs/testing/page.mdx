@@ -79,6 +79,12 @@ src/__tests__/
 │   └── validators/          # Tests for src/validators/*
 ├── smoke/                   # Vitest smoke tests (against running dev server)
 │   └── smoke.test.mjs       # Page loads + API endpoint checks
+├── visual/                  # Vitest browser-mode screenshot tests
+│   ├── *.visual.test.jsx    # One file per component under test
+│   ├── fixtures.mjs         # Literal fixture data (frozen clock, map state, stat rows)
+│   ├── renderVisual.jsx     # Mount helper: live-data provider + screenshot wrapper
+│   ├── stubs/               # next/image, next/link, @sentry/nextjs stand-ins
+│   └── __screenshots__/     # Committed baseline PNGs
 └── utils/                   # Shared test utilities
     └── index.mjs            # Mock factories and helpers
 ```
@@ -90,6 +96,7 @@ Root-level config files:
 | `vitest.config.mjs`       | Vitest unit test config (env, aliases, coverage) |
 | `vitest.setup.mjs`        | Global mocks (auth, Prisma, Next.js modules)     |
 | `vitest.smoke.config.mjs` | Vitest smoke test config (30s timeout, node env) |
+| `vitest.visual.config.mjs` | Visual regression config (chromium browser mode)  |
 
 ---
 
@@ -101,6 +108,8 @@ Root-level config files:
 | `npm run test:unit`     | Vitest single run (unit tests only)          |
 | `npm run test:coverage` | Vitest with v8 coverage report               |
 | `npm run test:e2e`      | Smoke tests via vitest.smoke.config.mjs      |
+| `npm run test:visual`   | Visual regression tests (requires Docker)    |
+| `npm run test:visual:update` | Rewrite the visual baselines            |
 
 **Note:** Smoke tests require a running dev server at `http://localhost:3000`. Never start the dev server from Claude — ask the user.
 
@@ -253,6 +262,27 @@ Smoke tests use a separate Vitest config (`vitest.smoke.config.mjs`) — not Pla
 
 ---
 
+## Visual Regression Tests
+
+Screenshot tests that catch layout and styling regressions unit tests cannot see. They run in Vitest's browser mode (chromium via Playwright) and mount real client components with fixture data — no Next server, no database, no third-party service.
+
+`DashboardClient` reads everything from `LiveDataContext`, so wrapping it in a provider with a static payload renders the whole dashboard from one fixture. Current baselines: dashboard (desktop + mobile), `EventCard` (attack + defend), `StatGrid`.
+
+**Docker is required.** Baseline PNGs are platform-specific — font rendering and antialiasing differ between macOS and Linux — so both generation and comparison run inside `mcr.microsoft.com/playwright:v1.62.1-noble` via `scripts/visual-tests.sh`. A baseline generated anywhere else fails on noise instead of on regressions.
+
+```bash
+npm run test:visual          # compare against committed baselines
+npm run test:visual:update   # accept current rendering as the new baselines
+```
+
+Determinism comes from four things, all in `src/__tests__/visual/setup.mjs` and the config: a frozen `Date` (`vi.useFakeTimers({ toFake: ['Date'] })`, so `setTimeout`/rAF still work), a global rule zeroing every animation and transition, explicit `page.viewport()` per test, and literal fixtures. Aliased stubs replace `next/image`, `next/link`, and `@sentry/nextjs`, none of which work outside a Next runtime.
+
+When a baseline changes, review the diff PNG under `.vitest-attachments/` before accepting it. Visual tests are not part of `npm run test:unit`.
+
+**In CI:** the `Visual Regression` job in `.github/workflows/ci.yml` runs on every PR and push to `main`/`develop`, inside the same Playwright image (as a job `container:`, so it calls `vitest` directly rather than the Docker script). On failure it uploads the actual/diff PNGs as a `visual-diffs` artifact. The image tag appears in three places — the CI job, `scripts/visual-tests.sh`, and the `playwright` devDependency — and all three must move together, or CI and local runs stop agreeing on what a pixel looks like.
+
+---
+
 ## Gitignore
 
 Test artifacts are excluded from version control:
@@ -263,4 +293,7 @@ Test artifacts are excluded from version control:
 /playwright-report/  # Playwright HTML report
 /playwright/         # Playwright screenshots & artifacts
 .playwright-mcp/     # Playwright MCP state
+.vitest-attachments/ # Visual regression actual/diff PNGs
 ```
+
+Visual baselines under `src/__tests__/visual/__screenshots__/` **are** committed — they are the reference the tests compare against.

@@ -500,23 +500,26 @@ The `sector` field is a number to avoid string parsing from `id`.
 
 `src/features/stats/evaluateProgress.mjs`
 
-Evaluates how a live event is performing relative to the expected linear progress rate. Returns a human-readable status string for active events, or `null` for completed/inactive events.
+Evaluates how a live event is performing relative to the expected linear progress rate. Returns a pace object for active events, or `null` for completed/inactive events.
 
 ```ts
-evaluateProgress(event: { start_time, end_time, points, points_max, status }) → string | null
+evaluateProgress(event: { start_time, end_time, points, points_max, status })
+    → { status: 'ahead' | 'behind' | 'on_track', delta, deltaPercent, currentRate, requiredRate } | null
 ```
 
 **Algorithm:**
 
 1. Calculate expected points at current time assuming linear progress (`expectedRate × elapsedTime`).
-2. Compare actual `points` against expected with a 10% buffer.
+2. Compare actual `points` against expected with a +10% upper buffer ('behind' has no buffer — any shortfall reports).
 3. Return status:
-    - `"Ahead by N points"` — actual > expected + 10% buffer
-    - `"Behind by N points"` — actual < expected
-    - `"On track by N points"` — within buffer
-    - `null` — event `status` is not `'active'`
+    - `'ahead'` — actual > expected + 10% buffer
+    - `'behind'` — actual < expected
+    - `'on_track'` — in between
+    - `null` — event `status` is not `'active'` or the time window is degenerate
 
-**Tests:** `src/__tests__/unit/utils/evaluateProgress.test.mjs`
+The `'behind'` predicate is algebraically the complement of `eventForecast`'s `onTrack`, so the ▲/▼ pace indicator and the Falls/Fails outcome verdict on event cards always agree (pinned by `paceVerdict.contract.test.mjs`).
+
+**Tests:** `src/__tests__/unit/features/stats/evaluateProgress.test.mjs`
 
 ---
 

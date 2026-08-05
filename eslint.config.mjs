@@ -11,6 +11,8 @@ export default [
     {
         ignores: [
             'src/generated/**',
+            'src/features/dashboard/waveModel.mjs', // emitted by scripts/analysis/08
+            'src/features/dashboard/attackModel.mjs', // emitted by scripts/analysis/11
             '.next/**',
             'public/sw.js',
             'public/workers/**',
@@ -18,6 +20,11 @@ export default [
             'coverage/**',
             'dist/**',
             '.serwist/**',
+            // Each worktree holds a full copy of src/, so without this a lint
+            // run in the main checkout also lints every branch checked out
+            // under .worktrees/ — results would depend on which worktrees
+            // happen to exist.
+            '.worktrees/**',
         ],
     },
 

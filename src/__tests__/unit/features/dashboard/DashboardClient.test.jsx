@@ -8,6 +8,36 @@ vi.mock('@/features/notifications/NotificationToggle', () => ({
     default: () => null,
 }));
 
+// Sentinel forecasts distinguish which function DashboardClient called: real
+// attackForecast/sectorForecast both need `data.snapshots` + a calibrated
+// model, neither of which these fixtures carry, so without stubbing them out
+// every fixture would collapse to the same `{mode:'hidden', reason:'no-data'}`
+// regardless of which one ran.
+vi.mock('@/features/dashboard/attackForecast.mjs', () => ({
+    attackForecast: vi.fn(() => ({
+        mode: 'window',
+        p25: 1,
+        p50: 2,
+        p75: 3,
+        remaining: 100,
+        imminent: false,
+    })),
+    sectorForecast: vi.fn(() => ({
+        mode: 'median',
+        p50: 1,
+        remaining: 10,
+        imminent: false,
+    })),
+}));
+vi.mock('@/features/dashboard/eventForecast.mjs', () => ({
+    eventForecast: vi.fn(() => ({
+        mode: 'verdict',
+        etaHours: 2,
+        onTrack: true,
+        stalled: false,
+    })),
+}));
+
 // Capture-style mock: each EventCard render emits a <div> carrying the
 // props it received as JSON. Tests can then query and parse to inspect
 // exactly what the parent passed in (view, points, factionMap, barLabel…).
@@ -29,6 +59,8 @@ vi.mock('@/features/galaxy/EventCard', async () => {
                     points: props.points,
                     pointsMax: props.pointsMax,
                     hasFactionMap: props.factionMap != null,
+                    etaForecastMode: props.etaForecast?.mode ?? null,
+                    eventEtaMode: props.eventEta?.mode ?? null,
                 })}
             />
         ),
@@ -149,7 +181,7 @@ describe('DashboardClient — base rendering', () => {
     test('renders Season header with view toggle', () => {
         render(<DashboardClient />);
         expect(screen.getByText('Season 42')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /sector|campaign/i })).toBeDefined();
+        expect(screen.getByRole('button', { name: /sector|faction/i })).toBeDefined();
     });
 
     test('regions toggle defaults to sector view (EventCard receives view="sector")', () => {
@@ -189,13 +221,13 @@ describe('DashboardClient — regions view toggle persistence', () => {
 
     test('initializes regions view from initialRegionsView prop', () => {
         render(<DashboardClient initialRegionsView="campaign" />);
-        const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+        const props = getCardProps('event-card-0-FACTION_PROGRESS');
         expect(props?.view).toBe('campaign');
     });
 
     test('clicking toggle persists new value to cookie', () => {
         render(<DashboardClient />);
-        const toggle = screen.getByRole('button', { name: /switch to campaign/i });
+        const toggle = screen.getByRole('button', { name: /switch to faction/i });
         fireEvent.click(toggle);
         expect(document.cookie).toContain('hd1-regions-view=campaign');
     });
@@ -260,9 +292,10 @@ describe('DashboardClient — Super Earth defense branch', () => {
         // SE card is event-focused — view prop stays undefined (defaults to 'sector')
         expect(seCard.view).toBeUndefined();
 
-        // Non-defenders still get their normal frontier cards
-        expect(getCardProps('event-card-1-SECTOR_PROGRESS')).not.toBeNull();
-        expect(getCardProps('event-card-2-SECTOR_PROGRESS')).not.toBeNull();
+        // Non-defenders still get their normal frontier cards (campaign label
+        // in campaign view)
+        expect(getCardProps('event-card-1-FACTION_PROGRESS')).not.toBeNull();
+        expect(getCardProps('event-card-2-FACTION_PROGRESS')).not.toBeNull();
     });
 });
 
@@ -334,19 +367,22 @@ describe('DashboardClient — homeworld card suppression', () => {
         );
     });
 
-    test('campaign view homeworld card receives view=campaign + factionMap', async () => {
+    test('active attack keeps the card event-focused even in campaign view', async () => {
         setupHomeworldAttack();
         render(<DashboardClient initialRegionsView="campaign" />);
-        // When all 10 sectors are captured and the homeworld is under attack,
-        // the frontier card returns null (computeFrontier → null) and the
-        // homeworld card becomes the faction's primary card. In campaign view
-        // it must carry the 11-segment bar, so we pass view + factionMap.
+        // An active homeworld assault is an event-focused interrupt (like the
+        // Super Earth defense card): single event bar, no 11-segment faction
+        // overview, regardless of the view toggle.
         await waitFor(() => {
             const props = getCardProps('event-card-0-HOMEWORLD_ASSAULT');
-            expect(props?.view).toBe('campaign');
+            expect(props?.view).toBe('sector');
         });
         const props = getCardProps('event-card-0-HOMEWORLD_ASSAULT');
-        expect(props.hasFactionMap).toBe(true);
+        expect(props.hasFactionMap).toBe(false);
+        // The bar carries the EVENT's progress, and the verdict tracks it.
+        expect(props.points).toBe(300);
+        expect(props.pointsMax).toBe(1000);
+        expect(props.eventEtaMode).toBe('verdict');
     });
 });
 
@@ -380,10 +416,10 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
 
         render(<DashboardClient initialRegionsView="campaign" />);
         await waitFor(() => {
-            const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+            const props = getCardProps('event-card-0-FACTION_PROGRESS');
             expect(props?.view).toBe('campaign');
         });
-        const props = getCardProps('event-card-0-SECTOR_PROGRESS');
+        const props = getCardProps('event-card-0-FACTION_PROGRESS');
         expect(props.points).toBe(3_200_000);
         expect(props.pointsMax).toBe(5_000_000);
         // factionMap must be forwarded in campaign view so the card can
@@ -422,6 +458,93 @@ describe('DashboardClient — campaign view passes cumulative points', () => {
         // pointsPerSector = 500K; sectorsEarned = 6; pointsIntoFrontier = 200K
         expect(props.points).toBe(200_000);
         expect(props.pointsMax).toBe(500_000);
+    });
+});
+
+describe('DashboardClient — view-dependent ETA & event verdicts', () => {
+    beforeEach(() => {
+        localStorage.clear();
+        vi.mocked(useLiveDataContext).mockReturnValue({
+            data: {
+                status: [
+                    {
+                        enemy: 0,
+                        points: 1_000_000,
+                        points_max: 5_000_000,
+                        status: 'active',
+                    },
+                    { enemy: 1, points: 0, points_max: 5_000_000, status: 'active' },
+                    { enemy: 2, points: 0, points_max: 5_000_000, status: 'active' },
+                ],
+                events: [],
+                last_updated: '2025-01-01',
+                season: 42,
+            },
+            mapState: baseMapState,
+            status: 'live',
+            prevData: null,
+            isLeader: true,
+        });
+    });
+
+    afterEach(() => cleanup());
+
+    test('passes the sector forecast in sector view and the attack forecast in campaign view', () => {
+        // Sector view is the persisted default.
+        render(<DashboardClient />);
+        const sectorProps = getCardProps('event-card-0-SECTOR_PROGRESS');
+        expect(sectorProps.etaForecastMode).toBe('median');
+
+        cleanup();
+
+        render(<DashboardClient initialRegionsView="campaign" />);
+        const campaignProps = getCardProps('event-card-0-FACTION_PROGRESS');
+        expect(campaignProps.etaForecastMode).toBe('window');
+    });
+
+    test('passes an event verdict for the active defend event', () => {
+        vi.mocked(useLiveDataContext).mockReturnValue({
+            data: {
+                status: [
+                    {
+                        enemy: 0,
+                        points: 200_000,
+                        points_max: 1_000_000,
+                        status: 'active',
+                    },
+                    { enemy: 1, points: 0, points_max: 5_000_000, status: 'active' },
+                    { enemy: 2, points: 0, points_max: 5_000_000, status: 'active' },
+                ],
+                events: [
+                    {
+                        type: 'defend',
+                        region: 3,
+                        enemy: 0,
+                        status: 'active',
+                        start_time: 100,
+                        end_time: Math.floor(Date.now() / 1000) + 3600,
+                        points: 100,
+                        points_max: 1000,
+                    },
+                ],
+                last_updated: '2025-01-01',
+                season: 42,
+            },
+            mapState: {
+                ...baseMapState,
+                0: makeDashboardMap({
+                    3: { event: 'active', status: 'active', percent: 10 },
+                }),
+            },
+            status: 'live',
+            prevData: null,
+            isLeader: true,
+        });
+
+        render(<DashboardClient />);
+        const props = getCardProps('event-card-0-CAPITAL_DEFENSE');
+        expect(props).not.toBeNull();
+        expect(props.eventEtaMode).toBe('verdict');
     });
 });
 

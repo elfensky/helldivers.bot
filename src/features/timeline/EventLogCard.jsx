@@ -124,6 +124,10 @@ function DurationPill({ event, styles, timeFormat }) {
 function TimeLine({ event, timeFormat, isCompleted }) {
     if (timeFormat === 'absolute') {
         const ts = isCompleted ? event.end_time : event.start_time;
+        // timeZone pinned for the same reason as DefeatedCard (#496): without
+        // it the server's UTC render and the visitor's local render disagree
+        // on the hour, throwing a hydration mismatch. CascadeLogCard already
+        // pins UTC for the identical line on the archives page.
         const formatted = new Date(ts * 1000).toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -131,6 +135,7 @@ function TimeLine({ event, timeFormat, isCompleted }) {
             hour: '2-digit',
             minute: '2-digit',
             hour12: false,
+            timeZone: 'UTC',
         });
         const prefix = isCompleted ? 'Ended' : 'Started';
         return (
@@ -187,7 +192,7 @@ function schema(event, type) {
         return {
             '@context': 'https://schema.org',
             '@type': 'Event',
-            name: `Attacking ${capital}`,
+            name: `Capturing ${capital}`,
             description: `The Helldivers have launched an assault on ${capital} in the ${region}. Join the fight to liberate this sector from ${faction} control!`,
             startDate: new Date(event.start_time * 1000),
             endDate: new Date(event.end_time * 1000),

@@ -7,6 +7,7 @@ import { SECTOR_COUNT } from '@/shared/enums/worlds.mjs';
 import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.mjs';
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
 import { CAMPAIGN_STATUS, EVENT_STATUS, MAP_STATUS } from '@/shared/enums/events.mjs';
+import factions from '@/shared/enums/factions.mjs';
 import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 
 const passThrough = (v) => (v == null ? '—' : String(v));
@@ -134,6 +135,141 @@ function PaceIndicator({ pace }) {
     );
 }
 
+/**
+ * The discriminated result of `attackForecast` or `sectorForecast`. Declared
+ * locally rather than imported so this presentational component keeps no
+ * dependency on the dashboard feature that computes it. Covers both the
+ * percentile-window shape (attack/homeworld assaults) and the median-only
+ * shape (sector ETAs, whose range hasn't shipped yet — see script 13).
+ *
+ * @typedef {{mode: 'window', p25: number, p50: number, p75: number, imminent: boolean}
+ *   | {mode: 'median', p50: number, remaining: number, imminent: boolean}
+ *   | {mode: 'hidden', reason: string}} AssaultForecast
+ */
+
+/**
+ * @param {number} h hours
+ * @returns {string} whole days at >=48h ("5d"), whole hours at >=1h, whole
+ *   minutes below ("40m")
+ */
+function formatEtaHours(h) {
+    const clamped = Math.max(0, h);
+    if (clamped < 1) return `${Math.round(clamped * 60)}m`;
+    if (clamped < 48) return `${Math.round(clamped)}h`;
+    return `${Math.round(clamped / 24)}d`;
+}
+
+/**
+ * Range with the unit written once when both bounds share it: `4-16h`,
+ * `30-55m` — and per-bound only when mixed: `30m-2h`.
+ *
+ * @param {number} lo hours
+ * @param {number} hi hours
+ * @returns {string}
+ */
+function formatEtaRange(lo, hi) {
+    const a = formatEtaHours(lo);
+    const b = formatEtaHours(hi);
+    return a.slice(-1) === b.slice(-1) ? `${a.slice(0, -1)}-${b}` : `${a}-${b}`;
+}
+
+/**
+ * ETA line, rendered as one more middot-separated item in the meta row.
+ *
+ * Median-first with the range in parens for window forecasts: `~9h (4-16h)`.
+ * The `~` and the range keep the single number honest — still not a
+ * countdown. NOT a `±` form: the window is asymmetric (near campaign
+ * completion p75 runs up to 2x the median, see /docs/predict), and a
+ * symmetric spread would understate the late side. Median-only forecasts
+ * (sector ETAs) render without a range — an unmeasured spread would be
+ * worse than none.
+ *
+ * @param {object} props
+ * @param {{mode: 'window', p25: number, p50: number, p75: number, imminent: boolean}
+ *   | {mode: 'median', p50: number, remaining: number, imminent: boolean}} props.forecast
+ */
+function EtaLine({ forecast }) {
+    const med = formatEtaHours(forecast.p50);
+    const range =
+        forecast.mode === 'window' ?
+            ` (${formatEtaRange(forecast.p25, forecast.p75)})`
+        :   ''; // mode 'median' — no unmeasured parens (sector ETA, see spec ruling)
+    // Beyond the validated 48h window the figures are the same arithmetic and
+    // measured ratios, but were never separately validated out there — say so.
+    const rough = forecast.p50 >= 48 ? ' Rough at multi-day range.' : '';
+    const title =
+        (forecast.mode === 'window' ?
+            `Assault ETA — median ${forecast.p50.toFixed(1)}h. Range is the 25th-75th percentile.`
+        :   `Median estimate ${forecast.p50.toFixed(1)}h. Range ships once calibrated (script 13).`) +
+        rough;
+    return (
+        <span
+            className={
+                'sector-card-assault' +
+                (forecast.imminent ? ' sector-card-assault--imminent' : '')
+            }
+            title={title}
+            suppressHydrationWarning
+        >
+            ETA ~{med}
+            {range}
+        </span>
+    );
+}
+
+/**
+ * How an active event is going to END, in the same left-aligned style as the
+ * campaign/sector `EtaLine`.
+ *
+ * The two outcomes land at different times, so only one of them needs a
+ * number. A loss lands on the deadline — which the `EventCountdown` beside
+ * this is already counting down to — so the losing verdict is a word, not a
+ * second copy of the same duration. A win lands *early*, when the points
+ * fill, so that one carries its ETA.
+ *
+ * On-pace/behind detail stays the PaceIndicator's job (▲/▼ + points amount)
+ * on the right edge, as before.
+ *
+ * Danger red is reserved for the losing verdict here — deliberately NOT the
+ * `--imminent` modifier the assault ETA uses. A win landing inside the hour
+ * is good news, and painting it the same red as "Falls" would make the two
+ * outcomes indistinguishable at a glance on exactly the cards that matter
+ * most. On this line, red means one thing: this event is going to be lost.
+ *
+ * @param {object} props
+ * @param {{etaHours: number|null, onTrack: boolean, stalled: boolean}} props.eta
+ * @param {boolean} props.isDefending
+ */
+function EventEta({ eta, isDefending }) {
+    if (!eta.onTrack) {
+        return (
+            <span
+                className="sector-card-assault sector-card-assault--imminent"
+                title={
+                    'At the average pace since the event started, the bar will not fill ' +
+                    'before the timer runs out. The countdown is the time left.'
+                }
+                suppressHydrationWarning
+            >
+                {isDefending ? 'Falls' : 'Fails'}
+            </span>
+        );
+    }
+    const hours = /** @type {number} */ (eta.etaHours);
+    return (
+        <span
+            className="sector-card-assault"
+            title={
+                'At the average pace since the event started, the bar fills before the ' +
+                'timer runs out — the event ends early, at this ETA.'
+            }
+            suppressHydrationWarning
+        >
+            {isDefending ? 'Holds' : 'Taken'} ~{formatEtaHours(hours)}
+        </span>
+    );
+}
+
 export default function EventCard({
     action,
     region,
@@ -147,7 +283,14 @@ export default function EventCard({
     pulseDelay,
     view = 'sector',
     factionMap,
+    etaForecast = /** @type {AssaultForecast|null} */ (null),
+    eventEta = /** @type {{mode: 'verdict', etaHours: number|null, remainingHours: number, onTrack: boolean, stalled: boolean}|{mode: 'hidden'}|null} */ (
+        null
+    ),
 }) {
+    // Every verdict renders now, stalled included: a stalled event is behind by
+    // definition, and the behind branch needs no ETA to say so.
+    const showEventEta = eventEta?.mode === 'verdict';
     const color = FACTION_COLORS[factionIndex] || 'var(--color-primary)';
     const isEvent = !!endTime;
     const isDefending = action === 'defending';
@@ -157,6 +300,12 @@ export default function EventCard({
 
     const isCampaign = view === 'campaign';
     const { captured } = isCampaign ? countCapturedRegions(factionMap) : { captured: 0 };
+
+    // Faction view's bar spans the whole campaign, so the header is just the
+    // faction name — no "Capturing", which belongs to a single sector. Active
+    // events keep their action word and place name; they're about a place.
+    const isFactionTitle = isCampaign && !isEvent;
+    const title = isFactionTitle ? factions[factionIndex]?.name || region : region;
 
     const cardStyle = /** @type {React.CSSProperties} */ ({
         '--accent-color': color,
@@ -174,20 +323,49 @@ export default function EventCard({
                         width={16}
                         height={16}
                     />
-                    <span
-                        className={
-                            'sector-card-action' +
-                            (isEvent ? ' sector-card-action-flash' : '')
-                        }
-                        style={titleColor ? { color: titleColor } : undefined}
-                    >
-                        {isDefending ? 'Defending' : 'Capturing'}
-                    </span>
-                    <span className="sector-card-title">{region}</span>
+                    {!isFactionTitle && (
+                        <span
+                            className={
+                                'sector-card-action' +
+                                (isEvent ? ' sector-card-action-flash' : '')
+                            }
+                            style={titleColor ? { color: titleColor } : undefined}
+                        >
+                            {isDefending ? 'Defending' : 'Capturing'}
+                        </span>
+                    )}
+                    <span className="sector-card-title">{title}</span>
                 </div>
-                {barLabel && (
+                {(barLabel ||
+                    etaForecast?.mode === 'window' ||
+                    etaForecast?.mode === 'median' ||
+                    showEventEta) && (
                     <div className="sector-card-bar-label-row">
-                        <span className="sector-card-bar-label">{barLabel}</span>
+                        {/* Label and forecast are grouped so the row's
+                            space-between still pushes the pace indicator to the
+                            right edge rather than spreading three items evenly. */}
+                        <span className="sector-card-bar-label-group">
+                            {barLabel && (
+                                <span className="sector-card-bar-label">{barLabel}</span>
+                            )}
+                            {(etaForecast?.mode === 'window' ||
+                                etaForecast?.mode === 'median') && (
+                                <>
+                                    {barLabel && (
+                                        <span className="sector-card-sep">&middot;</span>
+                                    )}
+                                    <EtaLine forecast={etaForecast} />
+                                </>
+                            )}
+                            {showEventEta && (
+                                <>
+                                    {barLabel && (
+                                        <span className="sector-card-sep">&middot;</span>
+                                    )}
+                                    <EventEta eta={eventEta} isDefending={isDefending} />
+                                </>
+                            )}
+                        </span>
                         {pace && (
                             <>
                                 <span className="sector-card-sep">&middot;</span>
@@ -200,7 +378,7 @@ export default function EventCard({
                     <div
                         className="sector-card-bar"
                         role="progressbar"
-                        aria-label={`${region} ${action} progress`}
+                        aria-label={`${title} ${action} progress`}
                         aria-valuenow={isCampaign ? captured : safePct}
                         aria-valuemin={0}
                         aria-valuemax={isCampaign ? 11 : 100}
@@ -237,12 +415,7 @@ export default function EventCard({
                     <span className="sector-card-points">
                         <AnimatedStat value={points} /> / {formatNumber(pointsMax)}
                     </span>
-                    {endTime && (
-                        <>
-                            <span className="sector-card-sep">&middot;</span>
-                            <EventCountdown endTime={endTime} />
-                        </>
-                    )}
+                    {endTime && <EventCountdown endTime={endTime} />}
                     {!barLabel && pace && (
                         <>
                             <span className="sector-card-sep">&middot;</span>
@@ -251,11 +424,9 @@ export default function EventCard({
                     )}
                 </div>
             </div>
-            <div
-                className={
-                    'sector-card-accent' + (isEvent ? ' sector-card-accent-flash' : '')
-                }
-            />
+            {/* Accent stays solid faction color — the flashing state signal
+                lives in the title's action word, not here. */}
+            <div className="sector-card-accent" />
         </div>
     );
 }

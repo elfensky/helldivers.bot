@@ -71,4 +71,11 @@ docs/superpowers/archive
 # Temporary verification screenshots
 verify-*.png
 scorecard.png
+
+# Visual regression failure artifacts — actual/diff PNGs from a failed run.
+# The baselines under src/__tests__/visual/__screenshots__/ ARE committed.
+.vitest-attachments/
 .claude/skills/
+
+# graphify graph (generated locally)
+graphify-out/

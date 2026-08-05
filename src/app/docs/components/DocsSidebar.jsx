@@ -15,6 +15,22 @@ const sections = [
         ],
     },
     {
+        label: 'Predictions',
+        items: [
+            { href: '/docs/predict', label: 'Summary', track: 'docs-predict' },
+            {
+                href: '/docs/predict/attack',
+                label: 'Attacks',
+                track: 'docs-predict-attack',
+            },
+            {
+                href: '/docs/predict/defend',
+                label: 'Defends',
+                track: 'docs-predict-defend',
+            },
+        ],
+    },
+    {
         label: 'Architecture',
         items: [
             {

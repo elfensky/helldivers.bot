@@ -1,0 +1,346 @@
+import DefendRegularityChart from './DefendRegularityChartLoader';
+import LullByTrainLengthChart from './LullByTrainLengthChartLoader';
+import LiveNowChip from './LiveNowChip';
+import GammaExplorerSection from './GammaExplorerSection';
+import LiveConcurrency from './LiveConcurrency';
+
+export const metadata = {
+    title: 'Predicting Defend Waves | Helldivers Bot',
+    description:
+        'How the defend-wave likelihood window was built: five modeling attempts, fairness-tested clues, a reverse-engineered scheduler with a deterministic counterattack clock, and the pass mark that kept a countdown from shipping.',
+    alternates: { canonical: '/docs/predict/defend' },
+    openGraph: { url: '/docs/predict/defend' },
+};
+export const revalidate = 3600;
+
+# Can we predict defends?
+
+Partially — and honestly. Defend waves ride one global, hidden timer, and after five modeling attempts we can put an honest time window on the next one, but not a countdown — except for one wave in four, the counterattack, which turns out to run on a deterministic clock. This page is the whole story: the rules of the game, attempts that measured the wrong thing or hit a wall, the fairness checks that killed four false discoveries, and a reverse-engineering of the scheduler itself.
+
+## How we predict it
+
+1. We watch three observable things: whether a homeworld assault is running, whether any faction is one sector away from triggering one (9 of 10 sectors captured), and how long it has been since the last wave started.
+2. We look up every moment across the ~160 recorded wars that looked the same — same situation, same wait so far — and read off how long the wait turned out to be (careful not to be fooled by wars that ended before their wave arrived, which would otherwise make waits look shorter than they were).
+3. We show the middle estimate with the middle-50% window around it and the within-24h/48h chances — the card reads like "~20h (14-32h) · 63% within 24h", never a bare countdown.
+4. Those percentages are verified: replaying history as if live, "63% within 24h"-style claims come true at their advertised rates, within a few points, at every level we check.
+5. It is deliberately **not** a countdown. The typical miss is ±8h on a ~44h cycle, and the pass mark we wrote down in advance for shipping a countdown (roughly: reliably 40%+ better than a naive guess) was missed — and the miss is respected.
+
+<LiveNowChip />
+
+Everything below is how we earned those five lines — including the two attempts that didn't.
+
+## The rules of the game
+
+Before predicting anything, it pays to write down what the game will and won't do.
+
+A "defend" is an enemy assault you either win or lose. Defends follow five rules, each confirmed against the full 160-season, 5,091-defend history — these aren't statistical tendencies, they're mechanics of the game itself.
+
+1. **Two defends never run at the same time.** Zero overlapping pairs across 47,297 same-faction defend pairs checked.
+2. **A faction never defends while you are attacking it.** Zero overlapping pairs across 9,584 same-faction defend/attack pairs checked.
+3. **A defend and an attack on *different* factions can overlap.** 955 such pairs found (out of 19,756 different-faction defend/attack pairs checked) — so the constraint in rule 2 is per-faction, not global.
+4. **Defends only occur while a faction is active** — never while it's `hidden` (not yet introduced) or `defeated`. *(This is a consequence of how factions work, not a discovered rule.)* 5,019 / 5,091 defends (98.6%) start with recorded status `active`; the remaining 72 (1.4%) read `hidden`, attributable to the campaign snapshot's ~1-bucket/day staleness, not real hidden-state defends. Never `defeated`.
+5. **A defend train continues until the players win one.** Lose, and you get hit again almost immediately: **97.1%** of failed defends (3,112 / 3,205) chain into another defend within 10 minutes. Win, and it stops: only **0.1%** of successful defends (1 / 1,437) do the same.
+
+   *A war ending mid-train is the minority case, not a clean second rule.* It's tempting to assume a train only ends when Super Earth is defeated and a new season starts — but the last defend of a season was itself a **failure** in just **49 of 160 seasons (30.6%)**. In the other **69.4%**, the season's final train ended with a win, and the season ended some other way.
+
+```mermaid
+flowchart LR
+    A([Faction active]) --> B[Defend starts]
+    B -- "LOST — 97.1%" --> B
+    B -- WON --> C[Lull<br/><small>28h-46h typical</small>]
+    C --> D[Next train's<br/>first defend]
+    D -- "LOST — 97.1%" --> D
+    D -- WON --> C
+
+    style A fill:#1e293b,stroke:#3b82f6,color:#60a5fa
+    style B fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+    style D fill:#1c1917,stroke:#f59e0b,color:#fbbf24
+    style C fill:#0f1a0f,stroke:#22c55e,color:#4ade80
+```
+
+Everything inside the train (the self-loops above) is mechanical, not a forecasting target. The only open question is how long the lull runs between one train ending and the next one starting.
+
+The concurrency side of those rules is not a frozen claim — it is recomputed from the event log every hour, so future research (ours or yours) can cite the current census as proof rather than a snapshot. Three homeworld assaults have run simultaneously, and so have two assaults plus a defend; two defends at once has never happened, not once:
+
+<LiveConcurrency />
+
+There is a sixth rule, found later than the other five while working out which faction each wave targets: **a failed homeworld assault is always answered.** In every one of the 179 recorded lulls that began with a homeworld assault still running and ultimately failing, the next defend wave hit the faction that had been assaulted — 179/179, a deterministic sequencing mechanic, not a tendency. Assaults that *succeed* show the mirror image, 0/27, for the dull reason that winning removes the faction from the game. And when no assault is in play but exactly one faction sits one sector from triggering one, that faction is the likely-but-not-certain next target: 189 of 308 such lulls, 61.4% — and the fairness check (shuffling the labels within each war 2,000 times) says a fluke that big comes up less than once in a thousand shuffles. *(reproduce: `12-faction-choice.mjs`)*
+
+A Discord question ("is the cooldown always the same, with the defend just waiting for an appropriate time to begin?") pushed rule 6 one step further in 2026-07-31, and the answer splits it into two more rules, both sharper than the hunch. Credit where due: a community <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=3764548664" data-umami-event="docs-predict-steam-guide" rel="noopener noreferrer" target="_blank">Steam guide</a> had independently inferred much of this mechanic set from gameplay — we treated its claims as hypotheses with unknown provenance and tested them against the event log; the ones below are the survivors, now with exact counts:
+
+7. **A failed assault is answered *immediately*.** Every fail-resolved homeworld assault in history ran **exactly 48.0 hours** — 544 of 544 within ±30 minutes of the timeout; assaults that succeed end early, when their points fill. And when the defend slot is free at that moment, the counterattack train starts **within 10 minutes** of the timeout: 467 of 474 cases, p05–p95 spread 0.0h. (Measured slot-aware, because queued cases genuinely wait: when two assaults fail with overlapping pending windows, the second counterattack fires ~37h late at the median — the single defend slot serializes them.) The counterattack lands on region 9 in 97.8% of cases, which also explains most of the region-9 dominance among train starts.
+8. **No free wave ever starts while an assault is running.** Of 1,819 train starts, 178 began with an assault active — and all 178 are counterattacks. Zero random waves in 24,651 hours of assault-active lull time, against 34.9 starts per 1,000 hours in assault-free time. The scheduler's clock is *gated* for the duration of every assault.
+
+*(reproduce: `14-counterattack-delta.mjs` — which also re-verifies the concurrency census and rules 7–8 on every run)*
+
+With the rules fixed, the forecasting problem collapses to a single number: how long does the lull run? Our first attempt managed to get even the question wrong.
+
+## Attempt 1: we measured the wrong thing
+
+The obvious target is the gap from one defend to the next, and that is what we measured first: 4,642 defend-to-defend gaps pooled across every season. Models built on that target looked busy and went nowhere, and the reason is sitting in rule 5: **61.1% of all defends are mechanical follow-ups** — lose a defend and the next one starts within minutes, no scheduler involved. The pooled series is two different distributions stapled together: a spike at zero (the chain mechanic) and a long tail (the actual lulls).
+
+So our first models were unknowingly predicting the chain mechanic — a thing that needs no prediction, because rule 5 already states it. Restrict to train starts — the 1,978 waves that began *without* a defend immediately preceding them — and the target changes character completely:
+
+<DefendRegularityChart />
+
+The pooled defend-gap series is dominated by mechanical train continuations (the mass right at zero); restricting to train starts throws those out and leaves a genuinely different, more regular distribution.
+
+### Regularity: pooled gaps vs. train-start gaps
+
+("Middle half" below = the range the middle 50% of cases fall into — the narrower it is, the more regular the thing you're measuring.)
+
+| Series | n | Middle half of waits | Typical (median) | Spread of the middle half |
+| --- | --- | --- | --- | --- |
+| Pooled defend gaps (any defend → next) | 4,642 | 0.02h – 36.2h | 0.02h | 36.1h |
+| Train-start-to-train-start gaps | 1,818 | 33.6h – 56.0h | 44.1h | 22.4h |
+
+The pooled series is genuinely bimodal — half of it sits within minutes of zero (the mechanical chain restarts) and the other half stretches into a long tail. Restricting to train starts throws out the mechanical restarts and leaves a distribution that's both centered higher (the real ~44h cycle) and roughly 40% narrower.
+
+The quantity that actually matters for a "once you hold, the next wave is in..." claim is the **lull** — the gap from when the previous train *ends* to when the next one *starts* (not train-start to train-start, which also includes however long the previous train itself ran):
+
+| Quantity | n | Middle half | Typical (median) |
+| --- | --- | --- | --- |
+| Lull (end of previous train → next train start) | 1,818 | 27.8h – 46.4h | 36.8h |
+
+That lull — from the end of one train to the start of the next — is the real forecasting target. Attempt 2 predicted it honestly.
+
+## Attempt 2: the honest baseline
+
+The honest baseline uses no clues at all. At any moment during a lull it looks at exactly one thing — how long you have already waited — and reads off history how long waits that had already lasted this long went on to run. Every war is forecast using only the wars before it, never itself. It is the dumbest defensible model, which is precisely what makes it the right yardstick.
+
+It is also where the pass mark enters — three tests, written down before any model ran, all three required to ship a countdown:
+
+1. **Honest percentages** — when the model says "63% within 24h", that has to actually happen ~63% of the time.
+2. **Clearly better than the dumb guess** — reliably at least ~40% less error than always guessing the historical average, with enough evidence that it isn't a fluke.
+3. **A window that's actually narrower** than the raw spread of history — otherwise the "prediction" is just re-printing the history books.
+
+Here is where the baseline landed: its percentages are honest (test 1 passes — the "25% / 50% / 75% by now" claims come true at 21% / 49% / 76%), and it beats the flat guess (typical miss 9.1h vs 11.5h) — but not by *enough* for test 2, and its window is a hair *wider* than raw history, not narrower, so test 3 fails too. A clean miss, not a near-miss caused by too little data. (Exact scorecards: the [investigation handoff](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/predictions-handoff.md) and `04-train-baseline.mjs`.)
+
+One seemingly promising feature deserves its own burial before we move on: the length of the train you just survived tells you nothing about the wait that follows.
+
+<LullByTrainLengthChart />
+
+The previous train's length does **not** predict how long the following lull runs — every stratum sits close to the same ~35–38h median regardless of whether the previous train was a single defend or six-plus.
+
+### Does the previous train's length predict the wait?
+
+No. Every stratum's lull sits close to the same ~35-38h median regardless of whether the previous train was a single defend or six-plus:
+
+| Previous train length | n | Middle half of the lull | Typical lull |
+| --- | --- | --- | --- |
+| 1 defend | 671 | 23.0h – 47.0h | 34.7h |
+| 2 defends | 209 | 29.9h – 46.8h | 38.5h |
+| 3 defends | 222 | 29.3h – 45.2h | 37.7h |
+| 4 defends | 210 | 28.7h – 45.4h | 37.3h |
+| 5 defends | 102 | 28.5h – 43.0h | 33.6h |
+| 6+ defends | 115 | 30.7h – 43.2h | 38.4h |
+
+Measured across the 1,529 trains above, the relationship between previous-train length and the following lull is statistically indistinguishable from zero. (One apparent relationship does show up if you measure start-to-start instead of the lull, but it's mechanical, not predictive: a longer train simply pushes its own end later, dragging the next start-to-start measurement with it, even when the lull after it is exactly as random as any other.)
+
+So knowing only "how long you've waited" gets you honest percentages, but no window narrower than history itself. To do better, the model would have to actually see something about the world — and the world, it turns out, had already lied to us more than once.
+
+## Attempt 3: teaching it to read the map
+
+Attempt 3 is the one that got the closest, so here is its result up front:
+
+**How good is the best guess we could build?** The most accurate model tested — one that watches live campaign state (see the assault-window finding below) — predicts the wait to within about **8 hours**, typically, on a cycle that runs roughly **44 hours** end to end. A model that ignores everything and always guesses the historical average wait is off by about **12 hours**. So the smart model clearly beats the dumb one — by more with every attempt — but 8 hours of typical error is still close to a fifth of the entire cycle. That's not precise enough for a shrinking countdown bar; it's precise enough to say "usually somewhere between a day and two days," which is a sentence, not a clock.
+
+**The one conditioning fact that matters is visible on the map today:** if any faction has 9 of 10 sectors captured, the current lull is running long — the typical wait in that state is ~55h against ~35h otherwise (+20h, fairness-tested, consistent across all four eras of the game's history). The mechanism is coherent with the sixth rule above and the deterministic assault trigger on <a href="/docs/predict/attack" data-umami-event="docs-predict-attack">the attack page</a>, and sharper than it first looked: 9 of 10 sectors means the faction is *inside its final sector*, with the assault firing the moment that sector completes. `SC9` is therefore the window in which an assault is pending but has not yet fired — and defend trains go quiet through it.
+
+The reason those two paragraphs can be trusted is the fairness discipline behind them. By this point the project had accumulated four separate "we found it!" clues — each looking like a less-than-one-in-a-thousand fluke, each dead on closer inspection — and every one taught the same lesson about how comparing across different wars lets the mix of wars masquerade as a game mechanic:
+
+### Why so many "we found it!" results didn't survive
+
+The most notable false lead was `libVelocity1d` (how fast a faction had been losing ground right before a defend), which looked significant at first glance. Here's the trap the project's own control design fell into, and how it was caught.
+
+Imagine testing whether people eat bigger dinners right before a thunderstorm. If you compare pre-storm dinners in Seattle against random, ordinary dinners in Cairo, you'll almost certainly find a difference — Seattle and Cairo just eat differently, storm or no storm. The fix is to compare like with like: pre-storm dinners in Seattle against ordinary dinners *also in Seattle*.
+
+This project's original trigger-hunt comparisons were built the *first* way, not the second: every control point came from the *same fractional position in other wars* — a different war, at the same "how far in are we" moment. That's the Cairo mistake wearing a lab coat — different wars run at different speeds, so a war-to-war difference can look like a defend-related one. That's exactly what happened with `libVelocity1d`: against other-war controls it looked like a massive, sure-thing discovery. What actually caught it was a reviewer re-running the identical test with exactly one thing changed — comparison points drawn from the event's *own* war instead of another one — at which point the effect evaporated into a literal coin flip. That same-war check wasn't in the committed scripts at the time — a reviewer ran it by hand. The honest lesson is that the check belongs in the code, and as of the 2026-07-28 sweep it is: `06-train-covariates.mjs` runs every test with same-war shuffling built in, so a Cairo-style artifact can no longer clear that sweep's bar.
+
+#### Second clue sweep — train-start lulls, same-war fairness checks built in
+
+The 2026-07-28 sweep (`06-train-covariates.mjs`) tested eight pre-declared clues against the lull, each one required to show up *inside individual wars* (2,000 same-war shuffles — so differences *between* wars can't fake it) and to survive a second, even stricter variant of the same check. What survived:
+
+| # | Clue | Visible during the lull? | Effect on the wait | Verdict |
+| --- | --- | --- | --- | --- |
+| 1 | Hour of day | — | — | Nothing — an apparent pattern dissolved once mechanical follow-ups were excluded |
+| 2 | Day of week | — | — | Nothing — no weekend effect on train starts |
+| 3 | Previous train's faction | Yes | −0.7h | Nothing |
+| 4 | Previous train's region = 9 | Yes | −0.3h | Nothing |
+| 5 | Previous train's region = 10 | Yes | **+10.1h** | Real — another view of the assault window |
+| 6 | *Next* train's region = 9 | **No** (only revealed when the wave lands) | +11.5h | Real structure, but useless as a clue — you can't see it in advance |
+| 7 | **Some faction has 9 of 10 sectors** | **Yes** | **+20.3h** | **The assault window — the headline finding** |
+| 8 | Attack currently running | Yes | −11.5h | Real (and at any given moment this state actually predicts *longer* remaining waits — it persists through long lulls) |
+
+One sanity check ties it together: at 9 sectors the wait stretches +20h, but at **10** sectors it snaps back to normal — because at 10 the assault has already fired and the pending-assault window has closed. A slow calendar-drift explanation can't produce that reversal; the deterministic trigger explains it exactly. Also checked: there is **no minimum cooldown** between waves (shortest recorded lull: about 5 minutes).
+
+### Attempt 3: conditioning on live campaign state (2026-07-28)
+
+A third attempt asked whether anything **visible at forecast time** shifts the lull. Three clues survived the fairness sweep above — all pointing at the homeworld-assault window — and were fed into a model that first classifies the moment (attack running / some faction at 9 sectors / at 10 / normal), then looks up how long similar waits ran *in that situation*, careful again about wars that ended mid-wait. Scored the same way as everything else — each war forecast only from the wars before it:
+
+| Model | Honest percentages? | Typical miss | Window narrower than raw history? | Ships a countdown? |
+| --- | --- | --- | --- | --- |
+| Baseline (no clues) | Yes | 9.1h | No | No |
+| Season-rhythm adaptive | Yes | 9.5h | No | No — worse than no clues at all |
+| **Situation-aware (the best)** | **Yes** | **7.8h** | **Yes — first model ever to manage it** | **No — still not enough** |
+
+The situation-aware model is the closest anything has come: honest percentages, a genuinely narrower window, and a typical miss of 7.8h against the dumb guess's 11.5h. It still isn't the reliable ~40%+ improvement the pass mark demands — roughly a third better, not nearly half — and the mark doesn't bend. Two honest caveats are disclosed with it: it was the best of six related variants (picking your best attempt flatters the score a little — and it *still* missed), and the campaign data's once-a-day blurriness smears the situation boundaries, so the real assault-window effect is probably sharper than we can currently measure — a genuine reason to revisit once enough high-resolution seasons accumulate.
+
+**Verdict: INCONCLUSIVE.** Not dead — the best model is a materially better guess than a flat average — but it misses the mark, so no countdown ships.
+
+And yet a forecast ships. A **window labeled as a window** never overclaims: saying "likely in 14–32h · 63% within 24h", at rates those numbers verifiably hold, is honest whether or not a countdown ever becomes possible. That is exactly what the dashboard's <a href="/" data-umami-event="docs-predict-dashboard">next-wave card</a> renders, and all it renders. But knowing how well we can predict left one itch unscratched: what is the game actually *doing*?
+
+## Reverse-engineering the scheduler
+
+Put on a game developer's hat. Somewhere in the Helldivers 1 server there is a function that decides when the next wave fires, and although we cannot read it, every plausible design leaves a different fingerprint on the 1,819 recorded lulls. So we wrote down six designs a developer might reasonably have shipped, derived the fingerprint each would leave, and checked all six:
+
+| Candidate design | Fingerprint it would leave | What the data says | Verdict |
+| --- | --- | --- | --- |
+| Coin flip every tick (no memory) | Most waits short, a long fading tail, wild spread | The real waits are far too *regular* for that — clustered around ~35h, and the histogram shape misses badly (the worst fit tested) | Dead |
+| Random roll inside a fixed window | Flat-topped histogram | The histogram has a clear hump, not a plateau | Dead |
+| Cron-style tick grid (fires on the hour, etc.) | Waits bunching at round multiples; round wall-clock times | No bunching at any tick spacing tested, and 1,978 of 1,979 train starts land on non-zero seconds | Dead |
+| Three per-faction timers | Each faction's own rhythm *cleaner* than everything pooled together | Backwards: each faction alone looks noisier, pooled looks cleaner | Dead |
+| Schedule table by wave number | Wait behavior changing as the war's wave count climbs | Flat — wave #3 waits like wave #30 | Dead |
+| One global "roll a delay after each win" timer (gamma-shaped) | A right-leaning hump, moderate spread, no bunching, pooled cleaner than per-faction | Matches the histogram **~3× closer** than any alternative | **Survives** |
+
+Two details pin the survivor down further. The timer starts when the train *ends*, not when it starts — if it started at the train's start, long trains would eat into their own lull and the data shows no trace of that. And a *fixed* timer (same delay every time) is ruled out by the spread alone; the k = 50 preset in the explorer below shows how badly it misses.
+
+If we had to reconstruct the code, it would read (updated 2026-07-31 — the original fit was made on *all* lulls, before rules 7–8 showed that ~26% of them are mechanical counterattack lulls and that the clock pauses during assaults; refit on genuinely free lulls only, the delay is visibly tighter):
+
+```
+onTrainEnd(result == WIN):
+    nextWaveAt = now + randomDelay(average ≈ 32h, hump-shaped)
+    // clock PAUSED while any homeworld assault runs (rule 8)
+
+onAssaultTimeout(48h, result == FAIL):
+    spawnDefendTrain(faction = assaulted, region = 9)    // immediately (rule 7)
+```
+
+A close histogram match does not prove the developers typed the word *gamma* — several ways of building a "roll a delay" timer leave the same fingerprint — but it rules out everything else on the list. This is the real lull histogram from the live database — drag k (how "focused" the delay is) and watch the no-memory hypothesis miss (frozen tables above were computed a day earlier at 1,978 starts / 1,818 lulls — the dataset grows as wars end):
+
+<GammaExplorerSection />
+
+Which leaves `pickFaction()` as the one line still unexplained.
+
+## Which faction gets hit
+
+Mostly, the sixth rule answers it. If the lull began with a homeworld assault that goes on to fail, the next wave hits the assaulted faction — 179/179, deterministic. If the assault succeeded, that faction is gone and trivially cannot be the target (0/27). If no assault is in play but exactly one faction sits at 9 of 10 sectors, bet on it and you will be right 61.4% of the time (189/308 — and the same-war shuffling check says that edge is no fluke).
+
+Outside those regimes the draw is close to unpredictable. There is a mild "same faction again" tilt — after a Cyborg wave the next one is Cyborgs 41.0% of the time against a 36.2% base rate, and the other factions show the same few-point lean. But scoring five simple guessing rules on the 1,305 lulls outside both special regimes, the best ("same faction again") manages just 44.3% — barely better than the base rate — and the rest do worse. Nothing rule-like survives out there.
+
+The timing side independently confirms the drawing order: if each faction ran its own timer, each faction's rhythm would look *cleaner* on its own than everything pooled together. It's the opposite — so there is **one global clock**, and the faction is chosen only when the wave spawns. *(reproduce: `12-faction-choice.mjs` · `13-scheduler-shape.mjs`)*
+
+## The counterattack clock (the third target correction)
+
+Rules 7 and 8 are not just lore — they change what this page's models should have been predicting, for the third time. Attempt 1 unknowingly modeled the chain mechanic; the 2026-07-31 finding shows every attempt since has been unknowingly modeling the *counterattack* mechanic too: **487 of 1,979 train starts (24.6%) are counterattacks**, waves whose timing is fully determined by an assault's 48h timeout, not by the scheduler's dice. So the honest statistical target — waves the gamma clock actually draws — is the remaining 1,492.
+
+Re-running everything on that corrected target made it *harder*, not easier: a free wave sometimes has to wait out an entire assault episode (a 48h timeout plus the counterattack train it spawns) before the clock even resumes, which puts a long tail of extreme waits on the series that no tested model turns into an honest narrow window. The situation-aware model's *relative* edge over the dumb guess improves to the best the project has produced (roughly 1.6× better) — but its percentages stop being honest and its window stops being narrower. **The verdict is unchanged through what is now a fourth attempt: INCONCLUSIVE, no countdown for free waves.**
+
+The flip side is that the *mechanical* quarter of the target is now essentially solved. Replaying every moment where an assault was running, predicting "the next wave lands at the assault's start + 48h" typically missed by **0.0h, against the statistical model's 9.2h** on the same 7,282 moments — honestly conditional on the assault failing, which happens ~59% of the time and is known the instant the timeout passes. The same trick does *not* work one step earlier: chaining the attack ETA into the 48h timeout before the assault has even started is no better than the statistical table, because the ETA's noise swamps the deterministic tail. *(reproduce: `15-counterattack-target.mjs` · `16-counterattack-pipeline.mjs`)*
+
+A fifth attempt (2026-08-01) asked the natural follow-up: every piece of the assault episode is now measurable — the chance a running assault fails climbs from ~59% to ~97% as its timeout approaches; counterattack trains take ~7h to fight off (they're *harder* to stop than normal trains: players win the first defend 23% of the time vs 47%); and a won assault **releases the paused clock immediately** (the next free wave typically lands the moment a successful assault ends — the timer had already fired and was being held at the gate). Can composing those pieces beat the statistical model for the *free* waves too? Answer: **no.** The composite gets tantalizingly close on raw edge — the best score yet — but its percentages aren't honest, its window isn't narrower, and head-to-head at assault moments it's a tie with the existing table. The blocker is the fork itself: the "assault fails" and "assault succeeds" futures sit ~60 hours apart, and a ~60% failure chance can't pick a side. The one signal that *can* — the on-track/behind verdict the event cards ship — is nearly decisive in the data we have, but rests on a handful of assaults with detailed history. That's a data problem, not a modeling problem: when ~30+ such assaults exist, fold the verdict in and re-run. *(reproduce: `17-assault-outcome.mjs` · `18-outcome-composite.mjs`)*
+
+**Correction (2026-08-03): the pace verdict was being graded against a deadline that never existed.** The replay that scored the verdict used each event's *recorded* end time as the deadline — but a won event's recorded end is the moment its points filled, hours before the timer it was actually racing (rule 6). Every success was therefore judged against a deadline earlier than the one the live card sees, unfairly counting winning events as "behind". Graded against the real timer instead — the 150-minute defend clock, the 48h assault timeout — the verdict is far better than advertised: **91.6% accurate across 130 events and 2,193 moments**, rising from ~73% in the opening quarter to 92% past halfway and **~99.7% in the final quarter**. Two consequences shipped: the old "safety slack" on the verdict (which turned out to be compensating for the grading bug, not for flicker) was removed entirely, gaining five accuracy points at no stability cost; and the cards now stay silent for the first **25%** of an event, where the average-pace reading is still mostly noise. The assault table above was re-graded the same way, and the reading *strengthened*: an on-track assault has now never failed at **any** stage, while behind-pace ones fail ~65% early and **100%** past 60% elapsed — still resting on just 8 assaults with detailed history, so the wait for more data stands. *(reproduce: `14-event-verdict-margin.mjs` · `17-assault-outcome.mjs`)*
+
+## What ships
+
+The dashboard's next-wave card is driven by **two standalone forecasts, because rules 7–8 mean we are predicting two different things**, and each owns its regime:
+
+- **The free-wave band** (`waveForecast`) runs while the scheduler's dice are actually rolling — no assault, no active defend. It classifies the moment (9-sectors pending, 10, or normal), looks up how long similar waits actually ran in that situation at this elapsed hour, and renders the middle estimate (the accent tick on the bar) with the middle-50% band around it in a subtler tone, plus the within-24h/48h chances — and two badges: **imminent**, when the within-24h chance crosses its threshold, and **running long**, whenever a faction sits at 9 sectors. During an assault it goes quiet on purpose: rule 8 says the invasion timer is paused, so a statistical band there would be dressing up a pause as a probability.
+- **The counteroffensive clock** (`counterattackForecast`) runs only while an assault is active — the regime the band just vacated. It is a mechanic, not a model: *"counterattack ⟨assault start + 48h⟩"* (earliest assault first when several run), phrased through the assault's own live pace verdict — *"assault behind pace · counterattack ⟨t⟩"* when the bar is not filling in time, *"assault on pace to succeed · counterattack ⟨t⟩ only if pace collapses"* when it is. The pace wording comes from the same predicate that drives both the event cards' ▲/▼ pace delta and their Falls/Fails outcome verdict ([method and accuracy on the hub](/docs/predict)), deliberately never a probability (the verdict-to-outcome link waits on data — see the follow-ups below).
+
+### The two forecasts, by the numbers
+
+| | Counteroffensive clock (mechanical) | Free-wave band (statistical) |
+| --- | --- | --- |
+| Timing source | 48.0h timeout, exact in 544/544 fails; counterattack within 10 min of it (467/474 when the slot was free) | Lookup over ~160 wars of how long similar waits actually ran, by situation and hours waited |
+| Replayed against history | Typical miss **0.0h** vs the statistical model's 9.2h on the same 7,282 assault moments | Typical miss **~8h** on a ~44h cycle; the band's percentages come true at their advertised rates |
+| The catch | Conditional on the assault failing (~59% of the time; won assaults remove the faction instead) | Five modeling attempts, none reached the pass mark for a countdown — so a band, not a countdown |
+
+### What the clock borrows from the attack side
+
+The counteroffensive forecast contains no new statistics — it is assembled entirely from the <a href="/docs/predict/attack" data-umami-event="docs-predict-attack">attack page's</a> machinery:
+
+| Piece | Origin | Status |
+| --- | --- | --- |
+| *When an assault will start* | Deterministic full-points trigger + the pace-window ETA (the shipped assault ETA line) | Passed the mark; ships |
+| *How long a failing assault runs* | The exact 48h timeout | A constant, not a forecast |
+| *Will it fail at all* | The outcome verdict (`eventForecast` — the Falls/Fails wording on the event cards, same predicate as their ▲/▼ pace delta) | Reused verbatim as the clock's conditional wording |
+| *Chaining ETA → timeout before the assault starts* | Tested (`16-counterattack-pipeline.mjs`) | **Rejected** — the ETA's noise swamps the deterministic tail; the clock only speaks once the assault has actually started |
+
+Its honesty rules are hard-coded: it says *likely*, never *will*; it renders a band, never a countdown; it hides entirely while a wave is active instead of inventing precision; and the typical ±8h miss is printed on the card itself. That is the deal defends offer — an honest window, not a clock. (With one exception earned above: *during a homeworld assault*, "if this assault fails, the counterattack lands the moment it times out" **is** a clock — a deterministic mechanic, not a model — and the card shows exactly that line, conditional phrasing included, whenever an assault is active.) Attacks offer a much better deal: a deterministic trigger and a forecast that cleared every part of the same pass mark. <a href="/docs/predict/attack" data-umami-event="docs-predict-attack">That is the solved half of this report →</a>
+
+<details>
+<summary>In depth: trigger hunts, method & caveats, and reproduction</summary>
+
+### Event counts
+
+The static counts table that used to open this section is superseded by the live footer under the gamma explorer above (lulls, train starts and seasons, refreshed hourly). When the static analyses in this report were frozen, the record stood at **5,091 defends** across 160 seasons — **1,978 train starts (38.9%)**, the real forecasting targets, and **3,113 mechanical follow-ups (61.1%)** — plus **925 attacks**.
+
+Train length distribution — among the 1,529 trains with both a defined predecessor and a following lull (excludes each season's first train, which has no predecessor, and any train with no successor before the season ends):
+
+| Previous train length | n | Share |
+| --- | --- | --- |
+| 1 defend | 671 | 43.9% |
+| 2 defends | 209 | 13.7% |
+| 3 defends | 222 | 14.5% |
+| 4 defends | 210 | 13.7% |
+| 5 defends | 102 | 6.7% |
+| 6+ defends | 115 | 7.5% |
+
+### What was tested and rejected
+
+#### Trigger hunt — does campaign state predict the event?
+
+Five map-and-calendar variables (liberation %, sectors captured, days into the war, hours since the previous event, player count) were checked for a hard trigger, on all 5,091 defends, all 925 attacks, and the 1,978 train starts separately. The test: does the variable cluster tightly at real events, far more tightly than at comparison moments? Full scorecards live in the [findings doc](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/findings/2026-07-27-next-event-timing.md); the summary:
+
+| Dataset | Variable | Verdict |
+| --- | --- | --- |
+| Attacks | liberation / sectors captured | **RULE-LIKE — the full-points trigger** (see <a href="/docs/predict/attack" data-umami-event="docs-predict-attack">the attack page</a>) |
+| Attacks | days into war | Flat — the control check: confirms the trigger is campaign state, not the calendar |
+| Defends (all) | hours since previous event | A real lean, but far too diffuse to be a threshold |
+| Everything else | all remaining variables | No rule — including that restricting to train starts unmasked no hidden trigger |
+
+#### Clue sweep — previously untested variables
+
+Seven more variables were tested against train starts specifically: how fast the faction was losing ground over the last 1/3/7 days, how many points it had taken, player counts relative to the war's norm, and two yes/no states. Four of the seven initially looked like strong discoveries; **all four were subsequently rejected** — the ground-loss "signals" turned out to be the Cairo mistake from the main text (they evaporated under same-war comparisons), one merely restated the definitional "faction must be active" rule, and the last fell on close review. An even earlier pass that fed time-of-day and weekend clues into a fancier model made predictions strictly *worse* than using no clues at all — verified by a reviewer re-implementing the model from scratch. Full tables: the [findings doc](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/findings/2026-07-27-next-event-timing.md).
+
+### Method & caveats
+
+Plain-language version — the precise statistical protocol (test choices, thresholds, correction factors) lives in the [investigation handoff](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/predictions-handoff.md) and the findings doc:
+
+- **No model ever grades its own homework.** Every replay forecasts each war using only the wars before it.
+- **Every "discovery" faces a same-war shuffle test** before it is believed — comparisons across different wars have manufactured convincing fakes four separate times (the Cairo mistake). Two of the oldest sweep scripts still use the older cross-war comparison, so their published results are read as provisional.
+- **The pass mark was written down before any numbers existed** — honest percentages, reliably ~40%+ better than the dumb guess, and a genuinely narrower window; miss any one and no countdown ships. It has never been moved to let a result through.
+- **The campaign data is blurry for most of history** (one reading per day for 156 of 160 wars), and that blur has fooled this report once already — the attack "trigger band" that turned out to be a hard trigger seen through a lagging sensor. Any tidy-looking spread is treated as a suspect until checked against the recent high-resolution wars.
+- **Repeated readings of the same wait are not independent evidence** — a 40-hour lull sampled every hour produces 40 near-identical data points, not 40 facts. All the uncertainty ranges behind this page account for that.
+- **Broken tests get deleted, not patched.** One early test turned out to produce the same answer on shuffled data as on real data — it was removed entirely and replaced, and one labelling bug (trains chained across factions) was fixed with every number recomputed.
+
+**Reproduce everything above:**
+
+```
+node --env-file=.env.development scripts/analysis/01-trigger-hunt.mjs
+node --env-file=.env.development scripts/analysis/02-baseline.mjs
+node --env-file=.env.development scripts/analysis/04-train-baseline.mjs
+node --env-file=.env.development scripts/analysis/05-defend-covariates.mjs
+node --env-file=.env.development scripts/analysis/06-train-covariates.mjs
+node --env-file=.env.development scripts/analysis/09-attack-trigger.mjs
+node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
+node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
+node --env-file=.env.development scripts/analysis/12-faction-choice.mjs
+node --env-file=.env.development scripts/analysis/13-scheduler-shape.mjs
+node --env-file=.env.development scripts/analysis/14-counterattack-delta.mjs
+node --env-file=.env.development scripts/analysis/15-counterattack-target.mjs
+node --env-file=.env.development scripts/analysis/16-counterattack-pipeline.mjs
+node --env-file=.env.development scripts/analysis/17-assault-outcome.mjs
+node --env-file=.env.development scripts/analysis/18-outcome-composite.mjs
+```
+
+Full narrative write-up: [`docs/superpowers/findings/2026-07-27-next-event-timing.md`](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/findings/2026-07-27-next-event-timing.md). Script-by-script reference: [`scripts/README.md`](https://github.com/elfensky/helldivers.bot/blob/main/scripts/README.md#analysis).
+
+### Cross-references
+
+- See [Architecture](/docs/architecture) for how `h1_status`, `h1_event`, and `h1_event_progress` are populated — the tables every script in this report reads from.
+- See [Data Flow](/docs/data-flow) for the bucket-upsert pattern behind `h1_status`'s ~15-minute-or-1-day resolution, referenced in the caveats above.
+
+</details>

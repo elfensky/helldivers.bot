@@ -1,3 +1,5 @@
+import { hydrateFileSecrets } from './hydrateFileSecrets.mjs';
+
 /**
  * Validates environment variables at startup.
  * Core vars (database, worker) throw if missing — the app cannot function without them.
@@ -13,6 +15,9 @@
  * @throws {Error} if a core env var is unset, or if auth is partially configured
  */
 export async function initializeEnvironmentVariables() {
+    // Populate <KEY> from <KEY>_FILE (Docker/Swarm secrets) before validating —
+    // must run before Prisma reads POSTGRES_URL. See hydrateFileSecrets.mjs.
+    hydrateFileSecrets();
     validateDatabase();
     validateUpdates();
     const analytics = checkAnalytics();

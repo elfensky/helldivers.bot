@@ -5,6 +5,8 @@ import Hijackable from '@/features/ministry/Hijackable';
 import NotificationToggle from '@/features/notifications/NotificationToggle';
 import LastUpdated from '@/shared/components/LastUpdated';
 import EventCard, { computeFrontier } from '@/features/galaxy/EventCard';
+import { attackForecast, sectorForecast } from '@/features/dashboard/attackForecast.mjs';
+import { eventForecast } from '@/features/dashboard/eventForecast.mjs';
 import DefeatedCard from '@/features/galaxy/DefeatedCard';
 import { highlightSector, clearSectorHighlight } from '@/features/galaxy/sectorLink.mjs';
 import FactionTabs from '@/shared/components/FactionTabs';
@@ -137,6 +139,10 @@ export default function DashboardClient({
                         factionIndex={index}
                         pace={evaluateProgress(superEarthDefendEvent)}
                         endTime={superEarthDefendEvent.end_time}
+                        eventEta={eventForecast(
+                            superEarthDefendEvent,
+                            Math.floor(Date.now() / 1000),
+                        )}
                         pulseDelay={pulseDelays.get(`${index}-0`)}
                         // Sector-view (default) card — factionMap is only read
                         // in campaign view, so undefined is intentional here.
@@ -198,7 +204,12 @@ export default function DashboardClient({
             <li key={`frontier-${index}`} {...sectorHoverProps(index, frontier.sector)}>
                 <EventCard
                     action={isDefending ? 'defending' : 'capturing'}
-                    barLabel={isDefending ? 'CAPITAL_DEFENSE' : 'SECTOR_PROGRESS'}
+                    barLabel={
+                        isDefending ? 'CAPITAL_DEFENSE'
+                        : isCampaignView ?
+                            'FACTION_PROGRESS'
+                        :   'SECTOR_PROGRESS'
+                    }
                     region={frontier.region}
                     percent={
                         isDefending && activeEvent ?
@@ -210,6 +221,16 @@ export default function DashboardClient({
                     factionIndex={index}
                     pace={activeEvent ? evaluateProgress(activeEvent) : null}
                     endTime={activeEvent?.end_time}
+                    etaForecast={
+                        isCampaignView ?
+                            attackForecast(data, index, Math.floor(Date.now() / 1000))
+                        :   sectorForecast(data, index, Math.floor(Date.now() / 1000))
+                    }
+                    eventEta={
+                        activeEvent ?
+                            eventForecast(activeEvent, Math.floor(Date.now() / 1000))
+                        :   null
+                    }
                     pulseDelay={
                         activeEvent ?
                             pulseDelays.get(`${activeEvent.enemy}-${activeEvent.region}`)
@@ -233,11 +254,14 @@ export default function DashboardClient({
                 e.status === EVENT_STATUS.ACTIVE,
         );
 
-        // In campaign view this card's bar becomes the 11-segment overview
-        // (segments 1-10 from mapState, segment 11 from the active homeworld
-        // attack). During an actual homeworld assault, the frontier card for
-        // this faction returns null (all sectors captured → computeFrontier
-        // → null), so this homeworld card is the faction's primary card.
+        // During an actual homeworld assault this card is an event-focused
+        // interrupt, like the Super Earth defense card: single event bar
+        // ("Capturing {homeworld}"), regardless of the view toggle — the
+        // 11-segment faction overview is hidden while the event runs. The
+        // frontier card for this faction returns null anyway (all sectors
+        // captured → computeFrontier → null), so this is the faction's
+        // primary card. Only in the no-event fallback (stale mapState) does
+        // campaign view still show the segments.
         return (
             <li key={`attack-${index}`} {...sectorHoverProps(index, HOMEWORLD_REGION)}>
                 <EventCard
@@ -256,13 +280,20 @@ export default function DashboardClient({
                     factionIndex={index}
                     pace={attackEvent ? evaluateProgress(attackEvent) : null}
                     endTime={attackEvent?.end_time}
+                    eventEta={
+                        attackEvent ?
+                            eventForecast(attackEvent, Math.floor(Date.now() / 1000))
+                        :   null
+                    }
                     pulseDelay={
                         attackEvent ?
                             pulseDelays.get(`${attackEvent.enemy}-${attackEvent.region}`)
                         :   undefined
                     }
-                    view={regionsView}
-                    factionMap={isCampaignView ? mapState[index] : undefined}
+                    view={attackEvent ? 'sector' : regionsView}
+                    factionMap={
+                        !attackEvent && isCampaignView ? mapState[index] : undefined
+                    }
                 />
             </li>
         );
@@ -286,7 +317,7 @@ export default function DashboardClient({
                     campaign progress as they battle the Bugs, Cyborgs, and Illuminate for
                     peace, liberty, and managed democracy.
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col items-start gap-2">
                     <LastUpdated lastUpdated={data.last_updated} />
                     <NotificationToggle />
                 </div>

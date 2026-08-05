@@ -1,0 +1,222 @@
+import EtaSkewExplainer from './EtaSkewExplainerLoader';
+
+export const metadata = {
+    title: 'Predicting Attacks | Helldivers Bot',
+    description:
+        'How Helldivers 1 homeworld attacks are forecast: an exact full-points trigger plus a pace estimate, replayed against 925 recorded attacks and beating the pass mark set before testing.',
+    alternates: { canonical: '/docs/predict/attack' },
+    openGraph: { url: '/docs/predict/attack' },
+};
+
+# Can we predict attacks?
+
+**TLDR — how we predict attacks:** an attack fires the moment a faction's
+campaign hits full points — `points == points_max`, exactly, within minutes.
+So the forecast is just arithmetic:
+`eta = (points_max − points) / rate`, with a day-of-week correction to the
+pace. Replayed against all ~160 recorded wars as if it were running live,
+it's typically 3–4× closer than just guessing the historical average —
+clearing the pass mark we wrote down before testing — and ships on the
+dashboard as an assault heads-up line. It never becomes a clock: the window
+is ~21h wide a day out, ~5h wide two hours out. <a href="/docs/predict/defend" data-umami-event="docs-predict-defend">How the defend side
+compares →</a>
+
+Attacks are **deterministic**. An attack on a faction's homeworld fires within minutes of that faction's campaign reaching full points — `points == points_max`, the exact integer. Every one of the 925 recorded attacks targets region 11, the enemy homeworld; none fires early.
+
+There is nothing fuzzy to estimate about the trigger itself. It's a constant the game already tells us, stored in `h1_season.points_max`.
+
+### The trigger is a point, not a band
+
+Read at daily resolution, attack starts *appear* spread across a band of liberation values — a median near 96%, most firing somewhere above 90%. That spread belongs to the sensor, not the game: `h1_status` runs at roughly one bucket per day for 156 of the 160 seasons, so the campaign state read at an attack's start can be up to 24 hours stale, and a hard threshold viewed through a lagging sensor smears downward. Sorting the same 925 attacks by how fresh the reading was makes it plain:
+
+| Age of the campaign reading | Attacks | Median liberation at attack start |
+| --- | --- | --- |
+| &lt;15 min | 13 | **100.00%** |
+| &lt;1h | 23 | 99.69% |
+| &lt;6h | 170 | 98.87% |
+| &lt;12h | 182 | 97.37% |
+| &lt;24h | 537 | 94.28% |
+
+The "band" was a staleness gradient. Read fresh, the trigger is a point.
+
+The thirteen freshest readings are more convincing individually than any median, because the residual shortfalls scale with how early the reading was taken:
+
+| Season | Enemy | Reading age | Points / max | Short by | Liberation |
+| --- | --- | --- | --- | --- | --- |
+| 17 | 2 | 723s | 1,018,465 / 1,020,040 | 1,575 | 99.846% |
+| 20 | 0 | **62s** | 763,194 / 763,240 | **46** | **99.994%** |
+| 30 | 1 | 421s | 547,798 / 548,210 | 412 | 99.925% |
+| 60 | 1 | 482s | 636,241 / 636,530 | 289 | 99.955% |
+| 106 | 2 | 781s | 325,657 / 325,740 | 83 | 99.975% |
+| 143 | 2 | 361s | 253,842 / 253,910 | 68 | 99.973% |
+| 158 | 0 | 841s | 356,240 / 356,240 | **0** | **100.000%** |
+| 158 | 1 | 121s | 275,790 / 275,790 | **0** | **100.000%** |
+| 158 | 2 | 421s | 147,470 / 147,470 | **0** | **100.000%** |
+| 158 | 2 | 541s | 147,470 / 147,470 | **0** | **100.000%** |
+| 159 | 0 | 121s | 280,970 / 280,970 | **0** | **100.000%** |
+| 159 | 1 | 61s | 325,480 / 325,480 | **0** | **100.000%** |
+| 159 | 2 | 182s | 202,300 / 202,300 | **0** | **100.000%** |
+
+Twelve of thirteen sit within 0.1% of full. Season 20's Bug campaign was **46 points short of 763,240 sixty-two seconds before the attack began** — a sensor catching the last seconds of a climb, not a threshold with slack in it. The six sub-100% rows are all pre-S157 seasons whose whole campaign is covered by 13–43 buckets; their shortfall tracks their reading age, exactly as a hard threshold predicts.
+
+### How soon after reaching full points?
+
+For the four seasons with 15-minute resolution, the gap between the first bucket at full points and the attack's start is **1 to 14 minutes, median 3.0** (n = 7). Since a bucket can be up to 15 minutes wide, these are upper bounds. The trigger is effectively immediate.
+
+### Can we forecast the next one?
+
+With the trigger known exactly, forecasting an attack stops being a question about the trigger and becomes a question about **pace**:
+
+```
+eta = (points_max − points) / rate
+```
+
+Everything on the right-hand side except `rate` is known exactly and in real time. So the entire forecasting problem — and the entire error budget — lives in estimating how fast a campaign is gaining points.
+
+**Measured, and it works.** We replayed that formula against all 925 recorded attacks as if it were running live — always forecasting each war using only the wars before it, never letting it peek at its own future. Its typical miss, next to the dumbest possible guess (always saying the historical average):
+
+| Faction | Typical miss (this forecast) | Typical miss (just guess the average) |
+| --- | --- | --- |
+| Bugs | **17.3h** | 64.0h |
+| Cyborgs | **18.9h** | 81.3h |
+| Illuminate | **19.9h** | 61.3h |
+
+That's 3–4× better across the board, and the window it draws is genuinely narrower than the raw spread of history — both requirements of the pass mark this project wrote down before running any model. For scale: the best defend model ever built got only ~1.5× better than the dumb guess and failed that mark. **This is the first thing in this project to clear the mark it was measured against**, and it does so because the trigger is exact — the model is only forecasting pace, not guessing at a threshold. (The full statistical scorecards live in the [investigation handoff](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/predictions-handoff.md) and re-print on every run of `10-attack-eta.mjs`.)
+
+The forecast is not available at every moment. Roughly **38–47%** of moments emit nothing at all, because a stalled or retreating front (`rate <= 0`) gives no arrival time. A front that is not moving has no ETA, and the honest output is silence.
+
+### What a player would actually see
+
+The intended use is a heads-up, not a countdown, so we scored it like an alarm — and wrote down the two pass marks (70% and 80%) before running it:
+
+| Faction | The alarm went off before…​ | …​and when it went off, an attack really followed soon | Verdict |
+| --- | --- | --- | --- |
+| Bugs | 93.6% of attacks | 92.0% of the time | PASS |
+| Cyborgs | 96.9% | 97.4% | PASS |
+| Illuminate | 96.8% | 95.7% | PASS |
+
+The line shows up on the dashboard whenever the middle estimate falls under **48 hours**.
+
+**Why 48 and not 24.** The threshold was 24h first, and moving it out improved everything at once: the alarm fired before more attacks, cried wolf less, and its "sooner than X" claims came true closer to the honest 50% a middle estimate should hit (it moved from ~46–53% to ~50–54%). The reason is the data itself: for most of recorded history the campaign state updates only about once a day, so a 24-hour warning window is exactly where the input is blurriest. And the window does tighten as the attack approaches — this is the model's own output, on the moments a player would actually see:
+
+| When it says | It shows | Width | The attack actually came |
+| --- | --- | --- | --- |
+| ~2h | 0.8–5.6h | 4.8h | 2.5h |
+| ~6h | 4.3–12.6h | 8.3h | 6.0h |
+| ~10h | 7.8–19.2h | 11.5h | 9.2h |
+| ~14h | 10.7–25.0h | 14.3h | 12.9h |
+| ~18h | 13.8–31.4h | 17.7h | 16.0h |
+| ~22h | 17.2–38.3h | 21.1h | 20.8h |
+
+A day out the window is ~21 hours wide; a couple of hours out it is ~5. **It never becomes a clock.** The width tracks the estimate itself, so the display goes `17–38h` → `8–19h` → `1–6h` and stops. Curiously the *relative* uncertainty is slightly worse close in — roughly 1× the estimate a day out, 2× a couple of hours out — which is the daily-bucket staleness biting hardest when little remains to conquer.
+
+### While the assault runs
+
+Once the assault fires, the question flips from *when* to *how it ends*, and
+the event card switches to the [outcome verdict](/docs/predict): at the
+average pace since the assault started, does its bar fill inside the 48-hour
+timeout? On track → _"Taken ~12h"_; behind → _"Fails"_ (the countdown already
+shows the loss time).
+
+The verdict is unusually decisive on assaults. Splitting every recorded
+moment by what the verdict said at the time (8 assaults with minute-level
+history so far):
+
+| How far in | Said "on track" — how often it still failed | Said "behind" — how often it failed |
+| --- | --- | --- |
+| 10–35% | never (0 of 77 readings) | 67% (of 58) |
+| 35–60% | never (0 of 149) | 65% (of 198) |
+| 60–85% | never (0 of 77) | 100% (of 144) |
+| 85–100% | never (0 of 20) | 100% (of 87) |
+
+**An on-track reading has never been followed by a failed assault** — at
+any stage — while a behind reading fails about two-thirds of the time early
+and always past 60% elapsed. Read this as a strong direction, not a precise
+percentage: one assault contributes many readings, and only 8 assaults have
+this kind of history so far. Folding it into the counterattack clock is
+[#487](https://github.com/elfensky/helldivers.bot/issues/487), waiting
+until ~30 assaults have been recorded at this detail.
+
+## The sector ETA — the same arithmetic, one boundary early
+
+The faction cards' sector view shows an `ETA ~9h` line toward the **next
+sector boundary** — the same `remaining ÷ pace` computation as the assault
+ETA (literally the same code path, `paceEtaHours` in
+`attackForecast.mjs`), aimed at the next `points_max / 10` step instead of
+the campaign's end. Same 24-hour rate window, same day-of-week correction,
+same staleness anchoring.
+
+Two honest differences from the assault window:
+
+- **One number, no range.** The measured ratios that turn the assault
+  estimate into a trustworthy `(10–25h)` window were checked against one
+  target only — full campaign completion. Nobody has yet measured the
+  equivalent for sector boundaries (that needs more high-resolution
+  seasons, [#484](https://github.com/elfensky/helldivers.bot/issues/484)),
+  and a range we haven't measured is a range we don't show.
+- **Hidden during any active event for that faction.** Defends freeze the
+  campaign bar; during an assault the campaign is already complete.
+
+In the **last sector** the next boundary *is* the campaign end — exactly
+the target the assault forecast was measured against — so the card switches
+to the full assault window rather than showing an unmeasured single number
+for the same thing.
+
+## Why the window is lopsided
+
+The dashboard shows the forecast as `ETA ~14h (10–25h)` — a median with an
+*asymmetric* range, never a symmetric `±`. That is not a style choice. The
+skew is baked into the arithmetic, twice over.
+
+**Division skews time.** The forecast is `arrival = points remaining ÷ pace`,
+and division treats the two directions unequally. Pace swings are symmetric —
+players arrive, players leave — but their effect on the arrival time is not:
+
+| Pace change | Arrival | Shift |
+| --- | --- | --- |
+| ×2 (doubles) | 7h | 7h sooner |
+| ×1 (as forecast) | 14h | — |
+| ×½ (halves) | 28h | **14h later** |
+| ×¼ | 56h | **42h later** |
+
+Speeding up can at best push the arrival toward zero — it can never save more
+than the hours already on the clock. Slowing down has no such limit: as pace
+approaches zero, the arrival time grows without bound. Drag the pace and
+watch the curve do it:
+
+<EtaSkewExplainer />
+
+**Surges are capped, stalls are not.** The second half of the skew is
+supply. For an attack to land much *earlier* than forecast, extra players
+must show up — and a front can realistically double its pace on a good
+evening, rarely more. For it to land much *later*, players only have to
+*leave*: sleep, weekdays, a juicier event on another front. Showing up has a
+supply limit; leaving does not.
+
+The measured history agrees: across 160 seasons, when the raw arithmetic said
+"X hours", reality typically landed between ~0.85×X and ~2.3×X depending on
+how close the campaign was to completion — small early misses, large late
+ones. A `±` label would promise a symmetry the game has never once delivered;
+the `(10–25h)` range is the same information, told honestly.
+
+<details>
+<summary>In depth: the pace estimate, its corrections, and what carries no signal</summary>
+
+**The reading is old, so we correct for its age.** The campaign state we read can be up to 24 hours stale in the historical record (about 12 hours typically), so raw `remaining ÷ pace` answers *"how long from when the reading was taken"*, not *"how long from now."* The fix is simple — subtract the reading's age — and it matters most exactly in the under-48h regime where the line actually shows. Without it, "sooner than X" claims came true 65–70% of the time instead of the honest ~50% a middle estimate should hit; with it, 52–57%.
+
+**The 24-hour pace window was picked by measurement, not taste.** Asking "which window best predicts the next six hours of pace?" can be answered on all 21,849 high-resolution status readings — no attacks needed. Short windows lose badly (a 30-minute rate at this resolution is the difference of two readings, mostly noise: ~43% pace error vs ~24% at 24h), and windows longer than a day gain nothing.
+
+**Things that sound smart but don't help.** Multiplying the pace by "current players ÷ average players", or rebuilding it from points-per-mission × mission rate, both test *worse* than the plain 24-hour rate — the pace over a window already contains the players who produced it, so layering a player multiplier on top double-counts them. A gentler per-faction player adjustment looks slightly better in the four seasons that have the data, but only 2–3 scorable attacks per faction exist at that resolution — far too few to act on. The shipped model stands; the comparison re-runs as each new war lands.
+
+**The day-of-week correction.** Campaign pace has a strong weekly rhythm — the busiest days run ~29% faster than the quietest (weekends, essentially — the daily buckets shift the labels onto Sunday/Monday). Fed into the forecast honestly (learned only from past wars, never the one being forecast), it doesn't make the central guess more accurate — but it makes the displayed *window* more honest: the "sooner than X" percentages land closer to their advertised rates, and the alarm fires before ~94–96% of attacks. For a heads-up line, honesty of the window is the thing worth buying. Public holidays were not tested — the game's history contains a handful of them, nowhere near enough to measure.
+
+**Honest limits.** Attacks average ~2 per faction per war, so the real sample is ~94–125 independent attacks per faction, not 925 — small enough that some secondary checks wobble between factions, which we read as noise, not signal. And the live forecast is better-fed than the replay that graded it (live state updates every 15 minutes; historical state was daily), so the replay's error is more likely a ceiling than a floor — but with only 8 high-resolution attacks, that's an argument, not a demonstration.
+
+Full statistical detail — the scorecards, confidence intervals, and every rejected variant — lives in the [investigation handoff](https://github.com/elfensky/helldivers.bot/blob/main/docs/superpowers/predictions-handoff.md) and reprints on every run of:
+
+```
+node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
+node --env-file=.env.development scripts/analysis/12-faction-players-eta.mjs
+```
+
+</details>

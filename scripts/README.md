@@ -60,3 +60,206 @@ node --experimental-strip-types scripts/backfill-h1-tables.mjs --help
 - Resumable: checks `MAX(season)` from `h1_status` for checkpoint.
 - Does NOT write to `h1_event` -- that table is unchanged by the migration.
 - `--force` deletes target rows for each season before inserting.
+
+## analysis/
+
+Read-only, one-shot analysis scripts for the next-event timing forecast
+investigation ([#472](https://github.com/elfensky/helldivers.bot/issues/472)).
+They query the event log and campaign timeseries, print a report to stdout,
+and exit -- there is no persisted output and nothing here runs on a schedule.
+The design doc is
+[`docs/superpowers/specs/2026-07-27-next-event-timing-forecast-design.md`](../docs/superpowers/specs/2026-07-27-next-event-timing-forecast-design.md);
+the findings are written up at
+[`docs/superpowers/findings/2026-07-27-next-event-timing.md`](../docs/superpowers/findings/2026-07-27-next-event-timing.md).
+
+### Layout
+
+- `lib/dataset.mjs` -- the single data loader. Runs three queries
+  (`h1_event`, `h1_status`, `h1_season`) and attaches derived per-event
+  fields (causal within-season player percentile, enemy-scoped gaps, a
+  point-in-time status lookup). Every other script imports `loadDataset()`
+  from here rather than querying directly.
+- `lib/backtest.mjs` -- `walkForward()`, a walk-forward-by-season backtest
+  harness. Takes a caller-supplied `fitPredictor`, steps a clock through each
+  held-out season, and scores calibration/sharpness/skill-ratio with a
+  season-level block-bootstrap CI. Knows nothing about any particular model;
+  `02-baseline.mjs` and `03-hazard.mjs` both build on it. Has no DB import at
+  all, so its self-check runs against a synthetic fixture only.
+- `01-trigger-hunt.mjs` -- Phase 1. Tests whether attack/defend events fire
+  on a deterministic campaign-state rule (phase-matched controls +
+  permutation test, Bonferroni-corrected across five variables).
+- `02-baseline.mjs` -- Phase 2. Features-free empirical residual-life
+  predictor, the yardstick every later model has to beat, plus the
+  chain-vs-lull decomposition for defends and the project's pre-registered
+  decision gate.
+- `03-hazard.mjs` -- Phase 3. Hourly discrete-time logistic hazard model for
+  defends, using only features with measured support from Phases 1/2
+  (cyclic hour-of-day, weekend indicator, capped elapsed-hours). Compares
+  itself against the Phase 2 numbers on the same configuration.
+- `04-train-baseline.mjs` -- Phase 4, the corrected-target follow-up
+  ([#472](https://github.com/elfensky/helldivers.bot/issues/472)). Phases
+  1-3 measured defend timing against all 4,928 defend-to-defend gaps, a
+  bimodal series dominated by ~2.5h mechanical chain gaps (a defend train
+  continues iff the previous defend FAILED -- 96.9% vs 0.1%, see
+  `lib/dataset.mjs`'s train-labelling self-check). This script retrains and
+  re-evaluates on the correct series -- train-start-to-train-start gaps only
+  (n=1,976 events / 1,816 gaps, CV 0.45 vs the pooled series' CV 1.32) --
+  using the same `walkForward` method as `02-baseline.mjs`. It also reports
+  a lull-stratified table (by `prevTrainLength`/`prevTrainFailures`) and the
+  Pearson correlation of each against the following lull's length, which
+  replaced an earlier concentration/permutation test proven invariant to the
+  data (shuffling the feature values reproduced identical output).
+- `05-defend-covariates.mjs` -- covariates against defend train starts that
+  `01-trigger-hunt.mjs` never tested (liberation velocity at three windows,
+  players relative to the season median, faction status, other-faction event
+  activity), using the same phase-matched-control machinery. Headline: the
+  liberation-velocity "signal" is a cross-season artifact -- redrawn with
+  same-season controls it vanishes (0.832 -> 0.998) -- and everything else
+  is null or definitional.
+- `06-train-covariates.mjs` -- the second covariate sweep, on the corrected
+  target (train-start lulls), with the same-season placebo machinery built
+  in: every test is a WITHIN-SEASON label permutation (plus a
+  phase-stratified season-x-tercile variant), so neither cross-season
+  composition nor within-season calendar drift can manufacture an effect.
+  Eight pre-declared tests under Bonferroni. Null: clock features on train
+  starts (the pooled hour-of-day effect was follow-up dilution), previous
+  train's faction, `prevRegion==9`; no hard cooldown floor. Significant and
+  observable: `maxSC==9` at lull start (+20.3h -- the homeworld-assault
+  window), attack active at lull start (-11.5h), `prevRegion==10` (+10.1h).
+- `07-train-state-model.mjs` -- feeds the 06 covariates through
+  `walkForward` as an observable moment-level state (`ATTACK` > `SC9` >
+  `SC10` > `NORMAL`): kNN-on-elapsed within state, a season-pace variant,
+  and a declared Kaplan-Meier censoring fix. Best configuration: skill
+  0.648 [0.622, 0.674], calibration PASS, sharpness PASS -- still misses
+  the pre-registered ship bar (CI upper bound <= 0.6). Verdict:
+  INCONCLUSIVE, do not ship.
+- `08-emit-wave-model.mjs` -- emits the committed lookup table behind the
+  dashboard's next-wave card (`src/features/dashboard/waveModel.mjs`): the
+  attempt-3 STATE-KM estimator fit on full history, one row per observable
+  state x 1h elapsed bin, plus within-24h/48h probabilities. Refuses to emit
+  unless quantiles are monotone and the predicted probabilities are reliable
+  against history (deciles within ±0.10, overall ±0.05).
+- `09-attack-trigger.mjs` -- tests whether the attack trigger is exactly
+  `points == points_max`, with the published liberation "trigger band" as the
+  competing hypothesis (an artifact of `h1_status`'s ~1-bucket/day staleness
+  smearing a hard threshold into a plausible-looking spread). Three checks: a
+  staleness gradient (liberation-at-attack vs. reading age), every attack with
+  a <15-minute-old reading listed individually, and trigger lag for the
+  15-minute-resolution seasons.
+- `10-attack-eta.mjs` -- once `09-attack-trigger.mjs` establishes the
+  threshold as a known constant, the forecast collapses to
+  `eta = (points_max - points) / rate`, so this script measures how well a
+  24-hour pace window predicts it (chosen because shorter windows are
+  unbacktestable against 156 of 160 seasons' daily buckets), with no fallback
+  model for `rate <= 0` moments and per-remaining-fraction ratio quantiles
+  (pooling would be invalid since `wait / eta` is heavy-tailed near
+  `remaining -> 0`).
+- `11-emit-attack-model.mjs` -- emits the committed constants behind the
+  dashboard's assault-ETA line (`src/features/dashboard/attackModel.mjs`):
+  per-remaining-fraction band ratio multipliers and day-of-week pace factors
+  from `10-attack-eta.mjs`, fit on full history. Refuses to emit unless the
+  multipliers are finite/positive/monotone, the day-of-week table actually
+  varies, and a full-history replay clears the same alert bar the
+  walk-forward run was held to.
+- `13-scheduler-shape.mjs` -- distribution forensics on the train-start lull:
+  discriminates six candidate scheduler implementations by shape (KS vs
+  exponential/gamma/uniform), tick combs, per-faction-vs-pooled CV, and
+  wave-index stationarity. Verdict: one global end-anchored timer with a
+  gamma(k~4-5) delay; faction drawn at spawn. Forensic-descriptive -- the
+  discriminations rest on order-of-magnitude gaps, not p-values.
+- `12-faction-choice.mjs` -- which faction the next wave hits. The
+  counterattack rule (a FAILED homeworld assault is always followed by a
+  wave on that faction -- 179/179 in the current dataset), succeeded-assault
+  exclusion, SC9-window targeting (61.4%, within-season permutation
+  placebo), and the honest remainder: near-random among active factions;
+  per-faction recency/liberation/sector rules all at chance.
+- `14-counterattack-delta.mjs` -- is the counterattack DELAY mechanical?
+  Slot-aware delta from a fail-resolved assault's end to the counterattack
+  train start, pre-registered criterion (slot-free CV < 0.25 OR p95-p05 <
+  6h). Verdict: MECHANICAL -- 467/474 slot-free deltas < 10min (p05-p95 =
+  0.0h); queued cases (1 occupied + 43 double-queued) fire wide, which is
+  exactly why the pooled histogram is never the headline. Also commits the
+  concurrency table (defend-defend 0, same-faction defend-attack 0, cross
+  955, attack-attack 375, max 3 simultaneous) and the Steam-guide checks:
+  fail-resolved assaults are exact 48.0h timeouts (544/544), defends cap at
+  2h30m, the defend hazard is fully GATED during assaults (0
+  non-counterattack starts in ~24,651h of assault-active lull time), and
+  counterattacks land on region 9 (97.8%).
+- `15-counterattack-target.mjs` -- the THIRD target correction: excludes
+  the ~487 counterattack train starts (2h label window) and re-runs the
+  featureless baseline + STATE-KM through the pre-registered gate on the
+  corrected series, sharpness comparator recomputed from the corrected
+  marginal (22.0h). Result: STATE-KM skill 0.625 [0.599-0.664], calibration
+  and sharpness FAIL => INCONCLUSIVE -- the corrected target is HARDER
+  unconditionally (assault epochs put a long tail on the free series). Also
+  refits the 13 gamma on split populations: free lulls NET of
+  assault-gated time fit gamma(k~8.8, theta~3.6h), CV 0.336 -- 13's k~4.4
+  was counterattack-contaminated.
+- `16-counterattack-pipeline.mjs` -- the mechanistic composite vs the KM
+  table on ATTACK/SC9 moments (pre-registered comparison, original
+  all-waves target). ATTACK branch: predicted wait = earliest active
+  assault start + 48h; median |err| 0.0h vs STATE-KM's 9.2h (ratio 0.002,
+  CI upper < 1, win rate 0.894) -- the pipeline wins outright. SC9 branch
+  (pace-ETA + 48h): not better (ratio 1.296, CI 0.72-2.54) -- ETA noise
+  dominates the deterministic tail.
+- `17-assault-outcome.mjs` -- attempt-5 measurements: P(fail | assault
+  still running at elapsed e) survival curve (0.59 -> 0.97, stable across
+  history halves); pace-verdict conditioning replayed with the shipped
+  eventForecast rule on h1_event_progress (on-track past 35% elapsed NEVER
+  failed, 0/260 moments; behind ~70% fail -- but only 7 attacks have
+  progress history, exploratory); post-epoch draw provenance (after a
+  counterattack train: fresh end-anchored draw, KS 0.161 vs normal; after
+  a SUCCESS assault: spike at 0h, p50=0.0 -- the gated clock releases on
+  victory, KS 0.733); counterattack trains are harder to stop
+  (first-defend win 0.226 vs 0.467, median length 3 vs 1, duration p50
+  7.3h vs 2.5h).
+- `18-outcome-composite.mjs` -- attempt 5: pre-registered Monte-Carlo
+  mixture for the ATTACK cell (fail branch: rest-of-timeout +
+  counterattack-train + fresh draw; success branch: conditional duration +
+  release spike), STATE-KM elsewhere, all components walk-forward. Overall
+  skill 0.588 [0.559-0.621] (first sub-0.6 point estimate) but
+  calibration + sharpness FAIL, and the paired UNCENSORED ATTACK-moment
+  comparison vs STATE-KM is flat (ratio 1.045, CI 0.81-1.11): DO NOT
+  ADOPT. Outcome uncertainty dominates; the verdict signal that would
+  resolve it is the n=7 one. Null, by the pre-registered rule.
+
+### Self-checks
+
+Each module runs its own `assert`-based self-check when invoked directly
+(`import.meta.filename === process.argv[1]`) -- there are no vitest files
+for these scripts. `src/__tests__/unit/_meta/mirrorTree.test.mjs` resolves
+every unit-test path against the `src` and `public` roots only, so a test
+under `scripts/` has no mirrored source root to land on and would fail that
+rule. The in-module `assert` blocks are the test suite for this directory.
+
+### Running
+
+```
+# self-checks -- no DB required for backtest.mjs
+node scripts/analysis/lib/backtest.mjs
+node --env-file=.env.development scripts/analysis/lib/dataset.mjs
+
+# the report scripts -- all need POSTGRES_URL (DB required)
+node --env-file=.env.development scripts/analysis/01-trigger-hunt.mjs
+node --env-file=.env.development scripts/analysis/02-baseline.mjs
+node --env-file=.env.development scripts/analysis/03-hazard.mjs
+node --env-file=.env.development scripts/analysis/04-train-baseline.mjs
+node --env-file=.env.development scripts/analysis/05-defend-covariates.mjs
+node --env-file=.env.development scripts/analysis/06-train-covariates.mjs
+node --env-file=.env.development scripts/analysis/07-train-state-model.mjs
+node --env-file=.env.development scripts/analysis/08-emit-wave-model.mjs
+node --env-file=.env.development scripts/analysis/09-attack-trigger.mjs
+node --env-file=.env.development scripts/analysis/10-attack-eta.mjs
+node --env-file=.env.development scripts/analysis/11-emit-attack-model.mjs
+node --env-file=.env.development scripts/analysis/13-scheduler-shape.mjs
+node --env-file=.env.development scripts/analysis/12-faction-choice.mjs
+node --env-file=.env.development scripts/analysis/14-counterattack-delta.mjs
+node --env-file=.env.development scripts/analysis/15-counterattack-target.mjs
+node --env-file=.env.development scripts/analysis/16-counterattack-pipeline.mjs
+node --env-file=.env.development scripts/analysis/17-assault-outcome.mjs
+node --env-file=.env.development scripts/analysis/18-outcome-composite.mjs
+```
+
+`03-hazard.mjs` fits a logistic regression per (variant, evaluated season)
+across an hourly-resolution training set and takes noticeably longer to run
+than the others -- expect it to run for several minutes.

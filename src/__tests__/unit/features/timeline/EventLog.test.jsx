@@ -197,4 +197,53 @@ describe('EventLog', () => {
             expect(container.querySelector('.event-log-day-summary')).toBeNull();
         });
     });
+
+    describe('futureSlot', () => {
+        const slot = <div data-testid="future-content">forecast</div>;
+        const labels = (container) =>
+            [...container.querySelectorAll('.event-log-day-label')].map(
+                (el) => el.textContent,
+            );
+
+        test('renders the slot under a FUTURE label before day groups (newest first)', () => {
+            const { container, getByTestId } = render(
+                <EventLog events={fakeEvents} timeFormat="absolute" futureSlot={slot} />,
+            );
+            expect(getByTestId('future-content')).toBeInTheDocument();
+            expect(labels(container)[0]).toBe('FUTURE');
+            // No win/loss summary on the future group
+            const futureGroup = container.querySelector('.event-log-day');
+            expect(futureGroup.querySelector('.event-log-day-summary')).toBeNull();
+        });
+
+        test('renders after the day groups when sorting oldest first', () => {
+            const { container } = render(
+                <EventLog
+                    events={fakeEvents}
+                    timeFormat="absolute"
+                    futureSlot={slot}
+                    initialSortOrder="asc"
+                />,
+            );
+            const all = labels(container);
+            expect(all[all.length - 1]).toBe('FUTURE');
+            expect(all[0]).not.toBe('FUTURE');
+        });
+
+        test('no FUTURE group when the slot is null (default)', () => {
+            const { container } = render(
+                <EventLog events={fakeEvents} timeFormat="absolute" />,
+            );
+            expect(labels(container)).not.toContain('FUTURE');
+        });
+
+        test('renders the future group even when no events exist yet', () => {
+            const { container, getByTestId, queryByText } = render(
+                <EventLog events={[]} timeFormat="absolute" futureSlot={slot} />,
+            );
+            expect(getByTestId('future-content')).toBeInTheDocument();
+            expect(queryByText('No events recorded yet.')).toBeNull();
+            expect(labels(container)).toEqual(['FUTURE']);
+        });
+    });
 });

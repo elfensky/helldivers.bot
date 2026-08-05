@@ -13,7 +13,7 @@ export default function RegionsViewToggle({ value, onChange }) {
     const label =
         isCampaign ?
             'Switch to sector view (single-bar)'
-        :   'Switch to campaign view (11-segment bar)';
+        :   'Switch to faction view (11-segment bar)';
 
     return (
         <Button
