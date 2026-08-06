@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.90.6
+
+### Changed
+
+- **Seed data now covers seasons 157–159.** Fetched with
+  `prisma/seed/fetch-seasons.mjs`; the current season is 160, so those three
+  wars are finished and their `get_snapshots` responses are final. Fresh
+  deploys get three more seasons of `/archives` history without waiting for
+  on-demand backfill.
+
 ## 0.90.5
 
 ### Fixed
