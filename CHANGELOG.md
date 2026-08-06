@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.90.7
+
+### Added
+
+- **Seed data refreshes itself weekly.** A scheduled workflow
+  (`.github/workflows/seed-refresh.yml`, Mondays 03:00 UTC plus manual
+  dispatch) runs `prisma/seed/fetch-seasons.mjs` and opens a PR against
+  `develop` whenever a season has completed since the last run. It reuses one
+  `chore/seed-refresh` branch, so consecutive runs update the open PR instead
+  of stacking new ones, and it leaves the version bump and CHANGELOG entry to
+  whoever merges — `--no-ff`, per the usual git workflow.
+
 ## 0.90.6
 
 ### Changed
