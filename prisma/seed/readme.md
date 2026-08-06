@@ -17,7 +17,7 @@ prisma/seed/
     ├── season-001.json
     ├── season-002.json
     ├── ...
-    └── season-156.json    # most recent completed season
+    └── season-159.json    # most recent completed season
 ```
 
 Each JSON file mirrors the raw shape of the official HD1 API's
