@@ -4,8 +4,8 @@ Execution order for open work. GitHub Issues stays the source of truth for
 _what_ — this file is the source of truth for _when_, and for how to slice the
 work into sessions.
 
-**Last reconciled against the code: 2026-08-05** (`develop` @ `v0.90.1`,
-`main` @ `v0.67.1`). Regenerate the state table when it drifts:
+**Last reconciled against the code: 2026-08-07** (`develop` @ `v0.90.8`,
+`main` @ `v0.90.5`). Regenerate the state table when it drifts:
 `gh issue list --state open --json number,title,milestone`
 
 ---
@@ -50,44 +50,20 @@ commit), and close the issue with an implementation comment.
 
 ---
 
-## Now — unblock the release (again)
+## Now — post-release triage
 
-`develop` is **196 commits and 23 versions** (0.68.0 → 0.90.1) ahead of `main`,
-which is still tagged `v0.67.1`. `main` is fully contained in `develop`
-(0 commits behind), so the release PR is a clean merge with no conflicts.
+### ~~S0 — Release the develop backlog~~ ✅ done 2026-08-06
 
-This is the same blocker the previous edition of this file opened with. It was
-cleared once (v0.65.3 → v0.67.1) and has since reopened at three times the size,
-because ~23 versions of feature work shipped to `develop` and none of it was
-tagged. **The lesson is in the cadence, not the merge:** release when the gap is
-a handful of versions, not when it is twenty-three.
+The 23-version backlog shipped. `main` went 0.67.1 → **v0.90.4** (PR #498) and
+then **v0.90.5** the same day, fixing the migrate image's arm64 build that
+v0.90.4's release exposed. `develop` is now a handful of commits ahead of
+`main`, which is the gap this file said to hold it at.
 
-### What accumulated on `develop` and has never reached production
-
-None of it is on a roadmap track — it was all unplanned work taken between
-sessions, which is the other reason this file drifted:
-
-| Arc                                                | Versions       | Issues                                                    |
-| -------------------------------------------------- | -------------- | --------------------------------------------------------- |
-| Event/wave prediction (defend + attack)            | 0.72 → 0.88    | #472, #475, #478, #479, #480, #482, #483, #486, #488–#490 |
-| Visual regression suite + CI gate                  | 0.89.0         | —                                                         |
-| Full dependency pass, both high advisories cleared | 0.90.0         | —                                                         |
-| Assorted fixes                                     | 0.89.1, 0.90.1 | —                                                         |
-
-### S0 — Release the develop backlog
-
-- **Prep:** none
-- **Branch:** direct (release PR)
-- **Blocked by:** —
-
-PR `develop` → `main`, tag `v0.90.1` on the merge commit, push the tag, merge
-`main` back into `develop`. The production Docker build only triggers on version
-tags — forgetting the tag means no deployment.
-
-**Nothing else should start until this ships**, and for a sharper reason than
-last time: every production error currently in GlitchTip is against `v0.67.1`
-code. Debugging any of them before the release means debugging code that is 23
-versions dead. See S0a.
+**The lesson stays on the page, because it is a cadence rule, not a one-off:**
+release when the gap is a handful of versions, not when it is twenty-three. The
+same blocker had already been cleared once (v0.65.3 → v0.67.1) and reopened at
+three times the size. Next release when the develop/main gap reaches ~5
+versions, not when something forces it.
 
 #### Dependabot is clear — that section is retired
 
@@ -103,14 +79,15 @@ gh api repos/elfensky/helldivers.bot/dependabot/alerts --paginate \
 npm audit --audit-level=moderate             # expect 0
 ```
 
-### S0a — Post-release error triage
+### S0a — Post-release error triage ← **start here**
 
-- **Prep:** none — but **wait ~48h after S0 tags** for `dpl=0-90-x` events
+- **Prep:** none — v0.90.5 tagged 2026-08-06, so `dpl=0-90-5` events have been
+  landing since; the ~48h window closes 2026-08-08
 - **Branch:** direct (bugfix)
-- **Blocked by:** S0
+- **Blocked by:** — (S0 shipped)
 
 GlitchTip's unresolved list is dominated by errors that may already be fixed.
-Re-count after the release and act on what survives.
+Re-count now that the release is live and act on what survives.
 
 | Finding                                                                                              | Events | Status after release                                                        |
 | ---------------------------------------------------------------------------------------------------- | -----: | --------------------------------------------------------------------------- |
@@ -121,8 +98,8 @@ Re-count after the release and act on what survives.
 
 `Map.groupBy` (#495) is the one that does **not** wait: `groupEventsByDay.mjs`
 and `groupCascadesBySeason.mjs` still call it on the client, so Firefox 115 ESR
-(the last Firefox for Windows 7/8) loses the timeline today and will still lose
-it after the release.
+(the last Firefox for Windows 7/8) lost the timeline before the release and
+still loses it on v0.90.5. Fix it regardless of what the re-count says.
 
 **Diagnostics — done in v0.90.3, one blocker left.** Sourcemaps were not
 reaching GlitchTip for three reasons, none of them the wiring (which was always
@@ -170,7 +147,7 @@ up in a codebase area before a bigger feature. Take these in any order.
 - **Prep:** plan — 171 files move to ~7, and `vitest.config.mjs` include/exclude
   globs plus `_meta/mirrorTree.test.mjs` all change with them
 - **Branch:** worktree (mechanically large, benefits from isolation)
-- **Blocked by:** S0
+- **Blocked by:** — (S0 shipped)
 
 Do this **before** any feature work, not after. It follows directly from the
 mirror-tree work merged in v0.67.0, the constraints are already researched in
@@ -240,7 +217,7 @@ the assumption that the intended font is the right one.
 
 - **Prep:** none
 - **Branch:** direct (chore)
-- **Blocked by:** S0 — it verifies what's live in production
+- **Blocked by:** — (S0 shipped 2026-08-06; production is now v0.90.5)
 
 Rich Results, Schema validator, Search Console. Verification pass, likely
 zero-to-small code change.
@@ -315,7 +292,7 @@ encodes against.
 
 | Session | Issue                                                                                                                                                                         | Prep                                                      | Branch   | Blocked by |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------- | ---------- |
-| **S8**  | [#339](https://github.com/elfensky/helldivers.bot/issues/339) Static item catalogs `L` + [#340](https://github.com/elfensky/helldivers.bot/issues/340) design tokens `XS`     | brainstorm                                                | worktree | S0         |
+| **S8**  | [#339](https://github.com/elfensky/helldivers.bot/issues/339) Static item catalogs `L` + [#340](https://github.com/elfensky/helldivers.bot/issues/340) design tokens `XS`     | brainstorm                                                | worktree | —          |
 | **S9**  | [#341](https://github.com/elfensky/helldivers.bot/issues/341) Hash encode/decode + tests `S`                                                                                  | plan — **must accommodate squad from day one**, see below | direct   | S8         |
 | **S10** | [#342](https://github.com/elfensky/helldivers.bot/issues/342) Page route + LoadoutBuilder client `XL`                                                                         | brainstorm → plan                                         | worktree | S9         |
 | **S11** | [#343](https://github.com/elfensky/helldivers.bot/issues/343) Item stats display `M`                                                                                          | none                                                      | worktree | S10        |
@@ -571,7 +548,7 @@ open issues.** New bugs land here by default.
 ## Suggested order, condensed
 
 ```
-S0  release the backlog      ← blocks everything; 23 versions unshipped
+S0  release the backlog      ← ✅ done 2026-08-06 (main @ v0.90.5)
 S0a post-release triage      ← re-count GlitchTip; #495 fixes regardless
 S1  co-locate tests          ← before feature work adds more test files
 S2  stale-issue triage       ← ✅ done 2026-07-27

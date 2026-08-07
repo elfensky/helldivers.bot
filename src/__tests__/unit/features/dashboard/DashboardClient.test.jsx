@@ -61,6 +61,8 @@ vi.mock('@/features/galaxy/EventCard', async () => {
                     hasFactionMap: props.factionMap != null,
                     etaForecastMode: props.etaForecast?.mode ?? null,
                     eventEtaMode: props.eventEta?.mode ?? null,
+                    endTime: props.endTime ?? null,
+                    alert: props.alert ?? false,
                 })}
             />
         ),
@@ -545,6 +547,19 @@ describe('DashboardClient — view-dependent ETA & event verdicts', () => {
         const props = getCardProps('event-card-0-CAPITAL_DEFENSE');
         expect(props).not.toBeNull();
         expect(props.eventEtaMode).toBe('verdict');
+
+        cleanup();
+
+        // Faction view is about the campaign: no event verdict, no countdown,
+        // no defend label — just the "!" that an event is running.
+        render(<DashboardClient initialRegionsView="campaign" />);
+        const campaign = getCardProps('event-card-0-FACTION_PROGRESS');
+        expect(campaign).not.toBeNull();
+        expect(campaign.eventEtaMode).toBeNull();
+        expect(campaign.endTime).toBeNull();
+        expect(campaign.alert).toBe(true);
+        // The faction-level assault forecast is what the card predicts instead.
+        expect(campaign.etaForecastMode).toBe('window');
     });
 });
 

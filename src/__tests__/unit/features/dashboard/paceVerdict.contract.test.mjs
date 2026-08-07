@@ -3,7 +3,7 @@
  *
  * `evaluateProgress` (PaceIndicator's ▲/▼) says 'behind' when
  * `points < points_max · elapsed/duration` (linear schedule, no lower buffer).
- * `eventForecast` (the Falls/Fails wording) says `!onTrack` when
+ * `eventForecast` (the Behind/On track wording) says `!onTrack` when
  * `remaining/(points/elapsed) > remainingTime`. At VERDICT_MARGIN = 0 these
  * are the same inequality:
  *

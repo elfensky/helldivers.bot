@@ -189,6 +189,11 @@ export default function DashboardClient({
                 )
             :   null;
 
+        // Faction view is about the campaign, not the event running inside it:
+        // the countdown, pace and outcome verdict are the sector card's job.
+        // All the faction card carries is a flashing "!" that one is running.
+        const showEvent = !isCampaignView && activeEvent;
+
         // Campaign view uses cumulative campaign totals in the meta row; bar is
         // the 11-segment grid driven by mapState, not the per-sector percent.
         const metaPoints =
@@ -205,29 +210,30 @@ export default function DashboardClient({
                 <EventCard
                     action={isDefending ? 'defending' : 'capturing'}
                     barLabel={
-                        isDefending ? 'CAPITAL_DEFENSE'
-                        : isCampaignView ?
-                            'FACTION_PROGRESS'
+                        isCampaignView ? 'FACTION_PROGRESS'
+                        : isDefending ?
+                            'CAPITAL_DEFENSE'
                         :   'SECTOR_PROGRESS'
                     }
                     region={frontier.region}
                     percent={
-                        isDefending && activeEvent ?
+                        showEvent ?
                             (activeEvent.points / activeEvent.points_max) * 100
                         :   frontier.percent
                     }
                     points={metaPoints}
                     pointsMax={metaPointsMax}
                     factionIndex={index}
-                    pace={activeEvent ? evaluateProgress(activeEvent) : null}
-                    endTime={activeEvent?.end_time}
+                    pace={showEvent ? evaluateProgress(activeEvent) : null}
+                    endTime={showEvent ? activeEvent.end_time : undefined}
+                    alert={isCampaignView && !!activeEvent}
                     etaForecast={
                         isCampaignView ?
                             attackForecast(data, index, Math.floor(Date.now() / 1000))
                         :   sectorForecast(data, index, Math.floor(Date.now() / 1000))
                     }
                     eventEta={
-                        activeEvent ?
+                        showEvent ?
                             eventForecast(activeEvent, Math.floor(Date.now() / 1000))
                         :   null
                     }
