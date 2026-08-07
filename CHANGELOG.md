@@ -1,5 +1,47 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Faction cards no longer duplicate the event card.** A faction card is about
+  the campaign, not the event running inside it, so the countdown, pace delta
+  and outcome verdict now belong to the sector card alone. All the faction card
+  carries is a flashing red `!` next to the title saying an event is running in
+  that territory. The campaign-view bar label is `FACTION_PROGRESS` again — the
+  branch order had it fall through to `CAPITAL_DEFENSE` whenever the campaign
+  view happened to be defending.
+
+- **The event outcome line shows the fill ETA, not a verdict word.** On track,
+  the card prints the ETA the bar fills (`~2h`) — primary yellow, success green
+  when the pace is ahead of the linear schedule. Behind, the bar never fills, so
+  there is no ETA and the word `Behind` carries it in danger red; the countdown
+  beside it already holds the loss time, so nothing prints the same duration
+  twice. This replaces the old `Holds`/`Falls`/`Taken`/`Fails` wording, which
+  spent a word on a number the card could show. Prediction docs updated to
+  match — the underlying `eventForecast` predicate and its measured 91.6%
+  accuracy are unchanged.
+
+- **The pace indicator's glyph and colour follow the delta, not the status
+  band.** An `on_track` event that is ahead by 40k points rendered a grey `▪`
+  and the words "On track", hiding the number; now it renders a green `▲` with
+  the delta. `▪` means dead-on (zero points either way). Nothing about
+  `evaluateProgress`'s three-state contract changed — only how the card reads
+  it, so the ▲/▼ indicator still cannot disagree with the outcome verdict.
+
+### Fixed
+
+- **The event countdown wrapped the card's meta row onto a second line.** It
+  called `formatDuration` ("56 minutes, 20 seconds") where the narrow card needs
+  `formatCompactDuration` ("56m20s"). Both are exported from the same module,
+  so this was an import picking the wrong one.
+
+- **`docs/roadmap.md` reconciled against the v0.90.5 release.** The file still
+  opened with "unblock the release — `develop` is 196 commits and 23 versions
+  ahead of `main` @ `v0.67.1`", a blocker cleared on 2026-08-06. S0 is marked
+  done, the four sessions it blocked are unblocked, and S0a (post-release
+  GlitchTip re-count) is now the entry point.
+
 ## 0.90.7
 
 ### Added
