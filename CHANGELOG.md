@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.90.10
+
+### Added
+
+- **A declared browser support floor, and a lint pass against it.** Nothing in
+  the repo stated which browsers this site targets, which is why `Map.groupBy`
+  could ship into client code and kill the timeline on Firefox 115 ESR
+  ([#495](https://github.com/elfensky/helldivers.bot/issues/495)) with no tool
+  objecting. `package.json` now carries a `browserslist` key — Firefox >= 115
+  and Chrome >= 109 (the last versions for Windows 7/8), plus Safari >= 15.6
+  and `defaults` — and `eslint-plugin-compat` checks browser-shipped code
+  (`src/features`, `src/shared`, `src/sw.js`) against it. Server code is
+  excluded; it runs on Node 24. Currently **0 compat errors**.
+
+  The plugin has a documented blind spot, verified by probe rather than
+  assumed: it flags `Array.toSorted()` and `URLPattern` but **not**
+  `Map.groupBy`. A green run is not proof. A separate sweep for the built-ins
+  it misses found exactly two client-side offenders, both already tracked as
+  #495 — `groupEventsByDay.mjs` and `groupCascadesBySeason.mjs`. Every other
+  hit cleared: `.toSorted()` and the third `Map.groupBy` are server-only, and
+  `.at(-1)`/`structuredClone` predate the floor comfortably.
+
 ## 0.90.9
 
 ### Fixed
