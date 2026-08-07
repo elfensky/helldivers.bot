@@ -5,6 +5,7 @@ import reactCompiler from 'eslint-plugin-react-compiler';
 import nextPlugin from '@next/eslint-plugin-next';
 import jsdoc from 'eslint-plugin-jsdoc';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
+import compat from 'eslint-plugin-compat';
 import globals from 'globals';
 
 export default [
@@ -149,6 +150,21 @@ export default [
         languageOptions: {
             globals: globals.serviceworker,
         },
+    },
+
+    // Browser-API support checked against the `browserslist` key in
+    // package.json. Scoped to code that actually ships to a browser — server
+    // routes, queries and the update pipeline run on Node 24 and would report
+    // false positives.
+    //
+    // KNOWN BLIND SPOT: this plugin covers Web/DOM APIs well but misses some
+    // ES built-ins. Verified by probe: it flags Array.toSorted() and
+    // URLPattern, but NOT Map.groupBy — the one API that actually broke a
+    // browser here (#495). A green run is not proof; new ES built-ins still
+    // need a look.
+    {
+        files: ['src/features/**', 'src/shared/**', 'src/sw.js'],
+        ...compat.configs['flat/recommended'],
     },
 
     prettierRecommended,
