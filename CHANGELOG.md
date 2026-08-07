@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.90.12
+
+### Changed
+
+- **The compat lint rules apply repo-wide, with no per-directory exemptions.**
+  Both `eslint-plugin-compat` and the `Map`/`Object.groupBy` ban were scoped to
+  browser directories on the assumption that server code would report false
+  positives. It doesn't — a repo-wide probe over `src`, `scripts` and `prisma`
+  finds **0 compat violations in source**. The scoping bought nothing and cost
+  a boundary: a directory list to maintain, guess at when adding a folder, and
+  eventually get wrong. It also made the same API legal in one folder and
+  illegal in another, which turns the permissive folder into the copy-paste
+  source for the strict one — the same reasoning that migrated the server-only
+  `Map.groupBy` call site in #495 instead of exempting it.
+
+  Going repo-wide surfaced three violations, all in tests, none in shipped
+  code: `NotificationToggle.test.jsx` assigns and deletes `globalThis.
+  PushManager` to simulate a browser that has it, and `groupBy.test.mjs` uses
+  the built-in as the oracle its helper is diffed against. All three carry
+  inline `eslint-disable` comments with the reason at the point of use, rather
+  than a config-level exemption for `__tests__` — the exception stays visible
+  in the file that needs it, and the config keeps one answer for the repo.
+
 ## 0.90.11
 
 ### Fixed
