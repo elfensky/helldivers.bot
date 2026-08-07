@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.90.8",
+    "version": "0.90.9",
     "private": true,
     "type": "module",
     "scripts": {

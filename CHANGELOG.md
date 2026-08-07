@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.90.9
+
+### Fixed
+
+- **The OG image 500'd in production instead of falling back.** `sharp` has
+  been rejecting the buffer `@vercel/og` hands it since v0.90.4
+  ([#503](https://github.com/elfensky/helldivers.bot/issues/503)), and because
+  `new ImageResponse()` returns *before* satori and the rasteriser run — they
+  only run while the body streams — the throw landed on Next's request-error
+  boundary. Every crawler that asked for a social card got a 500.
+  `renderOrFallback` awaits `arrayBuffer()` so the failure is catchable,
+  reports it to Sentry tagged `route=opengraph-image`, and returns the plain
+  fallback card the no-data path already used. The root cause stays open on
+  #503 — this is a guard, not a fix.
+
+### Changed
+
+- **Sentry events now carry a release.** Nothing set one, so the only version
+  signal was the `?dpl=` query Next glues onto client chunk URLs — client-only,
+  and inside a filename string rather than a filterable tag. "Did the release
+  fix this?" was unanswerable, which is precisely the question post-release
+  triage asks. Both configs now send `NEXT_PUBLIC_APP_VERSION`.
+
+- **`server_name` names the machine, not the container.** The SDK defaults it
+  to `os.hostname()`, which inside Docker is the container ID — a fresh random
+  value every redeploy, splitting one server's history across dozens of
+  meaningless names. `SENTRY_SERVER_NAME` overrides it, and the Swarm stack
+  fills it with `{{.Node.Hostname}}`. Unset (local dev) keeps the old default.
+
 ## 0.90.8
 
 ### Changed
