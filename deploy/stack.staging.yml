@@ -33,6 +33,11 @@ services:
             NODE_ENV: production
             PORT: '3000'
             UPDATE_INTERVAL: '20'
+            # Swarm expands this per task. Without it the SDK falls back to
+            # os.hostname(), which in a container is the container ID — so the
+            # server_name tag in GlitchTip changes on every redeploy instead of
+            # naming the node the task landed on.
+            SENTRY_SERVER_NAME: '{{.Node.Hostname}}'
             # The app reads secrets from files via the `*_FILE` convention
             # (src/shared/utils/hydrateFileSecrets.mjs): if POSTGRES_URL_FILE is set,
             # it populates POSTGRES_URL from that file before Prisma reads it.
