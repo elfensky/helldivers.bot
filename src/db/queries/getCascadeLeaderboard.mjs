@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import db from '@/db/db';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { groupBy } from '@/shared/utils/groupBy.mjs';
 import {
     findAllCascades,
     compareCascades,
@@ -47,7 +48,7 @@ export const getCascadeLeaderboard = cache(async () => {
     );
     if (error || !events) return [];
 
-    const bySeason = Map.groupBy(events, (e) => e.season);
+    const bySeason = groupBy(events, (e) => e.season);
     const all = [];
     for (const [season, seasonEvents] of bySeason) {
         for (const cascade of findAllCascades(seasonEvents)) {
