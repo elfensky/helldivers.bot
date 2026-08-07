@@ -66,6 +66,8 @@ function installBrowserAPIs({
     });
 
     // PushManager presence is detected via `'PushManager' in window`.
+    // Defining the mock, not calling the API — this test simulates a browser that has it.
+    // eslint-disable-next-line compat/compat
     globalThis.PushManager = function () {};
 
     // fetch
@@ -87,6 +89,8 @@ afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
     delete globalThis.Notification;
+    // Tearing down the mock defined above.
+    // eslint-disable-next-line compat/compat
     delete globalThis.PushManager;
     delete globalThis.fetch;
     delete navigator.serviceWorker;

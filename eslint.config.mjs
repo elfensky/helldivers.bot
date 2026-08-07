@@ -153,27 +153,26 @@ export default [
     },
 
     // Browser-API support checked against the `browserslist` key in
-    // package.json. Scoped to code that actually ships to a browser — server
-    // routes, queries and the update pipeline run on Node 24 and would report
-    // false positives.
+    // package.json, repo-wide — no per-directory exemptions. Server code
+    // reports 0 violations anyway (verified), so scoping it to browser
+    // directories would buy nothing and leave a boundary someone has to
+    // maintain, guess at, and eventually get wrong. One rule, one answer.
     //
     // KNOWN BLIND SPOT: this plugin covers Web/DOM APIs well but misses some
     // ES built-ins. Verified by probe: it flags Array.toSorted() and
     // URLPattern, but NOT Map.groupBy — the one API that actually broke a
     // browser here (#495). A green run is not proof; new ES built-ins still
-    // need a look.
+    // need a look. The rule below closes that gap for the one that bit.
+    //
+    // Map/Object.groupBy is banned everywhere for the same reason the
+    // server-only call site was migrated in #495: a codebase where the same
+    // API is legal in one folder and illegal in another teaches nobody, and
+    // the folder it is legal in becomes the copy-paste source for the folder
+    // it is not.
     {
-        files: ['src/features/**', 'src/shared/**', 'src/sw.js'],
         ...compat.configs['flat/recommended'],
-    },
-
-    // The blind spot above, closed by hand for the built-ins that actually
-    // bit. compat can't see these, so nothing else would catch a reintroduction
-    // until it reached a Firefox 115 user (#495).
-    {
-        files: ['src/features/**', 'src/shared/**', 'src/app/**', 'src/sw.js'],
-        ignores: ['src/shared/utils/groupBy.mjs'],
         rules: {
+            ...compat.configs['flat/recommended'].rules,
             'no-restricted-syntax': [
                 'error',
                 {
