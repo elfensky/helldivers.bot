@@ -48,6 +48,16 @@
     flex-shrink: 0;
 }
 
+/* Faction view's only trace of a running event: the details live on the
+ * sector card. */
+.sector-card-event-alert {
+    font-family: var(--font-body, sans-serif);
+    font-size: var(--text-h3);
+    font-weight: 700;
+    color: var(--color-danger);
+    flex-shrink: 0;
+}
+
 .sector-card-action-flash {
     animation: action-flash var(--duration-pulse-fast) ease-in-out infinite;
     animation-delay: var(--pulse-delay, 0s);
@@ -144,6 +154,10 @@
 
 .sector-card-assault--imminent {
     color: var(--color-danger);
+}
+
+.sector-card-assault--ahead {
+    color: var(--color-success);
 }
 
 .sector-card-points {
