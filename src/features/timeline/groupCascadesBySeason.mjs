@@ -1,4 +1,5 @@
 import { compareCascades } from '@/shared/utils/game/seasonAnalytics.mjs';
+import { groupBy } from '@/shared/utils/groupBy.mjs';
 
 /**
  * Group cascades by season, then sort groups + within-group cascades.
@@ -20,7 +21,7 @@ import { compareCascades } from '@/shared/utils/game/seasonAnalytics.mjs';
 export function groupCascadesBySeason(cascades, { sortOrder = 'worst' } = {}) {
     if (!cascades?.length) return [];
 
-    const groups = Map.groupBy(cascades, (c) => c.season);
+    const groups = groupBy(cascades, (c) => c.season);
 
     const within =
         sortOrder === 'recent' ? (a, b) => b.endTime - a.endTime : compareCascades;

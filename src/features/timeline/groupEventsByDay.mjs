@@ -1,3 +1,5 @@
+import { groupBy } from '@/shared/utils/groupBy.mjs';
+
 /**
  * Group events by calendar day (UTC).
  *
@@ -9,7 +11,7 @@
 export function groupEventsByDay(events, { sortOrder = 'desc' } = {}) {
     if (!events || events.length === 0) return [];
 
-    const groups = Map.groupBy(events, (event) =>
+    const groups = groupBy(events, (event) =>
         new Date(event.start_time * 1000).toISOString().slice(0, 10),
     );
 

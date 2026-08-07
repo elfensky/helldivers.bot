@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.90.11
+
+### Fixed
+
+- **The timeline no longer breaks on Firefox 115 ESR and other pre-2023
+  browsers** ([#495](https://github.com/elfensky/helldivers.bot/issues/495)).
+  `Map.groupBy` shipped in Chrome 117 / Firefox 119 — past the support floor
+  declared in v0.90.10 — so `groupEventsByDay` and `groupCascadesBySeason`
+  threw on the last Firefox for Windows 7/8 and took the section with them.
+  Measured against caniuse usage data the built-in costs **6.39% of accounted
+  global users**; the four-line `groupBy()` helper in `src/shared/utils/` costs
+  nothing and keeps the built-in's contract (insertion-ordered `Map`,
+  SameValueZero keys, encounter-order values), pinned by a test that diffs it
+  against `Map.groupBy` directly.
+
+  All three call sites moved over, including the server-only one in
+  `getCascadeLeaderboard` — safe on Node 24, but leaving it would have left a
+  copy-paste source aimed at the API that broke a browser here.
+
+### Changed
+
+- **`Map.groupBy` and `Object.groupBy` are now a lint error in
+  browser-shipped code.** `eslint-plugin-compat` does not flag either — that
+  blind spot was found by probe in v0.90.10 — so a `no-restricted-syntax` rule
+  covers them and names the replacement in its message.
+
 ## 0.90.10
 
 ### Added

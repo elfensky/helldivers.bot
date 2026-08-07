@@ -167,5 +167,24 @@ export default [
         ...compat.configs['flat/recommended'],
     },
 
+    // The blind spot above, closed by hand for the built-ins that actually
+    // bit. compat can't see these, so nothing else would catch a reintroduction
+    // until it reached a Firefox 115 user (#495).
+    {
+        files: ['src/features/**', 'src/shared/**', 'src/app/**', 'src/sw.js'],
+        ignores: ['src/shared/utils/groupBy.mjs'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                {
+                    selector:
+                        "MemberExpression[object.name=/^(Map|Object)$/][property.name='groupBy']",
+                    message:
+                        'Map/Object.groupBy ships in Chrome 117 / Firefox 119, past this project’s support floor. Use groupBy() from @/shared/utils/groupBy.mjs.',
+                },
+            ],
+        },
+    },
+
     prettierRecommended,
 ];
