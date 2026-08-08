@@ -1,13 +1,19 @@
-name: Build Production
+name: 'Build: Release'
 
 on:
     push:
         tags:
             - 'v*.*.*' # Triggers on version tags like v1.0.0
 
+# Never cancel a half-published release. Two tags pushed back to back queue
+# rather than racing each other to the `production` and `latest` floating tags.
+concurrency:
+    group: build-release-${{ github.ref_name }}
+    cancel-in-progress: false
+
+# Read-only by default; the two jobs that need to write say so themselves.
 permissions:
-    contents: write
-    packages: write
+    contents: read
 
 jobs:
     # The same gate CI runs, against the exact tagged commit.
@@ -15,85 +21,48 @@ jobs:
     # main's branch protection already requires the "Test & Build" check to
     # merge, so the code in a release has normally passed. "Normally" is the
     # problem: a tag can be pushed at ANY commit — an older one, a hotfix
-    # merged with admin override, a hand-moved tag — and ci.yml does not run on
-    # tags at all, so nothing re-checks what is actually being shipped. This
-    # job makes the tag itself the unit that gets verified.
+    # merged with admin override, a hand-moved tag — and check-ci.yml does not
+    # run on tags at all, so nothing re-checks what is actually being shipped.
+    # This job makes the tag itself the unit that gets verified.
     #
-    # Deliberately duplicated from ci.yml rather than extracted into a
-    # `workflow_call` reusable workflow: that would rename ci.yml's check from
-    # "Test & Build" to "<caller> / Test & Build", and main's required status
-    # check matches on that exact string. Every PR to main would then block
-    # forever waiting for a check that no longer reports. ~25 duplicated lines
-    # on a workflow that runs a few times a year is the cheaper mistake.
+    # Shares the sequence with check-ci.yml through a COMPOSITE action rather
+    # than a `workflow_call` reusable workflow. A reusable workflow would rename
+    # the check from "Test & Build" to "<caller> / Test & Build", and main's
+    # required status check matches on that exact string — every PR to main
+    # would block forever waiting for a check that no longer reports. A
+    # composite action runs inside this job, so the name is untouched.
     verify:
         name: Test & Build
         runs-on: ubuntu-latest
+        timeout-minutes: 25
 
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v7.0.0
-              with:
-                  node-version-file: '.node-version'
-                  cache: 'npm'
-
-            - name: Install dependencies
-              run: npm ci
-
-            # src/db/db.js imports the generated Prisma client (gitignored), so
-            # it has to exist before typecheck, tests and build.
-            - name: Generate Prisma client
-              run: npx prisma generate
-              env:
-                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
-
-            - name: Lint
-              run: npm run lint
-
-            - name: Typecheck
-              run: npm run typecheck
-
-            - name: Run unit tests
-              run: npm run test:unit
-
-            - name: Build
-              run: npm run build
-              env:
-                  # Stubs for the eagerly-validated server config — see ci.yml.
-                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
-                  UPDATE_KEY: 'ci-stub-key'
-                  UPDATE_INTERVAL: '20'
+            - name: Lint, typecheck, test and build
+              uses: ./.github/actions/verify
 
     build-app:
+        name: Build App Image
         needs: verify
         runs-on: ubuntu-latest
+        # arm64 builds under QEMU emulation are slow; 30 leaves headroom.
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            packages: write
 
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
 
-            - name: Set up QEMU
-              uses: docker/setup-qemu-action@v4.2.0
-
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v4.2.0
-
-            - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v4.6.0
+            - name: Build and push APP
+              uses: ./.github/actions/docker-publish
               with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Build and push Docker image
-              uses: docker/build-push-action@v7.3.0
-              with:
-                  context: .
                   file: ./Dockerfile.app
                   platforms: linux/amd64,linux/arm64
-                  push: true
+                  registry-token: ${{ secrets.GITHUB_TOKEN }}
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:${{ github.ref_name }}
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:production
@@ -102,12 +71,10 @@ jobs:
                       NODE_ENV=production
                       NEXT_PUBLIC_DEPLOY_ENV=production
                       NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
-                  # Sentry credentials are passed as BuildKit secrets, NOT
-                  # build-args. Build-args end up in the image's provenance
-                  # attestation that gets pushed to GHCR — anyone with pull
-                  # access can extract them. Secrets are tmpfs-only inside
-                  # the build RUN and never persisted. See #284.
-                  secrets: |
+                  # Sentry credentials go in build-secrets, NOT build-args —
+                  # build-args land in the provenance attestation pushed to
+                  # GHCR, where anyone with pull access can read them. See #284.
+                  build-secrets: |
                       sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
                       sentry_url=${{ vars.SENTRY_URL }}
                       sentry_org=${{ secrets.SENTRY_ORG }}
@@ -117,31 +84,23 @@ jobs:
     # Each tag needs a versioned image, releases are infrequent (~$3/yr CI cost),
     # and a missing migration image causes broken deploys. Not worth optimizing.
     build-migrate:
+        name: Build Migrate Image
         needs: verify
         runs-on: ubuntu-latest
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            packages: write
 
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
 
-            - name: Set up QEMU
-              uses: docker/setup-qemu-action@v4.2.0
-
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v4.2.0
-
-            - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v4.6.0
+            - name: Build and push MIGRATE
+              uses: ./.github/actions/docker-publish
               with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Build and push MIGRATE image
-              uses: docker/build-push-action@v7.3.0
-              with:
-                  context: .
                   file: ./Dockerfile.migrate
+                  registry-token: ${{ secrets.GITHUB_TOKEN }}
                   # amd64 only — NOT an oversight. `prisma generate` dies under
                   # QEMU aarch64 emulation with `qemu: uncaught target signal 4
                   # (Illegal instruction)`, exit 132: Prisma's engine binary uses
@@ -158,7 +117,6 @@ jobs:
                   # with `image: tonistiigi/binfmt:latest`) or a native arm64
                   # runner — and verified on a real tag, not assumed.
                   platforms: linux/amd64
-                  push: true
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:${{ github.ref_name }}
                       ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:production
@@ -167,8 +125,12 @@ jobs:
                       NODE_ENV=production
 
     github-release:
+        name: Create GitHub Release
         needs: [build-app, build-migrate]
         runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: write # creates the GitHub Release for the tag
 
         steps:
             - name: Checkout code

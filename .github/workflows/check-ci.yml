@@ -1,4 +1,7 @@
-name: CI
+# The workflow NAME is load-bearing: build-staging.yml keys its `workflow_run`
+# trigger off it, and that trigger matches on the name, not the filename.
+# Changing it here means changing it there in the same commit.
+name: 'Check: CI'
 
 on:
     pull_request:
@@ -20,6 +23,7 @@ jobs:
     visual:
         name: Visual Regression
         runs-on: ubuntu-latest
+        timeout-minutes: 15
         # The exact image scripts/visual-tests.sh uses locally, and that is the
         # whole point: baseline PNGs are platform-specific, so rendering here
         # must match rendering on a developer's machine byte for byte. A bare
@@ -56,9 +60,13 @@ jobs:
                   include-hidden-files: true
                   if-no-files-found: ignore
 
+    # `name: Test & Build` is a REQUIRED status check on main's branch
+    # protection, matched as that exact bare string. Renaming this job blocks
+    # every PR to main until the protection rule is updated to match.
     test:
         name: Test & Build
         runs-on: ubuntu-latest
+        timeout-minutes: 25
 
         # Backing store for the smoke gate at the end of this job. Nothing before
         # the "Apply migrations" step touches it — in particular the Build step
@@ -106,42 +114,13 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v7.0.0
-              with:
-                  node-version-file: '.node-version'
-                  cache: 'npm'
-
-            - name: Install dependencies
-              run: npm ci
-
-            # The Prisma client (src/generated/prisma/, gitignored) is imported by
-            # src/db/db.js, so it must exist before typecheck, unit tests, and build.
-            # Generate it right after install — not after the gates.
-            - name: Generate Prisma client
-              run: npx prisma generate
-              env:
-                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
-
-            - name: Lint
-              run: npm run lint
-
-            - name: Typecheck
-              run: npm run typecheck
-
-            - name: Run unit tests
-              run: npm run test:unit
-
-            - name: Build
-              run: npm run build
-              env:
-                  # Stub the eagerly-validated server config (config/server.mjs runs
-                  # parseServerConfig() at import) so `next build` page-data collection
-                  # succeeds. These three are the required vars; auth is left unset
-                  # (auth-off at build) to avoid the all-or-none provider check.
-                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
-                  UPDATE_KEY: 'ci-stub-key'
-                  UPDATE_INTERVAL: '20'
+            # Install → prisma generate → lint → typecheck → unit tests → build.
+            # Shared with build-release.yml so a release verifies the tagged
+            # commit through the exact same sequence. A composite action, not a
+            # reusable workflow, precisely so this job keeps reporting as
+            # "Test & Build" — see .github/actions/verify/action.yml.
+            - name: Lint, typecheck, test and build
+              uses: ./.github/actions/verify
 
             # ─── Smoke gate ─────────────────────────────────────────────
             #
@@ -156,7 +135,7 @@ jobs:
             # and still abort the job on failure without waiting for a boot.
             #
             # This gate is deliberately NOT a replacement for
-            # main-pr-docker-smoke.yml — see the note at the top of that file.
+            # check-docker-smoke.yml — see the note at the top of that file.
 
             # The cron worker spawns on boot and immediately polls the official HD1
             # API through /api/h1/update, which would write live season rows into

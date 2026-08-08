@@ -1,4 +1,4 @@
-name: CodeQL
+name: 'Check: CodeQL'
 
 on:
     push:
@@ -18,9 +18,13 @@ permissions:
     security-events: write
 
 jobs:
+    # `name: Analyze` + the language matrix produce the check context
+    # "Analyze (javascript-typescript)", which is a REQUIRED status check on
+    # main's branch protection. Renaming either one blocks every PR to main.
     analyze:
         name: Analyze
         runs-on: ubuntu-latest
+        timeout-minutes: 20
 
         strategy:
             fail-fast: false

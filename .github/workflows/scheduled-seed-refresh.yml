@@ -1,17 +1,26 @@
-name: Seed refresh
+name: 'Scheduled: Seed Refresh'
 
 on:
     schedule:
         - cron: '0 3 * * 1' # Every Monday at 03:00 UTC
     workflow_dispatch:
 
+# Never cancel: the job force-pushes chore/seed-refresh, so two concurrent runs
+# would race on the same branch. Queue instead.
+concurrency:
+    group: scheduled-seed-refresh
+    cancel-in-progress: false
+
 permissions:
-    contents: write
-    pull-requests: write
+    contents: write # pushes chore/seed-refresh
+    pull-requests: write # opens the PR against develop
 
 jobs:
     fetch-seasons:
+        name: Fetch New Seasons
         runs-on: ubuntu-latest
+        timeout-minutes: 15
+
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
@@ -25,11 +34,13 @@ jobs:
                   cache: 'npm'
 
             # fetch-seasons.mjs only needs axios; skip the dev tree.
-            - run: npm ci --omit=dev --ignore-scripts
+            - name: Install dependencies
+              run: npm ci --omit=dev --ignore-scripts
 
             # Skips existing files, so this only writes newly-completed
             # seasons. Never touches the active season (see the script).
-            - run: node prisma/seed/fetch-seasons.mjs
+            - name: Fetch newly completed seasons
+              run: node prisma/seed/fetch-seasons.mjs
 
             # ponytail: one long-lived branch — a second run before the PR is
             # merged updates that PR instead of opening a new one.

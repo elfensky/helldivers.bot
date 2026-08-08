@@ -1,4 +1,4 @@
-name: Main PR Docker Smoke
+name: 'Check: Docker Smoke'
 
 # Catches the class of bugs that only manifest when the production-shaped
 # Docker stack actually builds and runs — image-level dependency issues,
@@ -11,7 +11,7 @@ name: Main PR Docker Smoke
 # develop → main and on hotfix PRs to main. Not on develop PRs (too slow for
 # the integration loop) and not on pushes (by then the merge already happened).
 #
-# Not superseded by the smoke gate in ci.yml. That gate boots `next build`'s
+# Not superseded by the smoke gate in check-ci.yml. That gate boots `next build`'s
 # standalone output directly on the runner, so it proves the *application*
 # runs; this one builds and runs the *shipping artifact*, so it is the only
 # check that covers the Dockerfiles, the compose wiring, the image-level
@@ -31,7 +31,7 @@ permissions:
 
 jobs:
     smoke:
-        name: Docker Compose smoke test
+        name: Docker Compose Smoke Test
         runs-on: ubuntu-latest
         # The Next.js image build takes ~5-7 minutes from a cold cache; the
         # migrate image ~1 minute; postgres start + migrate run + app boot ~30s.
