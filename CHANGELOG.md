@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.90.15
+
+### Fixed
+
+- **The seed script skips per season instead of comparing counts.** The guard
+  was `db.h1_season.count() === jsonFiles.length` — skip everything when the
+  numbers match, seed everything when they don't — which is wrong in both
+  directions.
+
+  It **re-seeded everything on any mismatch**. The weekly seed-refresh workflow
+  added in v0.90.7 exists to add newly-finished seasons, so its normal output
+  (one more file) meant rewriting the 159 seasons already present. Confirmed
+  against the local database, which holds 160 seasons — 159 seeded plus season
+  160 from the live worker — against 159 files: the old check re-seeded all 159
+  on every single run.
+
+  It also **skipped when the numbers coincided**. A database with 158 seed
+  seasons plus two on-demand backfills counts 160 against 160 files, reports
+  "already seeded", and leaves two seed files unapplied.
+
+  Each filename's season is now compared against the seasons actually present
+  in `h1_season`, and only the missing ones run. A file whose name doesn't
+  encode a season is always seeded, since `seedSeason()` reads the number from
+  the file contents and skipping on a guess would silently drop data.
+  `FORCE_SEED=true` still re-seeds everything.
+
+### Changed
+
+- **`seed()` runs only when the script is invoked directly.** It executed at
+  import time, so importing the module to test its pure helpers would have
+  connected to the database and seeded it.
+
 ## 0.90.14
 
 ### Fixed

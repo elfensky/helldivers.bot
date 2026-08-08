@@ -18,7 +18,7 @@ dotenv.config({ path: '.env.development' });
 dotenv.config(); // fallback to .env (production/Docker)
 import { readdir, readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // Relative imports — @/* aliases don't work outside Next.js
 import { PrismaClient } from '../../src/generated/prisma/client.ts';
@@ -239,6 +239,43 @@ async function seedTestApiKey(db) {
     console.log('SEED_TEST_API_KEY_HASH is set — seeded the CI smoke-test API key.');
 }
 
+/**
+ * Season number encoded in a seed filename — `season-042.json` → 42.
+ *
+ * @param {string} file - Seed filename
+ * @returns {number|null} The season, or null when the name doesn't encode one
+ */
+export function seasonFromFilename(file) {
+    const match = /^season-(\d+)\.json$/.exec(file);
+    return match ? Number(match[1]) : null;
+}
+
+/**
+ * Seed files whose season is not already in the database.
+ *
+ * Replaces a count comparison (`db.h1_season.count() === jsonFiles.length`)
+ * that was wrong in both directions. It re-seeded EVERYTHING whenever the
+ * numbers differed, so the weekly seed-refresh workflow adding one finished
+ * season meant rewriting all 159 already-present ones. And it skipped
+ * everything whenever the numbers happened to match, so a database holding
+ * 158 seed seasons plus one on-demand backfill counted as complete while a
+ * seed file sat unapplied.
+ *
+ * A file whose name doesn't encode a season is always seeded — seedSeason()
+ * reads the number out of the file contents, and skipping on a guess would
+ * silently drop data.
+ *
+ * @param {string[]} files - Candidate seed filenames
+ * @param {Set<number>} seeded - Seasons already present in h1_season
+ * @returns {string[]} The subset still needing a seed run
+ */
+export function pendingSeasonFiles(files, seeded) {
+    return files.filter((file) => {
+        const season = seasonFromFilename(file);
+        return season === null || !seeded.has(season);
+    });
+}
+
 async function seed() {
     const adapter = new PrismaPg({ connectionString: process.env.POSTGRES_URL });
     const db = new PrismaClient({ adapter });
@@ -263,27 +300,33 @@ async function seed() {
         return;
     }
 
-    // Skip seeding if DB already has the expected number of seasons
-    if (!process.env.FORCE_SEED) {
-        const dbCount = await db.h1_season.count();
-        if (dbCount === jsonFiles.length) {
+    let pending = jsonFiles;
+
+    if (process.env.FORCE_SEED) {
+        console.log('FORCE_SEED is set. Re-seeding every season file.');
+    } else {
+        const rows = await db.h1_season.findMany({ select: { season: true } });
+        const seeded = new Set(rows.map((r) => r.season));
+        pending = pendingSeasonFiles(jsonFiles, seeded);
+
+        if (pending.length === 0) {
             console.log(
-                `Already seeded (${dbCount} seasons). Skipping. Set FORCE_SEED=true to re-seed.`,
+                `Already seeded (${seeded.size} seasons in the database). Nothing to do. Set FORCE_SEED=true to re-seed.`,
             );
             await db.$disconnect();
             return;
         }
-    } else {
-        console.log('FORCE_SEED is set. Re-seeding all data.');
     }
 
+    const skipped = jsonFiles.length - pending.length;
     console.log(
-        `Found ${jsonFiles.length} season file(s) to seed (concurrency: ${CONCURRENCY}).`,
+        `Found ${jsonFiles.length} season file(s); ${skipped} already present, ` +
+            `seeding ${pending.length} (concurrency: ${CONCURRENCY}).`,
     );
 
     // Process in batches of CONCURRENCY
-    for (let i = 0; i < jsonFiles.length; i += CONCURRENCY) {
-        const batch = jsonFiles.slice(i, i + CONCURRENCY);
+    for (let i = 0; i < pending.length; i += CONCURRENCY) {
+        const batch = pending.slice(i, i + CONCURRENCY);
         await Promise.all(batch.map((file) => seedSeason(db, file)));
     }
 
@@ -291,7 +334,11 @@ async function seed() {
     console.log('Seed complete.');
 }
 
-seed().catch((err) => {
-    console.error('Seed failed:', err);
-    process.exit(1);
-});
+// Only run when invoked as a script. Without this, importing the module to
+// test the pure helpers above would connect to the database and seed it.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    seed().catch((err) => {
+        console.error('Seed failed:', err);
+        process.exit(1);
+    });
+}
