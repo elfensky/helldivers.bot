@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.90.14
+
+### Fixed
+
+- **The production build now verifies the tagged commit before shipping it.**
+  `ci.yml` runs on branches, not tags, so `release.docker.yml` fired the moment
+  a tag landed with nothing re-checking what was being shipped. `main`'s branch
+  protection requires the `Test & Build` check to merge, so a release normally
+  contains code that passed — *normally* being the gap, since a tag can be
+  pushed at any commit: an older one, a hotfix merged with an admin override, a
+  hand-moved tag. A `verify` job now runs lint, typecheck, unit tests and build
+  against the tagged tree, and `build-app` and `build-migrate` both `needs:` it.
+
+  It duplicates `ci.yml`'s steps rather than sharing them via a `workflow_call`
+  reusable workflow. Extraction would rename the check from `Test & Build` to
+  `<caller> / Test & Build`, and `main`'s required status check matches that
+  exact string — every PR to `main` would block forever waiting for a check
+  that no longer reports. ~25 duplicated lines on a workflow that runs a few
+  times a year is the cheaper mistake.
+
+### Changed
+
+- **Infrastructure docs:** the production trigger was documented as `*.*.*`
+  where the workflow actually matches `v*.*.*`.
+
 ## 0.90.13
 
 ### Fixed
