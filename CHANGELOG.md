@@ -1,5 +1,59 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **GHCR cleanup never pruned the migrate image.** The `cleanup` job in the
+  staging build passed `image-names: 'helldiversbot'`, but every staging build
+  republishes `helldiversbot-migrate` too — so that package's untagged blobs
+  accumulated indefinitely with nothing ever collecting them. Both names are now
+  listed (space-separated, per the action's own documented syntax).
+- **Concurrent staging deploys.** `Build: Staging` had no concurrency group, so
+  two merges to `develop` in quick succession produced two concurrent
+  `docker stack deploy` runs against the same swarm. It now queues
+  (`cancel-in-progress: false` — cancelling a deploy mid-flight leaves the stack
+  half-converged). `Build: Release` and `Scheduled: Seed Refresh` gained the same
+  guard; the latter force-pushes `chore/seed-refresh`, which two overlapping runs
+  would race on.
+- **No job timeouts.** 14 of 15 jobs had no `timeout-minutes`, so anything that
+  hung burned the 6-hour default before GitHub killed it. All jobs now bound.
+- **Over-broad workflow permissions.** The release and staging builds granted
+  `contents: write` to every job. Staging never writes contents at all; in the
+  release flow only `Create GitHub Release` does. Both now default to
+  `contents: read` with per-job grants. `Check: Version Bump` had no
+  `permissions:` block at all and inherited the repository default.
+- **`Check: Version Bump` filtered on a file that does not exist.**
+  `pyproject.toml` was in its `paths` list — there is no Python in this repo, so
+  that entry never matched. It now watches `prisma/**` and `public/**` as well.
+- **Broken README badges.** Three of four pointed at `elfensky/helldivers1api`, a
+  repository name that no longer resolves, and the "Build" badge additionally
+  filtered on `?branch=main` for a workflow that only ever runs on `develop`.
+  Repointed, plus a CI badge that was missing entirely. The wakapi time badge was
+  reading a stale pre-rename project slug frozen at 96 hours; the live one reads
+  299.
+
+### Changed
+
+- **Workflows follow one naming convention.** Filenames are now
+  `<verb>-<subject>.yml` and each workflow's `name:` is the matching
+  `Verb: Subject` — `check-` for PR/push gates, `build-` for anything that ships
+  an artifact, `scheduled-` for cron. Previously filenames mixed dot-separation
+  (`release.docker.yml`) with kebab-case (`dependency-review.yml`), names mixed
+  three casing styles, and three files were named after something other than what
+  they did (`metrics.yml` was "Pagespeed"). Every job and step now has an explicit
+  `name:` — 8 of 15 jobs were rendering as raw job ids in the Actions UI.
+- **Shared CI logic extracted into composite actions.** `.github/actions/verify`
+  (install → prisma generate → lint → typecheck → unit tests → build) replaces a
+  verbatim 35-line copy that the release build kept of the CI job, and
+  `.github/actions/docker-publish` (QEMU → Buildx → GHCR login → build-push)
+  replaces four near-identical copies across the two build workflows. Composite
+  actions rather than `workflow_call` reusable workflows deliberately: a reusable
+  workflow renames the check to `<caller> / Test & Build`, and `main`'s required
+  status check matches the bare string, so every PR to `main` would block forever.
+  A composite action runs inside the calling job and leaves the job name alone.
+  `docker-publish` also skips QEMU setup for the two amd64-only migrate builds.
+
 ## 0.90.16
 
 ### Fixed

@@ -8,7 +8,7 @@ swarm + self-hosted runner are up is what validates it.
 
 - `stack.staging.yml` — the Swarm deploy manifest (app + cloudflared, secrets, start-first rollout).
 - `../.github/scripts/kuma-maintenance.mjs` — flips the Uptime Kuma "upgrading" banner on/off.
-- The `deploy-staging` job in `../.github/workflows/staging.docker.yml` — runs on the
+- The `deploy-staging` job in `../.github/workflows/build-staging.yml` — runs on the
   self-hosted runner: banner on → migrate one-shot → `docker stack deploy` → wait healthy → banner off.
 
 ## Flow

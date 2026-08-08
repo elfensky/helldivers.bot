@@ -43,7 +43,7 @@ node prisma/seed/fetch-seasons.mjs --force
 node prisma/seed/fetch-seasons.mjs --force --from=148 --to=156
 ```
 
-You rarely need to run it by hand: `.github/workflows/seed-refresh.yml`
+You rarely need to run it by hand: `.github/workflows/scheduled-seed-refresh.yml`
 runs it every Monday (and on `workflow_dispatch`) and opens a PR against
 `develop` on the `chore/seed-refresh` branch whenever a season has
 completed since the last run. Merge that PR locally with `--no-ff`, doing

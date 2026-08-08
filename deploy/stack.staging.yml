@@ -1,5 +1,5 @@
 # Docker Swarm stack — helldivers.bot STAGING (the 3-Pi cluster).
-# Deployed by the `deploy-staging` job in .github/workflows/staging.docker.yml.
+# Deployed by the `deploy-staging` job in .github/workflows/build-staging.yml.
 #
 # ⚠️  DRAFT / UNTESTED. This cannot run until the swarm + a self-hosted runner
 #     exist. Open integration points are listed in deploy/README.md — do not
