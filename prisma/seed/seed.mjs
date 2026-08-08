@@ -240,6 +240,21 @@ async function seedTestApiKey(db) {
 }
 
 /**
+ * Whether FORCE_SEED asks for a full re-seed.
+ *
+ * Deliberately not `Boolean(process.env.FORCE_SEED)`: every non-empty string
+ * is truthy, so `FORCE_SEED=false` — the obvious way to write "off" in a
+ * compose file or a stack env block — forced a full re-seed of every season.
+ * The failure was silent and looked like the seed simply being slow.
+ *
+ * @returns {boolean} True only for an explicit affirmative value
+ */
+export function forceSeed() {
+    const raw = (process.env.FORCE_SEED ?? '').trim().toLowerCase();
+    return raw === 'true' || raw === '1' || raw === 'yes';
+}
+
+/**
  * Season number encoded in a seed filename — `season-042.json` → 42.
  *
  * @param {string} file - Seed filename
@@ -302,8 +317,8 @@ async function seed() {
 
     let pending = jsonFiles;
 
-    if (process.env.FORCE_SEED) {
-        console.log('FORCE_SEED is set. Re-seeding every season file.');
+    if (forceSeed()) {
+        console.log('FORCE_SEED is on. Re-seeding every season file.');
     } else {
         const rows = await db.h1_season.findMany({ select: { season: true } });
         const seeded = new Set(rows.map((r) => r.season));

@@ -189,6 +189,7 @@ jobs:
                   docker pull ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
                   docker run --rm \
                     -e POSTGRES_URL="${{ secrets.STAGING_POSTGRES_URL }}" \
+                    -e FORCE_SEED="${{ vars.FORCE_SEED }}" \
                     ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
 
             - name: Deploy the stack

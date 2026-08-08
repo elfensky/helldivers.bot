@@ -1,5 +1,9 @@
-import { describe, expect, test } from 'vitest';
-import { pendingSeasonFiles, seasonFromFilename } from '../../../../prisma/seed/seed.mjs';
+import { afterEach, describe, expect, test } from 'vitest';
+import {
+    forceSeed,
+    pendingSeasonFiles,
+    seasonFromFilename,
+} from '../../../../prisma/seed/seed.mjs';
 
 // Repo tooling rather than app code, so it lives in _meta — prisma/ is not one
 // of the mirror-tree roots. The logic under test decides whether a deploy
@@ -57,5 +61,31 @@ describe('pendingSeasonFiles', () => {
         expect(pendingSeasonFiles(['odd-name.json'], new Set([1]))).toEqual([
             'odd-name.json',
         ]);
+    });
+});
+
+describe('forceSeed', () => {
+    const set = (v) => {
+        if (v === undefined) delete process.env.FORCE_SEED;
+        else process.env.FORCE_SEED = v;
+    };
+    afterEach(() => set(undefined));
+
+    test.each(['true', 'TRUE', ' true ', '1', 'yes'])('%s enables it', (v) => {
+        set(v);
+        expect(forceSeed()).toBe(true);
+    });
+
+    // Boolean(process.env.FORCE_SEED) returns true for every one of these,
+    // which meant writing the obvious "off" value in a compose file silently
+    // re-seeded all 159 seasons.
+    test.each(['false', 'FALSE', '0', 'no', '', '   '])('%s leaves it off', (v) => {
+        set(v);
+        expect(forceSeed()).toBe(false);
+    });
+
+    test('unset leaves it off', () => {
+        set(undefined);
+        expect(forceSeed()).toBe(false);
     });
 });
