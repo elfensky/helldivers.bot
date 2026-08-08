@@ -1,19 +1,40 @@
-name: version
+name: 'Check: Version Bump'
+
+# CLAUDE.md § Git Workflow #2 requires the version to move in the same commit
+# that merges a branch. This is the only automated enforcement of that rule.
 on:
-  pull_request:
-    branches: [develop, main]
-    paths: ['src/**', 'package.json', 'pyproject.toml']
+    pull_request:
+        branches: [develop, main]
+        # Anything whose change ships to users. `pyproject.toml` used to be
+        # listed here — there is no Python in this repo, so it never matched.
+        paths: ['src/**', 'prisma/**', 'public/**', 'package.json']
+
+concurrency:
+    group: check-version-${{ github.event.pull_request.number || github.sha }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
 
 jobs:
-  bumped:
-    if: github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with: { fetch-depth: 0 }
-      - name: Version must differ from the base branch
-        run: |
-          base="origin/${{ github.base_ref }}"
-          old=$(git show "$base:package.json" | jq -r .version)
-          new=$(jq -r .version package.json)
-          [ "$old" != "$new" ] || { echo "::error::Still $new — bump it"; exit 1; }
+    bumped:
+        name: Version Bump
+        # Dependabot PRs are merged with the version bump added on merge, not
+        # by the bot, so this gate would only ever block them.
+        if: github.actor != 'dependabot[bot]'
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+              with:
+                  # Full history: the base branch ref has to be resolvable.
+                  fetch-depth: 0
+
+            - name: Version must differ from the base branch
+              run: |
+                  base="origin/${{ github.base_ref }}"
+                  old=$(git show "$base:package.json" | jq -r .version)
+                  new=$(jq -r .version package.json)
+                  [ "$old" != "$new" ] || { echo "::error::Still $new — bump it"; exit 1; }

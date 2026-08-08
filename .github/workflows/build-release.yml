@@ -1,13 +1,19 @@
-name: Build Production
+name: 'Build: Release'
 
 on:
     push:
         tags:
             - 'v*.*.*' # Triggers on version tags like v1.0.0
 
+# Never cancel a half-published release. Two tags pushed back to back queue
+# rather than racing each other to the `production` and `latest` floating tags.
+concurrency:
+    group: build-release-${{ github.ref_name }}
+    cancel-in-progress: false
+
+# Read-only by default; the two jobs that need to write say so themselves.
 permissions:
-    contents: write
-    packages: write
+    contents: read
 
 jobs:
     # The same gate CI runs, against the exact tagged commit.
@@ -15,9 +21,9 @@ jobs:
     # main's branch protection already requires the "Test & Build" check to
     # merge, so the code in a release has normally passed. "Normally" is the
     # problem: a tag can be pushed at ANY commit — an older one, a hotfix
-    # merged with admin override, a hand-moved tag — and ci.yml does not run on
-    # tags at all, so nothing re-checks what is actually being shipped. This
-    # job makes the tag itself the unit that gets verified.
+    # merged with admin override, a hand-moved tag — and check-ci.yml does not
+    # run on tags at all, so nothing re-checks what is actually being shipped.
+    # This job makes the tag itself the unit that gets verified.
     #
     # Shares the sequence with check-ci.yml through a COMPOSITE action rather
     # than a `workflow_call` reusable workflow. A reusable workflow would rename
@@ -28,6 +34,7 @@ jobs:
     verify:
         name: Test & Build
         runs-on: ubuntu-latest
+        timeout-minutes: 25
 
         steps:
             - name: Checkout code
@@ -37,8 +44,14 @@ jobs:
               uses: ./.github/actions/verify
 
     build-app:
+        name: Build App Image
         needs: verify
         runs-on: ubuntu-latest
+        # arm64 builds under QEMU emulation are slow; 30 leaves headroom.
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            packages: write
 
         steps:
             - name: Checkout code
@@ -71,8 +84,13 @@ jobs:
     # Each tag needs a versioned image, releases are infrequent (~$3/yr CI cost),
     # and a missing migration image causes broken deploys. Not worth optimizing.
     build-migrate:
+        name: Build Migrate Image
         needs: verify
         runs-on: ubuntu-latest
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            packages: write
 
         steps:
             - name: Checkout code
@@ -107,8 +125,12 @@ jobs:
                       NODE_ENV=production
 
     github-release:
+        name: Create GitHub Release
         needs: [build-app, build-migrate]
         runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: write # creates the GitHub Release for the tag
 
         steps:
             - name: Checkout code

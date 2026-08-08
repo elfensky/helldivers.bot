@@ -1,24 +1,30 @@
-name: Pagespeed
+name: 'Scheduled: Pagespeed'
+
+# Renders a PageSpeed Insights SVG for helldivers.bot and commits it to the
+# standalone `metrics` branch. That branch is NOT part of the git flow — it
+# never merges to or from develop or main. See CLAUDE.md § Git Workflow.
 on:
     schedule:
-        # - cron: '0 0 * * *' # Every Day at 00:00 AM UTC
-        - cron: '0 0 * * 1' # Every Monday at 00:00 AM UTC
-        # - cron: '0 15 * * 3' # Every Wednesday at 03:00 PM UTC
-        - cron: '0 6 * * 5' # Every Friday at 06:00 AM UTC
-    workflow_dispatch: # allows requesting workflow manually from the website
-    # push: { branches: ['main'] } # Run workflow when pushing on master/main
-    # push:
-    #     paths:
-    #         - '.github/workflows/metrics.yml' # run workflow if metrics.yml changes
+        - cron: '0 0 * * 1' # Every Monday at 00:00 UTC
+        - cron: '0 6 * * 5' # Every Friday at 06:00 UTC
+    workflow_dispatch: # allows requesting the workflow manually from the website
+
+concurrency:
+    group: scheduled-pagespeed
+    cancel-in-progress: true
+
 permissions:
-    contents: write
+    contents: write # commits the generated SVG to the `metrics` branch
 
 jobs:
     generate-metrics:
+        name: Generate Pagespeed Metrics
         runs-on: ubuntu-latest
+        timeout-minutes: 15
+
         steps:
             # https://github.com/lowlighter/metrics/tree/master/source/plugins/pagespeed
-            - name: 'metrics: pagespeed'
+            - name: Render the pagespeed SVG
               # pinned to v3.34 (latest release tag); @v4 is an unreleased
               # dev branch, not a tag — a group bump silently moved it there.
               uses: lowlighter/metrics@v3.34

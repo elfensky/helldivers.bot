@@ -1,4 +1,4 @@
-name: Build Develop
+name: 'Build: Staging'
 # Gated on CI, not on the push itself. Both used to trigger on
 # `push: branches: [develop]`, which meant they raced: the image built,
 # published and deployed while lint/typecheck/tests were still running, so a
@@ -12,18 +12,37 @@ on:
     workflow_dispatch:
         inputs: {}
     workflow_run:
-        workflows: [CI]
+        # Matches check-ci.yml's `name:`, NOT its filename. The two move
+        # together or this trigger silently stops firing.
+        workflows: ['Check: CI']
         types: [completed]
         branches: [develop]
+
+# Never cancel: deploy-staging runs `docker stack deploy` against a live swarm,
+# and killing that mid-flight leaves the stack half-converged. A second merge
+# to develop queues behind the first instead.
+concurrency:
+    group: build-staging
+    cancel-in-progress: false
+
+# Read-only by default; the jobs that touch GHCR say so themselves. This used
+# to grant `contents: write` workflow-wide — nothing here writes contents.
 permissions:
-    contents: write
-    packages: write
+    contents: read
+
+env:
+    # The commit CI actually tested — NOT the branch tip, which may have moved
+    # on. Falls back to github.sha for workflow_dispatch, where there is no
+    # workflow_run payload. Every checkout below uses this.
+    TESTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
     detect-migration:
+        name: Detect Migration Changes
         # CI green, or a deliberate manual run. Anything else stops here.
         if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 10
         outputs:
             migrate: ${{ steps.filter.outputs.migrate }}
             image_missing: ${{ steps.check.outputs.missing }}
@@ -31,10 +50,7 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
               with:
-                  # The commit CI actually tested — NOT the branch tip, which
-                  # may have moved on. Falls back to github.sha for
-                  # workflow_dispatch, where there is no workflow_run payload.
-                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+                  ref: ${{ env.TESTED_SHA }}
                   fetch-depth: 2
 
             # HEAD^ is the first parent, so on a --no-ff merge this spans
@@ -62,17 +78,19 @@ jobs:
                   fi
 
     build-migrate:
+        name: Build Migrate Image
         needs: detect-migration
         if: needs.detect-migration.outputs.migrate == 'true' || needs.detect-migration.outputs.image_missing == 'true' || github.event_name == 'workflow_dispatch'
         runs-on: ubuntu-latest
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            packages: write
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
               with:
-                  # The commit CI actually tested — NOT the branch tip, which
-                  # may have moved on. Falls back to github.sha for
-                  # workflow_dispatch, where there is no workflow_run payload.
-                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+                  ref: ${{ env.TESTED_SHA }}
 
             - name: Build and push MIGRATE
               uses: ./.github/actions/docker-publish
@@ -86,17 +104,21 @@ jobs:
                       ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
                   build-args: |
                       NODE_ENV=production
+
     build-app:
+        name: Build App Image
         if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
         runs-on: ubuntu-latest
+        # arm64 builds under QEMU emulation are slow; 30 leaves headroom.
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            packages: write
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
               with:
-                  # The commit CI actually tested — NOT the branch tip, which
-                  # may have moved on. Falls back to github.sha for
-                  # workflow_dispatch, where there is no workflow_run payload.
-                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+                  ref: ${{ env.TESTED_SHA }}
 
             - name: Build and push APP
               uses: ./.github/actions/docker-publish
@@ -123,6 +145,7 @@ jobs:
     # GitHub's cloud runners cannot reach the home-LAN cluster; this job runs on
     # the runner installed there. See deploy/README.md for the open TODOs.
     deploy-staging:
+        name: Deploy to Staging
         needs: [build-app, build-migrate]
         # DORMANT until the swarm + self-hosted runner exist. Flip repo variable
         # STAGING_DEPLOY_ENABLED=true to activate (without it the job skips cleanly
@@ -131,14 +154,16 @@ jobs:
         # image is reused. Skips if the app build failed.
         if: ${{ !cancelled() && needs.build-app.result == 'success' && vars.STAGING_DEPLOY_ENABLED == 'true' }}
         runs-on: self-hosted
+        # The convergence wait alone can take 5 minutes (30 × 10s).
+        timeout-minutes: 20
+        permissions:
+            contents: read
+            packages: read # docker pull from GHCR
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
               with:
-                  # The commit CI actually tested — NOT the branch tip, which
-                  # may have moved on. Falls back to github.sha for
-                  # workflow_dispatch, where there is no workflow_run payload.
-                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+                  ref: ${{ env.TESTED_SHA }}
 
             - name: Log in to GHCR
               run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -188,12 +213,16 @@ jobs:
                   KUMA_PASSWORD: ${{ secrets.KUMA_PASSWORD }}
 
     cleanup:
+        name: Cleanup Untagged Images
         needs: [build-migrate, build-app]
         # Runs when build-migrate is skipped (nothing to rebuild), but not
         # when build-app is skipped — that means CI failed and nothing was
         # published to prune.
         if: ${{ !cancelled() && needs.build-app.result != 'skipped' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: read
         steps:
             - name: Cleanup untagged packages
               uses: snok/container-retention-policy@v3.1.0
@@ -203,7 +232,12 @@ jobs:
                   # (ghs_) is rejected by container-retention-policy and can't
                   # delete user-account packages.
                   token: ${{ secrets.GHCR_CLEANUP_TOKEN }}
-                  image-names: 'helldiversbot'
+                  # SPACE-separated (the action's own documented syntax:
+                  # `image-names: "foo bar baz"`). Both packages are republished
+                  # on every staging build, so both orphan untagged blobs —
+                  # helldiversbot-migrate was missing here and its blobs
+                  # accumulated indefinitely.
+                  image-names: 'helldiversbot helldiversbot-migrate'
                   tag-selection: untagged
                   cut-off: 30min
                   dry-run: false
