@@ -1,0 +1,67 @@
+name: Verify
+description: Install dependencies, generate the Prisma client, then lint, typecheck, unit-test and build.
+
+# Shared by check-ci.yml (job "Test & Build") and build-release.yml (job
+# "Test & Build"). Both call sites need the identical sequence, so it lives
+# here rather than being copied.
+#
+# A COMPOSITE action, deliberately — not a `workflow_call` reusable workflow.
+# A reusable workflow would rename the check from "Test & Build" to
+# "<caller> / Test & Build", and main's required status check matches on that
+# exact string, so every PR to main would block forever waiting for a check
+# that no longer reports. A composite action runs *inside* the calling job, so
+# the job's name — and therefore the check context — is untouched.
+#
+# The caller must run actions/checkout before this: a local action can only be
+# resolved once the repository is on disk.
+
+runs:
+    using: composite
+    steps:
+        - name: Setup Node.js
+          uses: actions/setup-node@v7.0.0
+          with:
+              node-version-file: '.node-version'
+              cache: 'npm'
+
+        - name: Install dependencies
+          run: npm ci
+          shell: bash
+
+        # The Prisma client (src/generated/prisma/, gitignored) is imported by
+        # src/db/db.js, so it must exist before typecheck, unit tests, and build.
+        # Generate it right after install — not after the gates.
+        - name: Generate Prisma client
+          run: npx prisma generate
+          shell: bash
+          env:
+              POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
+
+        - name: Lint
+          run: npm run lint
+          shell: bash
+
+        - name: Typecheck
+          run: npm run typecheck
+          shell: bash
+
+        - name: Run unit tests
+          run: npm run test:unit
+          shell: bash
+
+        - name: Build
+          run: npm run build
+          shell: bash
+          env:
+              # Stub the eagerly-validated server config (config/server.mjs runs
+              # parseServerConfig() at import) so `next build` page-data collection
+              # succeeds. These three are the required vars; auth is left unset
+              # (auth-off at build) to avoid the all-or-none provider check.
+              #
+              # localhost:5432 is deliberately unreachable even in check-ci.yml,
+              # where a postgres service *is* running — it is published on 5433
+              # precisely so the build keeps its stub and never silently acquires
+              # a live database.
+              POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
+              UPDATE_KEY: 'ci-stub-key'
+              UPDATE_INTERVAL: '20'

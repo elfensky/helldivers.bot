@@ -1,0 +1,75 @@
+name: Docker publish
+description: Build a Dockerfile with Buildx and push it to the GitHub Container Registry.
+
+# Shared by the four image builds in build-staging.yml and build-release.yml.
+# Deliberately dumb: it owns the emulation/buildx/login/push mechanics and
+# nothing about this product. Anything image-specific (which platforms, which
+# tags, which build-args) stays a decision of the caller, next to the comment
+# explaining that decision.
+#
+# The caller must run actions/checkout first — a local action can only be
+# resolved once the repository is on disk.
+
+inputs:
+    file:
+        description: Path to the Dockerfile to build.
+        required: true
+    platforms:
+        description: Comma-separated target platforms. QEMU is only set up when this names an arm target.
+        required: true
+    tags:
+        description: Newline-separated list of fully-qualified image tags to push.
+        required: true
+    registry-token:
+        description: >-
+            Token for ghcr.io. Composite actions do NOT inherit secrets from the
+            caller, so secrets.GITHUB_TOKEN has to be passed in explicitly.
+        required: true
+    build-args:
+        description: >-
+            Newline-separated build arguments. Never pass credentials here —
+            build-args end up in the image's provenance attestation, which is
+            pushed to GHCR and readable by anyone with pull access. Use
+            build-secrets instead.
+        required: false
+        default: ''
+    build-secrets:
+        description: >-
+            Newline-separated BuildKit secrets. Mounted on tmpfs inside the build
+            RUN and never persisted into a layer or the attestation. See #284.
+        required: false
+        default: ''
+
+runs:
+    using: composite
+    steps:
+        # Emulation is only needed for a cross-architecture leg. The amd64-only
+        # migrate image skips a step that would otherwise cost time for nothing.
+        - name: Set up QEMU
+          if: contains(inputs.platforms, 'arm')
+          uses: docker/setup-qemu-action@v4.2.0
+
+        # Buildx is required for the BuildKit features Dockerfile.app uses:
+        # `# syntax=docker/dockerfile:1`, `RUN --mount=type=cache,...` and
+        # `RUN --mount=type=secret,...`. Without it those parse as ordinary RUNs
+        # and break the build.
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v4.2.0
+
+        - name: Log in to GitHub Container Registry
+          uses: docker/login-action@v4.6.0
+          with:
+              registry: ghcr.io
+              username: ${{ github.actor }}
+              password: ${{ inputs.registry-token }}
+
+        - name: Build and push image
+          uses: docker/build-push-action@v7.3.0
+          with:
+              context: .
+              file: ${{ inputs.file }}
+              platforms: ${{ inputs.platforms }}
+              push: true
+              tags: ${{ inputs.tags }}
+              build-args: ${{ inputs.build-args }}
+              secrets: ${{ inputs.build-secrets }}

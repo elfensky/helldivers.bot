@@ -106,42 +106,13 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v7.0.0
-              with:
-                  node-version-file: '.node-version'
-                  cache: 'npm'
-
-            - name: Install dependencies
-              run: npm ci
-
-            # The Prisma client (src/generated/prisma/, gitignored) is imported by
-            # src/db/db.js, so it must exist before typecheck, unit tests, and build.
-            # Generate it right after install — not after the gates.
-            - name: Generate Prisma client
-              run: npx prisma generate
-              env:
-                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
-
-            - name: Lint
-              run: npm run lint
-
-            - name: Typecheck
-              run: npm run typecheck
-
-            - name: Run unit tests
-              run: npm run test:unit
-
-            - name: Build
-              run: npm run build
-              env:
-                  # Stub the eagerly-validated server config (config/server.mjs runs
-                  # parseServerConfig() at import) so `next build` page-data collection
-                  # succeeds. These three are the required vars; auth is left unset
-                  # (auth-off at build) to avoid the all-or-none provider check.
-                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
-                  UPDATE_KEY: 'ci-stub-key'
-                  UPDATE_INTERVAL: '20'
+            # Install → prisma generate → lint → typecheck → unit tests → build.
+            # Shared with build-release.yml so a release verifies the tagged
+            # commit through the exact same sequence. A composite action, not a
+            # reusable workflow, precisely so this job keeps reporting as
+            # "Test & Build" — see .github/actions/verify/action.yml.
+            - name: Lint, typecheck, test and build
+              uses: ./.github/actions/verify
 
             # ─── Smoke gate ─────────────────────────────────────────────
             #

@@ -74,28 +74,14 @@ jobs:
                   # workflow_dispatch, where there is no workflow_run payload.
                   ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-            - name: Set up QEMU
-              uses: docker/setup-qemu-action@v4.2.0
-
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v4.2.0
-
-            - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v4.6.0
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-
             - name: Build and push MIGRATE
-              uses: docker/build-push-action@v7.3.0
+              uses: ./.github/actions/docker-publish
               with:
-                  context: .
                   file: ./Dockerfile.migrate
-                  # amd64 only — see the matching comment in release.docker.yml.
+                  registry-token: ${{ secrets.GITHUB_TOKEN }}
+                  # amd64 only — see the matching comment in build-release.yml.
                   # `prisma generate` SIGILLs under QEMU aarch64 (exit 132).
                   platforms: linux/amd64
-                  push: true
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
                   build-args: |
@@ -112,38 +98,22 @@ jobs:
                   # workflow_dispatch, where there is no workflow_run payload.
                   ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-            - name: Set up QEMU
-              uses: docker/setup-qemu-action@v4.2.0
-
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v4.2.0
-
-            - name: Log in to GitHub Container Registry
-              uses: docker/login-action@v4.6.0
-              with:
-                  registry: ghcr.io
-                  username: ${{ github.actor }}
-                  password: ${{ secrets.GITHUB_TOKEN }}
-
             - name: Build and push APP
-              uses: docker/build-push-action@v7.3.0
+              uses: ./.github/actions/docker-publish
               with:
-                  context: .
                   file: ./Dockerfile.app
                   platforms: linux/amd64,linux/arm64
-                  push: true
+                  registry-token: ${{ secrets.GITHUB_TOKEN }}
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
                   build-args: |
                       NODE_ENV=production
                       NEXT_PUBLIC_DEPLOY_ENV=staging
                       NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
-                  # Sentry credentials are passed as BuildKit secrets, NOT
-                  # build-args. Build-args end up in the image's provenance
-                  # attestation that gets pushed to GHCR — anyone with pull
-                  # access can extract them. Secrets are tmpfs-only inside
-                  # the build RUN and never persisted. See #284.
-                  secrets: |
+                  # Sentry credentials go in build-secrets, NOT build-args —
+                  # build-args land in the provenance attestation pushed to
+                  # GHCR, where anyone with pull access can read them. See #284.
+                  build-secrets: |
                       sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
                       sentry_url=${{ vars.SENTRY_URL }}
                       sentry_org=${{ secrets.SENTRY_ORG }}
