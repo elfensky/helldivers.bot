@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.90.13
+
+### Fixed
+
+- **The staging build no longer races CI — it waits for it.**
+  `staging.docker.yml` triggered on `push: branches: [develop]`, the same event
+  that starts `ci.yml`, with nothing connecting them. Both ran in parallel, so
+  the app and migrate images built, published to GHCR and deployed while lint,
+  typecheck and tests were still running; a red CI was a note attached to an
+  already-shipped build. `develop` takes direct merges without a PR, so the
+  `Test & Build` required check that guards `main` never applied here — this
+  was the only unguarded path. `release.docker.yml` is deliberately left alone:
+  tags are cut from `main`, whose branch protection already requires that check.
+
+  Now `workflow_run: { workflows: [CI], types: [completed], branches: [develop] }`
+  with both entry jobs gated on `conclusion == 'success'` (or a deliberate
+  `workflow_dispatch`), and `needs:` propagating the skip downstream.
+
+  Three details that make it correct rather than merely wired up: every
+  `checkout` pins `github.event.workflow_run.head_sha`, because a `workflow_run`
+  checkout otherwise defaults to the branch tip and a second merge landing
+  mid-run would build an image from code CI never saw; `dorny/paths-filter` is
+  replaced with `git diff --name-only HEAD^ HEAD` at `fetch-depth: 2`, since the
+  action derives its range from a push payload that a `workflow_run` event does
+  not carry (verified against three real commits); and `cleanup` no longer runs
+  on `!cancelled()` alone, which was **true** when its dependencies were
+  skipped.
+
+### Changed
+
+- **Infrastructure docs corrected.** The staging section claimed the pipeline
+  triggered on a push to `main` and named a `changes` job that has been
+  `detect-migration` for some time.
+
 ## 0.90.12
 
 ### Changed

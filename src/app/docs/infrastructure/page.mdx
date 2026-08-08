@@ -135,7 +135,8 @@ Running migrations inside the app container creates a race condition when scalin
 ```mermaid
 graph LR
     subgraph Staging["STAGING PIPELINE"]
-        PUSH["Push to main"] --> CHANGES["Detect changes"]
+        PUSH["Push to develop"] --> CI["CI<br/><small>lint · typecheck · test · build</small>"]
+        CI -->|"green only"| CHANGES["Detect changes"]
         CHANGES --> BUILD_APP["Build App Image<br/><small>ghcr.io/.../helldiversbot:staging</small>"]
         CHANGES -->|"migration files changed"| BUILD_MIG["Build Migrate Image<br/><small>ghcr.io/.../helldiversbot-migrate:staging</small>"]
         BUILD_APP --> CLEANUP["Cleanup untagged images"]
@@ -153,15 +154,19 @@ graph LR
 
 ### Staging (`staging.docker.yml`)
 
-**Trigger:** Push to `main`, or manual `workflow_dispatch`
+**Trigger:** Successful completion of the `CI` workflow on `develop` (`workflow_run`), or manual `workflow_dispatch`.
 
-**Jobs:** A `changes` job detects which files were modified. `build-app` always runs. `build-migrate` only runs when migration-related files changed (or on manual `workflow_dispatch`). A `cleanup` job runs after both builds complete (or are skipped).
+This pipeline used to trigger on the push itself, which meant it raced CI — the image built, published and deployed while lint, typecheck and tests were still running, so a red CI was a note attached to an already-shipped build. `develop` accepts direct merges without a PR, so the required-status-check that guards `main` never applies here; this gate is the only one.
 
-| Job             | Dockerfile           | Tag pushed                                       | Condition                                                                                                        |
-| --------------- | -------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `changes`       | ---                  | ---                                              | Always runs; outputs `migrate` boolean via `dorny/paths-filter`                                                  |
-| `build-migrate` | `Dockerfile.migrate` | `ghcr.io/elfensky/helldiversbot-migrate:staging` | Only when `prisma/**`, `prisma.config.mjs`, `package.json`, `package-lock.json`, or `Dockerfile.migrate` changed |
-| `build-app`     | `Dockerfile.app`     | `ghcr.io/elfensky/helldiversbot:staging`         | Always                                                                                                           |
+Two consequences worth knowing. `workflow_run` resolves the workflow file from the **default branch** (`develop`), so edits to it only take effect once merged there. And every `checkout` pins `github.event.workflow_run.head_sha` — the commit CI actually tested — because a `workflow_run` checkout otherwise defaults to the branch tip, which may have moved on.
+
+**Jobs:** A `detect-migration` job detects which files were modified. `build-app` always runs. `build-migrate` only runs when migration-related files changed (or on manual `workflow_dispatch`). A `cleanup` job runs after both builds complete (or are skipped).
+
+| Job                | Dockerfile           | Tag pushed                                       | Condition                                                                                                        |
+| ------------------ | -------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `detect-migration` | ---                  | ---                                              | Always runs; outputs `migrate` boolean from `git diff HEAD^ HEAD`                                                |
+| `build-migrate`    | `Dockerfile.migrate` | `ghcr.io/elfensky/helldiversbot-migrate:staging` | Only when `prisma/**`, `prisma.config.mjs`, `package.json`, `package-lock.json`, or `Dockerfile.migrate` changed |
+| `build-app`        | `Dockerfile.app`     | `ghcr.io/elfensky/helldiversbot:staging`         | Always                                                                                                           |
 
 Both build jobs pass `NODE_ENV=staging` as a build arg.
 
@@ -386,40 +391,40 @@ Variables are checked at startup by `initializeEnvironmentVariables()` in `src/s
 
 ### Full variable reference
 
-| Variable                       | Required         | Category       | Description                                                                                                                                       |
-| ------------------------------ | ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POSTGRES_URL`                 | **Yes**          | Database       | PostgreSQL connection string                                                                                                                      |
-| `UPDATE_KEY`                   | **Yes**          | Updates        | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests                                                       |
-| `UPDATE_INTERVAL`              | **Yes**          | Updates        | Polling interval in seconds (e.g., `"20"`); passed to the worker thread                                                                           |
-| `PORT`                         | No               | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                                                              |
-| `NEXT_PUBLIC_SITE_URL`         | No               | Site           | Public site origin (e.g. `https://helldivers.bot`); inlined at build time so self-hosters can serve under their own domain. Defaults to `https://helldivers.bot` (`src/config/site.mjs`). |
-| `UMAMI_SITE_ID`                | No               | Analytics      | Umami website tracking ID; if absent, Umami script not loaded and server-side tracking skipped                                                    |
-| `UMAMI_SITE_URL`               | No               | Analytics      | Umami instance URL; used in server-side fetch calls                                                                                               |
-| `SENTRY_DSN`                   | No               | Error tracking | Sentry DSN for server-side error reporting (points to GlitchTip); if absent, error tracking disabled                                              |
-| `NEXT_PUBLIC_SENTRY_DSN`       | No               | Error tracking | Sentry DSN for client-side error reporting (same DSN, exposed to browser)                                                                         |
-| `SENTRY_AUTH_TOKEN`            | No               | Error tracking | GlitchTip API token for source map uploads; if absent, `withSentryConfig` build plugin skipped                                                    |
-| `SENTRY_URL`                   | No               | Error tracking | GlitchTip instance URL; used by `withSentryConfig` for source map uploads                                                                         |
-| `SENTRY_ORG`                   | No               | Error tracking | GlitchTip organization slug; used for source map uploads                                                                                          |
-| `SENTRY_PROJECT`               | No               | Error tracking | GlitchTip project slug; used for source map uploads                                                                                               |
-| `GLITCHTIP_HEARTBEAT_URL`      | No               | Error tracking | GlitchTip uptime heartbeat endpoint; worker POSTs after each successful update                                                                    |
+| Variable                       | Required         | Category       | Description                                                                                                                                                                                     |
+| ------------------------------ | ---------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_URL`                 | **Yes**          | Database       | PostgreSQL connection string                                                                                                                                                                    |
+| `UPDATE_KEY`                   | **Yes**          | Updates        | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests                                                                                                     |
+| `UPDATE_INTERVAL`              | **Yes**          | Updates        | Polling interval in seconds (e.g., `"20"`); passed to the worker thread                                                                                                                         |
+| `PORT`                         | No               | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                                                                                                            |
+| `NEXT_PUBLIC_SITE_URL`         | No               | Site           | Public site origin (e.g. `https://helldivers.bot`); inlined at build time so self-hosters can serve under their own domain. Defaults to `https://helldivers.bot` (`src/config/site.mjs`).       |
+| `UMAMI_SITE_ID`                | No               | Analytics      | Umami website tracking ID; if absent, Umami script not loaded and server-side tracking skipped                                                                                                  |
+| `UMAMI_SITE_URL`               | No               | Analytics      | Umami instance URL; used in server-side fetch calls                                                                                                                                             |
+| `SENTRY_DSN`                   | No               | Error tracking | Sentry DSN for server-side error reporting (points to GlitchTip); if absent, error tracking disabled                                                                                            |
+| `NEXT_PUBLIC_SENTRY_DSN`       | No               | Error tracking | Sentry DSN for client-side error reporting (same DSN, exposed to browser)                                                                                                                       |
+| `SENTRY_AUTH_TOKEN`            | No               | Error tracking | GlitchTip API token for source map uploads; if absent, `withSentryConfig` build plugin skipped                                                                                                  |
+| `SENTRY_URL`                   | No               | Error tracking | GlitchTip instance URL; used by `withSentryConfig` for source map uploads                                                                                                                       |
+| `SENTRY_ORG`                   | No               | Error tracking | GlitchTip organization slug; used for source map uploads                                                                                                                                        |
+| `SENTRY_PROJECT`               | No               | Error tracking | GlitchTip project slug; used for source map uploads                                                                                                                                             |
+| `GLITCHTIP_HEARTBEAT_URL`      | No               | Error tracking | GlitchTip uptime heartbeat endpoint; worker POSTs after each successful update                                                                                                                  |
 | `NEXT_PUBLIC_DEPLOY_ENV`       | No               | Error tracking | Environment tag attached to Sentry events. Inlined into the client bundle at `next build`; CI sets `staging` or `production` per pipeline. Falls back to `DEPLOY_ENV` then `NODE_ENV` if unset. |
-| `DEPLOY_ENV`                   | No               | Error tracking | Server-only fallback for the Sentry environment tag when rebuilding to update `NEXT_PUBLIC_DEPLOY_ENV` isn't an option.                          |
-| `BETTER_AUTH_SECRET`           | No (all-or-none) | Auth           | BetterAuth session encryption secret; 128+ chars recommended. If absent, all auth features disabled. If present, all other auth vars are required |
-| `BETTER_AUTH_URL`              | If auth          | Auth           | Base URL for BetterAuth (e.g., `http://localhost:3000`; production: `https://helldivers.bot`)                                                     |
-| `AUTH_DISCORD_ID`              | If auth          | Auth           | Discord OAuth application client ID                                                                                                               |
-| `AUTH_DISCORD_SECRET`          | If auth          | Auth           | Discord OAuth application client secret                                                                                                           |
-| `AUTH_GITHUB_ID`               | If auth          | Auth           | GitHub OAuth application client ID                                                                                                                |
-| `AUTH_GITHUB_SECRET`           | If auth          | Auth           | GitHub OAuth application client secret                                                                                                            |
-| `AUTH_GOOGLE_ID`               | If auth          | Auth           | Google OAuth application client ID                                                                                                                |
-| `AUTH_GOOGLE_SECRET`           | If auth          | Auth           | Google OAuth application client secret                                                                                                            |
-| `VAPID_PUBLIC_KEY`             | No (all-or-none) | Push           | Web Push VAPID public key; if absent, push notifications disabled                                                                                 |
-| `VAPID_PRIVATE_KEY`            | No               | Push           | Web Push VAPID private key                                                                                                                        |
-| `VAPID_SUBJECT`                | No               | Push           | VAPID contact identifier (`mailto:` email)                                                                                                        |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No               | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`)                                                                                   |
-| `POSTGRES_SSL`                 | No               | Database       | Set to `"false"` for local dev without SSL; defaults to SSL enabled                                                                               |
-| `SKIP_MIGRATIONS`              | No               | Docker         | Set to `"true"` in the app container; has no effect on initialization logic currently but signals intent                                          |
-| `NODE_ENV`                     | No               | App            | `development` or `production`; affects OpenAPI spec behavior and worker path resolution. No longer used as the Sentry environment tag — see `NEXT_PUBLIC_DEPLOY_ENV` above.                       |
-| `NEXT_RUNTIME`                 | Internal         | Next.js        | Set automatically by Next.js; controls which Sentry config and init steps run                                                                     |
+| `DEPLOY_ENV`                   | No               | Error tracking | Server-only fallback for the Sentry environment tag when rebuilding to update `NEXT_PUBLIC_DEPLOY_ENV` isn't an option.                                                                         |
+| `BETTER_AUTH_SECRET`           | No (all-or-none) | Auth           | BetterAuth session encryption secret; 128+ chars recommended. If absent, all auth features disabled. If present, all other auth vars are required                                               |
+| `BETTER_AUTH_URL`              | If auth          | Auth           | Base URL for BetterAuth (e.g., `http://localhost:3000`; production: `https://helldivers.bot`)                                                                                                   |
+| `AUTH_DISCORD_ID`              | If auth          | Auth           | Discord OAuth application client ID                                                                                                                                                             |
+| `AUTH_DISCORD_SECRET`          | If auth          | Auth           | Discord OAuth application client secret                                                                                                                                                         |
+| `AUTH_GITHUB_ID`               | If auth          | Auth           | GitHub OAuth application client ID                                                                                                                                                              |
+| `AUTH_GITHUB_SECRET`           | If auth          | Auth           | GitHub OAuth application client secret                                                                                                                                                          |
+| `AUTH_GOOGLE_ID`               | If auth          | Auth           | Google OAuth application client ID                                                                                                                                                              |
+| `AUTH_GOOGLE_SECRET`           | If auth          | Auth           | Google OAuth application client secret                                                                                                                                                          |
+| `VAPID_PUBLIC_KEY`             | No (all-or-none) | Push           | Web Push VAPID public key; if absent, push notifications disabled                                                                                                                               |
+| `VAPID_PRIVATE_KEY`            | No               | Push           | Web Push VAPID private key                                                                                                                                                                      |
+| `VAPID_SUBJECT`                | No               | Push           | VAPID contact identifier (`mailto:` email)                                                                                                                                                      |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No               | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`)                                                                                                                                 |
+| `POSTGRES_SSL`                 | No               | Database       | Set to `"false"` for local dev without SSL; defaults to SSL enabled                                                                                                                             |
+| `SKIP_MIGRATIONS`              | No               | Docker         | Set to `"true"` in the app container; has no effect on initialization logic currently but signals intent                                                                                        |
+| `NODE_ENV`                     | No               | App            | `development` or `production`; affects OpenAPI spec behavior and worker path resolution. No longer used as the Sentry environment tag — see `NEXT_PUBLIC_DEPLOY_ENV` above.                     |
+| `NEXT_RUNTIME`                 | Internal         | Next.js        | Set automatically by Next.js; controls which Sentry config and init steps run                                                                                                                   |
 
 ### Connection string formats
 
