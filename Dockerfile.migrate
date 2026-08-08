@@ -155,8 +155,11 @@ ENTRYPOINT ["/sbin/tini", "--"]
 #   1. `prisma migrate deploy` — applies any pending SQL migrations from
 #      prisma/migrations/ in order. Idempotent: skips already-applied ones.
 #   2. `node --experimental-strip-types prisma/seed/seed.mjs` — upserts
-#      historical season JSON files into h1_* tables. Also idempotent: the
-#      seed script counts existing seasons and skips if already complete.
+#      historical season JSON files into h1_* tables. Also idempotent: it
+#      compares each file's season against the seasons already in h1_season
+#      and runs only the missing ones, so a deploy that adds one season file
+#      writes one season. Set FORCE_SEED=true on this container to re-upsert
+#      everything ("false" is correctly read as off).
 #
 # `&&` ensures the seed only runs if migrate succeeds. The container exits
 # with the appropriate code so docker-compose can gate the app on it.

@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.90.16
+
+### Fixed
+
+- **`FORCE_SEED=false` forced a re-seed.** The check was
+  `if (process.env.FORCE_SEED)`, and every non-empty string is truthy — so the
+  obvious way to write "off" in a compose file or a stack env block re-upserted
+  all 159 seasons on every deploy, silently and indistinguishably from the seed
+  just being slow. Only `true`, `1` or `yes` now enable it, case- and
+  whitespace-insensitive. Verified against a database holding all 160 seasons:
+  `false` reports "Nothing to do", `true` reports "seeding 159".
+
+### Added
+
+- **`FORCE_SEED` is documented and reachable.** It was never in `.example.env`,
+  so the only way to discover it was reading `seed.mjs`. The staging deploy job
+  also ran the migrate container with `POSTGRES_URL` alone, meaning a re-seed
+  required editing the workflow; it now passes `vars.FORCE_SEED` through, and
+  an unset variable is empty, which the new parser reads as off. Production has
+  no deploy job, so a re-seed there is whatever manual `docker run` rolls the
+  migrate container.
+
+### Changed
+
+- **Stale seed descriptions corrected** in `Dockerfile.migrate`,
+  `prisma/seed/readme.md` and the infrastructure docs — all three still
+  described the `db.h1_season.count()` comparison replaced in v0.90.15.
+
 ## 0.90.15
 
 ### Fixed
