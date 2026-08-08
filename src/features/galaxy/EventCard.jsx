@@ -8,7 +8,7 @@ import { countCapturedRegions } from '@/shared/utils/game/countCapturedRegions.m
 import AnimatedStat from '@/shared/components/AnimatedStat/AnimatedStat';
 import { CAMPAIGN_STATUS, EVENT_STATUS, MAP_STATUS } from '@/shared/enums/events.mjs';
 import factions from '@/shared/enums/factions.mjs';
-import { formatDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
+import { formatCompactDuration } from '@/shared/utils/format/formatCompactDuration.mjs';
 
 const passThrough = (v) => (v == null ? '—' : String(v));
 const formatSectorPct = (v) =>
@@ -62,7 +62,9 @@ function EventCountdown({ endTime }) {
     }, [endTime]);
 
     if (remaining <= 0) return <span className="sector-card-countdown">Expired</span>;
-    const text = formatDuration(remaining);
+    // Compact ("56m20s", not "56 minutes, 20 seconds") — the long form wraps
+    // the meta row onto a second line on a narrow card.
+    const text = formatCompactDuration(remaining);
     return (
         <span className="sector-card-countdown" suppressHydrationWarning>
             {text} left
@@ -105,8 +107,6 @@ function SegmentCell({ seg, factionColor: _factionColor }) {
     return <div className="sector-card-segment" />;
 }
 
-const PACE_GLYPH = { ahead: '▲', behind: '▼', on_track: '▪' };
-
 /**
  * Pace status indicator — a ▲/▼/▪ glyph plus the points delta, colour-coded
  * by status. Mirrors the StatGrid delta-subtitle pattern. The glyph and the
@@ -114,23 +114,31 @@ const PACE_GLYPH = { ahead: '▲', behind: '▼', on_track: '▪' };
  * the digits and the gap between glyph and number is never compressed (the
  * spacing bug the old "175,259 behind" single-string label suffered from).
  *
+ * The delta always renders; ▪ means dead-on (zero points either way), so the
+ * glyph tracks the number rather than the buffered status band.
+ *
  * @param {object} props - Component props
  * @param {{ status: 'ahead'|'behind'|'on_track', delta: number }} props.pace - Evaluated event pace
  */
 function PaceIndicator({ pace }) {
-    const glyph = PACE_GLYPH[pace.status] ?? '▪';
+    // Glyph and colour both follow the number, not the buffered status band:
+    // an 'on_track' event is still ahead by its delta, and a green ▲ with a
+    // grey colour read as a contradiction on the card.
+    const key =
+        pace.delta === 0 ? 'on_track'
+        : pace.status === 'behind' ? 'behind'
+        : 'ahead';
+    const glyph = { ahead: '▲', behind: '▼', on_track: '▪' }[key];
     // ▲/▼ glyphs sit below their optical centre — lift them; ▪ is centred.
-    const nudge = pace.status === 'on_track' ? '' : '-translate-y-[1.5px]';
+    const nudge = key === 'on_track' ? '' : '-translate-y-[1.5px]';
     return (
         <span
             className="sector-card-pace inline-flex items-center gap-1"
-            style={{ color: PACE_COLORS[pace.status] }}
+            style={{ color: PACE_COLORS[key] }}
             suppressHydrationWarning
         >
             <span className={nudge}>{glyph}</span>
-            {pace.status === 'on_track' ?
-                <span>On track</span>
-            :   <AnimatedStat value={pace.delta} />}
+            <AnimatedStat value={pace.delta} />
         </span>
     );
 }
@@ -221,26 +229,18 @@ function EtaLine({ forecast }) {
  * How an active event is going to END, in the same left-aligned style as the
  * campaign/sector `EtaLine`.
  *
- * The two outcomes land at different times, so only one of them needs a
- * number. A loss lands on the deadline — which the `EventCountdown` beside
- * this is already counting down to — so the losing verdict is a word, not a
- * second copy of the same duration. A win lands *early*, when the points
- * fill, so that one carries its ETA.
+ * Behind, the bar never fills, so there is no ETA to show and the word carries
+ * it in danger red — the `EventCountdown` beside this already holds the loss
+ * time, so no second copy of the duration.
  *
- * On-pace/behind detail stays the PaceIndicator's job (▲/▼ + points amount)
- * on the right edge, as before.
- *
- * Danger red is reserved for the losing verdict here — deliberately NOT the
- * `--imminent` modifier the assault ETA uses. A win landing inside the hour
- * is good news, and painting it the same red as "Falls" would make the two
- * outcomes indistinguishable at a glance on exactly the cards that matter
- * most. On this line, red means one thing: this event is going to be lost.
+ * On track or ahead, the fill ETA is the whole message: no word, just the
+ * number — primary yellow on track, success green when the pace is ahead.
  *
  * @param {object} props
  * @param {{etaHours: number|null, onTrack: boolean, stalled: boolean}} props.eta
- * @param {boolean} props.isDefending
+ * @param {{status: 'ahead'|'behind'|'on_track'}} [props.pace]
  */
-function EventEta({ eta, isDefending }) {
+function EventEta({ eta, pace }) {
     if (!eta.onTrack) {
         return (
             <span
@@ -251,21 +251,24 @@ function EventEta({ eta, isDefending }) {
                 }
                 suppressHydrationWarning
             >
-                {isDefending ? 'Falls' : 'Fails'}
+                Behind
             </span>
         );
     }
     const hours = /** @type {number} */ (eta.etaHours);
     return (
         <span
-            className="sector-card-assault"
+            className={
+                'sector-card-assault' +
+                (pace?.status === 'ahead' ? ' sector-card-assault--ahead' : '')
+            }
             title={
                 'At the average pace since the event started, the bar fills before the ' +
-                'timer runs out — the event ends early, at this ETA.'
+                'timer runs out — this is when.'
             }
             suppressHydrationWarning
         >
-            {isDefending ? 'Holds' : 'Taken'} ~{formatEtaHours(hours)}
+            ~{formatEtaHours(hours)}
         </span>
     );
 }
@@ -287,6 +290,7 @@ export default function EventCard({
     eventEta = /** @type {{mode: 'verdict', etaHours: number|null, remainingHours: number, onTrack: boolean, stalled: boolean}|{mode: 'hidden'}|null} */ (
         null
     ),
+    alert = false,
 }) {
     // Every verdict renders now, stalled included: a stalled event is behind by
     // definition, and the behind branch needs no ETA to say so.
@@ -334,6 +338,15 @@ export default function EventCard({
                             {isDefending ? 'Defending' : 'Capturing'}
                         </span>
                     )}
+                    {alert && (
+                        <span
+                            className="sector-card-event-alert sector-card-action-flash"
+                            title="Event in progress in this faction's territory"
+                            aria-label="Event in progress"
+                        >
+                            !
+                        </span>
+                    )}
                     <span className="sector-card-title">{title}</span>
                 </div>
                 {(barLabel ||
@@ -362,7 +375,7 @@ export default function EventCard({
                                     {barLabel && (
                                         <span className="sector-card-sep">&middot;</span>
                                     )}
-                                    <EventEta eta={eventEta} isDefending={isDefending} />
+                                    <EventEta eta={eventEta} pace={pace} />
                                 </>
                             )}
                         </span>

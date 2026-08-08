@@ -67,13 +67,13 @@ Attacks page).
 Every live event — a 150-minute defend or a 48-hour assault — resolves one
 of exactly two ways, and they end at *different times*: a **loss runs out
 the clock** (the countdown on the card is the loss time), a **win ends
-early**, the moment the points fill (rule 6 below). So the cards don't show
-a bare fill ETA; they name the outcome:
+early**, the moment the points fill (rule 6 below). So the ETA on the card is
+the win time, and the losing case gets a word instead of a number:
 
-- **On track** → _"Holds ~2h"_ on a defend, _"Taken ~12h"_ on an assault —
-  the fill ETA **is** the win time, and it beats the countdown.
-- **Behind pace** → _"Falls"_ / _"Fails"_ — no number, because the loss
-  time is already on the card: it's the countdown itself.
+- **On track** → _"~2h"_ — the fill ETA **is** the win time, and it beats
+  the countdown. Green when the pace is ahead of the linear schedule.
+- **Behind pace** → _"Behind"_ — no number, because the loss time is
+  already on the card: it's the countdown itself.
 
 The math is one line — at the average pace since the event started, does
 the bar fill before the deadline? — and it's the **same comparison** that
@@ -194,7 +194,7 @@ get. Where each forecast stands:
 | --- | --- | --- |
 | **Counterattack clock** | **Final** — it's a game rule, exact to the minute | Nothing |
 | **Free-wave window** | **Final** — the randomness is the game's, not ours; five modeling attempts confirmed a tighter window isn't hiding in more cleverness | Nothing — the honest window *is* the ceiling |
-| **Outcome verdict (Holds/Falls wording)** | **Works today** (91.6% right, measured on 130 events) | Nothing for the wording itself |
+| **Outcome verdict (Behind/On track wording)** | **Works today** (91.6% right, measured on 130 events) | Nothing for the wording itself |
 | Verdict → real percentages ("this assault will very likely fail") | Held back — the pattern looks decisive but we've only watched **8 assaults** in enough detail, and this project has been fooled by small samples five times | ~30 closely-watched assaults ([#487](https://github.com/elfensky/helldivers.bot/issues/487)) — grows by ~2 per war, for free |
 | Assault-start ETA | Good (3–4× better than guessing) — could sharpen modestly | A few more high-detail wars ([#481](https://github.com/elfensky/helldivers.bot/issues/481), [#477](https://github.com/elfensky/helldivers.bot/issues/477)) |
 | Sector ETA | Single estimate only — an honest range needs measuring | More high-detail wars ([#484](https://github.com/elfensky/helldivers.bot/issues/484)) |

@@ -1,16 +1,28 @@
 name: Build Develop
+# Gated on CI, not on the push itself. Both used to trigger on
+# `push: branches: [develop]`, which meant they raced: the image built,
+# published and deployed while lint/typecheck/tests were still running, so a
+# red CI was a note attached to an already-shipped build. develop takes direct
+# merges without a PR (see CLAUDE.md § Git Workflow), so the PR check that
+# guards main never applies here — this is the only gate.
+#
+# `workflow_run` resolves this file from the DEFAULT branch (develop), so edits
+# take effect once merged there, not from a feature branch.
 on:
     workflow_dispatch:
         inputs: {}
-    push:
-        branches:
-            - develop
+    workflow_run:
+        workflows: [CI]
+        types: [completed]
+        branches: [develop]
 permissions:
     contents: write
     packages: write
 
 jobs:
     detect-migration:
+        # CI green, or a deliberate manual run. Anything else stops here.
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
         runs-on: ubuntu-latest
         outputs:
             migrate: ${{ steps.filter.outputs.migrate }}
@@ -18,18 +30,27 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
+              with:
+                  # The commit CI actually tested — NOT the branch tip, which
+                  # may have moved on. Falls back to github.sha for
+                  # workflow_dispatch, where there is no workflow_run payload.
+                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+                  fetch-depth: 2
 
+            # HEAD^ is the first parent, so on a --no-ff merge this spans
+            # everything the branch brought in — the shape every merge to
+            # develop takes. A push of several loose commits would only compare
+            # the last one; the image_missing check below and a manual
+            # workflow_dispatch both force a build if that ever bites.
             - name: Detect migration-related changes
               id: filter
-              uses: dorny/paths-filter@v4.0.2
-              with:
-                  filters: |
-                      migrate:
-                        - 'prisma/**'
-                        - 'prisma.config.mjs'
-                        - 'package.json'
-                        - 'package-lock.json'
-                        - 'Dockerfile.migrate'
+              run: |
+                  if git diff --name-only HEAD^ HEAD \
+                     | grep -qE '^(prisma/|prisma\.config\.mjs|package(-lock)?\.json|Dockerfile\.migrate)'; then
+                    echo "migrate=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "migrate=false" >> "$GITHUB_OUTPUT"
+                  fi
 
             - name: Check if migrate image exists
               id: check
@@ -47,6 +68,11 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
+              with:
+                  # The commit CI actually tested — NOT the branch tip, which
+                  # may have moved on. Falls back to github.sha for
+                  # workflow_dispatch, where there is no workflow_run payload.
+                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v4.2.0
@@ -75,10 +101,16 @@ jobs:
                   build-args: |
                       NODE_ENV=production
     build-app:
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
+              with:
+                  # The commit CI actually tested — NOT the branch tip, which
+                  # may have moved on. Falls back to github.sha for
+                  # workflow_dispatch, where there is no workflow_run payload.
+                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v4.2.0
@@ -132,6 +164,11 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
+              with:
+                  # The commit CI actually tested — NOT the branch tip, which
+                  # may have moved on. Falls back to github.sha for
+                  # workflow_dispatch, where there is no workflow_run payload.
+                  ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
             - name: Log in to GHCR
               run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -181,7 +218,10 @@ jobs:
 
     cleanup:
         needs: [build-migrate, build-app]
-        if: ${{ !cancelled() }} # Run even when build-migrate is skipped
+        # Runs when build-migrate is skipped (nothing to rebuild), but not
+        # when build-app is skipped — that means CI failed and nothing was
+        # published to prune.
+        if: ${{ !cancelled() && needs.build-app.result != 'skipped' }}
         runs-on: ubuntu-latest
         steps:
             - name: Cleanup untagged packages

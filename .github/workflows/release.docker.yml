@@ -10,7 +10,64 @@ permissions:
     packages: write
 
 jobs:
+    # The same gate CI runs, against the exact tagged commit.
+    #
+    # main's branch protection already requires the "Test & Build" check to
+    # merge, so the code in a release has normally passed. "Normally" is the
+    # problem: a tag can be pushed at ANY commit — an older one, a hotfix
+    # merged with admin override, a hand-moved tag — and ci.yml does not run on
+    # tags at all, so nothing re-checks what is actually being shipped. This
+    # job makes the tag itself the unit that gets verified.
+    #
+    # Deliberately duplicated from ci.yml rather than extracted into a
+    # `workflow_call` reusable workflow: that would rename ci.yml's check from
+    # "Test & Build" to "<caller> / Test & Build", and main's required status
+    # check matches on that exact string. Every PR to main would then block
+    # forever waiting for a check that no longer reports. ~25 duplicated lines
+    # on a workflow that runs a few times a year is the cheaper mistake.
+    verify:
+        name: Test & Build
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v7.0.0
+              with:
+                  node-version-file: '.node-version'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            # src/db/db.js imports the generated Prisma client (gitignored), so
+            # it has to exist before typecheck, tests and build.
+            - name: Generate Prisma client
+              run: npx prisma generate
+              env:
+                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
+
+            - name: Lint
+              run: npm run lint
+
+            - name: Typecheck
+              run: npm run typecheck
+
+            - name: Run unit tests
+              run: npm run test:unit
+
+            - name: Build
+              run: npm run build
+              env:
+                  # Stubs for the eagerly-validated server config — see ci.yml.
+                  POSTGRES_URL: 'postgresql://ci:ci@localhost:5432/ci'
+                  UPDATE_KEY: 'ci-stub-key'
+                  UPDATE_INTERVAL: '20'
+
     build-app:
+        needs: verify
         runs-on: ubuntu-latest
 
         steps:
@@ -60,6 +117,7 @@ jobs:
     # Each tag needs a versioned image, releases are infrequent (~$3/yr CI cost),
     # and a missing migration image causes broken deploys. Not worth optimizing.
     build-migrate:
+        needs: verify
         runs-on: ubuntu-latest
 
         steps:

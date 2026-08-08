@@ -5,6 +5,7 @@ import reactCompiler from 'eslint-plugin-react-compiler';
 import nextPlugin from '@next/eslint-plugin-next';
 import jsdoc from 'eslint-plugin-jsdoc';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
+import compat from 'eslint-plugin-compat';
 import globals from 'globals';
 
 export default [
@@ -148,6 +149,39 @@ export default [
         files: ['src/sw.js'],
         languageOptions: {
             globals: globals.serviceworker,
+        },
+    },
+
+    // Browser-API support checked against the `browserslist` key in
+    // package.json, repo-wide — no per-directory exemptions. Server code
+    // reports 0 violations anyway (verified), so scoping it to browser
+    // directories would buy nothing and leave a boundary someone has to
+    // maintain, guess at, and eventually get wrong. One rule, one answer.
+    //
+    // KNOWN BLIND SPOT: this plugin covers Web/DOM APIs well but misses some
+    // ES built-ins. Verified by probe: it flags Array.toSorted() and
+    // URLPattern, but NOT Map.groupBy — the one API that actually broke a
+    // browser here (#495). A green run is not proof; new ES built-ins still
+    // need a look. The rule below closes that gap for the one that bit.
+    //
+    // Map/Object.groupBy is banned everywhere for the same reason the
+    // server-only call site was migrated in #495: a codebase where the same
+    // API is legal in one folder and illegal in another teaches nobody, and
+    // the folder it is legal in becomes the copy-paste source for the folder
+    // it is not.
+    {
+        ...compat.configs['flat/recommended'],
+        rules: {
+            ...compat.configs['flat/recommended'].rules,
+            'no-restricted-syntax': [
+                'error',
+                {
+                    selector:
+                        "MemberExpression[object.name=/^(Map|Object)$/][property.name='groupBy']",
+                    message:
+                        'Map/Object.groupBy ships in Chrome 117 / Firefox 119, past this project’s support floor. Use groupBy() from @/shared/utils/groupBy.mjs.',
+                },
+            ],
         },
     },
 

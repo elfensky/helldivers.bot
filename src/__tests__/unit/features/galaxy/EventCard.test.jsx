@@ -98,6 +98,21 @@ describe('EventCard (sector view — default)', () => {
         );
         expect(container.querySelector('.sector-card-alert')).toBeNull();
         expect(screen.queryByText('\u26A0')).toBeNull();
+        expect(container.querySelector('.sector-card-event-alert')).toBeNull();
+    });
+
+    test('alert renders a flashing "!" in the header', () => {
+        const { container } = render(
+            <EventCard
+                {...baseProps}
+                view="campaign"
+                factionMap={makeSectorMap()}
+                alert
+            />,
+        );
+        const el = container.querySelector('.sector-card-event-alert');
+        expect(el.textContent).toBe('!');
+        expect(el.className).toContain('sector-card-action-flash');
     });
 
     test('pace appears in bar-label row when barLabel is set', () => {
@@ -152,13 +167,25 @@ describe('EventCard (sector view — default)', () => {
         expect(paceEl.style.color).toBe('var(--color-danger)');
     });
 
-    test('pace "on_track" renders ▪ glyph with "On track" label', () => {
+    test('a zero delta renders ▪ with the number, never a word', () => {
         const { container } = render(
             <EventCard {...baseProps} pace={{ status: 'on_track', delta: 0 }} />,
         );
         const paceEl = container.querySelector('.sector-card-pace');
         expect(paceEl.textContent).toContain('▪');
-        expect(paceEl.textContent).toContain('On track');
+        expect(paceEl.textContent).toContain('0');
+        expect(paceEl.textContent).not.toMatch(/track/i);
+    });
+
+    test('an on_track pace with points to spare still renders ▲ and the delta', () => {
+        const { container } = render(
+            <EventCard {...baseProps} pace={{ status: 'on_track', delta: 300 }} />,
+        );
+        const paceEl = container.querySelector('.sector-card-pace');
+        expect(paceEl.textContent).toContain('▲');
+        expect(paceEl.textContent).toContain('300');
+        // Green with the ▲ — a grey up-arrow reads as a contradiction.
+        expect(paceEl.style.color).toBe('var(--color-success)');
     });
 
     test('meta line always visible with points', () => {
@@ -567,7 +594,7 @@ describe('EventCard — assault ETA line', () => {
         stalled: false,
     };
 
-    it('renders the win ETA left-aligned beside the label, pace on the right', () => {
+    it('renders the ETA left-aligned beside the label, pace on the right', () => {
         const { container } = renderEventCard(onTrack, {
             pace: {
                 status: 'ahead',
@@ -580,52 +607,33 @@ describe('EventCard — assault ETA line', () => {
         // The verdict lives in the left label group, same style as every ETA.
         const group = container.querySelector('.sector-card-bar-label-group');
         const eta = group.querySelector('.sector-card-assault');
-        expect(eta.textContent).toMatch(/Taken ~3h/);
+        expect(eta.textContent).toBe('~3h');
+        expect(eta.className).toContain('sector-card-assault--ahead');
         // The pace indicator (▲/▼ + amount) is back on the right, as before.
         const row = container.querySelector('.sector-card-bar-label-row');
         expect(row.querySelector('.sector-card-pace')).not.toBeNull();
         expect(row.textContent).toContain('8,100');
     });
 
-    it('names the outcome per event type when on track to finish early', () => {
-        const capture = renderEventCard(onTrack);
-        expect(
-            capture.container.querySelector('.sector-card-assault').textContent,
-        ).toMatch(/Taken ~3h/);
-        capture.unmount();
-
-        const defend = renderEventCard(onTrack, { action: 'defending' });
-        expect(
-            defend.container.querySelector('.sector-card-assault').textContent,
-        ).toMatch(/Holds ~3h/);
-    });
-
-    it('never paints a win in the loss colour, even inside the hour', () => {
-        const { container } = renderEventCard(
-            { ...onTrack, etaHours: 0.65, remainingHours: 1 },
-            { action: 'defending' },
-        );
-        const el = container.querySelector('.sector-card-assault');
-        expect(el.textContent).toMatch(/Holds ~39m/);
-        expect(el.className).not.toContain('sector-card-assault--imminent');
+    it('shows the bare ETA — no verdict word — when on pace but not ahead', () => {
+        for (const pace of [{ status: 'on_track', delta: 300 }, undefined]) {
+            const { container, unmount } = renderEventCard(onTrack, { pace });
+            const el = container.querySelector('.sector-card-assault');
+            expect(el.textContent).toBe('~3h');
+            expect(el.className).not.toContain('--imminent');
+            expect(el.className).not.toContain('--ahead'); // yellow, not green
+            unmount();
+        }
     });
 
     it('states the loss without repeating the countdown when behind', () => {
-        for (const [action, word] of [
-            ['defending', 'Falls'],
-            ['capturing', 'Fails'],
-        ]) {
-            const { container, unmount } = renderEventCard(behind, { action });
-            const el = container.querySelector('.sector-card-assault');
-            expect(el.textContent).toBe(word);
-            // The EventCountdown beside it already carries the deadline — a
-            // second copy of the same duration would be noise.
-            expect(el.textContent).not.toMatch(/\d/);
-            // Red is the loss, not "imminent": a win inside the hour must not
-            // wear the same colour as a defeat.
-            expect(el.className).toContain('sector-card-assault--imminent');
-            unmount();
-        }
+        const { container } = renderEventCard(behind, { action: 'defending' });
+        const el = container.querySelector('.sector-card-assault');
+        expect(el.textContent).toBe('Behind');
+        // The EventCountdown beside it already carries the deadline — a
+        // second copy of the same duration would be noise.
+        expect(el.textContent).not.toMatch(/\d/);
+        expect(el.className).toContain('sector-card-assault--imminent');
     });
 
     it('calls a stalled event behind rather than hiding it; pace still renders', () => {
@@ -639,7 +647,9 @@ describe('EventCard — assault ETA line', () => {
             },
             { action: 'defending', pace: { status: 'behind', delta: 5200 } },
         );
-        expect(container.querySelector('.sector-card-assault').textContent).toBe('Falls');
+        expect(container.querySelector('.sector-card-assault').textContent).toBe(
+            'Behind',
+        );
         expect(container.querySelector('.sector-card-pace')).not.toBeNull();
     });
 });

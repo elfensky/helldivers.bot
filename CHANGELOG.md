@@ -1,5 +1,228 @@
 # Changelog
 
+## 0.90.14
+
+### Fixed
+
+- **The production build now verifies the tagged commit before shipping it.**
+  `ci.yml` runs on branches, not tags, so `release.docker.yml` fired the moment
+  a tag landed with nothing re-checking what was being shipped. `main`'s branch
+  protection requires the `Test & Build` check to merge, so a release normally
+  contains code that passed — *normally* being the gap, since a tag can be
+  pushed at any commit: an older one, a hotfix merged with an admin override, a
+  hand-moved tag. A `verify` job now runs lint, typecheck, unit tests and build
+  against the tagged tree, and `build-app` and `build-migrate` both `needs:` it.
+
+  It duplicates `ci.yml`'s steps rather than sharing them via a `workflow_call`
+  reusable workflow. Extraction would rename the check from `Test & Build` to
+  `<caller> / Test & Build`, and `main`'s required status check matches that
+  exact string — every PR to `main` would block forever waiting for a check
+  that no longer reports. ~25 duplicated lines on a workflow that runs a few
+  times a year is the cheaper mistake.
+
+### Changed
+
+- **Infrastructure docs:** the production trigger was documented as `*.*.*`
+  where the workflow actually matches `v*.*.*`.
+
+## 0.90.13
+
+### Fixed
+
+- **The staging build no longer races CI — it waits for it.**
+  `staging.docker.yml` triggered on `push: branches: [develop]`, the same event
+  that starts `ci.yml`, with nothing connecting them. Both ran in parallel, so
+  the app and migrate images built, published to GHCR and deployed while lint,
+  typecheck and tests were still running; a red CI was a note attached to an
+  already-shipped build. `develop` takes direct merges without a PR, so the
+  `Test & Build` required check that guards `main` never applied here — this
+  was the only unguarded path. `release.docker.yml` is deliberately left alone:
+  tags are cut from `main`, whose branch protection already requires that check.
+
+  Now `workflow_run: { workflows: [CI], types: [completed], branches: [develop] }`
+  with both entry jobs gated on `conclusion == 'success'` (or a deliberate
+  `workflow_dispatch`), and `needs:` propagating the skip downstream.
+
+  Three details that make it correct rather than merely wired up: every
+  `checkout` pins `github.event.workflow_run.head_sha`, because a `workflow_run`
+  checkout otherwise defaults to the branch tip and a second merge landing
+  mid-run would build an image from code CI never saw; `dorny/paths-filter` is
+  replaced with `git diff --name-only HEAD^ HEAD` at `fetch-depth: 2`, since the
+  action derives its range from a push payload that a `workflow_run` event does
+  not carry (verified against three real commits); and `cleanup` no longer runs
+  on `!cancelled()` alone, which was **true** when its dependencies were
+  skipped.
+
+### Changed
+
+- **Infrastructure docs corrected.** The staging section claimed the pipeline
+  triggered on a push to `main` and named a `changes` job that has been
+  `detect-migration` for some time.
+
+## 0.90.12
+
+### Changed
+
+- **The compat lint rules apply repo-wide, with no per-directory exemptions.**
+  Both `eslint-plugin-compat` and the `Map`/`Object.groupBy` ban were scoped to
+  browser directories on the assumption that server code would report false
+  positives. It doesn't — a repo-wide probe over `src`, `scripts` and `prisma`
+  finds **0 compat violations in source**. The scoping bought nothing and cost
+  a boundary: a directory list to maintain, guess at when adding a folder, and
+  eventually get wrong. It also made the same API legal in one folder and
+  illegal in another, which turns the permissive folder into the copy-paste
+  source for the strict one — the same reasoning that migrated the server-only
+  `Map.groupBy` call site in #495 instead of exempting it.
+
+  Going repo-wide surfaced three violations, all in tests, none in shipped
+  code: `NotificationToggle.test.jsx` assigns and deletes `globalThis.
+  PushManager` to simulate a browser that has it, and `groupBy.test.mjs` uses
+  the built-in as the oracle its helper is diffed against. All three carry
+  inline `eslint-disable` comments with the reason at the point of use, rather
+  than a config-level exemption for `__tests__` — the exception stays visible
+  in the file that needs it, and the config keeps one answer for the repo.
+
+## 0.90.11
+
+### Fixed
+
+- **The timeline no longer breaks on Firefox 115 ESR and other pre-2023
+  browsers** ([#495](https://github.com/elfensky/helldivers.bot/issues/495)).
+  `Map.groupBy` shipped in Chrome 117 / Firefox 119 — past the support floor
+  declared in v0.90.10 — so `groupEventsByDay` and `groupCascadesBySeason`
+  threw on the last Firefox for Windows 7/8 and took the section with them.
+  Measured against caniuse usage data the built-in costs **6.39% of accounted
+  global users**; the four-line `groupBy()` helper in `src/shared/utils/` costs
+  nothing and keeps the built-in's contract (insertion-ordered `Map`,
+  SameValueZero keys, encounter-order values), pinned by a test that diffs it
+  against `Map.groupBy` directly.
+
+  All three call sites moved over, including the server-only one in
+  `getCascadeLeaderboard` — safe on Node 24, but leaving it would have left a
+  copy-paste source aimed at the API that broke a browser here.
+
+### Changed
+
+- **`Map.groupBy` and `Object.groupBy` are now a lint error in
+  browser-shipped code.** `eslint-plugin-compat` does not flag either — that
+  blind spot was found by probe in v0.90.10 — so a `no-restricted-syntax` rule
+  covers them and names the replacement in its message.
+
+## 0.90.10
+
+### Added
+
+- **A declared browser support floor, and a lint pass against it.** Nothing in
+  the repo stated which browsers this site targets, which is why `Map.groupBy`
+  could ship into client code and kill the timeline on Firefox 115 ESR
+  ([#495](https://github.com/elfensky/helldivers.bot/issues/495)) with no tool
+  objecting. `package.json` now carries a `browserslist` key — Firefox >= 115
+  and Chrome >= 109 (the last versions for Windows 7/8), plus Safari >= 15.6
+  and `defaults` — and `eslint-plugin-compat` checks browser-shipped code
+  (`src/features`, `src/shared`, `src/sw.js`) against it. Server code is
+  excluded; it runs on Node 24. Currently **0 compat errors**.
+
+  The plugin has a documented blind spot, verified by probe rather than
+  assumed: it flags `Array.toSorted()` and `URLPattern` but **not**
+  `Map.groupBy`. A green run is not proof. A separate sweep for the built-ins
+  it misses found exactly two client-side offenders, both already tracked as
+  #495 — `groupEventsByDay.mjs` and `groupCascadesBySeason.mjs`. Every other
+  hit cleared: `.toSorted()` and the third `Map.groupBy` are server-only, and
+  `.at(-1)`/`structuredClone` predate the floor comfortably.
+
+## 0.90.9
+
+### Fixed
+
+- **The OG image 500'd in production instead of falling back.** `sharp` has
+  been rejecting the buffer `@vercel/og` hands it since v0.90.4
+  ([#503](https://github.com/elfensky/helldivers.bot/issues/503)), and because
+  `new ImageResponse()` returns *before* satori and the rasteriser run — they
+  only run while the body streams — the throw landed on Next's request-error
+  boundary. Every crawler that asked for a social card got a 500.
+  `renderOrFallback` awaits `arrayBuffer()` so the failure is catchable,
+  reports it to Sentry tagged `route=opengraph-image`, and returns the plain
+  fallback card the no-data path already used. The root cause stays open on
+  #503 — this is a guard, not a fix.
+
+### Changed
+
+- **Sentry events now carry a release.** Nothing set one, so the only version
+  signal was the `?dpl=` query Next glues onto client chunk URLs — client-only,
+  and inside a filename string rather than a filterable tag. "Did the release
+  fix this?" was unanswerable, which is precisely the question post-release
+  triage asks. Both configs now send `NEXT_PUBLIC_APP_VERSION`.
+
+- **`server_name` names the machine, not the container.** The SDK defaults it
+  to `os.hostname()`, which inside Docker is the container ID — a fresh random
+  value every redeploy, splitting one server's history across dozens of
+  meaningless names. `SENTRY_SERVER_NAME` overrides it, and the Swarm stack
+  fills it with `{{.Node.Hostname}}`. Unset (local dev) keeps the old default.
+
+## 0.90.8
+
+### Changed
+
+- **Faction cards no longer duplicate the event card.** A faction card is about
+  the campaign, not the event running inside it, so the countdown, pace delta
+  and outcome verdict now belong to the sector card alone. All the faction card
+  carries is a flashing red `!` next to the title saying an event is running in
+  that territory. The campaign-view bar label is `FACTION_PROGRESS` again — the
+  branch order had it fall through to `CAPITAL_DEFENSE` whenever the campaign
+  view happened to be defending.
+
+- **The event outcome line shows the fill ETA, not a verdict word.** On track,
+  the card prints the ETA the bar fills (`~2h`) — primary yellow, success green
+  when the pace is ahead of the linear schedule. Behind, the bar never fills, so
+  there is no ETA and the word `Behind` carries it in danger red; the countdown
+  beside it already holds the loss time, so nothing prints the same duration
+  twice. This replaces the old `Holds`/`Falls`/`Taken`/`Fails` wording, which
+  spent a word on a number the card could show. Prediction docs updated to
+  match — the underlying `eventForecast` predicate and its measured 91.6%
+  accuracy are unchanged.
+
+- **The pace indicator's glyph and colour follow the delta, not the status
+  band.** An `on_track` event that is ahead by 40k points rendered a grey `▪`
+  and the words "On track", hiding the number; now it renders a green `▲` with
+  the delta. `▪` means dead-on (zero points either way). Nothing about
+  `evaluateProgress`'s three-state contract changed — only how the card reads
+  it, so the ▲/▼ indicator still cannot disagree with the outcome verdict.
+
+### Fixed
+
+- **The event countdown wrapped the card's meta row onto a second line.** It
+  called `formatDuration` ("56 minutes, 20 seconds") where the narrow card needs
+  `formatCompactDuration` ("56m20s"). Both are exported from the same module,
+  so this was an import picking the wrong one.
+
+- **`docs/roadmap.md` reconciled against the v0.90.5 release.** The file still
+  opened with "unblock the release — `develop` is 196 commits and 23 versions
+  ahead of `main` @ `v0.67.1`", a blocker cleared on 2026-08-06. S0 is marked
+  done, the four sessions it blocked are unblocked, and S0a (post-release
+  GlitchTip re-count) is now the entry point.
+
+## 0.90.7
+
+### Added
+
+- **Seed data refreshes itself weekly.** A scheduled workflow
+  (`.github/workflows/seed-refresh.yml`, Mondays 03:00 UTC plus manual
+  dispatch) runs `prisma/seed/fetch-seasons.mjs` and opens a PR against
+  `develop` whenever a season has completed since the last run. It reuses one
+  `chore/seed-refresh` branch, so consecutive runs update the open PR instead
+  of stacking new ones, and it leaves the version bump and CHANGELOG entry to
+  whoever merges — `--no-ff`, per the usual git workflow.
+
+## 0.90.6
+
+### Changed
+
+- **Seed data now covers seasons 157–159.** Fetched with
+  `prisma/seed/fetch-seasons.mjs`; the current season is 160, so those three
+  wars are finished and their `get_snapshots` responses are final. Fresh
+  deploys get three more seasons of `/archives` history without waiting for
+  on-demand backfill.
+
 ## 0.90.5
 
 ### Fixed

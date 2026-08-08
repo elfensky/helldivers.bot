@@ -13,6 +13,9 @@ Sentry.init({
         process.env.NEXT_PUBLIC_DEPLOY_ENV ||
         process.env.DEPLOY_ENV ||
         process.env.NODE_ENV,
+    // Same version tag as the server config — see sentry.server.config.js.
+    // No serverName here: it is a server-only concept.
+    release: process.env.NEXT_PUBLIC_APP_VERSION,
     sendDefaultPii: true,
     // 10% transaction sampling in production trims per-navigation/per-request
     // SDK overhead while staying statistically useful; full sampling in

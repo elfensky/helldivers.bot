@@ -517,7 +517,7 @@ evaluateProgress(event: { start_time, end_time, points, points_max, status })
     - `'on_track'` — in between
     - `null` — event `status` is not `'active'` or the time window is degenerate
 
-The `'behind'` predicate is algebraically the complement of `eventForecast`'s `onTrack`, so the ▲/▼ pace indicator and the Falls/Fails outcome verdict on event cards always agree (pinned by `paceVerdict.contract.test.mjs`).
+The `'behind'` predicate is algebraically the complement of `eventForecast`'s `onTrack`, so the ▲/▼ pace indicator and the Behind/On track outcome verdict on event cards always agree (pinned by `paceVerdict.contract.test.mjs`).
 
 **Tests:** `src/__tests__/unit/features/stats/evaluateProgress.test.mjs`
 

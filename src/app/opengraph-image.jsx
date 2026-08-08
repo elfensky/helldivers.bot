@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import * as Sentry from '@sentry/nextjs';
 import { SITE_URL } from '@/config/site.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
@@ -60,6 +61,32 @@ function getSectorFill(status, factionIndex) {
 
 function getSectorStroke(status) {
     return status === MAP_STATUS.LOST ? COLORS.lostStroke : COLORS.border;
+}
+
+/**
+ * Materialise an ImageResponse so a rasterisation failure is catchable.
+ *
+ * `new ImageResponse(...)` returns immediately — satori and the sharp
+ * rasteriser only run while the body streams, so a throw there lands on
+ * Next's request-error boundary as a 500 and the social card 404s for the
+ * crawler that asked. Awaiting `arrayBuffer()` pulls that work forward to
+ * somewhere `tryCatch` can see it, at the cost of buffering ~80 KB.
+ *
+ * Sentry still receives the original error, so this degrades the card without
+ * hiding the bug (#503).
+ *
+ * @param {import('next/og').ImageResponse} response - Unstreamed image response
+ * @returns {Promise<Response>} The rendered PNG, or the fallback card
+ */
+async function renderOrFallback(response) {
+    const { data, error } = await tryCatch(response.arrayBuffer());
+
+    if (error) {
+        Sentry.captureException(error, { tags: { route: 'opengraph-image' } });
+        return fallbackImage();
+    }
+
+    return new Response(data, { headers: response.headers });
 }
 
 function fallbackImage() {
@@ -160,151 +187,153 @@ export default async function Image() {
         }
     }
 
-    return new ImageResponse(
-        <div
-            style={{
-                display: 'flex',
-                width: '100%',
-                height: '100%',
-                background: COLORS.bg,
-            }}
-        >
+    return renderOrFallback(
+        new ImageResponse(
             <div
                 style={{
                     display: 'flex',
-                    width: '60%',
+                    width: '100%',
                     height: '100%',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
+                    background: COLORS.bg,
                 }}
             >
                 <div
                     style={{
                         display: 'flex',
+                        width: '60%',
+                        height: '100%',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                    }}
+                >
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            position: 'absolute',
+                            left: 24,
+                            top: 24,
+                        }}
+                    >
+                        <span
+                            style={{
+                                fontSize: 18,
+                                color: COLORS.textDim,
+                                letterSpacing: 2,
+                            }}
+                        >
+                            HELLDIVERS 1
+                        </span>
+                        <span
+                            style={{
+                                fontSize: 34,
+                                color: COLORS.yellow,
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            GALACTIC WAR
+                        </span>
+                    </div>
+                    <img
+                        src={mapDataUri}
+                        width={600}
+                        height={600}
+                        style={{ objectFit: 'contain' }}
+                    />
+                </div>
+                <div
+                    style={{
+                        display: 'flex',
                         flexDirection: 'column',
-                        position: 'absolute',
-                        left: 24,
-                        top: 24,
+                        width: '40%',
+                        height: '100%',
+                        padding: '40px 32px',
+                        justifyContent: 'center',
+                        gap: 16,
                     }}
                 >
                     <span
                         style={{
-                            fontSize: 18,
-                            color: COLORS.textDim,
-                            letterSpacing: 2,
+                            fontSize: 24,
+                            color: COLORS.yellow,
+                            fontWeight: 'bold',
+                            letterSpacing: 3,
                         }}
                     >
-                        HELLDIVERS 1
+                        SEASON {data.season ?? '?'}
                     </span>
                     <span
                         style={{
-                            fontSize: 34,
-                            color: COLORS.yellow,
+                            fontSize: 44,
+                            color: statusColor,
                             fontWeight: 'bold',
                         }}
                     >
-                        GALACTIC WAR
+                        {statusText}
                     </span>
-                </div>
-                <img
-                    src={mapDataUri}
-                    width={600}
-                    height={600}
-                    style={{ objectFit: 'contain' }}
-                />
-            </div>
-            <div
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    width: '40%',
-                    height: '100%',
-                    padding: '40px 32px',
-                    justifyContent: 'center',
-                    gap: 16,
-                }}
-            >
-                <span
-                    style={{
-                        fontSize: 24,
-                        color: COLORS.yellow,
-                        fontWeight: 'bold',
-                        letterSpacing: 3,
-                    }}
-                >
-                    SEASON {data.season ?? '?'}
-                </span>
-                <span
-                    style={{
-                        fontSize: 44,
-                        color: statusColor,
-                        fontWeight: 'bold',
-                    }}
-                >
-                    {statusText}
-                </span>
-                <div
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 20,
-                        marginTop: 16,
-                    }}
-                >
-                    {factionStats.map((f) => (
-                        <div
-                            key={f.enemy}
-                            style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 4,
-                            }}
-                        >
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 20,
+                            marginTop: 16,
+                        }}
+                    >
+                        {factionStats.map((f) => (
                             <div
+                                key={f.enemy}
                                 style={{
                                     display: 'flex',
-                                    justifyContent: 'space-between',
-                                    fontSize: 20,
-                                    fontWeight: 'bold',
-                                    color: f.textColor,
-                                }}
-                            >
-                                <span>{f.name}</span>
-                                <span>{f.percent}%</span>
-                            </div>
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    height: 14,
-                                    background: COLORS.barBg,
-                                    borderRadius: 5,
-                                    overflow: 'hidden',
+                                    flexDirection: 'column',
+                                    gap: 4,
                                 }}
                             >
                                 <div
                                     style={{
-                                        width: `${f.percent}%`,
-                                        height: '100%',
-                                        background: f.barColor,
-                                        borderRadius: 5,
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        fontSize: 20,
+                                        fontWeight: 'bold',
+                                        color: f.textColor,
                                     }}
-                                />
+                                >
+                                    <span>{f.name}</span>
+                                    <span>{f.percent}%</span>
+                                </div>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        height: 14,
+                                        background: COLORS.barBg,
+                                        borderRadius: 5,
+                                        overflow: 'hidden',
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            width: `${f.percent}%`,
+                                            height: '100%',
+                                            background: f.barColor,
+                                            borderRadius: 5,
+                                        }}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
+                    <span
+                        style={{
+                            fontSize: 16,
+                            color: COLORS.textMuted,
+                            marginTop: 'auto',
+                        }}
+                    >
+                        {new URL(SITE_URL).host}
+                    </span>
                 </div>
-                <span
-                    style={{
-                        fontSize: 16,
-                        color: COLORS.textMuted,
-                        marginTop: 'auto',
-                    }}
-                >
-                    {new URL(SITE_URL).host}
-                </span>
-            </div>
-        </div>,
-        { width: 1200, height: 630 },
+            </div>,
+            { width: 1200, height: 630 },
+        ),
     );
 }

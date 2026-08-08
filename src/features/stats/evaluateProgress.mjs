@@ -16,7 +16,7 @@ import { EVENT_STATUS } from '@/shared/enums/events.mjs';
  *
  * At VERDICT_MARGIN = 0 the 'behind' predicate here is algebraically the
  * complement of eventForecast's `onTrack` (p < M·e/T ⟺ fill ETA > time
- * left), so the ▲/▼ indicator and the Falls/Fails verdict cannot disagree —
+ * left), so the ▲/▼ indicator and the Behind/On track verdict cannot disagree —
  * pinned by paceVerdict.contract.test.mjs.
  *
  * Returns null if the event is not active or the time window is degenerate.
