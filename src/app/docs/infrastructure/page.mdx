@@ -176,9 +176,13 @@ Both build jobs pass `NODE_ENV=staging` as a build arg.
 
 ### Production (`release.docker.yml`)
 
-**Trigger:** Version tags matching the pattern `*.*.*` (e.g., `1.2.3`)
+**Trigger:** Version tags matching the pattern `v*.*.*` (e.g. `v1.2.3`)
 
-**Jobs:** Single `build` job — only the app image is built; no migrate image is produced for production.
+**Jobs:** A `verify` job runs lint, typecheck, unit tests and build against the tagged commit; `build-app` and `build-migrate` both `needs: verify`, and `github-release` needs both.
+
+`main`'s branch protection already requires the `Test & Build` check to merge, so release code has normally passed. *Normally* is the gap: a tag can be pushed at any commit — an older one, a hotfix merged with an admin override, a hand-moved tag — and `ci.yml` does not run on tags at all. The `verify` job makes the tag itself the unit that gets checked.
+
+It duplicates `ci.yml`'s steps rather than sharing them through a `workflow_call` reusable workflow. That would rename the check from `Test & Build` to `<caller> / Test & Build`, and `main`'s required status check matches that exact string — every PR to `main` would block forever waiting for a check that no longer reports.
 
 **Tags pushed:**
 
