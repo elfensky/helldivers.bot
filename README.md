@@ -235,3 +235,16 @@ cx scan create --project-name "helldivers.bot" --branch "develop" --scan-types "
 ### Containers
 
 cx scan create --project-name "helldivers.bot" --branch "develop" --scan-types "container-security" --containers-local-resolution --container-images "ghcr.io/elfensky/helldiversbot:local" -s . --debug
+
+## Licence
+
+**[AGPL-3.0-only](LICENSE)** — relicensed from MIT on 2026-08-12.
+
+This project is served over a network, which is the case AGPL exists for. Plain GPL's copyleft
+triggers on *distribution*: anyone who runs a fork as a hosted API never distributes a copy, so
+they would owe nothing. AGPL §13 closes that — if you run a modified version and let people
+interact with it over a network, you have to offer them the source.
+
+Everything released up to and including `v0.91.0` remains available under MIT; the change binds
+what comes after. MIT grants the right to sublicense, so contributions made under it can be
+carried forward — thanks to everyone who has contributed.
