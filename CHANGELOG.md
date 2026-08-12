@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.91.1
+
+### Changed
+
+- **Relicensed MIT → AGPL-3.0-only.** This repo is a network-served proxy API,
+  which is the one case where the choice changes anything. GPL's copyleft
+  triggers on *distribution*, so someone running a fork as a hosted API
+  distributes nothing and owes nothing; MIT is the same but more permissive.
+  AGPL §13 closes it — run a modified version and let people interact with it
+  over a network, and you must offer them the source. Everything through
+  `v0.91.0` remains available under MIT; MIT grants the right to sublicense, so
+  existing contributions carry forward. `package.json` also gained the `license`
+  field, which was previously unset.
+
 ## 0.91.0
 
 ### Fixed

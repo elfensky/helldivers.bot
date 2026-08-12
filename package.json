@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.91.0",
+    "version": "0.91.1",
     "private": true,
     "license": "AGPL-3.0-only",
     "type": "module",
