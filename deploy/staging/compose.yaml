@@ -1,0 +1,107 @@
+# Docker Swarm stack — helldivers.bot STAGING (the 3-Pi cluster).
+#
+# THIS FILE IS THE WRITER. It is Git-Synced into Arcane (project `helldivers`,
+# swarm environment), which polls this path and applies it — so the compose is
+# read-only in the Arcane UI and rollback is `git revert`, not a console edit.
+# Do not `docker stack deploy` this by hand once the Arcane project exists;
+# that reintroduces the two-writers problem Git Sync is here to remove.
+#
+# This repo is PUBLIC. Nothing secret may enter this file — every credential is
+# an external Swarm secret created out-of-band on a manager.
+#
+# Manual fallback (Arcane down):
+#   docker stack deploy -c deploy/staging/compose.yaml helldivers
+#
+# Prereqs — external Swarm secrets, created once on a manager (see deploy/README.md):
+#   staging_postgres_url          secret   Postgres connection string
+#   staging_update_key            secret   API key for the update endpoint
+#   cloudflared-helldiversbot     secret   Cloudflare Tunnel token (remotely-managed)
+#
+# Ingress is a Cloudflare Tunnel: cloudflared dials OUT to the Cloudflare edge,
+# so there are NO published ports. It reaches the app at http://app:3000 over
+# the `internal` overlay — Swarm's service VIP load-balances to whichever node
+# holds a replica, so cloudflared never needs to know about node IPs.
+#
+# The tunnel is REMOTELY MANAGED: the token identifies it and the ingress rules
+# (staging.helldivers.bot -> http://app:3000) live in the Cloudflare Zero Trust
+# dashboard, not in this file. Routing changes are made there.
+#
+# Migrations are NOT a service here — Swarm ignores `depends_on`. Run the
+# migrate image as a one-shot BEFORE deploying. It is amd64-only today, so it
+# cannot run on the Pis; run it from an amd64 host. See deploy/README.md.
+
+networks:
+    internal:
+        driver: overlay
+
+secrets:
+    staging_postgres_url:
+        external: true
+    staging_update_key:
+        external: true
+    cloudflared-helldiversbot:
+        external: true
+
+services:
+    app:
+        image: ghcr.io/elfensky/helldiversbot:staging
+        networks: [internal]
+        environment:
+            NODE_ENV: production
+            PORT: '3000'
+            UPDATE_INTERVAL: '20'
+            # Swarm expands this per task. Without it the SDK falls back to
+            # os.hostname(), which in a container is the container ID — so the
+            # server_name tag in GlitchTip changes on every redeploy instead of
+            # naming the node the task landed on.
+            SENTRY_SERVER_NAME: '{{.Node.Hostname}}'
+            # The app reads secrets from files via the `*_FILE` convention
+            # (src/shared/utils/hydrateFileSecrets.mjs): if POSTGRES_URL_FILE is set,
+            # it populates POSTGRES_URL from that file before Prisma reads it.
+            POSTGRES_URL_FILE: /run/secrets/staging_postgres_url
+            UPDATE_KEY_FILE: /run/secrets/staging_update_key
+        secrets:
+            - staging_postgres_url
+            - staging_update_key
+        # Auth is deliberately unconfigured: initializeEnv treats a missing
+        # BETTER_AUTH_SECRET as "auth disabled" and warns. Add the auth vars
+        # (and BETTER_AUTH_URL=https://staging.helldivers.bot) when the OAuth
+        # apps have staging callback URLs registered.
+        #
+        # Healthcheck is baked into the image (GET /api/healthcheck -> 503 when the
+        # DB is unreachable, 200 healthy), so start-first rollout gates on real health.
+        deploy:
+            replicas: 1
+            update_config:
+                order: start-first
+                failure_action: rollback
+                monitor: 30s
+            rollback_config:
+                order: start-first
+            restart_policy:
+                condition: any
+
+    cloudflared:
+        image: cloudflare/cloudflared:2026.8.2
+        # The image's ENTRYPOINT is already `cloudflared --no-autoupdate`, so the
+        # command is just the subcommand.
+        command: tunnel run
+        networks: [internal]
+        environment:
+            # TUNNEL_TOKEN has no *_FILE variant, but `tunnel run` accepts
+            # --token-file / $TUNNEL_TOKEN_FILE, so the token stays a Swarm
+            # secret and never lands in the service spec. This avoids an
+            # entrypoint shim, which would not work anyway: the image is
+            # distroless and has no /bin/sh.
+            TUNNEL_TOKEN_FILE: /run/secrets/cloudflared-helldiversbot
+        secrets:
+            - cloudflared-helldiversbot
+        # 2 replicas, no placement constraint. Every cloudflared running these
+        # credentials registers as a connector on the same tunnel and Cloudflare
+        # load-balances across them, so a node dying does not drop ingress.
+        # (A `node.role == manager` constraint would be a no-op here — all three
+        # nodes are managers.) They do not race for certs; Cloudflare owns TLS.
+        deploy:
+            replicas: 2
+            restart_policy:
+                condition: any
