@@ -1,6 +1,6 @@
 # Docker Swarm stack — helldivers.bot STAGING (the 3-Pi cluster).
 #
-# THIS FILE IS THE WRITER. It is Git-Synced into Arcane (project `helldivers`,
+# THIS FILE IS THE WRITER. It is Git-Synced into Arcane (stack `helldiversbot`,
 # swarm environment), which polls this path and applies it — so the compose is
 # read-only in the Arcane UI and rollback is `git revert`, not a console edit.
 # Do not `docker stack deploy` this by hand once the Arcane project exists;
@@ -10,7 +10,7 @@
 # an external Swarm secret created out-of-band on a manager.
 #
 # Manual fallback (Arcane down):
-#   docker stack deploy -c deploy/staging/compose.yaml helldivers
+#   docker stack deploy -c deploy/staging/compose.yaml helldiversbot
 #
 # Prereqs — external Swarm secrets, created once on a manager (see deploy/README.md):
 #   staging_postgres_url          secret   Postgres connection string

@@ -13,7 +13,7 @@
   not in this repo.
 - No published ports. The old LAN `:50001` is gone.
 
-- Stack `helldivers`, service `helldivers_app`, 1 replica, `:staging` image (multi-arch, pulls
+- Swarm stack `helldiversbot`, services `helldiversbot_app` / `helldiversbot_cloudflared`, 1 replica, `:staging` image (multi-arch, pulls
   anonymously from GHCR — the packages are public, no registry auth needed).
 - Connected to the **dev** Postgres on huginn (`10.0.0.40:5432/helldiversbot`) via the
   `staging_postgres_url` Swarm secret. Schema was already current (52/52 migrations).
@@ -28,9 +28,17 @@ environment) polls this repo and applies that file, which makes the compose **re
 Arcane UI** — rollback is `git revert`, not a console edit. See the vault:
 `knowledge/homelab/truenas-apps-to-arcane.md` § "One writer per stack".
 
-Arcane project settings: repo `https://github.com/elfensky/helldivers.bot`, branch `develop`,
-compose path `deploy/staging/compose.yaml`, environment = the swarm (any of the three managers —
-they are all managers, so all three show the same cluster).
+Create it under **Swarm → Stacks**, NOT under Projects. Projects run plain `docker compose` on a
+single node, which rejects `external:` secrets outright (`unsupported external secret …`, from
+docker/compose `pkg/compose/create.go`). Swarm → Stacks runs `docker stack deploy` and resolves
+external secrets correctly — verified.
+
+Stack settings: name `helldiversbot`, repo `https://github.com/elfensky/helldivers.bot`, branch
+`develop`, compose path `deploy/staging/compose.yaml`, environment = the swarm (all three nodes are
+managers, so any of them shows the same cluster).
+
+The stack name is the Swarm namespace, so it must stay `helldiversbot` — changing it deploys a
+second copy alongside the first rather than renaming anything.
 
 The repo is **public**, so Git Sync needs no token — and nothing secret may enter the compose file.
 
@@ -65,8 +73,12 @@ The app reads both as files via the `*_FILE` convention
    nowhere to run. It stays dormant until repo variable `STAGING_DEPLOY_ENABLED=true`.
 5. **Kuma maintenance banner** (`../.github/scripts/kuma-maintenance.mjs`) unverified —
    Socket.IO event shapes vary by version. Leave `vars.KUMA_URL` unset and it skips cleanly.
-6. **Single replica, no placement constraint.** Fine today; the poller has no leader election
-   documented, so check that before scaling replicas above 1.
+6. **The app cannot be scaled past 1 replica.** `src/shared/utils/initializeWorker.mjs` spawns a
+   cron worker thread on every instance with no advisory lock and no leader election anywhere in
+   `src/` — so N replicas means N pollers hitting the API and racing on the same rows. This is a
+   correctness limit, not a capacity one. `cloudflared` has no such constraint: connectors are
+   stateless and Cloudflare load-balances across them, hence 2 replicas there. Fix is to split the
+   poller into its own 1-replica service; then the web app scales freely.
 
 ## Intended CI flow (once 1-4 are done)
 
