@@ -13,9 +13,14 @@
 #   docker stack deploy -c deploy/staging/compose.yaml helldiversbot
 #
 # Prereqs — external Swarm secrets, created once on a manager (see deploy/README.md):
-#   staging_postgres_url          secret   Postgres connection string
-#   staging_update_key            secret   API key for the update endpoint
-#   cloudflared-helldiversbot     secret   Cloudflare Tunnel token (remotely-managed)
+#   helldiversbot_postgres_url    secret   Postgres connection string
+#   helldiversbot_update_key      secret   API key for the update endpoint
+#   helldiversbot_cloudflared     secret   Cloudflare Tunnel token (remotely-managed)
+#
+# Naming: <app>_<secret>. Swarm secrets are cluster-global and flat — there is
+# no namespace — so as more stacks land on this cluster an unprefixed name like
+# `postgres_url` is a collision waiting to happen. External secrets are NOT
+# prefixed by the stack, so the prefix has to be in the name itself.
 #
 # Ingress is a Cloudflare Tunnel: cloudflared dials OUT to the Cloudflare edge,
 # so there are NO published ports. It reaches the app at http://app:3000 over
@@ -35,11 +40,11 @@ networks:
         driver: overlay
 
 secrets:
-    staging_postgres_url:
+    helldiversbot_postgres_url:
         external: true
-    staging_update_key:
+    helldiversbot_update_key:
         external: true
-    cloudflared-helldiversbot:
+    helldiversbot_cloudflared:
         external: true
 
 services:
@@ -58,11 +63,11 @@ services:
             # The app reads secrets from files via the `*_FILE` convention
             # (src/shared/utils/hydrateFileSecrets.mjs): if POSTGRES_URL_FILE is set,
             # it populates POSTGRES_URL from that file before Prisma reads it.
-            POSTGRES_URL_FILE: /run/secrets/staging_postgres_url
-            UPDATE_KEY_FILE: /run/secrets/staging_update_key
+            POSTGRES_URL_FILE: /run/secrets/helldiversbot_postgres_url
+            UPDATE_KEY_FILE: /run/secrets/helldiversbot_update_key
         secrets:
-            - staging_postgres_url
-            - staging_update_key
+            - helldiversbot_postgres_url
+            - helldiversbot_update_key
         # Auth is deliberately unconfigured: initializeEnv treats a missing
         # BETTER_AUTH_SECRET as "auth disabled" and warns. Add the auth vars
         # (and BETTER_AUTH_URL=https://staging.helldivers.bot) when the OAuth
@@ -93,9 +98,9 @@ services:
             # secret and never lands in the service spec. This avoids an
             # entrypoint shim, which would not work anyway: the image is
             # distroless and has no /bin/sh.
-            TUNNEL_TOKEN_FILE: /run/secrets/cloudflared-helldiversbot
+            TUNNEL_TOKEN_FILE: /run/secrets/helldiversbot_cloudflared
         secrets:
-            - cloudflared-helldiversbot
+            - helldiversbot_cloudflared
         # 2 replicas, no placement constraint. Every cloudflared running these
         # credentials registers as a connector on the same tunnel and Cloudflare
         # load-balances across them, so a node dying does not drop ingress.

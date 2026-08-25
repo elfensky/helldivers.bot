@@ -45,10 +45,14 @@ The repo is **public**, so Git Sync needs no token — and nothing secret may en
 ## Swarm secrets (external — create once, on a manager, out of band)
 
 ```sh
-printf '%s' "$POSTGRES_URL"     | docker secret create staging_postgres_url -
-printf '%s' "$UPDATE_KEY"       | docker secret create staging_update_key -
-printf '%s' "$CF_TUNNEL_TOKEN"  | docker secret create cloudflared-helldiversbot -
+printf '%s' "$POSTGRES_URL"     | docker secret create helldiversbot_postgres_url -
+printf '%s' "$UPDATE_KEY"       | docker secret create helldiversbot_update_key -
+printf '%s' "$CF_TUNNEL_TOKEN"  | docker secret create helldiversbot_cloudflared -
 ```
+
+Names follow `<app>_<secret>`. Swarm secrets are cluster-global and flat, and an
+**external** secret is not prefixed by its stack — so the app prefix has to live in the name or
+the next stack on this cluster collides with it.
 
 `printf` not `echo` — a trailing newline can invalidate a token or a connection string.
 
