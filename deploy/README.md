@@ -15,9 +15,14 @@
 
 - Swarm stack `helldiversbot`, services `helldiversbot_app` / `helldiversbot_cloudflared`, 1 replica, `:staging` image (multi-arch, pulls
   anonymously from GHCR — the packages are public, no registry auth needed).
-- Connected to the **dev** Postgres on huginn (`10.0.0.40:5432/helldiversbot`) via the
-  `staging_postgres_url` Swarm secret. Schema was already current (52/52 migrations).
-- `worker: true` — the poller runs and writes `worker_heartbeat` in that DB.
+- Connected to the **staging** Postgres on huginn (`10.0.0.40:5433/helldiversbot_staging` on the
+  `db-staging` cluster) via the `helldiversbot_database_url` Swarm secret — no longer the dev
+  instance on `:5432`. Loaded from a filtered production dump: all 52 migrations plus the `h1_*`
+  game tables, with `User`/`Account`/`Session`/`ApiKey` deliberately restored **empty** (the dump
+  carried real users' plaintext Google and Discord OAuth tokens).
+- `worker: true` — the poller runs and writes `worker_heartbeat` in that DB. After the cutover this
+  is the thing to check: laptop and swarm no longer share that row, so if the swarm is still writing
+  to the dev database the secret did not take.
 - Auth/Umami/Sentry unset on purpose: the app degrades gracefully and OAuth callbacks need a
   real hostname anyway.
 
@@ -45,7 +50,7 @@ The repo is **public**, so Git Sync needs no token — and nothing secret may en
 ## Swarm secrets (external — create once, on a manager, out of band)
 
 ```sh
-printf '%s' "$POSTGRES_URL"     | docker secret create helldiversbot_postgres_url -
+printf '%s' "$POSTGRES_URL"     | docker secret create helldiversbot_database_url -
 printf '%s' "$UPDATE_KEY"       | docker secret create helldiversbot_update_key -
 printf '%s' "$CF_TUNNEL_TOKEN"  | docker secret create helldiversbot_cloudflared -
 ```

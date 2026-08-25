@@ -13,7 +13,7 @@
 #   docker stack deploy -c deploy/staging/compose.yaml helldiversbot
 #
 # Prereqs — external Swarm secrets, created once on a manager (see deploy/README.md):
-#   helldiversbot_postgres_url    secret   Postgres connection string
+#   helldiversbot_database_url    secret   Postgres connection string
 #   helldiversbot_update_key      secret   API key for the update endpoint
 #   helldiversbot_cloudflared     secret   Cloudflare Tunnel token (remotely-managed)
 #
@@ -40,7 +40,7 @@ networks:
         driver: overlay
 
 secrets:
-    helldiversbot_postgres_url:
+    helldiversbot_database_url:
         external: true
     helldiversbot_update_key:
         external: true
@@ -63,10 +63,15 @@ services:
             # The app reads secrets from files via the `*_FILE` convention
             # (src/shared/utils/hydrateFileSecrets.mjs): if POSTGRES_URL_FILE is set,
             # it populates POSTGRES_URL from that file before Prisma reads it.
-            POSTGRES_URL_FILE: /run/secrets/helldiversbot_postgres_url
+            # Points at the STAGING database (db-staging on huginn,
+            # 10.0.0.40:5433/helldiversbot_staging) — no longer the dev
+            # instance on :5432. The secret is named *_database_url to match
+            # the [appname]_[secretName] convention; the env var stays
+            # POSTGRES_URL_FILE because that is what the app reads.
+            POSTGRES_URL_FILE: /run/secrets/helldiversbot_database_url
             UPDATE_KEY_FILE: /run/secrets/helldiversbot_update_key
         secrets:
-            - helldiversbot_postgres_url
+            - helldiversbot_database_url
             - helldiversbot_update_key
         # Auth is deliberately unconfigured: initializeEnv treats a missing
         # BETTER_AUTH_SECRET as "auth disabled" and warns. Add the auth vars
