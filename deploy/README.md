@@ -14,17 +14,22 @@ Arcane applies it on every commit to `develop`, and CI writes that commit (`bump
   not in this repo.
 - No published ports. The old LAN `:50001` is gone.
 
-- Swarm stack `helldiversbot`, services `helldiversbot_app` / `helldiversbot_cloudflared`, 1 replica, image pinned to
-  `:sha-<commit>` by CI (multi-arch, pulls anonymously from GHCR — the packages are public, no
-  registry auth needed).
+- Swarm stack `helldiversbot`: `helldiversbot_app` ×3 (soft-spread across nodes) and
+  `helldiversbot_cloudflared` ×2, image pinned to `:sha-<commit>` by CI (multi-arch, pulls
+  anonymously from GHCR — the packages are public, no registry auth needed). Load balancing is the
+  Swarm service VIP: cloudflared targets `http://app:3000` and Swarm spreads new connections across
+  the replicas (per connection, not per request — cloudflared pools keep-alives).
 - Connected to the **staging** Postgres on huginn (`10.0.0.40:5433/helldiversbot_staging` on the
   `db-staging` cluster) via the `helldiversbot_database_url` Swarm secret — no longer the dev
   instance on `:5432`. Loaded from a filtered production dump: all 52 migrations plus the `h1_*`
   game tables, with `User`/`Account`/`Session`/`ApiKey` deliberately restored **empty** (the dump
   carried real users' plaintext Google and Discord OAuth tokens).
-- `worker: true` — the poller runs and writes `worker_heartbeat` in that DB. After the cutover this
-  is the thing to check: laptop and swarm no longer share that row, so if the swarm is still writing
-  to the dev database the secret did not take.
+- Every replica runs the cron thread, but only the lease holder polls (`src/update/lease.mjs`,
+  #517): `worker_heartbeat.holder_id` names it, `lease_until` is renewed every poll (60 s TTL), and
+  the others answer `200 { role: 'standby' }`. The admin dashboard's "Poller" card shows the host.
+  Kill the holder's task and the row moves to another replica within ~1 min, carrying
+  `prev_events` / `last_season_observed` with it. Staging sets no `VAPID_*`, so push dedup is not
+  observable here — what staging proves is single-holder polling and handover.
 - Auth/Umami/Sentry unset on purpose: the app degrades gracefully and OAuth callbacks need a
   real hostname anyway.
 
@@ -87,10 +92,11 @@ The app reads both as files via the `*_FILE` convention
    the vault's `50-ci-cd`. Until it exists, migrations are a manual one-shot.
 3. **Kuma maintenance banner** (`../.github/scripts/kuma-maintenance.mjs`) unverified —
    Socket.IO event shapes vary by version. Unused until a runner exists.
-4. **The app cannot be scaled past 1 replica** — every instance also *is* the poller, and
-   `checkAndNotify()` diffs against in-memory state, so N replicas means N× duplicate push
-   notifications. A correctness limit, not a capacity one; `cloudflared` has no such constraint
-   (stateless connectors, hence 2 replicas). Tracked as #516 (bug) / #517 (lease-based fix).
+4. **A network partition can briefly yield two holders.** A node cut off from the managers keeps
+   its task running; its lease expires and another replica claims it, and until the partitioned
+   node reconnects both poll. Bounded by the partition length; power loss (this cluster's actual
+   failure mode) does not do this — the task is simply dead. Acceptable for staging; a fencing
+   token on writes would close it if it ever matters.
 
 ## CI flow (live)
 
