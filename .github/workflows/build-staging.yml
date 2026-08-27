@@ -178,7 +178,7 @@ jobs:
             - name: Pin the tested image and commit
               if: needs.detect-migration.outputs.migrate != 'true'
               run: |
-                  sed -i -E "s#^(\s*image: ghcr\.io/[^/]+/helldiversbot:).*#\1sha-${TESTED_SHA}#" deploy/staging/compose.yaml
+                  sed -i -E "s#^([[:space:]]*image: ghcr\.io/[^/]+/helldiversbot:).*#\1sha-${TESTED_SHA}#" deploy/staging/compose.yaml
                   git diff --exit-code --quiet deploy/staging/compose.yaml && { echo "already pinned"; exit 0; }
                   git config user.name github-actions[bot]
                   git config user.email 41898282+github-actions[bot]@users.noreply.github.com
