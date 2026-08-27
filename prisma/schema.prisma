@@ -235,12 +235,18 @@ model push_subscription {
 
 // #region WORKER HEALTH
 model worker_heartbeat {
-    worker_type      String   @id
-    last_beat        DateTime
-    poll_duration_ms Int?
-    last_error       String?
-    started_at       DateTime
-    updated_at       DateTime @updatedAt
+    worker_type          String    @id
+    last_beat            DateTime
+    poll_duration_ms     Int?
+    last_error           String?
+    started_at           DateTime
+    updated_at           DateTime  @updatedAt
+    // Poller lease (#517): who polls, until when, and the state a successor
+    // inherits — see src/update/lease.mjs.
+    holder_id            String?
+    lease_until          DateTime?
+    prev_events          Json?
+    last_season_observed Int?
 }
 
 // #endregion

@@ -7,7 +7,6 @@ import { EVENT_TYPE } from '@/shared/enums/events.mjs';
 import db from '@/db/db';
 
 const MAX_CONCURRENT = 50;
-let prevEvents = null;
 let configured = false;
 
 export function ensureVapid() {
@@ -108,8 +107,15 @@ export async function sendWithConcurrencyLimit(subscriptions, payload) {
  * Check for event transitions and send push notifications.
  * Called after updateStatus() — async, non-blocking.
  * Fetches current events from DB to avoid coupling with the update pipeline.
+ *
+ * The baseline is an argument, not module state: it comes from the lease row
+ * (#517), so a replica that just took over the poller role diffs against the
+ * previous holder's last snapshot instead of starting blind. Returns the
+ * current snapshot for the caller to persist.
+ * @param {object[] | null} prevEvents - Baseline snapshot from the lease row; null seeds without diffing.
+ * @returns {Promise<object[] | undefined>}
  */
-export async function checkAndNotify() {
+export async function checkAndNotify(prevEvents) {
     if (!ensureVapid()) return;
 
     const { data: season, error: fetchError } = await tryCatch(
@@ -137,7 +143,7 @@ export async function checkAndNotify() {
     if (fetchError || !season) return;
     const currentEvents = season.events;
 
-    if (prevEvents !== null) {
+    if (prevEvents != null) {
         const changes = detectChanges(prevEvents, currentEvents);
 
         if (changes.length > 0) {
@@ -156,5 +162,5 @@ export async function checkAndNotify() {
         }
     }
 
-    prevEvents = currentEvents;
+    return currentEvents;
 }

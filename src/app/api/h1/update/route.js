@@ -14,6 +14,7 @@ import { checkAndNotify } from '@/update/pushNotifier.mjs';
 import { computeBucket } from '@/shared/utils/bucketing.mjs';
 import { cleanupRateLimitWindows } from '@/shared/utils/api/rateLimit.mjs';
 import { isWorkerEnabled } from '@/shared/utils/initializeWorker.mjs';
+import { HOLDER_ID, claimLease, persistPollerState } from '@/update/lease.mjs';
 
 // Custom header set on the very first poll of a worker session so the
 // handler can run a one-time startup pass (e.g. backfill missing seasons).
@@ -23,16 +24,12 @@ import { isWorkerEnabled } from '@/shared/utils/initializeWorker.mjs';
 // match what `request.headers.get(...)` normalises to.
 export const WORKER_STARTUP_HEADER = 'x-worker-startup';
 
-// Tracks the season observed on the previous worker poll so we can detect
-// a season transition and run one final updateSeason() pass on the outgoing
-// season. HD1 writes a final "closing" snapshot to the old season a few
-// minutes after the transition point — without this detection, the worker
-// moves on to the new season before that closing frame is published and it
-// never lands in h1_status. Resets to null on worker restart; the only
-// impact of a restart during the tiny transition window is that the closing
-// snapshot for that single transition is missed, which the admin can recover
-// via the /archives refresh button.
-let lastSeasonObserved = null;
+// The season observed on the previous poll (to detect a transition and run
+// one closing updateSeason() pass on the outgoing season — HD1 writes a final
+// snapshot a few minutes after the transition) and the previous event
+// snapshot (push-notification baseline) both live in the lease row, not in
+// this process — see src/update/lease.mjs (#517). A holder that just took
+// over inherits them, so a transition across a handover is not missed.
 
 // Throttle for the rate-limit window cleanup. The worker polls every ~15s, so
 // we run the purge at most hourly (tracked here, not per-restart) to keep the
@@ -42,27 +39,19 @@ let lastRateLimitCleanup = 0;
 const RATE_LIMIT_CLEANUP_INTERVAL_MS = 3_600_000;
 
 /**
+ * Holder-guarded: the row is created by claimLease(), and started_at is
+ * reset there whenever the holder changes, so this only ever updates.
  * @param {number} start - performance.now() timestamp when the poll began.
- * @param {boolean} isStartup - True on the worker's first poll of a session.
  * @param {string | null} [errorMsg] - Last error message to record, if any.
  */
-async function writeHeartbeat(start, isStartup, errorMsg = null) {
-    const now = new Date();
+async function writeHeartbeat(start, errorMsg = null) {
     const { error } = await tryCatch(
-        db.worker_heartbeat.upsert({
-            where: { worker_type: 'cron_api_poller' },
-            create: {
-                worker_type: 'cron_api_poller',
-                last_beat: now,
+        db.worker_heartbeat.updateMany({
+            where: { worker_type: 'cron_api_poller', holder_id: HOLDER_ID },
+            data: {
+                last_beat: new Date(),
                 poll_duration_ms: Math.round(performance.now() - start),
                 last_error: errorMsg?.slice(0, 500) ?? null,
-                started_at: now,
-            },
-            update: {
-                last_beat: now,
-                poll_duration_ms: Math.round(performance.now() - start),
-                last_error: errorMsg?.slice(0, 500) ?? null,
-                ...(isStartup && { started_at: now }),
             },
         }),
     );
@@ -89,7 +78,17 @@ export async function GET(request) {
     if (!isWorkerEnabled())
         return errorResponse(403, start, 'worker disabled on this instance');
 
-    const isStartup = request.headers.get(WORKER_STARTUP_HEADER) === '1';
+    // Claim (or renew) the poller lease. Every replica polls; only the
+    // holder does the work. A standby answer is deliberately cheap and
+    // touches nothing — the holder's heartbeat row must stay the holder's.
+    const { data: lease, error: leaseError } = await tryCatch(claimLease());
+    if (leaseError) {
+        reportError(leaseError, { route: '/api/h1/update', stage: 'lease' });
+        return errorResponse(500, start, leaseError.message);
+    }
+    if (!lease)
+        return successResponse(200, start, { role: 'standby', holder: HOLDER_ID });
+    const { prevEvents, lastSeasonObserved } = lease;
 
     // Periodic rate-limit window cleanup (at most hourly), off the response path.
     const nowMs = Date.now();
@@ -112,7 +111,7 @@ export async function GET(request) {
     if (statusError) {
         console.error(statusError?.message, statusError?.cause);
         reportError(statusError, { route: '/api/h1/update', stage: 'status' });
-        await writeHeartbeat(start, isStartup, statusError?.message);
+        await writeHeartbeat(start, statusError?.message);
         return errorResponse(500, start, statusError?.message);
     }
     const statusTime = roundedPerformanceTime(start);
@@ -142,7 +141,7 @@ export async function GET(request) {
             });
         }
     }
-    lastSeasonObserved = statusData.season;
+    await persistPollerState(HOLDER_ID, { lastSeasonObserved: statusData.season });
 
     //SEASON
     // Protect the bucket updateStatus() just wrote — stale snapshots from
@@ -158,7 +157,7 @@ export async function GET(request) {
             stage: 'season',
             season: statusData.season,
         });
-        await writeHeartbeat(start, isStartup, seasonError?.message);
+        await writeHeartbeat(start, seasonError?.message);
         return errorResponse(500, start, seasonError?.message);
     }
     const seasonTime = roundedPerformanceTime(start);
@@ -187,15 +186,17 @@ export async function GET(request) {
     // cleanup) without blocking the response — same pattern as the campaign
     // and rebroadcast routes.
     after(async () => {
-        const { error } = await tryCatch(checkAndNotify());
+        const { data: snapshot, error } = await tryCatch(checkAndNotify(prevEvents));
         if (error) {
             console.error('Push notification error:', error.message);
             reportError(error, { route: '/api/h1/update', stage: 'push-notify' });
+            return;
         }
+        if (snapshot) await persistPollerState(HOLDER_ID, { prevEvents: snapshot });
     });
 
     //RESPONSE
-    await writeHeartbeat(start, isStartup);
+    await writeHeartbeat(start);
     return successResponse(200, start, {
         updated: {
             status: statusData,
