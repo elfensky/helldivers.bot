@@ -52,6 +52,18 @@ describe('GET /api/h1/update', () => {
         expect(updateSeason).not.toHaveBeenCalled();
     });
 
+    test('returns 403 on a web-only replica (WORKER_ENABLED=false) before any work', async () => {
+        vi.stubEnv('WORKER_ENABLED', 'false');
+        const req = new Request('http://localhost/api/h1/update', {
+            headers: { Authorization: 'Bearer test-secret-key' },
+        });
+        const res = await GET(req);
+        expect(res.status).toBe(403);
+        expectErrorEnvelope(await res.json(), { code: 403 });
+        expect(updateStatus).not.toHaveBeenCalled();
+        expect(updateSeason).not.toHaveBeenCalled();
+    });
+
     test('returns 200 with correct key and update data', async () => {
         const mockStatusData = { season: 5, time: 1000 };
         const mockSeasonData = { campaign_status: [] };

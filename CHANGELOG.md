@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.92.0
+
+### Added
+
+- `WORKER_ENABLED=false` runs an instance as web-only: no cron poller thread, and
+  `/api/h1/update` answers 403 there. Lets the web tier scale horizontally while
+  exactly one instance polls — the update path keeps `prevEvents` /
+  `lastSeasonObserved` in memory, so N pollers meant N× duplicate push
+  notifications (#516). Accepts `false` / `0` / `no` / `off`, any case.
+
+### Changed
+
+- A dead cron worker thread now exits the process (exit 1) instead of leaving a
+  "healthy" instance that never polls; the container healthcheck is only a DB
+  ping, so this is what lets the orchestrator restart it.
+
 ## 0.91.1
 
 ### Changed
