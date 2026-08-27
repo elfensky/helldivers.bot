@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.93.1
+
+### Fixed
+
+- Lease timestamps are written as `now() AT TIME ZONE 'UTC'`, matching what
+  Prisma writes into the naive `timestamp(3)` columns — a bare `now()` was the
+  session's local time, so `started_at` sat two hours off `last_beat`.
+- `holder_id` prefers the Swarm-provided node name (`SENTRY_SERVER_NAME`) over
+  the container hostname, which in a container is just the container ID.
+
 ## 0.93.0
 
 ### Added
