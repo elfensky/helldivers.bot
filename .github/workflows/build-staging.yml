@@ -45,6 +45,7 @@ jobs:
         timeout-minutes: 10
         outputs:
             migrate: ${{ steps.filter.outputs.migrate }}
+            schema: ${{ steps.filter.outputs.schema }}
             image_missing: ${{ steps.check.outputs.missing }}
         steps:
             - name: Checkout code
@@ -58,14 +59,25 @@ jobs:
             # develop takes. A push of several loose commits would only compare
             # the last one; the image_missing check below and a manual
             # workflow_dispatch both force a build if that ever bites.
+            # Two questions, two outputs. `migrate` = rebuild the migrate image
+            # (anything that changes what it contains, package.json included).
+            # `schema` = the DATABASE changed (prisma/ only) — the one that
+            # gates the staging tag bump. They must stay separate: every PR
+            # touches package.json for the version bump, so gating on
+            # `migrate` skipped every single deploy.
             - name: Detect migration-related changes
               id: filter
               run: |
-                  if git diff --name-only HEAD^ HEAD \
-                     | grep -qE '^(prisma/|prisma\.config\.mjs|package(-lock)?\.json|Dockerfile\.migrate)'; then
+                  changed=$(git diff --name-only HEAD^ HEAD)
+                  if echo "$changed" | grep -qE '^(prisma/|prisma\.config\.mjs|package(-lock)?\.json|Dockerfile\.migrate)'; then
                     echo "migrate=true" >> "$GITHUB_OUTPUT"
                   else
                     echo "migrate=false" >> "$GITHUB_OUTPUT"
+                  fi
+                  if echo "$changed" | grep -qE '^prisma/'; then
+                    echo "schema=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "schema=false" >> "$GITHUB_OUTPUT"
                   fi
 
             - name: Check if migrate image exists
@@ -151,10 +163,11 @@ jobs:
     # `[skip ci]` is belt and braces. No rebase-retry on a push race: the run
     # fails visibly and the next merge to develop re-bumps.
     #
-    # Gated on "no migration in this merge": the swarm is arm64 and the
-    # migrate image is amd64-only (see build-migrate), and a cloud runner
-    # cannot reach the LAN database anyway — so a merge that carries a
-    # migration must be migrated by hand first, then bumped by hand.
+    # Gated on "no schema change in this merge" (prisma/ untouched): the
+    # swarm is arm64 and the migrate image is amd64-only (see build-migrate),
+    # and a cloud runner cannot reach the LAN database anyway — so a merge
+    # that carries a migration must be migrated by hand first, then bumped
+    # by hand.
     bump-staging-tag:
         name: Bump Staging Tag
         needs: [detect-migration, build-app]
@@ -165,18 +178,18 @@ jobs:
             contents: write
         steps:
             - name: Migration in this merge — not bumping
-              if: needs.detect-migration.outputs.migrate == 'true'
+              if: needs.detect-migration.outputs.schema == 'true'
               run: |
                   echo "::warning title=staging not bumped::${TESTED_SHA} touches prisma/ — run helldiversbot-migrate:staging against the staging DB from an amd64 host, then set image to :sha-${TESTED_SHA} in deploy/staging/compose.yaml and commit."
 
             - name: Checkout develop
-              if: needs.detect-migration.outputs.migrate != 'true'
+              if: needs.detect-migration.outputs.schema != 'true'
               uses: actions/checkout@v7.0.1
               with:
                   ref: develop
 
             - name: Pin the tested image and commit
-              if: needs.detect-migration.outputs.migrate != 'true'
+              if: needs.detect-migration.outputs.schema != 'true'
               run: |
                   sed -i -E "s#^([[:space:]]*image: ghcr\.io/[^/]+/helldiversbot:).*#\1sha-${TESTED_SHA}#" deploy/staging/compose.yaml
                   git diff --exit-code --quiet deploy/staging/compose.yaml && { echo "already pinned"; exit 0; }
