@@ -13,6 +13,7 @@ import { updateSeason } from '@/update/season.mjs';
 import { checkAndNotify } from '@/update/pushNotifier.mjs';
 import { computeBucket } from '@/shared/utils/bucketing.mjs';
 import { cleanupRateLimitWindows } from '@/shared/utils/api/rateLimit.mjs';
+import { isWorkerEnabled } from '@/shared/utils/initializeWorker.mjs';
 
 // Custom header set on the very first poll of a worker session so the
 // handler can run a one-time startup pass (e.g. backfill missing seasons).
@@ -81,6 +82,12 @@ export async function GET(request) {
     const actual = crypto.createHash('sha256').update(key).digest();
     const expected = crypto.createHash('sha256').update(secret).digest();
     if (!crypto.timingSafeEqual(actual, expected)) return errorResponse(401, start);
+
+    // A web-only replica must never run the update: prevEvents and
+    // lastSeasonObserved live in this process, so a poll landing here would
+    // diff against stale state and re-send push notifications (#516).
+    if (!isWorkerEnabled())
+        return errorResponse(403, start, 'worker disabled on this instance');
 
     const isStartup = request.headers.get(WORKER_STARTUP_HEADER) === '1';
 
