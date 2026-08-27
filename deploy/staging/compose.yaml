@@ -67,7 +67,7 @@ secrets:
 services:
     app:
         # Rewritten by CI to :sha-<commit> — see the header.
-        image: ghcr.io/elfensky/helldiversbot:sha-099b344783f2259da8903645ecc69a4f78af5967
+        image: ghcr.io/elfensky/helldiversbot:sha-2fd5cfcae44c4a8b9c610f0828a0aa3bf44826ec
         networks: [internal]
         environment:
             NODE_ENV: production
