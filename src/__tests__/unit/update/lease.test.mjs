@@ -3,6 +3,7 @@ import db from '@/db/db';
 import {
     claimLease,
     persistPollerState,
+    makeHolderId,
     HOLDER_ID,
     WORKER_TYPE,
 } from '@/update/lease.mjs';
@@ -40,6 +41,15 @@ describe('claimLease', () => {
     test('HOLDER_ID names this process (hostname + pid) so the dashboard can show who polls', () => {
         expect(HOLDER_ID).toContain(String(process.pid));
         expect(HOLDER_ID.split(':').length).toBeGreaterThanOrEqual(3);
+    });
+
+    test('makeHolderId prefers the orchestrator-given name over the container hostname', () => {
+        // In a container os.hostname() is the container ID — useless on a
+        // dashboard. Swarm hands the node name in via SENTRY_SERVER_NAME.
+        expect(makeHolderId({ SENTRY_SERVER_NAME: 'swarm02-1' }, 'c0ffee')).toMatch(
+            /^swarm02-1:\d+:[0-9a-f]{8}$/,
+        );
+        expect(makeHolderId({}, 'c0ffee')).toMatch(/^c0ffee:\d+:[0-9a-f]{8}$/);
     });
 });
 
