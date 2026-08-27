@@ -1,8 +1,9 @@
 # Staging deploy — helldivers.bot on the Pi swarm
 
-**Status: deployed manually, CI path still unwired.** `staging/compose.yaml` is live on the
-3-Pi swarm (Arcane Git Sync (manual fallback: `docker stack deploy -c deploy/staging/compose.yaml helldivers`)). The
-`deploy-staging` job in `../.github/workflows/build-staging.yml` has still never run.
+**Status: live, deployed by Git Sync.** `staging/compose.yaml` is the stack on the 3-Pi swarm;
+Arcane applies it on every commit to `develop`, and CI writes that commit (`bump-staging-tag` in
+`../.github/workflows/build-staging.yml`). Manual fallback if Arcane is down:
+`docker stack deploy -c deploy/staging/compose.yaml helldiversbot`.
 
 ## What's live (2026-08-25)
 
@@ -13,8 +14,9 @@
   not in this repo.
 - No published ports. The old LAN `:50001` is gone.
 
-- Swarm stack `helldiversbot`, services `helldiversbot_app` / `helldiversbot_cloudflared`, 1 replica, `:staging` image (multi-arch, pulls
-  anonymously from GHCR — the packages are public, no registry auth needed).
+- Swarm stack `helldiversbot`, services `helldiversbot_app` / `helldiversbot_cloudflared`, 1 replica, image pinned to
+  `:sha-<commit>` by CI (multi-arch, pulls anonymously from GHCR — the packages are public, no
+  registry auth needed).
 - Connected to the **staging** Postgres on huginn (`10.0.0.40:5433/helldiversbot_staging` on the
   `db-staging` cluster) via the `helldiversbot_database_url` Swarm secret — no longer the dev
   instance on `:5432`. Loaded from a filtered production dump: all 52 migrations plus the `h1_*`
@@ -47,6 +49,13 @@ second copy alongside the first rather than renaming anything.
 
 The repo is **public**, so Git Sync needs no token — and nothing secret may enter the compose file.
 
+**Git Sync redeploys on commit change, not on image change.** A rebuilt floating `:staging` tag
+produces no commit, so Arcane would never see it. That is why CI (`bump-staging-tag` in
+`build-staging.yml`) rewrites the `image:` line to the immutable `:sha-<commit>` tag and commits
+it to `develop` after every green build — the commit is the deploy trigger, and `git revert` of
+that commit is the rollback. Do not `docker service update --force` the stack by hand; that is
+the second writer this setup exists to remove.
+
 ## Swarm secrets (external — create once, on a manager, out of band)
 
 ```sh
@@ -68,36 +77,30 @@ The app reads both as files via the `*_FILE` convention
 ## Known gaps
 
 1. **`helldiversbot-migrate:staging` is amd64-only** (`platforms: linux/amd64` in
-   `build-staging.yml`), so it cannot run on the arm64 Pis. Either make that build multi-arch
-   like the app image, or keep running migrations from an amd64 host. Blocking for any
-   automated deploy that has to migrate.
-2. **Own staging database.** It currently points at the *dev* DB, which means laptop and
-   swarm share one database and one worker table. Give staging its own role + database on
-   huginn per the vault handbook before this counts as a real staging tier.
-3. **Floating image tag vs Git Sync.** The compose pins `:staging`, a moving tag — so a new
-   build produces no commit, and Arcane (which redeploys on commit change) will not pick it up.
-   Per `50-ci-cd`, CI should rewrite the tag in this file and commit; until it does, a new
-   `:staging` image needs a manual `docker service update --force helldivers_app`.
-4. **No self-hosted runner** on a Pi manager, so `deploy-staging` (`runs-on: self-hosted`) has
-   nowhere to run. It stays dormant until repo variable `STAGING_DEPLOY_ENABLED=true`.
-5. **Kuma maintenance banner** (`../.github/scripts/kuma-maintenance.mjs`) unverified —
-   Socket.IO event shapes vary by version. Leave `vars.KUMA_URL` unset and it skips cleanly.
-6. **The app cannot be scaled past 1 replica.** `src/shared/utils/initializeWorker.mjs` spawns a
-   cron worker thread on every instance with no advisory lock and no leader election anywhere in
-   `src/` — so N replicas means N pollers hitting the API and racing on the same rows. This is a
-   correctness limit, not a capacity one. `cloudflared` has no such constraint: connectors are
-   stateless and Cloudflare load-balances across them, hence 2 replicas there. Fix is to split the
-   poller into its own 1-replica service; then the web app scales freely.
+   `build-staging.yml`) — `prisma generate` SIGILLs under QEMU arm64 (exit 132), so it is not a
+   one-line fix; a native arm64 runner leg would be needed. Until then it cannot run on the Pis:
+   run it from an amd64 host, and note that `bump-staging-tag` deliberately skips any merge that
+   touches `prisma/` (see § How it is deployed).
+2. **No self-hosted runner** in the LAN (elfensky/helldivers.bot#474). With Git Sync as the
+   writer a runner is no longer needed to *deploy*; it is needed only to run migrations against
+   the LAN database and to take the maintenance banner up/down around a deploy — the shape in
+   the vault's `50-ci-cd`. Until it exists, migrations are a manual one-shot.
+3. **Kuma maintenance banner** (`../.github/scripts/kuma-maintenance.mjs`) unverified —
+   Socket.IO event shapes vary by version. Unused until a runner exists.
+4. **The app cannot be scaled past 1 replica** — every instance also *is* the poller, and
+   `checkAndNotify()` diffs against in-memory state, so N replicas means N× duplicate push
+   notifications. A correctness limit, not a capacity one; `cloudflared` has no such constraint
+   (stateless connectors, hence 2 replicas). Tracked as #516 (bug) / #517 (lease-based fix).
 
-## Intended CI flow (once 1-4 are done)
+## CI flow (live)
 
 ```
-push to develop
-  → build :staging images (cloud runners, multi-arch)
-  → deploy-staging (self-hosted runner on a Pi manager):
-       kuma banner ON (optional)
-       docker run --rm migrate:staging        # migrations, BEFORE the stack (Swarm ignores depends_on)
-       docker stack deploy stack.staging.yml   # start-first + healthcheck + rollback
-       wait for helldivers_app = 1/1
-       kuma banner OFF (always)
+merge to develop
+  → Check: CI green
+  → Build: Staging
+       build :staging + :sha-<commit> app image (multi-arch)
+       bump-staging-tag: pin :sha-<commit> in deploy/staging/compose.yaml, commit [skip ci]
+         (skipped with a warning when the merge touches prisma/ — migrate by hand first)
+  → Arcane Git Sync (polls every 5 min) sees the commit → redeploys the stack
+       start-first + image healthcheck + rollback on failure
 ```

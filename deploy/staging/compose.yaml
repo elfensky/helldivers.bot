@@ -32,8 +32,15 @@
 # dashboard, not in this file. Routing changes are made there.
 #
 # Migrations are NOT a service here — Swarm ignores `depends_on`. Run the
-# migrate image as a one-shot BEFORE deploying. It is amd64-only today, so it
-# cannot run on the Pis; run it from an amd64 host. See deploy/README.md.
+# migrate image as a one-shot BEFORE deploying. It is amd64-only (prisma
+# generate SIGILLs under QEMU arm64), so it cannot run on the Pis; run it
+# from an amd64 host. See deploy/README.md.
+#
+# The `image:` line below is written by CI (bump-staging-tag in
+# build-staging.yml): every green develop build pins `:sha-<commit>` here and
+# commits, and that commit is what Git Sync redeploys on. A merge that
+# carries a migration is NOT bumped automatically — migrate by hand, then pin
+# the tag by hand. Rollback is `git revert` of the bump commit.
 
 networks:
     internal:
@@ -49,6 +56,8 @@ secrets:
 
 services:
     app:
+        # Rewritten by CI to :sha-<commit> — see the header. `:staging` only
+        # until the first bump lands.
         image: ghcr.io/elfensky/helldiversbot:staging
         networks: [internal]
         environment:

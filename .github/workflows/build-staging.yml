@@ -18,15 +18,15 @@ on:
         types: [completed]
         branches: [develop]
 
-# Never cancel: deploy-staging runs `docker stack deploy` against a live swarm,
-# and killing that mid-flight leaves the stack half-converged. A second merge
-# to develop queues behind the first instead.
+# Never cancel: bump-staging-tag commits to develop, and two runs racing on
+# that push is a failed push for nothing. A second merge to develop queues
+# behind the first instead.
 concurrency:
     group: build-staging
     cancel-in-progress: false
 
-# Read-only by default; the jobs that touch GHCR say so themselves. This used
-# to grant `contents: write` workflow-wide — nothing here writes contents.
+# Read-only by default; the jobs that touch GHCR say so themselves, and only
+# bump-staging-tag gets `contents: write`.
 permissions:
     contents: read
 
@@ -128,6 +128,7 @@ jobs:
                   registry-token: ${{ secrets.GITHUB_TOKEN }}
                   tags: |
                       ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot:sha-${{ env.TESTED_SHA }}
                   build-args: |
                       NODE_ENV=production
                       NEXT_PUBLIC_DEPLOY_ENV=staging
@@ -141,76 +142,48 @@ jobs:
                       sentry_org=${{ secrets.SENTRY_ORG }}
                       sentry_project=${{ secrets.SENTRY_PROJECT }}
 
-    # ⚠️ DRAFT / UNTESTED until a self-hosted runner exists on a Pi swarm manager.
-    # GitHub's cloud runners cannot reach the home-LAN cluster; this job runs on
-    # the runner installed there. See deploy/README.md for the open TODOs.
-    deploy-staging:
-        name: Deploy to Staging
-        needs: [build-app, build-migrate]
-        # DORMANT until the swarm + self-hosted runner exist. Flip repo variable
-        # STAGING_DEPLOY_ENABLED=true to activate (without it the job skips cleanly
-        # instead of hanging "pending" waiting for a runner that isn't there).
-        # Runs even when build-migrate was skipped — the existing :staging migrate
-        # image is reused. Skips if the app build failed.
-        if: ${{ !cancelled() && needs.build-app.result == 'success' && vars.STAGING_DEPLOY_ENABLED == 'true' }}
-        runs-on: self-hosted
-        # The convergence wait alone can take 5 minutes (30 × 10s).
-        timeout-minutes: 20
+    # The deploy itself is Arcane Git Sync (deploy/README.md): Arcane polls
+    # develop and redeploys the stack when the commit changes. A rebuilt
+    # floating `:staging` tag is invisible to it, so the only thing this job
+    # has to do is write the immutable tag into the compose and commit.
+    #
+    # GITHUB_TOKEN pushes never trigger workflows (GitHub's recursion guard),
+    # `[skip ci]` is belt and braces. No rebase-retry on a push race: the run
+    # fails visibly and the next merge to develop re-bumps.
+    #
+    # Gated on "no migration in this merge": the swarm is arm64 and the
+    # migrate image is amd64-only (see build-migrate), and a cloud runner
+    # cannot reach the LAN database anyway — so a merge that carries a
+    # migration must be migrated by hand first, then bumped by hand.
+    bump-staging-tag:
+        name: Bump Staging Tag
+        needs: [detect-migration, build-app]
+        if: ${{ !cancelled() && needs.build-app.result == 'success' }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
         permissions:
-            contents: read
-            packages: read # docker pull from GHCR
+            contents: write
         steps:
-            - name: Checkout code
+            - name: Migration in this merge — not bumping
+              if: needs.detect-migration.outputs.migrate == 'true'
+              run: |
+                  echo "::warning title=staging not bumped::${TESTED_SHA} touches prisma/ — run helldiversbot-migrate:staging against the staging DB from an amd64 host, then set image to :sha-${TESTED_SHA} in deploy/staging/compose.yaml and commit."
+
+            - name: Checkout develop
+              if: needs.detect-migration.outputs.migrate != 'true'
               uses: actions/checkout@v7.0.1
               with:
-                  ref: ${{ env.TESTED_SHA }}
+                  ref: develop
 
-            - name: Log in to GHCR
-              run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            - name: Maintenance banner ON (optional — skipped if Kuma unset)
-              if: ${{ vars.KUMA_URL != '' }}
+            - name: Pin the tested image and commit
+              if: needs.detect-migration.outputs.migrate != 'true'
               run: |
-                  npm i socket.io-client@4 --no-save --silent
-                  node .github/scripts/kuma-maintenance.mjs start
-              env:
-                  KUMA_URL: ${{ vars.KUMA_URL }}
-                  KUMA_USERNAME: ${{ secrets.KUMA_USERNAME }}
-                  KUMA_PASSWORD: ${{ secrets.KUMA_PASSWORD }}
-                  KUMA_MONITOR_IDS: ${{ vars.KUMA_STAGING_MONITOR_IDS }}
-
-            - name: Run migrations (one-shot, before the stack)
-              run: |
-                  docker pull ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
-                  docker run --rm \
-                    -e POSTGRES_URL="${{ secrets.STAGING_POSTGRES_URL }}" \
-                    -e FORCE_SEED="${{ vars.FORCE_SEED }}" \
-                    ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
-
-            - name: Deploy the stack
-              run: |
-                  docker pull ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
-                  docker stack deploy --with-registry-auth -c deploy/stack.staging.yml helldivers
-
-            - name: Wait for the app service to converge (healthy)
-              run: |
-                  for i in $(seq 1 30); do
-                    reps=$(docker service ls --filter name=helldivers_app --format '{{.Replicas}}')
-                    echo "helldivers_app: ${reps:-pending}"
-                    [ "$reps" = "1/1" ] && exit 0
-                    sleep 10
-                  done
-                  echo "::error::app service did not converge"; docker service ps helldivers_app --no-trunc; exit 1
-
-            - name: Maintenance banner OFF (always)
-              if: ${{ always() && vars.KUMA_URL != '' }}
-              run: |
-                  npm i socket.io-client@4 --no-save --silent
-                  node .github/scripts/kuma-maintenance.mjs end
-              env:
-                  KUMA_URL: ${{ vars.KUMA_URL }}
-                  KUMA_USERNAME: ${{ secrets.KUMA_USERNAME }}
-                  KUMA_PASSWORD: ${{ secrets.KUMA_PASSWORD }}
+                  sed -i -E "s#^(\s*image: ghcr\.io/[^/]+/helldiversbot:).*#\1sha-${TESTED_SHA}#" deploy/staging/compose.yaml
+                  git diff --exit-code --quiet deploy/staging/compose.yaml && { echo "already pinned"; exit 0; }
+                  git config user.name github-actions[bot]
+                  git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+                  git commit -am "chore(deploy): staging → sha-${TESTED_SHA:0:12} [skip ci]"
+                  git push origin develop
 
     cleanup:
         name: Cleanup Untagged Images
