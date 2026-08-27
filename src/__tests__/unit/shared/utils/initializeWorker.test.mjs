@@ -52,6 +52,14 @@ describe('initializeWorker', () => {
         await expect(initializeWorker()).rejects.toThrow('UPDATE_INTERVAL is not set');
     });
 
+    test('WORKER_ENABLED=false returns true without spawning a Worker', async () => {
+        vi.stubEnv('WORKER_ENABLED', 'false');
+        const { Worker } = await import('worker_threads');
+        const result = await initializeWorker();
+        expect(result).toBe(true);
+        expect(Worker).not.toHaveBeenCalled();
+    });
+
     test('creates Worker and returns true on success', async () => {
         const { Worker } = await import('worker_threads');
         const result = await initializeWorker();

@@ -14,17 +14,19 @@ Arcane applies it on every commit to `develop`, and CI writes that commit (`bump
   not in this repo.
 - No published ports. The old LAN `:50001` is gone.
 
-- Swarm stack `helldiversbot`, services `helldiversbot_app` / `helldiversbot_cloudflared`, 1 replica, image pinned to
-  `:sha-<commit>` by CI (multi-arch, pulls anonymously from GHCR — the packages are public, no
-  registry auth needed).
+- Swarm stack `helldiversbot`: `helldiversbot_app` ×3 (one per node, `WORKER_ENABLED=false`),
+  `helldiversbot_worker` ×1 (the poller), `helldiversbot_cloudflared` ×2. One image for app and
+  worker, pinned to `:sha-<commit>` by CI (multi-arch, pulls anonymously from GHCR — the packages
+  are public, no registry auth needed). Load balancing is the Swarm service VIP: cloudflared
+  targets `http://app:3000` and Swarm spreads connections across the three replicas.
 - Connected to the **staging** Postgres on huginn (`10.0.0.40:5433/helldiversbot_staging` on the
   `db-staging` cluster) via the `helldiversbot_database_url` Swarm secret — no longer the dev
   instance on `:5432`. Loaded from a filtered production dump: all 52 migrations plus the `h1_*`
   game tables, with `User`/`Account`/`Session`/`ApiKey` deliberately restored **empty** (the dump
   carried real users' plaintext Google and Discord OAuth tokens).
-- `worker: true` — the poller runs and writes `worker_heartbeat` in that DB. After the cutover this
-  is the thing to check: laptop and swarm no longer share that row, so if the swarm is still writing
-  to the dev database the secret did not take.
+- The `worker` service is the only poller and the only writer of `worker_heartbeat` in that DB
+  (`app` replicas log `WORKER_ENABLED=false` at boot and return 403 on `/api/h1/update`). If the
+  swarm is still writing to the dev database the secret did not take.
 - Auth/Umami/Sentry unset on purpose: the app degrades gracefully and OAuth callbacks need a
   real hostname anyway.
 
@@ -87,10 +89,10 @@ The app reads both as files via the `*_FILE` convention
    the vault's `50-ci-cd`. Until it exists, migrations are a manual one-shot.
 3. **Kuma maintenance banner** (`../.github/scripts/kuma-maintenance.mjs`) unverified —
    Socket.IO event shapes vary by version. Unused until a runner exists.
-4. **The app cannot be scaled past 1 replica** — every instance also *is* the poller, and
-   `checkAndNotify()` diffs against in-memory state, so N replicas means N× duplicate push
-   notifications. A correctness limit, not a capacity one; `cloudflared` has no such constraint
-   (stateless connectors, hence 2 replicas). Tracked as #516 (bug) / #517 (lease-based fix).
+4. **The poller is a single replica** (`worker`). The web tier scales — the poller was split out
+   because it keeps state in memory and fans out push notifications (#516) — but a node loss pauses
+   polling until Swarm reschedules `worker` (~1–2 min, no data loss). #517 (a Postgres lease) is
+   the HA upgrade for it.
 
 ## CI flow (live)
 

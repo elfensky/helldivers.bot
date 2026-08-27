@@ -54,16 +54,27 @@ secrets:
     helldiversbot_cloudflared:
         external: true
 
+# Two services from ONE image. `app` is the web tier and scales freely
+# (sessions live in the database); `worker` is the single poller. They are
+# split because the update path keeps state in memory (prevEvents,
+# lastSeasonObserved) and fans push notifications out to every subscriber —
+# N pollers means N× duplicate pushes (#516). WORKER_ENABLED=false on `app`
+# also makes /api/h1/update refuse there, so a poll can never land on a web
+# replica. #517 (a Postgres lease) is the later HA upgrade for `worker`.
+#
+# The `image:` line of BOTH services is rewritten by CI (bump-staging-tag) —
+# the sed matches every helldiversbot image line, so they move together.
+
 services:
     app:
-        # Rewritten by CI to :sha-<commit> — see the header. `:staging` only
-        # until the first bump lands.
+        # Rewritten by CI to :sha-<commit> — see the header.
         image: ghcr.io/elfensky/helldiversbot:sha-879c6210b1d0d77009c94895984037ed9d1c0a4e
         networks: [internal]
         environment:
             NODE_ENV: production
             PORT: '3000'
             UPDATE_INTERVAL: '20'
+            WORKER_ENABLED: 'false'
             # Swarm expands this per task. Without it the SDK falls back to
             # os.hostname(), which in a container is the container ID — so the
             # server_name tag in GlitchTip changes on every redeploy instead of
@@ -89,14 +100,43 @@ services:
         #
         # Healthcheck is baked into the image (GET /api/healthcheck -> 503 when the
         # DB is unreachable, 200 healthy), so start-first rollout gates on real health.
+        # cloudflared reaches http://app:3000 — the service VIP — and Swarm
+        # spreads connections across every healthy replica. That IS the load
+        # balancing; nothing on the Cloudflare side knows there are three.
         deploy:
-            replicas: 1
+            replicas: 3
+            placement:
+                max_replicas_per_node: 1
             update_config:
                 order: start-first
                 failure_action: rollback
                 monitor: 30s
             rollback_config:
                 order: start-first
+            restart_policy:
+                condition: any
+
+    worker:
+        # Same image as `app`; the only difference is WORKER_ENABLED (unset =
+        # on). Not on the tunnel path — it only needs the database. It still
+        # listens on :3000 because the cron thread polls its own localhost.
+        image: ghcr.io/elfensky/helldiversbot:sha-879c6210b1d0d77009c94895984037ed9d1c0a4e
+        networks: [internal]
+        environment:
+            NODE_ENV: production
+            PORT: '3000'
+            UPDATE_INTERVAL: '20'
+            SENTRY_SERVER_NAME: '{{.Node.Hostname}}'
+            POSTGRES_URL_FILE: /run/secrets/helldiversbot_database_url
+            UPDATE_KEY_FILE: /run/secrets/helldiversbot_update_key
+        secrets:
+            - helldiversbot_database_url
+            - helldiversbot_update_key
+        # stop-first on purpose: start-first would run two pollers for the
+        # rollout window, which is exactly the duplicate-push bug. A poll gap
+        # of one rollout is the cheaper failure — the next poll catches up.
+        deploy:
+            replicas: 1
             restart_policy:
                 condition: any
 

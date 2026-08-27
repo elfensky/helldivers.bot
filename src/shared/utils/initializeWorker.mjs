@@ -1,12 +1,30 @@
 /**
+ * True unless WORKER_ENABLED is explicitly "false". Lets a horizontally scaled
+ * web tier run with the poller switched off: the update path keeps state in
+ * memory (prevEvents, lastSeasonObserved), so exactly one instance may poll —
+ * see #516. Deployments run N web replicas with WORKER_ENABLED=false and one
+ * worker replica with it on (deploy/staging/compose.yaml).
+ * @returns {boolean}
+ */
+export function isWorkerEnabled() {
+    return process.env.WORKER_ENABLED !== 'false';
+}
+
+/**
  * Spawns the cron worker thread that polls the API update endpoint on a timer.
  * Only runs under the Node.js runtime; registers SIGINT/SIGTERM handlers for graceful shutdown.
- * @returns {Promise<boolean>} true if the worker started, false otherwise
+ * @returns {Promise<boolean>} true if the worker started (or is deliberately disabled), false otherwise
  */
 export async function initializeWorker() {
     'use server';
 
     if (process.env.NEXT_RUNTIME === 'nodejs') {
+        if (!isWorkerEnabled()) {
+            console.info(
+                'initializeWorker | WORKER_ENABLED=false — this instance serves web only',
+            );
+            return true;
+        }
         const key = process.env.UPDATE_KEY;
         if (!key) {
             throw new Error('UPDATE_KEY is not set');
