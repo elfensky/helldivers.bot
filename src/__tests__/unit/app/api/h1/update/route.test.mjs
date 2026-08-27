@@ -10,10 +10,26 @@ vi.mock('@/update/season', () => ({ updateSeason: vi.fn() }));
 vi.mock('@/update/pushNotifier', () => ({
     checkAndNotify: vi.fn().mockResolvedValue(undefined),
 }));
+// The lease decides whether this instance is the poller. Default: held, fresh
+// state — the shape a single-instance deploy sees on its first poll.
+vi.mock('@/update/lease.mjs', () => ({
+    HOLDER_ID: 'test-host:1:abcd',
+    claimLease: vi.fn().mockResolvedValue({ prevEvents: null, lastSeasonObserved: null }),
+    persistPollerState: vi.fn().mockResolvedValue(undefined),
+}));
+import { claimLease, persistPollerState } from '@/update/lease.mjs';
+import { after } from 'next/server';
+import { checkAndNotify } from '@/update/pushNotifier';
 
 describe('GET /api/h1/update', () => {
     beforeEach(() => {
         vi.stubEnv('UPDATE_KEY', 'test-secret-key');
+        // Mocks are reset between tests; restore the "lease held, fresh state"
+        // default so the holder path is what these tests exercise.
+        vi.mocked(claimLease).mockResolvedValue({
+            prevEvents: null,
+            lastSeasonObserved: null,
+        });
     });
 
     afterEach(() => {
@@ -62,6 +78,54 @@ describe('GET /api/h1/update', () => {
         expectErrorEnvelope(await res.json(), { code: 403 });
         expect(updateStatus).not.toHaveBeenCalled();
         expect(updateSeason).not.toHaveBeenCalled();
+    });
+
+    test('standby replica (lease not acquired) answers 200 and does no work', async () => {
+        vi.mocked(claimLease).mockResolvedValueOnce(null);
+        const req = new Request('http://localhost/api/h1/update', {
+            headers: { Authorization: 'Bearer test-secret-key' },
+        });
+        const res = await GET(req);
+        expect(res.status).toBe(200);
+        const body = await res.json();
+        expectSuccessEnvelope(body, { code: 200 });
+        expect(body.data.role).toBe('standby');
+        expect(updateStatus).not.toHaveBeenCalled();
+        expect(updateSeason).not.toHaveBeenCalled();
+        expect(checkAndNotify).not.toHaveBeenCalled();
+        expect(persistPollerState).not.toHaveBeenCalled();
+    });
+
+    test('holder diffs against the prevEvents from the lease row and persists the new snapshot', async () => {
+        const prev = [{ event_id: 1, status: 'active' }];
+        const next = [{ event_id: 1, status: 'success' }];
+        vi.mocked(claimLease).mockResolvedValueOnce({
+            prevEvents: prev,
+            lastSeasonObserved: 5,
+        });
+        vi.mocked(checkAndNotify).mockResolvedValueOnce(next);
+        vi.mocked(updateStatus).mockResolvedValue({ season: 5, time: 1000 });
+        vi.mocked(updateSeason).mockResolvedValue({});
+        // `after` is a no-op stub globally; run the deferred work here so the
+        // notify + persist step is observable.
+        let deferred;
+        vi.mocked(after).mockImplementation((fn) => {
+            deferred = fn();
+        });
+
+        const req = new Request('http://localhost/api/h1/update', {
+            headers: { Authorization: 'Bearer test-secret-key' },
+        });
+        const res = await GET(req);
+        await deferred;
+        expect(res.status).toBe(200);
+        expect(checkAndNotify).toHaveBeenCalledWith(prev);
+        expect(persistPollerState).toHaveBeenCalledWith('test-host:1:abcd', {
+            prevEvents: next,
+        });
+        expect(persistPollerState).toHaveBeenCalledWith('test-host:1:abcd', {
+            lastSeasonObserved: 5,
+        });
     });
 
     test('returns 200 with correct key and update data', async () => {
@@ -152,26 +216,14 @@ describe('GET /api/h1/update', () => {
 });
 
 describe('GET /api/h1/update — season transition detection', () => {
-    // The route keeps `lastSeasonObserved` as module-level state to detect
-    // season transitions across polls. These tests reset the route module
-    // between cases via vi.resetModules() so each test starts with a clean
-    // null state.
-
-    let transitionUpdateStatus;
-    let transitionUpdateSeason;
-    let transitionGET;
-
-    beforeEach(async () => {
-        vi.resetModules();
+    // The previous season lives in the lease row (worker_heartbeat), not in
+    // the process — a fresh holder inherits it from the row it just claimed.
+    beforeEach(() => {
         vi.stubEnv('UPDATE_KEY', 'test-secret-key');
-        // Re-import after reset so we get fresh mock instances bound to the
-        // re-imported route module.
-        const statusModule = await import('@/update/status');
-        const seasonModule = await import('@/update/season');
-        const routeModule = await import('@/app/api/h1/update/route');
-        transitionUpdateStatus = statusModule.updateStatus;
-        transitionUpdateSeason = seasonModule.updateSeason;
-        transitionGET = routeModule.GET;
+        vi.mocked(claimLease).mockResolvedValue({
+            prevEvents: null,
+            lastSeasonObserved: null,
+        });
     });
 
     afterEach(() => {
@@ -183,70 +235,54 @@ describe('GET /api/h1/update — season transition detection', () => {
             headers: { Authorization: 'Bearer test-secret-key' },
         });
 
-    test('runs closing pass on outgoing season when current season is higher', async () => {
-        vi.mocked(transitionUpdateStatus)
-            .mockResolvedValueOnce({ season: 156, time: 1000 })
-            .mockResolvedValueOnce({ season: 157, time: 1010 });
-        vi.mocked(transitionUpdateSeason).mockResolvedValue({ season: 0 });
-
-        // Poll 1: no prior observation, no closing pass, only current-season call
-        await transitionGET(makeReq());
-        expect(transitionUpdateSeason).toHaveBeenCalledTimes(1);
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(1, 156, {
-            protectedBucket: 900,
+    test('runs closing pass on outgoing season when current season is higher than the row says', async () => {
+        vi.mocked(claimLease).mockResolvedValueOnce({
+            prevEvents: null,
+            lastSeasonObserved: 156,
         });
+        vi.mocked(updateStatus).mockResolvedValueOnce({ season: 157, time: 1010 });
+        vi.mocked(updateSeason).mockResolvedValue({ season: 0 });
 
-        // Poll 2: prior was 156, current is 157 — closing pass (no opts) THEN current season (with protectedBucket)
-        await transitionGET(makeReq());
-        expect(transitionUpdateSeason).toHaveBeenCalledTimes(3);
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(2, 156); // closing pass — no protectedBucket
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(3, 157, {
-            protectedBucket: 900,
+        await GET(makeReq());
+        expect(updateSeason).toHaveBeenCalledTimes(2);
+        expect(updateSeason).toHaveBeenNthCalledWith(1, 156); // closing pass — no protectedBucket
+        expect(updateSeason).toHaveBeenNthCalledWith(2, 157, { protectedBucket: 900 });
+        expect(persistPollerState).toHaveBeenCalledWith('test-host:1:abcd', {
+            lastSeasonObserved: 157,
         });
     });
 
-    test('does not run closing pass when season stays the same across polls', async () => {
-        vi.mocked(transitionUpdateStatus)
-            .mockResolvedValueOnce({ season: 157, time: 1000 })
-            .mockResolvedValueOnce({ season: 157, time: 1010 });
-        vi.mocked(transitionUpdateSeason).mockResolvedValue({ season: 0 });
+    test('no closing pass when the row has no prior season (fresh lease) or the season is unchanged', async () => {
+        vi.mocked(claimLease)
+            .mockResolvedValueOnce({ prevEvents: null, lastSeasonObserved: null })
+            .mockResolvedValueOnce({ prevEvents: null, lastSeasonObserved: 157 });
+        vi.mocked(updateStatus).mockResolvedValue({ season: 157, time: 1000 });
+        vi.mocked(updateSeason).mockResolvedValue({ season: 0 });
 
-        await transitionGET(makeReq());
-        await transitionGET(makeReq());
+        await GET(makeReq());
+        await GET(makeReq());
 
-        expect(transitionUpdateSeason).toHaveBeenCalledTimes(2);
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(1, 157, {
-            protectedBucket: 900,
-        });
-        expect(transitionUpdateSeason).toHaveBeenNthCalledWith(2, 157, {
-            protectedBucket: 900,
-        });
+        expect(updateSeason).toHaveBeenCalledTimes(2);
+        expect(updateSeason).toHaveBeenNthCalledWith(1, 157, { protectedBucket: 900 });
+        expect(updateSeason).toHaveBeenNthCalledWith(2, 157, { protectedBucket: 900 });
     });
 
     test('closing pass failure is non-fatal and current season still processes', async () => {
-        vi.mocked(transitionUpdateStatus)
-            .mockResolvedValueOnce({ season: 156, time: 1000 })
-            .mockResolvedValueOnce({ season: 157, time: 1010 });
-        vi.mocked(transitionUpdateSeason)
-            .mockResolvedValueOnce({ season: 0 }) // poll 1 current
-            .mockRejectedValueOnce(new Error('closing pass API error')) // poll 2 closing
-            .mockResolvedValueOnce({ season: 0 }); // poll 2 current
-
+        vi.mocked(claimLease).mockResolvedValueOnce({
+            prevEvents: null,
+            lastSeasonObserved: 156,
+        });
+        vi.mocked(updateStatus).mockResolvedValueOnce({ season: 157, time: 1010 });
+        vi.mocked(updateSeason)
+            .mockRejectedValueOnce(new Error('closing pass API error'))
+            .mockResolvedValueOnce({ season: 0 });
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-        await transitionGET(makeReq());
-        const res2 = await transitionGET(makeReq());
-
-        // Current season update still succeeded
-        expect(res2.status).toBe(200);
-        expect(transitionUpdateSeason).toHaveBeenCalledTimes(3);
-        // Closing pass for 156 logged the failure
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-            expect.stringContaining('Closing pass for season 156 failed'),
-            expect.any(String),
-        );
-
+        const res = await GET(makeReq());
+        expect(res.status).toBe(200);
+        expect(updateSeason).toHaveBeenCalledTimes(2);
+        expect(updateSeason).toHaveBeenNthCalledWith(2, 157, { protectedBucket: 900 });
         consoleErrorSpy.mockRestore();
         consoleLogSpy.mockRestore();
     });

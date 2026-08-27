@@ -60,6 +60,10 @@ export default async function SystemOverview() {
                     label="Uptime"
                     value={heartbeat ? formatUptime(heartbeat.started_at) : '—'}
                 />
+                <AdminStatCard
+                    label="Poller"
+                    value={heartbeat?.holder_id ? heartbeat.holder_id.split(':')[0] : '—'}
+                />
             </div>
 
             {heartbeat?.last_error && (

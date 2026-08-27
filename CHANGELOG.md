@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.93.0
+
+### Added
+
+- Poller lease in Postgres (#517): every replica runs the cron thread, but on
+  each poll it must claim the `worker_heartbeat` row (`holder_id`,
+  `lease_until`, 60 s TTL) — one conditional `INSERT … ON CONFLICT DO UPDATE`
+  that Postgres serialises, so exactly one instance polls and a dead holder is
+  replaced within the TTL with no election and no manual step. The poller's
+  state (`prev_events`, `last_season_observed`) lives in the same row, so a
+  new holder inherits the previous snapshot instead of starting blind: a
+  transition across a handover is neither missed nor sent twice. Standby
+  replicas answer `200 { role: 'standby' }` and touch nothing. The admin
+  dashboard shows which host holds the lease.
+
+### Changed
+
+- `checkAndNotify(prevEvents)` takes its baseline as an argument and returns
+  the current snapshot; the module-level `prevEvents` is gone. The route's
+  module-level `lastSeasonObserved` is gone likewise. Heartbeat writes are
+  holder-guarded `updateMany`s, never an unconditional upsert.
+
 ## 0.92.0
 
 ### Added
