@@ -54,10 +54,19 @@ secrets:
     helldiversbot_cloudflared:
         external: true
 
+# One service, N replicas, exactly one poller: every replica runs the cron
+# thread, but each poll must claim the lease row in worker_heartbeat first
+# (src/update/lease.mjs, #517). Postgres serialises the claim, so one instance
+# does the work and the rest answer "standby". A dead holder is replaced
+# within the 60 s TTL with no election. The poller's state lives in the same
+# row, so a handover neither misses nor duplicates a transition.
+#
+# Because of that, no placement constraint and no separate worker service:
+# `docker service scale` is safe at any N.
+
 services:
     app:
-        # Rewritten by CI to :sha-<commit> — see the header. `:staging` only
-        # until the first bump lands.
+        # Rewritten by CI to :sha-<commit> — see the header.
         image: ghcr.io/elfensky/helldiversbot:sha-1049d41d4650e0760336d1da175a7600b0b14d26
         networks: [internal]
         environment:
@@ -68,7 +77,7 @@ services:
             # os.hostname(), which in a container is the container ID — so the
             # server_name tag in GlitchTip changes on every redeploy instead of
             # naming the node the task landed on.
-            SENTRY_SERVER_NAME: '{{.Node.Hostname}}'
+            SENTRY_SERVER_NAME: '{{.Node.Hostname}}-{{.Task.Slot}}'
             # The app reads secrets from files via the `*_FILE` convention
             # (src/shared/utils/hydrateFileSecrets.mjs): if POSTGRES_URL_FILE is set,
             # it populates POSTGRES_URL from that file before Prisma reads it.
@@ -89,8 +98,22 @@ services:
         #
         # Healthcheck is baked into the image (GET /api/healthcheck -> 503 when the
         # DB is unreachable, 200 healthy), so start-first rollout gates on real health.
+        # cloudflared reaches http://app:3000 — the service VIP — and Swarm
+        # spreads NEW connections across every healthy replica (per TCP
+        # connection, not per request; cloudflared pools keep-alives, so the
+        # spread is lumpy). That IS the load balancing; nothing on the
+        # Cloudflare side knows there are three.
+        #
+        # Soft spread, NOT `max_replicas_per_node: 1`: the hard cap plus
+        # start-first never converges on a 3-node swarm — the replacement task
+        # has no node, sits Pending, and Pending is not a failure so rollback
+        # never fires (moby/moby#40797). The preference puts one per node when
+        # three are up and doubles up on a live node when one is down.
         deploy:
-            replicas: 1
+            replicas: 3
+            placement:
+                preferences:
+                    - spread: node.id
             update_config:
                 order: start-first
                 failure_action: rollback
