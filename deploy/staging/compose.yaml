@@ -58,7 +58,7 @@ services:
     app:
         # Rewritten by CI to :sha-<commit> — see the header. `:staging` only
         # until the first bump lands.
-        image: ghcr.io/elfensky/helldiversbot:staging
+        image: ghcr.io/elfensky/helldiversbot:sha-879c6210b1d0d77009c94895984037ed9d1c0a4e
         networks: [internal]
         environment:
             NODE_ENV: production
