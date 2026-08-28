@@ -31,7 +31,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Housekeeping (HOUSE)
 
 - [ ] **HOUSE-01**: #466 — unit tests are co-located as `*.test.*` next to their modules; `src/__tests__/` keeps only `_meta`, contract and integration tests; `mirrorTree.test.mjs` is replaced by a co-location guard; `.dockerignore` / `output: 'standalone'` / `pageExtensions` verified to exclude tests from the image; CLAUDE.md § Test Layout rewritten. Lands before any feature phase adds tests
-- [ ] **HOUSE-02**: #389 — Rich Results, Schema.org validator, Search Console and SERP previews for `/`, `/archives`, `/docs/about` verified on production; findings fixed or recorded
+- [ ] **HOUSE-02**: #389 — Rich Results, Schema.org validator, Search Console and SERP previews for `/`, `/archives`, `/docs/about` verified on production; findings fixed or recorded (checks absorbed into SEO-05)
 - [ ] **HOUSE-03**: #502 — once GlitchTip symbolication is proven on ≥1 release, sourcemaps are uploaded at build time and stripped from the shipped image (~24 MB saved); verified by image size and a symbolicated production stack trace
 - [ ] **HOUSE-04**: #501 — the seed-refresh workflow's PR path is verified end-to-end at the next season transition (or via a controlled simulation if the transition hasn't happened by the phase's end); issue records the run
 - [ ] **HOUSE-05**: `docs/roadmap.md` is retired to a short pointer at `.planning/ROADMAP.md`; one source of truth for execution order
@@ -166,7 +166,6 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAB-07 | Phase 1 | Pending |
 | DOCS-01 | Phase 2 | Pending |
 | DOCS-02 | Phase 2 | Pending |
-| HOUSE-02 | Phase 2 | Pending |
 | HOUSE-03 | Phase 2 | Pending |
 | HOUSE-04 | Phase 2 | Pending |
 | HOUSE-05 | Phase 2 | Pending |
@@ -177,61 +176,72 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEPS-04 | Phase 4 | Pending |
 | DEPS-05 | Phase 4 | Pending |
 | DEPS-06 | Phase 4 | Pending |
-| ICE-01 | Phase 5 | Pending |
-| ICE-02 | Phase 5 | Pending |
-| ICE-03 | Phase 5 | Pending |
-| ICE-04 | Phase 5 | Pending |
-| ICE-05 | Phase 5 | Pending |
-| LOAD-01 | Phase 6 | Pending |
-| LOAD-02 | Phase 6 | Pending |
-| LOAD-03 | Phase 6 | Pending |
-| LOAD-04 | Phase 7 | Pending |
-| LOAD-05 | Phase 7 | Pending |
-| LOAD-09 | Phase 7 | Pending |
-| LOAD-10 | Phase 7 | Pending |
-| LOAD-06 | Phase 8 | Pending |
-| LOAD-07 | Phase 8 | Pending |
-| LOAD-08 | Phase 8 | Pending |
-| LOAD-11 | Phase 8 | Pending |
-| LOAD-12 | Phase 8 | Pending |
-| ARCH-01 | Phase 9 | Pending |
-| ARCH-02 | Phase 10 | Pending |
-| ARCH-03 | Phase 10 | Pending |
-| ARCH-04 | Phase 10 | Pending |
-| ARCH-05 | Phase 10 | Pending |
-| ARCH-06 | Phase 11 | Pending |
-| ARCH-07 | Phase 11 | Pending |
-| ARCH-08 | Phase 11 | Pending |
-| ARCH-09 | Phase 11 | Pending |
-| ARCH-10 | Phase 11 | Pending |
-| A11Y-01 | Phase 12 | Pending |
-| A11Y-02 | Phase 12 | Pending |
-| A11Y-03 | Phase 12 | Pending |
-| A11Y-04 | Phase 12 | Pending |
-| A11Y-05 | Phase 12 | Pending |
-| SITE-01 | Phase 13 | Pending |
-| SITE-02 | Phase 13 | Pending |
-| SITE-03 | Phase 13 | Pending |
-| SITE-04 | Phase 13 | Pending |
-| MAP-01 | Phase 14 | Pending |
-| MAP-02 | Phase 14 | Pending |
-| MAP-03 | Phase 14 | Pending |
-| MAP-04 | Phase 14 | Pending |
-| ICE-06 | Phase 14 | Pending |
-| ICE-07 | Phase 14 | Pending |
-| STAGE-01 | Phase 15 | Pending |
-| STAGE-02 | Phase 15 | Pending |
-| STAGE-03 | Phase 15 | Pending |
-| STAGE-04 | Phase 15 | Pending |
-| SSE-01 | Phase 16 | Pending |
-| SSE-02 | Phase 16 | Pending |
-| DOCS-03 | Phase 17 | Pending |
+| SEO-01 | Phase 5 | Pending |
+| SEO-02 | Phase 5 | Pending |
+| SEO-03 | Phase 5 | Pending |
+| SEO-04 | Phase 5 | Pending |
+| SEO-05 | Phase 5 | Pending |
+| SEO-06 | Phase 5 | Pending |
+| SEO-07 | Phase 5 | Pending |
+| SEO-08 | Phase 5 | Pending |
+| SEO-09 | Phase 5 | Pending |
+| SEO-10 | Phase 5 | Pending |
+| HOUSE-02 | Phase 5 | Pending |
+| ICE-01 | Phase 6 | Pending |
+| ICE-02 | Phase 6 | Pending |
+| ICE-03 | Phase 6 | Pending |
+| ICE-04 | Phase 6 | Pending |
+| ICE-05 | Phase 6 | Pending |
+| LOAD-01 | Phase 7 | Pending |
+| LOAD-02 | Phase 7 | Pending |
+| LOAD-03 | Phase 7 | Pending |
+| LOAD-04 | Phase 8 | Pending |
+| LOAD-05 | Phase 8 | Pending |
+| LOAD-09 | Phase 8 | Pending |
+| LOAD-10 | Phase 8 | Pending |
+| LOAD-06 | Phase 9 | Pending |
+| LOAD-07 | Phase 9 | Pending |
+| LOAD-08 | Phase 9 | Pending |
+| LOAD-11 | Phase 9 | Pending |
+| LOAD-12 | Phase 9 | Pending |
+| ARCH-01 | Phase 10 | Pending |
+| ARCH-02 | Phase 11 | Pending |
+| ARCH-03 | Phase 11 | Pending |
+| ARCH-04 | Phase 11 | Pending |
+| ARCH-05 | Phase 11 | Pending |
+| ARCH-06 | Phase 12 | Pending |
+| ARCH-07 | Phase 12 | Pending |
+| ARCH-08 | Phase 12 | Pending |
+| ARCH-09 | Phase 12 | Pending |
+| ARCH-10 | Phase 12 | Pending |
+| A11Y-01 | Phase 13 | Pending |
+| A11Y-02 | Phase 13 | Pending |
+| A11Y-03 | Phase 13 | Pending |
+| A11Y-04 | Phase 13 | Pending |
+| A11Y-05 | Phase 13 | Pending |
+| SITE-01 | Phase 14 | Pending |
+| SITE-02 | Phase 14 | Pending |
+| SITE-03 | Phase 14 | Pending |
+| SITE-04 | Phase 14 | Pending |
+| MAP-01 | Phase 15 | Pending |
+| MAP-02 | Phase 15 | Pending |
+| MAP-03 | Phase 15 | Pending |
+| MAP-04 | Phase 15 | Pending |
+| ICE-06 | Phase 15 | Pending |
+| ICE-07 | Phase 15 | Pending |
+| STAGE-01 | Phase 16 | Pending |
+| STAGE-02 | Phase 16 | Pending |
+| STAGE-03 | Phase 16 | Pending |
+| STAGE-04 | Phase 16 | Pending |
+| SSE-01 | Phase 17 | Pending |
+| SSE-02 | Phase 17 | Pending |
+| DOCS-03 | Phase 18 | Pending |
 
 **Coverage:**
 - v1 requirements: 79 total
-- Mapped to phases: 69
+- Mapped to phases: 79
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-28*
-*Last updated: 2026-08-29 after roadmap creation (17 phases, full coverage)*
+*Last updated: 2026-08-29 after roadmap revision (18 phases, full coverage — SEO & Analytics Foundation inserted as Phase 5, HOUSE-02 absorbed into it)*
