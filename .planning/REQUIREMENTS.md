@@ -42,6 +42,21 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **DOCS-02**: Public `/docs` pages (`architecture`, `data-flow`, `infrastructure`, `database`, `testing`) match the code — lease, replica topology, CI/CD workflow names, test layout — verified page-by-page against `.planning/codebase/`
 - [ ] **DOCS-03**: A final docs pass after all feature tracks ship covers Loadout Builder, Archive Analytics, staging, and the SSE outcome, so docs describe what shipped
 
+### SEO & Analytics (SEO)
+
+Goal: rank highly for Helldivers 1 queries ("helldivers 1 galactic war status/map/stats/api/loadout", "helldivers war archive"…). Patterns copied from `../euraikaweb` (llms.txt, `robots.js`/`sitemap.js` via the Metadata API, `createPageMetadata` helper, typed JSON-LD components). Google Search Console already has the property.
+
+- [ ] **SEO-01**: `/llms.txt` served (euraikaweb pattern): one-paragraph site summary, core pages with one-line descriptions, the public API, data facts (160 seasons, factions, telemetry reach), contact/author — kept current by the same registry as the sitemap
+- [ ] **SEO-02**: `sitemap.js` is registry-driven and covers every public route (all `/docs/**` incl. `predict/*`, `/stats`, `/legal`, `/archives` per-season URLs, `/loadout` when it ships) with truthful `lastModified` (not `new Date()` on every request); a test fails when a public `page.*` is missing from the registry
+- [ ] **SEO-03**: `robots.js` via the Metadata API (replacing the static file), consistent with the sitemap, AI crawlers explicitly allowed, private routes (`/profile`, `/sign-in`, `/sandbox`, `/api`) disallowed; `/robots.txt` and `/sitemap.xml` are in the uptime monitor (an intermittent 520 was observed on 2026-08-28)
+- [ ] **SEO-04**: every public page has a unique `title` (template `%s — Helldivers Bot`), `description`, self-canonical and page-specific OpenGraph/Twitter via a shared `createPageMetadata()` helper; private pages (`/profile`, `/sign-in`, `/sandbox/*`) carry `robots: noindex`
+- [ ] **SEO-05**: JSON-LD is typed components (euraikaweb pattern) and covers `WebSite`, `WebApplication`, `VideoGame` main entity, `BreadcrumbList` on every page, `FAQPage` on `/docs/faq`, `Dataset` for the historic war archive, `Event` per active event; every type passes the Rich Results Test and schema.org validator (absorbs #389's checks)
+- [ ] **SEO-06**: Keyword-to-page map written (target queries above → owning page) and each owning page has server-rendered H1 + intro copy covering its queries; archives seasons are indexable at unique URLs with per-season titles ("Helldivers 1 — War 160 archive") and metadata; docs pages get descriptive titles instead of generic ones
+- [ ] **SEO-07**: Google Search Console is wired into the workflow: verification token in metadata, sitemap submitted, an agent-accessible path (GSC API or an MCP server) to pull performance (queries/impressions/CTR/position) and coverage; a recurring review turns findings into GitHub issues, and the first review's fixes ship in this milestone
+- [ ] **SEO-08**: Lighthouse SEO ≥ 95 and Performance/Accessibility ≥ 90 on `/`, `/archives`, `/docs` measured against production (the `scheduled-pagespeed.yml` report on the `metrics` branch is the record); Core Web Vitals pass in GSC's report
+- [ ] **SEO-09**: Umami (umami.drunik.be) is fully wired: `UMAMI_SITE_ID`/`UMAMI_SITE_URL` present in production and staging runtime env, tracker loads via the `/stats.js` proxy and events flow through `/api/send`→`/api/umami` (verified by a real event in the Umami dashboard), `umami.identify()` on login, and `umamiTrackEvent` called via `after()` on every public API route (`/api/v1/**`, `/api/h1/campaign`, `/api/h1/rebroadcast`) — currently zero routes do
+- [ ] **SEO-10**: Every interactive element carries `data-umami-event` (or `useTrack`), enforced by a lint rule or test rather than review; Umami event names follow `category-action` and the category list in CLAUDE.md is complete
+
 ### Loadout Builder (LOAD) — milestone #19
 
 - [ ] **LOAD-01**: #339 — static JSON catalogs for stratagems, weapons, perks with string IDs (never indices), stats fields, and stratagem input codes; schema-validated by a test
@@ -142,13 +157,81 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by roadmap) | | |
+| STAB-01 | Phase 1 | Pending |
+| STAB-02 | Phase 1 | Pending |
+| STAB-03 | Phase 1 | Pending |
+| STAB-04 | Phase 1 | Pending |
+| STAB-05 | Phase 1 | Pending |
+| STAB-06 | Phase 1 | Pending |
+| STAB-07 | Phase 1 | Pending |
+| DOCS-01 | Phase 2 | Pending |
+| DOCS-02 | Phase 2 | Pending |
+| HOUSE-02 | Phase 2 | Pending |
+| HOUSE-03 | Phase 2 | Pending |
+| HOUSE-04 | Phase 2 | Pending |
+| HOUSE-05 | Phase 2 | Pending |
+| HOUSE-01 | Phase 3 | Pending |
+| DEPS-01 | Phase 4 | Pending |
+| DEPS-02 | Phase 4 | Pending |
+| DEPS-03 | Phase 4 | Pending |
+| DEPS-04 | Phase 4 | Pending |
+| DEPS-05 | Phase 4 | Pending |
+| DEPS-06 | Phase 4 | Pending |
+| ICE-01 | Phase 5 | Pending |
+| ICE-02 | Phase 5 | Pending |
+| ICE-03 | Phase 5 | Pending |
+| ICE-04 | Phase 5 | Pending |
+| ICE-05 | Phase 5 | Pending |
+| LOAD-01 | Phase 6 | Pending |
+| LOAD-02 | Phase 6 | Pending |
+| LOAD-03 | Phase 6 | Pending |
+| LOAD-04 | Phase 7 | Pending |
+| LOAD-05 | Phase 7 | Pending |
+| LOAD-09 | Phase 7 | Pending |
+| LOAD-10 | Phase 7 | Pending |
+| LOAD-06 | Phase 8 | Pending |
+| LOAD-07 | Phase 8 | Pending |
+| LOAD-08 | Phase 8 | Pending |
+| LOAD-11 | Phase 8 | Pending |
+| LOAD-12 | Phase 8 | Pending |
+| ARCH-01 | Phase 9 | Pending |
+| ARCH-02 | Phase 10 | Pending |
+| ARCH-03 | Phase 10 | Pending |
+| ARCH-04 | Phase 10 | Pending |
+| ARCH-05 | Phase 10 | Pending |
+| ARCH-06 | Phase 11 | Pending |
+| ARCH-07 | Phase 11 | Pending |
+| ARCH-08 | Phase 11 | Pending |
+| ARCH-09 | Phase 11 | Pending |
+| ARCH-10 | Phase 11 | Pending |
+| A11Y-01 | Phase 12 | Pending |
+| A11Y-02 | Phase 12 | Pending |
+| A11Y-03 | Phase 12 | Pending |
+| A11Y-04 | Phase 12 | Pending |
+| A11Y-05 | Phase 12 | Pending |
+| SITE-01 | Phase 13 | Pending |
+| SITE-02 | Phase 13 | Pending |
+| SITE-03 | Phase 13 | Pending |
+| SITE-04 | Phase 13 | Pending |
+| MAP-01 | Phase 14 | Pending |
+| MAP-02 | Phase 14 | Pending |
+| MAP-03 | Phase 14 | Pending |
+| MAP-04 | Phase 14 | Pending |
+| ICE-06 | Phase 14 | Pending |
+| ICE-07 | Phase 14 | Pending |
+| STAGE-01 | Phase 15 | Pending |
+| STAGE-02 | Phase 15 | Pending |
+| STAGE-03 | Phase 15 | Pending |
+| STAGE-04 | Phase 15 | Pending |
+| SSE-01 | Phase 16 | Pending |
+| SSE-02 | Phase 16 | Pending |
+| DOCS-03 | Phase 17 | Pending |
 
 **Coverage:**
-- v1 requirements: 69 total
-- Mapped to phases: 0
-- Unmapped: 69 ⚠️
+- v1 requirements: 79 total
+- Mapped to phases: 69
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-28*
-*Last updated: 2026-08-28 after initial definition*
+*Last updated: 2026-08-29 after roadmap creation (17 phases, full coverage)*

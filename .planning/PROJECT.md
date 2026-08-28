@@ -35,6 +35,8 @@ The live dashboard and API are **stable and correct** — the poller never loses
 - [ ] Release cadence honored: `develop` (0.93.1) is already >5 versions ahead of `main` (v0.90.14) — release early in the plan and keep the gap ≤5 versions thereafter
 - [ ] Dependency posture: 7 open Dependabot alerts (1 high `nanoid`, `mermaid` ×5, `dompurify`) cleared; 5 open Dependabot PRs resolved (two currently failing CI: #515 minor/patch group, #511 TypeScript 6→7)
 - [ ] **Steady state = Dependabot auto-merge:** minor/patch groups auto-merge when CI is green; majors stay manual. Requires repo `allow_auto_merge`, a branch ruleset on `develop` requiring the CI checks, and a workflow that enables auto-merge on Dependabot PRs — must respect the `--no-ff` + version-bump/CHANGELOG-on-merge rule (or explicitly exempt deps PRs and record why)
+- [ ] **SEO — rank highly for Helldivers 1 queries:** llms.txt, registry-driven sitemap/robots via the Metadata API, `createPageMetadata` helper, typed JSON-LD (WebSite/WebApplication/VideoGame/BreadcrumbList/FAQPage/Dataset/Event) validated in Rich Results, keyword-to-page map with server-rendered copy, indexable per-season archive URLs, Google Search Console wired in (verification, sitemap, API/MCP access, recurring review → issues), Lighthouse SEO ≥ 95 — patterns copied from `../euraikaweb`
+- [ ] **Umami fully wired** (umami.drunik.be): runtime env present in prod + staging, tracker via `/stats.js` proxy verified end-to-end, `identify()` on login, server-side `umamiTrackEvent` on every public API route (currently none), `data-umami-event` coverage enforced by lint/test
 - [ ] Docs kept accurate: CLAUDE.md § Architecture and the public `/docs` pages (`src/app/docs/**`, esp. `architecture`, `data-flow`, `infrastructure`, `database`) rewritten to describe the lease/`worker_heartbeat` model, multi-replica web tier, and current CI/CD — the codebase map found concrete drift
 - [ ] Housekeeping (Track A): #466 co-locate unit tests (do before feature work adds more test files), #469 archives map hides un-introduced factions, #389 post-deploy SEO verification, #502 stop shipping sourcemaps once symbolication is proven, #501 verify seed-refresh workflow at season 160's end
 - [ ] Accessibility & Design Polish (milestone #10): #42 WCAG design tokens → #148 ARIA patterns (FactionTabs, BottomNav, Alerts, Map) → #124 design polish (scope first)
@@ -85,6 +87,7 @@ The live dashboard and API are **stable and correct** — the poller never loses
 | Keep `/docs` + CLAUDE.md as the portfolio showcase (no new "how it's built" page) | Accurate docs already exist and are public; drift is the problem, not absence | — Pending |
 | Hash codec (#341) designed for squad mode from day one | Shared URLs cannot be migrated; a second format later would break every link in the wild | — Pending |
 | SSE (#298) is spike-gated and last | Highest blast radius on the board against polling that works; "don't do it" is a valid spike outcome | — Pending |
+| SEO is a first-class track, sequenced right after stability + housekeeping | Ranking compounds with time; every later feature page inherits the registry-driven sitemap/metadata/llms.txt so SEO can't drift again | — Pending |
 | Roadmap execution order lives in `.planning/` from now on | Two "when" documents drift (docs/roadmap.md already has); one wins | — Pending |
 
 ## Evolution
@@ -105,4 +108,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-28 after initialization*
+*Last updated: 2026-08-29 after adding the SEO & Analytics track*
