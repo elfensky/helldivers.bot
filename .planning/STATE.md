@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-08-29)
 Phase: 1 of 18 (Stability Fixes & Release)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-08-29 — ROADMAP.md revised to insert Phase 5 (SEO & Analytics Foundation, SEO-01…10 + HOUSE-02), renumbering Phases 5-17 to 6-18; all 79 v1 requirements mapped across 18 phases
+Last activity: 2026-08-29 - Completed quick task 260829-219: Wire SENTRY_DSN into the staging Swarm stack so staging reports to GlitchTip
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -70,6 +70,12 @@ None yet.
 - HOUSE-03 (sourcemap stripping) needs GlitchTip symbolication proven on a real release — depends on Phase 1's release landing first
 - SITE-03 and ARCH-08 touch the same narrative/vernacular copy — Phase 14 depends on Phase 12 so the second track consumes the first's vocabulary source instead of forking it
 - ICE-06/ICE-07 and STAGE-01..04 are gated on external factors (official API behavior, TLS pinning, homelab hardware) — not schedulable by effort alone
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260829-219 | Wire SENTRY_DSN into the staging Swarm stack so staging reports to GlitchTip | 2026-08-29 | d8323eef | [260829-219-wire-sentry-dsn-into-the-staging-swarm-s](./quick/260829-219-wire-sentry-dsn-into-the-staging-swarm-s/) |
 
 ## Deferred Items
 
