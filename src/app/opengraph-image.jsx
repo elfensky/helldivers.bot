@@ -205,8 +205,26 @@ function buildMapSvg(mapState) {
 export default async function Image() {
     const { data, error } = await tryCatch(getCampaign());
 
-    if (error || !data || !data.status || data.status.length === 0) {
-        return fallbackImage('data-fetch');
+    // D-11: getCampaign() is the first link in the #503 chain, so its two
+    // failure shapes get two different dispositions instead of one silent
+    // fallback. A rejected query or a structurally wrong resolved value
+    // (missing entirely, or missing its `status` array) is an incident —
+    // something is actually broken, and the previous single guard reported
+    // nothing at all here. A well-formed result whose `status` array is
+    // simply empty (a season boundary, a freshly seeded database) is not an
+    // incident — reporting it would train the maintainer to ignore the
+    // route's alerts.
+    if (error || !data || !data.status) {
+        reportError(error ?? new Error('getCampaign() returned a malformed result'), {
+            route: 'opengraph-image',
+            stage: 'data-fetch',
+            level: 'error',
+        });
+        return fallbackImage('query-failure');
+    }
+
+    if (data.status.length === 0) {
+        return fallbackImage('empty-data');
     }
 
     // Two event lists:

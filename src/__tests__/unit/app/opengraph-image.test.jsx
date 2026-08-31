@@ -133,6 +133,17 @@ describe('opengraph-image', () => {
         expect(response.headers.get('Cache-Control')).toContain('no-store');
     });
 
+    test('a rejected getCampaign() is dispositioned as a query failure and reported to GlitchTip (D-11)', async () => {
+        getCampaign.mockRejectedValue(new Error('connection refused'));
+
+        await Image();
+
+        expect(reportError).toHaveBeenCalledWith(
+            expect.objectContaining({ message: 'connection refused' }),
+            expect.objectContaining({ route: 'opengraph-image', stage: 'data-fetch' }),
+        );
+    });
+
     test('serves the uncacheable static fallback without constructing an ImageResponse when status is empty', async () => {
         getCampaign.mockResolvedValue({ status: [], events: [] });
 
@@ -141,6 +152,14 @@ describe('opengraph-image', () => {
         expect(constructed).toHaveLength(0);
         expect(response.headers.get('content-type')).toBe('image/png');
         expect(response.headers.get('Cache-Control')).toContain('no-store');
+    });
+
+    test('a well-formed empty result is dispositioned as legitimately empty and does NOT report an error (D-11)', async () => {
+        getCampaign.mockResolvedValue({ status: [], events: [] });
+
+        await Image();
+
+        expect(reportError).not.toHaveBeenCalled();
     });
 
     test('a successful render fires exactly one telemetry call marking the rendered outcome', async () => {
@@ -185,7 +204,7 @@ describe('opengraph-image', () => {
             expect.any(String),
             '/opengraph-image',
             'api-og-fallback',
-            expect.any(Object),
+            expect.objectContaining({ stage: 'query-failure' }),
         );
     });
 
