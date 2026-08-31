@@ -45,7 +45,18 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. `--font-mono` is resolved one way or the other (loaded via `next/font`, or dropped from the token) with before/after measurements of affected elements recorded on the issue (STAB-04)
   5. `getWarOutcome` tolerates a null faction slot instead of throwing, pinned by a regression test (STAB-05)
   6. GlitchTip shows zero new events for the #496/#503/#485 classes on the new deployment id over a 48-hour window after `develop` is tagged and released to `main`, with `main` merged back into `develop` (STAB-06, STAB-07)
-**Plans**: TBD
+**Plans**: 9 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Tracer: getWarOutcome null-slot guard + buildPlayerBeats zero-baseline coverage (STAB-05)
+- [ ] 01-02-PLAN.md — Hydration sweep, per-variant fixes and regression tests on `/` (STAB-01)
+- [ ] 01-03-PLAN.md — OG static crash fallback served as raw bytes, per-outcome cache headers (STAB-02)
+- [ ] 01-04-PLAN.md — OG render telemetry, getCampaign failure-mode audit, edge-case map-state coverage (STAB-02)
+- [ ] 01-05-PLAN.md — Time-boxed sharp-rejection reproduction against the standalone image (STAB-02)
+- [ ] 01-06-PLAN.md — NotificationToggle error state, 5s timeout, Retry and VAPID surfacing (STAB-03)
+- [ ] 01-07-PLAN.md — Space Mono via next/font, token repoint, before/after measurements (STAB-04)
+- [ ] 01-08-PLAN.md — Symbolication gate, single develop→main release, tag and merge-back (STAB-07)
+- [ ] 01-09-PLAN.md — 48h GlitchTip re-count on the new deployment id, issue disposition (STAB-06)
 **UI hint**: yes
 
 ### Phase 2: Docs Accuracy & Operational Housekeeping
