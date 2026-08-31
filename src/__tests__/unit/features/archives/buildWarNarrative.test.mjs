@@ -603,3 +603,66 @@ describe('buildWarNarrative — arrival beats are capped by the chronicle', () =
         expect(arrival.day).toBe(3);
     });
 });
+
+describe('buildWarNarrative — buildPlayerBeats guards (D-19)', () => {
+    const SEASON = 220;
+
+    // Static text preceding the interpolated count for each surge/collapse
+    // variant, derived from the live PHRASES pool rather than hardcoded copies
+    // of the prose — this survives the #453 phrasing-variety work adding more
+    // variants later.
+    const SENTINEL = '__N__';
+    const surgePrefixes = PHRASES.surge.map((fn) => fn(SENTINEL).split(SENTINEL)[0]);
+    const collapsePrefixes = PHRASES.collapse.map((fn) => fn(SENTINEL).split(SENTINEL)[0]);
+
+    function hasPlayerBeat(beats) {
+        return beats.some(
+            (b) =>
+                surgePrefixes.some((p) => b.text.startsWith(p)) ||
+                collapsePrefixes.some((p) => b.text.startsWith(p)),
+        );
+    }
+
+    function fixtureWithPlayerTimeseries(playerTimeseries) {
+        return {
+            season: SEASON,
+            war_start: WAR_START,
+            introduction_order: { order: [0, 1, 2] },
+            status: [{ enemy: 0, first_seen: WAR_START, status: 'active' }],
+            points_max: { points: [1000, 1000, 1000] },
+            snapshots: [],
+            playerTimeseries,
+            events: [
+                {
+                    type: 'defend',
+                    status: 'success',
+                    enemy: 0,
+                    region: 5,
+                    start_time: WAR_START,
+                    end_time: WAR_START + HOUR,
+                    event_id: 1,
+                    season: SEASON,
+                },
+            ],
+        };
+    }
+
+    it('emits no surge or collapse beat when the median player baseline is zero', () => {
+        // Sorted [0, 0, 5] → median (middle of 3) = 0 → baseline <= 0 guard.
+        const beats = buildWarNarrative(
+            fixtureWithPlayerTimeseries([
+                { time: WAR_START, day: 1, total: 0 },
+                { time: WAR_START + DAY, day: 2, total: 0 },
+                { time: WAR_START + 2 * DAY, day: 3, total: 5 },
+            ]),
+        );
+        expect(hasPlayerBeat(beats)).toBe(false);
+    });
+
+    it('emits no surge or collapse beat with a single playerTimeseries sample', () => {
+        const beats = buildWarNarrative(
+            fixtureWithPlayerTimeseries([{ time: WAR_START, day: 1, total: 100 }]),
+        );
+        expect(hasPlayerBeat(beats)).toBe(false);
+    });
+});
