@@ -49,7 +49,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. `getWarOutcome` tolerates a null faction slot instead of throwing, pinned by a regression test (STAB-05)
   6. GlitchTip shows zero new events for the #496/#503/#485 classes on the new deployment id over a 48-hour window after `develop` is tagged and released to `main`, with `main` merged back into `develop` (STAB-06, STAB-07)
 
-**Plans**: 2/9 plans executed
+**Plans**: 3/9 plans executed
 
 Plans:
 **Wave 1**
@@ -59,7 +59,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 01-02-PLAN.md — Hydration sweep, per-variant fixes and regression tests on `/` (STAB-01)
-- [ ] 01-03-PLAN.md — OG static crash fallback served as raw bytes, per-outcome cache headers (STAB-02)
+- [x] 01-03-PLAN.md — OG static crash fallback served as raw bytes, per-outcome cache headers (STAB-02)
 - [ ] 01-06-PLAN.md — NotificationToggle error state, 5s timeout, Retry and VAPID surfacing (STAB-03)
 - [ ] 01-07-PLAN.md — Space Mono via next/font, token repoint, before/after measurements (STAB-04)
 
@@ -357,7 +357,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stability Fixes & Release | 2/9 | In Progress|  |
+| 1. Stability Fixes & Release | 3/9 | In Progress|  |
 | 2. Docs Accuracy & Operational Housekeeping | 0/TBD | Not started | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |

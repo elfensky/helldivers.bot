@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 01
 current_phase_name: Stability Fixes & Release
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-08-31T07:40:41.464Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-08-31T07:56:26.261Z"
 last_activity: 2026-08-31
 last_activity_desc: Phase 01 execution started
-state_head: 34355e9843bb91f514fa2ccdcd955643acc5c388
+state_head: 7f65367fa108b0ab63e25e1500b1362fd92c118c
 progress:
   total_phases: 18
   completed_phases: 0
   total_plans: 9
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-08-29)
 ## Current Position
 
 Phase: 01 (Stability Fixes & Release) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-08-31 — Phase 01 execution started
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 |------|----------|-------|-------|
 | Phase 01 P01 | 8min | 2 tasks | 3 files |
 | Phase 01 P02 | 17min | 3 tasks | 3 files |
+| Phase 01 P03 | 15min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ Recent decisions affecting current work:
 - [Phase 01]: Used optional chaining (f?.status) at both getWarOutcome .every call sites rather than an early bail — smaller diff, symmetric checks, closes STAB-05 at root cause
 - [Phase 01]: STAB-01's timezone/date hydration mismatches on / are already resolved on develop; the sweep made zero source edits — All files_modified candidates were already correctly guarded (suppressHydrationWarning at every render-time consumer, or timeZone: 'UTC' already pinned, or provably a Server Component); verified via a validated real-browser Playwright harness across 4 timezones
 - [Phase 01]: A real, out-of-scope hydration bug (UserSection.jsx auth-session race) was found and filed as issue #526 rather than fixed inline — Its correct fix is a mounted/hasHydrated gating boolean, explicitly prohibited by this plan's own acceptance criteria, and the bug is structurally different from the date/timezone taxonomy this plan targets
+- [Phase 01]: next.config.mjs's catch-all Cache-Control header rule must exclude any route setting its own outcome-dependent Cache-Control — it silently overrides route-level headers in a production build, which is how the /opengraph-image no-store fallback fix was almost defeated
 
 ### Pending Todos
 
@@ -105,6 +107,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-31T07:40:41.450Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-08-31T07:56:26.247Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
