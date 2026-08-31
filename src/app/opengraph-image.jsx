@@ -1,8 +1,10 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
-import * as Sentry from '@sentry/nextjs';
 import { SITE_URL } from '@/config/site.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 import {
     EVENT_STATUS,
@@ -20,10 +22,33 @@ import {
 } from '@/features/galaxy/mapPaths.mjs';
 
 // --- File convention exports ---
-export const revalidate = 300;
+// Segment-level `revalidate` cached whatever the route returned — including a
+// crashed fallback (#503, D-08). Caching is decided per-response instead (see
+// SUCCESS_CACHE_CONTROL / FALLBACK_CACHE_CONTROL below), so the segment itself
+// must not cache.
+export const dynamic = 'force-dynamic';
 export const alt = 'Helldivers 1 galactic war status map with faction progress';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
+
+// A successful render stays cached for 5 minutes (matches the previous
+// `revalidate = 300`); a fallback response must never be cached, so the next
+// request retries the real card instead of freezing on a stale fallback.
+const SUCCESS_CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=60';
+const FALLBACK_CACHE_CONTROL = 'no-store';
+
+// Design-time-committed 1200x630 static card, regenerated via
+// scripts/generate-og-fallback.mjs. Read as raw bytes — no ImageResponse, no
+// Satori, no sharp — so a render failure in the live card cannot also fail
+// the fallback (D-07).
+const FALLBACK_PNG_PATH = join(process.cwd(), 'public', 'og-fallback.png');
+
+// Last-resort fallback if even the static asset read fails — a 1x1
+// transparent PNG, so the route still cannot 500.
+const TRANSPARENT_PIXEL_PNG = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+    'base64',
+);
 
 // --- Constants ---
 const COLORS = {
@@ -82,31 +107,45 @@ async function renderOrFallback(response) {
     const { data, error } = await tryCatch(response.arrayBuffer());
 
     if (error) {
-        Sentry.captureException(error, { tags: { route: 'opengraph-image' } });
+        reportError(error, {
+            route: 'opengraph-image',
+            stage: 'rasterisation',
+            level: 'error',
+        });
         return fallbackImage();
     }
 
-    return new Response(data, { headers: response.headers });
+    return new Response(data, {
+        headers: {
+            'content-type': 'image/png',
+            'Cache-Control': SUCCESS_CACHE_CONTROL,
+        },
+    });
 }
 
-function fallbackImage() {
-    return new ImageResponse(
-        <div
-            style={{
-                display: 'flex',
-                width: '100%',
-                height: '100%',
-                background: COLORS.bg,
-                color: 'white',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 32,
-            }}
-        >
-            {new URL(SITE_URL).host}
-        </div>,
-        { width: 1200, height: 630 },
-    );
+/**
+ * Serve the committed static fallback PNG as raw bytes (D-07) with a
+ * `no-store` cache policy (D-08), so a single rasterisation failure can never
+ * freeze a degraded card in front of every subsequent unauthenticated caller.
+ * @returns {Promise<Response>} The static fallback image, uncacheable.
+ */
+async function fallbackImage() {
+    const { data, error } = await tryCatch(readFile(FALLBACK_PNG_PATH));
+
+    if (error) {
+        reportError(error, {
+            route: 'opengraph-image',
+            stage: 'fallback-read',
+            level: 'error',
+        });
+    }
+
+    return new Response(error ? TRANSPARENT_PIXEL_PNG : data, {
+        headers: {
+            'content-type': 'image/png',
+            'Cache-Control': FALLBACK_CACHE_CONTROL,
+        },
+    });
 }
 
 function buildMapSvg(mapState) {
