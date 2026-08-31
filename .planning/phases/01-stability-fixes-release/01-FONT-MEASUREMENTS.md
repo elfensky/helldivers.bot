@@ -120,13 +120,144 @@ Ran via `sh scripts/visual-tests.sh` (Docker, `mcr.microsoft.com/playwright:v1.6
 real committed baselines) — **green, no code changes**:
 
 ```
-Test Files  4 passed (4)
-     Tests  10 passed (10)
+Test Files  3 passed (3)
+     Tests  5 passed (5)
 ```
 
-All four suites (`StatGrid`, `DashboardClient`, `EventCard` ×2) passed
-against their committed baselines. Any diff surfaced by Task 3's post-fix
-run is attributable to the font change, not pre-existing drift.
+(`StatGrid` ×1, `DashboardClient` ×2, `EventCard` ×2.) All three suites
+passed against their committed baselines. This count corrects an inflated
+first reading of "4 files / 10 tests" that accidentally included a
+now-deleted scratch measurement file left on disk at capture time — the
+real production visual suite is 3 files, 5 tests. Any diff surfaced by
+Task 3's post-fix run is attributable to the font change, not pre-existing
+drift.
 
 ---
 *Captured 2026-08-31, plan 01-07, Task 1. Before any edit to `layout.jsx` or `layout.css`.*
+
+## After (post-fix) — Task 3
+
+### Methodology correction from Task 1
+
+The Task 1 approach of measuring through the project's own `vitest`
+browser-mode visual harness (`vitest.visual.config.mjs`) turned out to be
+**unable to prove or disprove this fix**. That harness runs under Vite, and
+`next/font/google` is a Next.js build-pipeline feature (webpack/Turbopack
+plugin) — it never executes under Vite. `import '@/app/layout.css'` in
+`src/__tests__/visual/setup.mjs` pulls in the CSS text, including
+`--font-mono: var(--font-space-mono), monospace;`, but `--font-space-mono`
+is never defined anywhere in that environment (no next/font-generated class
+exists on `<html>`), so the custom property is invalid at computed-value
+time and every mono element there silently falls back to the plain
+`monospace` keyword — identically, before and after the fix. Re-running the
+Task 1 fixtures through that harness post-fix confirmed this: computed
+`font-family` read bare `"monospace"` and every measured width was
+byte-identical to the pre-fix run. That is a **methodology artifact, not
+evidence the fix failed** — it means the harness cannot see `next/font` at
+all, in either state.
+
+The authoritative instrument is therefore the actual Next.js dev server
+(`localhost:3000`), which does run the real font pipeline. All After
+measurements below were captured there. To get a clean paired comparison
+without disturbing the running dev server long-term, `layout.jsx`/
+`layout.css` were temporarily rewritten on disk to their pre-fix content
+(sourced via `git show HEAD~1:...`, the Task 1 commit), the dev server's
+hot-reload picked it up, the Before reading was taken, then the files were
+restored byte-for-byte to the committed Task 2 content (verified via
+`git diff` showing zero changes) before taking the After reading below. No
+commit was made in between; this was a read-only measurement technique.
+
+### Before/After — real dev server, viewport 1280×900, same DOM elements each time
+
+| Selector | Text (may include mid-animation digits) | Before `font-family` | After `font-family` | Before width (px) | After width (px) | Δ |
+|---|---|---|---|---|---|---|
+| `.sector-card-points` | live points/total (AnimatedStat, mid-roll) | `"Space Mono", monospace` | `"Space Mono", "Space Mono Fallback", monospace` | 126.078125 | 128.609375 | +2.53 |
+| `.sector-card-countdown` | `Expired` (static, not animated) | `"Space Mono", monospace` | `"Space Mono", "Space Mono Fallback", monospace` | 58.8125 | 59.984375 | +1.17 |
+| `.sector-card-pace` | pace delta (AnimatedStat, mid-roll) | `"Space Mono", monospace` | `"Space Mono", "Space Mono Fallback", monospace` | 62.875 | 74.484375 | +11.6* |
+| `.sector-card-bar-label` | `SECTOR_PROGRESS` (static) | `"Space Mono", monospace` | `"Space Mono", "Space Mono Fallback", monospace` | 126.03125 | 128.53125 | +2.5 |
+| `.sector-card-assault` | — | not rendered (no active event with a computable forecast right now, same both times) | not rendered | — | — | n/a |
+| `.stat-card-label` | `HELLDIVERS_ONLINE` (static) | `"Space Mono", monospace` | `"Space Mono", "Space Mono Fallback", monospace` | 228 | 228 | 0** |
+
+\* `.sector-card-pace` shows the biggest delta but its text includes
+`AnimatedStat`'s mid-roll animated digits, captured at a different point in
+the roll each run — the delta is directionally consistent with a font swap
+but is confounded by animation state, so it is not treated as clean
+evidence on its own.
+
+\*\* `.stat-card-label`'s width is unchanged because the label sits in a
+fixed-width grid column with `overflow: hidden; text-overflow: ellipsis` —
+the box width is dictated by the grid track, not by glyph metrics, so an
+unchanged pixel width here is the expected, correct outcome, not a sign the
+font failed to apply.
+
+**The reliable, non-animated evidence:** `.sector-card-countdown` (+1.17px)
+and `.sector-card-bar-label` (+2.5px) are both 100%-static text strings
+(`Expired`, `SECTOR_PROGRESS`) measured identically before and after — their
+widths changed because the glyphs that painted them changed. Combined with
+the `font-family` computed-style difference (the `"Space Mono Fallback"`
+face only exists when `next/font` actually generates it — no hand-written
+CSS produces that name), this is direct, non-circumstantial proof that
+`--font-mono` now resolves to a genuinely-loaded Space Mono where it
+previously fell back to the browser's generic `monospace`.
+
+**`.sector-card-assault` (assault ETA):** did not render live in either
+capture — there is currently no active event on the live season with a
+computable ETA forecast (`etaForecast`/`eventEta` are both null under
+today's live game state). It shares the byte-identical CSS declaration
+`font-family: var(--font-mono, monospace);` (`EventCard.css`) with
+`.sector-card-pace`, `.sector-card-bar-label`, `.sector-card-points`, and
+`.sector-card-countdown` — all four of which are directly confirmed above —
+and `--font-mono` is a single global custom property, not scoped per
+element, so the same resolution necessarily applies to `.sector-card-assault`
+the moment it renders. No separate DOM-level proof was possible without
+either waiting for a live assault event or standing up new test
+infrastructure outside this plan's scope.
+
+### `.sector-card-meta` narrow-width wrap — after
+
+Same real-dev-server technique, first live `.sector-card` forced to 300px
+then 260px via inline style (measurement-only DOM mutation, not a code
+change):
+
+| Card width | `.sector-card-meta` width | Row count | Wraps? |
+|---|---|---|---|
+| 300px | 268px | 1 | No |
+| 260px | 228px | 1 | No |
+
+Identical to the pre-fix reading — this particular live card has a
+`barLabel` set, so `PaceIndicator` renders in the bar-label row, not inside
+`.sector-card-meta` (matches Task 1's first fixture scenario, not the
+no-`barLabel` "PaceIndicator also in `.sector-card-meta`" scenario). The
+Task 1 fixture that DID put `PaceIndicator` inside `.sector-card-meta`
+already wraps at both widths pre-fix (`flex-wrap: wrap` engaging under the
+combined width of points + countdown + pace regardless of which mono face
+renders); no overflow regression was introduced, no `EventCard.css` change
+was required.
+
+### Post-change visual-regression status
+
+Ran via `sh scripts/visual-tests.sh` (Docker, same image, committed
+baselines) after the fix:
+
+```
+Test Files  3 passed (3)
+     Tests  5 passed (5)
+```
+
+Identical pass count to the pre-fix run, **zero baseline diffs**. Per the
+methodology correction above, this is expected and does not indicate the
+fix has no visible effect — the Docker-run vitest harness cannot execute
+`next/font` any more than the local one can, so it renders the same
+generic-monospace fallback both before and after and the screenshots are
+pixel-identical by construction. This is a genuine, pre-existing gap in the
+visual-regression suite's coverage (it cannot catch a `next/font`
+loading regression), not something this plan's scope covers fixing — flagged
+in the SUMMARY for awareness rather than treated as a blocking issue.
+
+### `npm run test:unit` / `npm run build`
+
+Both re-run clean after the fix — see task commit for exact output; no
+regressions attributable to this change.
+
+---
+*Captured 2026-08-31, plan 01-07, Task 3. After `layout.jsx`/`layout.css` were committed with Space Mono wired via next/font.*
