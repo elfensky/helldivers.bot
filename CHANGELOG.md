@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `NotificationToggle` now reaches a distinct `error` state (with a Retry
+  control) instead of hanging forever in "loading" when
+  `navigator.serviceWorker.ready` never resolves, `getSubscription()`
+  rejects, or the deploy is missing its VAPID public key (#485).
+
+### Fixed
+
+- `getWarOutcome` and the `/opengraph-image` route's own faction-stats logic
+  no longer throw on a null faction slot in campaign/status data — both now
+  fail the victory check or drop the null slot instead of crashing (#459,
+  #503).
+- `/opengraph-image`'s crash fallback is now a committed static PNG served as
+  raw bytes (no Satori/sharp on the fallback path), with outcome-dependent
+  `Cache-Control` (`no-store` on fallback, cacheable on success). A
+  `next.config.mjs` catch-all header rule that was silently overriding the
+  route's own headers — including replacing the fallback's `no-store` with a
+  cacheable directive — is also fixed (#503).
+- `/opengraph-image` now emits render-outcome telemetry (rendered vs.
+  fallback, with a failure-stage tag) and reports a real `getCampaign()`
+  query failure to GlitchTip instead of degrading silently (#503).
+- Space Mono is now genuinely loaded via `next/font/google`; `--font-mono`
+  resolves through the generated CSS variable instead of an unresolved
+  bare font-family string (#476).
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is now passed as a Docker build-arg in both
+  the release and staging image builds, so push notifications work in the
+  shipped bundle instead of the key silently going missing.
+
 ## 0.93.1
 
 ### Fixed
