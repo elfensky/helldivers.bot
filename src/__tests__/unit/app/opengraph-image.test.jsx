@@ -1,4 +1,12 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { CAMPAIGN_STATUS, EVENT_STATUS, EVENT_TYPE } from '@/shared/enums/events.mjs';
+
+// Real implementation, used only to build realistic map-state fixtures for
+// the edge-case tests below — @/shared/utils/game/computeMapState.mjs is
+// mocked (below) so the route itself never runs it.
+const { computeMapState: realComputeMapState } = await vi.importActual(
+    '@/shared/utils/game/computeMapState.mjs',
+);
 
 // Constructed instances of the LIVE card only — the fallback reads static
 // bytes and never constructs an ImageResponse (D-07).
@@ -49,8 +57,12 @@ vi.mock('next/server', async (importOriginal) => {
 const getCampaign = vi.fn();
 vi.mock('@/db/queries/getCampaign.mjs', () => ({ getCampaign: () => getCampaign() }));
 
+// Per-test controllable — default matches the pre-Task-3 flat empty array so
+// the existing cases are unaffected; the edge-case tests below override this
+// with a realistic per-case shape built from the real computeMapState.
+let computeLiveMapStateResult = () => [];
 vi.mock('@/shared/utils/game/computeMapState.mjs', () => ({
-    computeLiveMapState: () => [],
+    computeLiveMapState: (...args) => computeLiveMapStateResult(...args),
 }));
 
 // The route reads the committed static fallback via `node:fs/promises`
@@ -78,6 +90,7 @@ describe('opengraph-image', () => {
         getCampaign.mockResolvedValue(CAMPAIGN);
         bodyFails = false;
         readFileResult = () => Promise.resolve(FALLBACK_BYTES);
+        computeLiveMapStateResult = () => [];
     });
 
     test('returns the rendered card when rasterisation succeeds', async () => {
@@ -222,5 +235,157 @@ describe('opengraph-image', () => {
         getCampaign.mockRejectedValue(new Error('connection refused'));
         await Image();
         expect(umamiTrackEvent).toHaveBeenCalledTimes(1);
+    });
+
+    describe('edge-case map states (D-12)', () => {
+        // Realistic 3-faction campaign, no active events — used as the base for
+        // the null-slot and no-active-events cases below. Shape/values mirror
+        // computeMapState.test.mjs's baseFactions fixture.
+        const REALISTIC_FACTIONS = [
+            {
+                enemy: 0,
+                points: 55000,
+                points_max: 100000,
+                status: CAMPAIGN_STATUS.ACTIVE,
+            },
+            {
+                enemy: 1,
+                points: 30000,
+                points_max: 100000,
+                status: CAMPAIGN_STATUS.ACTIVE,
+            },
+            {
+                enemy: 2,
+                points: 70000,
+                points_max: 100000,
+                status: CAMPAIGN_STATUS.ACTIVE,
+            },
+        ];
+
+        test('control: guard fails when driven to the fallback by construction', async () => {
+            // Confirms the discriminating assertion actually distinguishes success
+            // from fallback before trusting the three cases below — a campaign
+            // with an empty status array is a deliberately broken shape that must
+            // fall back, not render.
+            getCampaign.mockResolvedValue({ status: [], events: [] });
+
+            const response = await Image();
+
+            expect(constructed).toHaveLength(0);
+            expect(response.headers.get('Cache-Control')).toContain('no-store');
+        });
+
+        test('a null faction slot in data.status still renders a real card, not the fallback', async () => {
+            // A campaign whose status array contains a null faction entry — the
+            // #503-class bug: data.status.map/.every previously read `.enemy` /
+            // `.status` off that null unguarded (found and fixed in this task,
+            // see the Deviations section of the plan summary). The mapState
+            // fixture is built from only the non-null factions, since
+            // computeMapState.mjs (mocked here, real implementation) also
+            // assumes non-null entries — the null-slot is opengraph-image.jsx's
+            // own concern, not computeMapState.mjs's.
+            const NULL_SLOT_STATUS = [REALISTIC_FACTIONS[0], null, REALISTIC_FACTIONS[2]];
+            getCampaign.mockResolvedValue({ status: NULL_SLOT_STATUS, events: [] });
+            computeLiveMapStateResult = () =>
+                realComputeMapState([REALISTIC_FACTIONS[0], REALISTIC_FACTIONS[2]], []);
+
+            const response = await Image();
+
+            expect(constructed).toHaveLength(1);
+            expect(response.headers.get('Cache-Control')).not.toContain('no-store');
+            expect(umamiTrackEvent).toHaveBeenCalledWith(
+                expect.any(String),
+                '/opengraph-image',
+                'api-og-rendered',
+                expect.any(Object),
+            );
+            expect(umamiTrackEvent).not.toHaveBeenCalledWith(
+                expect.any(String),
+                '/opengraph-image',
+                'api-og-fallback',
+                expect.any(Object),
+            );
+        });
+
+        test('no-active-events map state still renders a real card, not the fallback', async () => {
+            getCampaign.mockResolvedValue({ status: REALISTIC_FACTIONS, events: [] });
+            computeLiveMapStateResult = () => realComputeMapState(REALISTIC_FACTIONS, []);
+
+            const response = await Image();
+
+            expect(constructed).toHaveLength(1);
+            expect(response.headers.get('Cache-Control')).not.toContain('no-store');
+            expect(umamiTrackEvent).toHaveBeenCalledWith(
+                expect.any(String),
+                '/opengraph-image',
+                'api-og-rendered',
+                expect.any(Object),
+            );
+            expect(umamiTrackEvent).not.toHaveBeenCalledWith(
+                expect.any(String),
+                '/opengraph-image',
+                'api-og-fallback',
+                expect.any(Object),
+            );
+        });
+
+        test('homeworld-only map state (active attack, no sector campaigns) still renders a real card, not the fallback', async () => {
+            const now = Math.floor(Date.now() / 1000);
+            const NO_SECTOR_FACTIONS = [
+                {
+                    enemy: 0,
+                    points: 0,
+                    points_max: 100000,
+                    status: CAMPAIGN_STATUS.ACTIVE,
+                },
+                {
+                    enemy: 1,
+                    points: 0,
+                    points_max: 100000,
+                    status: CAMPAIGN_STATUS.ACTIVE,
+                },
+                {
+                    enemy: 2,
+                    points: 0,
+                    points_max: 100000,
+                    status: CAMPAIGN_STATUS.ACTIVE,
+                },
+            ];
+            const homeworldAttack = {
+                type: EVENT_TYPE.ATTACK,
+                enemy: 0,
+                status: EVENT_STATUS.ACTIVE,
+                start_time: now - 3600,
+                end_time: now + 3600,
+                points: 5000,
+                points_max: 10000,
+            };
+            getCampaign.mockResolvedValue({
+                status: NO_SECTOR_FACTIONS,
+                events: [homeworldAttack],
+            });
+            const realMapState = realComputeMapState(NO_SECTOR_FACTIONS, [
+                homeworldAttack,
+            ]);
+            expect(realMapState[0][11].status).toBe('active'); // guard: region 11 really is owned
+            computeLiveMapStateResult = () => realMapState;
+
+            const response = await Image();
+
+            expect(constructed).toHaveLength(1);
+            expect(response.headers.get('Cache-Control')).not.toContain('no-store');
+            expect(umamiTrackEvent).toHaveBeenCalledWith(
+                expect.any(String),
+                '/opengraph-image',
+                'api-og-rendered',
+                expect.any(Object),
+            );
+            expect(umamiTrackEvent).not.toHaveBeenCalledWith(
+                expect.any(String),
+                '/opengraph-image',
+                'api-og-fallback',
+                expect.any(Object),
+            );
+        });
     });
 });

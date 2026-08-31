@@ -234,7 +234,11 @@ export default async function Image() {
     const mapState = computeLiveMapState(data);
     const mapDataUri = buildMapSvg(mapState);
 
-    const factionStats = data.status.map((f) => {
+    // A null faction slot (D-12) is dropped rather than rendered — it carries
+    // no enemy id to key the bar on. Same null-slot bug class already fixed
+    // in getWarOutcome.mjs's `.every` checks (STAB-05); `.filter(Boolean)`
+    // is the equivalent guard for a `.map`.
+    const factionStats = data.status.filter(Boolean).map((f) => {
         const idx = f.enemy;
         return {
             name: FACTION_NAMES[idx] || `FACTION ${idx}`,
@@ -251,7 +255,7 @@ export default async function Image() {
 
     const allDefeated =
         data.status.length === 3 &&
-        data.status.every((f) => f.status === CAMPAIGN_STATUS.DEFEATED);
+        data.status.every((f) => f?.status === CAMPAIGN_STATUS.DEFEATED);
     if (allDefeated) {
         statusText = 'VICTORY';
     } else if (events.length > 0) {
