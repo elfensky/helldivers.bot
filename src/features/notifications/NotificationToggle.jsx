@@ -20,10 +20,29 @@ function urlBase64ToUint8Array(base64String) {
     return output;
 }
 
+/**
+ * Subscribes the current service worker registration to push and POSTs the
+ * subscription to our backend.
+ *
+ * Returns `{ error: null }` for both a successful subscribe AND the
+ * legitimate "this browser has no push support" no-op — those two outcomes
+ * are indistinguishable to the caller by design (web notifications alone
+ * still work). Returns `{ error: Error }` only when push IS supported but
+ * the deploy has no VAPID public key configured (D-15) — a misconfiguration
+ * the caller must not present as success.
+ * @returns {Promise<{error: Error|null}>}
+ */
 async function subscribeToPush() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window))
+        return { error: null };
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey) return;
+    if (!vapidKey) {
+        return {
+            error: new Error(
+                'Push is supported by this browser but NEXT_PUBLIC_VAPID_PUBLIC_KEY is not configured',
+            ),
+        };
+    }
 
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.subscribe({
@@ -36,6 +55,8 @@ async function subscribeToPush() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(subscription.toJSON()),
     });
+
+    return { error: null };
 }
 
 async function unsubscribeFromPush() {
@@ -174,9 +195,19 @@ export default function NotificationToggle() {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             track('notification-enable');
-            await subscribeToPush();
-            track('push-subscribe');
-            setState('enabled');
+            const { error } = await subscribeToPush();
+            if (error) {
+                reportError(error, {
+                    source: 'NotificationToggle',
+                    stage: 'subscribeToPush',
+                    level: 'warning',
+                });
+                track('notification-error');
+                setState('error');
+            } else {
+                track('push-subscribe');
+                setState('enabled');
+            }
         } else if (permission === 'denied') {
             track('notification-permission-denied');
         }

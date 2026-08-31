@@ -23,6 +23,7 @@ function installBrowserAPIs({
     hasSubscription = false,
     fetchOk = true,
     getSubscriptionRejection = null,
+    withVapidKey = true,
 } = {}) {
     // Notification
     globalThis.Notification = function () {};
@@ -80,8 +81,11 @@ function installBrowserAPIs({
         Promise.resolve({ ok: fetchOk, status: fetchOk ? 200 : 500 }),
     );
 
-    // VAPID key for subscribeToPush
-    vi.stubEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'BAxyz-_=');
+    // VAPID key for subscribeToPush — callers can opt out to exercise the
+    // missing-key error path without hand-editing this helper.
+    if (withVapidKey) {
+        vi.stubEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'BAxyz-_=');
+    }
 
     return { subscription, subscribeMock, pushManager };
 }
@@ -445,5 +449,53 @@ describe('NotificationToggle — error state (hung/rejecting service worker)', (
 
         expect(screen.getByText('Enable notifications')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Retry/i })).not.toBeInTheDocument();
+    });
+});
+
+describe('NotificationToggle — missing VAPID key (D-15)', () => {
+    test('clicking Enable with NEXT_PUBLIC_VAPID_PUBLIC_KEY unset leaves the component in the error state', async () => {
+        installBrowserAPIs({ permission: 'default', withVapidKey: false });
+
+        render(<NotificationToggle />);
+        const button = await screen.findByText('Enable notifications');
+
+        fireEvent.click(button);
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
+        });
+    });
+
+    test('with the key unset, the component does not claim to be enabled', async () => {
+        installBrowserAPIs({ permission: 'default', withVapidKey: false });
+
+        render(<NotificationToggle />);
+        const button = await screen.findByText('Enable notifications');
+
+        fireEvent.click(button);
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
+        });
+        expect(screen.queryByText('Notifications on')).not.toBeInTheDocument();
+    });
+
+    test('with the key set, the existing enable flow still reaches enabled and still POSTs the subscription', async () => {
+        const { subscribeMock } = installBrowserAPIs({
+            permission: 'default',
+            requestPermissionResult: 'granted',
+        });
+
+        render(<NotificationToggle />);
+        const button = await screen.findByText('Enable notifications');
+
+        fireEvent.click(button);
+
+        await waitFor(() => {
+            expect(subscribeMock).toHaveBeenCalledTimes(1);
+        });
+        await waitFor(() => {
+            expect(screen.getByText('Notifications on')).toBeInTheDocument();
+        });
     });
 });
