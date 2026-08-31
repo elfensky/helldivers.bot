@@ -8,6 +8,10 @@
  *   2. ANY snapshot contains all 3 factions with status 'defeated'
  *   3. All 3 enemy homeworlds captured (successful attack events on enemies 0, 1, 2)
  *
+ * A null or missing faction slot in either `data.status` or a snapshot's
+ * `data` array fails the all-defeated check rather than throwing — it is
+ * never treated as a defeated faction (STAB-05).
+ *
  * Defeat signal:
  *   - Chronologically last region-0 defend event has status 'fail' (Super Earth fell)
  *
@@ -52,7 +56,7 @@ export function getWarOutcome(data) {
     const lastConqueredFaction = successfulAttacks[0]?.enemy ?? null;
 
     // Victory signal 1: live data shows all 3 factions defeated (current season)
-    if (live.length === 3 && live.every((f) => f.status === CAMPAIGN_STATUS.DEFEATED)) {
+    if (live.length === 3 && live.every((f) => f?.status === CAMPAIGN_STATUS.DEFEATED)) {
         return {
             outcome: 'victory',
             reason: 'All enemy factions have been defeated.',
@@ -66,7 +70,7 @@ export function getWarOutcome(data) {
         return (
             Array.isArray(factionData) &&
             factionData.length === 3 &&
-            factionData.every((f) => f.status === CAMPAIGN_STATUS.DEFEATED)
+            factionData.every((f) => f?.status === CAMPAIGN_STATUS.DEFEATED)
         );
     });
 
