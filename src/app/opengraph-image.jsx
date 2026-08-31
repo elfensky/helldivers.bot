@@ -1,11 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
+import { after } from 'next/server';
 import { SITE_URL } from '@/config/site.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
 import { reportError } from '@/shared/utils/observability.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 import {
     EVENT_STATUS,
     EVENT_TYPE,
@@ -36,6 +38,29 @@ export const contentType = 'image/png';
 // request retries the real card instead of freezing on a stale fallback.
 const SUCCESS_CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=60';
 const FALLBACK_CACHE_CONTROL = 'no-store';
+
+// Render-outcome telemetry (D-09, STAB-02). The route never re-runs on a
+// cache hit, so the event count *is* the invocation count — the gap between
+// it and the page's own OG-fetch volume is the derived cache-hit rate. Do
+// not add a separate "cache hit" event; the route cannot observe one.
+const OG_TRACK_URL = '/opengraph-image';
+const OG_EVENT_RENDERED = 'api-og-rendered';
+const OG_EVENT_FALLBACK = 'api-og-fallback';
+
+/**
+ * Fire the outcome-labelled Umami event for one real invocation, without
+ * blocking the response. `opengraph-image` is documented as "a special
+ * Route Handler" (Next 16 file-conventions docs), and `after()` is
+ * supported in Route Handlers, so the call is scheduled through `after()`
+ * rather than fired-and-forgotten — matching the `api-campaign` /
+ * `api-rebroadcast` precedent in src/app/api/h1/campaign/route.js.
+ *
+ * @param {string} name - `category-action` event name (rendered or fallback)
+ * @param {object} [data] - Optional data, e.g. `{ stage }` on the fallback branch
+ */
+function trackOgOutcome(name, data = {}) {
+    after(() => umamiTrackEvent(alt, OG_TRACK_URL, name, data));
+}
 
 // Design-time-committed 1200x630 static card, regenerated via
 // scripts/generate-og-fallback.mjs. Read as raw bytes — no ImageResponse, no
@@ -112,8 +137,10 @@ async function renderOrFallback(response) {
             stage: 'rasterisation',
             level: 'error',
         });
-        return fallbackImage();
+        return fallbackImage('rasterisation');
     }
+
+    trackOgOutcome(OG_EVENT_RENDERED);
 
     return new Response(data, {
         headers: {
@@ -127,9 +154,14 @@ async function renderOrFallback(response) {
  * Serve the committed static fallback PNG as raw bytes (D-07) with a
  * `no-store` cache policy (D-08), so a single rasterisation failure can never
  * freeze a degraded card in front of every subsequent unauthenticated caller.
+ * @param {string} stage - Why this invocation fell back (e.g. 'rasterisation',
+ *   'data-fetch') — carried on the fallback telemetry event so the causes are
+ *   separable in Umami without opening GlitchTip (D-09).
  * @returns {Promise<Response>} The static fallback image, uncacheable.
  */
-async function fallbackImage() {
+async function fallbackImage(stage) {
+    trackOgOutcome(OG_EVENT_FALLBACK, { stage });
+
     const { data, error } = await tryCatch(readFile(FALLBACK_PNG_PATH));
 
     if (error) {
@@ -174,7 +206,7 @@ export default async function Image() {
     const { data, error } = await tryCatch(getCampaign());
 
     if (error || !data || !data.status || data.status.length === 0) {
-        return fallbackImage();
+        return fallbackImage('data-fetch');
     }
 
     // Two event lists:

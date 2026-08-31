@@ -30,6 +30,22 @@ vi.mock('@/shared/utils/observability.mjs', () => ({
     reportError: (...args) => reportError(...args),
 }));
 
+const umamiTrackEvent = vi.fn();
+vi.mock('@/shared/utils/umami.mjs', () => ({
+    umamiTrackEvent: (...args) => umamiTrackEvent(...args),
+}));
+
+// `after()` schedules work post-response; the mock runs it immediately so
+// assertions don't need to await Next's request lifecycle (same pattern as
+// src/__tests__/unit/app/api/h1/rebroadcast/route.test.mjs).
+vi.mock('next/server', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        after: vi.fn((fn) => fn()),
+    };
+});
+
 const getCampaign = vi.fn();
 vi.mock('@/db/queries/getCampaign.mjs', () => ({ getCampaign: () => getCampaign() }));
 
@@ -58,6 +74,7 @@ describe('opengraph-image', () => {
     beforeEach(() => {
         constructed.length = 0;
         reportError.mockClear();
+        umamiTrackEvent.mockClear();
         getCampaign.mockResolvedValue(CAMPAIGN);
         bodyFails = false;
         readFileResult = () => Promise.resolve(FALLBACK_BYTES);
@@ -124,5 +141,67 @@ describe('opengraph-image', () => {
         expect(constructed).toHaveLength(0);
         expect(response.headers.get('content-type')).toBe('image/png');
         expect(response.headers.get('Cache-Control')).toContain('no-store');
+    });
+
+    test('a successful render fires exactly one telemetry call marking the rendered outcome', async () => {
+        await Image();
+
+        expect(umamiTrackEvent).toHaveBeenCalledTimes(1);
+        expect(umamiTrackEvent).toHaveBeenCalledWith(
+            expect.any(String),
+            '/opengraph-image',
+            'api-og-rendered',
+            expect.any(Object),
+        );
+    });
+
+    test('a rasterisation failure fires exactly one fallback-outcome telemetry call and still reports the original error', async () => {
+        bodyFails = true;
+
+        await Image();
+
+        expect(umamiTrackEvent).toHaveBeenCalledTimes(1);
+        expect(umamiTrackEvent).toHaveBeenCalledWith(
+            expect.any(String),
+            '/opengraph-image',
+            'api-og-fallback',
+            expect.objectContaining({ stage: 'rasterisation' }),
+        );
+        expect(reportError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                message: expect.stringContaining('unsupported image'),
+            }),
+            expect.objectContaining({ route: 'opengraph-image' }),
+        );
+    });
+
+    test('a data-fetch failure fires exactly one telemetry call marking the fallback outcome', async () => {
+        getCampaign.mockRejectedValue(new Error('connection refused'));
+
+        await Image();
+
+        expect(umamiTrackEvent).toHaveBeenCalledTimes(1);
+        expect(umamiTrackEvent).toHaveBeenCalledWith(
+            expect.any(String),
+            '/opengraph-image',
+            'api-og-fallback',
+            expect.any(Object),
+        );
+    });
+
+    test('the rendered and fallback events are mutually exclusive — no invocation fires more than one telemetry call', async () => {
+        await Image();
+        expect(umamiTrackEvent).toHaveBeenCalledTimes(1);
+
+        umamiTrackEvent.mockClear();
+        bodyFails = true;
+        await Image();
+        expect(umamiTrackEvent).toHaveBeenCalledTimes(1);
+
+        umamiTrackEvent.mockClear();
+        bodyFails = false;
+        getCampaign.mockRejectedValue(new Error('connection refused'));
+        await Image();
+        expect(umamiTrackEvent).toHaveBeenCalledTimes(1);
     });
 });
