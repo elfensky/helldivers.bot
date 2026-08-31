@@ -12,7 +12,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Stability (STAB)
 
 - [x] **STAB-01**: #496 — React #418 hydration mismatch on `/` is fixed at the root (SSR/client value divergence identified per variant, not masked with mounted-flags), with a regression test per divergent value
-- [ ] **STAB-02**: #503 — `/opengraph-image` never 500s: the Satori→resvg failure is root-caused, the route falls back to a static image on render failure, and edge-case map states (null slots, no active events, homeworld-only) have render coverage
+- [x] **STAB-02**: #503 — `/opengraph-image` never 500s: the Satori→resvg failure is root-caused, the route falls back to a static image on render failure, and edge-case map states (null slots, no active events, homeworld-only) have render coverage
 - [x] **STAB-03**: #485 — `NotificationToggle` cannot stay in `'loading'` forever: hung `serviceWorker.ready`/rejected `getSubscription()` resolve to an explicit error state with a visible retry, covered by a test
 - [x] **STAB-04**: #476 — `--font-mono` is resolved one way or the other (load Space Mono via `next/font` or drop it from the token) with before/after measurements of affected mono elements recorded on the issue
 - [x] **STAB-05**: #459 — `getWarOutcome` tolerates null faction slots; regression test pins it
@@ -158,7 +158,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | STAB-01 | Phase 1 | Complete |
-| STAB-02 | Phase 1 | Pending |
+| STAB-02 | Phase 1 | Complete |
 | STAB-03 | Phase 1 | Complete |
 | STAB-04 | Phase 1 | Complete |
 | STAB-05 | Phase 1 | Complete |

@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 01
 current_phase_name: Stability Fixes & Release
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-08-31T08:52:59.474Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-08-31T09:04:30.602Z"
 last_activity: 2026-08-31
 last_activity_desc: Phase 01 execution started
-state_head: 3d4b7a1698489869977a9fdcc60f1b042ae253a0
+state_head: 974bca34a58692a1809f2d2ac882d9846ead10dd
 progress:
   total_phases: 18
   completed_phases: 0
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-08-29)
 ## Current Position
 
 Phase: 01 (Stability Fixes & Release) — EXECUTING
-Plan: 7 of 9
+Plan: 8 of 9
 Status: Ready to execute
 Last activity: 2026-08-31 — Phase 01 execution started
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P06 | 15min | 3 tasks | 3 files |
 | Phase 01 P07 | 35min | 3 tasks | 3 files |
 | Phase 01 P04 | 12min | 3 tasks | 2 files |
+| Phase 01 P05 | 10min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,7 @@ Recent decisions affecting current work:
 - [Phase 01]: The project's vitest browser-mode visual-regression harness cannot execute next/font (runs under Vite, not Next's build pipeline) — switched the before/after measurement instrument to the real dev server via a temporary, non-committing file revert/restore
 - [Phase 01]: [Phase 01]: getCampaign() audited (D-11) — no masking found; the OG route's own null-slot handling in factionStats/allDefeated was the real bug, fixed with the same f?.field pattern as getWarOutcome.mjs (STAB-05)
 - [Phase 01]: [Phase 01]: OG route telemetry uses after() (not fire-and-forget) since opengraph-image is documented as a special Route Handler; no separate cache-hit event needed since the route only executes on a real invocation
+- [Phase 01]: [Phase 01]: OG sharp rejection (#503) reproduction attempt: NOT REPRODUCED against a locally built linux/arm64 standalone image across three distinct real map states; two of three hypotheses ruled out by inspection, findings posted to #503 which stays open
 
 ### Pending Todos
 
@@ -117,6 +119,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-31T08:52:59.455Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-08-31T09:04:30.585Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
