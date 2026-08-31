@@ -1,9 +1,13 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
-import * as Sentry from '@sentry/nextjs';
+import { after } from 'next/server';
 import { SITE_URL } from '@/config/site.mjs';
 import { getCampaign } from '@/db/queries/getCampaign.mjs';
 import { computeLiveMapState } from '@/shared/utils/game/computeMapState.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { umamiTrackEvent } from '@/shared/utils/umami.mjs';
 import {
     EVENT_STATUS,
     EVENT_TYPE,
@@ -20,10 +24,56 @@ import {
 } from '@/features/galaxy/mapPaths.mjs';
 
 // --- File convention exports ---
-export const revalidate = 300;
+// Segment-level `revalidate` cached whatever the route returned — including a
+// crashed fallback (#503, D-08). Caching is decided per-response instead (see
+// SUCCESS_CACHE_CONTROL / FALLBACK_CACHE_CONTROL below), so the segment itself
+// must not cache.
+export const dynamic = 'force-dynamic';
 export const alt = 'Helldivers 1 galactic war status map with faction progress';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
+
+// A successful render stays cached for 5 minutes (matches the previous
+// `revalidate = 300`); a fallback response must never be cached, so the next
+// request retries the real card instead of freezing on a stale fallback.
+const SUCCESS_CACHE_CONTROL = 'public, s-maxage=300, stale-while-revalidate=60';
+const FALLBACK_CACHE_CONTROL = 'no-store';
+
+// Render-outcome telemetry (D-09, STAB-02). The route never re-runs on a
+// cache hit, so the event count *is* the invocation count — the gap between
+// it and the page's own OG-fetch volume is the derived cache-hit rate. Do
+// not add a separate "cache hit" event; the route cannot observe one.
+const OG_TRACK_URL = '/opengraph-image';
+const OG_EVENT_RENDERED = 'api-og-rendered';
+const OG_EVENT_FALLBACK = 'api-og-fallback';
+
+/**
+ * Fire the outcome-labelled Umami event for one real invocation, without
+ * blocking the response. `opengraph-image` is documented as "a special
+ * Route Handler" (Next 16 file-conventions docs), and `after()` is
+ * supported in Route Handlers, so the call is scheduled through `after()`
+ * rather than fired-and-forgotten — matching the `api-campaign` /
+ * `api-rebroadcast` precedent in src/app/api/h1/campaign/route.js.
+ *
+ * @param {string} name - `category-action` event name (rendered or fallback)
+ * @param {object} [data] - Optional data, e.g. `{ stage }` on the fallback branch
+ */
+function trackOgOutcome(name, data = {}) {
+    after(() => umamiTrackEvent(alt, OG_TRACK_URL, name, data));
+}
+
+// Design-time-committed 1200x630 static card, regenerated via
+// scripts/generate-og-fallback.mjs. Read as raw bytes — no ImageResponse, no
+// Satori, no sharp — so a render failure in the live card cannot also fail
+// the fallback (D-07).
+const FALLBACK_PNG_PATH = join(process.cwd(), 'public', 'og-fallback.png');
+
+// Last-resort fallback if even the static asset read fails — a 1x1
+// transparent PNG, so the route still cannot 500.
+const TRANSPARENT_PIXEL_PNG = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+    'base64',
+);
 
 // --- Constants ---
 const COLORS = {
@@ -82,31 +132,52 @@ async function renderOrFallback(response) {
     const { data, error } = await tryCatch(response.arrayBuffer());
 
     if (error) {
-        Sentry.captureException(error, { tags: { route: 'opengraph-image' } });
-        return fallbackImage();
+        reportError(error, {
+            route: 'opengraph-image',
+            stage: 'rasterisation',
+            level: 'error',
+        });
+        return fallbackImage('rasterisation');
     }
 
-    return new Response(data, { headers: response.headers });
+    trackOgOutcome(OG_EVENT_RENDERED);
+
+    return new Response(data, {
+        headers: {
+            'content-type': 'image/png',
+            'Cache-Control': SUCCESS_CACHE_CONTROL,
+        },
+    });
 }
 
-function fallbackImage() {
-    return new ImageResponse(
-        <div
-            style={{
-                display: 'flex',
-                width: '100%',
-                height: '100%',
-                background: COLORS.bg,
-                color: 'white',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 32,
-            }}
-        >
-            {new URL(SITE_URL).host}
-        </div>,
-        { width: 1200, height: 630 },
-    );
+/**
+ * Serve the committed static fallback PNG as raw bytes (D-07) with a
+ * `no-store` cache policy (D-08), so a single rasterisation failure can never
+ * freeze a degraded card in front of every subsequent unauthenticated caller.
+ * @param {string} stage - Why this invocation fell back (e.g. 'rasterisation',
+ *   'data-fetch') — carried on the fallback telemetry event so the causes are
+ *   separable in Umami without opening GlitchTip (D-09).
+ * @returns {Promise<Response>} The static fallback image, uncacheable.
+ */
+async function fallbackImage(stage) {
+    trackOgOutcome(OG_EVENT_FALLBACK, { stage });
+
+    const { data, error } = await tryCatch(readFile(FALLBACK_PNG_PATH));
+
+    if (error) {
+        reportError(error, {
+            route: 'opengraph-image',
+            stage: 'fallback-read',
+            level: 'error',
+        });
+    }
+
+    return new Response(error ? TRANSPARENT_PIXEL_PNG : data, {
+        headers: {
+            'content-type': 'image/png',
+            'Cache-Control': FALLBACK_CACHE_CONTROL,
+        },
+    });
 }
 
 function buildMapSvg(mapState) {
@@ -134,8 +205,26 @@ function buildMapSvg(mapState) {
 export default async function Image() {
     const { data, error } = await tryCatch(getCampaign());
 
-    if (error || !data || !data.status || data.status.length === 0) {
-        return fallbackImage();
+    // D-11: getCampaign() is the first link in the #503 chain, so its two
+    // failure shapes get two different dispositions instead of one silent
+    // fallback. A rejected query or a structurally wrong resolved value
+    // (missing entirely, or missing its `status` array) is an incident —
+    // something is actually broken, and the previous single guard reported
+    // nothing at all here. A well-formed result whose `status` array is
+    // simply empty (a season boundary, a freshly seeded database) is not an
+    // incident — reporting it would train the maintainer to ignore the
+    // route's alerts.
+    if (error || !data || !data.status) {
+        reportError(error ?? new Error('getCampaign() returned a malformed result'), {
+            route: 'opengraph-image',
+            stage: 'data-fetch',
+            level: 'error',
+        });
+        return fallbackImage('query-failure');
+    }
+
+    if (data.status.length === 0) {
+        return fallbackImage('empty-data');
     }
 
     // Two event lists:
@@ -145,7 +234,11 @@ export default async function Image() {
     const mapState = computeLiveMapState(data);
     const mapDataUri = buildMapSvg(mapState);
 
-    const factionStats = data.status.map((f) => {
+    // A null faction slot (D-12) is dropped rather than rendered — it carries
+    // no enemy id to key the bar on. Same null-slot bug class already fixed
+    // in getWarOutcome.mjs's `.every` checks (STAB-05); `.filter(Boolean)`
+    // is the equivalent guard for a `.map`.
+    const factionStats = data.status.filter(Boolean).map((f) => {
         const idx = f.enemy;
         return {
             name: FACTION_NAMES[idx] || `FACTION ${idx}`,
@@ -162,7 +255,7 @@ export default async function Image() {
 
     const allDefeated =
         data.status.length === 3 &&
-        data.status.every((f) => f.status === CAMPAIGN_STATUS.DEFEATED);
+        data.status.every((f) => f?.status === CAMPAIGN_STATUS.DEFEATED);
     if (allDefeated) {
         statusText = 'VICTORY';
     } else if (events.length > 0) {

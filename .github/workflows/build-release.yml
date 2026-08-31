@@ -71,6 +71,7 @@ jobs:
                       NODE_ENV=production
                       NEXT_PUBLIC_DEPLOY_ENV=production
                       NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+                      NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
                   # Sentry credentials go in build-secrets, NOT build-args —
                   # build-args land in the provenance attestation pushed to
                   # GHCR, where anyone with pull access can read them. See #284.

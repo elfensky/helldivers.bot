@@ -165,13 +165,19 @@ const nextConfig = {
                 // so visitors don't pay origin latency on the TTL boundary.
                 //
                 // Excludes:
-                //   /api/*       — route handlers set their own Cache-Control
-                //   /_next/*     — Next.js asset/data chunks (content-hashed)
-                //   asset roots  — pinned `immutable` above with longer TTLs
-                //   /sw.js       — service worker must always revalidate
-                //   /workers/*   — cron worker source (immutable above)
-                //   /profile/*   — per-user content, must not be shared
-                source: '/((?!api/|_next/|profile|favicons/|fonts/|icons/|images/|svgs/|sw\\.js|workers/).*)',
+                //   /api/*             — route handlers set their own Cache-Control
+                //   /_next/*           — Next.js asset/data chunks (content-hashed)
+                //   asset roots        — pinned `immutable` above with longer TTLs
+                //   /sw.js             — service worker must always revalidate
+                //   /workers/*         — cron worker source (immutable above)
+                //   /profile/*         — per-user content, must not be shared
+                //   /opengraph-image   — sets its own outcome-dependent Cache-Control
+                //                        (public max-age on a real render, no-store on
+                //                        the crash fallback, per #503/D-08) — this
+                //                        config-level header previously overrode both,
+                //                        silently freezing a cached fallback in front
+                //                        of every crawler until the segment TTL expired
+                source: '/((?!api/|_next/|profile|favicons/|fonts/|icons/|images/|svgs/|sw\\.js|workers/|opengraph-image).*)',
                 headers: [
                     {
                         key: 'Cache-Control',
