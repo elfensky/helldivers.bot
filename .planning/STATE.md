@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 01
 current_phase_name: Stability Fixes & Release
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-08-31T07:56:26.261Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-08-31T08:10:29.874Z"
 last_activity: 2026-08-31
 last_activity_desc: Phase 01 execution started
-state_head: 7f65367fa108b0ab63e25e1500b1362fd92c118c
+state_head: c66dd38a0d2ce4b441d0f3473b4883c033d9d948
 progress:
   total_phases: 18
   completed_phases: 0
   total_plans: 9
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-08-29)
 ## Current Position
 
 Phase: 01 (Stability Fixes & Release) — EXECUTING
-Plan: 4 of 9
+Plan: 5 of 9
 Status: Ready to execute
 Last activity: 2026-08-31 — Phase 01 execution started
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P01 | 8min | 2 tasks | 3 files |
 | Phase 01 P02 | 17min | 3 tasks | 3 files |
 | Phase 01 P03 | 15min | 3 tasks | 6 files |
+| Phase 01 P06 | 15min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 01]: STAB-01's timezone/date hydration mismatches on / are already resolved on develop; the sweep made zero source edits — All files_modified candidates were already correctly guarded (suppressHydrationWarning at every render-time consumer, or timeZone: 'UTC' already pinned, or provably a Server Component); verified via a validated real-browser Playwright harness across 4 timezones
 - [Phase 01]: A real, out-of-scope hydration bug (UserSection.jsx auth-session race) was found and filed as issue #526 rather than fixed inline — Its correct fix is a mounted/hasHydrated gating boolean, explicitly prohibited by this plan's own acceptance criteria, and the bug is structurally different from the date/timezone taxonomy this plan targets
 - [Phase 01]: next.config.mjs's catch-all Cache-Control header rule must exclude any route setting its own outcome-dependent Cache-Control — it silently overrides route-level headers in a production build, which is how the /opengraph-image no-store fallback fix was almost defeated
+- [Phase 01]: [Phase 01]: NotificationToggle's stale-attempt guard uses a closure-scoped cancelled flag (set in effect cleanup) rather than a ref-based attempt-id counter — Promise.race already discards a timed-out attempt's late settlement, so the guard only needs to cover Retry-supersedes-previous-attempt and unmount
+- [Phase 01]: [Phase 01]: subscribeToPush() returns a discriminated {error} result instead of throwing or silently no-op'ing, so enable() can tell 'no push support in this browser' (legitimate no-op) apart from 'VAPID key missing' (misconfiguration) — previously both returned undefined
 
 ### Pending Todos
 
@@ -90,6 +93,7 @@ None yet.
 - HOUSE-03 (sourcemap stripping) needs GlitchTip symbolication proven on a real release — depends on Phase 1's release landing first
 - SITE-03 and ARCH-08 touch the same narrative/vernacular copy — Phase 14 depends on Phase 12 so the second track consumes the first's vocabulary source instead of forking it
 - ICE-06/ICE-07 and STAGE-01..04 are gated on external factors (official API behavior, TLS pinning, homelab hardware) — not schedulable by effort alone
+- NEXT_PUBLIC_VAPID_PUBLIC_KEY is confirmed ABSENT from the release image (Dockerfile.app has no ARG for it, neither build-release.yml nor build-staging.yml pass it as a build-arg) — plan 01-08's release gate must add it before 01-06's VAPID error-surfacing fix ships, or every push-capable production visitor lands in the new error state. See 01-VAPID-IMAGE-CHECK.md.
 
 ### Quick Tasks Completed
 
@@ -107,6 +111,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-31T07:56:26.247Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-08-31T08:10:29.858Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None
