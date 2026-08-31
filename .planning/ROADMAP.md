@@ -49,7 +49,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. `getWarOutcome` tolerates a null faction slot instead of throwing, pinned by a regression test (STAB-05)
   6. GlitchTip shows zero new events for the #496/#503/#485 classes on the new deployment id over a 48-hour window after `develop` is tagged and released to `main`, with `main` merged back into `develop` (STAB-06, STAB-07)
 
-**Plans**: 5/9 plans executed
+**Plans**: 6/9 plans executed
 
 Plans:
 **Wave 1**
@@ -65,7 +65,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-04-PLAN.md — OG render telemetry, getCampaign failure-mode audit, edge-case map-state coverage (STAB-02)
+- [x] 01-04-PLAN.md — OG render telemetry, getCampaign failure-mode audit, edge-case map-state coverage (STAB-02)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -357,7 +357,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stability Fixes & Release | 5/9 | In Progress|  |
+| 1. Stability Fixes & Release | 6/9 | In Progress|  |
 | 2. Docs Accuracy & Operational Housekeeping | 0/TBD | Not started | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
