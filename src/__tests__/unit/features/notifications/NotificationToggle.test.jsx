@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 // NotificationToggle is a permission-flow state machine:
 //   loading → { unsupported | denied | enabled | disabled }
@@ -22,6 +22,7 @@ function installBrowserAPIs({
     requestPermissionResult = 'granted',
     hasSubscription = false,
     fetchOk = true,
+    getSubscriptionRejection = null,
 } = {}) {
     // Notification
     globalThis.Notification = function () {};
@@ -54,7 +55,11 @@ function installBrowserAPIs({
     );
 
     const pushManager = {
-        getSubscription: vi.fn(() => Promise.resolve(subscription)),
+        getSubscription: vi.fn(() =>
+            getSubscriptionRejection ?
+                Promise.reject(getSubscriptionRejection)
+            :   Promise.resolve(subscription),
+        ),
         subscribe: subscribeMock,
     };
 
@@ -313,5 +318,132 @@ describe('NotificationToggle — busy state', () => {
         await waitFor(() => {
             expect(screen.getByText('Enable notifications')).toBeInTheDocument();
         });
+    });
+});
+
+describe('NotificationToggle — error state (hung/rejecting service worker)', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    test('serviceWorker.ready never resolves -> after 5s renders error copy + Retry', async () => {
+        installBrowserAPIs({ permission: 'granted' });
+        Object.defineProperty(navigator, 'serviceWorker', {
+            configurable: true,
+            value: { ready: new Promise(() => {}) },
+        });
+
+        render(<NotificationToggle />);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(5000);
+        });
+
+        expect(screen.getByText('Notifications unavailable')).toBeInTheDocument();
+        const retryButton = screen.getByRole('button', { name: /Retry/i });
+        expect(retryButton).toBeInTheDocument();
+    });
+
+    test('getSubscription() rejects -> renders error copy + Retry without waiting for the timeout', async () => {
+        installBrowserAPIs({
+            permission: 'granted',
+            getSubscriptionRejection: new Error('getSubscription boom'),
+        });
+
+        render(<NotificationToggle />);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(screen.getByText('Notifications unavailable')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
+    });
+
+    test('clicking Retry re-runs init against a now-healthy environment and reaches a terminal state', async () => {
+        installBrowserAPIs({ permission: 'granted' });
+        Object.defineProperty(navigator, 'serviceWorker', {
+            configurable: true,
+            value: { ready: new Promise(() => {}) },
+        });
+
+        render(<NotificationToggle />);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(5000);
+        });
+        const retryButton = screen.getByRole('button', { name: /Retry/i });
+
+        // Repair the environment before retrying.
+        installBrowserAPIs({ permission: 'granted', hasSubscription: false });
+
+        fireEvent.click(retryButton);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(screen.getByText('Enable notifications')).toBeInTheDocument();
+    });
+
+    test('timeout fires, then a late serviceWorker.ready resolution does not overwrite the error state', async () => {
+        installBrowserAPIs({ permission: 'granted' });
+        let resolveReady;
+        Object.defineProperty(navigator, 'serviceWorker', {
+            configurable: true,
+            value: {
+                ready: new Promise((resolve) => {
+                    resolveReady = resolve;
+                }),
+            },
+        });
+
+        render(<NotificationToggle />);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(5000);
+        });
+        expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
+
+        // Late resolution arrives after the timeout already won the race.
+        await act(async () => {
+            resolveReady({
+                pushManager: { getSubscription: () => Promise.resolve(null) },
+            });
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
+        expect(screen.queryByText('Enable notifications')).not.toBeInTheDocument();
+    });
+
+    test('clicking Retry twice in quick succession leaves exactly one terminal state', async () => {
+        installBrowserAPIs({ permission: 'granted' });
+        Object.defineProperty(navigator, 'serviceWorker', {
+            configurable: true,
+            value: { ready: new Promise(() => {}) },
+        });
+
+        render(<NotificationToggle />);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(5000);
+        });
+        const retryButton = screen.getByRole('button', { name: /Retry/i });
+
+        installBrowserAPIs({ permission: 'granted', hasSubscription: false });
+        fireEvent.click(retryButton);
+        fireEvent.click(retryButton);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(screen.getByText('Enable notifications')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Retry/i })).not.toBeInTheDocument();
     });
 });
