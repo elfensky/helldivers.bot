@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 01
 current_phase_name: Stability Fixes & Release
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-08-31T08:10:29.874Z"
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-08-31T08:34:26.611Z"
 last_activity: 2026-08-31
 last_activity_desc: Phase 01 execution started
-state_head: c66dd38a0d2ce4b441d0f3473b4883c033d9d948
+state_head: ffa0aa5f14b74ba1a0c53aee0ac04aaad8559766
 progress:
   total_phases: 18
   completed_phases: 0
   total_plans: 9
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-08-29)
 ## Current Position
 
 Phase: 01 (Stability Fixes & Release) — EXECUTING
-Plan: 5 of 9
+Plan: 6 of 9
 Status: Ready to execute
 Last activity: 2026-08-31 — Phase 01 execution started
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P02 | 17min | 3 tasks | 3 files |
 | Phase 01 P03 | 15min | 3 tasks | 6 files |
 | Phase 01 P06 | 15min | 3 tasks | 3 files |
+| Phase 01 P07 | 35min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,8 @@ Recent decisions affecting current work:
 - [Phase 01]: next.config.mjs's catch-all Cache-Control header rule must exclude any route setting its own outcome-dependent Cache-Control — it silently overrides route-level headers in a production build, which is how the /opengraph-image no-store fallback fix was almost defeated
 - [Phase 01]: [Phase 01]: NotificationToggle's stale-attempt guard uses a closure-scoped cancelled flag (set in effect cleanup) rather than a ref-based attempt-id counter — Promise.race already discards a timed-out attempt's late settlement, so the guard only needs to cover Retry-supersedes-previous-attempt and unmount
 - [Phase 01]: [Phase 01]: subscribeToPush() returns a discriminated {error} result instead of throwing or silently no-op'ing, so enable() can tell 'no push support in this browser' (legitimate no-op) apart from 'VAPID key missing' (misconfiguration) — previously both returned undefined
+- [Phase 01]: Kept Space Mono per D-17 and made it load for real via next/font, following the working variable-reference pattern rather than the bare-string pattern --font-display/--font-body still use (separate, out-of-scope bug, flagged for later)
+- [Phase 01]: The project's vitest browser-mode visual-regression harness cannot execute next/font (runs under Vite, not Next's build pipeline) — switched the before/after measurement instrument to the real dev server via a temporary, non-committing file revert/restore
 
 ### Pending Todos
 
@@ -111,6 +114,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-31T08:10:29.858Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-08-31T08:34:26.593Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None

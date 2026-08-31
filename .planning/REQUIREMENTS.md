@@ -14,7 +14,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **STAB-01**: #496 — React #418 hydration mismatch on `/` is fixed at the root (SSR/client value divergence identified per variant, not masked with mounted-flags), with a regression test per divergent value
 - [ ] **STAB-02**: #503 — `/opengraph-image` never 500s: the Satori→resvg failure is root-caused, the route falls back to a static image on render failure, and edge-case map states (null slots, no active events, homeworld-only) have render coverage
 - [x] **STAB-03**: #485 — `NotificationToggle` cannot stay in `'loading'` forever: hung `serviceWorker.ready`/rejected `getSubscription()` resolve to an explicit error state with a visible retry, covered by a test
-- [ ] **STAB-04**: #476 — `--font-mono` is resolved one way or the other (load Space Mono via `next/font` or drop it from the token) with before/after measurements of affected mono elements recorded on the issue
+- [x] **STAB-04**: #476 — `--font-mono` is resolved one way or the other (load Space Mono via `next/font` or drop it from the token) with before/after measurements of affected mono elements recorded on the issue
 - [x] **STAB-05**: #459 — `getWarOutcome` tolerates null faction slots; regression test pins it
 - [ ] **STAB-06**: After the stability release, GlitchTip shows zero new events for #496/#503/#485 classes on the new `dpl` id over a 48h window; residual classes get new issues
 - [ ] **STAB-07**: `develop` is released to `main` (PR → `vX.Y.Z` tag on the merge commit → `main` merged back into `develop`) once STAB-01…05 land; thereafter the develop/main gap stays ≤ ~5 versions
@@ -160,7 +160,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAB-01 | Phase 1 | Complete |
 | STAB-02 | Phase 1 | Pending |
 | STAB-03 | Phase 1 | Complete |
-| STAB-04 | Phase 1 | Pending |
+| STAB-04 | Phase 1 | Complete |
 | STAB-05 | Phase 1 | Complete |
 | STAB-06 | Phase 1 | Pending |
 | STAB-07 | Phase 1 | Pending |
