@@ -613,7 +613,9 @@ describe('buildWarNarrative — buildPlayerBeats guards (D-19)', () => {
     // variants later.
     const SENTINEL = '__N__';
     const surgePrefixes = PHRASES.surge.map((fn) => fn(SENTINEL).split(SENTINEL)[0]);
-    const collapsePrefixes = PHRASES.collapse.map((fn) => fn(SENTINEL).split(SENTINEL)[0]);
+    const collapsePrefixes = PHRASES.collapse.map(
+        (fn) => fn(SENTINEL).split(SENTINEL)[0],
+    );
 
     function hasPlayerBeat(beats) {
         return beats.some(
