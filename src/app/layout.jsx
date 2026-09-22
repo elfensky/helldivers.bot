@@ -237,13 +237,26 @@ export default async function RootLayout({ children }) {
                     </MinistryProvider>
                 </LiveDataProvider>
                 {isProduction && process.env.UMAMI_SITE_ID ?
-                    <Script
-                        nonce={nonce}
-                        // src="https://umami.drunik.be/script.js"
-                        src="/stats.js"
-                        data-website-id={process.env.UMAMI_SITE_ID}
-                        strategy="afterInteractive"
-                    />
+                    <>
+                        <Script
+                            nonce={nonce}
+                            // src="https://umami.drunik.be/script.js"
+                            src="/stats.js"
+                            data-website-id={process.env.UMAMI_SITE_ID}
+                            data-performance="true"
+                            strategy="afterInteractive"
+                        />
+                        {/* Session replay + heatmaps. Proxied like /stats.js;
+                            inert until Replays/Heatmaps are toggled on for this
+                            site in Umami. Must load after the tracker — it only
+                            sends once window.umami has a session cache. */}
+                        <Script
+                            nonce={nonce}
+                            src="/recorder.js"
+                            data-website-id={process.env.UMAMI_SITE_ID}
+                            strategy="afterInteractive"
+                        />
+                    </>
                 :   null}
             </body>
         </html>
