@@ -61,6 +61,22 @@ const nextConfig = {
                 source: '/api/send',
                 destination: '/api/umami',
             },
+            // Session replay + heatmaps. The recorder authenticates with the
+            // `x-umami-cache` token it reads from window.umami.getSession(),
+            // not the client IP, so these need no X-Forwarded-For handling and
+            // a plain rewrite is enough (unlike /api/send above).
+            {
+                source: '/recorder.js',
+                destination: 'https://umami.drunik.be/recorder.js',
+            },
+            {
+                source: '/api/record',
+                destination: 'https://umami.drunik.be/api/record',
+            },
+            {
+                source: '/api/websites/:id/recorder',
+                destination: 'https://umami.drunik.be/api/websites/:id/recorder',
+            },
         ];
     },
     async headers() {
