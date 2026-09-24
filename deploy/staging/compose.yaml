@@ -124,7 +124,7 @@ services:
                 condition: any
 
     cloudflared:
-        image: cloudflare/cloudflared:2026.8.2
+        image: cloudflare/cloudflared:latest
         # The image's ENTRYPOINT is already `cloudflared --no-autoupdate`, so the
         # command is just the subcommand.
         command: tunnel run
@@ -138,12 +138,10 @@ services:
             TUNNEL_TOKEN_FILE: /run/secrets/helldiversbot_cloudflared
         secrets:
             - helldiversbot_cloudflared
-        # 2 replicas, no placement constraint. Every cloudflared running these
-        # credentials registers as a connector on the same tunnel and Cloudflare
-        # load-balances across them, so a node dying does not drop ingress.
-        # (A `node.role == manager` constraint would be a no-op here — all three
-        # nodes are managers.) They do not race for certs; Cloudflare owns TLS.
+        # One replica, no placement constraint: the cluster is staging, so one
+        # connector is enough. If its node dies, Swarm reschedules it on a live
+        # one. Cloudflare owns TLS, so raising the count later is always safe.
         deploy:
-            replicas: 2
+            replicas: 1
             restart_policy:
                 condition: any
