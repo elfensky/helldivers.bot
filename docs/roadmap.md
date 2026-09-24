@@ -19,11 +19,11 @@ session across two.
 
 Every entry carries three markers:
 
-| Marker         | Meaning                                                                         |
-| -------------- | ------------------------------------------------------------------------------- |
-| **Prep**       | What to run _before_ touching code — see the prep ladder below                  |
-| **Branch**     | `worktree` (feature, per § Worktree Workflow) or `direct` (chore/bugfix branch) |
-| **Blocked by** | Sessions that must land first. No entry = startable today                       |
+| Marker         | Meaning                                                                                                     |
+| -------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Prep**       | What to run _before_ touching code — see the prep ladder below                                              |
+| **Branch**     | Historical — `direct` is retired: every session works in a worktree and lands by PR (AGENTS.md § Worktrees) |
+| **Blocked by** | Sessions that must land first. No entry = startable today                                                   |
 
 ### The prep ladder
 
@@ -44,9 +44,9 @@ Stop at the first rung that applies.
 ### Every session ends the same way
 
 `npm run lint:fix` → `npm run lint` → `npm run typecheck` → `npm run test:unit`
-→ `npm run build`. All four green, or the session reports why not. Then merge
-per § Git Workflow (`--no-ff`, version bump + CHANGELOG move in the merge
-commit), and close the issue with an implementation comment.
+→ `npm run build`. All four green, or the session reports why not. Then open
+the PR per § Git Workflow (version bump + CHANGELOG move as its last commit,
+rebase-merge), and close the issue with an implementation comment.
 
 ---
 

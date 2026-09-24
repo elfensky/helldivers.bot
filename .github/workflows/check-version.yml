@@ -1,7 +1,7 @@
 name: 'Check: Version Bump'
 
-# CLAUDE.md § Git Workflow #2 requires the version to move in the same commit
-# that merges a branch. This is the only automated enforcement of that rule.
+# CLAUDE.md § Git Workflow #2 requires every PR to carry its own version
+# bump. This is the only automated enforcement of that rule.
 on:
     pull_request:
         branches: [develop, main]
@@ -19,8 +19,8 @@ permissions:
 jobs:
     bumped:
         name: Version Bump
-        # Dependabot PRs are merged with the version bump added on merge, not
-        # by the bot, so this gate would only ever block them.
+        # Dependabot PRs get the version bump pushed onto their branch by hand,
+        # not by the bot, so this gate would only ever block the bot's own push.
         if: github.actor != 'dependabot[bot]'
         runs-on: ubuntu-latest
         timeout-minutes: 5
