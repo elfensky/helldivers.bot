@@ -46,8 +46,8 @@ node prisma/seed/fetch-seasons.mjs --force --from=148 --to=156
 You rarely need to run it by hand: `.github/workflows/scheduled-seed-refresh.yml`
 runs it every Monday (and on `workflow_dispatch`) and opens a PR against
 `develop` on the `chore/seed-refresh` branch whenever a season has
-completed since the last run. Merge that PR locally with `--no-ff`, doing
-the version bump + CHANGELOG entry in the merge commit as usual — the
+completed since the last run. Push the version bump + CHANGELOG entry onto
+that branch as usual (from a worktree), then rebase-merge the PR — the
 workflow deliberately does not touch either.
 
 **The script will never fetch the currently-active season.** The active

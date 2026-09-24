@@ -21,7 +21,7 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 ## Working Style
 
 - **Use agents** for codebase exploration and multi-step research tasks.
-- **Use git worktrees** for parallel development on separate branches.
+- **One worktree per session**, chores included — see § Worktrees.
 - **Vitest:** `npm run test:unit` (single run), `npm run test:coverage` (with coverage).
 - **Smoke tests:** `npm run test:smoke` (`test:e2e` is an alias) — plain Vitest + `fetch` against a running server, no Playwright and no browser. Requires a server on `:3000` or `TEST_SERVER_URL`; it **fails** if none is reachable (`SMOKE_ALLOW_SKIP=1` to skip instead).
 - **Visual regression:** `npm run test:visual` (compare) / `npm run test:visual:update` (rewrite baselines) — Vitest browser mode, run inside the Playwright Docker image because baseline PNGs are platform-specific. Tests live in `src/__tests__/visual/`, baselines are committed. Not part of `test:unit`. See `/docs/testing`.
@@ -41,26 +41,33 @@ After any frontend/CSS change, verify via DevTools before declaring done:
 - For grid/flex: check parent-child sizing chain
 - For interactive changes: programmatically trigger state changes and verify DOM updates
 
-## Worktree Workflow
+## Worktrees — one lane, always
 
-Features use an isolated git worktree off `develop`; small chores commit directly on a branch (no worktree). Both still follow the rules in § Git Workflow.
+Every session — feature, chore or one-line fix — works in its own worktree under `.worktrees/`
+(git-ignored), never in the main checkout. The main checkout stays on `develop` and moves only by
+`git pull --ff-only`: a branch parked there is how parallel sessions commit onto each other's work.
+Every change reaches `develop` by a PR. The why: vault `knowledge/developer/stack/git-and-prs.md`.
 
-**When to use a worktree (features):** new functionality, multi-file refactors, anything large enough to warrant a PR, anything that benefits from isolation while iterating. Default for any task you'd otherwise raise a feature branch for.
+```bash
+git status -sb && git pull --ff-only             # main checkout: sync only, never commit here
+git worktree prune && git fetch -q --prune origin
+git worktree add --lock --reason "$(hostname -s)" .worktrees/<slug> -b <type>/<slug> origin/develop
+cd .worktrees/<slug>                             # work and commit here
+git push -u origin HEAD && gh pr create --base develop --fill
+gh pr checks --watch --required && gh pr merge --rebase --delete-branch
+cd - && git pull --ff-only
+git worktree unlock .worktrees/<slug> && git worktree remove .worktrees/<slug> && git branch -D <type>/<slug>
+```
 
-**When to skip the worktree (small chores/bugfixes):** dependency bumps, `npm audit` fixes, doc edits, lint/format passes, copy tweaks, single-call-site bugfixes, CLAUDE.md/CHANGELOG updates. Branch from `develop` in the main checkout, commit, merge with `git merge --no-ff` per § Git Workflow. Use judgment; if unsure, default to a worktree.
+A new worktree has no dependencies installed: run `npm ci && npx prisma generate` in it first (the
+Prisma client outputs to the gitignored `src/generated/prisma/`), and copy the gitignored env files
+from the main checkout (`cp ../../.env.development .`, plus `.env.local` if present). A locked worktree
+you did not create belongs to another session — leave it. `.claude/worktrees/` is Claude Code's own
+subagent isolation and is managed by the harness.
 
-**Feature workflow (worktree):**
-
-1. Create the worktree off `develop` (run from the main checkout):
-   `git worktree add .worktrees/<branch-dir> -b feature/<desc> develop`
-2. Copy gitignored env files from the main checkout: `cp ../../.env.development .` (and any `.env.local` if present — `*.env*` is gitignored, so the dev server can't boot without them)
-3. Install dependencies in the worktree: `npm install && npx prisma generate` (Prisma client outputs to `src/generated/prisma/` which is gitignored, so it must be regenerated per worktree)
-4. Do the work in the worktree directory — small, logical commits as you go, not one giant commit at the end
-5. Verify in the worktree: `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build` (all four must pass — same chain as § Critical Rules)
-6. Merge back from the main checkout: `git checkout develop && git merge --no-ff feature/<desc>` — include the version bump + CHANGELOG move into `## X.Y.Z` in the merge commit per § Git Workflow rule #2
-7. Push `develop`, then clean up: `git worktree remove .worktrees/<branch-dir>` + `git branch -d feature/<desc>`
-
-**Worktree directory:** `.worktrees/` in project root (already gitignored). Directory names mirror the branch with slashes replaced by hyphens (e.g., `feature/ministry-interference` → `.worktrees/feature-ministry-interference`).
+Before the PR: small, logical commits; the verify chain (`npm run lint`, `npm run typecheck`,
+`npm run test:unit`, `npm run build` — all four green); and the version bump as the PR's last commit
+(§ Git Workflow rule 2).
 
 **Prisma migrations:** If the branch creates a migration under `prisma/migrations/`, remind the user to run `npx prisma migrate deploy` against the local database after merging, before the next dev-server restart.
 
@@ -83,21 +90,14 @@ metrics to it (PageSpeed/Lighthouse, etc.). It never merges to or from `develop`
 
 **Rules:**
 
-0. **Never squash merge. Never fast-forward merge.** Always use `git merge --no-ff` so every merge creates a merge commit and the branch boundary stays visible in `git log --graph`. Never `--squash`, never `--rebase`, never `--ff-only`.
-1. **Create feature/bugfix/chore branches from `develop`.** Features use a worktree (see § Worktree Workflow) and merge back via PR. Bugfix and chore branches skip the worktree and merge via `git merge --no-ff` directly into `develop` (branch → commit → `git checkout develop && git merge --no-ff <branch>` → push → delete branch). No PR needed.
-2. **Version on merge to `develop`:** When merging a branch into `develop`, **in the same commit** move its changelog entries from `## Unreleased` into a new `## X.Y.Z` section and bump `"version"` in `package.json` to match. Do not defer this to a separate commit or ask — it is part of the merge step. Use semver: patch for bugfixes, minor for features, major for breaking changes. Skipping version numbers between releases is fine — not every version on `develop` will be tagged on `main`.
-3. **Release process:** Merge `develop` → `main` via PR → **tag `vX.Y.Z` on the merge commit on `main`** (use the latest version from `CHANGELOG.md`) → push tag → **merge `main` back into `develop`** (`git checkout develop && git merge origin/main && git push`). The production Docker build only triggers on version tags, so forgetting to tag means no deployment. The merge-back carries main's PR merge commit into develop so the next release PR doesn't trip the "branch not up to date" check.
-4. **Hotfix process:** Cut `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` with new version section → PR to `main` → tag `vX.Y.Z` → merge back to `develop`
+0. **Rebase-merge into `develop`, never squash.** `gh pr merge --rebase --delete-branch`: a linear `develop` whose commits survive as separate, bisectable steps. Never merge locally into `develop` or `main`. The only merge commits are the release PR into `main` and its merge-back (rule 3).
+1. **Every branch starts from `origin/develop` in its own worktree and lands by PR** — features, bugfixes and chores alike (§ Worktrees).
+2. **The PR carries its version bump:** its last commit moves the branch's changelog entries from `## Unreleased` into a new `## X.Y.Z` section and bumps `"version"` in `package.json` to match. Do not defer it or ask — it is part of opening the PR, and `Check: Version Bump` fails a code PR without it. Bot PRs (Dependabot, the weekly seed refresh) get the same commit pushed onto their branch before merge. Use semver: patch for bugfixes, minor for features, major for breaking changes. Skipping version numbers between releases is fine — not every version on `develop` will be tagged on `main`.
+3. **Release process:** PR `develop` → `main`, merged with a merge commit (`gh pr merge --merge`) → **tag `vX.Y.Z` on that merge commit** (use the latest version from `CHANGELOG.md`) → push tag → **merge `main` back into `develop` by PR** (`gh pr create --base develop --head main --fill && gh pr merge main --merge`, never `--delete-branch`). The production Docker build only triggers on version tags, so forgetting to tag means no deployment. The merge-back carries main's merge commit into develop so the next release PR doesn't trip the "branch not up to date" check.
+4. **Hotfix process:** worktree on `hotfix/X.Y.Z` from `origin/main` → fix → update `CHANGELOG.md` with new version section → PR to `main` → tag `vX.Y.Z` → merge `main` back into `develop` by PR (rule 3)
 5. **Semver tagging:** `v<major>.<minor>.<patch>` on `main` only (always use `v` prefix)
 
-**Git Flow automation (git-workflow skill):**
-
-- `/git-workflow:feature <desc>` — create feature branch from `develop`
-- `/git-workflow:hotfix <semver>` — create hotfix branch from `main`
-- `/git-workflow:finish` — merge current branch to correct target(s), tag, cleanup
-- `/git-workflow:flow-status` — show branch status, stale branches, version info
-
-Prefer these commands over manual git operations.
+`/git-workflow:flow-status` (git-workflow skill) shows branch status, stale branches and version info. Do not use the skill's `feature`, `hotfix` or `finish` commands: they branch in the main checkout and merge locally, which § Worktrees replaces.
 
 ## Conventions
 
