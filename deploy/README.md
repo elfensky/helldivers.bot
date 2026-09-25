@@ -81,11 +81,11 @@ The app reads both as files via the `*_FILE` convention
 
 ## Known gaps
 
-1. **`helldiversbot-migrate:staging` is amd64-only** (`platforms: linux/amd64` in
-   `build-staging.yml`) — `prisma generate` SIGILLs under QEMU arm64 (exit 132), so it is not a
-   one-line fix; a native arm64 runner leg would be needed. Until then it cannot run on the Pis:
-   run it from an amd64 host, and note that `bump-staging-tag` deliberately skips any merge that
-   touches `prisma/` (see § How it is deployed).
+1. **Migrations are still run by hand.** `helldiversbot-migrate:staging` is multi-arch — amd64 and
+   arm64 are each built on a runner of their own arch, because `prisma generate` SIGILLs under QEMU
+   arm64 — so it runs from any LAN host, a Pi included. `bump-staging-tag` deliberately skips any
+   build whose range since the deployed pin changes `prisma/` (see § How it is deployed): run the
+   migrate image, then pin the tag by hand.
 2. **No self-hosted runner** in the LAN (elfensky/helldivers.bot#474). With Git Sync as the
    writer a runner is no longer needed to *deploy*; it is needed only to run migrations against
    the LAN database and to take the maintenance banner up/down around a deploy — the shape in

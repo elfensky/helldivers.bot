@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Changed
+
+- The migrate image is multi-arch again: amd64 and arm64, each built on a
+  runner of its own arch (`ubuntu-24.04-arm` for arm64) and joined into one
+  tag with `docker buildx imagetools create`. It went amd64-only after
+  v0.90.4, because `prisma generate` SIGILLs under QEMU arm64; built natively
+  it works. The staging migration now runs from any LAN host, a Pi included.
+  A new `Check: Migrate Image (arm64)` builds it natively and runs Prisma's
+  schema engine on every PR that touches the image.
+
 ### Fixed
 
 - The staging build now sees every migration since the last deploy.

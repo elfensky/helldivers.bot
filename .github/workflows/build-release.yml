@@ -85,9 +85,27 @@ jobs:
     # Each tag needs a versioned image, releases are infrequent (~$3/yr CI cost),
     # and a missing migration image causes broken deploys. Not worth optimizing.
     build-migrate:
-        name: Build Migrate Image
+        name: Build Migrate Image (${{ matrix.arch }})
         needs: verify
-        runs-on: ubuntu-latest
+        # One leg per arch, each on a runner of that arch — NOT QEMU. `prisma
+        # generate` dies under QEMU aarch64 emulation with `qemu: uncaught
+        # target signal 4 (Illegal instruction)`, exit 132: Prisma's engine
+        # binary uses instructions QEMU doesn't implement. Building both arches
+        # on one x86 runner (8b5b2058) broke the first release that tried it —
+        # v0.90.4, where the app image published and this one failed, leaving
+        # no migrate image for the tag — and it went amd64-only (061334c2).
+        # Built natively on arm64 the same Dockerfile works: `prisma generate`
+        # at build and the schema engine at run time, checked on every PR that
+        # touches it by check-migrate-arm64.yml. Each leg pushes
+        # :<tag>-<arch>; merge-migrate joins them into the release tags.
+        strategy:
+            matrix:
+                include:
+                    - arch: amd64
+                      runner: ubuntu-latest
+                    - arch: arm64
+                      runner: ubuntu-24.04-arm
+        runs-on: ${{ matrix.runner }}
         timeout-minutes: 30
         permissions:
             contents: read
@@ -102,32 +120,44 @@ jobs:
               with:
                   file: ./Dockerfile.migrate
                   registry-token: ${{ secrets.GITHUB_TOKEN }}
-                  # amd64 only — NOT an oversight. `prisma generate` dies under
-                  # QEMU aarch64 emulation with `qemu: uncaught target signal 4
-                  # (Illegal instruction)`, exit 132: Prisma's engine binary uses
-                  # instructions QEMU doesn't implement. The amd64 leg of the same
-                  # build succeeds. Adding arm64 here (8b5b2058, two hours after
-                  # v0.67.1 was tagged) was speculative prep for the Pi swarm and
-                  # broke the first release that tried it — v0.90.4, where the app
-                  # image published fine and this one failed, leaving no migrate
-                  # image for the tag.
-                  #
-                  # The app image (Dockerfile.app) still builds both arches; only
-                  # Prisma is affected. To restore arm64 here, the QEMU problem has
-                  # to be solved first — newer binfmt (`docker/setup-qemu-action`
-                  # with `image: tonistiigi/binfmt:latest`) or a native arm64
-                  # runner — and verified on a real tag, not assumed.
-                  platforms: linux/amd64
+                  platforms: linux/${{ matrix.arch }}
                   tags: |
-                      ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:${{ github.ref_name }}
-                      ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:production
-                      ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:latest
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:${{ github.ref_name }}-${{ matrix.arch }}
                   build-args: |
                       NODE_ENV=production
 
+    merge-migrate:
+        name: Publish Migrate Manifest
+        needs: build-migrate
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: read
+            packages: write
+
+        steps:
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v4.6.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Join the two arches into the release tags
+              env:
+                  IMAGE: ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate
+                  TAG: ${{ github.ref_name }}
+              run: |
+                  docker buildx imagetools create -t "$IMAGE:$TAG" -t "$IMAGE:production" -t "$IMAGE:latest" "$IMAGE:$TAG-amd64" "$IMAGE:$TAG-arm64"
+                  out=$(docker buildx imagetools inspect "$IMAGE:$TAG")
+                  echo "$out"
+                  for p in linux/amd64 linux/arm64; do
+                    grep -qE "Platform: +$p$" <<< "$out" || { echo "::error::$IMAGE:$TAG has no $p manifest"; exit 1; }
+                  done
+
     github-release:
         name: Create GitHub Release
-        needs: [build-app, build-migrate]
+        needs: [build-app, merge-migrate]
         runs-on: ubuntu-latest
         timeout-minutes: 10
         permissions:
