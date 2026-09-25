@@ -1,8 +1,8 @@
 # Staging deploy — helldivers.bot on the Pi swarm
 
 **Status: live, deployed by Git Sync.** `staging/compose.yaml` is the stack on the 3-Pi swarm;
-Arcane applies it on every commit to `develop`, and CI writes that commit (`bump-staging-tag` in
-`../.github/workflows/build-staging.yml`). Manual fallback if Arcane is down:
+Arcane applies it from the CI-owned branch `deploy/staging`, which CI force-pushes after every
+green `develop` build (`bump-staging-tag` in `../.github/workflows/build-staging.yml`). Manual fallback if Arcane is down:
 `docker stack deploy -c deploy/staging/compose.yaml helldiversbot`.
 
 ## What's live (2026-08-25)
@@ -37,7 +37,7 @@ Arcane applies it on every commit to `develop`, and CI writes that commit (`bump
 
 `staging/compose.yaml` is the single writer. Arcane on huginn (`arcane.lav.ren`, swarm
 environment) polls this repo and applies that file, which makes the compose **read-only in the
-Arcane UI** — rollback is `git revert`, not a console edit. See the vault:
+Arcane UI** — rollback is a git-side re-pin (below), not a console edit. See the vault:
 `knowledge/homelab/truenas-apps-to-arcane.md` § "One writer per stack".
 
 Create it under **Swarm → Stacks**, NOT under Projects. Projects run plain `docker compose` on a
@@ -46,7 +46,7 @@ docker/compose `pkg/compose/create.go`). Swarm → Stacks runs `docker stack dep
 external secrets correctly — verified.
 
 Stack settings: name `helldiversbot`, repo `https://github.com/elfensky/helldivers.bot`, branch
-`develop`, compose path `deploy/staging/compose.yaml`, environment = the swarm (all three nodes are
+`deploy/staging`, compose path `deploy/staging/compose.yaml`, environment = the swarm (all three nodes are
 managers, so any of them shows the same cluster).
 
 The stack name is the Swarm namespace, so it must stay `helldiversbot` — changing it deploys a
@@ -56,9 +56,12 @@ The repo is **public**, so Git Sync needs no token — and nothing secret may en
 
 **Git Sync redeploys on commit change, not on image change.** A rebuilt floating `:staging` tag
 produces no commit, so Arcane would never see it. That is why CI (`bump-staging-tag` in
-`build-staging.yml`) rewrites the `image:` line to the immutable `:sha-<commit>` tag and commits
-it to `develop` after every green build — the commit is the deploy trigger, and `git revert` of
-that commit is the rollback. Do not `docker service update --force` the stack by hand; that is
+`build-staging.yml`) rewrites the `image:` line to the immutable `:sha-<commit>` tag in the tested
+commit's compose and force-pushes that as `deploy/staging` after every green build — the commit
+is the deploy trigger. `develop` never takes a CI push, so it can stay PR-only; `develop`'s own
+`image:` line is therefore stale and says nothing about what runs. Rollback: re-run the **Bump
+Staging Tag** job of the earlier `Build: Staging` run that deployed the good version
+(`gh run rerun <run-id> --job <job-id>`) — it pins that run's tested commit again. Do not `docker service update --force` the stack by hand; that is
 the second writer this setup exists to remove.
 
 ## Swarm secrets (external — create once, on a manager, out of band)
@@ -85,7 +88,7 @@ The app reads both as files via the `*_FILE` convention
    arm64 are each built on a runner of their own arch, because `prisma generate` SIGILLs under QEMU
    arm64 — so it runs from any LAN host, a Pi included. `bump-staging-tag` deliberately skips any
    build whose range since the deployed pin changes `prisma/` (see § How it is deployed): run the
-   migrate image, then pin the tag by hand.
+   migrate image, then `gh workflow run build-staging.yml --ref develop -f migrated=true` to pin.
 2. **No self-hosted runner** in the LAN (elfensky/helldivers.bot#474). With Git Sync as the
    writer a runner is no longer needed to *deploy*; it is needed only to run migrations against
    the LAN database and to take the maintenance banner up/down around a deploy — the shape in
@@ -105,8 +108,9 @@ merge to develop
   → Check: CI green
   → Build: Staging
        build :staging + :sha-<commit> app image (multi-arch)
-       bump-staging-tag: pin :sha-<commit> in deploy/staging/compose.yaml, commit [skip ci]
-         (skipped with a warning when the merge touches prisma/ — migrate by hand first)
-  → Arcane Git Sync (polls every 5 min) sees the commit → redeploys the stack
+       bump-staging-tag: pin :sha-<commit> in deploy/staging/compose.yaml, force-push deploy/staging
+         (skipped with a warning when prisma/ changed since the deployed pin — migrate by hand,
+          then dispatch with migrated=true)
+  → Arcane Git Sync (polls deploy/staging every 5 min) sees the commit → redeploys the stack
        start-first + image healthcheck + rollback on failure
 ```

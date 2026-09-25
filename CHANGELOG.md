@@ -4,6 +4,14 @@
 
 ### Changed
 
+- Staging's image pin moved off `develop`: `bump-staging-tag` now force-pushes
+  the tested commit plus the pin to the CI-owned branch `deploy/staging`,
+  which Arcane Git Sync watches, so `develop` takes no CI push and can be
+  PR-only. `detect-migration` reads the deployed pin from that branch. After a
+  hand-run migration, pin with
+  `gh workflow run build-staging.yml --ref develop -f migrated=true`; roll back
+  by re-running an earlier run's Bump Staging Tag job.
+
 - The migrate image is multi-arch again: amd64 and arm64, each built on a
   runner of its own arch (`ubuntu-24.04-arm` for arm64) and joined into one
   tag with `docker buildx imagetools create`. It went amd64-only after
