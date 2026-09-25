@@ -8,14 +8,14 @@ Arcane applies it on every commit to `develop`, and CI writes that commit (`bump
 ## What's live (2026-08-25)
 
 - Ingress is a **Cloudflare Tunnel** (remotely-managed, token in the `cloudflared-helldiversbot`
-  Swarm secret). One `cloudflared` replica, no placement constraint — the cluster is staging, so one
-  connector is enough; Swarm reschedules it if its node dies. Public hostname
+  Swarm secret). Two `cloudflared` replicas, no placement constraint — both register as
+  connectors on the same tunnel and Cloudflare load-balances across them. Public hostname
   `staging.helldivers.bot` → `HTTP` → `app:3000` is configured in the Zero Trust dashboard,
   not in this repo.
 - No published ports. The old LAN `:50001` is gone.
 
-- Swarm stack `helldiversbot`: `helldiversbot_app` ×3 (soft-spread across nodes) and
-  `helldiversbot_cloudflared` ×1, image pinned to `:sha-<commit>` by CI (multi-arch, pulls
+- Swarm stack `helldiversbot`: `helldiversbot_app` ×2 (soft-spread across nodes) and
+  `helldiversbot_cloudflared` ×2, image pinned to `:sha-<commit>` by CI (multi-arch, pulls
   anonymously from GHCR — the packages are public, no registry auth needed). Load balancing is the
   Swarm service VIP: cloudflared targets `http://app:3000` and Swarm spreads new connections across
   the replicas (per connection, not per request — cloudflared pools keep-alives).
