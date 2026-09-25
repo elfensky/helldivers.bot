@@ -32,9 +32,9 @@
 # dashboard, not in this file. Routing changes are made there.
 #
 # Migrations are NOT a service here — Swarm ignores `depends_on`. Run the
-# migrate image as a one-shot BEFORE deploying. It is amd64-only (prisma
-# generate SIGILLs under QEMU arm64), so it cannot run on the Pis; run it
-# from an amd64 host. See deploy/README.md.
+# migrate image as a one-shot BEFORE deploying. It is multi-arch (each arch
+# built on its own runner), so it runs from any LAN host, a Pi included.
+# See deploy/README.md.
 #
 # The `image:` line below is written by CI (bump-staging-tag in
 # build-staging.yml): every green develop build pins `:sha-<commit>` here and

@@ -105,11 +105,22 @@ jobs:
                     echo "missing=true" >> "$GITHUB_OUTPUT"
                   fi
 
+    # One leg per arch, each on a runner of that arch — never QEMU: Prisma's
+    # engine SIGILLs under emulated aarch64 (see build-release.yml). Each leg
+    # pushes :staging-<arch>; merge-migrate joins them into :staging, so the
+    # Pis (arm64) and any amd64 host pull the same tag.
     build-migrate:
-        name: Build Migrate Image
+        name: Build Migrate Image (${{ matrix.arch }})
         needs: detect-migration
         if: needs.detect-migration.outputs.migrate == 'true' || needs.detect-migration.outputs.image_missing == 'true' || github.event_name == 'workflow_dispatch'
-        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                include:
+                    - arch: amd64
+                      runner: ubuntu-latest
+                    - arch: arm64
+                      runner: ubuntu-24.04-arm
+        runs-on: ${{ matrix.runner }}
         timeout-minutes: 30
         permissions:
             contents: read
@@ -125,13 +136,38 @@ jobs:
               with:
                   file: ./Dockerfile.migrate
                   registry-token: ${{ secrets.GITHUB_TOKEN }}
-                  # amd64 only — see the matching comment in build-release.yml.
-                  # `prisma generate` SIGILLs under QEMU aarch64 (exit 132).
-                  platforms: linux/amd64
+                  platforms: linux/${{ matrix.arch }}
                   tags: |
-                      ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:staging-${{ matrix.arch }}
                   build-args: |
                       NODE_ENV=production
+
+    merge-migrate:
+        name: Publish Migrate Manifest
+        needs: build-migrate
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v4.6.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Join the two arches into :staging
+              env:
+                  IMAGE: ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate
+              run: |
+                  docker buildx imagetools create -t "$IMAGE:staging" "$IMAGE:staging-amd64" "$IMAGE:staging-arm64"
+                  out=$(docker buildx imagetools inspect "$IMAGE:staging")
+                  echo "$out"
+                  for p in linux/amd64 linux/arm64; do
+                    grep -qE "Platform: +$p$" <<< "$out" || { echo "::error::$IMAGE:staging has no $p manifest"; exit 1; }
+                  done
 
     build-app:
         name: Build App Image
@@ -181,10 +217,9 @@ jobs:
     # fails visibly and the next merge to develop re-bumps.
     #
     # Gated on "no prisma/ change since the deployed pin" (detect-migration):
-    # the swarm is arm64 and the migrate image is amd64-only (see
-    # build-migrate), and a cloud runner cannot reach the LAN database anyway
-    # — so a range that carries a migration must be migrated by hand first,
-    # then bumped by hand.
+    # a cloud runner cannot reach the LAN database, so a range that carries a
+    # migration must be migrated by hand first — the migrate image is
+    # multi-arch, so from any LAN host, a Pi included — then bumped by hand.
     bump-staging-tag:
         name: Bump Staging Tag
         needs: [detect-migration, build-app]
@@ -197,7 +232,7 @@ jobs:
             - name: Migration in this merge — not bumping
               if: needs.detect-migration.outputs.schema == 'true'
               run: |
-                  echo "::warning title=staging not bumped::prisma/ changed between the deployed pin and ${TESTED_SHA} — run helldiversbot-migrate:staging against the staging DB from an amd64 host, then set image to :sha-${TESTED_SHA} in deploy/staging/compose.yaml and commit."
+                  echo "::warning title=staging not bumped::prisma/ changed between the deployed pin and ${TESTED_SHA} — run helldiversbot-migrate:staging against the staging DB from any LAN host (the image is multi-arch), then set image to :sha-${TESTED_SHA} in deploy/staging/compose.yaml and commit."
 
             - name: Checkout develop
               if: needs.detect-migration.outputs.schema != 'true'
@@ -217,7 +252,7 @@ jobs:
 
     cleanup:
         name: Cleanup Untagged Images
-        needs: [build-migrate, build-app]
+        needs: [build-migrate, merge-migrate, build-app]
         # Runs when build-migrate is skipped (nothing to rebuild), but not
         # when build-app is skipped — that means CI failed and nothing was
         # published to prune.

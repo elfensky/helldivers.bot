@@ -43,10 +43,12 @@ inputs:
 runs:
     using: composite
     steps:
-        # Emulation is only needed for a cross-architecture leg. The amd64-only
-        # migrate image skips a step that would otherwise cost time for nothing.
+        # Emulation is only needed for a cross-architecture leg: an arm target
+        # on an x86 runner. The migrate image builds each arch on its own
+        # runner (amd64 on ubuntu-latest, arm64 natively on ubuntu-24.04-arm),
+        # so neither leg needs it — Prisma's engine SIGILLs under QEMU aarch64.
         - name: Set up QEMU
-          if: contains(inputs.platforms, 'arm')
+          if: contains(inputs.platforms, 'arm') && runner.arch != 'ARM64'
           uses: docker/setup-qemu-action@v4.2.0
 
         # Buildx is required for the BuildKit features Dockerfile.app uses:
