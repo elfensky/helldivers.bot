@@ -10,7 +10,14 @@ name: 'Build: Staging'
 # take effect once merged there, not from a feature branch.
 on:
     workflow_dispatch:
-        inputs: {}
+        inputs:
+            migrated:
+                # The manual step after a migration: detect-migration keeps
+                # refusing to pin while prisma/ differs from the deployed pin,
+                # so once the staging DB is migrated, dispatch with this set.
+                description: 'Staging DB is migrated to this commit — pin it even though prisma/ changed'
+                type: boolean
+                default: false
     workflow_run:
         # Matches check-ci.yml's `name:`, NOT its filename. The two move
         # together or this trigger silently stops firing.
@@ -18,9 +25,9 @@ on:
         types: [completed]
         branches: [develop]
 
-# Never cancel: bump-staging-tag commits to develop, and two runs racing on
-# that push is a failed push for nothing. A second merge to develop queues
-# behind the first instead.
+# Never cancel: bump-staging-tag force-pushes deploy/staging, and two runs
+# racing on that push would pin whichever lost. A second merge to develop
+# queues behind the first instead.
 concurrency:
     group: build-staging
     cancel-in-progress: false
@@ -55,7 +62,10 @@ jobs:
                   fetch-depth: 0
 
             # Diff against what staging RUNS — the sha-<commit> pinned in
-            # deploy/staging/compose.yaml — not against HEAD^. HEAD^..HEAD
+            # deploy/staging/compose.yaml on the deploy/staging branch (the
+            # branch Git Sync watches; develop's copy of the image: line is not
+            # what runs), falling back to the tested commit's copy until that
+            # branch exists — not against HEAD^. HEAD^..HEAD
             # assumed every merge was a --no-ff merge commit; under rebase
             # merges it is only the PR's last commit, which by AGENTS.md rule 2
             # is always the version bump, so it never saw a migration. The pin
@@ -73,9 +83,14 @@ jobs:
             - name: Detect migration-related changes
               id: filter
               run: |
-                  deployed=$(sed -nE 's#^[[:space:]]*image: ghcr\.io/[^/]+/helldiversbot:sha-([0-9a-f]{40}).*#\1#p' deploy/staging/compose.yaml | head -n 1)
+                  if git rev-parse -q --verify refs/remotes/origin/deploy/staging > /dev/null; then
+                    compose=$(git show origin/deploy/staging:deploy/staging/compose.yaml)
+                  else
+                    compose=$(cat deploy/staging/compose.yaml)
+                  fi
+                  deployed=$(sed -nE 's#^[[:space:]]*image: ghcr\.io/[^/]+/helldiversbot:sha-([0-9a-f]{40}).*#\1#p' <<< "$compose" | head -n 1)
                   if [ -z "$deployed" ] || ! git merge-base --is-ancestor "$deployed" HEAD 2>/dev/null; then
-                    echo "::warning title=staging base unknown::no pinned sha-<commit> in deploy/staging/compose.yaml that is an ancestor of ${TESTED_SHA} — treating this build as a migration"
+                    echo "::warning title=staging base unknown::no pinned sha-<commit> on deploy/staging that is an ancestor of ${TESTED_SHA} — treating this build as a migration"
                     echo "migrate=true" >> "$GITHUB_OUTPUT"
                     echo "schema=true" >> "$GITHUB_OUTPUT"
                     exit 0
@@ -208,18 +223,22 @@ jobs:
                       sentry_project=${{ secrets.SENTRY_PROJECT }}
 
     # The deploy itself is Arcane Git Sync (deploy/README.md): Arcane polls
-    # develop and redeploys the stack when the commit changes. A rebuilt
-    # floating `:staging` tag is invisible to it, so the only thing this job
-    # has to do is write the immutable tag into the compose and commit.
+    # the CI-owned branch deploy/staging and redeploys the stack when its
+    # commit changes. A rebuilt floating `:staging` tag is invisible to it, so
+    # this job writes the immutable tag into the tested commit's compose and
+    # force-pushes that as deploy/staging. develop stays PR-only: CI never
+    # pushes to it (descent-app's pattern, vault arcane-deploy § Path B).
     #
     # GITHUB_TOKEN pushes never trigger workflows (GitHub's recursion guard),
-    # `[skip ci]` is belt and braces. No rebase-retry on a push race: the run
-    # fails visibly and the next merge to develop re-bumps.
+    # `[skip ci]` is belt and braces. Rollback: re-run this job in the earlier
+    # run that deployed the good version (`gh run rerun <run> --job <job>`) —
+    # it pins that run's tested commit again.
     #
     # Gated on "no prisma/ change since the deployed pin" (detect-migration):
     # a cloud runner cannot reach the LAN database, so a range that carries a
-    # migration must be migrated by hand first — the migrate image is
-    # multi-arch, so from any LAN host, a Pi included — then bumped by hand.
+    # migration is migrated by hand first — the migrate image is multi-arch,
+    # so from any LAN host, a Pi included — then pinned by dispatching this
+    # workflow on develop with `migrated: true`.
     bump-staging-tag:
         name: Bump Staging Tag
         needs: [detect-migration, build-app]
@@ -229,26 +248,25 @@ jobs:
         permissions:
             contents: write
         steps:
-            - name: Migration in this merge — not bumping
-              if: needs.detect-migration.outputs.schema == 'true'
+            - name: Migration since the deployed pin — not pinning
+              if: needs.detect-migration.outputs.schema == 'true' && inputs.migrated != true
               run: |
-                  echo "::warning title=staging not bumped::prisma/ changed between the deployed pin and ${TESTED_SHA} — run helldiversbot-migrate:staging against the staging DB from any LAN host (the image is multi-arch), then set image to :sha-${TESTED_SHA} in deploy/staging/compose.yaml and commit."
+                  echo "::warning title=staging not pinned::prisma/ changed between the deployed pin and ${TESTED_SHA} — run helldiversbot-migrate:staging against the staging DB from any LAN host, then: gh workflow run build-staging.yml --ref develop -f migrated=true"
 
-            - name: Checkout develop
-              if: needs.detect-migration.outputs.schema != 'true'
+            - name: Checkout the tested commit
+              if: needs.detect-migration.outputs.schema != 'true' || inputs.migrated == true
               uses: actions/checkout@v7.0.1
               with:
-                  ref: develop
+                  ref: ${{ env.TESTED_SHA }}
 
-            - name: Pin the tested image and commit
-              if: needs.detect-migration.outputs.schema != 'true'
+            - name: Pin the tested image and push deploy/staging
+              if: needs.detect-migration.outputs.schema != 'true' || inputs.migrated == true
               run: |
                   sed -i -E "s#^([[:space:]]*image: ghcr\.io/[^/]+/helldiversbot:).*#\1sha-${TESTED_SHA}#" deploy/staging/compose.yaml
-                  git diff --exit-code --quiet deploy/staging/compose.yaml && { echo "already pinned"; exit 0; }
                   git config user.name github-actions[bot]
                   git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-                  git commit -am "chore(deploy): staging → sha-${TESTED_SHA:0:12} [skip ci]"
-                  git push origin develop
+                  git commit -qam "chore(deploy): staging → sha-${TESTED_SHA:0:12} [skip ci]" || echo "compose already pins sha-${TESTED_SHA:0:12}"
+                  git push --force origin HEAD:refs/heads/deploy/staging
 
     cleanup:
         name: Cleanup Untagged Images
