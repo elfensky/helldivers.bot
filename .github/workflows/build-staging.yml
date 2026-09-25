@@ -2,9 +2,9 @@ name: 'Build: Staging'
 # Gated on CI, not on the push itself. Both used to trigger on
 # `push: branches: [develop]`, which meant they raced: the image built,
 # published and deployed while lint/typecheck/tests were still running, so a
-# red CI was a note attached to an already-shipped build. develop takes direct
-# merges without a PR (see CLAUDE.md § Git Workflow), so the PR check that
-# guards main never applies here — this is the only gate.
+# red CI was a note attached to an already-shipped build. develop takes PRs
+# rebase-merged (see AGENTS.md § Worktrees) but has no required checks, so the
+# check that guards main never applies here — this is the only gate.
 #
 # `workflow_run` resolves this file from the DEFAULT branch (develop), so edits
 # take effect once merged there, not from a feature branch.
@@ -52,29 +52,45 @@ jobs:
               uses: actions/checkout@v7.0.1
               with:
                   ref: ${{ env.TESTED_SHA }}
-                  fetch-depth: 2
+                  fetch-depth: 0
 
-            # HEAD^ is the first parent, so on a --no-ff merge this spans
-            # everything the branch brought in — the shape every merge to
-            # develop takes. A push of several loose commits would only compare
-            # the last one; the image_missing check below and a manual
-            # workflow_dispatch both force a build if that ever bites.
+            # Diff against what staging RUNS — the sha-<commit> pinned in
+            # deploy/staging/compose.yaml — not against HEAD^. HEAD^..HEAD
+            # assumed every merge was a --no-ff merge commit; under rebase
+            # merges it is only the PR's last commit, which by AGENTS.md rule 2
+            # is always the version bump, so it never saw a migration. The pin
+            # spans every commit since the last deploy, whatever the merge
+            # method, and keeps refusing after a skipped bump until the
+            # migration is run and the tag pinned by hand. Pin unreadable or
+            # not in history: fail closed — treat it as a migration.
             # Two questions, two outputs. `migrate` = rebuild the migrate image
             # (anything that changes what it contains, package.json included).
-            # `schema` = the DATABASE changed (prisma/ only) — the one that
-            # gates the staging tag bump. They must stay separate: every PR
-            # touches package.json for the version bump, so gating on
-            # `migrate` skipped every single deploy.
+            # `schema` = the DATABASE needs the migrate container run (any
+            # prisma/ change but Markdown: schema, migrations, and the seed
+            # data it upserts) — the one that gates the staging tag bump. They
+            # must stay separate: every PR touches package.json for the
+            # version bump, so gating on `migrate` skipped every single deploy.
             - name: Detect migration-related changes
               id: filter
               run: |
-                  changed=$(git diff --name-only HEAD^ HEAD)
-                  if echo "$changed" | grep -qE '^(prisma/|prisma\.config\.mjs|package(-lock)?\.json|Dockerfile\.migrate)'; then
+                  deployed=$(sed -nE 's#^[[:space:]]*image: ghcr\.io/[^/]+/helldiversbot:sha-([0-9a-f]{40}).*#\1#p' deploy/staging/compose.yaml | head -n 1)
+                  if [ -z "$deployed" ] || ! git merge-base --is-ancestor "$deployed" HEAD 2>/dev/null; then
+                    echo "::warning title=staging base unknown::no pinned sha-<commit> in deploy/staging/compose.yaml that is an ancestor of ${TESTED_SHA} — treating this build as a migration"
+                    echo "migrate=true" >> "$GITHUB_OUTPUT"
+                    echo "schema=true" >> "$GITHUB_OUTPUT"
+                    exit 0
+                  fi
+                  changed=$(git diff --name-only "$deployed" HEAD)
+                  echo "Deployed ${deployed:0:12}; changed since:"; echo "$changed"
+                  # Here-strings and one awk, no pipes: under the runner's
+                  # `bash -eo pipefail`, a `grep -q` mid-pipe can SIGPIPE the
+                  # writer and turn a match into a failure.
+                  if grep -qE '^(prisma/|prisma\.config\.mjs|package(-lock)?\.json|Dockerfile\.migrate)' <<< "$changed"; then
                     echo "migrate=true" >> "$GITHUB_OUTPUT"
                   else
                     echo "migrate=false" >> "$GITHUB_OUTPUT"
                   fi
-                  if echo "$changed" | grep -qE '^prisma/'; then
+                  if awk '/^prisma\// && !/\.md$/ { hit = 1 } END { exit !hit }' <<< "$changed"; then
                     echo "schema=true" >> "$GITHUB_OUTPUT"
                   else
                     echo "schema=false" >> "$GITHUB_OUTPUT"
@@ -164,11 +180,11 @@ jobs:
     # `[skip ci]` is belt and braces. No rebase-retry on a push race: the run
     # fails visibly and the next merge to develop re-bumps.
     #
-    # Gated on "no schema change in this merge" (prisma/ untouched): the
-    # swarm is arm64 and the migrate image is amd64-only (see build-migrate),
-    # and a cloud runner cannot reach the LAN database anyway — so a merge
-    # that carries a migration must be migrated by hand first, then bumped
-    # by hand.
+    # Gated on "no prisma/ change since the deployed pin" (detect-migration):
+    # the swarm is arm64 and the migrate image is amd64-only (see
+    # build-migrate), and a cloud runner cannot reach the LAN database anyway
+    # — so a range that carries a migration must be migrated by hand first,
+    # then bumped by hand.
     bump-staging-tag:
         name: Bump Staging Tag
         needs: [detect-migration, build-app]
@@ -181,7 +197,7 @@ jobs:
             - name: Migration in this merge — not bumping
               if: needs.detect-migration.outputs.schema == 'true'
               run: |
-                  echo "::warning title=staging not bumped::${TESTED_SHA} touches prisma/ — run helldiversbot-migrate:staging against the staging DB from an amd64 host, then set image to :sha-${TESTED_SHA} in deploy/staging/compose.yaml and commit."
+                  echo "::warning title=staging not bumped::prisma/ changed between the deployed pin and ${TESTED_SHA} — run helldiversbot-migrate:staging against the staging DB from an amd64 host, then set image to :sha-${TESTED_SHA} in deploy/staging/compose.yaml and commit."
 
             - name: Checkout develop
               if: needs.detect-migration.outputs.schema != 'true'
