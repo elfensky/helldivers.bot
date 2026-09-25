@@ -102,15 +102,15 @@ services:
         # spreads NEW connections across every healthy replica (per TCP
         # connection, not per request; cloudflared pools keep-alives, so the
         # spread is lumpy). That IS the load balancing; nothing on the
-        # Cloudflare side knows there are three.
+        # Cloudflare side knows there are two.
         #
         # Soft spread, NOT `max_replicas_per_node: 1`: the hard cap plus
-        # start-first never converges on a 3-node swarm — the replacement task
+        # start-first stalls whenever replicas = live nodes — the replacement task
         # has no node, sits Pending, and Pending is not a failure so rollback
-        # never fires (moby/moby#40797). The preference puts one per node when
-        # three are up and doubles up on a live node when one is down.
+        # never fires (moby/moby#40797). The preference keeps the two replicas on
+        # different nodes and doubles up only when one node is left.
         deploy:
-            replicas: 3
+            replicas: 2
             placement:
                 preferences:
                     - spread: node.id
@@ -138,10 +138,12 @@ services:
             TUNNEL_TOKEN_FILE: /run/secrets/helldiversbot_cloudflared
         secrets:
             - helldiversbot_cloudflared
-        # One replica, no placement constraint: the cluster is staging, so one
-        # connector is enough. If its node dies, Swarm reschedules it on a live
-        # one. Cloudflare owns TLS, so raising the count later is always safe.
+        # 2 replicas, no placement constraint. Every cloudflared running these
+        # credentials registers as a connector on the same tunnel and Cloudflare
+        # load-balances across them, so a node dying does not drop ingress.
+        # (A `node.role == manager` constraint would be a no-op here — all three
+        # nodes are managers.) They do not race for certs; Cloudflare owns TLS.
         deploy:
-            replicas: 1
+            replicas: 2
             restart_policy:
                 condition: any
