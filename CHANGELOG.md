@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Fixed
+
+- The staging build now sees every migration since the last deploy.
+  `detect-migration` diffed `HEAD^..HEAD`, which assumed `--no-ff` merges;
+  under rebase merges that is only the PR's last commit — by rule 2 always the
+  version bump — so a migration never gated the staging tag bump, and staging
+  would have deployed onto an unmigrated database. It now diffs from the
+  `sha-<commit>` pinned in `deploy/staging/compose.yaml`, fails closed when
+  that pin is missing or not in history, and ignores Markdown under `prisma/`
+  (the seed readme had blocked a bump). Seed data changes still count: they
+  only land when the migrate container runs.
+
 ## 0.94.0
 
 ### Added
