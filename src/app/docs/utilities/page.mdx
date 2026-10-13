@@ -358,7 +358,7 @@ Umami v3 (self-hosted, cookieless) with three tracking layers:
 2. **`useTrack()` hook / `window.umami?.track()`** — for dynamic client-side interactions where event names or data depend on runtime state.
 3. **`sendUmamiEvent()` server utility** — for API route tracking. Sends server-to-server directly to Umami (not subject to ad blockers).
 
-**Ad-blocker bypass:** The client-side tracker posts through a same-origin proxy chain: tracker → `/api/send` (Next.js rewrite) → `/api/umami` (proxy route) → `umami.drunik.be/api/send`. The browser sends no request to an external Umami domain. The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash.
+**Ad-blocker bypass:** The client-side tracker posts through a same-origin proxy chain: tracker → `/api/send` (Next.js rewrite) → `/api/umami` (proxy route) → `umami.lav.ren/api/send`. The browser sends no request to an external Umami domain. The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash.
 
 **User identification:** Authenticated users are identified via `umami.identify(userId, { provider })` in `UserSection.jsx`. Anonymous visitors remain fully anonymous.
 

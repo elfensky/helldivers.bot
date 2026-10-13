@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Changed
+
+- Analytics point at `umami.lav.ren`: the `/api/record` and
+  `/api/websites/:id/recorder` rewrites and the docs. The Umami instance moved
+  from the Hetzner box to the homelab, and `umami.drunik.be` is being retired.
+  Production's `UMAMI_SITE_URL` must be set to `umami.lav.ren` at deploy time.
+
 ## 0.95.1
 
 ### Fixed

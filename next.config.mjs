@@ -61,14 +61,16 @@ const nextConfig = {
             // handlers (src/app/stats.js/, src/app/recorder.js/), because a
             // rewrite forwards the visitor's cookies to the Umami host. The
             // rewrites below carry no cookie: recorder.js calls them with
-            // credentials: "omit".
+            // credentials: "omit". The host is fixed here, not read from
+            // UMAMI_SITE_URL: rewrites are resolved at build time and that
+            // variable exists only at runtime.
             {
                 source: '/api/record',
-                destination: 'https://umami.drunik.be/api/record',
+                destination: 'https://umami.lav.ren/api/record',
             },
             {
                 source: '/api/websites/:id/recorder',
-                destination: 'https://umami.drunik.be/api/websites/:id/recorder',
+                destination: 'https://umami.lav.ren/api/websites/:id/recorder',
             },
         ];
     },

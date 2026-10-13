@@ -359,12 +359,12 @@ The service worker at `src/sw.js` runs in a separate worker context with no DOM,
 Umami v3 analytics use a same-origin proxy to bypass ad blockers:
 
 1. **Script proxy:** `/stats.js` and `/recorder.js` are route handlers (`src/app/stats.js/route.js`, `src/app/recorder.js/route.js`, shared code `proxyUmamiScript` in `src/shared/utils/umami.mjs`). Each fetches `script.js` or `recorder.js` from `UMAMI_SITE_URL` with no visitor headers, so visitor cookies, the auth session cookie included, never reach the Umami host. A Next.js rewrite would forward them.
-2. **Data proxy:** `/api/send` → `/api/umami` (Next.js rewrite) → `umami.drunik.be/api/send` (API route proxy)
-3. **Recorder data:** `/api/record` and `/api/websites/:id/recorder` are Next.js rewrites to `umami.drunik.be`. The recorder calls them with `credentials: "omit"`, so the browser attaches no cookie. `RecorderScript` renders the recorder only for browsers without the `umami.disabled` opt-out flag. Replays and heatmaps stay inert until they are turned on for the site in Umami.
+2. **Data proxy:** `/api/send` → `/api/umami` (Next.js rewrite) → `umami.lav.ren/api/send` (API route proxy)
+3. **Recorder data:** `/api/record` and `/api/websites/:id/recorder` are Next.js rewrites to `umami.lav.ren`, set in `next.config.mjs` and not read from `UMAMI_SITE_URL`: rewrites are resolved at build time, and that variable exists only at runtime. The recorder calls them with `credentials: "omit"`, so the browser attaches no cookie. `RecorderScript` renders the recorder only for browsers without the `umami.disabled` opt-out flag. Replays and heatmaps stay inert until they are turned on for the site in Umami.
 
 The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash. The app sets no Content-Security-Policy header and the production edge sets one. Every Umami request (script, send, recorder) is same-origin, so `'self'` in `script-src` and `connect-src` covers it and no Umami domain needs an allowance.
 
-Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.drunik.be`), `UMAMI_SITE_ID` (website UUID).
+Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.lav.ren`), `UMAMI_SITE_ID` (website UUID).
 
 ### next.config.mjs Sentry settings
 
