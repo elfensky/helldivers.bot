@@ -79,3 +79,8 @@ scorecard.png
 
 # graphify graph (generated locally)
 graphify-out/
+
+# GSD runtime state — regenerated every step, never commit
+.gsd/
+.planning/milestone.lock
+.planning/state.json
