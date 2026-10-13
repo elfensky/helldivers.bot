@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Added
+
+- Umami now reports Core Web Vitals (LCP, FCP, CLS, INP, TTFB). Session
+  replay and heatmaps load through same-origin rewrites (`/recorder.js`,
+  `/api/record`, `/api/websites/:id/recorder`), as `/stats.js` does, and stay
+  inert until they are turned on for the site in Umami. `/legal` gains a
+  switch that sets the tracker's own `localStorage['umami.disabled']` flag.
+  The privacy text now describes the pseudonymous hash, Web Vitals, session
+  recording and the retention rule (kept until deleted).
+
 ### Changed
 
 - Staging's image pin moved off `develop`: `bump-staging-tag` now force-pushes
