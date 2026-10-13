@@ -8,6 +8,7 @@ import Header from '@/shared/components/Header/Header';
 import Footer from '@/shared/components/Footer/Footer';
 import BottomNav from '@/shared/components/BottomNav/BottomNav';
 import PreferenceTracker from '@/shared/components/PreferenceTracker';
+import RecorderScript from '@/shared/components/RecorderScript';
 import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 import MinistryProvider from '@/features/ministry/MinistryProvider';
 import MinistryTriggerWidget from '@/features/admin/MinistryTriggerWidget';
@@ -246,15 +247,13 @@ export default async function RootLayout({ children }) {
                             data-performance="true"
                             strategy="afterInteractive"
                         />
-                        {/* Session replay + heatmaps. Proxied like /stats.js;
-                            inert until Replays/Heatmaps are toggled on for this
-                            site in Umami. Must load after the tracker — it only
-                            sends once window.umami has a session cache. */}
-                        <Script
+                        {/* Session replay + heatmaps, served same-origin by
+                            src/app/recorder.js/route.js. Rendered only for
+                            browsers that have not opted out; inert until
+                            turned on for this site in Umami. */}
+                        <RecorderScript
                             nonce={nonce}
-                            src="/recorder.js"
-                            data-website-id={process.env.UMAMI_SITE_ID}
-                            strategy="afterInteractive"
+                            siteId={process.env.UMAMI_SITE_ID}
                         />
                     </>
                 :   null}
