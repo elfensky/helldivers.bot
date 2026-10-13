@@ -360,8 +360,9 @@ Umami v3 analytics use a same-origin proxy to bypass ad blockers:
 
 1. **Script proxy:** `/stats.js` → `umami.drunik.be/script.js` (Next.js rewrite in `next.config.mjs`)
 2. **Data proxy:** `/api/send` → `/api/umami` (Next.js rewrite) → `umami.drunik.be/api/send` (API route proxy)
+3. **Recorder proxy:** `/recorder.js`, `/api/record` and `/api/websites/:id/recorder` are plain Next.js rewrites to `umami.drunik.be`. Replays and heatmaps stay inert until they are turned on for the site in Umami.
 
-The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash. No external Umami domain appears in CSP — both `script-src` and `connect-src` only reference `'self'`.
+The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash. The app sets no Content-Security-Policy header and the production edge sets one. Every Umami request (script, send, recorder) is same-origin, so `'self'` in `script-src` and `connect-src` covers it and no Umami domain needs an allowance.
 
 Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.drunik.be`), `UMAMI_SITE_ID` (website UUID).
 
