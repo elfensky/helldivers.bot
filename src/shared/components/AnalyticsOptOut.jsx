@@ -4,33 +4,37 @@ import { useEffect, useState } from 'react';
 
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 
-const KEY = 'umami.disabled';
+export const OPT_OUT_KEY = 'umami.disabled';
 
 /**
- * Reads the flag; `null` when storage throws. Wrapped in a promise because
- * `tryCatch` only takes promises.
+ * Reads the flag; any non-empty value counts, as in the tracker. Wrapped in a
+ * promise because `tryCatch` only takes promises.
  *
- * @returns {Promise<boolean | null>} Whether the visitor opted out.
+ * @returns {Promise<boolean | null>} Whether the visitor opted out; `null` when
+ *   storage threw (never `false`, so callers can fail closed).
  */
-async function readOptOut() {
+export async function readOptOut() {
     const { data, error } = await tryCatch(
-        Promise.resolve().then(() => localStorage.getItem(KEY) === '1'),
+        Promise.resolve().then(() => Boolean(localStorage.getItem(OPT_OUT_KEY))),
     );
     return error ? null : data;
 }
 
 /**
- * Sets or clears the flag. The result is ignored: the `readOptOut` after the
- * write reports a failure.
+ * Sets or clears the flag.
  *
  * @param {boolean} optOut - True to set the flag, false to clear it.
+ * @returns {Promise<boolean>} True when the write succeeded, false when storage threw.
  */
 async function writeOptOut(optOut) {
-    await tryCatch(
+    const { error } = await tryCatch(
         Promise.resolve().then(() =>
-            optOut ? localStorage.setItem(KEY, '1') : localStorage.removeItem(KEY),
+            optOut ?
+                localStorage.setItem(OPT_OUT_KEY, '1')
+            :   localStorage.removeItem(OPT_OUT_KEY),
         ),
     );
+    return !error;
 }
 
 /**
@@ -58,8 +62,9 @@ export default function AnalyticsOptOut() {
     }, []);
 
     const toggle = async () => {
-        await writeOptOut(!(await readOptOut()));
-        setOptedOut(await readOptOut());
+        const saved = await writeOptOut(!(await readOptOut()));
+        // A failed save shows the blocked-storage message, not the old state.
+        setOptedOut(saved ? await readOptOut() : null);
     };
 
     if (!ready) {
