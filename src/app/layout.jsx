@@ -241,7 +241,7 @@ export default async function RootLayout({ children }) {
                     <>
                         <Script
                             nonce={nonce}
-                            // src="https://umami.drunik.be/script.js"
+                            // src="https://umami.lav.ren/script.js"
                             src="/stats.js"
                             data-website-id={process.env.UMAMI_SITE_ID}
                             data-performance="true"
