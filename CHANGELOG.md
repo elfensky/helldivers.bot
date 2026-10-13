@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.95.2
+
 ### Changed
 
 - Analytics point at `umami.lav.ren`: the `/api/record` and
