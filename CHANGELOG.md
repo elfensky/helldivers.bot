@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.95.0
+
 ### Added
 
 - Umami now reports Core Web Vitals (LCP, FCP, CLS, INP, TTFB). Session
