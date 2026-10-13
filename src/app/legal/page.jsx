@@ -161,10 +161,11 @@ export default function LegalPage() {
                     </h3>
                     <p>
                         This terminal employs a self-hosted analytics system (Umami) to
-                        monitor operational efficiency. It sets no cookies and writes
-                        nothing to your device — sessions are identified by a one-way hash
-                        of your IP address, browser user-agent, and hostname, which cannot
-                        be reversed and is never reused on another site. Recorded: pages
+                        monitor operational efficiency. It sets no cookies, and its only
+                        storage in your browser is the opt-out flag described under
+                        Citizen Rights — sessions are identified by a one-way hash of your
+                        IP address, browser user-agent, and hostname, which cannot be
+                        reversed and is never reused on another site. Recorded: pages
                         visited, referrer, browser, operating system, device type, screen
                         size, language, approximate location (country, region, city) and
                         loading performance (Core Web Vitals — LCP, FCP, CLS, INP, TTFB).
@@ -196,10 +197,13 @@ export default function LegalPage() {
                         identifies where the interface fails its citizens. Anything you
                         type into a form field is masked inside your own browser before
                         transmission, so the value itself never leaves your device. Click
-                        and scroll heatmaps are aggregates built from these recordings.
-                        Note that while you are signed in, a recording is linked to your
-                        citizen ID by the section above, and is therefore attributable to
-                        your account rather than anonymous.
+                        and scroll heatmaps are collected separately from recordings:
+                        pointer positions and scroll depth per page, sampled on their own,
+                        so a visit can add to a heatmap without being recorded. A browser
+                        that has opted out (see Citizen Rights) does not load the
+                        recorder. Note that while you are signed in, a recording is linked
+                        to your citizen ID by the section above, and is therefore
+                        attributable to your account rather than anonymous.
                     </p>
 
                     <h3 className="text-h3 font-bold text-text uppercase">
@@ -262,9 +266,11 @@ export default function LegalPage() {
                         disable push notifications at any time. Analytics data cannot be
                         traced back to you without an authenticated session. Under the
                         GDPR you may also request access to data concerning you, request
-                        its erasure, or object to its collection — and because an
-                        anonymous visit carries only an irreversible hash, the switch
-                        below is the dependable remedy rather than a request.
+                        its erasure, or object to its collection. The switch below stops
+                        analytics collection in this browser only, until you clear its
+                        site data, and does not carry over to other browsers or devices.
+                        For a request that does not depend on your browser, contact the
+                        operator through the routes below.
                     </p>
                     <AnalyticsOptOut />
 
@@ -381,6 +387,16 @@ export default function LegalPage() {
                                         Stores last campaign data for offline/PWA fallback
                                     </td>
                                 </tr>
+                                <tr className="border-b border-ghost/50">
+                                    <td className="py-2 pr-4 font-mono text-primary">
+                                        umami.disabled
+                                    </td>
+                                    <td className="py-2">
+                                        Records your analytics opt-out. Set only when you
+                                        press the transponder switch under Citizen Rights;
+                                        removed when you re-enable analytics.
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -395,8 +411,8 @@ export default function LegalPage() {
                         <li>No browser fingerprinting</li>
                     </ul>
                     <p>
-                        The operational analytics system (Umami) is entirely cookieless.
-                        It does not store any data in your browser.
+                        The operational analytics system (Umami) sets no cookies. Its only
+                        browser storage is the opt-out flag listed above.
                     </p>
 
                     <h3 className="text-h3 font-bold text-text uppercase">
@@ -406,7 +422,8 @@ export default function LegalPage() {
                         You may clear cookies and local storage from your browser at any
                         time. Clearing the session cookie will log you out. Clearing local
                         storage removes the offline campaign cache — it will repopulate
-                        automatically on your next visit.
+                        automatically on your next visit. It also removes the analytics
+                        opt-out, so analytics resume until you press the switch again.
                     </p>
                 </div>
             </section>
