@@ -126,7 +126,7 @@ Every interactive element (links, buttons, nav items) must have Umami tracking. 
 - **`window.umami?.track()`** inside `useEffect` callbacks where hooks can't be called.
 - **`sendUmamiEvent()`** for server-side API route tracking (called inside `after()` to avoid blocking responses).
 
-Categories: `nav`, `auth`, `footer`, `docs`, `diagram`, `faction`, `archive`, `notification`, `push`, `sw`, `toast`, `dashboard`, `api`.
+Categories: `nav`, `auth`, `footer`, `docs`, `diagram`, `faction`, `archive`, `notification`, `push`, `sw`, `toast`, `dashboard`, `api`, `legal`.
 
 When adding a new interactive element, always add a `data-umami-event` attribute. When adding a new API route that serves external consumers, add a server-side `umamiTrackEvent` call.
 
