@@ -65,7 +65,7 @@
 
 **Analytics:**
 - Umami v3 (self-hosted, cookieless) — `UMAMI_SITE_URL`, `UMAMI_SITE_ID`
-- Client tracker script proxied same-origin: `/stats.js` rewrite → `https://umami.drunik.be/script.js`, event posts proxied via `/api/send` → `/api/umami` (both to dodge ad blockers)
+- Client scripts served same-origin by route handlers: `/stats.js` and `/recorder.js` fetch `script.js` / `recorder.js` from `UMAMI_SITE_URL` with no visitor headers (`proxyUmamiScript` in `src/shared/utils/umami.mjs`); event posts proxied via `/api/send` → `/api/umami`; recorder data via rewrites `/api/record` and `/api/websites/:id/recorder` (all to dodge ad blockers)
 - Server-side event sender: `sendUmamiEvent()` in `src/shared/utils/umami.mjs` — posts directly server-to-server, production-only (`NODE_ENV === 'production'` gate), used inside `after()` calls in API routes so it never blocks the response
 - Client-side dynamic tracking: `useTrack()` hook (`src/shared/hooks/useTrack.mjs`) and direct `window.umami?.track()` calls
 - Declarative tracking: `data-umami-event="category-action"` HTML attributes, auto-captured by the tracker script

@@ -67,7 +67,7 @@
 - Build-time vs runtime vars distinguished: `NEXT_PUBLIC_*` vars are inlined at `next build` time (site URL, deploy env, VAPID public key, Sentry DSN, app version)
 
 **Build:**
-- `next.config.mjs` — MDX wrapper, conditional Sentry wrapper (only when `SENTRY_AUTH_TOKEN` set), security headers, cache-control rules per route type, redirects (`/war` → `/archives`, `/profile/admin` → `/profile`), rewrites (`/stats.js` → Umami script proxy, `/api/send` → `/api/umami`)
+- `next.config.mjs` — MDX wrapper, conditional Sentry wrapper (only when `SENTRY_AUTH_TOKEN` set), security headers, cache-control rules per route type, redirects (`/war` → `/archives`, `/profile/admin` → `/profile`), rewrites (`/api/send` → `/api/umami`, `/api/record` and `/api/websites/:id/recorder` → Umami recorder endpoints); `/stats.js` and `/recorder.js` are route handlers, not rewrites
 - `deploymentId` set from `package.json` version (dots replaced with dashes) — drives Next.js's built-in stale-chunk detection
 - `jsconfig.json` — `@/*` → `./src/*` path alias, `@test-utils` alias, `checkJs: true` strict-null JSDoc typechecking with `noImplicitAny: false`
 - `browserslist` in `package.json`: `defaults`, Firefox ≥115, Chrome ≥109, Safari ≥15.6, excludes dead/op_mini/kaios/android-browser
