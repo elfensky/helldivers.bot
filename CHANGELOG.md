@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.95.1
+
 ### Fixed
 
 - `/stats.js` and `/recorder.js` are now route handlers that fetch the Umami
