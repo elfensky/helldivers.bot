@@ -190,7 +190,7 @@ export default function LegalPage() {
                         Session Recording Protocols
                     </h3>
                     <p>
-                        Roughly 15% of visits are recorded for review. A recording is not
+                        A sample of visits may be recorded for review. A recording is not
                         video and not a capture of your screen — the page structure and
                         its text are re-serialised and replayed, which is how the Ministry
                         identifies where the interface fails its citizens. Anything you
