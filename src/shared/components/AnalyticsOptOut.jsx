@@ -38,12 +38,14 @@ async function writeOptOut(optOut) {
 }
 
 /**
- * Opt-out switch for the self-hosted Umami tracker.
+ * Opt-out switch for the self-hosted Umami analytics.
  *
- * The tracker checks `localStorage.umami.disabled` before every send and bails
- * when it is set, so flipping this key is the whole mechanism — there is no
- * server-side list. This is also the only value the analytics stack ever writes
- * to the visitor's device, which is why the terminal needs no consent banner.
+ * The tracker checks `OPT_OUT_KEY` before every send and sends nothing while
+ * the key is set. recorder.js has no check of its own, so `RecorderScript`
+ * does not render it for an opted-out browser. A change made on the current
+ * page applies fully from the next page load: a recorder that is already
+ * running keeps its session in memory until then. This key is the only value
+ * the analytics stack writes to the visitor's device.
  *
  * `null` means storage threw (private mode, blocked site data); the control
  * reports that instead of pretending the choice was saved.
