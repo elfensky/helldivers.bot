@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Fixed
+
+- `/stats.js` and `/recorder.js` are now route handlers that fetch the Umami
+  scripts without forwarding request headers. The old rewrites passed the
+  visitor's cookies, the auth session cookie included, to the Umami host.
+- The session recorder no longer loads in a browser that has opted out of
+  analytics. Before, it still downloaded and requested its config from the
+  Umami host.
+- The `/legal` opt-out switch reports a failed save (storage full or blocked)
+  instead of showing the old state.
+- `/legal` lists the `umami.disabled` opt-out flag as browser storage, says
+  heatmaps are collected apart from recordings, and says the opt-out lasts per
+  browser until its site data is cleared.
+
 ## 0.95.0
 
 ### Added
