@@ -4,7 +4,142 @@ Tracks the release-gate checks, version choice, and final tag/deploy evidence
 for shipping all five Phase 1 stability fixes (01-01 through 01-07) in one
 release, per plan 01-08 and D-01/D-03.
 
-## Pre-release checks
+## Pre-release checks — re-run 2026-10-14 (v0.95.2)
+
+Re-execution of 01-08 Task 2. The August release never ran: `origin/main`
+is still at `v0.90.14`, and `develop` moved 114 commits to `v0.95.2`
+(`5b539144`). Process change since August: `develop` is rebase-merged per PR
+and every PR carries its own version bump and CHANGELOG move, so
+`## Unreleased` is empty by design and the release version is develop's
+current version. Checks ran on the lane `chore/phase-01-release`, which
+equals `origin/develop` at `5b539144`. Task 1 (GlitchTip #497 and
+`SENTRY_PROJECT`) was done by the developer on 2026-08-31 and is not
+repeated; check 5 re-confirms its effect.
+
+| # | Check | Result |
+|---|-------|--------|
+| 1 | Verification chain | PASS |
+| 2 | Version adjacency | PASS |
+| 3 | Changelog content | PASS |
+| 4 | VAPID wiring | PASS |
+| 5 | Symbolication prerequisites | PASS (end-to-end proof pending the tag build) |
+| 6 | Staging health | PASS (6b Umami proxy routes: OPEN) |
+| 7 | Production config for 0.95.2 (`UMAMI_SITE_URL`) | OPEN (developer) |
+
+### 1. Verification chain — PASS
+
+Run with `mise exec --` (Node 24.15.0). Build used the CI stub env
+(`POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL` set inline; no `.env*` file
+read or created).
+
+- `npm run lint` — exit 0, 0 errors, 323 warnings (same pre-existing count
+  as in August).
+- `npm run typecheck` — exit 0.
+- `npm run test:unit` — exit 0, 194 test files and 2028 tests passed.
+- `npm run build` — exit 0, no "Failed to compile", service worker written
+  (196 precached URLs, 8.43 MB).
+
+### 2. Version adjacency — PASS
+
+- `package.json` version: `0.95.2`.
+- `git describe --tags --abbrev=0 origin/main` (after
+  `git fetch -q origin main --tags`): `v0.90.14`.
+- `0.95.2` differs from `v0.90.14`, so no duplicate tag or deployment id.
+- `origin/main` (`2b415eac`) is an ancestor of `develop`, so the release PR
+  is a clean merge. `v0.90.14` is 114 commits behind develop.
+
+### 3. Changelog content — PASS
+
+- `## Unreleased` exists and is empty, by design under the per-PR bump
+  process.
+- `## 0.95.2` exists and is non-empty (Changed: analytics point at
+  `umami.lav.ren`).
+- The five Phase-01 fixes are in `## 0.94.0`: the `NotificationToggle` error
+  state (#485); the null faction slot crashes in `getWarOutcome` and the
+  `/opengraph-image` route (#459, #503); the static PNG fallback with
+  outcome-dependent `Cache-Control` and the `next.config.mjs` header-rule
+  fix (#503); the OG render-outcome telemetry and `getCampaign()` error
+  reporting (#503); Space Mono loading (#476); the VAPID build-arg wiring.
+- CHANGELOG sections that reach production for the first time with this
+  release (everything above `## 0.90.14`, which `v0.90.14` already
+  shipped): 0.90.15, 0.90.16, 0.91.0, 0.91.1, 0.92.0, 0.93.0, 0.93.1,
+  0.94.0, 0.95.0, 0.95.1, 0.95.2 — 11 sections.
+- Database: one new migration reaches production with this release,
+  `20260827140000_worker_heartbeat_lease` (plus a `prisma/schema.prisma`
+  change). Informational for the developer: it applies through the migrate
+  container at deploy.
+
+### 4. VAPID wiring — PASS
+
+- `Dockerfile.app` declares `ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY` (line 67) and
+  `ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY` (line 68).
+- `.github/workflows/build-release.yml` line 74 passes
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}` as a
+  build-arg.
+- `gh variable list`: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` present, updated
+  `2026-08-31T11:50:47Z` (name and timestamp only; no value read or
+  recorded).
+- Caveat unchanged from August: verified by source inspection and pattern
+  parity with `NEXT_PUBLIC_SENTRY_DSN`; the first end-to-end proof is the
+  tag build.
+
+### 5. Symbolication prerequisites — PASS (end-to-end proof pending)
+
+- `gh secret list` shows `SENTRY_PROJECT` (updated `2026-08-31T09:11:38Z`),
+  `SENTRY_AUTH_TOKEN` and `SENTRY_ORG` (names and timestamps only).
+- `gh variable list` shows `SENTRY_URL` and `NEXT_PUBLIC_SENTRY_DSN`.
+- Workflow name: `Build: Release` (`.github/workflows/build-release.yml`).
+  It triggers on `push` of tags matching `v*.*.*`.
+- `gh run list --workflow=build-release.yml --limit 5` returns no runs. No
+  release build has ever executed, so there is no sourcemap-upload step to
+  read for Errno 13 or an auth failure. Evidence of the #497 fix remains
+  the developer's 2026-08-31 manual `sentry-cli sourcemaps upload` test
+  (see the old check 5 below).
+- The real proof is the sourcemap-upload step of the tag-triggered run.
+
+### 6. Staging health — PASS (6b: OPEN)
+
+- Latest `Build: Staging` run for develop `5b539144`: run `38456694658`,
+  completed, success, 2026-10-13T19:40:23Z
+  (https://github.com/elfensky/helldivers.bot/actions/runs/38456694658).
+  The four runs before it also succeeded.
+- Staging URL: `https://staging.helldivers.bot` (from
+  `deploy/staging/compose.yaml`, Cloudflare tunnel to the app service).
+  `origin/deploy/staging` pins `sha-5b539144bd6e`, the same commit.
+- Observed with `curl`:
+  - `/api/healthcheck` — 200, `application/json`, `alive: true`.
+  - `/api/h1/live` — 200, `application/json`, `cache-control: no-store`,
+    `appVersion` `0.95.2` (staging runs the release candidate).
+  - `/stats.js` — 404, `text/plain;charset=UTF-8`.
+  - `/recorder.js` — 404, `text/plain;charset=UTF-8`.
+- 6b (OPEN): the 404s are the designed response of `proxyUmamiScript` when
+  `UMAMI_SITE_URL` is unset (`src/shared/utils/umami.mjs`), and staging has
+  no Umami env in `deploy/staging/compose.yaml`. So staging cannot exercise
+  the 0.95.1 and 0.95.2 script proxy routes. They get their first real test
+  on production once `UMAMI_SITE_URL` is set (check 7). The new host
+  `umami.lav.ren` answers 200 `application/javascript` for `/script.js` and
+  `/recorder.js`.
+
+### 7. Production config change required by 0.95.2 — OPEN (developer)
+
+- `CHANGELOG.md` `## 0.95.2`: production's `UMAMI_SITE_URL` must be set to
+  `umami.lav.ren` at deploy time. The Umami instance moved to the homelab
+  and `umami.drunik.be` is being retired.
+- What must change: on the production host, set `UMAMI_SITE_URL=umami.lav.ren`
+  (host only, no scheme, no port) before the tag build deploys, and confirm
+  `UMAMI_SITE_ID` still matches the website id on the new Umami instance.
+  Only the developer can make this change.
+- Repo search for `umami.drunik.be` in `*.js`, `*.mjs`, `*.jsx`, `*.mdx`,
+  `*.yml`, `*.yaml` (excluding `node_modules`, `.next`, `public/sw.js`):
+  no matches. `src`, `deploy`, `docker-compose*.yml`, `.example.env`,
+  `next.config.mjs` and `Dockerfile*` also have no `drunik` reference. The
+  string remains only in `CHANGELOG.md` and in `.planning/` documents,
+  which is history, not configuration.
+
+## Pre-release checks (2026-08-31, v0.93.1 / 0.94.0 attempt)
+
+> Superseded by the re-run of 2026-10-14 above. Kept as history; do not use
+> these results to gate the release.
 
 Five checks required by 01-08 Task 2, each recorded with its evidence.
 Stops the plan on any unresolved FAIL — none remain unresolved.
@@ -182,3 +317,24 @@ this plan does not own and left untouched), then `CHANGELOG.md`'s
 `## Unreleased` present but empty) and `package.json`'s `"version"` was set
 to `0.94.0` — both edits folded into the same merge commit per CLAUDE.md
 rule 2's explicit "do not defer this to a separate commit" instruction.
+
+### Addendum 2026-10-14 (re-execution)
+
+The merge-into-develop procedure above is superseded by the per-PR bump
+process in CLAUDE.md (§ Git Workflow rules 0 and 2): `develop` is
+rebase-merged per PR, and each PR carries its own version bump and CHANGELOG
+move. Nothing was merged into `develop` and no version was bumped in this
+re-run.
+
+- The release version is develop's current version, **0.95.2**.
+- The August choice of 0.94.0 stands for its own CHANGELOG section
+  (`## 0.94.0`, which holds the five Phase-01 fixes and ships with this
+  release).
+- Check run: `package.json` version `0.95.2`; `## 0.95.2` exists in
+  `CHANGELOG.md` and is non-empty (plan Task 3 node check passed).
+- Plan Task 3 check `git log --merges -1 develop` contains `package.json`:
+  not applicable. `develop` no longer takes a merge commit carrying the bump;
+  the bump travels in each PR's last commit. The only merge commits are the
+  release PR into `main` and its merge-back.
+- Deployment id for this release (dots to dashes, per `next.config.mjs`
+  `APP_VERSION.replaceAll('.', '-')`): `0-95-2`.
