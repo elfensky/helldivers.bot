@@ -17,7 +17,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **STAB-04**: #476 — `--font-mono` is resolved one way or the other (load Space Mono via `next/font` or drop it from the token) with before/after measurements of affected mono elements recorded on the issue
 - [x] **STAB-05**: #459 — `getWarOutcome` tolerates null faction slots; regression test pins it
 - [ ] **STAB-06**: After the stability release, GlitchTip shows zero new events for #496/#503/#485 classes on the new `dpl` id over a 48h window; residual classes get new issues
-- [ ] **STAB-07**: `develop` is released to `main` (PR → `vX.Y.Z` tag on the merge commit → `main` merged back into `develop`) once STAB-01…05 land; thereafter the develop/main gap stays ≤ ~5 versions
+- [x] **STAB-07**: `develop` is released to `main` (PR → `vX.Y.Z` tag on the merge commit → `main` merged back into `develop`) once STAB-01…05 land; thereafter the develop/main gap stays ≤ ~5 versions
 
 ### Dependencies & Automation (DEPS)
 
@@ -163,7 +163,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAB-04 | Phase 1 | Complete |
 | STAB-05 | Phase 1 | Complete |
 | STAB-06 | Phase 1 | Pending |
-| STAB-07 | Phase 1 | Pending |
+| STAB-07 | Phase 1 | Complete |
 | DOCS-01 | Phase 2 | Pending |
 | DOCS-02 | Phase 2 | Pending |
 | HOUSE-03 | Phase 2 | Pending |
