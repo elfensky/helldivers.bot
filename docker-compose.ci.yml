@@ -6,7 +6,7 @@
 #
 # Spins up the full production-shaped stack (postgres + migrate + app) using
 # images built from the local working tree, NOT pulled from GHCR. Used by
-# .github/workflows/main-pr-docker-smoke.yml to catch the class of bugs that
+# .github/workflows/check-docker-smoke.yml to catch the class of bugs that
 # only manifest at image build / container runtime — e.g. the v0.47.0 migrate
 # crash where `isValidSeason.mjs` imported `@/shared/...` and raw Node could
 # not resolve the jsconfig alias. That regression passed `npm run build`,

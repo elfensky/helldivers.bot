@@ -519,7 +519,7 @@ describe('checkAndNotify', () => {
         expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
     });
 
-    test('first call (prevEvents=null) ESTABLISHES baseline — does NOT detect changes or send', async () => {
+    test('prevEvents=null ESTABLISHES baseline — no diff, no send — and returns the snapshot', async () => {
         const dbModule = (await import('@/db/db')).default;
         const events = [
             { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
@@ -528,18 +528,14 @@ describe('checkAndNotify', () => {
         const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
         const { checkAndNotify } = await import('@/update/pushNotifier');
 
-        await checkAndNotify();
+        const result = await checkAndNotify(null);
 
-        // detectChanges is NOT called on the first run — we just snapshot.
         expect(detectChanges).not.toHaveBeenCalled();
         expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
+        expect(result).toEqual(events);
     });
 
-    test('second call: detectChanges is invoked with (prevEvents, currentEvents) in that order', async () => {
-        // Strengthened from "called once" to also assert the actual args:
-        // baseline events FIRST, then the new snapshot. A regression that
-        // swaps the order would still get "called once" but compare the
-        // wrong snapshots.
+    test('with prevEvents: detectChanges is invoked with (prevEvents, currentEvents) in that order', async () => {
         const dbModule = (await import('@/db/db')).default;
         const events1 = [
             { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
@@ -547,22 +543,37 @@ describe('checkAndNotify', () => {
         const events2 = [
             { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
         ];
-        dbModule.h1_season.findFirst
-            .mockResolvedValueOnce({ events: events1 })
-            .mockResolvedValueOnce({ events: events2 });
+        dbModule.h1_season.findFirst.mockResolvedValueOnce({ events: events2 });
         const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
-        detectChanges.mockReturnValue([]); // No changes between calls.
+        detectChanges.mockReturnValue([]);
         const { checkAndNotify } = await import('@/update/pushNotifier');
 
-        await checkAndNotify(); // baseline
-        await checkAndNotify(); // diff against baseline → no changes
+        const result = await checkAndNotify(events1);
 
         expect(detectChanges).toHaveBeenCalledTimes(1);
         expect(detectChanges).toHaveBeenCalledWith(events1, events2);
         expect(dbModule.push_subscription.findMany).not.toHaveBeenCalled();
+        expect(result).toEqual(events2);
     });
 
-    test('second call WITH changes: fetches subs and sends one batch per change', async () => {
+    test('state is NOT kept in the module: two calls with prevEvents=null never diff', async () => {
+        // The whole point of #517 — a fresh holder must get its baseline from the
+        // lease row, and a module variable would silently re-introduce per-process state.
+        const dbModule = (await import('@/db/db')).default;
+        const events = [
+            { event_id: 1, status: 'active', enemy: 0, region: 5, type: 'defend' },
+        ];
+        dbModule.h1_season.findFirst.mockResolvedValue({ events });
+        const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
+        const { checkAndNotify } = await import('@/update/pushNotifier');
+
+        await checkAndNotify(null);
+        await checkAndNotify(null);
+
+        expect(detectChanges).not.toHaveBeenCalled();
+    });
+
+    test('with changes: fetches subs and sends one batch per change', async () => {
         const dbModule = (await import('@/db/db')).default;
         const webpush = (await import('web-push')).default;
         const events1 = [
@@ -571,10 +582,7 @@ describe('checkAndNotify', () => {
         const events2 = [
             { event_id: 1, status: 'success', enemy: 0, region: 5, type: 'defend' },
         ];
-
-        dbModule.h1_season.findFirst
-            .mockResolvedValueOnce({ events: events1 })
-            .mockResolvedValueOnce({ events: events2 });
+        dbModule.h1_season.findFirst.mockResolvedValueOnce({ events: events2 });
         dbModule.push_subscription.findMany.mockResolvedValue([
             { endpoint: 'e1', keys_p256dh: 'p1', keys_auth: 'a1' },
         ]);
@@ -586,8 +594,7 @@ describe('checkAndNotify', () => {
         webpush.sendNotification.mockResolvedValue({ statusCode: 201 });
 
         const { checkAndNotify } = await import('@/update/pushNotifier');
-        await checkAndNotify(); // baseline
-        await checkAndNotify(); // diff → changes → send
+        await checkAndNotify(events1);
 
         // findMany called ONCE (not per change — it's outside the changes loop).
         expect(dbModule.push_subscription.findMany).toHaveBeenCalledTimes(1);
@@ -603,10 +610,7 @@ describe('checkAndNotify', () => {
         const events2 = [
             { event_id: 1, status: 'success', enemy: 0, region: 5, type: 'defend' },
         ];
-
-        dbModule.h1_season.findFirst
-            .mockResolvedValueOnce({ events: events1 })
-            .mockResolvedValueOnce({ events: events2 });
+        dbModule.h1_season.findFirst.mockResolvedValueOnce({ events: events2 });
         const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
         detectChanges.mockReturnValue([{ kind: 'event_won', event: events2[0] }]);
         dbModule.push_subscription.findMany.mockRejectedValue(
@@ -617,8 +621,7 @@ describe('checkAndNotify', () => {
         webpush.sendNotification.mockClear();
 
         const { checkAndNotify } = await import('@/update/pushNotifier');
-        await checkAndNotify();
-        await expect(checkAndNotify()).resolves.toBeUndefined();
+        await expect(checkAndNotify(events1)).resolves.toEqual(events2);
 
         expect(errSpy).toHaveBeenCalledWith(
             'Failed to fetch push subscriptions:',
@@ -635,19 +638,15 @@ describe('checkAndNotify', () => {
         const events2 = [
             { event_id: 1, status: 'success', enemy: 0, region: 5, type: 'defend' },
         ];
-
-        dbModule.h1_season.findFirst
-            .mockResolvedValueOnce({ events: events1 })
-            .mockResolvedValueOnce({ events: events2 });
+        dbModule.h1_season.findFirst.mockResolvedValueOnce({ events: events2 });
+        dbModule.push_subscription.findMany.mockResolvedValue([]);
         const { detectChanges } = await import('@/shared/utils/game/detectChanges.mjs');
         detectChanges.mockReturnValue([{ kind: 'event_won', event: events2[0] }]);
-        dbModule.push_subscription.findMany.mockResolvedValue([]);
         const webpush = (await import('web-push')).default;
         webpush.sendNotification.mockClear();
 
         const { checkAndNotify } = await import('@/update/pushNotifier');
-        await checkAndNotify();
-        await checkAndNotify();
+        await checkAndNotify(events1);
 
         expect(webpush.sendNotification).not.toHaveBeenCalled();
     });

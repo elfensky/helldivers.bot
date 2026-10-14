@@ -46,7 +46,7 @@
     /* === TYPOGRAPHY === */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
-    --font-mono: 'Space Mono', monospace;
+    --font-mono: var(--font-space-mono), monospace;
     --font-cyberstan: 'Collective Consciousness', monospace;
 
     /* === SPACING === */
@@ -98,7 +98,7 @@
     /* Typography — font families */
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
-    --font-mono: 'Space Mono', monospace;
+    --font-mono: var(--font-space-mono), monospace;
     --font-cyberstan: 'Collective Consciousness', monospace;
 
     /* Typography — fluid type scale (5 steps) */

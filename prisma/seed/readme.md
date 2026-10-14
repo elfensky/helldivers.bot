@@ -43,11 +43,11 @@ node prisma/seed/fetch-seasons.mjs --force
 node prisma/seed/fetch-seasons.mjs --force --from=148 --to=156
 ```
 
-You rarely need to run it by hand: `.github/workflows/seed-refresh.yml`
+You rarely need to run it by hand: `.github/workflows/scheduled-seed-refresh.yml`
 runs it every Monday (and on `workflow_dispatch`) and opens a PR against
 `develop` on the `chore/seed-refresh` branch whenever a season has
-completed since the last run. Merge that PR locally with `--no-ff`, doing
-the version bump + CHANGELOG entry in the merge commit as usual — the
+completed since the last run. Push the version bump + CHANGELOG entry onto
+that branch as usual (from a worktree), then rebase-merge the PR — the
 workflow deliberately does not touch either.
 
 **The script will never fetch the currently-active season.** The active
@@ -91,11 +91,21 @@ identifier (`season`, `(season, time)`, or `(type, event_id)`), so
 running `seed.mjs` multiple times with the same data produces no
 visible changes.
 
-**Short-circuit.** By default `seed.mjs` skips work entirely when
-`db.h1_season.count() === <number of JSON files>`. This makes repeated
-Docker deploys cheap — migrations run, seed runs, seed sees the DB is
-already at parity, exits. Set `FORCE_SEED=true` to override this and
-re-run the full upsert loop.
+**Per-season skip.** `seed.mjs` reads the season number out of each
+filename, compares it against the seasons already present in
+`h1_season`, and upserts only the missing ones. A deploy that adds one
+season file writes one season, not all of them.
+
+This replaced a count comparison (`db.h1_season.count() === <number of
+JSON files>`) that was wrong in both directions: it re-seeded everything
+whenever the numbers differed — which is the normal state, since the
+live worker creates a row for the in-progress season that has no file
+yet — and it skipped everything whenever they happened to match, even
+when the rows were for different seasons than the files.
+
+Set `FORCE_SEED=true` to re-run the full upsert loop regardless. Only
+`true`, `1` or `yes` enable it; anything else, including `false`, leaves
+it off.
 
 ## Why two scripts?
 

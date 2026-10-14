@@ -54,7 +54,7 @@ The project uses two separate Dockerfiles. Migrations and the application server
 6. Extract the Prisma version from `package.json` at build time and install only that version — no full `npm ci`
 7. Run `npx prisma generate` to produce the client
 8. Entrypoint: `/sbin/tini --`
-9. CMD: `npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs` — runs migrations first, then seeds historical season data from JSON files in `prisma/seed/seasons/`. The seed uses upserts and is idempotent (safe to re-run on every deploy). It short-circuits when `db.h1_season.count()` equals the number of JSON files, so repeat deploys are cheap (set `FORCE_SEED=true` to override). If no season files exist, the seed exits gracefully.
+9. CMD: `npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs` — runs migrations first, then seeds historical season data from JSON files in `prisma/seed/seasons/`. The seed uses upserts and is idempotent (safe to re-run on every deploy). It compares each file's season against the seasons already in `h1_season` and upserts only the missing ones, so a deploy that adds one season file writes one season rather than re-running all of them (set `FORCE_SEED=true` on the migrate container to re-upsert everything — only `true`, `1` or `yes` count, so `false` correctly means off). If no season files exist, the seed exits gracefully.
 
 The `seasons/*.json` files are produced by `prisma/seed/fetch-seasons.mjs` — a one-shot refresh script developers run on their workstations to pull the latest state from the official HD1 API. Developers then commit the updated files to git. The fetch script **never captures the currently-active season** (its `get_snapshots` response is a mid-war partial by definition), so `--to` defaults to `currentSeason - 1` and is clamped to that maximum even if specified higher. Refresh the files periodically via `node prisma/seed/fetch-seasons.mjs --force` to keep disk data in parity with the API's occasional "closing frame" writes after a season ends. See `prisma/seed/readme.md` for the full workflow.
 
@@ -358,12 +358,13 @@ The service worker at `src/sw.js` runs in a separate worker context with no DOM,
 
 Umami v3 analytics use a same-origin proxy to bypass ad blockers:
 
-1. **Script proxy:** `/stats.js` → `umami.drunik.be/script.js` (Next.js rewrite in `next.config.mjs`)
-2. **Data proxy:** `/api/send` → `/api/umami` (Next.js rewrite) → `umami.drunik.be/api/send` (API route proxy)
+1. **Script proxy:** `/stats.js` and `/recorder.js` are route handlers (`src/app/stats.js/route.js`, `src/app/recorder.js/route.js`, shared code `proxyUmamiScript` in `src/shared/utils/umami.mjs`). Each fetches `script.js` or `recorder.js` from `UMAMI_SITE_URL` with no visitor headers, so visitor cookies, the auth session cookie included, never reach the Umami host. A Next.js rewrite would forward them.
+2. **Data proxy:** `/api/send` → `/api/umami` (Next.js rewrite) → `umami.lav.ren/api/send` (API route proxy)
+3. **Recorder data:** `/api/record` and `/api/websites/:id/recorder` are Next.js rewrites to `umami.lav.ren`, set in `next.config.mjs` and not read from `UMAMI_SITE_URL`: rewrites are resolved at build time, and that variable exists only at runtime. The recorder calls them with `credentials: "omit"`, so the browser attaches no cookie. `RecorderScript` renders the recorder only for browsers without the `umami.disabled` opt-out flag. Replays and heatmaps stay inert until they are turned on for the site in Umami.
 
-The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash. No external Umami domain appears in CSP — both `script-src` and `connect-src` only reference `'self'`.
+The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash. The app sets no Content-Security-Policy header and the production edge sets one. Every Umami request (script, send, recorder) is same-origin, so `'self'` in `script-src` and `connect-src` covers it and no Umami domain needs an allowance.
 
-Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.drunik.be`), `UMAMI_SITE_ID` (website UUID).
+Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.lav.ren`), `UMAMI_SITE_ID` (website UUID).
 
 ### next.config.mjs Sentry settings
 

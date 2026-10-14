@@ -1,58 +1,116 @@
 # Staging deploy — helldivers.bot on the Pi swarm
 
-**Status: DRAFT / UNTESTED.** These files are scaffolding written ahead of the
-cluster existing. None of it has run. The first real `develop` push after the
-swarm + self-hosted runner are up is what validates it.
+**Status: live, deployed by Git Sync.** `staging/compose.yaml` is the stack on the 3-Pi swarm;
+Arcane applies it from the CI-owned branch `deploy/staging`, which CI force-pushes after every
+green `develop` build (`bump-staging-tag` in `../.github/workflows/build-staging.yml`). Manual fallback if Arcane is down:
+`docker stack deploy -c deploy/staging/compose.yaml helldiversbot`.
 
-## What's here
+## What's live (2026-08-25)
 
-- `stack.staging.yml` — the Swarm deploy manifest (app + cloudflared, secrets, start-first rollout).
-- `../.github/scripts/kuma-maintenance.mjs` — flips the Uptime Kuma "upgrading" banner on/off.
-- The `deploy-staging` job in `../.github/workflows/staging.docker.yml` — runs on the
-  self-hosted runner: banner on → migrate one-shot → `docker stack deploy` → wait healthy → banner off.
+- Ingress is a **Cloudflare Tunnel** (remotely-managed, token in the `cloudflared-helldiversbot`
+  Swarm secret). Two `cloudflared` replicas, no placement constraint — both register as
+  connectors on the same tunnel and Cloudflare load-balances across them. Public hostname
+  `staging.helldivers.bot` → `HTTP` → `app:3000` is configured in the Zero Trust dashboard,
+  not in this repo.
+- No published ports. The old LAN `:50001` is gone.
 
-## Flow
+- Swarm stack `helldiversbot`: `helldiversbot_app` ×2 (soft-spread across nodes) and
+  `helldiversbot_cloudflared` ×2, image pinned to `:sha-<commit>` by CI (multi-arch, pulls
+  anonymously from GHCR — the packages are public, no registry auth needed). Load balancing is the
+  Swarm service VIP: cloudflared targets `http://app:3000` and Swarm spreads new connections across
+  the replicas (per connection, not per request — cloudflared pools keep-alives).
+- Connected to the **staging** Postgres on huginn (`10.0.0.40:5433/helldiversbot_staging` on the
+  `db-staging` cluster) via the `helldiversbot_database_url` Swarm secret — no longer the dev
+  instance on `:5432`. Loaded from a filtered production dump: all 52 migrations plus the `h1_*`
+  game tables, with `User`/`Account`/`Session`/`ApiKey` deliberately restored **empty** (the dump
+  carried real users' plaintext Google and Discord OAuth tokens).
+- Every replica runs the cron thread, but only the lease holder polls (`src/update/lease.mjs`,
+  #517): `worker_heartbeat.holder_id` names it, `lease_until` is renewed every poll (60 s TTL), and
+  the others answer `200 { role: 'standby' }`. The admin dashboard's "Poller" card shows the host.
+  Kill the holder's task and the row moves to another replica within ~1 min, carrying
+  `prev_events` / `last_season_observed` with it. Staging sets no `VAPID_*`, so push dedup is not
+  observable here — what staging proves is single-holder polling and handover.
+- Auth/Umami/Sentry unset on purpose: the app degrades gracefully and OAuth callbacks need a
+  real hostname anyway.
+
+## How it is deployed — Arcane Git Sync
+
+`staging/compose.yaml` is the single writer. Arcane on huginn (`arcane.lav.ren`, swarm
+environment) polls this repo and applies that file, which makes the compose **read-only in the
+Arcane UI** — rollback is a git-side re-pin (below), not a console edit. See the vault:
+`knowledge/homelab/truenas-apps-to-arcane.md` § "One writer per stack".
+
+Create it under **Swarm → Stacks**, NOT under Projects. Projects run plain `docker compose` on a
+single node, which rejects `external:` secrets outright (`unsupported external secret …`, from
+docker/compose `pkg/compose/create.go`). Swarm → Stacks runs `docker stack deploy` and resolves
+external secrets correctly — verified.
+
+Stack settings: name `helldiversbot`, repo `https://github.com/elfensky/helldivers.bot`, branch
+`deploy/staging`, compose path `deploy/staging/compose.yaml`, environment = the swarm (all three nodes are
+managers, so any of them shows the same cluster).
+
+The stack name is the Swarm namespace, so it must stay `helldiversbot` — changing it deploys a
+second copy alongside the first rather than renaming anything.
+
+The repo is **public**, so Git Sync needs no token — and nothing secret may enter the compose file.
+
+**Git Sync redeploys on commit change, not on image change.** A rebuilt floating `:staging` tag
+produces no commit, so Arcane would never see it. That is why CI (`bump-staging-tag` in
+`build-staging.yml`) rewrites the `image:` line to the immutable `:sha-<commit>` tag in the tested
+commit's compose and force-pushes that as `deploy/staging` after every green build — the commit
+is the deploy trigger. `develop` never takes a CI push, so it can stay PR-only; `develop`'s own
+`image:` line is therefore stale and says nothing about what runs. Rollback: re-run the **Bump
+Staging Tag** job of the earlier `Build: Staging` run that deployed the good version
+(`gh run rerun <run-id> --job <job-id>`) — it pins that run's tested commit again. Do not `docker service update --force` the stack by hand; that is
+the second writer this setup exists to remove.
+
+## Swarm secrets (external — create once, on a manager, out of band)
+
+```sh
+printf '%s' "$POSTGRES_URL"     | docker secret create helldiversbot_database_url -
+printf '%s' "$UPDATE_KEY"       | docker secret create helldiversbot_update_key -
+printf '%s' "$CF_TUNNEL_TOKEN"  | docker secret create helldiversbot_cloudflared -
+```
+
+Names follow `<app>_<secret>`. Swarm secrets are cluster-global and flat, and an
+**external** secret is not prefixed by its stack — so the app prefix has to live in the name or
+the next stack on this cluster collides with it.
+
+`printf` not `echo` — a trailing newline can invalidate a token or a connection string.
+
+The app reads both as files via the `*_FILE` convention
+(`../src/shared/utils/hydrateFileSecrets.mjs`); the stack sets `POSTGRES_URL_FILE` /
+`UPDATE_KEY_FILE`.
+
+## Known gaps
+
+1. **Migrations are still run by hand.** `helldiversbot-migrate:staging` is multi-arch — amd64 and
+   arm64 are each built on a runner of their own arch, because `prisma generate` SIGILLs under QEMU
+   arm64 — so it runs from any LAN host, a Pi included. `bump-staging-tag` deliberately skips any
+   build whose range since the deployed pin changes `prisma/` (see § How it is deployed): run the
+   migrate image, then `gh workflow run build-staging.yml --ref develop -f migrated=true` to pin.
+2. **No self-hosted runner** in the LAN (elfensky/helldivers.bot#474). With Git Sync as the
+   writer a runner is no longer needed to *deploy*; it is needed only to run migrations against
+   the LAN database and to take the maintenance banner up/down around a deploy — the shape in
+   the vault's `50-ci-cd`. Until it exists, migrations are a manual one-shot.
+3. **Kuma maintenance banner** (`../.github/scripts/kuma-maintenance.mjs`) unverified —
+   Socket.IO event shapes vary by version. Unused until a runner exists.
+4. **A network partition can briefly yield two holders.** A node cut off from the managers keeps
+   its task running; its lease expires and another replica claims it, and until the partitioned
+   node reconnects both poll. Bounded by the partition length; power loss (this cluster's actual
+   failure mode) does not do this — the task is simply dead. Acceptable for staging; a fencing
+   token on writes would close it if it ever matters.
+
+## CI flow (live)
 
 ```
-push to develop
-  → build :staging images (cloud runners, multi-arch)
-  → deploy-staging (self-hosted runner on a Pi manager):
-       kuma banner ON (optional)
-       docker run --rm migrate:staging        # migrations, BEFORE the stack (Swarm ignores depends_on)
-       docker stack deploy stack.staging.yml   # start-first + healthcheck + rollback
-       wait for helldivers_app = 1/1
-       kuma banner OFF (always)
+merge to develop
+  → Check: CI green
+  → Build: Staging
+       build :staging + :sha-<commit> app image (multi-arch)
+       bump-staging-tag: pin :sha-<commit> in deploy/staging/compose.yaml, force-push deploy/staging
+         (skipped with a warning when prisma/ changed since the deployed pin — migrate by hand,
+          then dispatch with migrated=true)
+  → Arcane Git Sync (polls deploy/staging every 5 min) sees the commit → redeploys the stack
+       start-first + image healthcheck + rollback on failure
 ```
-
-## TODO before it can run (blocking)
-
-1. **Self-hosted runner** installed on a Pi swarm **manager** (Settings → Actions → Runners).
-   The job uses `runs-on: self-hosted`; the runner needs Docker access on the manager.
-2. **Swarm secrets** created on the cluster (external — must exist before deploy):
-    ```sh
-    printf '%s' "$POSTGRES_URL"     | docker secret create staging_postgres_url -
-    printf '%s' "$UPDATE_KEY"       | docker secret create staging_update_key -
-    printf '%s' "$CF_TUNNEL_TOKEN"  | docker secret create staging_cf_tunnel_token -
-    ```
-3. ~~App secrets-as-files wiring.~~ **DONE** — the app supports the `*_FILE`
-   convention (`src/shared/utils/hydrateFileSecrets.mjs`): the stack sets
-   `POSTGRES_URL_FILE` / `UPDATE_KEY_FILE` and the env loader populates the real
-   vars from the mounted secret files before Prisma reads them.
-4. **Cloudflare Tunnel.** Create the tunnel, put its token/creds in the
-   `staging_cf_tunnel_token` secret, finalize the `cloudflared` service (token via the
-   entrypoint shim, or creds-file + a `config.yml` with the ingress rules), point
-   `staging.helldivers.bot` at it, and pin the `cloudflare/cloudflared` image tag.
-5. **GitHub Actions secrets/vars:**
-    - `secrets.STAGING_POSTGRES_URL` — for the migrate one-shot (the documented env exception).
-    - Optional Kuma: `vars.KUMA_URL`, `secrets.KUMA_USERNAME`, `secrets.KUMA_PASSWORD`,
-      `vars.KUMA_STAGING_MONITOR_IDS`. Leave `KUMA_URL` unset and the banner steps skip cleanly.
-6. **Flip the enable flag — do this LAST.** Set repo variable `STAGING_DEPLOY_ENABLED=true`.
-   The `deploy-staging` job is **dormant** until then (it skips cleanly instead of hanging
-   "pending" for a runner that isn't there), so it's safe to have on `develop` before the
-   swarm exists. Flip it once items 1–5 are done.
-
-## TODO to verify (non-blocking)
-
-- `kuma-maintenance.mjs` drives Kuma's Socket.IO API, whose event shapes vary by version —
-  verify `addMaintenance` / `addMonitorMaintenance` / `deleteMaintenance` against your Kuma.
-- Confirm the app image ships `/bin/sh` if you use the cloudflared/app entrypoint-shim option.

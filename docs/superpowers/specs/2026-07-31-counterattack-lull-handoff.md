@@ -215,7 +215,7 @@ mission:
 ## Rules of engagement
 
 Report what the numbers say; nulls are good outcomes. Work on a branch off
-`develop` in a worktree (§ Worktree Workflow in CLAUDE.md), never commit
+`develop` in a worktree (§ Worktrees in CLAUDE.md), never commit
 to develop/main directly. `mise exec --` prefix (repo pins node 24).
 Verification chain before merging: lint:fix, lint, typecheck, test:unit,
 build (env-sourced). If findings change the published story, update

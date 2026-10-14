@@ -1,0 +1,49 @@
+name: 'Check: CodeQL'
+
+on:
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main, develop]
+    schedule:
+        - cron: '0 6 * * 1' # Every Monday at 06:00 UTC
+
+concurrency:
+    group: codeql-${{ github.event.pull_request.number || github.sha }}
+    cancel-in-progress: true
+
+permissions:
+    actions: read
+    contents: read
+    security-events: write
+
+jobs:
+    # `name: Analyze` + the language matrix produce the check context
+    # "Analyze (javascript-typescript)", which is a REQUIRED status check on
+    # main's branch protection. Renaming either one blocks every PR to main.
+    analyze:
+        name: Analyze
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+
+        strategy:
+            fail-fast: false
+            matrix:
+                language: ['javascript-typescript']
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Initialize CodeQL
+              uses: github/codeql-action/init@v4.37.9
+              with:
+                  languages: ${{ matrix.language }}
+
+            - name: Autobuild
+              uses: github/codeql-action/autobuild@v4.37.9
+
+            - name: Perform CodeQL Analysis
+              uses: github/codeql-action/analyze@v4.37.9
+              with:
+                  category: '/language:${{ matrix.language }}'

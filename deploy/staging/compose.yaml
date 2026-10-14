@@ -1,0 +1,150 @@
+# Docker Swarm stack — helldivers.bot STAGING (the 3-Pi cluster).
+#
+# THIS FILE IS THE WRITER. It is Git-Synced into Arcane (stack `helldiversbot`,
+# swarm environment), which polls this path and applies it — so the compose is
+# read-only in the Arcane UI and rollback is a git-side re-pin, not a console edit.
+# Do not `docker stack deploy` this by hand once the Arcane project exists;
+# that reintroduces the two-writers problem Git Sync is here to remove.
+#
+# This repo is PUBLIC. Nothing secret may enter this file — every credential is
+# an external Swarm secret created out-of-band on a manager.
+#
+# Manual fallback (Arcane down):
+#   docker stack deploy -c deploy/staging/compose.yaml helldiversbot
+#
+# Prereqs — external Swarm secrets, created once on a manager (see deploy/README.md):
+#   helldiversbot_database_url    secret   Postgres connection string
+#   helldiversbot_update_key      secret   API key for the update endpoint
+#   helldiversbot_cloudflared     secret   Cloudflare Tunnel token (remotely-managed)
+#
+# Naming: <app>_<secret>. Swarm secrets are cluster-global and flat — there is
+# no namespace — so as more stacks land on this cluster an unprefixed name like
+# `postgres_url` is a collision waiting to happen. External secrets are NOT
+# prefixed by the stack, so the prefix has to be in the name itself.
+#
+# Ingress is a Cloudflare Tunnel: cloudflared dials OUT to the Cloudflare edge,
+# so there are NO published ports. It reaches the app at http://app:3000 over
+# the `internal` overlay — Swarm's service VIP load-balances to whichever node
+# holds a replica, so cloudflared never needs to know about node IPs.
+#
+# The tunnel is REMOTELY MANAGED: the token identifies it and the ingress rules
+# (staging.helldivers.bot -> http://app:3000) live in the Cloudflare Zero Trust
+# dashboard, not in this file. Routing changes are made there.
+#
+# Migrations are NOT a service here — Swarm ignores `depends_on`. Run the
+# migrate image as a one-shot BEFORE deploying. It is multi-arch (each arch
+# built on its own runner), so it runs from any LAN host, a Pi included.
+# See deploy/README.md.
+#
+# The `image:` line below is written by CI (bump-staging-tag in
+# build-staging.yml) on the CI-owned branch deploy/staging, which is what Git
+# Sync deploys — on develop this line is stale and not what runs. A range that
+# carries a migration is NOT pinned automatically: migrate by hand, then
+# dispatch build-staging.yml on develop with migrated=true. Rollback: re-run
+# the Bump Staging Tag job of the run that deployed the good version.
+
+networks:
+    internal:
+        driver: overlay
+
+secrets:
+    helldiversbot_database_url:
+        external: true
+    helldiversbot_update_key:
+        external: true
+    helldiversbot_cloudflared:
+        external: true
+
+# One service, N replicas, exactly one poller: every replica runs the cron
+# thread, but each poll must claim the lease row in worker_heartbeat first
+# (src/update/lease.mjs, #517). Postgres serialises the claim, so one instance
+# does the work and the rest answer "standby". A dead holder is replaced
+# within the 60 s TTL with no election. The poller's state lives in the same
+# row, so a handover neither misses nor duplicates a transition.
+#
+# Because of that, no placement constraint and no separate worker service:
+# `docker service scale` is safe at any N.
+
+services:
+    app:
+        # Rewritten by CI to :sha-<commit> — see the header.
+        image: ghcr.io/elfensky/helldiversbot:sha-3785bbc0246fec1ca2488022159382543496a851
+        networks: [internal]
+        environment:
+            NODE_ENV: production
+            PORT: '3000'
+            UPDATE_INTERVAL: '20'
+            # Swarm expands this per task. Without it the SDK falls back to
+            # os.hostname(), which in a container is the container ID — so the
+            # server_name tag in GlitchTip changes on every redeploy instead of
+            # naming the node the task landed on.
+            SENTRY_SERVER_NAME: '{{.Node.Hostname}}-{{.Task.Slot}}'
+            # The app reads secrets from files via the `*_FILE` convention
+            # (src/shared/utils/hydrateFileSecrets.mjs): if POSTGRES_URL_FILE is set,
+            # it populates POSTGRES_URL from that file before Prisma reads it.
+            # Points at the STAGING database (db-staging on huginn,
+            # 10.0.0.40:5433/helldiversbot_staging) — no longer the dev
+            # instance on :5432. The secret is named *_database_url to match
+            # the [appname]_[secretName] convention; the env var stays
+            # POSTGRES_URL_FILE because that is what the app reads.
+            POSTGRES_URL_FILE: /run/secrets/helldiversbot_database_url
+            UPDATE_KEY_FILE: /run/secrets/helldiversbot_update_key
+        secrets:
+            - helldiversbot_database_url
+            - helldiversbot_update_key
+        # Auth is deliberately unconfigured: initializeEnv treats a missing
+        # BETTER_AUTH_SECRET as "auth disabled" and warns. Add the auth vars
+        # (and BETTER_AUTH_URL=https://staging.helldivers.bot) when the OAuth
+        # apps have staging callback URLs registered.
+        #
+        # Healthcheck is baked into the image (GET /api/healthcheck -> 503 when the
+        # DB is unreachable, 200 healthy), so start-first rollout gates on real health.
+        # cloudflared reaches http://app:3000 — the service VIP — and Swarm
+        # spreads NEW connections across every healthy replica (per TCP
+        # connection, not per request; cloudflared pools keep-alives, so the
+        # spread is lumpy). That IS the load balancing; nothing on the
+        # Cloudflare side knows there are two.
+        #
+        # Soft spread, NOT `max_replicas_per_node: 1`: the hard cap plus
+        # start-first stalls whenever replicas = live nodes — the replacement task
+        # has no node, sits Pending, and Pending is not a failure so rollback
+        # never fires (moby/moby#40797). The preference keeps the two replicas on
+        # different nodes and doubles up only when one node is left.
+        deploy:
+            replicas: 2
+            placement:
+                preferences:
+                    - spread: node.id
+            update_config:
+                order: start-first
+                failure_action: rollback
+                monitor: 30s
+            rollback_config:
+                order: start-first
+            restart_policy:
+                condition: any
+
+    cloudflared:
+        image: cloudflare/cloudflared:latest
+        # The image's ENTRYPOINT is already `cloudflared --no-autoupdate`, so the
+        # command is just the subcommand.
+        command: tunnel run
+        networks: [internal]
+        environment:
+            # TUNNEL_TOKEN has no *_FILE variant, but `tunnel run` accepts
+            # --token-file / $TUNNEL_TOKEN_FILE, so the token stays a Swarm
+            # secret and never lands in the service spec. This avoids an
+            # entrypoint shim, which would not work anyway: the image is
+            # distroless and has no /bin/sh.
+            TUNNEL_TOKEN_FILE: /run/secrets/helldiversbot_cloudflared
+        secrets:
+            - helldiversbot_cloudflared
+        # 2 replicas, no placement constraint. Every cloudflared running these
+        # credentials registers as a connector on the same tunnel and Cloudflare
+        # load-balances across them, so a node dying does not drop ingress.
+        # (A `node.role == manager` constraint would be a no-op here — all three
+        # nodes are managers.) They do not race for certs; Cloudflare owns TLS.
+        deploy:
+            replicas: 2
+            restart_policy:
+                condition: any

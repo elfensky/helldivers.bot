@@ -1,0 +1,113 @@
+name: 'Check: Docker Smoke'
+
+# Catches the class of bugs that only manifest when the production-shaped
+# Docker stack actually builds and runs — image-level dependency issues,
+# missing COPY lines in Dockerfiles, raw-Node module resolution (the v0.47.0
+# `@/shared` regression), runtime env-var requirements, etc. These all pass
+# `npm run lint/typecheck/test:unit/build` locally because the local tooling
+# resolves jsconfig aliases and provides full env mocking.
+#
+# Scoped to `pull_request: branches: [main]` only — runs on release PRs from
+# develop → main and on hotfix PRs to main. Not on develop PRs (too slow for
+# the integration loop) and not on pushes (by then the merge already happened).
+#
+# Not superseded by the smoke gate in check-ci.yml. That gate boots `next build`'s
+# standalone output directly on the runner, so it proves the *application*
+# runs; this one builds and runs the *shipping artifact*, so it is the only
+# check that covers the Dockerfiles, the compose wiring, the image-level
+# dependency trace, and raw-Node module resolution. Same smoke suite, different
+# subject — keep both.
+
+on:
+    pull_request:
+        branches: [main]
+
+concurrency:
+    group: docker-smoke-${{ github.event.pull_request.number || github.sha }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    smoke:
+        name: Docker Compose Smoke Test
+        runs-on: ubuntu-latest
+        # The Next.js image build takes ~5-7 minutes from a cold cache; the
+        # migrate image ~1 minute; postgres start + migrate run + app boot ~30s.
+        # 20 minutes leaves comfortable headroom for runner variability.
+        timeout-minutes: 20
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Set up Docker Buildx
+              # Buildx is needed for the BuildKit features Dockerfile.app uses:
+              # `# syntax=docker/dockerfile:1`, `RUN --mount=type=cache,...`,
+              # and `RUN --mount=type=secret,...`. Without buildx, those parse
+              # as ordinary RUNs and break the build.
+              uses: docker/setup-buildx-action@v4.3.0
+
+            - name: Build images
+              # `docker compose build` invokes buildx per service. No GHA cache
+              # configured here — adding it requires the `x-bake` extension or
+              # rewriting as standalone `docker buildx build` calls per image.
+              # Cold-cache cost is ~7 minutes total which is acceptable for the
+              # main-PR cadence; revisit if it becomes painful.
+              run: docker compose -f docker-compose.ci.yml build
+
+            - name: Start the stack
+              # `--wait` (compose >= 2.17) blocks until every service reaches
+              # `healthy` (per `healthcheck:`) or `completed_successfully`
+              # (for one-shot containers like migrate), then exits 0.
+              # On any service failure or healthcheck timeout it exits non-zero
+              # — which is precisely the assertion we want.
+              run: docker compose -f docker-compose.ci.yml up -d --wait
+
+            - name: Setup Node.js
+              # Only needed to run the smoke suite from the runner host against
+              # the container's published port. Placed after the stack is up so
+              # a broken image build fails before we pay for the install.
+              uses: actions/setup-node@v7.0.0
+              with:
+                  node-version-file: '.node-version'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              # vitest and its config are the only things the smoke suite needs.
+              # No `prisma generate` here — src/__tests__/smoke/ imports nothing
+              # from src/, it only talks HTTP.
+              run: npm ci
+
+            - name: Run smoke tests against the running stack
+              # Supersedes the previous `curl | grep '"data"'` one-liner: that
+              # asserted a single endpoint returned JSON containing the string
+              # "data". This runs all 12 smoke assertions (5 pages render, the
+              # healthcheck body, three rebroadcast auth paths, the OG image,
+              # and two SSR content checks) against the same published port, in
+              # ~3 seconds. An unreachable server now fails the suite outright
+              # rather than skipping it — SMOKE_ALLOW_SKIP is deliberately unset.
+              run: npm run test:smoke
+              env:
+                  TEST_SERVER_URL: http://127.0.0.1:3000
+
+            - name: Dump container logs on failure
+              if: failure()
+              run: |
+                  echo "::group::postgres logs"
+                  docker compose -f docker-compose.ci.yml logs postgres || true
+                  echo "::endgroup::"
+                  echo "::group::migrate logs"
+                  docker compose -f docker-compose.ci.yml logs migrate || true
+                  echo "::endgroup::"
+                  echo "::group::helldiversbot logs"
+                  docker compose -f docker-compose.ci.yml logs helldiversbot || true
+                  echo "::endgroup::"
+                  echo "::group::compose ps"
+                  docker compose -f docker-compose.ci.yml ps || true
+                  echo "::endgroup::"
+
+            - name: Tear down
+              if: always()
+              run: docker compose -f docker-compose.ci.yml down -v --remove-orphans

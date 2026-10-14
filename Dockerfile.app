@@ -54,6 +54,18 @@ ENV NEXT_PUBLIC_DEPLOY_ENV=$NEXT_PUBLIC_DEPLOY_ENV
 # it needs no secret mount. Empty is fine — the client SDK no-ops without it.
 ARG NEXT_PUBLIC_SENTRY_DSN
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+# NEXT_PUBLIC_VAPID_PUBLIC_KEY is the public half of the Web Push VAPID
+# keypair. Like DEPLOY_ENV and SENTRY_DSN it is inlined into the client
+# bundle at build time (Next.js NEXT_PUBLIC_* rule), so it MUST be set here
+# as a build arg — a value present only at runtime never reaches the shipped
+# JS and NotificationToggle's Enable flow surfaces the new 'error' state for
+# every push-capable visitor instead of subscribing them (#485/STAB-03).
+# It is a public value by design (VAPID public keys are meant to ship to
+# every browser), so a plain build arg is correct; unlike the private key it
+# needs no secret mount. Empty is fine — the client SDK's missing-key branch
+# already renders the error state deliberately.
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.

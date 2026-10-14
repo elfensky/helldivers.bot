@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Hijackable from '@/features/ministry/Hijackable';
+import AnalyticsOptOut from '@/shared/components/AnalyticsOptOut';
 
 export const metadata = {
     title: 'Civic Compliance Protocols',
@@ -160,11 +161,19 @@ export default function LegalPage() {
                     </h3>
                     <p>
                         This terminal employs a self-hosted analytics system (Umami) to
-                        monitor operational efficiency. This system is entirely cookieless
-                        — it identifies sessions using a one-way hash of your IP address,
-                        browser user-agent, and hostname. No personal data is stored. Page
-                        views and interaction events are tracked in aggregate for internal
-                        use only. Analytics are active in production environments only.
+                        monitor operational efficiency. It sets no cookies, and its only
+                        storage in your browser is the opt-out flag described under
+                        Citizen Rights — sessions are identified by a one-way hash of your
+                        IP address, browser user-agent, and hostname, which cannot be
+                        reversed and is never reused on another site. Recorded: pages
+                        visited, referrer, browser, operating system, device type, screen
+                        size, language, approximate location (country, region, city) and
+                        loading performance (Core Web Vitals — LCP, FCP, CLS, INP, TTFB).
+                        Your IP address is processed to produce the hash and resolve that
+                        location. Stated plainly rather than marketed: an IP address is
+                        personal data under the GDPR and a hash derived from one is
+                        pseudonymous, not anonymous. The lawful basis is legitimate
+                        interest (Article 6(1)(f)). Analytics run in production only.
                     </p>
 
                     <h3 className="text-h3 font-bold text-text uppercase">
@@ -176,6 +185,25 @@ export default function LegalPage() {
                         analytics session. This allows the Ministry to understand how
                         authenticated citizens use the terminal. This data is used for
                         internal operational analysis only and is never shared externally.
+                    </p>
+
+                    <h3 className="text-h3 font-bold text-text uppercase">
+                        Session Recording Protocols
+                    </h3>
+                    <p>
+                        A sample of visits may be recorded for review. A recording is not
+                        video and not a capture of your screen — the page structure and
+                        its text are re-serialised and replayed, which is how the Ministry
+                        identifies where the interface fails its citizens. Anything you
+                        type into a form field is masked inside your own browser before
+                        transmission, so the value itself never leaves your device. Click
+                        and scroll heatmaps are collected separately from recordings:
+                        pointer positions and scroll depth per page, sampled on their own,
+                        so a visit can add to a heatmap without being recorded. A browser
+                        that has opted out (see Citizen Rights) does not load the
+                        recorder. Note that while you are signed in, a recording is linked
+                        to your citizen ID by the section above, and is therefore
+                        attributable to your account rather than anonymous.
                     </p>
 
                     <h3 className="text-h3 font-bold text-text uppercase">
@@ -222,9 +250,10 @@ export default function LegalPage() {
                         Data Retention Protocols
                     </h3>
                     <p>
-                        Account data persists while your account exists. Analytics data is
-                        aggregated and anonymized by the analytics system. Error reports
-                        are retained per standard stability monitoring practices. Push
+                        Account data persists while your account exists. Analytics data,
+                        including session recordings, is retained until deleted by the
+                        operator; no automatic expiry is configured. Error reports are
+                        retained per standard stability monitoring practices. Push
                         notification subscriptions are deleted on unsubscribe.
                     </p>
 
@@ -235,8 +264,15 @@ export default function LegalPage() {
                         You may delete your account from the profile page at any time.
                         This triggers a cascading deletion of all associated data. You may
                         disable push notifications at any time. Analytics data cannot be
-                        traced back to you without an authenticated session.
+                        traced back to you without an authenticated session. Under the
+                        GDPR you may also request access to data concerning you, request
+                        its erasure, or object to its collection. The switch below stops
+                        analytics collection in this browser only, until you clear its
+                        site data, and does not carry over to other browsers or devices.
+                        For a request that does not depend on your browser, contact the
+                        operator through the routes below.
                     </p>
+                    <AnalyticsOptOut />
 
                     <h3 className="text-h3 font-bold text-text uppercase">
                         Contact the Operator
@@ -351,6 +387,16 @@ export default function LegalPage() {
                                         Stores last campaign data for offline/PWA fallback
                                     </td>
                                 </tr>
+                                <tr className="border-b border-ghost/50">
+                                    <td className="py-2 pr-4 font-mono text-primary">
+                                        umami.disabled
+                                    </td>
+                                    <td className="py-2">
+                                        Records your analytics opt-out. Set only when you
+                                        press the transponder switch under Citizen Rights;
+                                        removed when you re-enable analytics.
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -365,8 +411,8 @@ export default function LegalPage() {
                         <li>No browser fingerprinting</li>
                     </ul>
                     <p>
-                        The operational analytics system (Umami) is entirely cookieless.
-                        It does not store any data in your browser.
+                        The operational analytics system (Umami) sets no cookies. Its only
+                        browser storage is the opt-out flag listed above.
                     </p>
 
                     <h3 className="text-h3 font-bold text-text uppercase">
@@ -376,7 +422,8 @@ export default function LegalPage() {
                         You may clear cookies and local storage from your browser at any
                         time. Clearing the session cookie will log you out. Clearing local
                         storage removes the offline campaign cache — it will repopulate
-                        automatically on your next visit.
+                        automatically on your next visit. It also removes the analytics
+                        opt-out, so analytics resume until you press the switch again.
                     </p>
                 </div>
             </section>

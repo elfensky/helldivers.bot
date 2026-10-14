@@ -1,0 +1,209 @@
+name: 'Build: Release'
+
+on:
+    push:
+        tags:
+            - 'v*.*.*' # Triggers on version tags like v1.0.0
+
+# Never cancel a half-published release. Two tags pushed back to back queue
+# rather than racing each other to the `production` and `latest` floating tags.
+concurrency:
+    group: build-release-${{ github.ref_name }}
+    cancel-in-progress: false
+
+# Read-only by default; the two jobs that need to write say so themselves.
+permissions:
+    contents: read
+
+jobs:
+    # The same gate CI runs, against the exact tagged commit.
+    #
+    # main's branch protection already requires the "Test & Build" check to
+    # merge, so the code in a release has normally passed. "Normally" is the
+    # problem: a tag can be pushed at ANY commit — an older one, a hotfix
+    # merged with admin override, a hand-moved tag — and check-ci.yml does not
+    # run on tags at all, so nothing re-checks what is actually being shipped.
+    # This job makes the tag itself the unit that gets verified.
+    #
+    # Shares the sequence with check-ci.yml through a COMPOSITE action rather
+    # than a `workflow_call` reusable workflow. A reusable workflow would rename
+    # the check from "Test & Build" to "<caller> / Test & Build", and main's
+    # required status check matches on that exact string — every PR to main
+    # would block forever waiting for a check that no longer reports. A
+    # composite action runs inside this job, so the name is untouched.
+    verify:
+        name: Test & Build
+        runs-on: ubuntu-latest
+        timeout-minutes: 25
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Lint, typecheck, test and build
+              uses: ./.github/actions/verify
+
+    build-app:
+        name: Build App Image
+        needs: verify
+        runs-on: ubuntu-latest
+        # arm64 builds under QEMU emulation are slow; 30 leaves headroom.
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            packages: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Build and push APP
+              uses: ./.github/actions/docker-publish
+              with:
+                  file: ./Dockerfile.app
+                  platforms: linux/amd64,linux/arm64
+                  registry-token: ${{ secrets.GITHUB_TOKEN }}
+                  tags: |
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot:${{ github.ref_name }}
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot:production
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot:latest
+                  build-args: |
+                      NODE_ENV=production
+                      NEXT_PUBLIC_DEPLOY_ENV=production
+                      NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+                      NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+                  # Sentry credentials go in build-secrets, NOT build-args —
+                  # build-args land in the provenance attestation pushed to
+                  # GHCR, where anyone with pull access can read them. See #284.
+                  build-secrets: |
+                      sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
+                      sentry_url=${{ vars.SENTRY_URL }}
+                      sentry_org=${{ secrets.SENTRY_ORG }}
+                      sentry_project=${{ secrets.SENTRY_PROJECT }}
+
+    # Always build migrate in Production — unlike staging, no skip logic here.
+    # Each tag needs a versioned image, releases are infrequent (~$3/yr CI cost),
+    # and a missing migration image causes broken deploys. Not worth optimizing.
+    build-migrate:
+        name: Build Migrate Image (${{ matrix.arch }})
+        needs: verify
+        # One leg per arch, each on a runner of that arch — NOT QEMU. `prisma
+        # generate` dies under QEMU aarch64 emulation with `qemu: uncaught
+        # target signal 4 (Illegal instruction)`, exit 132: Prisma's engine
+        # binary uses instructions QEMU doesn't implement. Building both arches
+        # on one x86 runner (8b5b2058) broke the first release that tried it —
+        # v0.90.4, where the app image published and this one failed, leaving
+        # no migrate image for the tag — and it went amd64-only (061334c2).
+        # Built natively on arm64 the same Dockerfile works: `prisma generate`
+        # at build and the schema engine at run time, checked on every PR that
+        # touches it by check-migrate-arm64.yml. Each leg pushes
+        # :<tag>-<arch>; merge-migrate joins them into the release tags.
+        strategy:
+            matrix:
+                include:
+                    - arch: amd64
+                      runner: ubuntu-latest
+                    - arch: arm64
+                      runner: ubuntu-24.04-arm
+        runs-on: ${{ matrix.runner }}
+        timeout-minutes: 30
+        permissions:
+            contents: read
+            packages: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Build and push MIGRATE
+              uses: ./.github/actions/docker-publish
+              with:
+                  file: ./Dockerfile.migrate
+                  registry-token: ${{ secrets.GITHUB_TOKEN }}
+                  platforms: linux/${{ matrix.arch }}
+                  tags: |
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate:${{ github.ref_name }}-${{ matrix.arch }}
+                  build-args: |
+                      NODE_ENV=production
+
+    merge-migrate:
+        name: Publish Migrate Manifest
+        needs: build-migrate
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: read
+            packages: write
+
+        steps:
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v4.6.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Join the two arches into the release tags
+              env:
+                  IMAGE: ghcr.io/${{ github.repository_owner }}/helldiversbot-migrate
+                  TAG: ${{ github.ref_name }}
+              run: |
+                  docker buildx imagetools create -t "$IMAGE:$TAG" -t "$IMAGE:production" -t "$IMAGE:latest" "$IMAGE:$TAG-amd64" "$IMAGE:$TAG-arm64"
+                  out=$(docker buildx imagetools inspect "$IMAGE:$TAG")
+                  echo "$out"
+                  for p in linux/amd64 linux/arm64; do
+                    grep -qE "Platform: +$p$" <<< "$out" || { echo "::error::$IMAGE:$TAG has no $p manifest"; exit 1; }
+                  done
+
+    github-release:
+        name: Create GitHub Release
+        needs: [build-app, merge-migrate]
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            contents: write # creates the GitHub Release for the tag
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Extract changelog for this version
+              id: changelog
+              env:
+                  TAG_NAME: ${{ github.ref_name }}
+              run: |
+                  VERSION="${TAG_NAME#v}"
+                  # State-machine awk: find "## <version>" header, collect until next "## " header or EOF
+                  awk -v ver="$VERSION" '
+                    /^## / { if (found) exit; if (index($0, "## " ver) == 1) { found=1; next } }
+                    found { print }
+                  ' CHANGELOG.md > /tmp/release-notes.md
+
+                  # Fail if changelog section is missing or empty
+                  if [ ! -s /tmp/release-notes.md ] || [ -z "$(tr -d '[:space:]' < /tmp/release-notes.md)" ]; then
+                    echo "::warning::No changelog entry found for ${VERSION} — using tag name as release body"
+                    echo "Release ${TAG_NAME}" > /tmp/release-notes.md
+                  fi
+
+                  # Append Docker image references
+                  OWNER=$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+                  {
+                    echo ""
+                    echo "---"
+                    echo ""
+                    echo "### Docker Images"
+                    echo ""
+                    echo '```'
+                    echo "docker pull ghcr.io/${OWNER}/helldiversbot:${TAG_NAME}"
+                    echo "docker pull ghcr.io/${OWNER}/helldiversbot-migrate:${TAG_NAME}"
+                    echo '```'
+                  } >> /tmp/release-notes.md
+
+            - name: Create GitHub Release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  TAG_NAME: ${{ github.ref_name }}
+              run: |
+                  gh release create "$TAG_NAME" \
+                    --title "$TAG_NAME" \
+                    --notes-file /tmp/release-notes.md

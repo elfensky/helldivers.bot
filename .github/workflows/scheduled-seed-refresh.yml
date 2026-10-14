@@ -1,0 +1,66 @@
+name: 'Scheduled: Seed Refresh'
+
+on:
+    schedule:
+        - cron: '0 3 * * 1' # Every Monday at 03:00 UTC
+    workflow_dispatch:
+
+# Never cancel: the job force-pushes chore/seed-refresh, so two concurrent runs
+# would race on the same branch. Queue instead.
+concurrency:
+    group: scheduled-seed-refresh
+    cancel-in-progress: false
+
+permissions:
+    contents: write # pushes chore/seed-refresh
+    pull-requests: write # opens the PR against develop
+
+jobs:
+    fetch-seasons:
+        name: Fetch New Seasons
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+              with:
+                  ref: develop
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v7.0.0
+              with:
+                  node-version-file: '.node-version'
+                  cache: 'npm'
+
+            # fetch-seasons.mjs only needs axios; skip the dev tree.
+            - name: Install dependencies
+              run: npm ci --omit=dev --ignore-scripts
+
+            # Skips existing files, so this only writes newly-completed
+            # seasons. Never touches the active season (see the script).
+            - name: Fetch newly completed seasons
+              run: node prisma/seed/fetch-seasons.mjs
+
+            # ponytail: one long-lived branch — a second run before the PR is
+            # merged updates that PR instead of opening a new one.
+            - name: Open PR if new seasons appeared
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  # --porcelain, not `git diff`: new seasons arrive as
+                  # untracked files, which `git diff` does not report.
+                  if [ -z "$(git status --porcelain prisma/seed/seasons)" ]; then
+                    echo "No new completed seasons."
+                    exit 0
+                  fi
+                  git config user.name 'github-actions[bot]'
+                  git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+                  git checkout -B chore/seed-refresh
+                  git add prisma/seed/seasons
+                  git commit -m 'chore(seed): add newly completed seasons'
+                  git push --force origin chore/seed-refresh
+                  gh pr create --base develop --head chore/seed-refresh \
+                    --title 'chore(seed): refresh historical season data' \
+                    --body 'Automated weekly run of `prisma/seed/fetch-seasons.mjs`. Push the version bump + CHANGELOG commit onto this branch, then rebase-merge.' \
+                    || echo 'PR already open — branch updated.'

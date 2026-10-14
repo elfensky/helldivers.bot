@@ -1,5 +1,281 @@
 # Changelog
 
+## Unreleased
+
+## 0.95.2
+
+### Changed
+
+- Analytics point at `umami.lav.ren`: the `/api/record` and
+  `/api/websites/:id/recorder` rewrites and the docs. The Umami instance moved
+  from the Hetzner box to the homelab, and `umami.drunik.be` is being retired.
+  Production's `UMAMI_SITE_URL` must be set to `umami.lav.ren` at deploy time.
+
+## 0.95.1
+
+### Fixed
+
+- `/stats.js` and `/recorder.js` are now route handlers that fetch the Umami
+  scripts without forwarding request headers. The old rewrites passed the
+  visitor's cookies, the auth session cookie included, to the Umami host.
+- The session recorder no longer loads in a browser that has opted out of
+  analytics. Before, it still downloaded and requested its config from the
+  Umami host.
+- The `/legal` opt-out switch reports a failed save (storage full or blocked)
+  instead of showing the old state.
+- `/legal` lists the `umami.disabled` opt-out flag as browser storage, says
+  heatmaps are collected apart from recordings, and says the opt-out lasts per
+  browser until its site data is cleared.
+
+## 0.95.0
+
+### Added
+
+- Umami now reports Core Web Vitals (LCP, FCP, CLS, INP, TTFB). Session
+  replay and heatmaps load through same-origin rewrites (`/recorder.js`,
+  `/api/record`, `/api/websites/:id/recorder`), as `/stats.js` does, and stay
+  inert until they are turned on for the site in Umami. `/legal` gains a
+  switch that sets the tracker's own `localStorage['umami.disabled']` flag.
+  The privacy text now describes the pseudonymous hash, Web Vitals, session
+  recording and the retention rule (kept until deleted).
+
+### Changed
+
+- Staging's image pin moved off `develop`: `bump-staging-tag` now force-pushes
+  the tested commit plus the pin to the CI-owned branch `deploy/staging`,
+  which Arcane Git Sync watches, so `develop` takes no CI push and can be
+  PR-only. `detect-migration` reads the deployed pin from that branch. After a
+  hand-run migration, pin with
+  `gh workflow run build-staging.yml --ref develop -f migrated=true`; roll back
+  by re-running an earlier run's Bump Staging Tag job.
+
+- The migrate image is multi-arch again: amd64 and arm64, each built on a
+  runner of its own arch (`ubuntu-24.04-arm` for arm64) and joined into one
+  tag with `docker buildx imagetools create`. It went amd64-only after
+  v0.90.4, because `prisma generate` SIGILLs under QEMU arm64; built natively
+  it works. The staging migration now runs from any LAN host, a Pi included.
+  A new `Check: Migrate Image (arm64)` builds it natively and runs Prisma's
+  schema engine on every PR that touches the image.
+
+### Fixed
+
+- The staging build now sees every migration since the last deploy.
+  `detect-migration` diffed `HEAD^..HEAD`, which assumed `--no-ff` merges;
+  under rebase merges that is only the PR's last commit — by rule 2 always the
+  version bump — so a migration never gated the staging tag bump, and staging
+  would have deployed onto an unmigrated database. It now diffs from the
+  `sha-<commit>` pinned in `deploy/staging/compose.yaml`, fails closed when
+  that pin is missing or not in history, and ignores Markdown under `prisma/`
+  (the seed readme had blocked a bump). Seed data changes still count: they
+  only land when the migrate container runs.
+
+## 0.94.0
+
+### Added
+
+- `NotificationToggle` now reaches a distinct `error` state (with a Retry
+  control) instead of hanging forever in "loading" when
+  `navigator.serviceWorker.ready` never resolves, `getSubscription()`
+  rejects, or the deploy is missing its VAPID public key (#485).
+
+### Fixed
+
+- `getWarOutcome` and the `/opengraph-image` route's own faction-stats logic
+  no longer throw on a null faction slot in campaign/status data — both now
+  fail the victory check or drop the null slot instead of crashing (#459,
+  #503).
+- `/opengraph-image`'s crash fallback is now a committed static PNG served as
+  raw bytes (no Satori/sharp on the fallback path), with outcome-dependent
+  `Cache-Control` (`no-store` on fallback, cacheable on success). A
+  `next.config.mjs` catch-all header rule that was silently overriding the
+  route's own headers — including replacing the fallback's `no-store` with a
+  cacheable directive — is also fixed (#503).
+- `/opengraph-image` now emits render-outcome telemetry (rendered vs.
+  fallback, with a failure-stage tag) and reports a real `getCampaign()`
+  query failure to GlitchTip instead of degrading silently (#503).
+- Space Mono is now genuinely loaded via `next/font/google`; `--font-mono`
+  resolves through the generated CSS variable instead of an unresolved
+  bare font-family string (#476).
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is now passed as a Docker build-arg in both
+  the release and staging image builds, so push notifications work in the
+  shipped bundle instead of the key silently going missing.
+
+## 0.93.1
+
+### Fixed
+
+- Lease timestamps are written as `now() AT TIME ZONE 'UTC'`, matching what
+  Prisma writes into the naive `timestamp(3)` columns — a bare `now()` was the
+  session's local time, so `started_at` sat two hours off `last_beat`.
+- `holder_id` prefers the Swarm-provided node name (`SENTRY_SERVER_NAME`) over
+  the container hostname, which in a container is just the container ID.
+
+## 0.93.0
+
+### Added
+
+- Poller lease in Postgres (#517): every replica runs the cron thread, but on
+  each poll it must claim the `worker_heartbeat` row (`holder_id`,
+  `lease_until`, 60 s TTL) — one conditional `INSERT … ON CONFLICT DO UPDATE`
+  that Postgres serialises, so exactly one instance polls and a dead holder is
+  replaced within the TTL with no election and no manual step. The poller's
+  state (`prev_events`, `last_season_observed`) lives in the same row, so a
+  new holder inherits the previous snapshot instead of starting blind: a
+  transition across a handover is neither missed nor sent twice. Standby
+  replicas answer `200 { role: 'standby' }` and touch nothing. The admin
+  dashboard shows which host holds the lease.
+
+### Changed
+
+- `checkAndNotify(prevEvents)` takes its baseline as an argument and returns
+  the current snapshot; the module-level `prevEvents` is gone. The route's
+  module-level `lastSeasonObserved` is gone likewise. Heartbeat writes are
+  holder-guarded `updateMany`s, never an unconditional upsert.
+
+## 0.92.0
+
+### Added
+
+- `WORKER_ENABLED=false` runs an instance as web-only: no cron poller thread, and
+  `/api/h1/update` answers 403 there. Lets the web tier scale horizontally while
+  exactly one instance polls — the update path keeps `prevEvents` /
+  `lastSeasonObserved` in memory, so N pollers meant N× duplicate push
+  notifications (#516). Accepts `false` / `0` / `no` / `off`, any case.
+
+### Changed
+
+- A dead cron worker thread now exits the process (exit 1) instead of leaving a
+  "healthy" instance that never polls; the container healthcheck is only a DB
+  ping, so this is what lets the orchestrator restart it.
+
+## 0.91.1
+
+### Changed
+
+- **Relicensed MIT → AGPL-3.0-only.** This repo is a network-served proxy API,
+  which is the one case where the choice changes anything. GPL's copyleft
+  triggers on *distribution*, so someone running a fork as a hosted API
+  distributes nothing and owes nothing; MIT is the same but more permissive.
+  AGPL §13 closes it — run a modified version and let people interact with it
+  over a network, and you must offer them the source. Everything through
+  `v0.91.0` remains available under MIT; MIT grants the right to sublicense, so
+  existing contributions carry forward. `package.json` also gained the `license`
+  field, which was previously unset.
+
+## 0.91.0
+
+### Fixed
+
+- **GHCR cleanup never pruned the migrate image.** The `cleanup` job in the
+  staging build passed `image-names: 'helldiversbot'`, but every staging build
+  republishes `helldiversbot-migrate` too — so that package's untagged blobs
+  accumulated indefinitely with nothing ever collecting them. Both names are now
+  listed (space-separated, per the action's own documented syntax).
+- **Concurrent staging deploys.** `Build: Staging` had no concurrency group, so
+  two merges to `develop` in quick succession produced two concurrent
+  `docker stack deploy` runs against the same swarm. It now queues
+  (`cancel-in-progress: false` — cancelling a deploy mid-flight leaves the stack
+  half-converged). `Build: Release` and `Scheduled: Seed Refresh` gained the same
+  guard; the latter force-pushes `chore/seed-refresh`, which two overlapping runs
+  would race on.
+- **No job timeouts.** 14 of 15 jobs had no `timeout-minutes`, so anything that
+  hung burned the 6-hour default before GitHub killed it. All jobs now bound.
+- **Over-broad workflow permissions.** The release and staging builds granted
+  `contents: write` to every job. Staging never writes contents at all; in the
+  release flow only `Create GitHub Release` does. Both now default to
+  `contents: read` with per-job grants. `Check: Version Bump` had no
+  `permissions:` block at all and inherited the repository default.
+- **`Check: Version Bump` filtered on a file that does not exist.**
+  `pyproject.toml` was in its `paths` list — there is no Python in this repo, so
+  that entry never matched. It now watches `prisma/**` and `public/**` as well.
+- **Broken README badges.** Three of four pointed at `elfensky/helldivers1api`, a
+  repository name that no longer resolves, and the "Build" badge additionally
+  filtered on `?branch=main` for a workflow that only ever runs on `develop`.
+  Repointed, plus a CI badge that was missing entirely. The wakapi time badge was
+  reading a stale pre-rename project slug frozen at 96 hours; the live one reads
+  299.
+
+### Changed
+
+- **Workflows follow one naming convention.** Filenames are now
+  `<verb>-<subject>.yml` and each workflow's `name:` is the matching
+  `Verb: Subject` — `check-` for PR/push gates, `build-` for anything that ships
+  an artifact, `scheduled-` for cron. Previously filenames mixed dot-separation
+  (`release.docker.yml`) with kebab-case (`dependency-review.yml`), names mixed
+  three casing styles, and three files were named after something other than what
+  they did (`metrics.yml` was "Pagespeed"). Every job and step now has an explicit
+  `name:` — 8 of 15 jobs were rendering as raw job ids in the Actions UI.
+- **Shared CI logic extracted into composite actions.** `.github/actions/verify`
+  (install → prisma generate → lint → typecheck → unit tests → build) replaces a
+  verbatim 35-line copy that the release build kept of the CI job, and
+  `.github/actions/docker-publish` (QEMU → Buildx → GHCR login → build-push)
+  replaces four near-identical copies across the two build workflows. Composite
+  actions rather than `workflow_call` reusable workflows deliberately: a reusable
+  workflow renames the check to `<caller> / Test & Build`, and `main`'s required
+  status check matches the bare string, so every PR to `main` would block forever.
+  A composite action runs inside the calling job and leaves the job name alone.
+  `docker-publish` also skips QEMU setup for the two amd64-only migrate builds.
+
+## 0.90.16
+
+### Fixed
+
+- **`FORCE_SEED=false` forced a re-seed.** The check was
+  `if (process.env.FORCE_SEED)`, and every non-empty string is truthy — so the
+  obvious way to write "off" in a compose file or a stack env block re-upserted
+  all 159 seasons on every deploy, silently and indistinguishably from the seed
+  just being slow. Only `true`, `1` or `yes` now enable it, case- and
+  whitespace-insensitive. Verified against a database holding all 160 seasons:
+  `false` reports "Nothing to do", `true` reports "seeding 159".
+
+### Added
+
+- **`FORCE_SEED` is documented and reachable.** It was never in `.example.env`,
+  so the only way to discover it was reading `seed.mjs`. The staging deploy job
+  also ran the migrate container with `POSTGRES_URL` alone, meaning a re-seed
+  required editing the workflow; it now passes `vars.FORCE_SEED` through, and
+  an unset variable is empty, which the new parser reads as off. Production has
+  no deploy job, so a re-seed there is whatever manual `docker run` rolls the
+  migrate container.
+
+### Changed
+
+- **Stale seed descriptions corrected** in `Dockerfile.migrate`,
+  `prisma/seed/readme.md` and the infrastructure docs — all three still
+  described the `db.h1_season.count()` comparison replaced in v0.90.15.
+
+## 0.90.15
+
+### Fixed
+
+- **The seed script skips per season instead of comparing counts.** The guard
+  was `db.h1_season.count() === jsonFiles.length` — skip everything when the
+  numbers match, seed everything when they don't — which is wrong in both
+  directions.
+
+  It **re-seeded everything on any mismatch**. The weekly seed-refresh workflow
+  added in v0.90.7 exists to add newly-finished seasons, so its normal output
+  (one more file) meant rewriting the 159 seasons already present. Confirmed
+  against the local database, which holds 160 seasons — 159 seeded plus season
+  160 from the live worker — against 159 files: the old check re-seeded all 159
+  on every single run.
+
+  It also **skipped when the numbers coincided**. A database with 158 seed
+  seasons plus two on-demand backfills counts 160 against 160 files, reports
+  "already seeded", and leaves two seed files unapplied.
+
+  Each filename's season is now compared against the seasons actually present
+  in `h1_season`, and only the missing ones run. A file whose name doesn't
+  encode a season is always seeded, since `seedSeason()` reads the number from
+  the file contents and skipping on a guess would silently drop data.
+  `FORCE_SEED=true` still re-seeds everything.
+
+### Changed
+
+- **`seed()` runs only when the script is invoked directly.** It executed at
+  import time, so importing the module to test its pure helpers would have
+  connected to the database and seeded it.
+
 ## 0.90.14
 
 ### Fixed

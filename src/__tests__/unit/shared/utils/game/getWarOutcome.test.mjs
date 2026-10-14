@@ -150,4 +150,30 @@ describe('getWarOutcome', () => {
         };
         expect(getWarOutcome(data)).toBeNull();
     });
+
+    test('does not throw and does not report victory when a live status slot is null', () => {
+        const data = {
+            status: [{ status: 'defeated' }, null, { status: 'defeated' }],
+            snapshots: [],
+            events: [],
+        };
+        expect(() => getWarOutcome(data)).not.toThrow();
+        const result = getWarOutcome(data);
+        expect(result.outcome).toBe('defeat');
+    });
+
+    test('does not throw and does not report victory when a snapshot faction slot is null', () => {
+        const data = {
+            status: [{ status: 'active' }, { status: 'active' }, { status: 'active' }],
+            snapshots: [
+                {
+                    data: [{ status: 'defeated' }, null, { status: 'defeated' }],
+                },
+            ],
+            events: [],
+        };
+        expect(() => getWarOutcome(data)).not.toThrow();
+        const result = getWarOutcome(data);
+        expect(result.outcome).toBe('defeat');
+    });
 });

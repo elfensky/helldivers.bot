@@ -1,0 +1,46 @@
+name: 'Check: Migrate Image (arm64)'
+# The migrate image is multi-arch, and its arm64 leg is the fragile one: built
+# under QEMU, `prisma generate` SIGILLs (see build-release.yml). This builds
+# it natively on an arm64 runner and runs Prisma's schema engine — the binary
+# `migrate deploy` uses — without a database, on every PR that changes what
+# goes into the image. It catches the v0.90.4 failure on the PR, not the tag.
+#
+# Its own workflow, not a job in check-ci.yml: build-staging.yml waits for
+# 'Check: CI' to complete, and this job must never be able to hold that up.
+on:
+    pull_request:
+        branches: [develop, main]
+        paths:
+            - 'Dockerfile.migrate'
+            - 'prisma/**'
+            - 'prisma.config.mjs'
+            - 'package.json'
+            - 'package-lock.json'
+            - '.github/actions/docker-publish/**'
+            - '.github/workflows/build-*.yml'
+            - '.github/workflows/check-migrate-arm64.yml'
+
+concurrency:
+    group: check-migrate-arm64-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    arm64:
+        name: Migrate image builds and runs on arm64
+        runs-on: ubuntu-24.04-arm
+        timeout-minutes: 15
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Build natively for linux/arm64
+              run: docker build --platform linux/arm64 -f Dockerfile.migrate -t migrate:arm64 .
+
+            - name: Run the schema engine, no database
+              run: >-
+                  docker run --rm -e POSTGRES_URL=postgresql://dummy migrate:arm64
+                  npx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script
+                  > /dev/null

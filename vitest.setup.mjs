@@ -103,6 +103,7 @@ const createModelMock = () => ({
     upsert: vi.fn(() => Promise.resolve({})),
     delete: vi.fn(() => Promise.resolve({})),
     deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
+    updateMany: vi.fn(() => Promise.resolve({ count: 1 })),
     count: vi.fn(() => Promise.resolve(0)),
 });
 

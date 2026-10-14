@@ -29,39 +29,31 @@ develop ──────●──●──●──●──●──── (s
 - `hotfix/<semver>` — e.g., `hotfix/0.16.1`
 - `chore/<short-desc>` — e.g., `chore/upgrade-discord-js`
 
-## Git Flow Commands (Claude Code)
-
-```bash
-/git-workflow:feature war-event-tracking  # Create feature branch from develop
-/git-workflow:hotfix 0.16.1               # Create hotfix branch from main
-/git-workflow:finish                       # Merge current branch, tag, cleanup
-/git-workflow:flow-status                  # Show branch status and version info
-```
-
 ## Workflow
 
-1. Create a branch from `develop`
-2. Make changes, commit with conventional commits (`feat:`, `fix:`, `chore:`)
+Every change — feature, bugfix or chore — lands on `develop` by a PR from its own worktree
+under `.worktrees/`. The main checkout stays on `develop` and only ever pulls. Commands and the
+full rule: [AGENTS.md § Worktrees](AGENTS.md#worktrees--one-lane-always).
+
+1. Create a worktree + branch from `origin/develop`
+2. Make changes, commit with conventional commits (`feat:`, `fix:`, `chore:`), bump the version as the last commit
 3. Push and open a pull request to `develop`
-4. Merge when CI passes
+4. Rebase-merge when CI passes (`gh pr merge --rebase --delete-branch`)
 5. Changes deploy to staging
 
 ## Release Process
 
-Releases are automated via [release-please](https://github.com/googleapis/release-please):
-
-1. Merge PRs to `main` using conventional commits (`feat:`, `fix:`, etc.)
-2. release-please automatically creates/updates a Release PR with version bump + changelog
-3. Merge the Release PR when ready to ship
-4. GitHub Actions automatically: creates git tag, GitHub Release, and builds Docker images
+PR `develop` → `main` (merge commit), tag `vX.Y.Z` on the merge commit, push the tag, then merge
+`main` back into `develop` by PR. The tag triggers the production Docker build. Full steps:
+[AGENTS.md § Git Workflow](AGENTS.md#git-workflow), rule 3.
 
 ## Hotfix Process
 
-1. Cut `hotfix/<semver>` from `main`
+1. Worktree on `hotfix/<semver>` from `origin/main`
 2. Fix, commit with tests
 3. PR to `main`, merge
 4. Tag and push (triggers production build)
-5. Merge `main` back to `develop`
+5. Merge `main` back into `develop` by PR
 
 ## Versioning
 
@@ -89,6 +81,4 @@ refactor: extract event handler base class
 | Event                       | Action                                         |
 | --------------------------- | ---------------------------------------------- |
 | Push to `main` or `develop` | Build + deploy staging Docker image            |
-| Push to `main`              | release-please creates/updates Release PR      |
-| Merge Release PR            | Creates git tag + GitHub Release               |
 | Tag `v*.*.*`                | Build production Docker images (app + migrate) |
