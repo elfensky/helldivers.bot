@@ -375,29 +375,33 @@ Client-side upload succeeded. Server-side processing and symbolication of a
 real `0-95-2` event is not yet confirmed: no production traffic runs
 `0.95.2` yet (see below).
 
-### Production deployment: NOT REACHED
+### Production deployment
 
 `build-release.yml` only publishes images (`:v0.95.2`, `:production`,
 `:latest`) and creates the GitHub Release. It has no deploy step. The
-production host (Hetzner, `~/docker/helldiversbot/docker-compose.yml`) must
-pull the new image by hand.
+production host (Hetzner, `~/docker/helldiversbot/docker-compose.yml`) pulls
+the new image by hand. The developer pulled and restarted the stack between
+10:42Z (last poll still on 0.90.14) and 11:22Z on 2026-10-14.
 
-| Check | Result |
+| Check (2026-10-14T11:22:13Z) | Result |
 |---|---|
-| `GET https://helldivers.bot/api/h1/live` `.data.appVersion` | `0.90.14` at every poll from 10:27:47Z to 10:41:50Z (about 30 polls, 30 s apart) |
-| Page `dpl` | `0-90-14` throughout |
-| `GET /stats.js` | 502 text/plain (old build; expected 200 application/javascript) |
-| `GET /recorder.js` | 404 text/html (route absent in the old build) |
+| `GET https://helldivers.bot/api/h1/live` `.data.appVersion` | `0.95.2` |
+| Page `dpl` | `0-95-2` |
+| `GET /stats.js` | 200 `application/javascript; charset=utf-8` |
+| `GET /recorder.js` | 200 `application/javascript; charset=utf-8` |
 | `GET /api/healthcheck` | 200 alive |
-
-The poll window (about 15 min after the image was published) ended with
-production still on 0.90.14. The release is published but not deployed.
+| Poller on the new build (`worker_heartbeat_lease` migration applied) | `/api/h1/live` `.data.data.last_updated` = 2026-10-14T11:23:03.841Z, newer than the check |
 
 ### STAB-06 48-hour window
 
-NOT STARTED. The window starts when production serves `0-95-2`. When that
-happens, record the UTC time here. The window then ends at start + 48 h.
-Plan 01-09 must filter GlitchTip on `dpl` = `0-95-2`.
+| Item | Value |
+|---|---|
+| Window start (UTC) | 2026-10-14T11:22:13Z — first verified observation of `appVersion` 0.95.2 in production |
+| Window end (UTC) | 2026-10-16T11:22:13Z |
+| GlitchTip filter for plan 01-09 | `dpl` = `0-95-2` |
+
+The start is the first verified observation, not the exact restart time, so
+the window covers at least 48 hours of the new build.
 
 ### Plan Task 5 automated verify
 

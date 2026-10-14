@@ -3,7 +3,7 @@ phase: 01-stability-fixes-release
 plan: 08
 subsystem: release
 tags: [release, git-flow, tag, ghcr, glitchtip, sourcemaps]
-status: partial  # release published, NOT deployed to production; not "complete"
+status: complete
 
 requires:
   - phase: 01-stability-fixes-release
@@ -28,7 +28,7 @@ key-decisions:
   - "Release version is develop's 0.95.2; the August 0.94.0 choice stays as the CHANGELOG section that holds the five Phase-01 fixes"
   - "Release cut by PR #547 (merge commit) and merge-back by PR #548 (merge commit, branch kept), per CLAUDE.md rule 3"
 
-requirements-completed: []  # STAB-07 stays open until production serves 0.95.2
+requirements-completed: [STAB-07]
 
 coverage:
   - id: D1
@@ -52,8 +52,8 @@ coverage:
     requirement: STAB-07
     verification:
       - kind: other
-        ref: "curl https://helldivers.bot/api/h1/live .data.appVersion -> 0.90.14 at 10:42Z"
-        status: fail
+        ref: "curl https://helldivers.bot/api/h1/live .data.appVersion -> 0.95.2 at 2026-10-14T11:22:13Z (dpl 0-95-2)"
+        status: pass
     human_judgment: false
   - id: D4
     description: "main merged back into develop"
@@ -67,8 +67,9 @@ coverage:
 
 # Phase 01 Plan 08: Cut the v0.95.2 release Summary
 
-v0.95.2 is merged, tagged and published as images. Production has not been
-updated: it still serves 0.90.14. The STAB-06 48-hour window has not started.
+v0.95.2 is merged to `main`, tagged, built and deployed: production serves
+0.95.2 (`dpl` 0-95-2) since 2026-10-14T11:22:13Z, which starts the STAB-06
+48-hour window (ends 2026-10-16T11:22:13Z).
 
 ## What happened
 
@@ -102,25 +103,21 @@ choice of 0.94.0. The release was never cut.
 274 files bundled and uploaded to GlitchTip as an artifact bundle, "processing
 pending on server". Symbolication of a real `0-95-2` event is not yet confirmed.
 
-## Production not reached
+## Production deployment
 
-`build-release.yml` only publishes images and the GitHub Release. It has no
-deploy step. The production host pulls images by hand
-(`~/docker/helldiversbot/docker-compose.yml` on the Hetzner box). About 30
-polls over 15 minutes after the image was published showed
-`appVersion` 0.90.14 and `dpl` `0-90-14`. `/stats.js` returned 502 and
-`/recorder.js` returned 404, both as expected on the old build.
-
-**Needed from the developer:** pull and restart the production stack on
-`ghcr.io/elfensky/helldiversbot:production` (tag `v0.95.2`). The
-`worker_heartbeat_lease` migration must run via the migrate image. Then confirm
-`appVersion` is `0.95.2`, `/stats.js` and `/recorder.js` return 200, and note the
-UTC time.
+`build-release.yml` only publishes images and the GitHub Release; it has no
+deploy step. The developer pulled and restarted the production stack
+(Hetzner, `~/docker/helldiversbot/`) between 10:42Z and 11:22Z. Verified at
+2026-10-14T11:22:13Z: `appVersion` 0.95.2, page `dpl` `0-95-2`, `/stats.js`
+and `/recorder.js` 200 `application/javascript`, `/api/healthcheck` 200, and
+the poller writing on the new build (`last_updated` 11:23:03Z), so the
+`worker_heartbeat_lease` migration applied.
 
 ## Window for plan 01-09
 
-NOT STARTED. It starts when production serves `0-95-2`. It ends 48 hours later.
-Plan 01-09 must filter GlitchTip on `dpl` = `0-95-2`.
+Start 2026-10-14T11:22:13Z (first verified observation of 0.95.2), end
+2026-10-16T11:22:13Z. Plan 01-09 filters GlitchTip on `dpl` = `0-95-2` and
+also confirms symbolication of the first `0-95-2` event.
 
 ## Deviations from Plan
 
@@ -130,12 +127,13 @@ repository. Fix: explicit `--title` and `--body-file`. No file changes.
 
 **2. [Scope] Task 3 superseded** by the per-PR bump process (see above).
 
-**3. [Open] Production deployment is manual.** The plan assumed the tag deploys.
-It does not. Recorded as the blocker above.
+**3. [Rule 3 - Blocking] Production deployment is manual.** The plan assumed the
+tag deploys. It does not: the developer pulled the images by hand, then the
+deploy was verified (see above).
 
 ## Self-Check: PASSED
 
 - Tag `v0.95.2` on remote peels to `11864900`: checked.
 - PR #547 and #548 state MERGED: checked.
 - `01-RELEASE-RECORD.md` contains `## Release` and `deployment id`: checked.
-- Production deployment: NOT reached (recorded, not a self-check failure).
+- Production serves 0.95.2 (`dpl` 0-95-2) at 2026-10-14T11:22:13Z: checked.
