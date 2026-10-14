@@ -338,3 +338,72 @@ re-run.
   release PR into `main` and its merge-back.
 - Deployment id for this release (dots to dashes, per `next.config.mjs`
   `APP_VERSION.replaceAll('.', '-')`): `0-95-2`.
+
+## Release
+
+Cut 2026-10-14 after the developer approved the release checkpoint
+("Approved — UMAMI_SITE_URL is set"; `.planning/` on `main`: yes).
+
+| Item | Value |
+|---|---|
+| Version | 0.95.2 |
+| Tag | `v0.95.2` (annotated, same style as `v0.90.14`); tag object `b0ab81a4`, peeled commit = main merge commit |
+| `main` merge commit | `11864900736070928c514636bdce39ad5e11584a` (parents: previous main tip `2b415eac`, develop `5b539144`) |
+| Release PR | #547 `develop` -> `main`, merge commit (no squash, no rebase); required checks green |
+| Merge-back PR | #548 `main` -> `develop`, merge commit `53b75a526c3a4ccad26b1135304ca6168b9ae78d`; branch not deleted |
+| deployment id | `0-95-2` (`next.config.mjs`: `deploymentId: APP_VERSION.replaceAll('.', '-')`) |
+| Build run | https://github.com/elfensky/helldivers.bot/actions/runs/38547055304 — conclusion `success` |
+| Build jobs | Test & Build ok (2m43s); Build Migrate arm64 ok; Build Migrate amd64 ok; Publish Migrate Manifest ok; Build App Image ok (14m27s, finished 2026-10-14T10:22:17Z); Create GitHub Release ok (10:22:29Z) |
+| Image published (UTC) | 2026-10-14T10:22:17Z (run finished 10:22:30Z) |
+
+### Sourcemap upload (first run of the end-to-end path)
+
+The `Build App Image` step ran the Sentry/GlitchTip upload against
+`https://glitchtip.lav.ren` and reported success. Excerpt from the log:
+
+```
+> Adding source map references
+> Bundled 274 files for upload
+> Uploaded files to Sentry
+> Uploading completed in 5.266s
+> File upload complete (processing pending on server)
+> Upload type: artifact bundle
+Source Map Upload Report
+```
+
+Client-side upload succeeded. Server-side processing and symbolication of a
+real `0-95-2` event is not yet confirmed: no production traffic runs
+`0.95.2` yet (see below).
+
+### Production deployment: NOT REACHED
+
+`build-release.yml` only publishes images (`:v0.95.2`, `:production`,
+`:latest`) and creates the GitHub Release. It has no deploy step. The
+production host (Hetzner, `~/docker/helldiversbot/docker-compose.yml`) must
+pull the new image by hand.
+
+| Check | Result |
+|---|---|
+| `GET https://helldivers.bot/api/h1/live` `.data.appVersion` | `0.90.14` at every poll from 10:27:47Z to 10:41:50Z (about 30 polls, 30 s apart) |
+| Page `dpl` | `0-90-14` throughout |
+| `GET /stats.js` | 502 text/plain (old build; expected 200 application/javascript) |
+| `GET /recorder.js` | 404 text/html (route absent in the old build) |
+| `GET /api/healthcheck` | 200 alive |
+
+The poll window (about 15 min after the image was published) ended with
+production still on 0.90.14. The release is published but not deployed.
+
+### STAB-06 48-hour window
+
+NOT STARTED. The window starts when production serves `0-95-2`. When that
+happens, record the UTC time here. The window then ends at start + 48 h.
+Plan 01-09 must filter GlitchTip on `dpl` = `0-95-2`.
+
+### Plan Task 5 automated verify
+
+Run from the lane worktree after `git fetch --tags`:
+
+- `git tag --points-at origin/main | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$'` -> PASS (prints `v0.95.2`).
+- Tag equals `package.json` version on `origin/main` (0.95.2, read via `mise exec -- node`) -> PASS.
+- `git merge-base --is-ancestor origin/main origin/develop` -> exit 0 (checked).
+- `grep -c 'deployment id'` on this file -> 4 matches (PASS).
