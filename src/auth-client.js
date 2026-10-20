@@ -40,11 +40,9 @@ export const linkSocial = (provider) =>
 
 /**
  * Unlink a social provider from the current account.
- * @param {string} providerId - Provider name ('discord', 'github', or 'google')
- * @param {string} accountId - The provider-specific account ID
+ * @param {string} accountId - The Better Auth account row ID (`account.id`, not the provider's ID)
  */
-export const unlinkAccount = (providerId, accountId) =>
-    authClient.unlinkAccount({ providerId, accountId });
+export const unlinkAccount = (accountId) => authClient.unlinkAccount({ accountId });
 
 /** React hook for accessing the current session in client components. */
 export const useSession = authClient.useSession;
