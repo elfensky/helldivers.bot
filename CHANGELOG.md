@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### Changed
+
+- Dependabot group (#554), 22 minor and patch updates: `next`, `@next/mdx` and
+  `@next/eslint-plugin-next` 16.3.8 to 16.4.2; `react` and `react-dom` 19.2.8
+  to 19.3.1; `prisma`, `@prisma/client` and `@prisma/adapter-pg` 7.9.1 to
+  7.10.1; `better-auth` 1.6.25 to 1.7.10; `zod` 4.4.3 to 4.6.7; `playwright`
+  1.62.1 to 1.64.1; `@eslint-react/eslint-plugin` 5.18.0 to 5.28.1. Ten
+  smaller patch updates ride along.
+- The visual regression tests (CI job and `scripts/visual-tests.sh`) run in
+  `mcr.microsoft.com/playwright:v1.64.1-noble`, to match the `playwright`
+  devDependency. No baseline is rewritten.
+- Dependabot no longer opens major updates for `@types/node`, which stays on
+  ^24 to match the Node 24 runtime, or for `typescript`, which stays on 6.x
+  until the TypeScript 7 JSDoc errors are fixed (#555).
+
+### Fixed
+
+- `npx prisma generate` works again. The `effect` override under `prisma` is
+  `^3.20.0`: the open range resolved to `effect` 4.x, which `@prisma/config`
+  cannot load.
+- Unlinking a social account on `/profile` passes the Better Auth account row
+  id, as `better-auth` 1.7 requires. The old provider and account id pair no
+  longer type-checks.
+
 ## 0.95.5
 
 ### Changed
