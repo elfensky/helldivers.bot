@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Security
+
+- **All 54 open Dependabot alerts are resolved**, including the critical
+  remote-code-execution advisories in `next`. No lockfile entry falls inside
+  the vulnerable range of any open alert.
+- Direct dependencies: `next`, `@next/mdx` and `@next/eslint-plugin-next`
+  16.3.0 to 16.3.8 (still on the 16.3 line); `axios` 1.18.1 to 1.20.0;
+  `mermaid` 11.16.0 to 11.16.1; `vitest` and the `@vitest/*` packages 4.1.10
+  to 4.1.11; `serwist`, `@serwist/next` and `@serwist/cli` 9.5.12 to 9.5.13,
+  which ends the exact `browserslist` pin.
+- Overrides: `sharp` raised to `^0.35.5` and `brace-expansion` to `^5.0.12`.
+  `mysql2` `^3.22.0` is added because Prisma 7.9.1 pins 3.15.3 exactly; Prisma
+  stays on 7.9.1. `katex` `^0.18.2` is added because Mermaid still asks for
+  0.16; no diagram uses KaTeX math, so rendered diagrams are unchanged.
+- Lockfile refresh inside existing ranges: `dompurify` 3.4.17,
+  `source-map-js` 1.2.2, `fast-uri` 3.1.9, `nanoid` 3.3.20, `undici` 8.12.3.
+- `npm audit` reports 10 high-severity advisories (4 with `--omit=dev`), none on
+  the open Dependabot alert list: `follow-redirects` 1.16.0, `deepmerge-ts`
+  under `prisma` 7.9.1, and the `braces`, `micromatch`, `fast-glob`,
+  `chokidar` chain under `@next/eslint-plugin-next` and `chokidar-cli`.
+
 ## 0.95.2
 
 ### Changed
