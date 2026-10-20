@@ -28,7 +28,7 @@
 - MDX via `@next/mdx` + `@mdx-js/react` + `@mdx-js/loader` (`pageExtensions: ['js', 'jsx', 'mdx']`), `remark-gfm` for GFM support — used for `/docs` content
 
 **Testing:**
-- Vitest 4.1.10 — unit tests (`vitest run`), smoke tests (`vitest.smoke.config.mjs`, plain `fetch` against a running server), visual regression (`@vitest/browser` + `@vitest/browser-playwright`, Playwright 1.62.1 browser engine)
+- Vitest 4.1.10 — unit tests (`vitest run`), smoke tests (`vitest.smoke.config.mjs`, plain `fetch` against a running server), visual regression (`@vitest/browser` + `@vitest/browser-playwright`, Playwright 1.64.1 browser engine)
 - `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event` — component testing
 - `@vitest/coverage-v8` — coverage reports
 
