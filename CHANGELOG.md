@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.95.5
+
+### Changed
+
+- GitHub Actions: `actions/upload-artifact` 7.0.2, `github/codeql-action`
+  4.39.0, `docker/setup-buildx-action` 4.4.1 and `actions/setup-node` 7.1.0
+  (Dependabot #543).
+
 ## 0.95.4
 
 ### Security
