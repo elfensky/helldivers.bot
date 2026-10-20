@@ -86,3 +86,18 @@ Error classes on 0.95.2 that are not among the three.
 | R5 | `ChunkLoadError: Failed to load chunk /_next/static/chunks/20xjeazwuu5j4.js?dpl=0-95-2` | HELLDIVERSBOT-6K (376) | 1 | 2026-10-20T07:02:45Z | same | no (outside window); stale client, `guardedReload` exists | listed only, no issue |
 
 Not on 0.95.2 (no event tagged 0.95.2): 361/358 `Failed to parse body as FormData` (last 2026-10-07), 362/360 ChunkLoadError on dpl=0-90-14, 359 webkit-masked-url, 221 Server Action mismatch (last 2026-10-08).
+
+## Disposition
+
+All three existing issues stay open: every verdict is RESIDUAL. No issue was closed.
+
+| Issue | Action taken | Resulting state | URL |
+|---|---|---|---|
+| #496 | Status comment with the seven hydration groupings, variants and counts | OPEN | https://github.com/elfensky/helldivers.bot/issues/496#issuecomment-6303346289 |
+| #503 | Status comment; GlitchTip as measured, Umami not read (INCONCLUSIVE). Stays open as plan 01-05 left it; the count evidences the fallback holding, not a root cause resolved | OPEN | https://github.com/elfensky/helldivers.bot/issues/503#issuecomment-6303346574 |
+| #485 | Status comment: original class cannot persist past 5 s; new signature HELLDIVERSBOT-6C at 148 events (about 23 per day) | OPEN | https://github.com/elfensky/helldivers.bot/issues/485#issuecomment-6303346927 |
+| #565 (R1) | New issue: `localStorage` null in `readOptOut`, 22 handled TypeErrors. Labels `bug`, `frontend`; milestone Engineering Health | OPEN | https://github.com/elfensky/helldivers.bot/issues/565 |
+| #566 (R2) | New issue: React #412 on RSC stream close, 72 lifetime events. Labels `bug`, `frontend`; milestone Engineering Health | OPEN | https://github.com/elfensky/helldivers.bot/issues/566 |
+| #567 (R3) | New issue: `removeChild`/`insertBefore` NotFoundError in the react-dom commit phase, 109 lifetime events. Labels `bug`, `frontend`; milestone Engineering Health | OPEN | https://github.com/elfensky/helldivers.bot/issues/567 |
+
+R4 (HELLDIVERSBOT-62, server-side "destination stream closed early") and R5 (HELLDIVERSBOT-6K, one ChunkLoadError) were listed and not filed. Developer decision. R4 is a benign client disconnect. R5 fell outside the window and `guardedReload` covers it.
