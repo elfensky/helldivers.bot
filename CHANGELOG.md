@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.95.3
+
 ### Security
 
 - **All 54 open Dependabot alerts are resolved**, including the critical
