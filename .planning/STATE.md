@@ -4,10 +4,10 @@ current_phase: 01
 current_phase_name: Stability Fixes & Release
 status: executing
 stopped_at: "Completed 01-08-PLAN.md (v0.95.2 deployed; STAB-06 window ends 2026-10-16T11:22:13Z)"
-last_updated: "2026-10-20T19:45:33.983Z"
+last_updated: "2026-10-20T21:51:16.812Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 01 execution started
-state_head: 57a55b446d1fb9065532f77835134015d6ccbd09
+state_head: c0bb75ba8f2cec15544d0add3ac8111f9e56fd7c
 progress:
   total_phases: 18
   completed_phases: 0
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-08-29)
 Phase: 01 (Stability Fixes & Release) — EXECUTING
 Plan: 9 of 9 (01-08 release published, production deploy pending)
 Status: Blocked on production deploy of v0.95.2
-Last activity: 2026-10-20 - Completed quick task 261020-tlt: Resolve all open Dependabot security alerts with a targeted dependency bump
+Last activity: 2026-10-20 - Completed quick task 261020-wsk: Land Dependabot PR #554 (prisma effect cap, Playwright 1.64.1, better-auth 1.7 unlink fix)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -112,6 +112,7 @@ None yet.
 | 261013-luq | Fix review findings WR-01..06 from 261013-hu0-REVIEW.md | 2026-10-13 | 91f9d470 | [261013-luq-fix-review-findings-wr-01-06-from-261013](./quick/261013-luq-fix-review-findings-wr-01-06-from-261013/) |
 | 261020-tlt | Resolve all open Dependabot security alerts with a targeted dependency bump | 2026-10-20 | 4ad6fb84 | [261020-tlt-resolve-all-open-dependabot-security-ale](./quick/261020-tlt-resolve-all-open-dependabot-security-ale/) |
 | 5 | Bump follow-redirects to 1.16.1 to close Dependabot alerts 212 and 213 | 2026-10-20 | 57a55b44 | — |
+| 261020-wsk | Land Dependabot PR #554: cap prisma effect override at 3.x, Playwright image 1.64.1, better-auth 1.7 unlink fix, Dependabot ignores for @types/node and typescript majors | 2026-10-20 | c0bb75ba | [261020-wsk-land-dependabot-pr-554-cap-prisma-effect](./quick/261020-wsk-land-dependabot-pr-554-cap-prisma-effect/) |
 
 ## Deferred Items
 
