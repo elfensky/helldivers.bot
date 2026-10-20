@@ -4,10 +4,10 @@ current_phase: 01
 current_phase_name: Stability Fixes & Release
 status: executing
 stopped_at: "Completed 01-08-PLAN.md (v0.95.2 deployed; STAB-06 window ends 2026-10-16T11:22:13Z)"
-last_updated: "2026-10-21T08:51:19.953Z"
-last_activity: 2026-10-20
+last_updated: "2026-10-20T22:32:13.403Z"
+last_activity: 2026-10-21
 last_activity_desc: Phase 01 execution started
-state_head: a11def5fa4a9c5dc40d501ff10bea2518ae2d026
+state_head: 394c9f74bacad06af42c98df76419729d40a0aec
 progress:
   total_phases: 18
   completed_phases: 0
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-08-29)
 ## Current Position
 
 Phase: 01 (Stability Fixes & Release) — EXECUTING
-Plan: 9 of 9 (01-08 release published, production deploy pending)
-Status: Blocked on production deploy of v0.95.2
-Last activity: 2026-10-21 - Completed quick task 261021-epu: Fold Dependabot PRs #556-#564 (vitest 5, Sentry 11, mermaid 12)
+Plan: 1 of 9
+Status: Executing Phase 01
+Last activity: 2026-10-21 — Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
