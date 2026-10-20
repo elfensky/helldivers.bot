@@ -21,14 +21,14 @@ export default async function ProfilePage() {
     const { data: accounts, error } = await tryCatch(
         db.account.findMany({
             where: { userId: user.id },
-            select: { providerId: true, accountId: true },
+            select: { id: true, providerId: true },
         }),
     );
     if (error) throw error;
 
     const providers = accounts.map((a) => ({
+        id: a.id,
         providerId: a.providerId,
-        accountId: a.accountId,
     }));
     const avatarUrl = user.image ?? (await getGravatarUrl(user.email));
 
