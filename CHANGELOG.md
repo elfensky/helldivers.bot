@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.95.6
+
 ### Changed
 
 - Dependabot group (#554), 22 minor and patch updates: `next`, `@next/mdx` and
