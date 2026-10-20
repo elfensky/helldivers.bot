@@ -4,10 +4,10 @@ current_phase: 01
 current_phase_name: Stability Fixes & Release
 status: executing
 stopped_at: "Completed 01-08-PLAN.md (v0.95.2 deployed; STAB-06 window ends 2026-10-16T11:22:13Z)"
-last_updated: "2026-10-20T19:36:32.024Z"
-last_activity: 2026-10-14
+last_updated: "2026-10-20T19:45:33.983Z"
+last_activity: 2026-10-20
 last_activity_desc: Phase 01 execution started
-state_head: 4ad6fb8496fa67aacbe7132b8b23490403b306f3
+state_head: 57a55b446d1fb9065532f77835134015d6ccbd09
 progress:
   total_phases: 18
   completed_phases: 0
@@ -111,6 +111,7 @@ None yet.
 | 261013-hu0 | Finish PR 532 (Umami replay) and prepare the repo for GSD | 2026-10-13 | 6a41c266 | [261013-hu0-finish-pr-532-umami-replay-and-prepare-t](./quick/261013-hu0-finish-pr-532-umami-replay-and-prepare-t/) |
 | 261013-luq | Fix review findings WR-01..06 from 261013-hu0-REVIEW.md | 2026-10-13 | 91f9d470 | [261013-luq-fix-review-findings-wr-01-06-from-261013](./quick/261013-luq-fix-review-findings-wr-01-06-from-261013/) |
 | 261020-tlt | Resolve all open Dependabot security alerts with a targeted dependency bump | 2026-10-20 | 4ad6fb84 | [261020-tlt-resolve-all-open-dependabot-security-ale](./quick/261020-tlt-resolve-all-open-dependabot-security-ale/) |
+| 5 | Bump follow-redirects to 1.16.1 to close Dependabot alerts 212 and 213 | 2026-10-20 | 57a55b44 | — |
 
 ## Deferred Items
 
