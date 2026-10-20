@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.95.4
+
 ### Security
 
 - `follow-redirects` 1.16.0 to 1.16.1 (lockfile refresh inside the `^1.16.0`
