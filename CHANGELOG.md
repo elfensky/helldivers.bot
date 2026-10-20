@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Security
+
+- `follow-redirects` 1.16.0 to 1.16.1 (lockfile refresh inside the `^1.16.0`
+  range `axios` asks for). This resolves the two Dependabot alerts the 0.95.3
+  rescan opened: credential headers are stripped again on cross-origin
+  redirects.
+
 ## 0.95.3
 
 ### Security
