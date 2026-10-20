@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Stability Fixes & Release
 status: executing
-stopped_at: "Completed 01-08-PLAN.md (v0.95.2 deployed; STAB-06 window ends 2026-10-16T11:22:13Z)"
-last_updated: "2026-10-20T22:32:13.403Z"
+stopped_at: Completed 01-09-PLAN.md
+last_updated: "2026-10-20T22:38:50.086Z"
 last_activity: 2026-10-21
 last_activity_desc: Phase 01 execution started
-state_head: 394c9f74bacad06af42c98df76419729d40a0aec
+state_head: 16c8f723673986e2fa34dcdb155b619cfb0f0bce
 progress:
   total_phases: 18
   completed_phases: 0
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -28,8 +28,8 @@ See: .planning/PROJECT.md (updated 2026-08-29)
 ## Current Position
 
 Phase: 01 (Stability Fixes & Release) — EXECUTING
-Plan: 1 of 9
-Status: Executing Phase 01
+Plan: 9 of 9 (all plans executed; phase verification pending)
+Status: Phase 01 plans complete — ready for verification
 Last activity: 2026-10-21 — Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
@@ -65,6 +65,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P07 | 35min | 3 tasks | 3 files |
 | Phase 01 P04 | 12min | 3 tasks | 2 files |
 | Phase 01 P05 | 10min | 2 tasks | 1 files |
+| Phase 01 P09 | 45min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,7 @@ Recent decisions affecting current work:
 - [Phase 01]: [Phase 01]: getCampaign() audited (D-11) — no masking found; the OG route's own null-slot handling in factionStats/allDefeated was the real bug, fixed with the same f?.field pattern as getWarOutcome.mjs (STAB-05)
 - [Phase 01]: [Phase 01]: OG route telemetry uses after() (not fire-and-forget) since opengraph-image is documented as a special Route Handler; no separate cache-hit event needed since the route only executes on a real invocation
 - [Phase 01]: [Phase 01]: OG sharp rejection (#503) reproduction attempt: NOT REPRODUCED against a locally built linux/arm64 standalone image across three distinct real map states; two of three hypotheses ruled out by inspection, findings posted to #503 which stays open
+- [Phase 01]: 01-09: all three STAB-06 classes RESIDUAL on release 0.95.2; #496/#503/#485 stay open; residual issues #565/#566/#567 filed
 
 ### Pending Todos
 
@@ -125,6 +127,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-14T11:24:01.525Z
-Stopped at: Completed 01-08-PLAN.md (v0.95.2 deployed; STAB-06 window ends 2026-10-16T11:22:13Z)
+Last session: 2026-10-20T22:38:50.052Z
+Stopped at: Completed 01-09-PLAN.md
 Resume file: None
