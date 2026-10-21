@@ -33,7 +33,7 @@ covered_files:
   - "src/app/opengraph-image.jsx"
   - "src/features/notifications/NotificationToggle.jsx"
   - "src/shared/utils/game/getWarOutcome.mjs"
-covered_digest: "v3:sha256:adc156aa47fca7cee269bb712597167d0a101938e79fb72923da02444b82382a"
+covered_digest: "v3:sha256:71faadb448d5b3264e97da50790c79224c78f643c3ba58c7dae98a0ad158f6eb"
 behavior_unverified: 0
 overrides_applied: 1
 overrides:
