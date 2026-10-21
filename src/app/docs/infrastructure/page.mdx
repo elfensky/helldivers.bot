@@ -302,13 +302,17 @@ The project uses the Sentry SDK (`@sentry/nextjs`) but targets a **self-hosted G
         process.env.NEXT_PUBLIC_DEPLOY_ENV ||
         process.env.DEPLOY_ENV ||
         process.env.NODE_ENV,
-    sendDefaultPii: true,               // safe on a self-hosted instance
+    dataCollection: {                   // server value; keeps the v10 scope
+        httpBodies: ['incomingRequest'],
+        databaseQueryData: false,
+        stackFrameVariables: false,
+    },
     tracesSampleRate: 1.0,              // 100% of requests traced
     debug: false,
 }
 ```
 
-Client-only additions: `autoSessionTracking: false` (GlitchTip doesn't support sessions), `tunnel: '/api/glitchtip'` (ad blocker bypass).
+Client-only additions: `autoSessionTracking: false` (GlitchTip doesn't support sessions), `tunnel: '/api/glitchtip'` (ad blocker bypass), `dataCollection: { httpBodies: [] }` (the browser sends no HTTP bodies).
 
 Server init lives in `sentry.server.config.js` and is loaded from `src/instrumentation.js` only when `SENTRY_DSN` is set — no production gate, so localhost reports too. Client init lives in `src/instrumentation-client.js` and runs on every page load whenever `NEXT_PUBLIC_SENTRY_DSN` is set.
 
@@ -368,7 +372,7 @@ Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.lav.ren`), `UM
 
 ### next.config.mjs Sentry settings
 
-The `withSentryConfig` wrapper controls build-time behavior:
+The `withSentryConfig` wrapper (imported from `@sentry/nextjs/config`) controls build-time behavior:
 
 ```js
 export default withSentryConfig(withMDX(nextConfig), {

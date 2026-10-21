@@ -8,7 +8,7 @@ import './MermaidDiagram.css';
 
 /**
  * Extract the original node ID from Mermaid's rendered SVG element.
- * Mermaid v11 assigns IDs like "mermaid-data-flow-1-flowchart-api_status-0".
+ * Mermaid v12 assigns IDs like "mermaid-data-flow-1-flowchart-api_status-0".
  * We extract the node ID between "flowchart-" and the trailing "-N" suffix.
  */
 function extractNodeId(nodeElement) {
@@ -46,7 +46,7 @@ function parseEdgeEndpoints(dataId, knownNodeIds) {
 
 /**
  * Apply dim/highlight classes to SVG nodes and edges based on active flow filter.
- * Mermaid v11 DOM structure:
+ * Mermaid v12 DOM structure:
  *   - Nodes: g.node (each with a unique ID containing the node key)
  *   - Edges: path.flowchart-link with data-id="L_{source}_{target}_{index}"
  *   - Edge labels: g.edgeLabel elements
@@ -82,7 +82,7 @@ function applyFlowFilter(container, activeView, flows) {
         }
     });
 
-    // Mermaid v11 renders multiple .edgeLabel elements per edge (background + text).
+    // Mermaid v12 renders multiple .edgeLabel elements per edge (background + text).
     // Compute stride to map each edge path to its corresponding label group.
     const labelsPerEdge =
         allEdgePaths.length > 0 ?
