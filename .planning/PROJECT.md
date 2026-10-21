@@ -27,12 +27,14 @@ The live dashboard and API are **stable and correct** — the poller never loses
 - ✓ Test suite: ~190 Vitest unit tests in a mirrored tree, smoke tests, visual regression baselines — existing
 - ✓ Public `/docs` site (architecture, database, data-flow, infrastructure, api, testing, notifications, authentication, hd1-api, predict, brandkit…) — existing
 
+- ✓ Stability release: the five Engineering Health bug classes (#496 hydration, #503 OG 500s, #485 toggle, #476 Space Mono, #459 null slot) fixed or guarded and released as v0.95.2; the 48 h GlitchTip re-count on the new deployment id found #496/#503/#485 RESIDUAL, tracked in the open issues plus #565/#566/#567 — Phase 1
+- ✓ Release cadence restored: `develop` released to `main` as v0.95.2 (2026-10-14), merged back; the develop/main gap is 2 versions — Phase 1
+
 ### Active
 
 <!-- Everything open on GitHub gets explored, tested, and either implemented+released or closed with a written reason. -->
 
-- [ ] **Stability first:** drain Engineering Health bugs — #496 hydration mismatch (largest prod error class), #503 OG image 500s, #485 notification toggle stuck loading, #476 Space Mono, #459 null-slot crash — verified against GlitchTip after release, not just locally
-- [ ] Release cadence honored: `develop` (0.93.1) is already >5 versions ahead of `main` (v0.90.14) — release early in the plan and keep the gap ≤5 versions thereafter
+- [ ] **Stability round 2:** the residual classes measured on 0.95.2 — #496 text divergence on `/` and the `UserSection` race #526, #503 sharp rejection on every production render (fallback always served), #485 `serviceWorker.ready` stall (~23/day), plus #565/#566/#567 — root-caused and re-counted after a later release
 - [ ] Dependency posture: 7 open Dependabot alerts (1 high `nanoid`, `mermaid` ×5, `dompurify`) cleared; 5 open Dependabot PRs resolved (two currently failing CI: #515 minor/patch group, #511 TypeScript 6→7)
 - [ ] **Steady state = Dependabot auto-merge:** minor/patch groups auto-merge when CI is green; majors stay manual. Requires repo `allow_auto_merge`, a branch ruleset on `develop` requiring the CI checks, and a workflow that enables auto-merge on Dependabot PRs — must respect the `--no-ff` + version-bump/CHANGELOG-on-merge rule (or explicitly exempt deps PRs and record why)
 - [ ] **SEO — rank highly for Helldivers 1 queries:** llms.txt, registry-driven sitemap/robots via the Metadata API, `createPageMetadata` helper, typed JSON-LD (WebSite/WebApplication/VideoGame/BreadcrumbList/FAQPage/Dataset/Event) validated in Rich Results, keyword-to-page map with server-rendered copy, indexable per-season archive URLs, Google Search Console wired in (verification, sitemap, API/MCP access, recurring review → issues), Lighthouse SEO ≥ 95 — patterns copied from `../euraikaweb`
@@ -79,16 +81,18 @@ The live dashboard and API are **stable and correct** — the poller never loses
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Stability before features or portfolio polish | Largest prod error class (#496) and a 500ing OG route undermine both goals; fixing them first also unblocks trustworthy verification of everything after | — Pending |
+| Stability before features or portfolio polish | Largest prod error class (#496) and a 500ing OG route undermine both goals; fixing them first also unblocks trustworthy verification of everything after | Phase 1 shipped v0.95.2 (2026-10-14); re-count 2026-10-21: 3 of 5 classes RESIDUAL, carried as open issues |
 | Every open issue reaches a terminal state (shipped or closed-with-reason), Icebox included | "Done" means an empty limbo, not an empty backlog — parked issues need a written gate, shelved ones a written verdict | — Pending |
 | Data-gated predictions (#481/#484/#487/#477) stay open and parked | The gate is season count, not effort; closing would hide real future work | — Pending |
 | Dependabot auto-merge for minor/patch, manual for majors | Matches the desired "just update deps every so often" steady state; majors (e.g. TypeScript 7) need a human | — Pending |
-| Release `develop` early — gap is already >5 versions | Roadmap's own cadence rule; smaller releases make GlitchTip re-counts attributable | — Pending |
+| Release `develop` early — gap is already >5 versions | Roadmap's own cadence rule; smaller releases make GlitchTip re-counts attributable | v0.95.2 released 2026-10-14; gap now 2 versions |
 | Keep `/docs` + CLAUDE.md as the portfolio showcase (no new "how it's built" page) | Accurate docs already exist and are public; drift is the problem, not absence | — Pending |
 | Hash codec (#341) designed for squad mode from day one | Shared URLs cannot be migrated; a second format later would break every link in the wild | — Pending |
 | SSE (#298) is spike-gated and last | Highest blast radius on the board against polling that works; "don't do it" is a valid spike outcome | — Pending |
 | SEO is a first-class track, sequenced right after stability + housekeeping | Ranking compounds with time; every later feature page inherits the registry-driven sitemap/metadata/llms.txt so SEO can't drift again | — Pending |
 | Roadmap execution order lives in `.planning/` from now on | Two "when" documents drift (docs/roadmap.md already has); one wins | — Pending |
+| STAB-01 and STAB-06 re-scoped to the measured outcome (2026-10-21) | The release fixed the symptoms but the hydration and OG classes persist on 0.95.2; waiting on zero events would block 17 phases behind two root causes with no known fix | Phase 1 closed with one verification override; residual work tracked in #496/#526/#503/#485/#565-567 |
+| GlitchTip re-counts filter on `release:<version>`, not `dpl` | GlitchTip does not index the `dpl` tag; `release` comes from the same APP_VERSION and frame URLs carry `?dpl=` for confirmation. Counts are lifetime per grouping, so new groupings are the per-release signal | Recorded in 01-GLITCHTIP-RECOUNT.md |
 
 ## Evolution
 
@@ -108,4 +112,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-29 after adding the SEO & Analytics track*
+*Last updated: 2026-10-21 after Phase 1 (Stability Fixes & Release)*
