@@ -101,3 +101,9 @@ All three existing issues stay open: every verdict is RESIDUAL. No issue was clo
 | #567 (R3) | New issue: `removeChild`/`insertBefore` NotFoundError in the react-dom commit phase, 109 lifetime events. Labels `bug`, `frontend`; milestone Engineering Health | OPEN | https://github.com/elfensky/helldivers.bot/issues/567 |
 
 R4 (HELLDIVERSBOT-62, server-side "destination stream closed early") and R5 (HELLDIVERSBOT-6K, one ChunkLoadError) were listed and not filed. Developer decision. R4 is a benign client disconnect. R5 fell outside the window and `guardedReload` covers it.
+
+## Addendum — environment check (verification, 2026-10-21)
+
+The security audit noted that `release:0.95.2` carries no `environment` constraint and that staging ran the same 0.95.2 build with the same DSN during the window. A re-query with `release:0.95.2` and `environment=production` (GlitchTip MCP `list_issues`) returns the same issue set as the unconstrained query (plus HELLDIVERSBOT-5J, a React #412 sibling that received a new event on 2026-10-21). Every event sample inspected during the recount carried `environment=production`. The MCP still reports lifetime counts, so a per-environment split of the counts is not available; the caveat can only inflate the RESIDUAL counts, never produce a false ZERO.
+
+Production check during verification: two requests to `/opengraph-image` on 2026-10-21 both returned the static fallback byte-for-byte (MD5 `be7a419facbdd1a6a7ce3a859aa9851f` = `public/og-fallback.png`), i.e. the sharp rejection fails every uncached render on 0.95.2. Posted on #503.
