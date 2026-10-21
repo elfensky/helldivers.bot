@@ -9,6 +9,9 @@ import path from 'path';
 export default defineConfig({
     test: {
         globals: true,
+        // Vitest 5 moved the default to .vitest/attachments; the CI upload step,
+        // .gitignore and /docs/testing name this folder.
+        attachmentsDir: '.vitest-attachments',
         include: ['src/__tests__/visual/**/*.visual.{test,spec}.{js,jsx,mjs}'],
         setupFiles: ['./src/__tests__/visual/setup.mjs'],
         browser: {
