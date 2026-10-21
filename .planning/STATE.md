@@ -20,10 +20,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-29)
+See: .planning/PROJECT.md (updated 2026-10-21)
 
 **Core value:** The live dashboard and API are stable and correct — the poller never loses data across season transitions or replica handovers, and production error volume stays at zero known classes.
-**Current focus:** Phase 01 — Stability Fixes & Release
+**Current focus:** Phase 2 — Docs Accuracy & Operational Housekeeping
 
 ## Current Position
 
@@ -100,10 +100,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- HOUSE-03 (sourcemap stripping) needs GlitchTip symbolication proven on a real release — depends on Phase 1's release landing first
+- HOUSE-03 (sourcemap stripping): v0.95.2 uploaded sourcemaps and GlitchTip symbolicates 0.95.2 events (turbopack frames resolve to source paths in the recount), so #502 can proceed in Phase 2
+- [Phase 1] Production `/opengraph-image` serves the static fallback on every request (sharp rejection on x64 production, not reproduced on arm64) — #503
+- [Phase 1] Hydration #418 still fires on `/` for real browsers on 0.95.2 — #496, #526
+- [Phase 1] Code review WR-01..11 recorded open in 01-REVIEW-DISPOSITION.md; WR-08 (shared-cache HTML with session-dependent admin widget) and WR-07 (unconditional Umami proxy rewrite) deserve Phase 2 triage first
 - SITE-03 and ARCH-08 touch the same narrative/vernacular copy — Phase 14 depends on Phase 12 so the second track consumes the first's vocabulary source instead of forking it
 - ICE-06/ICE-07 and STAGE-01..04 are gated on external factors (official API behavior, TLS pinning, homelab hardware) — not schedulable by effort alone
-- NEXT_PUBLIC_VAPID_PUBLIC_KEY is confirmed ABSENT from the release image (Dockerfile.app has no ARG for it, neither build-release.yml nor build-staging.yml pass it as a build-arg) — plan 01-08's release gate must add it before 01-06's VAPID error-surfacing fix ships, or every push-capable production visitor lands in the new error state. See 01-VAPID-IMAGE-CHECK.md.
 
 ### Quick Tasks Completed
 
