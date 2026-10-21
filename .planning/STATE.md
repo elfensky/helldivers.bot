@@ -4,10 +4,10 @@ current_phase: 01
 current_phase_name: Stability Fixes & Release
 status: executing
 stopped_at: "Completed 01-08-PLAN.md (v0.95.2 deployed; STAB-06 window ends 2026-10-16T11:22:13Z)"
-last_updated: "2026-10-20T21:51:16.812Z"
+last_updated: "2026-10-21T08:51:19.953Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 01 execution started
-state_head: c0bb75ba8f2cec15544d0add3ac8111f9e56fd7c
+state_head: a11def5fa4a9c5dc40d501ff10bea2518ae2d026
 progress:
   total_phases: 18
   completed_phases: 0
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-08-29)
 Phase: 01 (Stability Fixes & Release) — EXECUTING
 Plan: 9 of 9 (01-08 release published, production deploy pending)
 Status: Blocked on production deploy of v0.95.2
-Last activity: 2026-10-20 - Completed quick task 261020-wsk: Land Dependabot PR #554 (prisma effect cap, Playwright 1.64.1, better-auth 1.7 unlink fix)
+Last activity: 2026-10-21 - Completed quick task 261021-epu: Fold Dependabot PRs #556-#564 (vitest 5, Sentry 11, mermaid 12)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -113,6 +113,7 @@ None yet.
 | 261020-tlt | Resolve all open Dependabot security alerts with a targeted dependency bump | 2026-10-20 | 4ad6fb84 | [261020-tlt-resolve-all-open-dependabot-security-ale](./quick/261020-tlt-resolve-all-open-dependabot-security-ale/) |
 | 5 | Bump follow-redirects to 1.16.1 to close Dependabot alerts 212 and 213 | 2026-10-20 | 57a55b44 | — |
 | 261020-wsk | Land Dependabot PR #554: cap prisma effect override at 3.x, Playwright image 1.64.1, better-auth 1.7 unlink fix, Dependabot ignores for @types/node and typescript majors | 2026-10-20 | c0bb75ba | [261020-wsk-land-dependabot-pr-554-cap-prisma-effect](./quick/261020-wsk-land-dependabot-pr-554-cap-prisma-effect/) |
+| 261021-epu | Fold Dependabot PRs #556-#564: vitest 5 (grouped), Sentry 11 with v10 data-collection scope, mermaid 12, dotenv 18, eslint-plugin-jsdoc 65, @types/node 24.19 | 2026-10-21 | a11def5f | [261021-epu-fold-dependabot-prs-556-564-vitest-5-sen](./quick/261021-epu-fold-dependabot-prs-556-564-vitest-5-sen/) |
 
 ## Deferred Items
 
