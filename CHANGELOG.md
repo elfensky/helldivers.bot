@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.95.7
+
 ### Changed
 
 - Dependabot PRs #556 to #564 land together: `vitest`, `@vitest/browser`,
@@ -22,6 +24,9 @@
   from `@sentry/nextjs/config`.
 - Visual regression diff PNGs stay in `.vitest-attachments/`, where CI
   uploads them on failure.
+- The dashboard and stat-grid visual baselines are captured at the real
+  viewport size (1280 px desktop, 390 px mobile). Vitest 5 no longer scales
+  the test frame down, so the old baselines no longer matched.
 
 ## 0.95.6
 
