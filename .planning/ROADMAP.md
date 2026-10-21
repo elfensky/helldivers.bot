@@ -47,7 +47,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The notification toggle resolves to an explicit error state with a visible retry when `serviceWorker.ready` hangs or `getSubscription()` rejects, instead of spinning forever (STAB-03)
   4. `--font-mono` is resolved one way or the other (loaded via `next/font`, or dropped from the token) with before/after measurements of affected elements recorded on the issue (STAB-04)
   5. `getWarOutcome` tolerates a null faction slot instead of throwing, pinned by a regression test (STAB-05)
-  6. GlitchTip shows zero new events for the #496/#503/#485 classes on the new deployment id over a 48-hour window after `develop` is tagged and released to `main`, with `main` merged back into `develop` (STAB-06, STAB-07)
+  6. the #496/#503/#485 classes are re-counted in GlitchTip on the new deployment id over a 48-hour window and dispositioned on the measured numbers (re-scoped 2026-10-21: all three RESIDUAL, tracked in the open issues) after `develop` is tagged and released to `main`, with `main` merged back into `develop` (STAB-06, STAB-07)
 
 **Plans**: 9/9 plans executed
 
