@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Changed
+
+- Dependabot PRs #556 to #564 land together: `vitest`, `@vitest/browser`,
+  `@vitest/browser-playwright` and `@vitest/coverage-v8` 4.1.11 to 5.0.5;
+  `@sentry/nextjs` 10.68.0 to 11.8.0; `mermaid` 11.16.1 to 12.2.0; `dotenv`
+  17.4.2 to 18.0.8; `eslint-plugin-jsdoc` 63.3.2 to 65.3.11; `@types/node`
+  24.13.3 to 24.19.2.
+- Sentry keeps the data scope it had before Sentry 11. User info, cookies,
+  headers and query parameters are sent. The server sends request bodies of
+  incoming requests only, and no local variable values or database query
+  data. The browser sends no HTTP bodies.
+- Dependabot opens one PR for `vitest` and `@vitest/*`, because the four
+  packages pin each other exactly and a lone bump fails `npm ci`.
+
+### Fixed
+
+- `npm run build` works with `@sentry/nextjs` 11. `withSentryConfig` comes
+  from `@sentry/nextjs/config`.
+- Visual regression diff PNGs stay in `.vitest-attachments/`, where CI
+  uploads them on failure.
+
 ## 0.95.6
 
 ### Changed
