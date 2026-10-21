@@ -48,7 +48,7 @@
 ## Monitoring & Observability
 
 **Error Tracking:**
-- Sentry SDK (`@sentry/nextjs` 10.68.0) targeting a self-hosted GlitchTip instance
+- Sentry SDK (`@sentry/nextjs` 11.8.0) targeting a self-hosted GlitchTip instance
 - Config: `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_URL`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` (build-time sourcemap upload — `withSentryConfig` wraps `next.config.mjs` only when `SENTRY_AUTH_TOKEN` is set)
 - Instrumentation entry points: `src/instrumentation.js`, `src/instrumentation.node.js`, `src/instrumentation-client.js`
 - Sample rates: `tracesSampleRate` 0.1 in production, 1.0 in dev; no session replays, no Sentry logs
