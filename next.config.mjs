@@ -1,4 +1,4 @@
-import { withSentryConfig } from '@sentry/nextjs';
+import { withSentryConfig } from '@sentry/nextjs/config';
 import createMDX from '@next/mdx';
 
 const APP_VERSION = process.env.npm_package_version || '0.0.0';

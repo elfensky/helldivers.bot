@@ -16,7 +16,8 @@ Sentry.init({
     // Same version tag as the server config — see sentry.server.config.js.
     // No serverName here: it is a server-only concept.
     release: process.env.NEXT_PUBLIC_APP_VERSION,
-    sendDefaultPii: true,
+    // Keep the v10 scope: the browser SDK sent no HTTP bodies.
+    dataCollection: { httpBodies: [] },
     // 10% transaction sampling in production trims per-navigation/per-request
     // SDK overhead while staying statistically useful; full sampling in
     // dev/preview so local traces are never missed.

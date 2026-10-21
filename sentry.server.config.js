@@ -21,7 +21,13 @@ Sentry.init({
     // with `{{.Node.Hostname}}` so the tag names the machine instead. Unset
     // (local dev) falls back to the SDK default, which is the real hostname.
     serverName: process.env.SENTRY_SERVER_NAME || undefined,
-    sendDefaultPii: true,
+    // Sentry 11's defaults collect more than v10 did (local variables, DB query
+    // data, every HTTP body); keep the v10 scope.
+    dataCollection: {
+        httpBodies: ['incomingRequest'],
+        databaseQueryData: false,
+        stackFrameVariables: false,
+    },
     tracesSampleRate: 1.0,
     debug: false,
 });
