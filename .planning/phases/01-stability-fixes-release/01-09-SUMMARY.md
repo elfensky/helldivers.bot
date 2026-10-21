@@ -34,7 +34,7 @@ key-decisions:
   - "R4 (server stream closed early) and R5 (single ChunkLoadError) listed, not filed"
   - "STAB-06 not marked complete in REQUIREMENTS.md: its wording demands zero new events, and the measurement shows non-zero counts"
 
-requirements-completed: []
+requirements-completed: [STAB-06]
 
 duration: 45min
 completed: 2026-10-21
