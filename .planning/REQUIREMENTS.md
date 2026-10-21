@@ -11,7 +11,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Stability (STAB)
 
-- [x] **STAB-01**: #496 — React #418 hydration mismatch on `/` is fixed at the root (SSR/client value divergence identified per variant, not masked with mounted-flags), with a regression test per divergent value
+- [x] **STAB-01**: #496 — the hydration taxonomy on `/` is swept in a real browser across timezones, every date/locale divergence is confirmed guarded, and the sweep harness (`scripts/hydration-sweep.mjs`) is committed; residual React #418 mismatches on release 0.95.2 stay tracked in #496 and #526 (re-scoped 2026-10-21 by developer decision: the planned per-variant fix made no source change and the class measured RESIDUAL, see `01-VERIFICATION.md`)
 - [x] **STAB-02**: #503 — `/opengraph-image` never 500s: the Satori→resvg failure is root-caused, the route falls back to a static image on render failure, and edge-case map states (null slots, no active events, homeworld-only) have render coverage
 - [x] **STAB-03**: #485 — `NotificationToggle` cannot stay in `'loading'` forever: hung `serviceWorker.ready`/rejected `getSubscription()` resolve to an explicit error state with a visible retry, covered by a test
 - [x] **STAB-04**: #476 — `--font-mono` is resolved one way or the other (load Space Mono via `next/font` or drop it from the token) with before/after measurements of affected mono elements recorded on the issue

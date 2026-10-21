@@ -42,7 +42,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Requirements**: STAB-01, STAB-02, STAB-03, STAB-04, STAB-05, STAB-06, STAB-07
 **Success Criteria** (what must be TRUE):
 
-  1. Loading `/` in any timezone produces no React #418 hydration warning, with the SSR/client divergence identified per variant (not masked with a mounted-flag) and a regression test per divergent value (STAB-01)
+  1. The hydration taxonomy on `/` is swept in a real browser across timezones with every date/locale divergence confirmed guarded and the sweep harness committed; residual #418 mismatches on 0.95.2 are tracked in #496 and #526 (STAB-01, re-scoped 2026-10-21: the planned per-variant fix made no source change and the class measured RESIDUAL)
   2. `/opengraph-image` never 500s — it falls back to a static image on render failure, and null-slot, no-active-event, and homeworld-only map states have render coverage (STAB-02)
   3. The notification toggle resolves to an explicit error state with a visible retry when `serviceWorker.ready` hangs or `getSubscription()` rejects, instead of spinning forever (STAB-03)
   4. `--font-mono` is resolved one way or the other (loaded via `next/font`, or dropped from the token) with before/after measurements of affected elements recorded on the issue (STAB-04)
