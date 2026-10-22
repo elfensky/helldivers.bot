@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.95.8
+
+### Fixed
+
+- Restrict manual staging builds to the `develop` branch.
+
 ## 0.95.7
 
 ### Changed
