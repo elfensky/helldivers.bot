@@ -40,14 +40,15 @@ permissions:
 env:
     # The commit CI actually tested — NOT the branch tip, which may have moved
     # on. Falls back to github.sha for workflow_dispatch, where there is no
-    # workflow_run payload. Every checkout below uses this.
+    # workflow_run payload. Manual dispatch jobs below are restricted to develop.
+    # Every checkout below uses this.
     TESTED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
     detect-migration:
         name: Detect Migration Changes
         # CI green, or a deliberate manual run. Anything else stops here.
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop') || github.event.workflow_run.conclusion == 'success' }}
         runs-on: ubuntu-latest
         timeout-minutes: 10
         outputs:
@@ -127,7 +128,7 @@ jobs:
     build-migrate:
         name: Build Migrate Image (${{ matrix.arch }})
         needs: detect-migration
-        if: needs.detect-migration.outputs.migrate == 'true' || needs.detect-migration.outputs.image_missing == 'true' || github.event_name == 'workflow_dispatch'
+        if: needs.detect-migration.result == 'success' && (needs.detect-migration.outputs.migrate == 'true' || needs.detect-migration.outputs.image_missing == 'true' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop'))
         strategy:
             matrix:
                 include:
@@ -186,7 +187,7 @@ jobs:
 
     build-app:
         name: Build App Image
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop') || github.event.workflow_run.conclusion == 'success' }}
         runs-on: ubuntu-latest
         # arm64 builds under QEMU emulation are slow; 30 leaves headroom.
         timeout-minutes: 30
