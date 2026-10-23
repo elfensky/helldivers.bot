@@ -28,7 +28,7 @@
 - MDX via `@next/mdx` + `@mdx-js/react` + `@mdx-js/loader` (`pageExtensions: ['js', 'jsx', 'mdx']`), `remark-gfm` for GFM support — used for `/docs` content
 
 **Testing:**
-- Vitest 4.1.10 — unit tests (`vitest run`), smoke tests (`vitest.smoke.config.mjs`, plain `fetch` against a running server), visual regression (`@vitest/browser` + `@vitest/browser-playwright`, Playwright 1.62.1 browser engine)
+- Vitest 5.0.5 — unit tests (`vitest run`), smoke tests (`vitest.smoke.config.mjs`, plain `fetch` against a running server), visual regression (`@vitest/browser` + `@vitest/browser-playwright`, Playwright 1.64.1 browser engine)
 - `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event` — component testing
 - `@vitest/coverage-v8` — coverage reports
 
@@ -49,11 +49,11 @@
 - `axios` 1.18.1 — used specifically because Node's native `fetch` cannot supply a custom `https.Agent` (needed to disable TLS cert validation against the official HD1 API, see `src/update/fetch.mjs`)
 - `better-auth` 1.6.25 — authentication (optional; server config `src/auth.js`, client `src/auth-client.js`)
 - `web-push` 3.6.7 — Web Push notification delivery
-- `@sentry/nextjs` 10.68.0 — error tracking SDK (targets self-hosted GlitchTip)
-- `dotenv` 17.4.2 — env loading in `prisma.config.mjs` (`.env.development` then `.env` fallback)
+- `@sentry/nextjs` 11.8.0 — error tracking SDK (targets self-hosted GlitchTip)
+- `dotenv` 18.0.8 — env loading in `prisma.config.mjs` (`.env.development` then `.env` fallback)
 
 **Infrastructure:**
-- `mermaid` 11.16.0 — interactive diagrams (`src/shared/components/MermaidDiagram/`), dynamically imported client-side only
+- `mermaid` 12.2.0 — interactive diagrams (`src/shared/components/MermaidDiagram/`), dynamically imported client-side only
 - `recharts` 3.10.1 — charting (`ProgressExplainer` and dashboard stat visualizations)
 - `sonner` 2.0.7 — toast notifications (`LiveToasts`)
 - `react-slot-counter` 3.3.3 — animated number counters

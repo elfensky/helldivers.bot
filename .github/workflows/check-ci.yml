@@ -30,7 +30,7 @@ jobs:
         # ubuntu-latest runner with `playwright install` has different fonts and
         # would fail every baseline on noise. This tag, the `playwright`
         # devDependency, and the script must move together.
-        container: mcr.microsoft.com/playwright:v1.62.1-noble
+        container: mcr.microsoft.com/playwright:v1.64.1-noble
 
         steps:
             - name: Checkout code
@@ -50,7 +50,7 @@ jobs:
             # it locally.
             - name: Upload diffs on failure
               if: failure()
-              uses: actions/upload-artifact@v7.0.1
+              uses: actions/upload-artifact@v7.0.2
               with:
                   name: visual-diffs
                   path: .vitest-attachments/

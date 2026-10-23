@@ -268,7 +268,7 @@ Screenshot tests that catch layout and styling regressions unit tests cannot see
 
 `DashboardClient` reads everything from `LiveDataContext`, so wrapping it in a provider with a static payload renders the whole dashboard from one fixture. Current baselines: dashboard (desktop + mobile), `EventCard` (attack + defend), `StatGrid`.
 
-**Docker is required.** Baseline PNGs are platform-specific — font rendering and antialiasing differ between macOS and Linux — so both generation and comparison run inside `mcr.microsoft.com/playwright:v1.62.1-noble` via `scripts/visual-tests.sh`. A baseline generated anywhere else fails on noise instead of on regressions.
+**Docker is required.** Baseline PNGs are platform-specific — font rendering and antialiasing differ between macOS and Linux — so both generation and comparison run inside `mcr.microsoft.com/playwright:v1.64.1-noble` via `scripts/visual-tests.sh`. A baseline generated anywhere else fails on noise instead of on regressions.
 
 ```bash
 npm run test:visual          # compare against committed baselines

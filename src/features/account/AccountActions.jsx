@@ -25,10 +25,10 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
         }
     };
 
-    const handleUnlink = async (providerId, accountId) => {
+    const handleUnlink = async (providerId, id) => {
         setLoading(providerId);
         setLinkError(null);
-        const { error } = await tryCatch(unlinkAccount(providerId, accountId));
+        const { error } = await tryCatch(unlinkAccount(id));
         if (error) {
             setLinkError(`Failed to unlink ${providerId}`);
         }
@@ -121,10 +121,7 @@ export default function AccountActions({ user, avatarUrl, providers, canUnlink }
                                                 <Button
                                                     variant="danger"
                                                     onClick={() =>
-                                                        handleUnlink(
-                                                            provider,
-                                                            linked.accountId,
-                                                        )
+                                                        handleUnlink(provider, linked.id)
                                                     }
                                                     disabled={isLoading}
                                                 >

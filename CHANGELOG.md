@@ -2,6 +2,108 @@
 
 ## Unreleased
 
+## 0.95.8
+
+### Security
+
+- The runtime image moves from `gcr.io/distroless/nodejs24-debian12` to
+  `node:24-slim`. Distroless was still on Node 24.14.0 two days after the
+  Node2Shell fix (CVE-2026-111497, fixed in 24.22.1); the slim image had it
+  within hours. Same glibc runtime, same uid 65532. `/nodejs/bin/node` stays
+  as a symlink so the production compose healthcheck keeps working.
+
+## 0.95.7
+
+### Changed
+
+- Dependabot PRs #556 to #564 land together: `vitest`, `@vitest/browser`,
+  `@vitest/browser-playwright` and `@vitest/coverage-v8` 4.1.11 to 5.0.5;
+  `@sentry/nextjs` 10.68.0 to 11.8.0; `mermaid` 11.16.1 to 12.2.0; `dotenv`
+  17.4.2 to 18.0.8; `eslint-plugin-jsdoc` 63.3.2 to 65.3.11; `@types/node`
+  24.13.3 to 24.19.2.
+- Sentry keeps the data scope it had before Sentry 11. User info, cookies,
+  headers and query parameters are sent. The server sends request bodies of
+  incoming requests only, and no local variable values or database query
+  data. The browser sends no HTTP bodies.
+- Dependabot opens one PR for `vitest` and `@vitest/*`, because the four
+  packages pin each other exactly and a lone bump fails `npm ci`.
+
+### Fixed
+
+- `npm run build` works with `@sentry/nextjs` 11. `withSentryConfig` comes
+  from `@sentry/nextjs/config`.
+- Visual regression diff PNGs stay in `.vitest-attachments/`, where CI
+  uploads them on failure.
+- The dashboard and stat-grid visual baselines are captured at the real
+  viewport size (1280 px desktop, 390 px mobile). Vitest 5 no longer scales
+  the test frame down, so the old baselines no longer matched.
+
+## 0.95.6
+
+### Changed
+
+- Dependabot group (#554), 22 minor and patch updates: `next`, `@next/mdx` and
+  `@next/eslint-plugin-next` 16.3.8 to 16.4.2; `react` and `react-dom` 19.2.8
+  to 19.3.1; `prisma`, `@prisma/client` and `@prisma/adapter-pg` 7.9.1 to
+  7.10.1; `better-auth` 1.6.25 to 1.7.10; `zod` 4.4.3 to 4.6.7; `playwright`
+  1.62.1 to 1.64.1; `@eslint-react/eslint-plugin` 5.18.0 to 5.28.1. Ten
+  smaller patch updates ride along.
+- The visual regression tests (CI job and `scripts/visual-tests.sh`) run in
+  `mcr.microsoft.com/playwright:v1.64.1-noble`, to match the `playwright`
+  devDependency. No baseline is rewritten.
+- Dependabot no longer opens major updates for `@types/node`, which stays on
+  ^24 to match the Node 24 runtime, or for `typescript`, which stays on 6.x
+  until the TypeScript 7 JSDoc errors are fixed (#555).
+
+### Fixed
+
+- `npx prisma generate` works again. The `effect` override under `prisma` is
+  `^3.20.0`: the open range resolved to `effect` 4.x, which `@prisma/config`
+  cannot load.
+- Unlinking a social account on `/profile` passes the Better Auth account row
+  id, as `better-auth` 1.7 requires. The old provider and account id pair no
+  longer type-checks.
+
+## 0.95.5
+
+### Changed
+
+- GitHub Actions: `actions/upload-artifact` 7.0.2, `github/codeql-action`
+  4.39.0, `docker/setup-buildx-action` 4.4.1 and `actions/setup-node` 7.1.0
+  (Dependabot #543).
+
+## 0.95.4
+
+### Security
+
+- `follow-redirects` 1.16.0 to 1.16.1 (lockfile refresh inside the `^1.16.0`
+  range `axios` asks for). This resolves the two Dependabot alerts the 0.95.3
+  rescan opened: credential headers are stripped again on cross-origin
+  redirects.
+
+## 0.95.3
+
+### Security
+
+- **All 54 open Dependabot alerts are resolved**, including the critical
+  remote-code-execution advisories in `next`. No lockfile entry falls inside
+  the vulnerable range of any open alert.
+- Direct dependencies: `next`, `@next/mdx` and `@next/eslint-plugin-next`
+  16.3.0 to 16.3.8 (still on the 16.3 line); `axios` 1.18.1 to 1.20.0;
+  `mermaid` 11.16.0 to 11.16.1; `vitest` and the `@vitest/*` packages 4.1.10
+  to 4.1.11; `serwist`, `@serwist/next` and `@serwist/cli` 9.5.12 to 9.5.13,
+  which ends the exact `browserslist` pin.
+- Overrides: `sharp` raised to `^0.35.5` and `brace-expansion` to `^5.0.12`.
+  `mysql2` `^3.22.0` is added because Prisma 7.9.1 pins 3.15.3 exactly; Prisma
+  stays on 7.9.1. `katex` `^0.18.2` is added because Mermaid still asks for
+  0.16; no diagram uses KaTeX math, so rendered diagrams are unchanged.
+- Lockfile refresh inside existing ranges: `dompurify` 3.4.17,
+  `source-map-js` 1.2.2, `fast-uri` 3.1.9, `nanoid` 3.3.20, `undici` 8.12.3.
+- `npm audit` reports 10 high-severity advisories (4 with `--omit=dev`), none on
+  the open Dependabot alert list: `follow-redirects` 1.16.0, `deepmerge-ts`
+  under `prisma` 7.9.1, and the `braces`, `micromatch`, `fast-glob`,
+  `chokidar` chain under `@next/eslint-plugin-next` and `chokidar-cli`.
+
 ## 0.95.2
 
 ### Changed

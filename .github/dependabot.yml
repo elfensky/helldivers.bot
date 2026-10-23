@@ -16,6 +16,11 @@ updates:
 
       # Reduce PR noise by grouping updates
       groups:
+          # The vitest packages pin each other exactly, so a lone bump fails `npm ci` (#558, #561-#563)
+          vitest:
+              patterns:
+                  - 'vitest'
+                  - '@vitest/*'
           # Group all minor/patch updates into a single PR
           minor-and-patch:
               patterns:
@@ -23,6 +28,16 @@ updates:
               update-types:
                   - 'minor'
                   - 'patch'
+
+      ignore:
+          # @types/node stays on ^24 to match the Node 24 runtime (commit a78e9d68)
+          - dependency-name: '@types/node'
+            update-types:
+                - 'version-update:semver-major'
+          # TypeScript 7 fails `npm run typecheck` with 268 JSDoc errors; remove when #555 is done
+          - dependency-name: 'typescript'
+            update-types:
+                - 'version-update:semver-major'
 
       # Limit open PRs to avoid overwhelming
       open-pull-requests-limit: 10

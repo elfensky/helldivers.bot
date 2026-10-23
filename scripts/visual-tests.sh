@@ -9,7 +9,7 @@
 # Any arguments are forwarded to vitest — `--update` rewrites the baselines.
 set -e
 
-IMAGE="mcr.microsoft.com/playwright:v1.62.1-noble"
+IMAGE="mcr.microsoft.com/playwright:v1.64.1-noble"
 
 # node_modules lives in a named volume rather than the bind mount: the host's
 # macOS binaries (esbuild, rollup, lightningcss) cannot execute on Linux.

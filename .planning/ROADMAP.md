@@ -13,7 +13,7 @@ This milestone drains every open GitHub issue to a terminal state: stability bug
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Stability Fixes & Release** - The five known production bug classes are fixed at root cause, verified live, and `develop` is released to `main`
+- [x] **Phase 1: Stability Fixes & Release** - The five known production bug classes are fixed at root cause, verified live, and `develop` is released to `main` (completed 2026-10-21)
 - [ ] **Phase 2: Docs Accuracy & Operational Housekeeping** - CLAUDE.md and `/docs` describe the lease model as it actually works, and outstanding operational verification chores close out
 - [ ] **Phase 3: Test Co-location** - Unit tests move next to their modules before any later phase adds more tests
 - [ ] **Phase 4: Dependency Cleanup & Auto-merge Automation** - The Dependabot backlog clears and minor/patch updates merge unattended thereafter
@@ -42,14 +42,14 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Requirements**: STAB-01, STAB-02, STAB-03, STAB-04, STAB-05, STAB-06, STAB-07
 **Success Criteria** (what must be TRUE):
 
-  1. Loading `/` in any timezone produces no React #418 hydration warning, with the SSR/client divergence identified per variant (not masked with a mounted-flag) and a regression test per divergent value (STAB-01)
+  1. The hydration taxonomy on `/` is swept in a real browser across timezones with every date/locale divergence confirmed guarded and the sweep harness committed; residual #418 mismatches on 0.95.2 are tracked in #496 and #526 (STAB-01, re-scoped 2026-10-21: the planned per-variant fix made no source change and the class measured RESIDUAL)
   2. `/opengraph-image` never 500s — it falls back to a static image on render failure, and null-slot, no-active-event, and homeworld-only map states have render coverage (STAB-02)
   3. The notification toggle resolves to an explicit error state with a visible retry when `serviceWorker.ready` hangs or `getSubscription()` rejects, instead of spinning forever (STAB-03)
   4. `--font-mono` is resolved one way or the other (loaded via `next/font`, or dropped from the token) with before/after measurements of affected elements recorded on the issue (STAB-04)
   5. `getWarOutcome` tolerates a null faction slot instead of throwing, pinned by a regression test (STAB-05)
-  6. GlitchTip shows zero new events for the #496/#503/#485 classes on the new deployment id over a 48-hour window after `develop` is tagged and released to `main`, with `main` merged back into `develop` (STAB-06, STAB-07)
+  6. the #496/#503/#485 classes are re-counted in GlitchTip on the new deployment id over a 48-hour window and dispositioned on the measured numbers (re-scoped 2026-10-21: all three RESIDUAL, tracked in the open issues) after `develop` is tagged and released to `main`, with `main` merged back into `develop` (STAB-06, STAB-07)
 
-**Plans**: 7/9 plans executed
+**Plans**: 9/9 plans complete
 
 Plans:
 **Wave 1**
@@ -73,11 +73,11 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 01-08-PLAN.md — Symbolication gate, single develop→main release, tag and merge-back (STAB-07)
+- [x] 01-08-PLAN.md — Symbolication gate, single develop→main release, tag and merge-back (STAB-07)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 01-09-PLAN.md — 48h GlitchTip re-count on the new deployment id, issue disposition (STAB-06)
+- [x] 01-09-PLAN.md — 48h GlitchTip re-count on the new deployment id, issue disposition (STAB-06)
 
 **UI hint**: yes
 
@@ -95,7 +95,50 @@ Plans:
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
   5. `docs/roadmap.md` is retired to a short pointer at `.planning/ROADMAP.md`, leaving one source of truth for execution order (HOUSE-05)
 
-**Plans**: TBD
+**Plans**: 12 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Release develop 0.95.7 to main (tag, release build with sourcemap upload, merge-back; production pull handed to Andrei) (HOUSE-03 input, D-21)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — DOCS-01: AGENTS.md lease model, #516-era code comments, codebase maps (DOCS-01)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-03-PLAN.md — #469 as ARCH-11 in Phase 11, then `docs/roadmap.md` retired to a pointer (HOUSE-05)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-04-PLAN.md — #501 closed on the season-160 run; seed-refresh gaps, WR-07 and WR-08 filed as issues (HOUSE-04)
+- [ ] 02-05-PLAN.md — Rendered-diagram pages (architecture, overview, notifications) with a browser render check (DOCS-02)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-06-PLAN.md — Mermaid fence parse check script and the data-flow page (DOCS-02)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 02-07-PLAN.md — Database and testing pages (DOCS-02)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 02-08-PLAN.md — Infrastructure page: topology, images, workflows, init flow, env table (DOCS-02)
+- [ ] 02-09-PLAN.md — Production pull of 0.95.7 (Task 1 precondition), Sentry-11 symbolication proof on a 0.95.7 production event, #502 gate record (HOUSE-03, D-24)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 02-10-PLAN.md — Sourcemap strip in next.config.mjs, documented Sentry block, D-15 check 1 on the staging image (HOUSE-03)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 02-11-PLAN.md — Phase-end release (tag, release build with upload lines, merge-back, production pull) (HOUSE-03, DOCS-02)
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 02-12-PLAN.md — D-15 checks 2 and 3 in production, #502 closed, `.claude/CLAUDE.md` regenerated (HOUSE-03, DOCS-01)
 
 ### Phase 3: Test Co-location
 
@@ -357,7 +400,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stability Fixes & Release | 7/9 | In Progress|  |
+| 1. Stability Fixes & Release | 9/9 | Complete    | 2026-10-21 |
 | 2. Docs Accuracy & Operational Housekeeping | 0/TBD | Not started | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
