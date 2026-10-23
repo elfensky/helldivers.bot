@@ -61,6 +61,10 @@ and WR-08 (D-25, D-26).
   DOCS-03.
 - **D-08:** data-flow gets a short poller-lease subsection (~15 lines) and loses the retired
   pieces (`?key=` auth, `initializeOpenApiSpec()`, module-level state, "on-demand" season pipeline).
+  **Amended 2026-10-23 (planning research):** the on-demand season pipeline is NOT retired —
+  `updateSeason` is still called by `getCampaignOrSeed`, `/api/h1/rebroadcast` (`route.js:126`),
+  `backfillAndRetry` and `reseedSeason`; keep those sections and fix only the false sentences at
+  `data-flow:90` and `:441`.
 - **D-09:** database drops `Review` and `App` (migration `20260416091157_drop_unused_tables`),
   adds the lease columns and `api_rate_limit`, and states `TIMESTAMP(3)` (naive UTC), not
   `TIMESTAMPTZ` (19 cells today).
@@ -83,6 +87,10 @@ and WR-08 (D-25, D-26).
   mermaid went 11 → 12 (commit f58e3052) with no re-render of the docs pages, and
   `data-flow/page.mdx:55` styles a subgraph that no longer exists. `next build` does not execute
   client-side mermaid, so the build proves nothing about rendering.
+  **Amended 2026-10-23 (planning research):** only `<MermaidDiagram>` renders (5 diagrams:
+  architecture, docs overview, notifications ×3) — those get the browser render; the ```` ```mermaid ````
+  fences on architecture (`:46`), data-flow, infrastructure, database and testing render as raw text
+  (`mdx-components.jsx:26-30`) and are checked with the `mermaid.parse` script instead.
 
 ### HOUSE-03 sourcemap strip
 - **D-13:** The #502 gate is met. Evidence: GlitchTip HELLDIVERSBOT-6C, event
