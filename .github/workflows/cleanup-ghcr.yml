@@ -1,0 +1,64 @@
+name: 'Cleanup: GHCR'
+
+# Keeps the newest 3 images per channel in GHCR and deletes the rest:
+#   sha-<commit> builds → newest 3
+#   vX.Y.Z releases     → newest 3
+#   untagged leftovers  → deleted (multi-arch children go only with their parent,
+#                         the action handles that; `validate` warns if one is missing)
+# Floating tags (latest, staging, dev, develop, production, *-amd64, *-arm64) are
+# never deleted — they point at the newest build anyway.
+# Rule set 2026-10-23: one person builds and deploys, so a short history is enough.
+# Runs weekly; by hand it defaults to a dry run.
+
+on:
+    schedule:
+        - cron: '17 4 * * 1'
+    workflow_dispatch:
+        inputs:
+            dry-run:
+                description: 'Only log what would be deleted'
+                type: boolean
+                default: true
+
+permissions:
+    packages: write
+    contents: read
+
+concurrency:
+    group: cleanup-ghcr
+    cancel-in-progress: false
+
+env:
+    PACKAGES: 'helldiversbot,helldiversbot-migrate'
+    KEEP: 'latest,staging,dev,develop,production,*-amd64,*-arm64'
+    DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+
+jobs:
+    cleanup:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: sha-<commit> builds, keep the newest 3
+              uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+              with:
+                  packages: ${{ env.PACKAGES }}
+                  delete-tags: 'sha-*'
+                  keep-n-tagged: 3
+                  exclude-tags: ${{ env.KEEP }}
+                  dry-run: ${{ env.DRY_RUN }}
+            - name: vX.Y.Z releases, keep the newest 3
+              uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+              with:
+                  packages: ${{ env.PACKAGES }}
+                  delete-tags: 'v*'
+                  keep-n-tagged: 3
+                  exclude-tags: ${{ env.KEEP }}
+                  dry-run: ${{ env.DRY_RUN }}
+            - name: untagged leftovers
+              uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+              with:
+                  packages: ${{ env.PACKAGES }}
+                  delete-untagged: true
+                  exclude-tags: ${{ env.KEEP }}
+                  validate: true
+                  dry-run: ${{ env.DRY_RUN }}
