@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.95.8
+
+### Security
+
+- The runtime image moves from `gcr.io/distroless/nodejs24-debian12` to
+  `node:24-slim`. Distroless was still on Node 24.14.0 two days after the
+  Node2Shell fix (CVE-2026-111497, fixed in 24.22.1); the slim image had it
+  within hours. Same glibc runtime, same uid 65532. `/nodejs/bin/node` stays
+  as a symlink so the production compose healthcheck keeps working.
+
 ## 0.95.7
 
 ### Changed
