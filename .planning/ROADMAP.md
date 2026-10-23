@@ -95,7 +95,50 @@ Plans:
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
   5. `docs/roadmap.md` is retired to a short pointer at `.planning/ROADMAP.md`, leaving one source of truth for execution order (HOUSE-05)
 
-**Plans**: TBD
+**Plans**: 12 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Release develop 0.95.7 to main (tag, release build with sourcemap upload, merge-back; production pull handed to Andrei) (HOUSE-03 input, D-21)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — DOCS-01: AGENTS.md lease model, #516-era code comments, codebase maps (DOCS-01)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-03-PLAN.md — #469 as ARCH-11 in Phase 11, then `docs/roadmap.md` retired to a pointer (HOUSE-05)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-04-PLAN.md — #501 closed on the season-160 run; seed-refresh gaps, WR-07 and WR-08 filed as issues (HOUSE-04)
+- [ ] 02-05-PLAN.md — Rendered-diagram pages (architecture, overview, notifications) with a browser render check (DOCS-02)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-06-PLAN.md — Mermaid fence parse check script and the data-flow page (DOCS-02)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 02-07-PLAN.md — Database and testing pages (DOCS-02)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 02-08-PLAN.md — Infrastructure page: topology, images, workflows, init flow, env table (DOCS-02)
+- [ ] 02-09-PLAN.md — Production pull of 0.95.7 (Task 1 precondition), Sentry-11 symbolication proof on a 0.95.7 production event, #502 gate record (HOUSE-03, D-24)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 02-10-PLAN.md — Sourcemap strip in next.config.mjs, documented Sentry block, D-15 check 1 on the staging image (HOUSE-03)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 02-11-PLAN.md — Phase-end release (tag, release build with upload lines, merge-back, production pull) (HOUSE-03, DOCS-02)
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 02-12-PLAN.md — D-15 checks 2 and 3 in production, #502 closed, `.claude/CLAUDE.md` regenerated (HOUSE-03, DOCS-01)
 
 ### Phase 3: Test Co-location
 
