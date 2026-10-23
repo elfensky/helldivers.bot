@@ -20,8 +20,8 @@ COPY package.json package-lock.json ./
 #
 # Build on glibc (node:24 is Debian, NOT Alpine/musl) so Sharp's prebuilt
 # glibc binary (@img/sharp-linux-x64) is installed and traced into the
-# standalone output. The runtime image (distroless nodejs/Debian 12) is
-# ALSO glibc, so the binary loads. Do NOT strip @img/sharp-* — building on
+# standalone output. The runtime image (node:24-slim, Debian) is ALSO
+# glibc, so the binary loads. Do NOT strip @img/sharp-* — building on
 # musl while shipping to a glibc runtime makes Sharp fail at runtime with
 # "Could not load the 'sharp' module using the linux-x64 runtime" (the image
 # optimizer then 500s on every avatar/icon).
@@ -97,20 +97,18 @@ RUN --mount=type=cache,target=/app/.next/cache,sharing=locked \
 #endregion
 
 #region runner
-# Hardened minimal runtime — Google distroless ships no shell, package manager,
-# or extra userland, only the Node runtime, on glibc/Debian 12 (so Sharp's
-# prebuilt binaries work). Pinned to Node 24 — the Active LTS. We previously used
-# cgr.dev/chainguard/node:latest, but its free tier only offers the floating
-# `:latest` tag, which now tracks Node 26 (Current, non-LTS); distroless lets us
-# pin the LTS major. Runs as `nonroot` (uid 65532) by default with
-# ENTRYPOINT ["/nodejs/bin/node"].
-FROM gcr.io/distroless/nodejs24-debian12:nonroot AS runner
+# Minimal Debian runtime on glibc, so Sharp's prebuilt binaries load. Until
+# 2026-10-23 this was gcr.io/distroless/nodejs24-debian12:nonroot; distroless
+# was still shipping Node 24.14.0 two days after Node2Shell (CVE-2026-111497)
+# was fixed in 24.22.1, while node:24-slim carried the fix within hours. The
+# slim image has a shell and apt, so it is a larger surface than distroless;
+# the app still runs as uid 65532 and nothing here calls a shell.
+FROM node:24-slim AS runner
 WORKDIR /app
-# distroless keeps the node binary at /nodejs/bin, which is NOT on the default
-# PATH. Add it so a bare `node` resolves — the HEALTHCHECK below and both
-# docker-compose healthchecks (ci + prod) invoke `node` directly, as they did
-# on the previous chainguard runtime where node was already on PATH.
-ENV PATH="/nodejs/bin:${PATH}"
+# shortcut: the hand-maintained production compose healthcheck calls
+# /nodejs/bin/node by full path (the distroless location). Keep that path
+# resolving until that compose calls plain `node`; then delete this line.
+RUN mkdir -p /nodejs/bin && ln -s /usr/local/bin/node /nodejs/bin/node
 # Pass the version from the build step
 ARG VERSION
 LABEL org.opencontainers.image.source="https://github.com/elfensky/helldivers.bot"
@@ -137,16 +135,16 @@ ENV NEXT_PUBLIC_DEPLOY_ENV=$NEXT_PUBLIC_DEPLOY_ENV
 COPY --from=builder --chown=65532:65532 /app/.next/standalone ./
 COPY --from=builder --chown=65532:65532 /app/.next/static ./.next/static
 COPY --from=builder --chown=65532:65532 /app/public ./public
+USER 65532:65532
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
-# Image ENTRYPOINT is ["/nodejs/bin/node"], so CMD is just the script path.
-CMD ["server.js"]
+# node:24-slim's ENTRYPOINT is docker-entrypoint.sh, which execs the command.
+CMD ["node", "server.js"]
 # Node's built-in fetch (stable since Node 21) replaces wget/curl probes.
-# Exec form (JSON array) bypasses /bin/sh, which distroless doesn't ship.
-# `node` resolves via the PATH set in the runner stage above.
+# Exec form (JSON array) so no shell is involved.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 #endregion
