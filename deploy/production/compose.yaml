@@ -33,10 +33,12 @@
 # build-release.yml) on the CI-owned branch deploy/production, which is what
 # Git Sync deploys — on develop and main it says production-unpinned and is
 # not what runs. A tag push pins that tag; `gh workflow run build-release.yml
-# --ref develop -f tag=vX.Y.Z` pins an existing one (rollback = the previous tag).
+# --ref <branch> -f tag=vX.Y.Z` pins an existing one: the first pin from
+# develop, a rollback (the previous tag) from main.
 #
 # Migrations are NOT a service here — Swarm ignores `depends_on`. Before the
-# first deploy of a release that carries a migration (any prisma/ change),
+# first deploy of a release that carries a migration (any prisma/ change but
+# Markdown since the pinned tag),
 # run ghcr.io/elfensky/helldiversbot-migrate:vX.Y.Z by hand against the
 # production database. See deploy/README.md § Production.
 
@@ -157,5 +159,11 @@ services:
                 limits:
                     cpus: '0.25'
                     memory: 128M
+            update_config:
+                order: start-first
+                failure_action: rollback
+                monitor: 30s
+            rollback_config:
+                order: start-first
             restart_policy:
                 condition: any

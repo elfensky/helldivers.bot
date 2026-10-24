@@ -165,9 +165,14 @@ commit. `develop` and `main` carry `:production-unpinned` and say nothing about 
 - **A tag push** (`vX.Y.Z`, § Release process in `../AGENTS.md`) builds both images, then pins the
   tag.
 - **An existing release** is pinned without a rebuild:
-  `gh workflow run build-release.yml --ref develop -f tag=vX.Y.Z`. The job first checks that
+  `gh workflow run build-release.yml --ref <branch> -f tag=vX.Y.Z`. The job pins the tag into the
+  compose of `<branch>`, after it checks that the input is `vX.Y.Z` and that
   `helldiversbot:vX.Y.Z` and `helldiversbot-migrate:vX.Y.Z` exist on GHCR.
-- **Rollback:** dispatch the previous tag the same way. Never edit the stack in the Arcane UI.
+- **The first pin** runs with `--ref develop`: `main` has no `deploy/production/compose.yaml` until
+  a release carries it.
+- **Rollback:** dispatch the previous tag with `--ref main`, once the release that carries this
+  job is on `main`. `--ref develop` would pair the old image with develop's newer compose. Never
+  edit the stack in the Arcane UI.
 
 ### Migrations
 
