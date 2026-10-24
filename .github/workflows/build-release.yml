@@ -236,6 +236,11 @@ jobs:
         name: Pin Production
         needs: [build-app, merge-migrate]
         if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || (needs.build-app.result == 'success' && needs.merge-migrate.result == 'success')) }}
+        # One pin at a time across tag pushes and dispatches: the workflow's
+        # concurrency group is per ref, so a release pin and a rollback could race.
+        concurrency:
+            group: pin-production
+            cancel-in-progress: false
         runs-on: ubuntu-latest
         timeout-minutes: 5
         permissions:
@@ -246,6 +251,7 @@ jobs:
         steps:
             - name: Both release images exist
               run: |
+                  [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::$TAG is not vX.Y.Z"; exit 1; }
                   for image in helldiversbot helldiversbot-migrate; do
                     docker manifest inspect "ghcr.io/elfensky/$image:$TAG" > /dev/null || { echo "::error::ghcr.io/elfensky/$image:$TAG does not exist"; exit 1; }
                   done
