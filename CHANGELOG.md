@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.95.9
+
+### Changed
+
+- Node 26, the next LTS line (Active LTS from 2026-10-28), replaces Node 24
+  everywhere the project pins it: the app images (`node:26` build base,
+  `node:26-slim` runner), the migrate image (`node:26-alpine`),
+  `.node-version` (CI) and `mise.toml`. Node 26.12.1 carries the Node2Shell
+  fix (CVE-2026-111497). The runner keeps its shape: glibc, uid 65532, the
+  bare-`node` healthcheck and the `/nodejs/bin/node` symlink.
+- `@types/node` 24.19.2 to 26.6.5.
+- The visual regression job stays on the Playwright image's own Node (24 in
+  v1.64.1) until a Playwright image ships Node 26.
+
 ## 0.95.8
 
 ### Security
