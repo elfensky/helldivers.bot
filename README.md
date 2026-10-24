@@ -45,7 +45,7 @@ notifications when campaign events transition state.
 
 | Layer         | Technology                                              |
 | ------------- | ------------------------------------------------------- |
-| Framework     | Next.js 16 (App Router) on Node.js 24, React 19         |
+| Framework     | Next.js 16 (App Router) on Node.js 26, React 19         |
 | Styling       | Tailwind CSS v4 (`@theme` in `src/app/layout.css`)      |
 | Database      | PostgreSQL via Prisma 7 (`@prisma/adapter-pg`)          |
 | Auth          | BetterAuth (Discord + GitHub OAuth, optional)           |
@@ -174,7 +174,7 @@ all still work without authentication.
 
 ## Development
 
-The application uses nextjs running on node@24, prisma and postgres. It is deployed on a VPS in a docker container.
+The application uses nextjs running on node@26, prisma and postgres. It is deployed on a VPS in a docker container.
 
 ### Local
 
