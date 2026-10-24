@@ -122,6 +122,7 @@ merge to develop
 
 **Status: ready, not deployed yet.** `production/compose.yaml` is the production stack. Arcane
 applies it from the CI-owned branch `deploy/production` once its secrets and Git Sync row exist.
+The Git Sync row for the production stack is created only after a pin of the filled compose exists.
 
 - **Stack** `helldiversbot` (services `app` ×2, `cloudflared` ×2) on the Arcane environment
   **production01**, every task on `node.labels.role == apps`. Git Sync: Swarm → Stacks, repo
@@ -133,8 +134,8 @@ applies it from the CI-owned branch `deploy/production` once its secrets and Git
 - **Database** `helldiversbot_prod` on the private network, through the `helldiversbot_database_url`
   secret.
 - **Public values** (the VAPID public key and subject, Umami, the OAuth client ids, the server-side
-  Sentry DSN) are plain `environment:` in the compose. `<FILL>` marks a value that is not filled
-  yet; every one is filled before the first deploy. `SENTRY_DSN` is plain, not a secret:
+  Sentry DSN) are plain `environment:` in the compose, filled from the password manager.
+  `SENTRY_DSN` is plain, not a secret:
   `src/instrumentation.js` reads it before the `*_FILE` values load.
 - **Only runtime variables** belong in the compose. The build-time values (`NEXT_PUBLIC_*`, the
   Sentry source-map upload settings) are build args and build secrets of `build-release.yml`.
@@ -170,6 +171,7 @@ commit. `develop` and `main` carry `:production-unpinned` and say nothing about 
   `helldiversbot:vX.Y.Z` and `helldiversbot-migrate:vX.Y.Z` exist on GHCR.
 - **The first pin** runs with `--ref develop`: `main` has no `deploy/production/compose.yaml` until
   a release carries it.
+- **Placeholder guard:** the job refuses to pin a compose that still holds a `<FILL>` value.
 - **Rollback:** dispatch the previous tag with `--ref main`, once the release that carries this
   job is on `main`. `--ref develop` would pair the old image with develop's newer compose. Never
   edit the stack in the Arcane UI.
