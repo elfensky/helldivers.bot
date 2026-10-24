@@ -18,10 +18,11 @@
 #   helldiversbot_auth_discord_secret      Discord OAuth client secret
 #   helldiversbot_auth_github_secret       GitHub OAuth client secret
 #   helldiversbot_auth_google_secret       Google OAuth client secret
-#   helldiversbot_email_server_password    SMTP password
-#   helldiversbot_sentry_auth_token        GlitchTip API token
-#   helldiversbot_sentry_dsn               GlitchTip server DSN
 #   helldiversbot_glitchtip_heartbeat_url  GlitchTip uptime heartbeat
+#
+# Only variables the running app reads belong here. The build-time values
+# (NEXT_PUBLIC_*, the Sentry source-map upload settings) are build args and
+# build secrets of build-release.yml, baked into the image.
 #
 # Ingress is the stack's own Cloudflare Tunnel `helldivers.bot (production)`:
 # cloudflared dials OUT, so there are NO published ports. Its public hostnames
@@ -60,12 +61,6 @@ secrets:
         external: true
     helldiversbot_auth_google_secret:
         external: true
-    helldiversbot_email_server_password:
-        external: true
-    helldiversbot_sentry_auth_token:
-        external: true
-    helldiversbot_sentry_dsn:
-        external: true
     helldiversbot_glitchtip_heartbeat_url:
         external: true
 
@@ -81,28 +76,20 @@ services:
             NODE_ENV: production
             PORT: '3000'
             UPDATE_INTERVAL: '20'
-            POSTGRES_SSL: 'false'
             # Swarm expands this per task, so the GlitchTip server_name tag
             # names the node instead of the container ID.
             SENTRY_SERVER_NAME: '{{.Node.Hostname}}-{{.Task.Slot}}'
             BETTER_AUTH_URL: https://helldivers.bot
             # Public values, from the 1Password item env-helldiversbot.
-            NEXT_PUBLIC_VAPID_PUBLIC_KEY: '<FILL>' # the controller fills it before the first deploy
             VAPID_PUBLIC_KEY: '<FILL>' # the controller fills it before the first deploy
             VAPID_SUBJECT: '<FILL>' # the controller fills it before the first deploy
             UMAMI_SITE_URL: '<FILL>' # the controller fills it before the first deploy
             UMAMI_SITE_ID: '<FILL>' # the controller fills it before the first deploy
-            NEXT_PUBLIC_SENTRY_DSN: '<FILL>' # the controller fills it before the first deploy
-            SENTRY_URL: '<FILL>' # the controller fills it before the first deploy
-            SENTRY_ORG: '<FILL>' # the controller fills it before the first deploy
-            SENTRY_PROJECT: '<FILL>' # the controller fills it before the first deploy
             AUTH_DISCORD_ID: '<FILL>' # the controller fills it before the first deploy
             AUTH_GITHUB_ID: '<FILL>' # the controller fills it before the first deploy
             AUTH_GOOGLE_ID: '<FILL>' # the controller fills it before the first deploy
-            EMAIL_SERVER_USER: '<FILL>' # the controller fills it before the first deploy
-            EMAIL_SERVER_HOST: '<FILL>' # the controller fills it before the first deploy
-            EMAIL_SERVER_PORT: '<FILL>' # the controller fills it before the first deploy
-            EMAIL_FROM: '<FILL>' # the controller fills it before the first deploy
+            # Plain, not a *_FILE: src/instrumentation.js reads it before the file values load.
+            SENTRY_DSN: '<FILL>' # the controller fills it before the first deploy
             # Credentials: the app reads <KEY> from the file named by <KEY>_FILE
             # (src/shared/utils/hydrateFileSecrets.mjs).
             POSTGRES_URL_FILE: /run/secrets/helldiversbot_database_url
@@ -112,9 +99,6 @@ services:
             AUTH_DISCORD_SECRET_FILE: /run/secrets/helldiversbot_auth_discord_secret
             AUTH_GITHUB_SECRET_FILE: /run/secrets/helldiversbot_auth_github_secret
             AUTH_GOOGLE_SECRET_FILE: /run/secrets/helldiversbot_auth_google_secret
-            EMAIL_SERVER_PASSWORD_FILE: /run/secrets/helldiversbot_email_server_password
-            SENTRY_AUTH_TOKEN_FILE: /run/secrets/helldiversbot_sentry_auth_token
-            SENTRY_DSN_FILE: /run/secrets/helldiversbot_sentry_dsn
             GLITCHTIP_HEARTBEAT_URL_FILE: /run/secrets/helldiversbot_glitchtip_heartbeat_url
         secrets:
             - helldiversbot_database_url
@@ -124,9 +108,6 @@ services:
             - helldiversbot_auth_discord_secret
             - helldiversbot_auth_github_secret
             - helldiversbot_auth_google_secret
-            - helldiversbot_email_server_password
-            - helldiversbot_sentry_auth_token
-            - helldiversbot_sentry_dsn
             - helldiversbot_glitchtip_heartbeat_url
         # Healthcheck is baked into the image (GET /api/healthcheck -> 503 when the
         # DB is unreachable), so start-first rollout gates on real health.

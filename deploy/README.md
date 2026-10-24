@@ -132,9 +132,12 @@ applies it from the CI-owned branch `deploy/production` once its secrets and Git
   No published ports.
 - **Database** `helldiversbot_prod` on the private network, through the `helldiversbot_database_url`
   secret.
-- **Public values** (VAPID public key, Umami, the Sentry client DSN and project, the OAuth client
-  ids, the mail sender) are plain `environment:` in the compose. `<FILL>` marks a value that is not
-  filled yet; every one is filled before the first deploy.
+- **Public values** (the VAPID public key and subject, Umami, the OAuth client ids, the server-side
+  Sentry DSN) are plain `environment:` in the compose. `<FILL>` marks a value that is not filled
+  yet; every one is filled before the first deploy. `SENTRY_DSN` is plain, not a secret:
+  `src/instrumentation.js` reads it before the `*_FILE` values load.
+- **Only runtime variables** belong in the compose. The build-time values (`NEXT_PUBLIC_*`, the
+  Sentry source-map upload settings) are build args and build secrets of `build-release.yml`.
 
 ### Swarm secrets (external, on production01)
 
@@ -147,9 +150,6 @@ applies it from the CI-owned branch `deploy/production` once its secrets and Git
 | `helldiversbot_auth_discord_secret`     | `AUTH_DISCORD_SECRET_FILE`            |
 | `helldiversbot_auth_github_secret`      | `AUTH_GITHUB_SECRET_FILE`             |
 | `helldiversbot_auth_google_secret`      | `AUTH_GOOGLE_SECRET_FILE`             |
-| `helldiversbot_email_server_password`   | `EMAIL_SERVER_PASSWORD_FILE`          |
-| `helldiversbot_sentry_auth_token`       | `SENTRY_AUTH_TOKEN_FILE`              |
-| `helldiversbot_sentry_dsn`              | `SENTRY_DSN_FILE`                     |
 | `helldiversbot_glitchtip_heartbeat_url` | `GLITCHTIP_HEARTBEAT_URL_FILE`        |
 | `helldiversbot_cloudflared`             | `cloudflared`, as `TUNNEL_TOKEN_FILE` |
 
