@@ -261,6 +261,7 @@ jobs:
 
             - name: Pin the tag and push deploy/production
               run: |
+                  ! grep -n '<FILL>' deploy/production/compose.yaml || { echo "::error::deploy/production/compose.yaml still holds <FILL> values"; exit 1; }
                   sed -i -E "s#^([[:space:]]*image: ghcr\.io/elfensky/helldiversbot:).*#\1${TAG}#" deploy/production/compose.yaml
                   grep -qF "image: ghcr.io/elfensky/helldiversbot:${TAG}" deploy/production/compose.yaml || { echo "::error::deploy/production/compose.yaml does not pin ${TAG}"; exit 1; }
                   git config user.name github-actions[bot]
