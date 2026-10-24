@@ -1,4 +1,7 @@
-# Staging deploy — helldivers.bot on the Pi swarm
+# Deploy — helldivers.bot
+
+Staging runs on the Pi swarm (this page, top to bottom); production runs on the Hetzner swarm
+(§ Production at the end).
 
 **Status: live, deployed by Git Sync.** `staging/compose.yaml` is the stack on the 3-Pi swarm;
 Arcane applies it from the CI-owned branch `deploy/staging`, which CI force-pushes after every
@@ -114,3 +117,64 @@ merge to develop
   → Arcane Git Sync (polls deploy/staging every 5 min) sees the commit → redeploys the stack
        start-first + image healthcheck + rollback on failure
 ```
+
+## Production
+
+**Status: ready, not deployed yet.** `production/compose.yaml` is the production stack. Arcane
+applies it from the CI-owned branch `deploy/production` once its secrets and Git Sync row exist.
+
+- **Stack** `helldiversbot` (services `app` ×2, `cloudflared` ×2) on the Arcane environment
+  **production01**, every task on `node.labels.role == apps`. Git Sync: Swarm → Stacks, repo
+  `https://github.com/elfensky/helldivers.bot`, branch `deploy/production`, compose path
+  `deploy/production/compose.yaml`, project name `helldiversbot`.
+- **Ingress** is the tunnel `helldivers.bot (production)`. Its public hostnames
+  (`helldivers.bot`, `www.helldivers.bot` → `http://app:3000`) live in the Zero Trust dashboard.
+  No published ports.
+- **Database** `helldiversbot_prod` on the private network, through the `helldiversbot_database_url`
+  secret.
+- **Public values** (VAPID public key, Umami, the Sentry client DSN and project, the OAuth client
+  ids, the mail sender) are plain `environment:` in the compose. `<FILL>` marks a value that is not
+  filled yet; every one is filled before the first deploy.
+
+### Swarm secrets (external, on production01)
+
+| Secret                                  | Read by the app as                    |
+| --------------------------------------- | ------------------------------------- |
+| `helldiversbot_database_url`            | `POSTGRES_URL_FILE`                   |
+| `helldiversbot_update_key`              | `UPDATE_KEY_FILE`                     |
+| `helldiversbot_vapid_private_key`       | `VAPID_PRIVATE_KEY_FILE`              |
+| `helldiversbot_better_auth_secret`      | `BETTER_AUTH_SECRET_FILE`             |
+| `helldiversbot_auth_discord_secret`     | `AUTH_DISCORD_SECRET_FILE`            |
+| `helldiversbot_auth_github_secret`      | `AUTH_GITHUB_SECRET_FILE`             |
+| `helldiversbot_auth_google_secret`      | `AUTH_GOOGLE_SECRET_FILE`             |
+| `helldiversbot_email_server_password`   | `EMAIL_SERVER_PASSWORD_FILE`          |
+| `helldiversbot_sentry_auth_token`       | `SENTRY_AUTH_TOKEN_FILE`              |
+| `helldiversbot_sentry_dsn`              | `SENTRY_DSN_FILE`                     |
+| `helldiversbot_glitchtip_heartbeat_url` | `GLITCHTIP_HEARTBEAT_URL_FILE`        |
+| `helldiversbot_cloudflared`             | `cloudflared`, as `TUNNEL_TOKEN_FILE` |
+
+Each is created once, out of band, from the password manager, with the trailing newline stripped
+and the value never printed. The names follow `<app>_<secret>`, as on staging.
+
+### The pin
+
+`pin-production` in `../.github/workflows/build-release.yml` writes the release tag into the
+`image:` line and force-pushes the result as `deploy/production`. Git Sync redeploys on that
+commit. `develop` and `main` carry `:production-unpinned` and say nothing about what runs.
+
+- **A tag push** (`vX.Y.Z`, § Release process in `../AGENTS.md`) builds both images, then pins the
+  tag.
+- **An existing release** is pinned without a rebuild:
+  `gh workflow run build-release.yml --ref develop -f tag=vX.Y.Z`. The job first checks that
+  `helldiversbot:vX.Y.Z` and `helldiversbot-migrate:vX.Y.Z` exist on GHCR.
+- **Rollback:** dispatch the previous tag the same way. Never edit the stack in the Arcane UI.
+
+### Migrations
+
+The migrate image is a one-shot, not a service. Before the first deploy of a release that carries
+a migration (any `prisma/` change but Markdown since the pinned tag), run it by hand against the
+production database, from a host on the private network:
+`docker run --rm -e POSTGRES_URL ghcr.io/elfensky/helldiversbot-migrate:vX.Y.Z`, with
+`POSTGRES_URL` set in the shell, never on the command line. A tag push pins at once and Git Sync
+applies the pin within its poll interval, so turn auto-sync off on the Git Sync row before such a
+tag is pushed, migrate once the release build is green, then sync.

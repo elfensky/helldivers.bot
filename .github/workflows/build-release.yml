@@ -4,6 +4,15 @@ on:
     push:
         tags:
             - 'v*.*.*' # Triggers on version tags like v1.0.0
+    # Pins an existing release on deploy/production without rebuilding it —
+    # only pin-production runs. The first production pin and rollback
+    # (dispatch the previous tag) both go through here.
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: 'vX.Y.Z, an existing release'
+                required: true
+                type: string
 
 # Never cancel a half-published release. Two tags pushed back to back queue
 # rather than racing each other to the `production` and `latest` floating tags.
@@ -11,7 +20,7 @@ concurrency:
     group: build-release-${{ github.ref_name }}
     cancel-in-progress: false
 
-# Read-only by default; the two jobs that need to write say so themselves.
+# Read-only by default; the jobs that need to write say so themselves.
 permissions:
     contents: read
 
@@ -33,6 +42,7 @@ jobs:
     # composite action runs inside this job, so the name is untouched.
     verify:
         name: Test & Build
+        if: github.event_name == 'push'
         runs-on: ubuntu-latest
         timeout-minutes: 25
 
@@ -46,6 +56,7 @@ jobs:
     build-app:
         name: Build App Image
         needs: verify
+        if: github.event_name == 'push'
         runs-on: ubuntu-latest
         # arm64 builds under QEMU emulation are slow; 30 leaves headroom.
         timeout-minutes: 30
@@ -87,6 +98,7 @@ jobs:
     build-migrate:
         name: Build Migrate Image (${{ matrix.arch }})
         needs: verify
+        if: github.event_name == 'push'
         # One leg per arch, each on a runner of that arch — NOT QEMU. `prisma
         # generate` dies under QEMU aarch64 emulation with `qemu: uncaught
         # target signal 4 (Illegal instruction)`, exit 132: Prisma's engine
@@ -129,6 +141,7 @@ jobs:
     merge-migrate:
         name: Publish Migrate Manifest
         needs: build-migrate
+        if: github.event_name == 'push'
         runs-on: ubuntu-latest
         timeout-minutes: 5
         permissions:
@@ -158,6 +171,7 @@ jobs:
     github-release:
         name: Create GitHub Release
         needs: [build-app, merge-migrate]
+        if: github.event_name == 'push'
         runs-on: ubuntu-latest
         timeout-minutes: 10
         permissions:
@@ -207,3 +221,43 @@ jobs:
                   gh release create "$TAG_NAME" \
                     --title "$TAG_NAME" \
                     --notes-file /tmp/release-notes.md
+
+    # The deploy is Arcane Git Sync from the CI-owned branch deploy/production
+    # (deploy/README.md § Production): Arcane redeploys when that branch's
+    # commit changes. This job writes the release tag into the compose of the
+    # workflow's own checkout — the tag on push, the dispatched branch on
+    # dispatch — and force-pushes that as deploy/production, the way
+    # bump-staging-tag handles deploy/staging. main and develop stay PR-only.
+    #
+    # On dispatch the builds are skipped and the job pins an existing release:
+    # rollback is a dispatch of the previous tag. A release that carries a
+    # migration is migrated by hand before Arcane deploys it (README).
+    pin-production:
+        name: Pin Production
+        needs: [build-app, merge-migrate]
+        if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || (needs.build-app.result == 'success' && needs.merge-migrate.result == 'success')) }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: write
+        env:
+            # Through env, never interpolated into the script: the input is free text.
+            TAG: ${{ inputs.tag || github.ref_name }}
+        steps:
+            - name: Both release images exist
+              run: |
+                  for image in helldiversbot helldiversbot-migrate; do
+                    docker manifest inspect "ghcr.io/elfensky/$image:$TAG" > /dev/null || { echo "::error::ghcr.io/elfensky/$image:$TAG does not exist"; exit 1; }
+                  done
+
+            - name: Checkout code
+              uses: actions/checkout@v7.0.1
+
+            - name: Pin the tag and push deploy/production
+              run: |
+                  sed -i -E "s#^([[:space:]]*image: ghcr\.io/elfensky/helldiversbot:).*#\1${TAG}#" deploy/production/compose.yaml
+                  grep -qF "image: ghcr.io/elfensky/helldiversbot:${TAG}" deploy/production/compose.yaml || { echo "::error::deploy/production/compose.yaml does not pin ${TAG}"; exit 1; }
+                  git config user.name github-actions[bot]
+                  git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+                  git commit -qm "chore(deploy): production → ${TAG} [skip ci]" deploy/production/compose.yaml || echo "compose already pins ${TAG}"
+                  git push --force origin HEAD:refs/heads/deploy/production
