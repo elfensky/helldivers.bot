@@ -82,16 +82,16 @@ services:
             # names the node instead of the container ID.
             SENTRY_SERVER_NAME: '{{.Node.Hostname}}-{{.Task.Slot}}'
             BETTER_AUTH_URL: https://helldivers.bot
-            # Public values, from the 1Password item env-helldiversbot.
-            VAPID_PUBLIC_KEY: '<FILL>' # the controller fills it before the first deploy
-            VAPID_SUBJECT: '<FILL>' # the controller fills it before the first deploy
-            UMAMI_SITE_URL: '<FILL>' # the controller fills it before the first deploy
-            UMAMI_SITE_ID: '<FILL>' # the controller fills it before the first deploy
-            AUTH_DISCORD_ID: '<FILL>' # the controller fills it before the first deploy
-            AUTH_GITHUB_ID: '<FILL>' # the controller fills it before the first deploy
-            AUTH_GOOGLE_ID: '<FILL>' # the controller fills it before the first deploy
+            # Public values, from the 1Password item env-helldiversbot-production.
+            VAPID_PUBLIC_KEY: 'BEf70mVbnfMXqMySDwVFHtHh6oiOYEhFmK_kJWmQU5go-Wp-wUIz3zpeUh4KXC3VwQ06FsjtHA5Fbl1sARAJb1o'
+            VAPID_SUBJECT: 'mailto:vapid@drunik.be'
+            UMAMI_SITE_URL: 'umami.lav.ren'
+            UMAMI_SITE_ID: '9a916711-2868-43d2-9932-964fc9528824'
+            AUTH_DISCORD_ID: '1318288646608130101'
+            AUTH_GITHUB_ID: 'Ov23lirdsC1TrKES7ARD'
+            AUTH_GOOGLE_ID: '431560438535-4k40gmg1ppl85r83p9leoos0gqsknaf0.apps.googleusercontent.com'
             # Plain, not a *_FILE: src/instrumentation.js reads it before the file values load.
-            SENTRY_DSN: '<FILL>' # the controller fills it before the first deploy
+            SENTRY_DSN: 'https://8afca5d3e7344a42b31eb9d8dd85cc89@glitchtip.lav.ren/1'
             # Credentials: the app reads <KEY> from the file named by <KEY>_FILE
             # (src/shared/utils/hydrateFileSecrets.mjs).
             POSTGRES_URL_FILE: /run/secrets/helldiversbot_database_url
