@@ -36,8 +36,9 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v7.0.1
 
-            # No setup-node: the image already ships the Node version pinned in
-            # .node-version, and the visual suite needs no Prisma client.
+            # No setup-node: the suite runs on the image's own Node (24 in
+            # v1.64.1, not .node-version); Chromium renders the baselines, so
+            # Node moves with the image tag. The visual suite needs no Prisma client.
             - name: Install dependencies
               run: npm ci
 

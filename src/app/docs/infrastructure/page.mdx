@@ -46,7 +46,7 @@ The project uses two separate Dockerfiles. Migrations and the application server
 
 **Build process:**
 
-1. Base image: `node:24-alpine`
+1. Base image: `node:26-alpine`
 2. Install `tini` via `apk` (init system for zombie process prevention)
 3. Upgrade npm to `11.7.0`
 4. `WORKDIR /app`
@@ -85,10 +85,10 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 
 | Stage     | Base             | What it does                                                                                      |
 | --------- | ---------------- | ------------------------------------------------------------------------------------------------- |
-| `base`    | `node:24-alpine` | Installs `tini` and upgrades npm to `11.7.0`                                                      |
+| `base`    | `node:26`        | Debian (glibc) build base, so Sharp's prebuilt glibc binary matches the runtime                   |
 | `deps`    | `base`           | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent                               |
 | `builder` | `base`           | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build` |
-| `runner`  | `base`           | Copies only `.next/standalone`, `.next/static`, and `public`; runs as non-root user               |
+| `runner`  | `node:26-slim`   | Copies only `.next/standalone`, `.next/static`, and `public`; runs as non-root user               |
 
 **Runner stage details:**
 

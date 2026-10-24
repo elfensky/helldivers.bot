@@ -35,7 +35,7 @@
 # a minimal package.json in /app, then install only the 4 packages we need.
 # =============================================================================
 
-FROM node:24-alpine
+FROM node:26-alpine
 
 # tini is a tiny PID 1 init (~150 KB) that reaps zombie processes and forwards
 # signals (SIGTERM, SIGINT) to its child. Without it, `docker stop` on a
