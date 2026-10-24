@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+## 0.96.0
+
+### Added
+
+- `deploy/production/compose.yaml`: the production stack `helldiversbot` for
+  the Hetzner swarm (Arcane environment production01). `app` and
+  `cloudflared` run on `node.labels.role == apps` with resource limits, and
+  every credential is an external swarm secret read through the `*_FILE`
+  convention. The public values are `<FILL>` until they are filled from the
+  password manager, before the first deploy.
+- `pin-production` in `build-release.yml`: a release tag pins
+  `deploy/production` (the branch Arcane Git Sync deploys) after both images
+  are built. `workflow_dispatch` with a `tag` input pins an existing release
+  without a rebuild; rollback is a dispatch of the previous tag.
+- `deploy/README.md` § Production: the stack, its secrets, the tunnel, the
+  pin, rollback and the migration rule.
+
 ## 0.95.9
 
 ### Changed
