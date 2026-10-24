@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.96.1
+
+### Changed
+
+- `deploy/production/compose.yaml` carries the production public values
+  (VAPID public key and subject, Umami host and site id, the OAuth client
+  ids, the server-side Sentry DSN) in place of the `<FILL>` placeholders.
+- `pin-production` refuses to pin a compose that still holds a `<FILL>`
+  value. `deploy/README.md` § Production names the guard, and says that the
+  production Git Sync row is created only after a pin of the filled compose
+  exists.
+
 ## 0.96.0
 
 ### Added
