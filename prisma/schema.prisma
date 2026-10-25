@@ -104,10 +104,11 @@ model ApiKey {
     userId      String
     description String
 
-    createdAt DateTime @default(now())
-    enabled   Boolean  @default(true)
+    createdAt  DateTime  @default(now())
+    enabled    Boolean   @default(true)
+    lastUsedAt DateTime?
     //relations
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // #endregion
@@ -247,6 +248,20 @@ model worker_heartbeat {
     lease_until          DateTime?
     prev_events          Json?
     last_season_observed Int?
+}
+
+// #endregion
+
+// #region APP INSTANCES
+// One row per running process, written by /api/healthcheck; roles (poller,
+// standby, web only) are derived on read, never stored (#596).
+model app_instance {
+    id             String   @id // HOLDER_ID: host:pid:nonce
+    host           String
+    version        String
+    worker_enabled Boolean
+    started_at     DateTime
+    last_seen      DateTime
 }
 
 // #endregion
