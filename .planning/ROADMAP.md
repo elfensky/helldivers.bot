@@ -92,7 +92,7 @@ Plans:
 
   1. Stack `helldiversbot` (`app` ×2, `cloudflared` ×2) runs on the Arcane environment production01, applied by Arcane Git Sync from the CI-owned branch `deploy/production` (`deploy/README.md` § Production)
   2. A release tag `vX.Y.Z` builds both images, and `pin-production` force-pushes `deploy/production` with that tag; no manual image pull happens on the production host
-  3. The unreleased `develop` backlog (0.95.9 to 0.96.2) ships as v0.96.2 through this pipeline, and production reports `appVersion` 0.96.2
+  3. The unreleased `develop` backlog (0.95.9 to 0.96.3) ships as v0.96.3 through this pipeline, and production reports `appVersion` 0.96.3
 
 **Impact on Phase 2:** plans 02-01, 02-09, 02-11 and 02-12 assume release v0.95.7 and a manual production pull. Production now runs releases pinned by `pin-production`, so these four plans need a re-plan before Phase 2 executes.
 
