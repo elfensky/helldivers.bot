@@ -37,7 +37,7 @@ describe('groupBy', () => {
         ];
         const key = (x) => x.s;
 
-        // The built-in is the oracle here. Vitest runs on Node 24, which has
+        // The built-in is the oracle here. Vitest runs on Node 26, which has
         // it; the ban keeps it out of shipped code, not out of the test that
         // pins parity against it.
         // eslint-disable-next-line no-restricted-syntax

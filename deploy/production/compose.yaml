@@ -1,0 +1,169 @@
+# Docker Swarm stack — helldivers.bot PRODUCTION (the Hetzner swarm, Arcane
+# environment production01).
+#
+# THIS FILE IS THE WRITER. It is Git-Synced into Arcane (stack `helldiversbot`,
+# swarm environment production01) from the CI-owned branch deploy/production,
+# so the compose is read-only in the Arcane UI and rollback is a git-side
+# re-pin, not a console edit. Never `docker stack deploy` it by hand.
+#
+# This repo is PUBLIC. Nothing secret may enter this file — every credential is
+# an external Swarm secret created out-of-band (deploy/README.md § Production).
+#
+# Prereqs — external Swarm secrets on production01, one per credential:
+#   helldiversbot_database_url             Postgres connection string
+#   helldiversbot_update_key               API key for the update endpoint
+#   helldiversbot_cloudflared              Cloudflare Tunnel token (remotely-managed)
+#   helldiversbot_vapid_private_key        Web Push signing key
+#   helldiversbot_better_auth_secret       Better Auth session secret
+#   helldiversbot_auth_discord_secret      Discord OAuth client secret
+#   helldiversbot_auth_github_secret       GitHub OAuth client secret
+#   helldiversbot_auth_google_secret       Google OAuth client secret
+#   helldiversbot_glitchtip_heartbeat_url  GlitchTip uptime heartbeat
+#
+# Only variables the running app reads belong here. The build-time values
+# (NEXT_PUBLIC_*, the Sentry source-map upload settings) are build args and
+# build secrets of build-release.yml, baked into the image.
+#
+# Ingress is the stack's own Cloudflare Tunnel `helldivers.bot (production)`:
+# cloudflared dials OUT, so there are NO published ports. Its public hostnames
+# (helldivers.bot, www.helldivers.bot -> http://app:3000) live in the Zero
+# Trust dashboard, not in this file.
+#
+# The `image:` line below is written by CI (pin-production in
+# build-release.yml) on the CI-owned branch deploy/production, which is what
+# Git Sync deploys — on develop and main it says production-unpinned and is
+# not what runs. A tag push pins that tag; `gh workflow run build-release.yml
+# --ref <branch> -f tag=vX.Y.Z` pins an existing one: the first pin from
+# develop, a rollback (the previous tag) from main.
+#
+# Migrations are NOT a service here — Swarm ignores `depends_on`. Before the
+# first deploy of a release that carries a migration (any prisma/ change but
+# Markdown since the pinned tag),
+# run ghcr.io/elfensky/helldiversbot-migrate:vX.Y.Z by hand against the
+# production database. See deploy/README.md § Production.
+
+networks:
+    internal:
+        driver: overlay
+
+secrets:
+    helldiversbot_database_url:
+        external: true
+    helldiversbot_update_key:
+        external: true
+    helldiversbot_cloudflared:
+        external: true
+    helldiversbot_vapid_private_key:
+        external: true
+    helldiversbot_better_auth_secret:
+        external: true
+    helldiversbot_auth_discord_secret:
+        external: true
+    helldiversbot_auth_github_secret:
+        external: true
+    helldiversbot_auth_google_secret:
+        external: true
+    helldiversbot_glitchtip_heartbeat_url:
+        external: true
+
+# Every replica runs the cron thread, but only the lease holder polls
+# (src/update/lease.mjs, #517), so `docker service scale` is safe at any N.
+
+services:
+    app:
+        # Rewritten by CI to :vX.Y.Z — see the header.
+        image: ghcr.io/elfensky/helldiversbot:production-unpinned
+        networks: [internal]
+        environment:
+            NODE_ENV: production
+            PORT: '3000'
+            UPDATE_INTERVAL: '20'
+            # Swarm expands this per task, so the GlitchTip server_name tag
+            # names the node instead of the container ID.
+            SENTRY_SERVER_NAME: '{{.Node.Hostname}}-{{.Task.Slot}}'
+            BETTER_AUTH_URL: https://helldivers.bot
+            # Public values, from the 1Password item env-helldiversbot-production.
+            VAPID_PUBLIC_KEY: 'BEf70mVbnfMXqMySDwVFHtHh6oiOYEhFmK_kJWmQU5go-Wp-wUIz3zpeUh4KXC3VwQ06FsjtHA5Fbl1sARAJb1o'
+            VAPID_SUBJECT: 'mailto:vapid@drunik.be'
+            UMAMI_SITE_URL: 'umami.lav.ren'
+            UMAMI_SITE_ID: '9a916711-2868-43d2-9932-964fc9528824'
+            AUTH_DISCORD_ID: '1318288646608130101'
+            AUTH_GITHUB_ID: 'Ov23lirdsC1TrKES7ARD'
+            AUTH_GOOGLE_ID: '431560438535-4k40gmg1ppl85r83p9leoos0gqsknaf0.apps.googleusercontent.com'
+            # Plain, not a *_FILE: src/instrumentation.js reads it before the file values load.
+            SENTRY_DSN: 'https://8afca5d3e7344a42b31eb9d8dd85cc89@glitchtip.lav.ren/1'
+            # Credentials: the app reads <KEY> from the file named by <KEY>_FILE
+            # (src/shared/utils/hydrateFileSecrets.mjs).
+            POSTGRES_URL_FILE: /run/secrets/helldiversbot_database_url
+            UPDATE_KEY_FILE: /run/secrets/helldiversbot_update_key
+            VAPID_PRIVATE_KEY_FILE: /run/secrets/helldiversbot_vapid_private_key
+            BETTER_AUTH_SECRET_FILE: /run/secrets/helldiversbot_better_auth_secret
+            AUTH_DISCORD_SECRET_FILE: /run/secrets/helldiversbot_auth_discord_secret
+            AUTH_GITHUB_SECRET_FILE: /run/secrets/helldiversbot_auth_github_secret
+            AUTH_GOOGLE_SECRET_FILE: /run/secrets/helldiversbot_auth_google_secret
+            GLITCHTIP_HEARTBEAT_URL_FILE: /run/secrets/helldiversbot_glitchtip_heartbeat_url
+        secrets:
+            - helldiversbot_database_url
+            - helldiversbot_update_key
+            - helldiversbot_vapid_private_key
+            - helldiversbot_better_auth_secret
+            - helldiversbot_auth_discord_secret
+            - helldiversbot_auth_github_secret
+            - helldiversbot_auth_google_secret
+            - helldiversbot_glitchtip_heartbeat_url
+        # Healthcheck is baked into the image (GET /api/healthcheck -> 503 when the
+        # DB is unreachable), so start-first rollout gates on real health.
+        # Soft spread, NOT `max_replicas_per_node: 1`: the hard cap plus
+        # start-first stalls whenever replicas = live nodes (moby/moby#40797).
+        deploy:
+            replicas: 2
+            placement:
+                constraints:
+                    - node.labels.role == apps
+                preferences:
+                    - spread: node.id
+            resources:
+                limits:
+                    cpus: '1.5'
+                    memory: 1024M
+            update_config:
+                order: start-first
+                failure_action: rollback
+                monitor: 30s
+            rollback_config:
+                order: start-first
+            restart_policy:
+                condition: any
+
+    cloudflared:
+        image: cloudflare/cloudflared:latest
+        # The image's ENTRYPOINT is already `cloudflared --no-autoupdate`.
+        command: tunnel run
+        networks: [internal]
+        environment:
+            # `tunnel run` reads the token from this file, so it never lands
+            # in the service spec (the image is distroless: no shell shim).
+            TUNNEL_TOKEN_FILE: /run/secrets/helldiversbot_cloudflared
+        secrets:
+            - helldiversbot_cloudflared
+        # 2 replicas: both register as connectors on the same tunnel and
+        # Cloudflare load-balances across them.
+        deploy:
+            replicas: 2
+            placement:
+                constraints:
+                    - node.labels.role == apps
+                preferences:
+                    - spread: node.id
+            resources:
+                limits:
+                    cpus: '0.25'
+                    memory: 128M
+            update_config:
+                order: start-first
+                failure_action: rollback
+                monitor: 30s
+            rollback_config:
+                order: start-first
+            restart_policy:
+                condition: any

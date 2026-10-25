@@ -5,7 +5,7 @@
 # importantly `RUN --mount=type=cache,...` for npm + Next.js build caches and
 # `RUN --mount=type=secret,...` for Sentry credentials.
 # BuildKit is the default builder in Docker Desktop and modern docker engine.
-FROM node:24 AS base
+FROM node:26 AS base
 
 #region deps
 # Install dependencies only when needed
@@ -18,9 +18,9 @@ COPY package.json package-lock.json ./
 # packages that haven't changed. `sharing=locked` ensures concurrent builds
 # don't corrupt the cache.
 #
-# Build on glibc (node:24 is Debian, NOT Alpine/musl) so Sharp's prebuilt
+# Build on glibc (node:26 is Debian, NOT Alpine/musl) so Sharp's prebuilt
 # glibc binary (@img/sharp-linux-x64) is installed and traced into the
-# standalone output. The runtime image (node:24-slim, Debian) is ALSO
+# standalone output. The runtime image (node:26-slim, Debian) is ALSO
 # glibc, so the binary loads. Do NOT strip @img/sharp-* — building on
 # musl while shipping to a glibc runtime makes Sharp fail at runtime with
 # "Could not load the 'sharp' module using the linux-x64 runtime" (the image
@@ -103,7 +103,7 @@ RUN --mount=type=cache,target=/app/.next/cache,sharing=locked \
 # was fixed in 24.22.1, while node:24-slim carried the fix within hours. The
 # slim image has a shell and apt, so it is a larger surface than distroless;
 # the app still runs as uid 65532 and nothing here calls a shell.
-FROM node:24-slim AS runner
+FROM node:26-slim AS runner
 WORKDIR /app
 # shortcut: the hand-maintained production compose healthcheck calls
 # /nodejs/bin/node by full path (the distroless location). Keep that path
@@ -141,7 +141,7 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
-# node:24-slim's ENTRYPOINT is docker-entrypoint.sh, which execs the command.
+# node:26-slim's ENTRYPOINT is docker-entrypoint.sh, which execs the command.
 CMD ["node", "server.js"]
 # Node's built-in fetch (stable since Node 21) replaces wget/curl probes.
 # Exec form (JSON array) so no shell is involved.

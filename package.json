@@ -1,6 +1,6 @@
 {
     "name": "helldivers.bot",
-    "version": "0.95.8",
+    "version": "0.96.3",
     "private": true,
     "license": "AGPL-3.0-only",
     "type": "module",
@@ -57,7 +57,7 @@
         "@testing-library/jest-dom": "^7.0.1",
         "@testing-library/react": "^16.3.3",
         "@testing-library/user-event": "^14.6.8",
-        "@types/node": "^24.19.2",
+        "@types/node": "^26.6.5",
         "@vitest/browser": "^5.0.5",
         "@vitest/browser-playwright": "^5.0.5",
         "@vitest/coverage-v8": "^5.0.5",
@@ -69,7 +69,6 @@
         "eslint-plugin-compat": "^7.0.2",
         "eslint-plugin-jsdoc": "^65.3.11",
         "eslint-plugin-prettier": "^5.5.7",
-        "eslint-plugin-react-compiler": "^19.1.0-rc.2",
         "eslint-plugin-react-hooks": "^7.1.1",
         "globals": "^17.13.0",
         "jsdom": "^30.1.3",
@@ -82,6 +81,7 @@
         "vitest": "^5.0.5"
     },
     "overrides": {
+        "zod": "$zod",
         "postcss": "^8.5.18",
         "better-sqlite3": "^12.0.0",
         "sharp": "^0.35.5",

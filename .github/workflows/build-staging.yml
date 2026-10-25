@@ -184,11 +184,22 @@ jobs:
                     grep -qE "Platform: +$p$" <<< "$out" || { echo "::error::$IMAGE:staging has no $p manifest"; exit 1; }
                   done
 
+    # Same shape as build-migrate: one leg per arch, each on a runner of that
+    # arch — never QEMU. On Node 26, `prisma generate` under emulated aarch64
+    # fails with "Unable to parse JSON … [Context: getDmmf]" (run 40131915205,
+    # 0.95.9); Node 24 survived it. Each leg pushes :staging-<arch>; merge-app
+    # joins them into :staging and :sha-<commit>.
     build-app:
-        name: Build App Image
+        name: Build App Image (${{ matrix.arch }})
         if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-        runs-on: ubuntu-latest
-        # arm64 builds under QEMU emulation are slow; 30 leaves headroom.
+        strategy:
+            matrix:
+                include:
+                    - arch: amd64
+                      runner: ubuntu-latest
+                    - arch: arm64
+                      runner: ubuntu-24.04-arm
+        runs-on: ${{ matrix.runner }}
         timeout-minutes: 30
         permissions:
             contents: read
@@ -203,11 +214,10 @@ jobs:
               uses: ./.github/actions/docker-publish
               with:
                   file: ./Dockerfile.app
-                  platforms: linux/amd64,linux/arm64
+                  platforms: linux/${{ matrix.arch }}
                   registry-token: ${{ secrets.GITHUB_TOKEN }}
                   tags: |
-                      ghcr.io/${{ github.repository_owner }}/helldiversbot:staging
-                      ghcr.io/${{ github.repository_owner }}/helldiversbot:sha-${{ env.TESTED_SHA }}
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot:staging-${{ matrix.arch }}
                   build-args: |
                       NODE_ENV=production
                       NEXT_PUBLIC_DEPLOY_ENV=staging
@@ -221,6 +231,33 @@ jobs:
                       sentry_url=${{ vars.SENTRY_URL }}
                       sentry_org=${{ secrets.SENTRY_ORG }}
                       sentry_project=${{ secrets.SENTRY_PROJECT }}
+
+    merge-app:
+        name: Publish App Manifest
+        needs: build-app
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v4.6.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Join the two arches into :staging and :sha-<commit>
+              env:
+                  IMAGE: ghcr.io/${{ github.repository_owner }}/helldiversbot
+              run: |
+                  docker buildx imagetools create -t "$IMAGE:staging" -t "$IMAGE:sha-$TESTED_SHA" "$IMAGE:staging-amd64" "$IMAGE:staging-arm64"
+                  out=$(docker buildx imagetools inspect "$IMAGE:sha-$TESTED_SHA")
+                  echo "$out"
+                  for p in linux/amd64 linux/arm64; do
+                    grep -qE "Platform: +$p$" <<< "$out" || { echo "::error::$IMAGE:sha-$TESTED_SHA has no $p manifest"; exit 1; }
+                  done
 
     # The deploy itself is Arcane Git Sync (deploy/README.md): Arcane polls
     # the CI-owned branch deploy/staging and redeploys the stack when its
@@ -241,8 +278,8 @@ jobs:
     # workflow on develop with `migrated: true`.
     bump-staging-tag:
         name: Bump Staging Tag
-        needs: [detect-migration, build-app]
-        if: ${{ !cancelled() && needs.build-app.result == 'success' }}
+        needs: [detect-migration, merge-app]
+        if: ${{ !cancelled() && needs.merge-app.result == 'success' }}
         runs-on: ubuntu-latest
         timeout-minutes: 5
         permissions:
@@ -270,7 +307,7 @@ jobs:
 
     cleanup:
         name: Cleanup Untagged Images
-        needs: [build-migrate, merge-migrate, build-app]
+        needs: [build-migrate, merge-migrate, build-app, merge-app]
         # Runs when build-migrate is skipped (nothing to rebuild), but not
         # when build-app is skipped — that means CI failed and nothing was
         # published to prune.

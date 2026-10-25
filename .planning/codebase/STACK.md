@@ -37,7 +37,7 @@
 - `esbuild` 0.28.1 — devDependency (bundling support tooling)
 - `chokidar-cli` — `npm run format` watch mode for Prettier
 - `prettier` 3.9.6 + `prettier-plugin-tailwindcss` — formatting, class-order sorting
-- `eslint` 10.8.0 (flat config, `eslint.config.mjs`) with `@eslint-react/eslint-plugin`, `@next/eslint-plugin-next`, `eslint-plugin-react-hooks`, `eslint-plugin-react-compiler`, `eslint-plugin-jsdoc`, `eslint-plugin-compat`, `eslint-plugin-prettier` (Prettier wired in as a lint rule)
+- `eslint` 10.8.0 (flat config, `eslint.config.mjs`) with `@eslint-react/eslint-plugin`, `@next/eslint-plugin-next`, `eslint-plugin-react-hooks`, `eslint-plugin-jsdoc`, `eslint-plugin-compat`, `eslint-plugin-prettier` (Prettier wired in as a lint rule)
 - `babel-plugin-react-compiler` — React Compiler transform support
 
 ## Key Dependencies

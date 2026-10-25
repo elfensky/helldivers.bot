@@ -30,7 +30,7 @@ updates:
                   - 'patch'
 
       ignore:
-          # @types/node stays on ^24 to match the Node 24 runtime (commit a78e9d68)
+          # @types/node stays on ^26 to match the Node 26 runtime
           - dependency-name: '@types/node'
             update-types:
                 - 'version-update:semver-major'

@@ -2,6 +2,73 @@
 
 ## Unreleased
 
+## 0.96.3
+
+### Security
+
+- Dependabot alert #214 is closed (GHSA-mrhx-c7xc-m3w5: zod below 4.6.6 can
+  exhaust memory while it validates oversized collections). A root
+  `"zod": "$zod"` entry in `overrides` resolves the four `@serwist/*`
+  packages, which pin zod 4.6.5 exactly, to the app's zod 4.6.7.
+- `eslint-plugin-react-compiler` is removed: it pulled zod 3.25.76 and
+  blocked GitHub's security update. `eslint-plugin-react-hooks` 7 carries the
+  React Compiler lint rules; `babel-plugin-react-compiler` and
+  `reactCompiler: true` are unchanged.
+
+## 0.96.2
+
+### Fixed
+
+- `robots.txt` fails closed. `src/app/robots.js` replaces the static
+  `src/app/robots.txt`, which let every crawler in on every build, staging
+  included. Only a build with `NEXT_PUBLIC_DEPLOY_ENV=production` (the release
+  image) allows crawlers and lists the sitemap. Any other build, local dev
+  included, serves `User-Agent: *` / `Disallow: /` with no sitemap line.
+  `.example.env` and `/docs/infrastructure` describe the switch.
+
+## 0.96.1
+
+### Changed
+
+- `deploy/production/compose.yaml` carries the production public values
+  (VAPID public key and subject, Umami host and site id, the OAuth client
+  ids, the server-side Sentry DSN) in place of the `<FILL>` placeholders.
+- `pin-production` refuses to pin a compose that still holds a `<FILL>`
+  value. `deploy/README.md` § Production names the guard, and says that the
+  production Git Sync row is created only after a pin of the filled compose
+  exists.
+
+## 0.96.0
+
+### Added
+
+- `deploy/production/compose.yaml`: the production stack `helldiversbot` for
+  the Hetzner swarm (Arcane environment production01). `app` and
+  `cloudflared` run on `node.labels.role == apps` with resource limits, and
+  every credential is an external swarm secret read through the `*_FILE`
+  convention. The public values are `<FILL>` until they are filled from the
+  password manager, before the first deploy.
+- `pin-production` in `build-release.yml`: a release tag pins
+  `deploy/production` (the branch Arcane Git Sync deploys) after both images
+  are built. `workflow_dispatch` with a `tag` input pins an existing release
+  without a rebuild; rollback is a dispatch of the previous tag.
+- `deploy/README.md` § Production: the stack, its secrets, the tunnel, the
+  pin, rollback and the migration rule.
+
+## 0.95.9
+
+### Changed
+
+- Node 26, the next LTS line (Active LTS from 2026-10-28), replaces Node 24
+  everywhere the project pins it: the app images (`node:26` build base,
+  `node:26-slim` runner), the migrate image (`node:26-alpine`),
+  `.node-version` (CI) and `mise.toml`. Node 26.12.1 carries the Node2Shell
+  fix (CVE-2026-111497). The runner keeps its shape: glibc, uid 65532, the
+  bare-`node` healthcheck and the `/nodejs/bin/node` symlink.
+- `@types/node` 24.19.2 to 26.6.5.
+- The visual regression job stays on the Playwright image's own Node (24 in
+  v1.64.1) until a Playwright image ships Node 26.
+
 ## 0.95.8
 
 ### Security

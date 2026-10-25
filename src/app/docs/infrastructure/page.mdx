@@ -46,7 +46,7 @@ The project uses two separate Dockerfiles. Migrations and the application server
 
 **Build process:**
 
-1. Base image: `node:24-alpine`
+1. Base image: `node:26-alpine`
 2. Install `tini` via `apk` (init system for zombie process prevention)
 3. Upgrade npm to `11.7.0`
 4. `WORKDIR /app`
@@ -85,10 +85,10 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 
 | Stage     | Base             | What it does                                                                                      |
 | --------- | ---------------- | ------------------------------------------------------------------------------------------------- |
-| `base`    | `node:24-alpine` | Installs `tini` and upgrades npm to `11.7.0`                                                      |
+| `base`    | `node:26`        | Debian (glibc) build base, so Sharp's prebuilt glibc binary matches the runtime                   |
 | `deps`    | `base`           | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent                               |
 | `builder` | `base`           | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build` |
-| `runner`  | `base`           | Copies only `.next/standalone`, `.next/static`, and `public`; runs as non-root user               |
+| `runner`  | `node:26-slim`   | Copies only `.next/standalone`, `.next/static`, and `public`; runs as non-root user               |
 
 **Runner stage details:**
 
@@ -416,7 +416,7 @@ Variables are checked at startup by `initializeEnvironmentVariables()` in `src/s
 | `SENTRY_ORG`                   | No               | Error tracking | GlitchTip organization slug; used for source map uploads                                                                                                                                        |
 | `SENTRY_PROJECT`               | No               | Error tracking | GlitchTip project slug; used for source map uploads                                                                                                                                             |
 | `GLITCHTIP_HEARTBEAT_URL`      | No               | Error tracking | GlitchTip uptime heartbeat endpoint; worker POSTs after each successful update                                                                                                                  |
-| `NEXT_PUBLIC_DEPLOY_ENV`       | No               | Error tracking | Environment tag attached to Sentry events. Inlined into the client bundle at `next build`; CI sets `staging` or `production` per pipeline. Falls back to `DEPLOY_ENV` then `NODE_ENV` if unset. |
+| `NEXT_PUBLIC_DEPLOY_ENV`       | No               | Error tracking | Inlined at `next build`; CI sets `staging` or `production`. Sentry environment tag (falls back to `DEPLOY_ENV`, then `NODE_ENV`). Only `production` makes `robots.txt` allow crawling.          |
 | `DEPLOY_ENV`                   | No               | Error tracking | Server-only fallback for the Sentry environment tag when rebuilding to update `NEXT_PUBLIC_DEPLOY_ENV` isn't an option.                                                                         |
 | `BETTER_AUTH_SECRET`           | No (all-or-none) | Auth           | BetterAuth session encryption secret; 128+ chars recommended. If absent, all auth features disabled. If present, all other auth vars are required                                               |
 | `BETTER_AUTH_URL`              | If auth          | Auth           | Base URL for BetterAuth (e.g., `http://localhost:3000`; production: `https://helldivers.bot`)                                                                                                   |
