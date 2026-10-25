@@ -53,12 +53,24 @@ jobs:
             - name: Lint, typecheck, test and build
               uses: ./.github/actions/verify
 
+    # Same shape as build-migrate: one leg per arch, each on a runner of that
+    # arch — NOT QEMU. On Node 26, `prisma generate` under emulated aarch64 dies
+    # with `Unable to parse JSON … [Context: getDmmf]`. Release run 40233672280
+    # (v0.96.3) published no app image because of it, as staging run 40131915205
+    # (0.95.9) did before 98d7255a; Node 24 survived QEMU. Each leg pushes
+    # :<tag>-<arch>; merge-app joins them into :<tag>, :production and :latest.
     build-app:
-        name: Build App Image
+        name: Build App Image (${{ matrix.arch }})
         needs: verify
         if: github.event_name == 'push'
-        runs-on: ubuntu-latest
-        # arm64 builds under QEMU emulation are slow; 30 leaves headroom.
+        strategy:
+            matrix:
+                include:
+                    - arch: amd64
+                      runner: ubuntu-latest
+                    - arch: arm64
+                      runner: ubuntu-24.04-arm
+        runs-on: ${{ matrix.runner }}
         timeout-minutes: 30
         permissions:
             contents: read
@@ -72,12 +84,10 @@ jobs:
               uses: ./.github/actions/docker-publish
               with:
                   file: ./Dockerfile.app
-                  platforms: linux/amd64,linux/arm64
+                  platforms: linux/${{ matrix.arch }}
                   registry-token: ${{ secrets.GITHUB_TOKEN }}
                   tags: |
-                      ghcr.io/${{ github.repository_owner }}/helldiversbot:${{ github.ref_name }}
-                      ghcr.io/${{ github.repository_owner }}/helldiversbot:production
-                      ghcr.io/${{ github.repository_owner }}/helldiversbot:latest
+                      ghcr.io/${{ github.repository_owner }}/helldiversbot:${{ github.ref_name }}-${{ matrix.arch }}
                   build-args: |
                       NODE_ENV=production
                       NEXT_PUBLIC_DEPLOY_ENV=production
@@ -91,6 +101,36 @@ jobs:
                       sentry_url=${{ vars.SENTRY_URL }}
                       sentry_org=${{ secrets.SENTRY_ORG }}
                       sentry_project=${{ secrets.SENTRY_PROJECT }}
+
+    merge-app:
+        name: Publish App Manifest
+        needs: build-app
+        if: github.event_name == 'push'
+        runs-on: ubuntu-latest
+        timeout-minutes: 5
+        permissions:
+            contents: read
+            packages: write
+
+        steps:
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v4.6.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Join the two arches into the release tags
+              env:
+                  IMAGE: ghcr.io/${{ github.repository_owner }}/helldiversbot
+                  TAG: ${{ github.ref_name }}
+              run: |
+                  docker buildx imagetools create -t "$IMAGE:$TAG" -t "$IMAGE:production" -t "$IMAGE:latest" "$IMAGE:$TAG-amd64" "$IMAGE:$TAG-arm64"
+                  out=$(docker buildx imagetools inspect "$IMAGE:$TAG")
+                  echo "$out"
+                  for p in linux/amd64 linux/arm64; do
+                    grep -qE "Platform: +$p$" <<< "$out" || { echo "::error::$IMAGE:$TAG has no $p manifest"; exit 1; }
+                  done
 
     # Always build migrate in Production — unlike staging, no skip logic here.
     # Each tag needs a versioned image, releases are infrequent (~$3/yr CI cost),
@@ -170,7 +210,7 @@ jobs:
 
     github-release:
         name: Create GitHub Release
-        needs: [build-app, merge-migrate]
+        needs: [merge-app, merge-migrate]
         if: github.event_name == 'push'
         runs-on: ubuntu-latest
         timeout-minutes: 10
@@ -234,8 +274,8 @@ jobs:
     # migration is migrated by hand before Arcane deploys it (README).
     pin-production:
         name: Pin Production
-        needs: [build-app, merge-migrate]
-        if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || (needs.build-app.result == 'success' && needs.merge-migrate.result == 'success')) }}
+        needs: [merge-app, merge-migrate]
+        if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || (needs.merge-app.result == 'success' && needs.merge-migrate.result == 'success')) }}
         # One pin at a time across tag pushes and dispatches: the workflow's
         # concurrency group is per ref, so a release pin and a rollback could race.
         concurrency:
