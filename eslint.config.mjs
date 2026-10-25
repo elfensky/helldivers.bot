@@ -1,7 +1,6 @@
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
 import reactHooks from 'eslint-plugin-react-hooks';
-import reactCompiler from 'eslint-plugin-react-compiler';
 import nextPlugin from '@next/eslint-plugin-next';
 import jsdoc from 'eslint-plugin-jsdoc';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
@@ -51,14 +50,12 @@ export default [
         },
         plugins: {
             'react-hooks': reactHooks,
-            'react-compiler': reactCompiler,
             '@next/next': nextPlugin,
         },
         rules: {
             ...reactHooks.configs.recommended.rules,
             ...nextPlugin.configs.recommended.rules,
             ...nextPlugin.configs['core-web-vitals'].rules,
-            'react-compiler/react-compiler': 'warn',
             'react-hooks/set-state-in-effect': 'off',
             'react-hooks/set-state-in-render': 'off',
             'react-hooks/purity': 'off',
