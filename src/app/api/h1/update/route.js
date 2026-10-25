@@ -15,6 +15,7 @@ import { computeBucket } from '@/shared/utils/bucketing.mjs';
 import { cleanupRateLimitWindows } from '@/shared/utils/api/rateLimit.mjs';
 import { isWorkerEnabled } from '@/shared/utils/initializeWorker.mjs';
 import { HOLDER_ID, claimLease, persistPollerState } from '@/update/lease.mjs';
+import { pruneInstances } from '@/update/instance.mjs';
 
 // Custom header set on the very first poll of a worker session so the
 // handler can run a one-time startup pass (e.g. backfill missing seasons).
@@ -34,7 +35,7 @@ export const WORKER_STARTUP_HEADER = 'x-worker-startup';
 // Throttle for the rate-limit window cleanup. The worker polls every ~15s, so
 // we run the purge at most hourly (tracked here, not per-restart) to keep the
 // api_rate_limit table tiny without a DELETE on every poll. The 0 default makes
-// it fire on the first poll after boot.
+// it fire on the first poll after boot. The same hourly pass prunes app_instance.
 let lastRateLimitCleanup = 0;
 const RATE_LIMIT_CLEANUP_INTERVAL_MS = 3_600_000;
 
@@ -100,6 +101,14 @@ export async function GET(request) {
                 reportError(error, {
                     route: '/api/h1/update',
                     stage: 'ratelimit-cleanup',
+                    level: 'warning',
+                });
+            }
+            const { error: pruneError } = await tryCatch(pruneInstances());
+            if (pruneError) {
+                reportError(pruneError, {
+                    route: '/api/h1/update',
+                    stage: 'instance-prune',
                     level: 'warning',
                 });
             }

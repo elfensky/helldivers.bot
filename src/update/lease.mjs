@@ -30,7 +30,10 @@ export function makeHolderId(env = process.env, hostname = os.hostname()) {
     const host = env.SENTRY_SERVER_NAME?.trim() || hostname;
     return `${host}:${process.pid}:${randomUUID().slice(0, 8)}`;
 }
-export const HOLDER_ID = makeHolderId();
+// Next.js can load a module more than once per process (one copy per route
+// bundle), like src/db/db.js caching the Prisma client on globalThis. The
+// app_instance row id must equal the holder id claimLease writes.
+export const HOLDER_ID = (globalThis.holderIdGlobal ??= makeHolderId());
 
 /**
  * Claim or renew the lease. Returns the persisted poller state when this
