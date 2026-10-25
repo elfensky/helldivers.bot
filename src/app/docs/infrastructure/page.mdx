@@ -100,7 +100,7 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 - Entrypoint: `/sbin/tini --`
 - CMD: `node server.js` (the Next.js standalone output file)
 - `EXPOSE 3000`, `ENV PORT=3000`, `ENV HOSTNAME="0.0.0.0"`
-- Healthcheck (Dockerfile-level): `curl -f http://0.0.0.0:3000/api/healthcheck` every 30s, timeout 5s, start period 5s, 3 retries
+- Healthcheck (Dockerfile-level): `curl -f http://0.0.0.0:3000/api/healthcheck` every 30s, timeout 5s, start period 5s, 3 retries. Each call also refreshes the replica's `app_instance` row after the response (at most once per 20 s per process); a failed write never changes the 200/503 answer
 
 ### docker-compose.yml
 
