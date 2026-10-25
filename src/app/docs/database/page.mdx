@@ -182,6 +182,7 @@ erDiagram
         String  hash    UK
         String  userId  FK
         Boolean enabled
+        DateTime lastUsedAt "nullable"
     }
 
     App {
@@ -197,6 +198,15 @@ erDiagram
         String   last_error "nullable"
         DateTime started_at
         DateTime updated_at
+    }
+
+    app_instance {
+        String   id             PK "HOLDER_ID"
+        String   host
+        String   version
+        Boolean  worker_enabled
+        DateTime started_at
+        DateTime last_seen
     }
 
     push_subscription {
@@ -533,6 +543,7 @@ Application API keys for external consumers. A random UUID is generated as the k
 | `description` | `String`    | `TEXT`          | User-provided label for the key                                                              |
 | `createdAt`   | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                                            |
 | `enabled`     | `Boolean`   | `BOOLEAN`       | `@default(true)` — keys can be disabled without deletion                                     |
+| `lastUsedAt`  | `DateTime?` | `TIMESTAMP(3)`  | Nullable. Last successful authentication. `validateApiKey` writes it in `after()`, at most once a minute per key |
 
 > **Security note:** SHA-256 is used as a one-way hash for key lookup. The key space is a random UUID (128 bits of entropy), which provides the actual security. The hash allows O(1) database lookups without storing the raw key. Validation logic is in `src/shared/utils/api/validateApiKey.mjs`.
 
@@ -593,6 +604,21 @@ Single-row-per-worker health tracking table. The worker thread upserts its row o
 
 **Used by:** `public/workers/cron.js` (upserts on each poll cycle), health check endpoints.
 
+### app_instance
+
+One row per running process, keyed by `HOLDER_ID` (`host:pid:nonce`). `/api/healthcheck` refreshes the row after the response, at most once per 20 s per process, and the admin System Overview refreshes the serving process's row before it reads. Roles are derived on read, never stored: POLLER when the id equals `worker_heartbeat.holder_id` and `lease_until` is in the future, STANDBY when the worker is enabled, WEB ONLY otherwise. A replica is LIVE up to 90 s after `last_seen`, LATE up to 5 min, and GONE after that. The lease holder's hourly cleanup deletes rows last seen more than 24 h ago.
+
+| Field            | Prisma Type | PostgreSQL Type | Constraints / Notes                                  |
+| ---------------- | ----------- | --------------- | ---------------------------------------------------- |
+| `id`             | `String`    | `TEXT`          | `@id` — `HOLDER_ID` (host:pid:nonce)                 |
+| `host`           | `String`    | `TEXT`          | Host or Swarm node name (first part of `HOLDER_ID`)  |
+| `version`        | `String`    | `TEXT`          | App version of the process                           |
+| `worker_enabled` | `Boolean`   | `BOOLEAN`       | False when `WORKER_ENABLED=false` (web-only replica) |
+| `started_at`     | `DateTime`  | `TIMESTAMP(3)`  | Process start time                                   |
+| `last_seen`      | `DateTime`  | `TIMESTAMP(3)`  | Last registration                                    |
+
+**Used by:** `src/update/instance.mjs`, `src/shared/utils/admin/computeReplicas.mjs`.
+
 ---
 
 ## 9. Index and Constraint Summary
@@ -625,6 +651,7 @@ This table enumerates every uniqueness constraint and index across the schema.
 | `push_subscription` | `@unique`       | `endpoint`                 | One subscription per push endpoint           |
 | `push_subscription` | `@@index`       | `[endpoint]`               |                                              |
 | `worker_heartbeat`  | `@id`           | `worker_type`              | One row per worker type                      |
+| `app_instance`      | `@id`           | `id`                       | One row per running process (HOLDER_ID)      |
 
 ---
 

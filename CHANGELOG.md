@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added
+
+- The admin System Overview lists every running replica. It reads the new
+  `app_instance` table, which `/api/healthcheck` refreshes. The replica that
+  holds the poller lease shows a POLLER badge. A replica is LATE after 90
+  seconds and GONE after 5 minutes. A version-skew alert shows when replicas
+  run different versions for more than 10 minutes. The panel groups its values
+  into Health, Game data and Community tables. "Uptime" is now "Polling since".
+- API keys record `lastUsedAt`. The profile key table and the admin key table
+  show it as "Last used".
+- Deploy the migration `20261025220000_app_instance_api_key_last_used` with
+  `npx prisma migrate deploy`.
+
 ## 0.96.4
 
 ### Fixed
