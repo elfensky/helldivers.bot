@@ -2,6 +2,8 @@ import { describe, test, expect, vi } from 'vitest';
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
+import { registerInstance, listInstances } from '@/update/instance.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 import {
     getAllUsers,
     updateUserRole,
@@ -10,6 +12,12 @@ import {
     getAllApiKeys,
     getSystemStats,
 } from '@/features/admin/actions.mjs';
+
+vi.mock('@/update/instance.mjs', () => ({
+    registerInstance: vi.fn(async () => {}),
+    listInstances: vi.fn(async () => []),
+    pruneInstances: vi.fn(async () => {}),
+}));
 
 const adminId = '01908174-d3a5-7e50-b964-6f5e9e48c0a1';
 const targetUserId = '01908174-d3a5-7e50-b964-6f5e9e48c0a2';
@@ -307,6 +315,8 @@ describe('getSystemStats', () => {
         vi.mocked(auth.api.getSession).mockResolvedValue(userSession);
         const result = await getSystemStats();
         expect(result.errors.auth).toBeDefined();
+        expect(registerInstance).not.toHaveBeenCalled();
+        expect(listInstances).not.toHaveBeenCalled();
     });
 
     test('returns full stats shape for admin', async () => {
@@ -387,5 +397,42 @@ describe('getSystemStats', () => {
         const result = await getSystemStats();
         expect(result.data.currentSeason).toBeNull();
         expect(result.data.activeFactions).toBe(0);
+    });
+
+    describe('replicas', () => {
+        const arrange = () => {
+            vi.mocked(auth.api.getSession).mockResolvedValue(adminSession);
+            vi.mocked(db.h1_season.findFirst).mockResolvedValue({ season: 1 });
+            vi.mocked(db.worker_heartbeat.findUnique).mockResolvedValue(null);
+            vi.mocked(db.$queryRaw).mockResolvedValue([{ count: 0 }]);
+        };
+
+        test('registers the serving process and returns the replica view', async () => {
+            arrange();
+            const result = await getSystemStats();
+            expect(registerInstance).toHaveBeenCalledTimes(1);
+            expect(listInstances).toHaveBeenCalled();
+            expect(result.data).toMatchObject({
+                replicas: [],
+                gone: [],
+                liveVersions: [],
+                skew: null,
+                hasPoller: false,
+            });
+        });
+
+        test('a failing registration still returns the stats and is reported', async () => {
+            arrange();
+            vi.mocked(registerInstance).mockRejectedValue(new Error('write failed'));
+            const result = await getSystemStats();
+            expect(result.data).toBeDefined();
+            expect(reportError).toHaveBeenCalledWith(
+                expect.any(Error),
+                expect.objectContaining({
+                    stage: 'instance-register',
+                    level: 'warning',
+                }),
+            );
+        });
     });
 });
