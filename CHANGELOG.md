@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.97.0
+
 ### Added
 
 - The admin System Overview lists every running replica. It reads the new
