@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.96.3
+
+### Security
+
+- Dependabot alert #214 is closed (GHSA-mrhx-c7xc-m3w5: zod below 4.6.6 can
+  exhaust memory while it validates oversized collections). A root
+  `"zod": "$zod"` entry in `overrides` resolves the four `@serwist/*`
+  packages, which pin zod 4.6.5 exactly, to the app's zod 4.6.7.
+- `eslint-plugin-react-compiler` is removed: it pulled zod 3.25.76 and
+  blocked GitHub's security update. `eslint-plugin-react-hooks` 7 carries the
+  React Compiler lint rules; `babel-plugin-react-compiler` and
+  `reactCompiler: true` are unchanged.
+
 ## 0.96.2
 
 ### Fixed
