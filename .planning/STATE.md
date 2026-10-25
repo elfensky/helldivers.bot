@@ -1,5 +1,6 @@
 ---
 gsd_state_version: "1.0"
+milestone: v0.96.2
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
@@ -9,11 +10,10 @@ last_activity: 2026-10-25
 last_activity_desc: Phase 01 complete, transitioned to Phase 2
 state_head: db35a4afe6464c1240554a7fe34dd1337f419052
 progress:
-  total_phases: 18
+  total_phases: 19
   completed_phases: 1
   total_plans: 21
   completed_plans: 9
-  percent: 6
 ---
 
 # Project State
@@ -121,6 +121,10 @@ None yet.
 | 261025-2yd | Staging robots.txt fails closed: Disallow all unless NEXT_PUBLIC_DEPLOY_ENV is production | 2026-10-25 | 2a0d52cd | [261025-2yd-staging-robots-txt-fails-closed-disallow](./quick/261025-2yd-staging-robots-txt-fails-closed-disallow/) |
 | 261025-tlm | Close Dependabot alert #214: root zod override, drop eslint-plugin-react-compiler | 2026-10-25 | 66122625 | [261025-tlm-close-dependabot-alert-214-zod-override-](./quick/261025-tlm-close-dependabot-alert-214-zod-override-/) |
 | 261025-uz2 | Release app image builds arm64 natively: per-arch legs plus merge-app in build-release.yml | 2026-10-25 | db35a4af | [261025-uz2-release-app-image-builds-arm64-natively-](./quick/261025-uz2-release-app-image-builds-arm64-natively-/) |
+
+### Roadmap Evolution
+
+- Phase 01.1 inserted after Phase 1: Production on the Hetzner Swarm (#588): pin-production deploys every release; Phase 2 plans 02-01/02-09/02-11/02-12 assume v0.95.7 and a manual pull (URGENT)
 
 ## Deferred Items
 

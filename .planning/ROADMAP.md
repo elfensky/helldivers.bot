@@ -14,6 +14,7 @@ This milestone drains every open GitHub issue to a terminal state: stability bug
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Stability Fixes & Release** - The five known production bug classes are fixed at root cause, verified live, and `develop` is released to `main` (completed 2026-10-21)
+- [ ] **Phase 1.1: Production on the Hetzner Swarm** (INSERTED) - Production runs on the Hetzner swarm, and every release reaches it through `pin-production` (#588)
 - [ ] **Phase 2: Docs Accuracy & Operational Housekeeping** - CLAUDE.md and `/docs` describe the lease model as it actually works, and outstanding operational verification chores close out
 - [ ] **Phase 3: Test Co-location** - Unit tests move next to their modules before any later phase adds more tests
 - [ ] **Phase 4: Dependency Cleanup & Auto-merge Automation** - The Dependabot backlog clears and minor/patch updates merge unattended thereafter
@@ -80,6 +81,22 @@ Plans:
 - [x] 01-09-PLAN.md — 48h GlitchTip re-count on the new deployment id, issue disposition (STAB-06)
 
 **UI hint**: yes
+
+### Phase 01.1: Production on the Hetzner Swarm (INSERTED)
+
+**Goal:** Production runs on the Hetzner swarm, and every release reaches it through `pin-production`
+**Issue:** #588
+**Requirements**: none (an infrastructure move, tracked by #588)
+**Depends on:** Phase 1
+**Success Criteria** (what must be TRUE):
+
+  1. Stack `helldiversbot` (`app` ×2, `cloudflared` ×2) runs on the Arcane environment production01, applied by Arcane Git Sync from the CI-owned branch `deploy/production` (`deploy/README.md` § Production)
+  2. A release tag `vX.Y.Z` builds both images, and `pin-production` force-pushes `deploy/production` with that tag; no manual image pull happens on the production host
+  3. The unreleased `develop` backlog (0.95.9 to 0.96.2) ships as v0.96.2 through this pipeline, and production reports `appVersion` 0.96.2
+
+**Impact on Phase 2:** plans 02-01, 02-09, 02-11 and 02-12 assume release v0.95.7 and a manual production pull. Production now runs releases pinned by `pin-production`, so these four plans need a re-plan before Phase 2 executes.
+
+**Plans:** none — an operational release; evidence in `01.1-RELEASE-RECORD.md`
 
 ### Phase 2: Docs Accuracy & Operational Housekeeping
 
@@ -401,6 +418,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stability Fixes & Release | 9/9 | Complete    | 2026-10-21 |
+| 1.1. Production on the Hetzner Swarm (INSERTED) | - | In progress | - |
 | 2. Docs Accuracy & Operational Housekeeping | 0/TBD | Not started | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
