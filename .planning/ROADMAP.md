@@ -14,7 +14,7 @@ This milestone drains every open GitHub issue to a terminal state: stability bug
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Stability Fixes & Release** - The five known production bug classes are fixed at root cause, verified live, and `develop` is released to `main` (completed 2026-10-21)
-- [ ] **Phase 1.1: Production on the Hetzner Swarm** (INSERTED) - Production runs on the Hetzner swarm, and every release reaches it through `pin-production` (#588)
+- [x] **Phase 1.1: Production on the Hetzner Swarm** (INSERTED) - Production runs on the Hetzner swarm, and every release reaches it through `pin-production` (#588) (completed 2026-10-25)
 - [ ] **Phase 2: Docs Accuracy & Operational Housekeeping** - CLAUDE.md and `/docs` describe the lease model as it actually works, and outstanding operational verification chores close out
 - [ ] **Phase 3: Test Co-location** - Unit tests move next to their modules before any later phase adds more tests
 - [ ] **Phase 4: Dependency Cleanup & Auto-merge Automation** - The Dependabot backlog clears and minor/patch updates merge unattended thereafter
@@ -418,7 +418,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stability Fixes & Release | 9/9 | Complete    | 2026-10-21 |
-| 1.1. Production on the Hetzner Swarm (INSERTED) | - | In progress | - |
+| 1.1. Production on the Hetzner Swarm (INSERTED) | - | Complete    | 2026-10-25 |
 | 2. Docs Accuracy & Operational Housekeeping | 0/TBD | Not started | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
