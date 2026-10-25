@@ -5,10 +5,10 @@ current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
 stopped_at: Phase 2 context refreshed (assumptions mode)
-last_updated: "2026-10-25T21:28:25.465Z"
+last_updated: "2026-10-25T22:34:10.378Z"
 last_activity: 2026-10-25
 last_activity_desc: Phase 01 complete, transitioned to Phase 2
-state_head: db35a4afe6464c1240554a7fe34dd1337f419052
+state_head: f535b86544d25c4309fe08a7b6dc3fff55129e6b
 progress:
   total_phases: 19
   completed_phases: 1
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — READY TO EXECUTE
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-10-25 - Completed quick task 261025-uz2: Release app image builds arm64 natively: per-arch legs plus merge-app in build-release.yml
+Last activity: 2026-10-25 - Completed quick task 261025-vze: Admin System Overview: all replicas with poller highlight, API key last used, grouped layout (#596)
 
 Progress: [█░░░░░░░░░] 6%
 
@@ -121,6 +121,7 @@ None yet.
 | 261025-2yd | Staging robots.txt fails closed: Disallow all unless NEXT_PUBLIC_DEPLOY_ENV is production | 2026-10-25 | 2a0d52cd | [261025-2yd-staging-robots-txt-fails-closed-disallow](./quick/261025-2yd-staging-robots-txt-fails-closed-disallow/) |
 | 261025-tlm | Close Dependabot alert #214: root zod override, drop eslint-plugin-react-compiler | 2026-10-25 | 66122625 | [261025-tlm-close-dependabot-alert-214-zod-override-](./quick/261025-tlm-close-dependabot-alert-214-zod-override-/) |
 | 261025-uz2 | Release app image builds arm64 natively: per-arch legs plus merge-app in build-release.yml | 2026-10-25 | db35a4af | [261025-uz2-release-app-image-builds-arm64-natively-](./quick/261025-uz2-release-app-image-builds-arm64-natively-/) |
+| 261025-vze | Admin System Overview: all replicas with poller highlight, API key last used, grouped layout (#596) | 2026-10-25 | f535b865 | [261025-vze-admin-system-overview-all-replicas-with-](./quick/261025-vze-admin-system-overview-all-replicas-with-/) |
 
 ### Roadmap Evolution
 
