@@ -163,7 +163,7 @@ function ReplicaCard({ replica }) {
     return (
         <div className="grid grid-cols-[minmax(0,1fr)_var(--card-accent-width)] border border-ghost bg-surface-1">
             <div className="min-w-0 p-3">
-                <p className="font-mono text-small uppercase">
+                <p className="mb-0! font-mono text-small uppercase">
                     <span
                         className={role === 'poller' ? 'text-primary' : 'text-text-muted'}
                     >
@@ -173,11 +173,11 @@ function ReplicaCard({ replica }) {
                 </p>
                 <p
                     title={host}
-                    className="truncate font-display text-h3 text-text uppercase"
+                    className="mt-1 mb-0! truncate font-display text-h3 text-text uppercase"
                 >
                     {host}
                 </p>
-                <p className="flex flex-wrap gap-x-3 font-mono text-small text-text-muted">
+                <p className="mt-1 mb-0! flex flex-wrap gap-x-3 font-mono text-small text-text-muted">
                     <span className="whitespace-nowrap">v{version}</span>
                     <span className="whitespace-nowrap">
                         up {formatUptime(started_at)}
