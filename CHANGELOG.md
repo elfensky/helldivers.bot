@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.96.2
+
+### Fixed
+
+- `robots.txt` fails closed. `src/app/robots.js` replaces the static
+  `src/app/robots.txt`, which let every crawler in on every build, staging
+  included. Only a build with `NEXT_PUBLIC_DEPLOY_ENV=production` (the release
+  image) allows crawlers and lists the sitemap. Any other build, local dev
+  included, serves `User-Agent: *` / `Disallow: /` with no sitemap line.
+  `.example.env` and `/docs/infrastructure` describe the switch.
+
 ## 0.96.1
 
 ### Changed
