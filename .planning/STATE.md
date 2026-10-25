@@ -4,10 +4,10 @@ current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
 stopped_at: Phase 2 context refreshed (assumptions mode)
-last_updated: "2026-10-25T20:33:27.892Z"
+last_updated: "2026-10-25T21:28:25.465Z"
 last_activity: 2026-10-25
 last_activity_desc: Phase 01 complete, transitioned to Phase 2
-state_head: 66122625408cf3bd36c09e4584a3635eb3092c7b
+state_head: db35a4afe6464c1240554a7fe34dd1337f419052
 progress:
   total_phases: 18
   completed_phases: 1
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — READY TO EXECUTE
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-10-25 - Completed quick task 261025-tlm: Close Dependabot alert #214: root zod override, drop eslint-plugin-react-compiler
+Last activity: 2026-10-25 - Completed quick task 261025-uz2: Release app image builds arm64 natively: per-arch legs plus merge-app in build-release.yml
 
 Progress: [█░░░░░░░░░] 6%
 
@@ -120,6 +120,7 @@ None yet.
 | 261021-epu | Fold Dependabot PRs #556-#564: vitest 5 (grouped), Sentry 11 with v10 data-collection scope, mermaid 12, dotenv 18, eslint-plugin-jsdoc 65, @types/node 24.19 | 2026-10-21 | a11def5f | [261021-epu-fold-dependabot-prs-556-564-vitest-5-sen](./quick/261021-epu-fold-dependabot-prs-556-564-vitest-5-sen/) |
 | 261025-2yd | Staging robots.txt fails closed: Disallow all unless NEXT_PUBLIC_DEPLOY_ENV is production | 2026-10-25 | 2a0d52cd | [261025-2yd-staging-robots-txt-fails-closed-disallow](./quick/261025-2yd-staging-robots-txt-fails-closed-disallow/) |
 | 261025-tlm | Close Dependabot alert #214: root zod override, drop eslint-plugin-react-compiler | 2026-10-25 | 66122625 | [261025-tlm-close-dependabot-alert-214-zod-override-](./quick/261025-tlm-close-dependabot-alert-214-zod-override-/) |
+| 261025-uz2 | Release app image builds arm64 natively: per-arch legs plus merge-app in build-release.yml | 2026-10-25 | db35a4af | [261025-uz2-release-app-image-builds-arm64-natively-](./quick/261025-uz2-release-app-image-builds-arm64-natively-/) |
 
 ## Deferred Items
 
