@@ -45,6 +45,7 @@ export async function getApiKeysByUserId(userId) {
                 visible: true,
                 createdAt: true,
                 enabled: true,
+                lastUsedAt: true,
             },
         }),
     );

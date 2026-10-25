@@ -1,5 +1,6 @@
-import { describe, test, expect, vi } from 'vitest';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
 import db from '@/db/db';
+import { after } from 'next/server';
 import { validateApiKey } from '@/shared/utils/api/validateApiKey.mjs';
 import { createHash } from 'crypto';
 
@@ -38,7 +39,7 @@ describe('validateApiKey', () => {
             .digest('hex');
         expect(db.ApiKey.findUnique).toHaveBeenCalledWith({
             where: { hash: expectedHash },
-            select: { id: true, userId: true, enabled: true },
+            select: { id: true, userId: true, enabled: true, lastUsedAt: true },
         });
     });
 
@@ -83,5 +84,78 @@ describe('validateApiKey', () => {
         expect(db.ApiKey.findUnique).toHaveBeenCalledWith(
             expect.objectContaining({ where: { hash: expectedHash } }),
         );
+    });
+
+    describe('last-used stamp', () => {
+        /** @type {Promise<void> | undefined} */
+        let deferred;
+        beforeEach(() => {
+            deferred = undefined;
+            vi.mocked(after).mockImplementation((fn) => {
+                deferred = fn();
+            });
+        });
+
+        const keyRow = (lastUsedAt, enabled = true) =>
+            vi.mocked(db.ApiKey.findUnique).mockResolvedValue({
+                id: 'key-1',
+                userId: 'user-1',
+                enabled,
+                lastUsedAt,
+            });
+
+        test('never-used key is stamped once in after()', async () => {
+            keyRow(null);
+            const result = await validateApiKey(makeRequest('Bearer k'));
+            expect(result).toEqual({
+                data: { userId: 'user-1', keyId: 'key-1' },
+                code: null,
+            });
+            expect(after).toHaveBeenCalledTimes(1);
+            await deferred;
+            expect(db.ApiKey.updateMany).toHaveBeenCalledWith({
+                where: {
+                    id: 'key-1',
+                    OR: [{ lastUsedAt: null }, { lastUsedAt: { lt: expect.any(Date) } }],
+                },
+                data: { lastUsedAt: expect.any(Date) },
+            });
+        });
+
+        test('61 s old stamp is refreshed, 10 s old is not', async () => {
+            keyRow(new Date(Date.now() - 61_000));
+            await validateApiKey(makeRequest('Bearer k'));
+            expect(after).toHaveBeenCalledTimes(1);
+
+            vi.mocked(after).mockClear();
+            keyRow(new Date(Date.now() - 10_000));
+            await validateApiKey(makeRequest('Bearer k'));
+            expect(after).not.toHaveBeenCalled();
+        });
+
+        test('a failed stamp is swallowed', async () => {
+            keyRow(null);
+            vi.mocked(db.ApiKey.updateMany).mockRejectedValue(new Error('write failed'));
+            await validateApiKey(makeRequest('Bearer k'));
+            await expect(deferred).resolves.toBeUndefined();
+        });
+
+        test.each([
+            ['disabled', () => keyRow(null, false)],
+            ['unknown', () => vi.mocked(db.ApiKey.findUnique).mockResolvedValue(null)],
+            [
+                'db error',
+                () => vi.mocked(db.ApiKey.findUnique).mockRejectedValue(new Error('x')),
+            ],
+        ])('%s key writes nothing', async (_name, arrange) => {
+            arrange();
+            await validateApiKey(makeRequest('Bearer k'));
+            expect(after).not.toHaveBeenCalled();
+        });
+
+        test('missing key writes nothing', async () => {
+            await validateApiKey(makeRequest(undefined));
+            expect(after).not.toHaveBeenCalled();
+        });
     });
 });
