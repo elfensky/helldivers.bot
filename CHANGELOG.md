@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.96.4
+
+### Fixed
+
+- The release app image builds arm64 natively. `build-release.yml` builds one
+  `build-app` leg per arch on a runner of that arch, and `merge-app` joins them
+  into `:vX.Y.Z`, `:production` and `:latest`; `pin-production` and the GitHub
+  Release wait for it. Under QEMU, Node 26 `prisma generate` fails
+  (`Unable to parse JSON … [Context: getDmmf]`), so the v0.96.3 build published
+  no app image and pinned nothing. Staging got the same fix in `98d7255a`.
+
 ## 0.96.3
 
 ### Security
