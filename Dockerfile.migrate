@@ -9,18 +9,12 @@
 #
 # Single-purpose, short-lived container that runs `prisma migrate deploy`
 # followed by an idempotent seed script, then exits. It is NOT a long-running
-# service. The `helldiversbot` service in docker-compose.yml depends on this
-# container exiting cleanly (`condition: service_completed_successfully`)
-# before it starts, so a failed migration blocks the app deploy.
+# service.
 #
-# WHY A SEPARATE IMAGE INSTEAD OF RUNNING MIGRATIONS FROM THE APP IMAGE
-#
-# - Decouples deploy lifecycle: migration failures don't crash-loop the app
-# - Smaller surface area: only ships what `prisma migrate deploy` + seed need,
-#   not the full Next.js runtime
-# - Can be replaced with a Kubernetes Job or one-off CI step without touching
-#   the app deployment
-# - Keeps the app image free of dev/migration tooling
+# The app image now runs the same two steps on start, from /app/migrate
+# (Dockerfile.app, migrate-tools stage; src/update/migrateOnStart.mjs). This
+# image stays as the manual and emergency one-shot: for example a seed with
+# FORCE_SEED=true, or a migration run while no app task is up.
 #
 # WHY THIS DOCKERFILE LOOKS UNUSUAL
 #
@@ -162,5 +156,5 @@ ENTRYPOINT ["/sbin/tini", "--"]
 #      everything ("false" is correctly read as off).
 #
 # `&&` ensures the seed only runs if migrate succeeds. The container exits
-# with the appropriate code so docker-compose can gate the app on it.
+# with the appropriate code.
 CMD ["sh", "-c", "npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs"]
