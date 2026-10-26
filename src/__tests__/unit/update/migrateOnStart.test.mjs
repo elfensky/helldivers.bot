@@ -18,6 +18,7 @@ vi.mock('pg', () => ({
 }));
 
 const {
+    CHILD_TIMEOUT_MS,
     MIGRATE_ARGS,
     MIGRATION_LOCK_KEY,
     RETRY_DELAYS_MS,
@@ -337,5 +338,15 @@ describe('runNode', () => {
         await expect(runNode(['-e', 'process.exit(3)'], os.tmpdir())).rejects.toThrow(
             /code 3/,
         );
+    });
+
+    it('kills a child that runs past the time limit', async () => {
+        await expect(
+            runNode(['-e', 'setTimeout(() => {}, 60000)'], os.tmpdir(), { timeout: 200 }),
+        ).rejects.toThrow(/signal SIGTERM/);
+    });
+
+    it('defaults the time limit to the 300 s health-check start period', () => {
+        expect(CHILD_TIMEOUT_MS).toBe(300_000);
     });
 });
