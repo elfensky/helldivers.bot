@@ -313,7 +313,32 @@ describe('migrateOnce', () => {
             'end',
         ]);
         expect(fakeClient.query.mock.calls[0][1]).toEqual([MIGRATION_LOCK_KEY]);
-        expect(run).toHaveBeenCalledWith(MIGRATE_ARGS, root);
+        expect(run).toHaveBeenCalledWith(MIGRATE_ARGS, root, {
+            signal: expect.any(AbortSignal),
+        });
+        expect(fakeClient.end).toHaveBeenCalledTimes(1);
+    });
+
+    it('kills the running child when the lock session is lost', async () => {
+        const run = vi.fn(
+            (_args, _cwd, { signal }) =>
+                new Promise((_resolve, reject) => {
+                    signal.addEventListener('abort', () => reject(new Error('killed')));
+                }),
+        );
+
+        const attempt = migrateOnce({
+            connectionString: 'cs',
+            root,
+            run,
+            logger: makeLogger(),
+        });
+        await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(1));
+        const onError = fakeClient.on.mock.calls.find(([event]) => event === 'error')[1];
+        onError(new Error('Connection terminated unexpectedly'));
+
+        await expect(attempt).rejects.toThrow('killed');
+        expect(run.mock.calls[0][2].signal.aborted).toBe(true);
         expect(fakeClient.end).toHaveBeenCalledTimes(1);
     });
 
@@ -344,6 +369,15 @@ describe('runNode', () => {
         await expect(
             runNode(['-e', 'setTimeout(() => {}, 60000)'], os.tmpdir(), { timeout: 200 }),
         ).rejects.toThrow(/signal SIGTERM/);
+    });
+
+    it('kills the child when the signal aborts', async () => {
+        const controller = new AbortController();
+        const child = runNode(['-e', 'setTimeout(() => {}, 60000)'], os.tmpdir(), {
+            signal: controller.signal,
+        });
+        controller.abort();
+        await expect(child).rejects.toThrow(/abort/i);
     });
 
     it('defaults the time limit to the 300 s health-check start period', () => {

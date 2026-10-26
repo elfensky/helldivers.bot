@@ -47,12 +47,18 @@ export const CHILD_TIMEOUT_MS = 300_000;
  * @param {string[]} args - Arguments for the node binary.
  * @param {string} cwd - Working directory of the child.
  * @param {object} [options] - Options.
+ * @param {AbortSignal} [options.signal] - Kill the child (SIGTERM) when it aborts.
  * @param {number} [options.timeout] - Kill the child (SIGTERM) after this many ms.
  * @returns {Promise<void>} Resolves on exit code 0.
  */
-export function runNode(args, cwd, { timeout = CHILD_TIMEOUT_MS } = {}) {
+export function runNode(args, cwd, { signal, timeout = CHILD_TIMEOUT_MS } = {}) {
     return new Promise((resolve, reject) => {
-        const child = spawn(process.execPath, args, { cwd, stdio: 'inherit', timeout });
+        const child = spawn(process.execPath, args, {
+            cwd,
+            stdio: 'inherit',
+            signal,
+            timeout,
+        });
         child.on('error', reject);
         child.on('exit', (code, signal) => {
             if (code === 0) resolve();
@@ -138,7 +144,7 @@ async function lockedSteps(client, root, run, logger) {
  * @param {object} options - Options.
  * @param {string} options.connectionString - Postgres URL.
  * @param {string} options.root - Folder with the Prisma CLI and prisma/.
- * @param {(args: string[], cwd: string) => Promise<void>} [options.run] - Child runner.
+ * @param {(args: string[], cwd: string, options: { signal: AbortSignal }) => Promise<void>} [options.run] - Child runner.
  * @param {Pick<Console, 'log'>} [options.logger] - Log sink.
  * @returns {Promise<void>}
  */
@@ -149,12 +155,16 @@ export async function migrateOnce({
     logger = console,
 }) {
     const client = new Client({ connectionString, keepAlive: true });
-    // An unexpected socket end emits 'error'; with no listener the process exits.
-    // The failure still surfaces through the rejected query.
-    client.on('error', () => {});
+    // An unexpected socket end emits 'error' (with no listener the process exits)
+    // and releases the advisory lock, so it also kills the running child: another
+    // replica may now hold the lock. The failure surfaces through the aborted child
+    // or the rejected query.
+    const sessionLost = new AbortController();
+    client.on('error', () => sessionLost.abort());
     await client.connect();
+    const runLocked = (args, cwd) => run(args, cwd, { signal: sessionLost.signal });
     // Ending the session releases the advisory lock, on success and on failure.
-    return lockedSteps(client, root, run, logger).finally(() => client.end());
+    return lockedSteps(client, root, runLocked, logger).finally(() => client.end());
 }
 
 /**
