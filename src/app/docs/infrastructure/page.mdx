@@ -115,6 +115,7 @@ Every app process runs `migrateOrWait()` (`src/update/migrateOnStart.mjs`) from 
 
 - A dedicated `pg` session takes `pg_advisory_lock(599000001)`. Replicas take turns, so Prisma's own fixed 10 s migrate lock never contends.
 - The session runs `prisma migrate deploy`, then the seed. The session ends afterwards, which releases the lock on success and on failure.
+- Each of the two child processes has a 5 min limit, equal to the image's health-check start period. A stuck child is killed, so the attempt fails, reports and releases the lock.
 - The seed runs only when the sha256 of `prisma/seed/seed.mjs` plus `prisma/seed/seasons/*.json` differs from the hash in the `seed_state` table. A failed seed stores nothing, so the next attempt seeds again.
 - `migrateOrWait()` never throws. A failure logs `[migrate] failed: …`, reports to GlitchTip with stage `migrate-on-start`, and retries after 30 s, 60 s, 2 min, then every 5 min.
 - Next holds requests until `register()` resolves. A migrating task stays Starting, and Swarm's start-first update keeps the old tasks serving.
