@@ -209,6 +209,12 @@ erDiagram
         DateTime last_seen
     }
 
+    seed_state {
+        Int      id         PK "always 1"
+        String   hash
+        DateTime applied_at
+    }
+
     push_subscription {
         Int      id         PK "autoincrement"
         String   endpoint   UK
@@ -619,6 +625,18 @@ One row per running process, keyed by `HOLDER_ID` (`host:pid:nonce`). `/api/heal
 
 **Used by:** `src/update/instance.mjs`, `src/shared/utils/admin/computeReplicas.mjs`.
 
+### seed_state
+
+One row (id 1): the sha256 of the seed inputs (`prisma/seed/seed.mjs` plus every `prisma/seed/seasons/*.json`) from the last successful seed. Migrate-on-start compares the current hash with this row and runs the seed only when they differ, then stores the new hash. A failed seed stores nothing, so the next start seeds again.
+
+| Field        | Prisma Type | PostgreSQL Type | Constraints / Notes                             |
+| ------------ | ----------- | --------------- | ----------------------------------------------- |
+| `id`         | `Int`       | `INTEGER`       | `@id` — always 1                                |
+| `hash`       | `String`    | `TEXT`          | sha256 hex digest of the seed inputs            |
+| `applied_at` | `DateTime`  | `TIMESTAMP(3)`  | When the hash was stored (UTC)                  |
+
+**Used by:** `src/update/migrateOnStart.mjs`.
+
 ---
 
 ## 9. Index and Constraint Summary
@@ -652,6 +670,7 @@ This table enumerates every uniqueness constraint and index across the schema.
 | `push_subscription` | `@@index`       | `[endpoint]`               |                                              |
 | `worker_heartbeat`  | `@id`           | `worker_type`              | One row per worker type                      |
 | `app_instance`      | `@id`           | `id`                       | One row per running process (HOLDER_ID)      |
+| `seed_state`        | `@id`           | `id`                       | One row (id 1)                               |
 
 ---
 
