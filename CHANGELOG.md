@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## 0.98.0
+
+### Added
+
+- The `seed_state` table stores the hash of the seed inputs from the last
+  successful seed. The migration `20261026000000_seed_state` applies itself on
+  the next start.
+- `pg` is a direct dependency. It was already installed through
+  `@prisma/adapter-pg`.
+
+### Changed
+
+- Every new app task applies pending Prisma migrations, and the seed when the
+  seed data changed, before it serves (#599). Replicas take turns through a
+  Postgres advisory lock. A failure logs `[migrate] failed`, reports to
+  GlitchTip and retries after 30 s, 60 s, 2 min, then every 5 min, while the
+  old tasks keep serving. Staging and production need no manual migrate step.
+- The app image carries the migrate tooling in `/app/migrate` (`MIGRATE_ROOT`).
+  Its health check start period is 300 s.
+- `build-staging.yml` pins every green build, including builds that carry a
+  migration. Its manual-pin dispatch input is gone.
+- The compose files have no migrate service. The CI smoke stack boots the app
+  against an empty database.
+- `npm run dev` applies pending migrations on start.
+
 ## 0.97.0
 
 ### Added

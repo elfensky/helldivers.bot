@@ -12,23 +12,17 @@ Technical reference for the helldivers.bot infrastructure layer. Audience: proje
 
 ```mermaid
 graph LR
-    subgraph Startup["Container Startup Order"]
-        direction TB
-        M["Dockerfile.migrate"] --> |"1. prisma migrate deploy"| MIG["Run Migrations"]
-        MIG --> |"2. seed.mjs"| SEED["Seed Historical Data"]
-        SEED --> |"exit 0"| DONE["Container Exits"]
-    end
-
     subgraph App["Application Container"]
         direction TB
-        A["Dockerfile"] --> |"npm start"| SERVER["Next.js Server"]
-        SERVER --> |"instrumentation.js"| WORKER["Worker Thread"]
+        SERVER["server.js"] --> |"instrumentation.js"| REG["register()"]
+        REG --> MIG["migrateOrWait"]
+        MIG --> |"advisory lock"| DEPLOY["prisma migrate deploy"]
+        DEPLOY --> |"seed hash changed"| SEED["seed.mjs"]
+        SEED --> WORKER["Worker Thread"]
+        DEPLOY --> |"seed unchanged"| WORKER
         WORKER --> |"setTimeout loop"| POLL["Poll Official API"]
     end
 
-    Startup --> |"then"| App
-
-    style Startup fill:#1c1917,stroke:#f59e0b,color:#fbbf24
     style App fill:#0f1a0f,stroke:#22c55e,color:#4ade80
 ```
 
@@ -36,13 +30,13 @@ graph LR
 
 ## Section 1: Docker Strategy
 
-The project uses two separate Dockerfiles. Migrations and the application server run in separate containers with a defined startup order.
+The project uses two Dockerfiles. One image serves and migrates: the app image applies pending migrations on start. `Dockerfile.migrate` builds the manual and emergency image.
 
 ### Dockerfile.migrate
 
 **Image:** `ghcr.io/elfensky/helldiversbot-migrate:staging`
 
-**Purpose:** Runs `prisma migrate deploy` once and exits. It never stays alive.
+**Purpose:** Manual and emergency one-shot. It runs `prisma migrate deploy` and the seed once and exits. It never stays alive. The app image runs the same two steps on start.
 
 **Build process:**
 
@@ -79,7 +73,7 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 
 **Image:** `ghcr.io/elfensky/helldiversbot:staging`
 
-**Purpose:** Runs the Next.js standalone server. This container never touches migrations.
+**Purpose:** Runs the Next.js standalone server. Before it serves, it applies pending migrations, and the seed when its data changed (see Migrate on start).
 
 **Build stages:**
 
@@ -88,7 +82,8 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 | `base`    | `node:26`        | Debian (glibc) build base, so Sharp's prebuilt glibc binary matches the runtime                   |
 | `deps`    | `base`           | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent                               |
 | `builder` | `base`           | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build` |
-| `runner`  | `node:26-slim`   | Copies only `.next/standalone`, `.next/static`, and `public`; runs as non-root user               |
+| `migrate-tools` | `node:26-slim` | Mirrors `Dockerfile.migrate` (Prisma CLI, schema engine, seed, generated client); copied to `/app/migrate` |
+| `runner`  | `node:26-slim`   | Copies only `.next/standalone`, `.next/static`, `public` and `/app/migrate`; runs as non-root user |
 
 **Runner stage details:**
 
@@ -100,33 +95,32 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 - Entrypoint: `/sbin/tini --`
 - CMD: `node server.js` (the Next.js standalone output file)
 - `EXPOSE 3000`, `ENV PORT=3000`, `ENV HOSTNAME="0.0.0.0"`
-- Healthcheck (Dockerfile-level): `curl -f http://0.0.0.0:3000/api/healthcheck` every 30s, timeout 5s, start period 5s, 3 retries. Each call also refreshes the replica's `app_instance` row after the response (at most once per 20 s per process); a failed write never changes the 200/503 answer
+- Healthcheck (Dockerfile-level): a Node `fetch` of `/api/healthcheck` every 30s, timeout 5s, start period 300s, 3 retries. Failures inside the start period do not count, and the first healthy answer ends it. Each call also refreshes the replica's `app_instance` row after the response (at most once per 20 s per process); a failed write never changes the 200/503 answer
 
 ### docker-compose.yml
 
 ```
-migrate (helldiversbot-migrate:staging)
-  env_file: .docker.env
-  → runs once and exits
-
 helldiversbot (helldiversbot:staging)
-  env_file: .docker.env
-  environment: SKIP_MIGRATIONS=true
-  ports: 127.0.0.1:58102:3000
+  env_file: .env.development
+  ports: 127.0.0.1:50001:3000
   restart: unless-stopped
-  depends_on: migrate (condition: service_completed_successfully)
-  healthcheck: curl localhost:3000/api/healthcheck every 60s, timeout 10s, 3 retries, 10s start_period
+  healthcheck: Node fetch of /api/healthcheck every 60s, timeout 10s, 3 retries, 300s start_period
 ```
 
-The port binding `127.0.0.1:58102:3000` deliberately limits exposure to the host loopback interface. External traffic must arrive through a reverse proxy (e.g., nginx or Caddy) on the host.
+The port binding `127.0.0.1:50001:3000` deliberately limits exposure to the host loopback interface. External traffic must arrive through a reverse proxy (e.g., nginx or Caddy) on the host.
 
-The `depends_on: condition: service_completed_successfully` ensures the app container does not start until migrations finish and the migrate container exits with code 0.
+### Migrate on start
 
-`SKIP_MIGRATIONS=true` is passed to the app container environment to signal the initialization code that database setup has already been handled externally.
+Every app process runs `migrateOrWait()` (`src/update/migrateOnStart.mjs`) from `instrumentation.js`, before the worker starts and before Next serves a request.
 
-### Why two containers
-
-Running migrations inside the app container creates a race condition when scaling to multiple replicas — each replica would attempt to apply migrations simultaneously. By delegating migrations to a one-shot container that must complete before the app starts, the compose startup sequence is deterministic and safe.
+- A dedicated `pg` session takes `pg_advisory_lock(599000001)`. Replicas take turns, so Prisma's own fixed 10 s migrate lock never contends.
+- The session runs `prisma migrate deploy`, then the seed. The session ends afterwards, which releases the lock on success and on failure.
+- Each of the two child processes has a 5 min limit, equal to the image's health-check start period. A stuck child is killed, so the attempt fails, reports and releases the lock. A lost lock session also kills the running child, because another replica can then take the lock.
+- The seed runs only when the sha256 of `prisma/seed/seed.mjs` plus `prisma/seed/seasons/*.json` differs from the hash in the `seed_state` table. A failed seed stores nothing, so the next attempt seeds again.
+- `migrateOrWait()` never throws. A failure logs `[migrate] failed: …`, reports to GlitchTip with stage `migrate-on-start`, and retries after 30 s, 60 s, 2 min, then every 5 min.
+- Next holds requests until `register()` resolves. A migrating task stays Starting, and Swarm's start-first update keeps the old tasks serving.
+- `MIGRATE_ROOT` names the folder with the Prisma CLI and the `prisma/` tree. The image sets `/app/migrate`; the default is the process cwd.
+- Every migration stays backward compatible for one release (expand/contract), because start-first runs the old and the new version side by side. Rollback is a forward migration: Prisma has no down migrations.
 
 ---
 
@@ -431,7 +425,7 @@ Variables are checked at startup by `initializeEnvironmentVariables()` in `src/s
 | `VAPID_SUBJECT`                | No               | Push           | VAPID contact identifier (`mailto:` email)                                                                                                                                                      |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No               | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`)                                                                                                                                 |
 | `POSTGRES_SSL`                 | No               | Database       | Set to `"false"` for local dev without SSL; defaults to SSL enabled                                                                                                                             |
-| `SKIP_MIGRATIONS`              | No               | Docker         | Set to `"true"` in the app container; has no effect on initialization logic currently but signals intent                                                                                        |
+| `MIGRATE_ROOT`                 | No               | Docker         | Folder with the Prisma CLI and the `prisma/` tree for migrate-on-start; defaults to the process cwd, the image sets `/app/migrate`                                                              |
 | `NODE_ENV`                     | No               | App            | `development` or `production`; affects OpenAPI spec behavior and worker path resolution. No longer used as the Sentry environment tag — see `NEXT_PUBLIC_DEPLOY_ENV` above.                     |
 | `NEXT_RUNTIME`                 | Internal         | Next.js        | Set automatically by Next.js; controls which Sentry config and init steps run                                                                                                                   |
 

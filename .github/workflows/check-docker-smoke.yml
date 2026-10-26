@@ -33,8 +33,9 @@ jobs:
     smoke:
         name: Docker Compose Smoke Test
         runs-on: ubuntu-latest
-        # The Next.js image build takes ~5-7 minutes from a cold cache; the
-        # migrate image ~1 minute; postgres start + migrate run + app boot ~30s.
+        # The Next.js image build takes ~5-7 minutes from a cold cache; postgres
+        # start + app boot (migrate-on-start and the full seed on the empty
+        # database) ~1-2 minutes.
         # 20 minutes leaves comfortable headroom for runner variability.
         timeout-minutes: 20
 
@@ -59,8 +60,7 @@ jobs:
 
             - name: Start the stack
               # `--wait` (compose >= 2.17) blocks until every service reaches
-              # `healthy` (per `healthcheck:`) or `completed_successfully`
-              # (for one-shot containers like migrate), then exits 0.
+              # `healthy` (per `healthcheck:`), then exits 0.
               # On any service failure or healthcheck timeout it exits non-zero
               # — which is precisely the assertion we want.
               run: docker compose -f docker-compose.ci.yml up -d --wait
@@ -97,9 +97,6 @@ jobs:
               run: |
                   echo "::group::postgres logs"
                   docker compose -f docker-compose.ci.yml logs postgres || true
-                  echo "::endgroup::"
-                  echo "::group::migrate logs"
-                  docker compose -f docker-compose.ci.yml logs migrate || true
                   echo "::endgroup::"
                   echo "::group::helldiversbot logs"
                   docker compose -f docker-compose.ci.yml logs helldiversbot || true

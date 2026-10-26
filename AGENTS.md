@@ -69,7 +69,7 @@ Before the PR: small, logical commits; the verify chain (`npm run lint`, `npm ru
 `npm run test:unit`, `npm run build` — all four green); and the version bump as the PR's last commit
 (§ Git Workflow rule 2).
 
-**Prisma migrations:** If the branch creates a migration under `prisma/migrations/`, remind the user to run `npx prisma migrate deploy` against the local database after merging, before the next dev-server restart.
+**Prisma migrations:** the dev server applies pending migrations, and the seed when its data changed, on start, before it serves (`src/update/migrateOnStart.mjs`). After merging a branch that adds a migration, restart the dev server; `[migrate]` lines in its log show the result, and an unreachable database makes it wait and retry.
 
 ## Git Workflow
 
