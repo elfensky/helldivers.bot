@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-10-21)
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — READY TO EXECUTE
 Plan: Not started
 Status: Ready to execute
-Last activity: 2026-10-25 - Completed quick task 261025-vze: Admin System Overview: all replicas with poller highlight, API key last used, grouped layout (#596)
+Last activity: 2026-10-26 - Completed quick task 261026-1vk: Swarm stacks migrate on start: app applies Prisma migrations and seed under an advisory lock (#599)
 
 Progress: [█░░░░░░░░░] 6%
 
@@ -123,6 +123,7 @@ None yet.
 | 261025-tlm | Close Dependabot alert #214: root zod override, drop eslint-plugin-react-compiler | 2026-10-25 | 66122625 | [261025-tlm-close-dependabot-alert-214-zod-override-](./quick/261025-tlm-close-dependabot-alert-214-zod-override-/) |
 | 261025-uz2 | Release app image builds arm64 natively: per-arch legs plus merge-app in build-release.yml | 2026-10-25 | db35a4af | [261025-uz2-release-app-image-builds-arm64-natively-](./quick/261025-uz2-release-app-image-builds-arm64-natively-/) |
 | 261025-vze | Admin System Overview: all replicas with poller highlight, API key last used, grouped layout (#596) | 2026-10-25 | f535b865 | [261025-vze-admin-system-overview-all-replicas-with-](./quick/261025-vze-admin-system-overview-all-replicas-with-/) |
+| 261026-1vk | Swarm stacks migrate on start: app applies Prisma migrations and seed under an advisory lock (#599) | 2026-10-26 | 73cd6159 | [261026-1vk-swarm-stacks-migrate-on-start-app-applie](./quick/261026-1vk-swarm-stacks-migrate-on-start-app-applie/) |
 
 ### Roadmap Evolution
 
