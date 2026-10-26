@@ -271,7 +271,8 @@ jobs:
     #
     # On dispatch the builds are skipped and the job pins an existing release:
     # rollback is a dispatch of the previous tag. A release that carries a
-    # migration is migrated by hand before Arcane deploys it (README).
+    # migration needs no manual step: every new task applies pending migrations
+    # before it serves (src/update/migrateOnStart.mjs, #599).
     pin-production:
         name: Pin Production
         needs: [merge-app, merge-migrate]

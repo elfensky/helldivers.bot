@@ -96,6 +96,39 @@ RUN --mount=type=cache,target=/app/.next/cache,sharing=locked \
     fi
 #endregion
 
+#region migrate-tools
+# The Prisma CLI, its schema engine, the seed and its generated client, for
+# src/update/migrateOnStart.mjs (#599). Mirrors Dockerfile.migrate; see there
+# for why this installs 5 packages from a minimal manifest and not the project's.
+# The schema engine is a native, libc-specific binary, so it is built on the
+# runner's own base (node:26-slim, glibc, ships libssl.so.3) and never copied
+# from the alpine/musl migrate image.
+FROM node:26-slim AS migrate-tools
+WORKDIR /migrate
+COPY package.json /tmp/project-package.json
+COPY prisma ./prisma/
+COPY src/validators/isValidSeason.mjs ./src/validators/isValidSeason.mjs
+COPY src/shared/enums/events.mjs ./src/shared/enums/events.mjs
+COPY prisma.config.mjs ./
+RUN \
+    PRISMA_VERSION=$(node -p "require('/tmp/project-package.json').devDependencies?.prisma || require('/tmp/project-package.json').dependencies?.prisma") && \
+    CLIENT_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/client']") && \
+    ADAPTER_PG_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/adapter-pg']") && \
+    DOTENV_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.dotenv") && \
+    ZOD_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.zod") && \
+    echo '{"name":"migrate","version":"1.0.0","private":true,"type":"module"}' > package.json && \
+    npm install --no-audit --no-fund \
+      prisma@$PRISMA_VERSION \
+      @prisma/client@$CLIENT_VERSION \
+      @prisma/adapter-pg@$ADAPTER_PG_VERSION \
+      dotenv@$DOTENV_VERSION \
+      zod@$ZOD_VERSION && \
+    POSTGRES_URL=postgresql://dummy npx prisma generate && \
+    rm /tmp/project-package.json && \
+    npm cache clean --force && \
+    rm -rf /root/.npm /tmp/*
+#endregion
+
 #region runner
 # Minimal Debian runtime on glibc, so Sharp's prebuilt binaries load. Until
 # 2026-10-23 this was gcr.io/distroless/nodejs24-debian12:nonroot; distroless
@@ -135,6 +168,10 @@ ENV NEXT_PUBLIC_DEPLOY_ENV=$NEXT_PUBLIC_DEPLOY_ENV
 COPY --from=builder --chown=65532:65532 /app/.next/standalone ./
 COPY --from=builder --chown=65532:65532 /app/.next/static ./.next/static
 COPY --from=builder --chown=65532:65532 /app/public ./public
+# src/update/migrateOnStart.mjs runs the Prisma CLI and the seed from here
+# before the server serves (#599).
+COPY --from=migrate-tools --chown=65532:65532 /migrate /app/migrate
+ENV MIGRATE_ROOT=/app/migrate
 USER 65532:65532
 EXPOSE 3000
 ENV PORT=3000
@@ -145,6 +182,8 @@ ENV HOSTNAME="0.0.0.0"
 CMD ["node", "server.js"]
 # Node's built-in fetch (stable since Node 21) replaces wget/curl probes.
 # Exec form (JSON array) so no shell is involved.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+# The 300 s start period covers a fresh-database seed on a Pi. Failures inside
+# it do not count, and the first healthy answer ends it.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=3 \
     CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 #endregion

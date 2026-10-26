@@ -10,14 +10,6 @@ name: 'Build: Staging'
 # take effect once merged there, not from a feature branch.
 on:
     workflow_dispatch:
-        inputs:
-            migrated:
-                # The manual step after a migration: detect-migration keeps
-                # refusing to pin while prisma/ differs from the deployed pin,
-                # so once the staging DB is migrated, dispatch with this set.
-                description: 'Staging DB is migrated to this commit — pin it even though prisma/ changed'
-                type: boolean
-                default: false
     workflow_run:
         # Matches check-ci.yml's `name:`, NOT its filename. The two move
         # together or this trigger silently stops firing.
@@ -52,7 +44,6 @@ jobs:
         timeout-minutes: 10
         outputs:
             migrate: ${{ steps.filter.outputs.migrate }}
-            schema: ${{ steps.filter.outputs.schema }}
             image_missing: ${{ steps.check.outputs.missing }}
         steps:
             - name: Checkout code
@@ -61,25 +52,18 @@ jobs:
                   ref: ${{ env.TESTED_SHA }}
                   fetch-depth: 0
 
-            # Diff against what staging RUNS — the sha-<commit> pinned in
+            # One question: does the migrate image need a rebuild? The diff
+            # runs against what staging RUNS: the sha-<commit> pinned in
             # deploy/staging/compose.yaml on the deploy/staging branch (the
             # branch Git Sync watches; develop's copy of the image: line is not
             # what runs), falling back to the tested commit's copy until that
-            # branch exists — not against HEAD^. HEAD^..HEAD
-            # assumed every merge was a --no-ff merge commit; under rebase
-            # merges it is only the PR's last commit, which by AGENTS.md rule 2
-            # is always the version bump, so it never saw a migration. The pin
-            # spans every commit since the last deploy, whatever the merge
-            # method, and keeps refusing after a skipped bump until the
-            # migration is run and the tag pinned by hand. Pin unreadable or
-            # not in history: fail closed — treat it as a migration.
-            # Two questions, two outputs. `migrate` = rebuild the migrate image
-            # (anything that changes what it contains, package.json included).
-            # `schema` = the DATABASE needs the migrate container run (any
-            # prisma/ change but Markdown: schema, migrations, and the seed
-            # data it upserts) — the one that gates the staging tag bump. They
-            # must stay separate: every PR touches package.json for the
-            # version bump, so gating on `migrate` skipped every single deploy.
+            # branch exists. It is not HEAD^..HEAD: under rebase merges that is
+            # only the PR's last commit, the version bump. The pin spans every
+            # commit since the last deploy, whatever the merge method. Pin
+            # unreadable or not in history: rebuild the migrate image.
+            # `migrate` = anything that changes what the migrate image contains
+            # (package.json included). It never gates the staging pin: the app
+            # applies its own migrations on start (#599).
             - name: Detect migration-related changes
               id: filter
               run: |
@@ -90,9 +74,8 @@ jobs:
                   fi
                   deployed=$(sed -nE 's#^[[:space:]]*image: ghcr\.io/[^/]+/helldiversbot:sha-([0-9a-f]{40}).*#\1#p' <<< "$compose" | head -n 1)
                   if [ -z "$deployed" ] || ! git merge-base --is-ancestor "$deployed" HEAD 2>/dev/null; then
-                    echo "::warning title=staging base unknown::no pinned sha-<commit> on deploy/staging that is an ancestor of ${TESTED_SHA} — treating this build as a migration"
+                    echo "::warning title=staging base unknown::no pinned sha-<commit> on deploy/staging that is an ancestor of ${TESTED_SHA} — rebuilding the migrate image (the build is still pinned)"
                     echo "migrate=true" >> "$GITHUB_OUTPUT"
-                    echo "schema=true" >> "$GITHUB_OUTPUT"
                     exit 0
                   fi
                   changed=$(git diff --name-only "$deployed" HEAD)
@@ -104,11 +87,6 @@ jobs:
                     echo "migrate=true" >> "$GITHUB_OUTPUT"
                   else
                     echo "migrate=false" >> "$GITHUB_OUTPUT"
-                  fi
-                  if awk '/^prisma\// && !/\.md$/ { hit = 1 } END { exit !hit }' <<< "$changed"; then
-                    echo "schema=true" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "schema=false" >> "$GITHUB_OUTPUT"
                   fi
 
             - name: Check if migrate image exists
@@ -271,33 +249,24 @@ jobs:
     # run that deployed the good version (`gh run rerun <run> --job <job>`) —
     # it pins that run's tested commit again.
     #
-    # Gated on "no prisma/ change since the deployed pin" (detect-migration):
-    # a cloud runner cannot reach the LAN database, so a range that carries a
-    # migration is migrated by hand first — the migrate image is multi-arch,
-    # so from any LAN host, a Pi included — then pinned by dispatching this
-    # workflow on develop with `migrated: true`.
+    # No migration gate: every new task applies pending migrations, and the
+    # seed when its data changed, before it serves (src/update/migrateOnStart.mjs,
+    # #599), and start-first keeps the old tasks serving until then.
     bump-staging-tag:
         name: Bump Staging Tag
-        needs: [detect-migration, merge-app]
+        needs: [merge-app]
         if: ${{ !cancelled() && needs.merge-app.result == 'success' }}
         runs-on: ubuntu-latest
         timeout-minutes: 5
         permissions:
             contents: write
         steps:
-            - name: Migration since the deployed pin — not pinning
-              if: needs.detect-migration.outputs.schema == 'true' && inputs.migrated != true
-              run: |
-                  echo "::warning title=staging not pinned::prisma/ changed between the deployed pin and ${TESTED_SHA} — run helldiversbot-migrate:staging against the staging DB from any LAN host, then: gh workflow run build-staging.yml --ref develop -f migrated=true"
-
             - name: Checkout the tested commit
-              if: needs.detect-migration.outputs.schema != 'true' || inputs.migrated == true
               uses: actions/checkout@v7.0.1
               with:
                   ref: ${{ env.TESTED_SHA }}
 
             - name: Pin the tested image and push deploy/staging
-              if: needs.detect-migration.outputs.schema != 'true' || inputs.migrated == true
               run: |
                   sed -i -E "s#^([[:space:]]*image: ghcr\.io/[^/]+/helldiversbot:).*#\1sha-${TESTED_SHA}#" deploy/staging/compose.yaml
                   git config user.name github-actions[bot]
