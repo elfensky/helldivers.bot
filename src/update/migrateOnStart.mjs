@@ -35,14 +35,24 @@ export const MIGRATE_ARGS = ['node_modules/prisma/build/index.js', 'migrate', 'd
 export const SEED_ARGS = ['--experimental-strip-types', 'prisma/seed/seed.mjs'];
 
 /**
+ * Time limit for one child. The session timeouts do not reach the children's own
+ * connections; this keeps a stuck child from holding the lock. It equals the
+ * image's 300 s health-check start period, so the failure reports before Swarm
+ * replaces the task.
+ */
+export const CHILD_TIMEOUT_MS = 300_000;
+
+/**
  * Run `node <args>` in `cwd` with the parent env (POSTGRES_URL never appears in argv).
  * @param {string[]} args - Arguments for the node binary.
  * @param {string} cwd - Working directory of the child.
+ * @param {object} [options] - Options.
+ * @param {number} [options.timeout] - Kill the child (SIGTERM) after this many ms.
  * @returns {Promise<void>} Resolves on exit code 0.
  */
-export function runNode(args, cwd) {
+export function runNode(args, cwd, { timeout = CHILD_TIMEOUT_MS } = {}) {
     return new Promise((resolve, reject) => {
-        const child = spawn(process.execPath, args, { cwd, stdio: 'inherit' });
+        const child = spawn(process.execPath, args, { cwd, stdio: 'inherit', timeout });
         child.on('error', reject);
         child.on('exit', (code, signal) => {
             if (code === 0) resolve();
@@ -115,7 +125,8 @@ export async function seedIfChanged({ client, root, run = runNode, logger = cons
 async function lockedSteps(client, root, run, logger) {
     // No timeout set yet: a second replica waits here, then finds nothing pending.
     await client.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_KEY]);
-    // These bound this session's statements; the child processes open their own connections.
+    // These bound this session's statements; the children open their own connections,
+    // which CHILD_TIMEOUT_MS bounds.
     await client.query(`SET lock_timeout = '30s'`);
     await client.query(`SET statement_timeout = '10min'`);
     await run(MIGRATE_ARGS, root);
