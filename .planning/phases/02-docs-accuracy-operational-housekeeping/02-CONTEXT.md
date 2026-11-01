@@ -153,6 +153,10 @@ and WR-08 (D-25, D-26).
 - **D-20:** The prep ladder, per-issue prediction unblock gates and feature-reach table are not
   migrated. The pointer links to the last full version of the file (commit permalink), so the
   content stays one click away.
+- **D-19/D-20 superseded (Andrei, 2026-11-02):** `docs/roadmap.md` is deleted, not kept as a
+  pointer — under the one-roadmap standard a pointer is a second roadmap file. Its live items
+  (prediction gates, feature-reach table, prep ladder, three Phase 11 notes) moved to
+  `ROADMAP.md` § Carried over; the bb01517d permalink sits there. See `02-03-SUMMARY.md`.
 
 ### Release
 - **D-21:** Two production releases (Andrei, 2026-10-23). (1) At the start of Phase 2: release
