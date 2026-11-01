@@ -10,6 +10,17 @@ Next.js 16 app that caches the official Helldivers 1 API, stores historic game d
 - **Assume the dev server is already running on :3000.** Ask the user to (re)start it separately if needed to clear cache or if it crashed.
 - Report outcomes faithfully: if tests fail, say so with the relevant output; if you did not run a verification step, say that rather than implying it succeeded. Never claim "all tests pass" when output shows failures, never suppress or simplify failing checks (tests, lints, type errors) to manufacture a green result, and never characterize incomplete or broken work as done.
 
+## Life cockpit
+
+Tracked in the life-cockpit vault under `#personal` (tracker: `elfensky/helldivers.bot`). The cockpit is the
+control plane (what to work on); this repo is where the work happens. Report progress by
+opening/closing issues and PRs as usual — the cockpit pulls from the tracker on its next
+`/sync`. Nothing to update in the vault; don't mirror cockpit state (milestones, due dates) here.
+GSD projects: after `/gsd-new-project`, run `/cockpit-gsd-profile` once in this repo before planning the first slice.
+Roadmap: this repo owns its roadmap. `.planning/ROADMAP.md` (GSD) is the one roadmap file here; no second
+roadmap file lives in this repo. A session in this repo publishes it to projects.static.lav.ren through
+keijiban (`elfensky/keijiban`); the vault keeps the enrollment only, never a copy of the plan.
+
 ## File & Function Size
 
 - Prefer files under ~500–800 LOC. Files over 1000 LOC must be split before major changes.
