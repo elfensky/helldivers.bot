@@ -5,15 +5,15 @@ current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
 stopped_at: Phase 2 context refreshed (assumptions mode)
-last_updated: "2026-10-25T22:34:10.378Z"
+last_updated: "2026-11-01T22:37:20.082Z"
 last_activity: 2026-10-25
 last_activity_desc: Phase 01 complete, transitioned to Phase 2
-state_head: f535b86544d25c4309fe08a7b6dc3fff55129e6b
+state_head: 932adb42db2061bf409a6f7c95f35e10303e5615
 progress:
   total_phases: 19
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 21
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Project State
@@ -93,6 +93,7 @@ Recent decisions affecting current work:
 - [Phase 01]: [Phase 01]: OG route telemetry uses after() (not fire-and-forget) since opengraph-image is documented as a special Route Handler; no separate cache-hit event needed since the route only executes on a real invocation
 - [Phase 01]: [Phase 01]: OG sharp rejection (#503) reproduction attempt: NOT REPRODUCED against a locally built linux/arm64 standalone image across three distinct real map states; two of three hypotheses ruled out by inspection, findings posted to #503 which stays open
 - [Phase 01]: 01-09: all three STAB-06 classes RESIDUAL on release 0.95.2; #496/#503/#485 stay open; residual issues #565/#566/#567 filed
+- [Phase 02]: docs/roadmap.md deleted, not a pointer (supersedes D-19/D-20): .planning/ROADMAP.md is the one roadmap file; live items carried into ROADMAP.md § Carried over; plan 02-03 done outside execute-phase (2026-11-02)
 
 ### Pending Todos
 

@@ -110,7 +110,7 @@ Plans:
   2. Each public `/docs` page (architecture, data-flow, infrastructure, database, testing) matches the code when checked page-by-page against `.planning/codebase/` (DOCS-02)
   3. Sourcemaps are uploaded at build time and stripped from the shipped image once GlitchTip symbolication is proven on at least one release, verified by image size and a symbolicated production stack trace (HOUSE-03)
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
-  5. `docs/roadmap.md` is retired to a short pointer at `.planning/ROADMAP.md`, leaving one source of truth for execution order (HOUSE-05)
+  5. `docs/roadmap.md` is deleted and its live items are carried into `.planning/` (ARCH-11 and § Carried over), leaving `.planning/ROADMAP.md` as the one roadmap file (HOUSE-05, done 2026-11-02)
 
 **Plans**: 12 plans
 
@@ -125,7 +125,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-03-PLAN.md — #469 as ARCH-11 in Phase 11, then `docs/roadmap.md` retired to a pointer (HOUSE-05)
+- [x] 02-03-PLAN.md — #469 as ARCH-11 in Phase 11, then `docs/roadmap.md` retired: deleted, not a pointer (HOUSE-05, done 2026-11-02, see 02-03-SUMMARY.md)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -286,13 +286,14 @@ Plans:
 **Goal**: Players can see season-level analytics and story-driven insights that work across the full 160-season archive, with playback of a season's evolution
 **Mode:** mvp
 **Depends on**: Phase 10, Phase 3 (adds tests)
-**Requirements**: ARCH-02, ARCH-03, ARCH-04, ARCH-05
+**Requirements**: ARCH-02, ARCH-03, ARCH-04, ARCH-05, ARCH-11
 **Success Criteria** (what must be TRUE):
 
   1. The Momentum Tracker renders for any of the 160 seasons, and ships first among the new charts (ARCH-02)
   2. Season Report Card, Season Fingerprint radar, Player Attrition Curve, and Peak Hour Heatmap each hide (rather than render zeros) when their season lacks telemetry, pinned by a test, with the Report Card degrading gracefully on partial data (ARCH-03)
   3. Clutch Factor, Perfect Storm, Coordination Paradox, and Planet Heartbeat classify historic seasons against thresholds documented before implementation (ARCH-04)
   4. A player can scrub a season's timeline with the map evolving and control play/pause/speed (ARCH-05)
+  5. On the archives map a faction stays hidden until its introduction point in the season, and the live map is unchanged (ARCH-11)
 
 **Plans**: TBD
 **Note**: New season-level analytics pages register in the sitemap/llms.txt/metadata registry per the SEO-02/04 convention established in Phase 5.
@@ -419,7 +420,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 |-------|----------------|--------|-----------|
 | 1. Stability Fixes & Release | 9/9 | Complete    | 2026-10-21 |
 | 1.1. Production on the Hetzner Swarm (INSERTED) | - | Complete    | 2026-10-25 |
-| 2. Docs Accuracy & Operational Housekeeping | 0/TBD | Not started | - |
+| 2. Docs Accuracy & Operational Housekeeping | 1/12 | In progress | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
 | 5. SEO & Analytics Foundation | 0/TBD | Not started | - |
@@ -440,4 +441,39 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 ---
 *Roadmap created: 2026-08-29*
 *Revised: 2026-08-29 — inserted Phase 5 (SEO & Analytics Foundation, SEO-01…10 + HOUSE-02) after Test Co-location and Dependency Cleanup; renumbered Phases 5-17 to 6-18*
+*Revised: 2026-11-02 — `docs/roadmap.md` deleted (HOUSE-05); #469 scheduled as ARCH-11 in Phase 11; its other live items carried over below*
 *Granularity: fine (18 phases) · Mode: mvp*
+
+## Carried over from docs/ROADMAP.md (2026-11-02)
+
+Live items of the former `docs/roadmap.md` that no phase or requirement held. The file was deleted on 2026-11-02 (HOUSE-05); its last full version is at commit [`bb01517d`](https://github.com/elfensky/helldivers.bot/blob/bb01517d560cc7ec1d673a280628ce5e86f00dc4/docs/roadmap.md). Everything else it held lives in the phases above, in REQUIREMENTS.md or in PROJECT.md.
+
+**Prediction follow-ups, parked on data.** Out of scope for this milestone (REQUIREMENTS.md § Out of Scope). Check the gate before you pick one up; if it is not met, leave the issue parked. `docs/superpowers/predictions-handoff.md` is the living record.
+
+| Issue | Unblocks when |
+|-------|---------------|
+| #481 Attack ETA attempt 4b | ~S165+ reached |
+| #484 Sector ETA measured range | script 13's gate becomes evaluable |
+| #487 Defend attempt 6 | ~30+ progress-tracked assaults exist |
+| #477 Assault ETA band width (Icebox) | ~S172 |
+
+**Archive Analytics data reach, input for Phase 10 (ARCH-01).** Measured 2026-07-27 with season 160 active: `h1_season`, `h1_status` and `h1_event` cover seasons 1–160; `h1_statistic` covers seasons 157–160 only. Re-run the count before relying on it; telemetry grows by one season per war.
+
+| Reach | Features |
+|-------|----------|
+| All seasons | Momentum Tracker, Clutch Factor, Planet Heartbeat, Perfect Storm, event win rates, cascade severity, war duration |
+| Telemetry seasons only (157+) | Season Fingerprint (4 of 6 axes are telemetry), Peak Hour Heatmap, Player Attrition Curve |
+| Partial | Season Report Card: event win rate is universal, mission/kill efficiency is not |
+
+**Phase 11 notes that no requirement records.**
+
+- ARCH-03 (#179): the Season Fingerprint radar carries #269's old overlay requirement ("compare up to 3 seasons"); that is why #269 was narrowed to ARCH-06, not closed.
+- ARCH-02/03 (#179): the debate synthesis that #177 cites (`docs/debates/2026-03-30-archive-analytics/`) is not in the repo. The issue bodies are the surviving record.
+- ARCH-05 (#270): War Playback brings back the horizontal timeline scrubber that the archives redesign removed. Find that commit in git history first.
+
+**Prep ladder.** Before code, stop at the first rung that applies:
+
+1. None: the issue body is the spec (most chores, single-call-site bugfixes).
+2. Plan: the shape is settled, but the work spans 5+ files or its order matters.
+3. Brainstorm, then plan: the issue describes an outcome, has open design questions, or lists alternatives.
+4. Spec refresh: the issue body is wrong, not only thin. Rewrite the issue against current reality first (Phase 10 is this rung for Archive Analytics).
