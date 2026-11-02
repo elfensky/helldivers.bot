@@ -10,11 +10,14 @@ import { reportError } from '@/shared/utils/observability.mjs';
  * This bypasses ad blockers because the browser only sees first-party
  * requests — no external domain in script-src or connect-src.
  *
- * X-Forwarded-For is forwarded so Umami can use the real client IP
- * for its cookieless session hash (IP + UA + hostname).
+ * The visitor's IP travels as `payload.ip` (see withVisitorIp), so Umami uses
+ * it for its cookieless session hash and its location lookup.
  */
 export async function POST(request) {
-    const body = await request.text();
+    const body = withVisitorIp(
+        await request.text(),
+        request.headers.get('cf-connecting-ip'),
+    );
     const umamiUrl = `https://${process.env.UMAMI_SITE_URL}/api/send`;
 
     const headers = {
@@ -40,6 +43,30 @@ export async function POST(request) {
         status: upstream.status,
         headers: { 'Content-Type': 'text/plain' },
     });
+}
+
+/**
+ * Puts the visitor's IP into the hit as `payload.ip`, replacing any value the
+ * client sent. The fetch in POST reaches Umami through Cloudflare a second
+ * time, and Cloudflare labels that hop with this server's IP and country.
+ * Umami takes `payload.ip` before any header and then finds the location itself.
+ *
+ * @param {string} body - The tracker's request body.
+ * @param {string | null} ip - The visitor's IP, from Cloudflare's `cf-connecting-ip`.
+ * @returns {string} The body with `payload.ip` set, or `body` unchanged when there
+ *   is no IP, the body is not JSON, or its `payload` is not a plain object.
+ */
+function withVisitorIp(body, ip) {
+    if (!ip) return body;
+    let hit;
+    try {
+        hit = JSON.parse(body);
+    } catch {
+        return body;
+    }
+    const payload = hit?.payload;
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return body;
+    return JSON.stringify({ ...hit, payload: { ...payload, ip } });
 }
 
 export const GET = methodNotAllowed;

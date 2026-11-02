@@ -64,4 +64,74 @@ describe('POST /api/umami', () => {
         const response = await POST(request);
         expect(response.status).toBe(502);
     });
+
+    describe('visitor IP', () => {
+        // The relay reaches Umami through Cloudflare a second time, which labels the hop with
+        // this server's IP and country. payload.ip makes Umami use the visitor instead.
+        const send = (body, cfConnectingIp) =>
+            POST(
+                new Request('http://localhost:3000/api/umami', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(cfConnectingIp && { 'CF-Connecting-IP': cfConnectingIp }),
+                    },
+                    body,
+                }),
+            );
+        const sentBody = () => global.fetch.mock.calls[0][1].body;
+
+        test('sets payload.ip from cf-connecting-ip', async () => {
+            await send(
+                JSON.stringify({ type: 'event', payload: { url: '/', website: 'w1' } }),
+                '203.0.113.9',
+            );
+
+            expect(JSON.parse(sentBody())).toEqual({
+                type: 'event',
+                payload: { url: '/', website: 'w1', ip: '203.0.113.9' },
+            });
+        });
+
+        test('replaces a client-sent payload.ip', async () => {
+            await send(
+                JSON.stringify({
+                    type: 'event',
+                    payload: { url: '/', ip: '198.51.100.7' },
+                }),
+                '203.0.113.9',
+            );
+
+            expect(JSON.parse(sentBody()).payload.ip).toBe('203.0.113.9');
+        });
+
+        test('forwards the body unchanged without cf-connecting-ip', async () => {
+            const body = JSON.stringify({
+                type: 'event',
+                payload: { url: '/', ip: '198.51.100.7' },
+            });
+            await send(body);
+
+            expect(sentBody()).toBe(body);
+        });
+
+        test('forwards a non-JSON body unchanged', async () => {
+            await send('not json', '203.0.113.9');
+
+            expect(sentBody()).toBe('not json');
+        });
+
+        test.each([
+            '{"type":"event"}',
+            '{"type":"event","payload":null}',
+            '{"type":"event","payload":[1]}',
+        ])(
+            'forwards a body whose payload is not an object unchanged: %s',
+            async (body) => {
+                await send(body, '203.0.113.9');
+
+                expect(sentBody()).toBe(body);
+            },
+        );
+    });
 });

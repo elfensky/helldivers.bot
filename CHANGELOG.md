@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Fixed
+
+- Umami located every relayed visitor at this server (Germany). The
+  `/api/umami` relay now sends the visitor's IP from Cloudflare's
+  `cf-connecting-ip` as `payload.ip`, so Umami uses it for the session and the
+  location. Relayed sessions get new ids once, at the switch.
+
 ## 0.97.0
 
 ### Added
