@@ -86,7 +86,6 @@ graphify-out/
 .planning/state.json
 .planning/estimation-calibration.json
 .planning/intel/
-.planning/debug/
 # GSD research fetch cache (machine artifacts, not planning docs)
 .planning/research/.cache/
 # Local UI-review and UAT captures; the verdicts live in the phase records
