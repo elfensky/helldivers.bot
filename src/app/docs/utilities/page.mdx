@@ -358,7 +358,7 @@ Umami v3 (self-hosted, cookieless) with three tracking layers:
 2. **`useTrack()` hook / `window.umami?.track()`** — for dynamic client-side interactions where event names or data depend on runtime state.
 3. **`sendUmamiEvent()` server utility** — for API route tracking. Sends server-to-server directly to Umami (not subject to ad blockers).
 
-**Ad-blocker bypass:** The client-side tracker posts through a same-origin proxy chain: tracker → `/api/send` (Next.js rewrite) → `/api/umami` (proxy route) → `umami.lav.ren/api/send`. The browser sends no request to an external Umami domain. The proxy forwards `X-Forwarded-For` so Umami receives the real client IP for its cookieless session hash.
+**Ad-blocker bypass:** The client-side tracker posts through a same-origin proxy chain: tracker → `/api/send` (Next.js rewrite) → `/api/umami` (proxy route) → `umami.lav.ren/api/send`. The browser sends no request to an external Umami domain. The proxy writes the visitor's IP from Cloudflare's `cf-connecting-ip` into the hit as `payload.ip`, so Umami uses the visitor for its cookieless session hash and its location.
 
 **User identification:** Authenticated users are identified via `umami.identify(userId, { provider })` in `UserSection.jsx`. Anonymous visitors remain fully anonymous.
 
@@ -447,7 +447,7 @@ Maps `NODE_ENV` to hostname:
 
 Same-origin proxy for the Umami tracker script. Receives POST from the client-side tracker (via `/api/send` rewrite in `next.config.mjs`) and forwards to `https://{UMAMI_SITE_URL}/api/send`.
 
-**Forwarded headers:** `Content-Type`, `User-Agent`, `X-Forwarded-For` (critical for Umami's cookieless IP+UA session hash).
+**Forwarded headers:** `Content-Type`, `User-Agent`, `X-Forwarded-For`. **Visitor IP:** `payload.ip`, set from `cf-connecting-ip` (Umami prefers it over every header, for the IP+UA session hash and the location).
 
 **Error handling:** Returns 502 Bad Gateway if the Umami instance is unreachable. Non-POST methods return 405.
 
