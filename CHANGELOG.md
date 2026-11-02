@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.97.1
+
 ### Fixed
 
 - Umami located every relayed visitor at this server (Germany). The
