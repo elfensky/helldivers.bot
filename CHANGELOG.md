@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 0.97.3
+
+### Changed
+
+- `.planning/ROADMAP.md` is the one roadmap file. `docs/roadmap.md` is
+  deleted (HOUSE-05). #469 is scheduled as ARCH-11 in Phase 11. The other live
+  items (prediction unblock gates, feature-reach table, prep ladder, Phase 11
+  notes) moved to ROADMAP.md § Carried over, with a permalink to the last full
+  version of the old file.
+- AGENTS.md has the Life cockpit block, with the one-roadmap rule.
+- `.gitignore` ignores every GSD runtime path under `.planning/`
+  (`estimation-calibration.json`, `intel/`, `research/.cache/`, `ui-reviews/`)
+  and `.uat-shots/`. `.planning/debug/` stays tracked: GSD debug sessions are
+  records.
+
 ## 0.97.2
 
 ### Security
