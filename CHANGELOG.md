@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.97.4
+
+### Security
+
+- The staging build runs only for CI on a push to this repository's
+  `develop`. `workflow_run`'s `branches: [develop]` matches the branch name
+  only, so a fork PR from a branch called `develop` that passed CI was built
+  with the workflow's write tokens and pinned to `deploy/staging`.
+  `detect-migration` and `build-app` now also check the event (`push`) and
+  the head repository (code-scanning alert 18). This replaces #570, which only
+  limited manual runs.
+
 ## 0.97.3
 
 ### Changed
