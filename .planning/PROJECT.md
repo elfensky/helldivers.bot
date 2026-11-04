@@ -54,7 +54,7 @@ The live dashboard and API are **stable and correct** — the poller never loses
 
 - Forcing a verdict on data-gated prediction issues #481/#484/#487/#477 — blocked on the game reaching ~S165–S172+; they stay **open and parked** in Engineering Health by decision, and "done" tolerates exactly these four
 - `npm audit fix --force` for the `deepmerge-ts` chain — it would downgrade Prisma 7 → 6.12; wait for an upstream non-breaking fix via Dependabot
-- Closing milestone #17 Engineering Health — it is a permanent catch-all by decision, never closed at 0 open issues
+- Closing milestone #17 Engineering Health — it is a permanent catch-all by decision, never closed at 0 open issues; new bugs land there by default
 - New player-facing features not already tracked as GitHub issues — the backlog is the scope; new ideas get an issue first
 - Squash/rebase/fast-forward merges anywhere — CLAUDE.md § Git Workflow is a hard rule, and auto-merge must be designed around it, not through it
 
