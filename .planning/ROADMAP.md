@@ -444,7 +444,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 *Revised: 2026-11-02 — `docs/roadmap.md` deleted (HOUSE-05); #469 scheduled as ARCH-11 in Phase 11; its other live items carried over below*
 *Granularity: fine (18 phases) · Mode: mvp*
 
-## Carried over from docs/ROADMAP.md (2026-11-02)
+## Carried over from docs/roadmap.md (2026-11-02)
 
 Live items of the former `docs/roadmap.md` that no phase or requirement held. The file was deleted on 2026-11-02 (HOUSE-05); its last full version is at commit [`bb01517d`](https://github.com/elfensky/helldivers.bot/blob/bb01517d560cc7ec1d673a280628ce5e86f00dc4/docs/roadmap.md). Everything else it held lives in the phases above, in REQUIREMENTS.md or in PROJECT.md.
 
@@ -474,6 +474,6 @@ Live items of the former `docs/roadmap.md` that no phase or requirement held. Th
 **Prep ladder.** Before code, stop at the first rung that applies:
 
 1. None: the issue body is the spec (most chores, single-call-site bugfixes).
-2. Plan: the shape is settled, but the work spans 5+ files or its order matters.
-3. Brainstorm, then plan: the issue describes an outcome, has open design questions, or lists alternatives.
+2. Plan (`superpowers:writing-plans`): the shape is settled, but the work spans 5+ files or its order matters.
+3. Brainstorm (`superpowers:brainstorming`), then plan: the issue describes an outcome (new UI surfaces count), has open design questions, says "explore", or lists alternatives.
 4. Spec refresh: the issue body is wrong, not only thin. Rewrite the issue against current reality first (Phase 10 is this rung for Archive Analytics).

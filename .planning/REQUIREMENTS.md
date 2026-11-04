@@ -127,7 +127,7 @@ Goal: rank highly for Helldivers 1 queries ("helldivers 1 galactic war status/ma
 
 ### SSE (SSE) — #298
 
-- [ ] **SSE-01**: Throwaway spike (branch discarded) answers the four gating questions — proxy/CrowdSec/idle-timeout survival, backgrounded/sleeping/offline behavior, per-tab vs leader stream, measured latency win over 10s polling — with answers written on #298
+- [ ] **SSE-01**: Throwaway, time-boxed spike (`superpowers:prototype`, branch discarded) answers the four gating questions — proxy/CrowdSec/idle-timeout survival, backgrounded/sleeping/offline behavior, per-tab vs leader stream, measured latency win over 10s polling — with answers written on #298
 - [ ] **SSE-02**: If the spike says yes: SSE replaces polling with Postgres `LISTEN/NOTIFY` fan-out across replicas, `useLiveData`'s public return shape preserved, reconnect-and-catch-up contract, verified on staging. If the spike says no: #298 closed with the findings
 
 ## v2 Requirements
