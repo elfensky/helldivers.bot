@@ -18,7 +18,7 @@
   GlitchTip and retries after 30 s, 60 s, 2 min, then every 5 min, while the
   old tasks keep serving. Staging and production need no manual migrate step.
 - The app image carries the migrate tooling in `/app/migrate` (`MIGRATE_ROOT`).
-  Its health check start period is 300 s.
+  Its health check start period is 900 s.
 - `build-staging.yml` pins every green build, including builds that carry a
   migration. Its manual-pin dispatch input is gone.
 - The compose files have no migrate service. The CI smoke stack boots the app
