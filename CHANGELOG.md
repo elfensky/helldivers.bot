@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.98.0
+
 ### Added
 
 - The `seed_state` table stores the hash of the seed inputs from the last
