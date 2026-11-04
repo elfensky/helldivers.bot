@@ -182,8 +182,9 @@ ENV HOSTNAME="0.0.0.0"
 CMD ["node", "server.js"]
 # Node's built-in fetch (stable since Node 21) replaces wget/curl probes.
 # Exec form (JSON array) so no shell is involved.
-# The 300 s start period covers a fresh-database seed on a Pi. Failures inside
+# The 900 s start period covers a fresh-database seed on a Pi and the first
+# migrate retries (30 s, 60 s, 2 min) after a failed attempt. Failures inside
 # it do not count, and the first healthy answer ends it.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=900s --retries=3 \
     CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/healthcheck').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 #endregion

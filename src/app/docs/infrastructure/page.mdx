@@ -95,7 +95,7 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 - Entrypoint: `/sbin/tini --`
 - CMD: `node server.js` (the Next.js standalone output file)
 - `EXPOSE 3000`, `ENV PORT=3000`, `ENV HOSTNAME="0.0.0.0"`
-- Healthcheck (Dockerfile-level): a Node `fetch` of `/api/healthcheck` every 30s, timeout 5s, start period 300s, 3 retries. Failures inside the start period do not count, and the first healthy answer ends it. Each call also refreshes the replica's `app_instance` row after the response (at most once per 20 s per process); a failed write never changes the 200/503 answer
+- Healthcheck (Dockerfile-level): a Node `fetch` of `/api/healthcheck` every 30s, timeout 5s, start period 900s, 3 retries. Failures inside the start period do not count, and the first healthy answer ends it. Each call also refreshes the replica's `app_instance` row after the response (at most once per 20 s per process); a failed write never changes the 200/503 answer
 
 ### docker-compose.yml
 
@@ -115,7 +115,7 @@ Every app process runs `migrateOrWait()` (`src/update/migrateOnStart.mjs`) from 
 
 - A dedicated `pg` session takes `pg_advisory_lock(599000001)`. Replicas take turns, so Prisma's own fixed 10 s migrate lock never contends.
 - The session runs `prisma migrate deploy`, then the seed. The session ends afterwards, which releases the lock on success and on failure.
-- Each of the two child processes has a 5 min limit, equal to the image's health-check start period. A stuck child is killed, so the attempt fails, reports and releases the lock. A lost lock session also kills the running child, because another replica can then take the lock.
+- Each of the two child processes has a 5 min limit, inside the image's 15 min health-check start period. A stuck child is killed, so the attempt fails, reports and releases the lock. A lost lock session also kills the running child, because another replica can then take the lock.
 - The seed runs only when the sha256 of `prisma/seed/seed.mjs` plus `prisma/seed/seasons/*.json` differs from the hash in the `seed_state` table. A failed seed stores nothing, so the next attempt seeds again.
 - `migrateOrWait()` never throws. A failure logs `[migrate] failed: …`, reports to GlitchTip with stage `migrate-on-start`, and retries after 30 s, 60 s, 2 min, then every 5 min.
 - Next holds requests until `register()` resolves. A migrating task stays Starting, and Swarm's start-first update keeps the old tasks serving.

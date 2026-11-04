@@ -380,7 +380,7 @@ describe('runNode', () => {
         await expect(child).rejects.toThrow(/abort/i);
     });
 
-    it('defaults the time limit to the 300 s health-check start period', () => {
+    it('defaults the time limit to 300 s, inside the 900 s health-check start period', () => {
         expect(CHILD_TIMEOUT_MS).toBe(300_000);
     });
 });

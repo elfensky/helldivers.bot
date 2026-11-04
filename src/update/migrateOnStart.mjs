@@ -36,8 +36,8 @@ export const SEED_ARGS = ['--experimental-strip-types', 'prisma/seed/seed.mjs'];
 
 /**
  * Time limit for one child. The session timeouts do not reach the children's own
- * connections; this keeps a stuck child from holding the lock. It equals the
- * image's 300 s health-check start period, so the failure reports before Swarm
+ * connections; this keeps a stuck child from holding the lock. It stays inside the
+ * image's 900 s health-check start period, so the failure reports before Swarm
  * replaces the task.
  */
 export const CHILD_TIMEOUT_MS = 300_000;
