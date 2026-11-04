@@ -253,6 +253,7 @@ graph LR
 2. `validateApiKey()` extracts the key, computes `SHA-256(key)`
 3. Looks up the hash in the `ApiKey` table
 4. Returns `{ userId, keyId }` on success, or error state (`'missing'`, `'invalid'`, `'disabled'`)
+5. A valid, enabled key gets `lastUsedAt` stamped in `after()`, at most once a minute, shown as "Last used" in the profile and admin key tables
 
 **Management:** Users can create (max 5), enable/disable, and delete API keys from their profile dashboard. The plaintext key is shown once at creation and never stored.
 

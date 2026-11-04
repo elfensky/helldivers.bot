@@ -2,6 +2,60 @@
 
 ## Unreleased
 
+## 0.97.2
+
+### Security
+
+- **The three open Dependabot alerts are resolved.** `follow-redirects` is
+  1.16.2 through `axios` 1.21.0. New overrides `minimatch` `^11.0.4`
+  (GHSA-g3hv-75wg-m249) and `glob` `^14.0.3` (GHSA-3g3m-2fjr-6pw4) replace
+  the 10.x and 13.x lines that ESLint, Serwist and the Sentry bundler plugin
+  ask for; no fix exists on those lines. Lint output and the service-worker
+  precache list are identical before and after. `npm audit` reports 0
+  vulnerabilities.
+
+### Changed
+
+- **All npm dependencies are at their latest version inside their range**,
+  superseding Dependabot #604: `next`, `@next/mdx` and
+  `@next/eslint-plugin-next` 16.4.2 to 16.4.5; `@sentry/nextjs` 11.8.0 to
+  11.10.0; `better-auth` 1.7.10 to 1.7.16; `axios` 1.20.0 to 1.21.0;
+  `mermaid` 12.2.0 to 12.3.0; `vitest` and the `@vitest/*` packages 5.0.5 to
+  5.1.0; `eslint` 10.8.0 to 10.14.0; `tailwindcss` and `@tailwindcss/postcss`
+  4.3.3 to 4.3.4; `timeago.js` 4.0.2 to 4.3.0; patch updates for `dotenv`,
+  `humanize-duration`, `globals`, `@types/node`,
+  `@eslint-react/eslint-plugin` and `eslint-plugin-jsdoc`.
+- GitHub Actions (Dependabot #602): `docker/login-action` 4.7.0,
+  `github/codeql-action` 4.39.1.
+- Two majors stay where they are. `prisma` stays on 7.10.1: npm tags
+  8.0.0-rc.30 as `latest`, but it is a release candidate and `@prisma/client`
+  is still 7.10.1. `typescript` stays on 6.0.3: 7.0.2 fails
+  `npm run typecheck` with 274 errors (#555).
+
+## 0.97.1
+
+### Fixed
+
+- Umami located every relayed visitor at this server (Germany). The
+  `/api/umami` relay now sends the visitor's IP from Cloudflare's
+  `cf-connecting-ip` as `payload.ip`, so Umami uses it for the session and the
+  location. Relayed sessions get new ids once, at the switch.
+
+## 0.97.0
+
+### Added
+
+- The admin System Overview lists every running replica. It reads the new
+  `app_instance` table, which `/api/healthcheck` refreshes. The replica that
+  holds the poller lease shows a POLLER badge. A replica is LATE after 90
+  seconds and GONE after 5 minutes. A version-skew alert shows when replicas
+  run different versions for more than 10 minutes. The panel groups its values
+  into Health, Game data and Community tables. "Uptime" is now "Polling since".
+- API keys record `lastUsedAt`. The profile key table and the admin key table
+  show it as "Last used".
+- Deploy the migration `20261025220000_app_instance_api_key_last_used` with
+  `npx prisma migrate deploy`.
+
 ## 0.96.4
 
 ### Fixed

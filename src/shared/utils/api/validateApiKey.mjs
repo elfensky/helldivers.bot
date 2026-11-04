@@ -1,6 +1,10 @@
 import db from '@/db/db';
+import { after } from 'next/server';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 import { createHash } from 'crypto';
+
+const LAST_USED_INTERVAL_MS = 60_000;
 
 export const API_KEY_ERROR = Object.freeze({
     MISSING: 'missing',
@@ -12,6 +16,7 @@ export const API_KEY_ERROR = Object.freeze({
 /**
  * Validate an API key from the Authorization header.
  * Not a server action — called from route handlers directly.
+ * A valid key's `lastUsedAt` is stamped in `after()`, at most once a minute.
  *
  * Returns `{ data, code }`, not `{ data, error }` — the second slot
  * carries a `API_KEY_ERROR` enum string, NOT an `Error` instance. The
@@ -37,7 +42,7 @@ export async function validateApiKey(request) {
     const { data: row, error: dbError } = await tryCatch(
         db.ApiKey.findUnique({
             where: { hash },
-            select: { id: true, userId: true, enabled: true },
+            select: { id: true, userId: true, enabled: true, lastUsedAt: true },
         }),
     );
 
@@ -50,6 +55,29 @@ export async function validateApiKey(request) {
 
     if (!row.enabled) {
         return { data: null, code: API_KEY_ERROR.DISABLED };
+    }
+
+    const cutoff = new Date(Date.now() - LAST_USED_INTERVAL_MS);
+    if (!row.lastUsedAt || row.lastUsedAt < cutoff) {
+        // The conditional where keeps this at one write per key per minute across replicas.
+        after(async () => {
+            const { error } = await tryCatch(
+                db.ApiKey.updateMany({
+                    where: {
+                        id: row.id,
+                        OR: [{ lastUsedAt: null }, { lastUsedAt: { lt: cutoff } }],
+                    },
+                    data: { lastUsedAt: new Date() },
+                }),
+            );
+            if (error) {
+                reportError(error, {
+                    route: 'validateApiKey',
+                    stage: 'last-used',
+                    level: 'warning',
+                });
+            }
+        });
     }
 
     return { data: { userId: row.userId, keyId: row.id }, code: null };

@@ -24,6 +24,7 @@ export default async function AdminApiKeys() {
                             <tr className="text-left font-mono text-small text-text-muted uppercase">
                                 <th className="p-3 pb-2">Key</th>
                                 <th className="p-3 pb-2">User</th>
+                                <th className="p-3 pb-2">Last used</th>
                                 <th className="p-3 pb-2">Created</th>
                                 <th className="p-3 pb-2">Status</th>
                                 <th className="p-3 pb-2">
@@ -42,6 +43,11 @@ export default async function AdminApiKeys() {
                                     </td>
                                     <td className="p-3 text-small text-text-muted">
                                         {key.user.email}
+                                    </td>
+                                    <td className="p-3 text-small text-text-muted">
+                                        {key.lastUsedAt ?
+                                            timeSince(key.lastUsedAt)
+                                        :   'never'}
                                     </td>
                                     <td className="p-3 text-small text-text-muted">
                                         {timeSince(key.createdAt)}

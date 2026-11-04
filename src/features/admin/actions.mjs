@@ -13,6 +13,9 @@ import {
 import { computeWorkerHealth } from '@/shared/utils/admin/computeWorkerHealth.mjs';
 import { ROLE } from '@/shared/enums/roles.mjs';
 import { requireAdmin } from '@/shared/utils/api/authGuards.mjs';
+import { registerInstance, listInstances } from '@/update/instance.mjs';
+import { computeReplicas } from '@/shared/utils/admin/computeReplicas.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
 
 // ─── User management ────────────────────────────────────────────────
 
@@ -212,6 +215,7 @@ export async function getAllApiKeys() {
                 visible: true,
                 enabled: true,
                 createdAt: true,
+                lastUsedAt: true,
                 user: { select: { email: true } },
             },
             orderBy: { createdAt: 'desc' },
@@ -228,6 +232,17 @@ export async function getSystemStats() {
     const start = performance.now();
     const { error: authError } = await requireAdmin();
     if (authError) return { errors: { auth: authError }, time: performanceTime(start) };
+
+    // Rendering the panel registers the serving process, so local dev (no
+    // Docker healthcheck) shows its replica on the first render.
+    const { error: registerError } = await tryCatch(registerInstance());
+    if (registerError) {
+        reportError(registerError, {
+            route: 'admin/system-overview',
+            stage: 'instance-register',
+            level: 'warning',
+        });
+    }
 
     // Step 1: Get current season (needed for active factions query)
     const { data: latestSeason, error: seasonError } = await tryCatch(
@@ -260,6 +275,7 @@ export async function getSystemStats() {
             db.user.count(),
             db.ApiKey.count(),
             db.push_subscription.count(),
+            listInstances(),
         ]),
     );
     if (error) throw error;
@@ -272,6 +288,7 @@ export async function getSystemStats() {
         totalUsers,
         totalApiKeys,
         pushSubscribers,
+        instances,
     ] = results;
 
     return {
@@ -285,6 +302,7 @@ export async function getSystemStats() {
             totalUsers,
             totalApiKeys,
             pushSubscribers,
+            ...computeReplicas(instances, heartbeat),
         },
         time: performanceTime(start),
     };

@@ -128,6 +128,8 @@ vi.mock('@/db/db', () => ({
         h1_event_progress: createModelMock(),
         // Worker health
         worker_heartbeat: createModelMock(),
+        // App instance registry
+        app_instance: createModelMock(),
         // Push subscriptions
         push_subscription: createModelMock(),
         // Rate limiting

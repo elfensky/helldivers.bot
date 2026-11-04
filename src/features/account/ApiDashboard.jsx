@@ -45,6 +45,9 @@ async function ApiKeysList({ userId }) {
                             Name
                         </th>
                         <th scope="col" className="pb-2">
+                            Last used
+                        </th>
+                        <th scope="col" className="pb-2">
                             Key
                         </th>
                         <th scope="col" className="pb-2">
@@ -64,6 +67,11 @@ async function ApiKeysList({ userId }) {
                         .map((apikey) => (
                             <tr key={apikey.id} className="border-t border-ghost">
                                 <td className="py-2 text-text">{apikey.description}</td>
+                                <td className="py-2 text-text-muted">
+                                    {apikey.lastUsedAt ?
+                                        timeSince(apikey.lastUsedAt)
+                                    :   'never'}
+                                </td>
                                 <td className="py-2 font-mono text-text-muted">
                                     {'****' + apikey.visible}
                                 </td>
