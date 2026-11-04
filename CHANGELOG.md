@@ -25,6 +25,14 @@
   against an empty database.
 - `npm run dev` applies pending migrations on start.
 
+### Security
+
+- The migrate tooling in the app image and the migrate image installs from the
+  project lockfile: every version, transitive ones included, is pinned and
+  integrity-checked, where it used to float inside Prisma's ranges at build
+  time. `/app/migrate` is root-owned, so the app user cannot change it, and
+  `CHECKPOINT_DISABLE=1` stops the Prisma CLI's update check on every start.
+
 ## 0.97.4
 
 ### Security
