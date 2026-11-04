@@ -46,8 +46,12 @@ env:
 jobs:
     detect-migration:
         name: Detect Migration Changes
-        # CI green, or a deliberate manual run. Anything else stops here.
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+        # CI green on a push to this repo's develop, or a deliberate manual run.
+        # Anything else stops here. `branches: [develop]` matches the head
+        # branch NAME only, so without the event and repository checks a fork
+        # PR from a branch called `develop` would be built and pinned with this
+        # workflow's write tokens (code-scanning alert 18). build-app repeats it.
+        if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository) }}
         runs-on: ubuntu-latest
         timeout-minutes: 10
         outputs:
@@ -191,7 +195,8 @@ jobs:
     # joins them into :staging and :sha-<commit>.
     build-app:
         name: Build App Image (${{ matrix.arch }})
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+        # Same gate as detect-migration: never build a fork's commit.
+        if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository) }}
         strategy:
             matrix:
                 include:
