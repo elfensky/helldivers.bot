@@ -26,7 +26,8 @@
 # packages. See issue #278 for the full investigation and slim-down history.
 #
 # The fix: copy package.json to /tmp as a read-only version reference, write
-# a minimal package.json in /app, then install only the 4 packages we need.
+# a minimal package.json in /app next to the project's package-lock.json, then
+# install only the packages we need, at the locked versions.
 # =============================================================================
 
 FROM node:26-alpine
@@ -51,6 +52,11 @@ WORKDIR /app
 # migrate container in lockstep with whatever the main app pins, with no
 # duplicate version strings to forget about updating.
 COPY package.json /tmp/project-package.json
+
+# The project lockfile sits next to the minimal manifest written below, so the
+# install keeps the project's exact, integrity-checked versions; no floating
+# transitive dependency slips in at build time.
+COPY package-lock.json ./
 
 # Schema, migrations, and seed JSON files. Used by `prisma generate` (compiles
 # the client into src/generated/prisma at build time) and `prisma migrate
@@ -78,24 +84,9 @@ COPY prisma.config.mjs ./
 # done in a later layer doesn't shrink earlier ones).
 #
 RUN \
-    # 1. Read the exact versions the project pins, from the /tmp reference
-    #    copy. `prisma` is a devDependency in the project (used for local
-    #    `npx prisma migrate dev`); the others are prod dependencies. The
-    #    `||` fallback handles either location for `prisma` itself.
-    PRISMA_VERSION=$(node -p "require('/tmp/project-package.json').devDependencies?.prisma || require('/tmp/project-package.json').dependencies?.prisma") && \
-    CLIENT_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/client']") && \
-    ADAPTER_PG_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.['@prisma/adapter-pg']") && \
-    DOTENV_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.dotenv") && \
-    ZOD_VERSION=$(node -p "require('/tmp/project-package.json').dependencies?.zod") && \
-    \
-    # 2. Write a minimal package.json in /app. Without this, npm install would
-    #    either fail (no manifest in cwd) or — much worse — if we'd copied the
-    #    project package.json here, install the entire Next.js dependency tree
-    #    (~1.2 GB). The minimal manifest tells npm "this is a fresh project,
-    #    install only what I explicitly ask for."
-    echo '{"name":"migrate","version":"1.0.0","private":true,"type":"module"}' > package.json && \
-    \
-    # 3. Install ONLY these 5 packages (and their transitive deps):
+    # 1. Write a minimal package.json in /app: the project's ranges for ONLY
+    #    these 5 packages, plus the project's `overrides`, read from the /tmp
+    #    reference copy (`prisma` is a devDependency there, the rest are prod).
     #    - prisma:             the CLI that runs `migrate deploy`
     #    - @prisma/client:     runtime needed by seed.mjs (which imports
     #                          PrismaClient from src/generated/prisma)
@@ -105,23 +96,24 @@ RUN \
     #                          startup of every prisma CLI invocation
     #    - zod:                used by src/validators/isValidSeason.mjs
     #                          (imported by the seed script)
-    #    --no-audit --no-fund: skip telemetry/postinstall noise that adds
-    #                          ~5-10 seconds to the build
-    npm install --no-audit --no-fund \
-      prisma@$PRISMA_VERSION \
-      @prisma/client@$CLIENT_VERSION \
-      @prisma/adapter-pg@$ADAPTER_PG_VERSION \
-      dotenv@$DOTENV_VERSION \
-      zod@$ZOD_VERSION && \
+    node -e "const p = require('/tmp/project-package.json'), all = { ...p.dependencies, ...p.devDependencies }; \
+      const deps = Object.fromEntries(['prisma', '@prisma/client', '@prisma/adapter-pg', 'dotenv', 'zod'].map((n) => [n, all[n]])); \
+      require('fs').writeFileSync('package.json', JSON.stringify({ name: 'migrate', version: '1.0.0', private: true, type: 'module', dependencies: deps, overrides: p.overrides }))" && \
     \
-    # 4. Generate the Prisma client into src/generated/prisma (per the
+    # 2. Install them. The lockfile pins every version, transitive ones
+    #    included, and npm checks its integrity hashes; everything the minimal
+    #    manifest does not need is pruned, so the ~1.2 GB Next.js tree never
+    #    installs. --no-audit --no-fund: skip noise that adds ~5-10 seconds.
+    npm install --no-audit --no-fund && \
+    \
+    # 3. Generate the Prisma client into src/generated/prisma (per the
     #    `output` field in prisma/schema.prisma's `generator client {}` block).
     #    POSTGRES_URL=dummy is needed because prisma.config.mjs validates the
     #    env var at config-load time; `prisma generate` doesn't actually
     #    connect to the database, it just parses the schema.
     POSTGRES_URL=postgresql://dummy npx prisma generate && \
     \
-    # 5. Cleanup. The /tmp version reference, the npm download cache, and any
+    # 4. Cleanup. The /tmp version reference, the npm download cache, and any
     #    other tmp install artifacts. All in this same RUN layer so they don't
     #    stick around in the final image.
     rm /tmp/project-package.json && \
