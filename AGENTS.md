@@ -103,12 +103,13 @@ opening/closing issues and PRs as usual — the cockpit pulls from the tracker o
 `/sync`. Nothing to update in the vault; don't mirror cockpit state (milestones, due dates) here.
 GSD projects: after `/gsd-new-project`, run `/cockpit-gsd-profile` once in this repo before planning the first slice.
 Roadmap: this repo owns its roadmap. `.planning/ROADMAP.md` (GSD) is the one roadmap file here; no second
-roadmap file lives in this repo. Display: [projects.static.lav.ren/helldivers-bot/](https://projects.static.lav.ren/helldivers-bot/)
-(roadmap, architecture overview, one page per `.planning/architecture/` component), plain HTML in the vault's page-kit look.
-Republish only on request, through the `publish-page` skill and `~/vault/knowledge/developer/stack/page-kit.md`, from the
-ordinary checkout at the live `develop` head. The renderer is local to the Mac that published it
-(`.local/roadmap-page-kit/render-project-pages.mjs`, git-excluded). Every upload replaces the whole folder: keep the four
-`phase-*` redirects from the retired vault milestone pages.
+roadmap file lives in this repo. Display: [projects.static.lav.ren/helldivers-bot/roadmap/](https://projects.static.lav.ren/helldivers-bot/roadmap/)
+and `/helldivers-bot/architecture/` (one page per `.planning/architecture/` component), plain HTML in the vault's page-kit
+look with its breadcrumb header. Republish only on request, through the `publish-page` skill and
+`~/vault/knowledge/developer/stack/page-kit.md`, from the ordinary checkout at the live `develop` head. The renderer is local
+to the Mac that published it (`.local/roadmap-page-kit/render-project-pages.mjs`, git-excluded). Every upload replaces the
+whole folder: keep `roadmap/files/logo.webp` (from `public/images/logo.webp`; the projects list shows it too), the
+`/helldivers-bot/` forward page and the four `phase-*` forwards from the retired vault milestone pages.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
