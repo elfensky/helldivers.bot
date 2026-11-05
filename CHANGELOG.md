@@ -7,6 +7,8 @@
 - AGENTS.md rewritten from the developer-handbook template (271 → 117 lines): shared standards now
   live in the handbook, the file keeps only repo-specific rules, invariants and the cockpit pointer.
   `.planning/architecture/` notes added; CONTRIBUTING.md links repointed at the surviving anchors.
+- The hosted roadmap at projects.static.lav.ren/helldivers-bot/ is now built from `.planning/`, with the
+  architecture notes as pages; AGENTS.md says how to republish it.
 
 ## 0.98.0
 
