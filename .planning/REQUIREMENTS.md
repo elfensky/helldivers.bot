@@ -26,11 +26,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **DEPS-03**: Repository settings: `allow_auto_merge` on; squash and rebase merge buttons disabled so only merge commits are possible on any PR
 - [ ] **DEPS-04**: A branch ruleset on `develop` requires the CI status checks (names matched to `check-ci.yml` job ids) and does **not** require linear history
 - [ ] **DEPS-05**: A workflow enables auto-merge (`gh pr merge --auto --merge`) on Dependabot PRs classified minor/patch by `dependabot/fetch-metadata`; major bumps are left for manual review; verified by observing one real Dependabot PR merge unattended
-- [ ] **DEPS-06**: CLAUDE.md § Git Workflow states the exemption: Dependabot merges into `develop` carry no version bump / CHANGELOG move; the next real release folds them in. `check-version.yml` does not block Dependabot PRs
+- [ ] **DEPS-06**: AGENTS.md § This repo's own rules states the exemption: Dependabot merges into `develop` carry no version bump / CHANGELOG move; the next real release folds them in. `check-version.yml` does not block Dependabot PRs
 
 ### Housekeeping (HOUSE)
 
-- [ ] **HOUSE-01**: #466 — unit tests are co-located as `*.test.*` next to their modules; `src/__tests__/` keeps only `_meta`, contract and integration tests; `mirrorTree.test.mjs` is replaced by a co-location guard; `.dockerignore` / `output: 'standalone'` / `pageExtensions` verified to exclude tests from the image; CLAUDE.md § Test Layout rewritten. Lands before any feature phase adds tests
+- [ ] **HOUSE-01**: #466 — unit tests are co-located as `*.test.*` next to their modules; `src/__tests__/` keeps only `_meta`, contract and integration tests; `mirrorTree.test.mjs` is replaced by a co-location guard; `.dockerignore` / `output: 'standalone'` / `pageExtensions` verified to exclude tests from the image; AGENTS.md's test-placement rule rewritten. Lands before any feature phase adds tests
 - [ ] **HOUSE-02**: #389 — Rich Results, Schema.org validator, Search Console and SERP previews for `/`, `/archives`, `/docs/about` verified on production; findings fixed or recorded (checks absorbed into SEO-05)
 - [ ] **HOUSE-03**: #502 — once GlitchTip symbolication is proven on ≥1 release, sourcemaps are uploaded at build time and stripped from the shipped image (~24 MB saved); verified by image size and a symbolicated production stack trace
 - [ ] **HOUSE-04**: #501 — the seed-refresh workflow's PR path is verified end-to-end at the next season transition (or via a controlled simulation if the transition hasn't happened by the phase's end); issue records the run
@@ -38,7 +38,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Documentation Accuracy (DOCS)
 
-- [ ] **DOCS-01**: CLAUDE.md § Architecture describes the lease/`worker_heartbeat` model, `WORKER_ENABLED`, and the multi-replica web tier — no mention of module-level `lastSeasonObserved` state
+- [ ] **DOCS-01**: AGENTS.md § Architecture invariants describes the lease/`worker_heartbeat` model, `WORKER_ENABLED`, and the multi-replica web tier — poller state in the lease row, not module memory
 - [ ] **DOCS-02**: Public `/docs` pages (`architecture`, `data-flow`, `infrastructure`, `database`, `testing`) match the code — lease, replica topology, CI/CD workflow names, test layout — verified page-by-page against `.planning/codebase/`
 - [ ] **DOCS-03**: A final docs pass after all feature tracks ship covers Loadout Builder, Archive Analytics, staging, and the SSE outcome, so docs describe what shipped
 
@@ -55,7 +55,7 @@ Goal: rank highly for Helldivers 1 queries ("helldivers 1 galactic war status/ma
 - [ ] **SEO-07**: Google Search Console is wired into the workflow: verification token in metadata, sitemap submitted, an agent-accessible path (GSC API or an MCP server) to pull performance (queries/impressions/CTR/position) and coverage; a recurring review turns findings into GitHub issues, and the first review's fixes ship in this milestone
 - [ ] **SEO-08**: Lighthouse SEO ≥ 95 and Performance/Accessibility ≥ 90 on `/`, `/archives`, `/docs` measured against production (the `scheduled-pagespeed.yml` report on the `metrics` branch is the record); Core Web Vitals pass in GSC's report
 - [ ] **SEO-09**: Umami (umami.drunik.be) is fully wired: `UMAMI_SITE_ID`/`UMAMI_SITE_URL` present in production and staging runtime env, tracker loads via the `/stats.js` proxy and events flow through `/api/send`→`/api/umami` (verified by a real event in the Umami dashboard), `umami.identify()` on login, and `umamiTrackEvent` called via `after()` on every public API route (`/api/v1/**`, `/api/h1/campaign`, `/api/h1/rebroadcast`) — currently zero routes do
-- [ ] **SEO-10**: Every interactive element carries `data-umami-event` (or `useTrack`), enforced by a lint rule or test rather than review; Umami event names follow `category-action` and the category list in CLAUDE.md is complete
+- [ ] **SEO-10**: Every interactive element carries `data-umami-event` (or `useTrack`), enforced by a lint rule or test rather than review; Umami event names follow `category-action` and the category list in AGENTS.md is complete
 
 ### Loadout Builder (LOAD) — milestone #19
 

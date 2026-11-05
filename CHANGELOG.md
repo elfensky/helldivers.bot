@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- AGENTS.md rewritten from the developer-handbook template (271 → 117 lines): shared standards now
+  live in the handbook, the file keeps only repo-specific rules, invariants and the cockpit pointer.
+  `.planning/architecture/` notes added; CONTRIBUTING.md links repointed at the surviving anchors.
+
 ## 0.98.0
 
 ### Added
