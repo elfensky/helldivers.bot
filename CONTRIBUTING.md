@@ -31,9 +31,10 @@ develop ──────●──●──●──●──●──── (s
 
 ## Workflow
 
-Every change — feature, bugfix or chore — lands on `develop` by a PR from its own worktree
-under `.worktrees/`. The main checkout stays on `develop` and only ever pulls. Commands and the
-full rule: [AGENTS.md § Worktrees](AGENTS.md#worktrees--one-lane-always).
+Every change — feature, bugfix or chore — lands on `develop` by a PR from its own session
+worktree. The main checkout stays on `develop` and only ever pulls. The full rule lives in the
+developer handbook (`~/vault/knowledge/developer/developer.md`), chapter
+`~/vault/knowledge/developer/stack/git-and-prs.md` § Worktrees.
 
 1. Create a worktree + branch from `origin/develop`
 2. Make changes, commit with conventional commits (`feat:`, `fix:`, `chore:`), bump the version as the last commit
@@ -45,7 +46,7 @@ full rule: [AGENTS.md § Worktrees](AGENTS.md#worktrees--one-lane-always).
 
 PR `develop` → `main` (merge commit), tag `vX.Y.Z` on the merge commit, push the tag, then merge
 `main` back into `develop` by PR. The tag triggers the production Docker build. Full steps:
-[AGENTS.md § Git Workflow](AGENTS.md#git-workflow), rule 3.
+[AGENTS.md § Branches](AGENTS.md#branches).
 
 ## Hotfix Process
 

@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Stability Fixes & Release** - The five known production bug classes are fixed at root cause, verified live, and `develop` is released to `main` (completed 2026-10-21)
 - [x] **Phase 1.1: Production on the Hetzner Swarm** (INSERTED) - Production runs on the Hetzner swarm, and every release reaches it through `pin-production` (#588) (completed 2026-10-25)
-- [ ] **Phase 2: Docs Accuracy & Operational Housekeeping** - CLAUDE.md and `/docs` describe the lease model as it actually works, and outstanding operational verification chores close out
+- [ ] **Phase 2: Docs Accuracy & Operational Housekeeping** - AGENTS.md and `/docs` describe the lease model as it actually works, and outstanding operational verification chores close out
 - [ ] **Phase 3: Test Co-location** - Unit tests move next to their modules before any later phase adds more tests
 - [ ] **Phase 4: Dependency Cleanup & Auto-merge Automation** - The Dependabot backlog clears and minor/patch updates merge unattended thereafter
 - [ ] **Phase 5: SEO & Analytics Foundation** - The site is structurally primed to rank for Helldivers 1 search queries and every interaction is tracked in Umami, before any feature page can drift from the convention
@@ -106,7 +106,7 @@ Plans:
 **Requirements**: DOCS-01, DOCS-02, HOUSE-03, HOUSE-04, HOUSE-05
 **Success Criteria** (what must be TRUE):
 
-  1. CLAUDE.md § Architecture describes the lease/`worker_heartbeat` model, `WORKER_ENABLED`, and the multi-replica web tier, with no mention of the retired module-level `lastSeasonObserved` state (DOCS-01)
+  1. AGENTS.md § Architecture invariants describes the lease/`worker_heartbeat` model, `WORKER_ENABLED`, and the multi-replica web tier, with poller state in the lease row, not module memory (DOCS-01)
   2. Each public `/docs` page (architecture, data-flow, infrastructure, database, testing) matches the code when checked page-by-page against `.planning/codebase/` (DOCS-02)
   3. Sourcemaps are uploaded at build time and stripped from the shipped image once GlitchTip symbolication is proven on at least one release, verified by image size and a symbolicated production stack trace (HOUSE-03)
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
@@ -168,7 +168,7 @@ Plans:
   1. Every unit test file sits at `*.test.*` beside the module it covers; `src/__tests__/` retains only `_meta`, contract, and integration tests
   2. A co-location guard replaces `mirrorTree.test.mjs` and fails CI when a test is misplaced
   3. `.dockerignore`, `output: 'standalone'`, and `pageExtensions` are verified to still exclude test files from the production image
-  4. CLAUDE.md § Test Layout describes the co-located convention, not the mirrored tree
+  4. AGENTS.md's test-placement rule describes the co-located convention, not the mirrored tree
 
 **Plans**: TBD
 
@@ -185,7 +185,7 @@ Plans:
   3. `allow_auto_merge` is on and the squash/rebase merge buttons are disabled repo-wide, so only merge commits are possible on any PR (DEPS-03)
   4. A branch ruleset on `develop` requires the named CI status checks and does not require linear history (DEPS-04)
   5. A real Dependabot minor/patch PR is observed merging unattended via `gh pr merge --auto --merge` classified by `dependabot/fetch-metadata`, while a major bump is left for manual review (DEPS-05)
-  6. CLAUDE.md § Git Workflow states the Dependabot exemption (no version bump/CHANGELOG move on those merges — folded in at the next real release), and `check-version.yml` does not block Dependabot PRs (DEPS-06)
+  6. AGENTS.md § This repo's own rules states the Dependabot exemption (no version bump/CHANGELOG move on those merges — folded in at the next real release), and `check-version.yml` does not block Dependabot PRs (DEPS-06)
 
 **Plans**: TBD
 
@@ -403,7 +403,7 @@ Plans:
 **Requirements**: DOCS-03
 **Success Criteria** (what must be TRUE):
 
-  1. `/docs` and CLAUDE.md describe the Loadout Builder, Archive Analytics, staging on the Pi swarm, and the SSE outcome as they actually shipped, not as originally planned (DOCS-03)
+  1. `/docs` and AGENTS.md describe the Loadout Builder, Archive Analytics, staging on the Pi swarm, and the SSE outcome as they actually shipped, not as originally planned (DOCS-03)
   2. No public doc references superseded architecture (pre-lease model, single-replica assumptions, or a schema this milestone changed) (DOCS-03)
 
 **Plans**: TBD
