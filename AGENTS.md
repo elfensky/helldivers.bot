@@ -103,8 +103,12 @@ opening/closing issues and PRs as usual — the cockpit pulls from the tracker o
 `/sync`. Nothing to update in the vault; don't mirror cockpit state (milestones, due dates) here.
 GSD projects: after `/gsd-new-project`, run `/cockpit-gsd-profile` once in this repo before planning the first slice.
 Roadmap: this repo owns its roadmap. `.planning/ROADMAP.md` (GSD) is the one roadmap file here; no second
-roadmap file lives in this repo. The shared page kit is `~/vault/knowledge/developer/stack/page-kit.md`. Follow its GSD recipe and
-`~/vault/meta/project-pages.md`; keep the existing page until its repo publication cutover.
+roadmap file lives in this repo. Display: [projects.static.lav.ren/helldivers-bot/](https://projects.static.lav.ren/helldivers-bot/)
+(roadmap, architecture overview, one page per `.planning/architecture/` component), plain HTML in the vault's page-kit look.
+Republish only on request, through the `publish-page` skill and `~/vault/knowledge/developer/stack/page-kit.md`, from the
+ordinary checkout at the live `develop` head. The renderer is local to the Mac that published it
+(`.local/roadmap-page-kit/render-project-pages.mjs`, git-excluded). Every upload replaces the whole folder: keep the four
+`phase-*` redirects from the retired vault milestone pages.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
