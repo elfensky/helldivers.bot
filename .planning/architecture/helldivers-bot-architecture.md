@@ -2,9 +2,9 @@
 kind: architecture
 title: helldivers.bot architecture
 status: implemented
-source_revision: 1755207f68e2d5f4e12e9b999a641e94720e02e4
-source_evidence_date: 2026-11-05
-publication_status: decided-not-built
+source_revision: 4290817ec6e08c558c8463ccfd3d5f28cc866bd5
+source_evidence_date: 2026-11-07
+forwards: phase-1-stability-release, phase-1-1-production-migration, phase-2-documentation-and-operations, phase-3-test-co-location
 ---
 
 # helldivers.bot architecture
@@ -58,4 +58,5 @@ flowchart TD
 
 - `.planning/codebase/ARCHITECTURE.md`, `STRUCTURE.md` (map refreshed 2026-08-28) checked against
   `src/`, `prisma/schema.prisma` at `1755207f` on 2026-11-05.
-- `AGENTS.md` § Architecture invariants.
+- `AGENTS.md` § Architecture invariants, re-checked at `4290817e` on 2026-11-07 (no file under
+  `src/`, `prisma/`, `public/` or `deploy/` changed since `1755207f`).

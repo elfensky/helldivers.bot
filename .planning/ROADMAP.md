@@ -2,6 +2,8 @@
 
 ## Overview
 
+Every open GitHub issue reaches a terminal state: fixed and released, shipped as a feature, or closed with a written decision.
+
 This milestone drains every open GitHub issue to a terminal state: stability bugs fixed and released first, then three prerequisite gates — docs accuracy, test co-location (before any phase adds more tests), and dependency cleanup — followed by an SEO & Analytics foundation locked in before any feature page can accrue ranking drift, then the independent feature tracks — Icebox disposition, Loadout Builder, Archive Analytics, Accessibility, Site Features, Map Visuals — and finally the two infrastructure bets (Pi Swarm staging, then a spike-gated SSE rewrite) before a closing documentation pass — including a Search Console findings review — describes what actually shipped. Every phase is a releasable vertical slice: a bug class eliminated and verified in production, a feature a player can use end to end, or a written terminal decision on an issue.
 
 ## Phases
@@ -112,7 +114,7 @@ Plans:
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
   5. `docs/roadmap.md` is deleted and its live items are carried into `.planning/` (ARCH-11 and § Carried over), leaving `.planning/ROADMAP.md` as the one roadmap file (HOUSE-05, done 2026-11-02)
 
-**Plans**: 12 plans
+**Plans**: 1/12 plans executed
 
 Plans:
 **Wave 1**
@@ -420,7 +422,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 |-------|----------------|--------|-----------|
 | 1. Stability Fixes & Release | 9/9 | Complete    | 2026-10-21 |
 | 1.1. Production on the Hetzner Swarm (INSERTED) | - | Complete    | 2026-10-25 |
-| 2. Docs Accuracy & Operational Housekeeping | 1/12 | In progress | - |
+| 2. Docs Accuracy & Operational Housekeeping | 1/12 | In Progress | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
 | 5. SEO & Analytics Foundation | 0/TBD | Not started | - |

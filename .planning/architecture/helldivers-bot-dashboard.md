@@ -5,7 +5,6 @@ component: dashboard
 status: implemented
 source_revision: 1755207f68e2d5f4e12e9b999a641e94720e02e4
 source_evidence_date: 2026-11-05
-publication_status: decided-not-built
 ---
 
 # Dashboard
