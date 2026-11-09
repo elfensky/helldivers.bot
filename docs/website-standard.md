@@ -31,7 +31,7 @@ the scope calls and the deviations, each with its item ID and reason (decided by
 | Favicons, Apple splash screens | `public/favicons/`, `public/splash/` | Made from the logo: same credit as the Helldivers artwork |
 | Open Graph fallback | `public/og-fallback.png` | A static image of the site name; no artwork |
 | Space Grotesk, Inter, Space Mono | `next/font/google` in `src/app/layout.jsx`, self-hosted at build time | Google Fonts, SIL Open Font License 1.1 |
-| Collective Consciousness (the Cyberstan glitch letters) | `public/fonts/collectiveconsciousness.regular.ttf` | No author or licence found: the file's copyright field holds the FontCreator template "(your company)". It is replaced by a font with a known licence (#620 follow-up PR) |
+| Collective Consciousness (the Cyberstan glitch letters) | `public/fonts/collectiveconsciousness.regular.ttf` | No author or licence found: the file's copyright field holds the FontCreator template "(your company)". Replaced in #651 by the sextant blocks (U+1FB00–1FB3B) of Noto Sans Symbols 2, Google Fonts, SIL Open Font License 1.1, through `next/font/google`; this row then names only Noto Sans Symbols 2 |
 | Ko-fi button | `public/images/kofi.webp` | Brand asset of Ko-fi |
 | GitHub marks | `public/svgs/github.black.svg`, `public/svgs/github.white.svg` | Brand asset of GitHub |
 
