@@ -112,5 +112,11 @@
         }
       ]
     }
+  ],
+  "forwards": [
+    "phase-1-stability-release",
+    "phase-1-1-production-migration",
+    "phase-2-documentation-and-operations",
+    "phase-3-test-co-location"
   ]
 }
