@@ -17,7 +17,8 @@ The worker thread polls the official Helldivers 1 API. There is no separate back
 deployments coordinate through a database-row lease, not a message queue.
 
 **eli14:** The app is a single restaurant kitchen. One stove (the Postgres lease row) decides which
-of the many identical kitchens cooks tonight — so the meal is never prepared twice. Whatever the
+of the many identical kitchens cooks right now, so the meal is cooked once. Only a cook who takes
+more than a minute can overlap with the next kitchen's cook. Whatever the
 stove cooks is chopped into fixed-size time buckets and stored in five normalized baskets; the
 counter, the menu board, and the takeaway API all read from those baskets, never from a raw tape.
 
@@ -63,7 +64,8 @@ flowchart TD
 
 ## Rules
 
-- One poller at a time across replicas via the 60 s `worker_heartbeat` lease; handover state
+- One lease holder at a time across replicas via the 60 s `worker_heartbeat` lease (a poll slower
+  than 60 s can overlap with the next holder's poll); handover state
   (`prevEvents`, `lastSeasonObserved`) lives in the lease row, never in module memory.
 - No raw-cache tables: the rebroadcast and public APIs reconstruct wire format from the normalized
   `h1_*` tables on read.

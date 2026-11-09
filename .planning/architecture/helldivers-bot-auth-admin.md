@@ -19,8 +19,9 @@ Optional authentication, public API keys, and the admin surface.
 
 - BetterAuth with database sessions (Prisma adapter), Discord, GitHub and Google OAuth. Tables:
   `Account`, `Session`, `Verification`, `User`, `Settings`.
-- Public API keys: `ApiKey` table. `/api/v1/h1/*` routes need a valid API key (Bearer). The key is
-  stored as a SHA-256 hash. Rate limiting counts per client IP in the `api_rate_limit` table.
+- Public API keys: `ApiKey` table. `/api/v1/h1/*` routes and `/api/h1/rebroadcast` need a valid API
+  key (Bearer). The key is stored as a SHA-256 hash. Rate limiting counts per client IP (per key for
+  rebroadcast) in the `api_rate_limit` table.
 - Account area: profile with linked providers, API key management, data export and account
   deletion.
 - Admin area on `/profile`, shown when `User.role` is `admin`: system overview (all replicas,
