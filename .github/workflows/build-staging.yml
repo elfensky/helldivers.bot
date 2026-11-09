@@ -62,7 +62,7 @@ jobs:
             # branch Git Sync watches; develop's copy of the image: line is not
             # what runs), falling back to the tested commit's copy until that
             # branch exists. It is not HEAD^..HEAD: under rebase merges that is
-            # only the PR's last commit, the version bump. The pin spans every
+            # only the PR's last commit. The pin spans every
             # commit since the last deploy, whatever the merge method. Pin
             # unreadable or not in history: rebuild the migrate image.
             # `migrate` = anything that changes what the migrate image contains
@@ -193,6 +193,12 @@ jobs:
               with:
                   ref: ${{ env.TESTED_SHA }}
 
+            # develop keeps one version between cuts (#618); the commit makes
+            # every staging build distinct for the reload, deploymentId and release.
+            - name: Stamp the version with the commit
+              id: stamp
+              run: echo "version=$(jq -r .version package.json)-dev.${TESTED_SHA::7}" >> "$GITHUB_OUTPUT"
+
             - name: Build and push APP
               uses: ./.github/actions/docker-publish
               with:
@@ -204,6 +210,7 @@ jobs:
                   build-args: |
                       NODE_ENV=production
                       NEXT_PUBLIC_DEPLOY_ENV=staging
+                      APP_VERSION=${{ steps.stamp.outputs.version }}
                       NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
                       NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
                   # Sentry credentials go in build-secrets, NOT build-args —

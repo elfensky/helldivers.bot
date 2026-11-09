@@ -48,11 +48,12 @@ reaches `develop` through its own PR.
 
 ## This repo's own rules
 
-- **Version bump on every code PR** (rule in force since 2026-10-14; registered as a deviation in the
-  handbook's deviations note): the PR's last commit moves its `CHANGELOG.md` entries from
-  `## Unreleased` into a new `## X.Y.Z` section and bumps `"version"` in `package.json` to match.
-  `Check: Version Bump` enforces it for changes under `src/`, `prisma/`, `public/`, `package.json`;
-  docs-only PRs outside those paths need no bump.
+- **The version cut** (#618): work PRs into `develop` raise no version; their notes go under
+  `## Unreleased`. The release PR's head is `develop`, so the cut lands first as its own PR into
+  `develop` (the `"version"` bump plus the move of the notes into `## X.Y.Z`), then the release PR
+  follows. `Check: Version Bump` runs only on PRs into `main`. Staging images carry
+  `<version>-dev.<sha7>` (`APP_VERSION` build arg, `build-staging.yml`), so the stale-tab reload,
+  `deploymentId` and the GlitchTip release still change on every staging build.
 - **`metrics` is a CI-owned standalone branch** — never merge it to or from `develop`/`main`, never
   delete it as stale.
 - Use the `tryCatch` wrapper (`src/shared/utils/tryCatch.mjs`); no bare try/catch blocks.
