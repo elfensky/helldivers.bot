@@ -1,5 +1,14 @@
 # Roadmap: helldivers.bot
 
+## Milestones
+
+- 🚧 **M7 Production is stable on the Hetzner swarm** — Phases 1–1.1 (in progress)
+- 📋 **M8 The site is documented, tested and findable** — Phases 2–6 (planned)
+- 📋 **M9 Players can build and share loadouts** — Phases 7–9 (planned)
+- 📋 **M10 Players can explore season analytics** — Phases 10–12 (planned)
+- 📋 **M11 The site is accessible and polished** — Phases 13–15 (planned)
+- 📋 **M12 Staging runs on the Pi and live updates are decided** — Phases 16–18 (planned)
+
 ## Overview
 
 Every open GitHub issue reaches a terminal state: fixed and released, shipped as a feature, or closed with a written decision.
@@ -15,27 +24,12 @@ This milestone drains every open GitHub issue to a terminal state: stability bug
 
 Decimal phases appear between their surrounding integers in numeric order.
 
+## 🚧 M7 · Production is stable on the Hetzner swarm (in progress)
+
+**Milestone goal:** The known production bug classes are fixed or tracked, and production runs on the Hetzner swarm, released as v0.96.4.
+
 - [x] **Phase 1: Stability Fixes & Release** - The five known production bug classes are fixed at root cause, verified live, and `develop` is released to `main` (completed 2026-10-21)
 - [x] **Phase 1.1: Production on the Hetzner Swarm** (INSERTED) - Production runs on the Hetzner swarm, and every release reaches it through `pin-production` (#588) (completed 2026-10-25)
-- [ ] **Phase 2: Docs Accuracy & Operational Housekeeping** - AGENTS.md and `/docs` describe the lease model as it actually works, and outstanding operational verification chores close out
-- [ ] **Phase 3: Test Co-location** - Unit tests move next to their modules before any later phase adds more tests
-- [ ] **Phase 4: Dependency Cleanup & Auto-merge Automation** - The Dependabot backlog clears and minor/patch updates merge unattended thereafter
-- [ ] **Phase 5: SEO & Analytics Foundation** - The site is structurally primed to rank for Helldivers 1 search queries and every interaction is tracked in Umami, before any feature page can drift from the convention
-- [ ] **Phase 6: Icebox Quick Closures** - The five already-decided Icebox issues close with written reasons
-- [ ] **Phase 7: Loadout Foundation (Catalogs + Codec)** - Item catalogs and the versioned shareable-URL hash format lock before any UI encodes against them
-- [ ] **Phase 8: Loadout Builder Core** - A player can build a loadout, see its stats, and share a link with a custom preview image
-- [ ] **Phase 9: Loadout Enhancements & Squad Mode** - Guides, favorites, account sync, accessibility, and a 4-player shareable squad loadout
-- [ ] **Phase 10: Archive Analytics Spec Refresh** - The analytics issues are rewritten against the real schema before any Track D code
-- [ ] **Phase 11: Archive Analytics Feature Build** - Season-level analytics and storytelling insights ship, working across all 160 seasons
-- [ ] **Phase 12: Archive Analytics — Comparison, Narrative & Caching** - Season comparison, delta badges, narrative variety, and cached aggregates
-- [ ] **Phase 13: Accessibility & Design Polish** - WCAG contrast, ARIA patterns, and scoped visual fixes
-- [ ] **Phase 14: Site Features & Easter Eggs** - Admin broadcasts, the Ministry of Truth toggle, faction vernacular, and API dashboard hygiene
-- [ ] **Phase 15: Map Visuals & Icebox Investigative Spikes** - CSS 3D map depth and animation, plus the two open-ended Icebox spikes reach terminal decisions
-- [ ] **Phase 16: Staging on the Pi Swarm** - `develop` pushes deploy automatically to a validated staging environment
-- [ ] **Phase 17: SSE Spike & Conditional Implementation** - The four SSE gating questions are answered empirically; polling is replaced only if the spike says yes
-- [ ] **Phase 18: Final Documentation Pass** - All public docs describe the system as it shipped across this entire milestone
-
-## Phase Details
 
 ### Phase 1: Stability Fixes & Release
 
@@ -84,7 +78,7 @@ Plans:
 
 **UI hint**: yes
 
-### Phase 01.1: Production on the Hetzner Swarm (INSERTED)
+### Phase 1.1: Production on the Hetzner Swarm (INSERTED)
 
 **Goal:** Production runs on the Hetzner swarm, and every release reaches it through `pin-production`
 **Issue:** #588
@@ -99,6 +93,16 @@ Plans:
 **Impact on Phase 2:** plans 02-01, 02-09, 02-11 and 02-12 assume release v0.95.7 and a manual production pull. Production now runs releases pinned by `pin-production`, so these four plans need a re-plan before Phase 2 executes.
 
 **Plans:** none — an operational release; evidence in `01.1-RELEASE-RECORD.md`
+
+## 📋 M8 · The site is documented, tested and findable (planned)
+
+**Milestone goal:** The docs match the code, tests sit beside their modules, dependency updates merge themselves, and search and analytics are wired in. The five decided Icebox issues close with written reasons, and the milestone ends in a release to `main`.
+
+- [ ] **Phase 2: Docs Accuracy & Operational Housekeeping** - AGENTS.md and `/docs` describe the lease model as it actually works, and outstanding operational verification chores close out
+- [ ] **Phase 3: Test Co-location** - Unit tests move next to their modules before any later phase adds more tests
+- [ ] **Phase 4: Dependency Cleanup & Auto-merge Automation** - The Dependabot backlog clears and minor/patch updates merge unattended thereafter
+- [ ] **Phase 5: SEO & Analytics Foundation** - The site is structurally primed to rank for Helldivers 1 search queries and every interaction is tracked in Umami, before any feature page can drift from the convention
+- [ ] **Phase 6: Icebox Quick Closures** - The five already-decided Icebox issues close with written reasons
 
 ### Phase 2: Docs Accuracy & Operational Housekeeping
 
@@ -221,6 +225,14 @@ Plans:
 
 **Plans**: TBD
 
+## 📋 M9 · Players can build and share loadouts (planned)
+
+**Milestone goal:** A player builds a loadout, sees its stats and shares it as a link with its own preview image, up to a full four-player squad. The URL format is fixed first, because shared links cannot be migrated. The milestone ends in a release to `main`.
+
+- [ ] **Phase 7: Loadout Foundation (Catalogs + Codec)** - Item catalogs and the versioned shareable-URL hash format lock before any UI encodes against them
+- [ ] **Phase 8: Loadout Builder Core** - A player can build a loadout, see its stats, and share a link with a custom preview image
+- [ ] **Phase 9: Loadout Enhancements & Squad Mode** - Guides, favorites, account sync, accessibility, and a 4-player shareable squad loadout
+
 ### Phase 7: Loadout Foundation (Catalogs + Codec)
 
 **Goal**: The static item data and the shareable-URL hash format — this milestone's one true one-way door — are locked before any UI is built against them
@@ -269,6 +281,14 @@ Plans:
 
 **Plans**: TBD
 **UI hint**: yes
+
+## 📋 M10 · Players can explore season analytics (planned)
+
+**Milestone goal:** Players read season-level analytics, stories and comparisons across all 160 seasons, and charts hide when a season has no telemetry. The issues are rewritten against the real schema first. The milestone ends in a release to `main`.
+
+- [ ] **Phase 10: Archive Analytics Spec Refresh** - The analytics issues are rewritten against the real schema before any Track D code
+- [ ] **Phase 11: Archive Analytics Feature Build** - Season-level analytics and storytelling insights ship, working across all 160 seasons
+- [ ] **Phase 12: Archive Analytics — Comparison, Narrative & Caching** - Season comparison, delta badges, narrative variety, and cached aggregates
 
 ### Phase 10: Archive Analytics Spec Refresh
 
@@ -319,6 +339,14 @@ Plans:
 **Note**: Any new comparison-view routes register in the sitemap/llms.txt/metadata registry per the SEO-02/04 convention established in Phase 5.
 **UI hint**: yes
 
+## 📋 M11 · The site is accessible and polished (planned)
+
+**Milestone goal:** The site meets WCAG contrast and ARIA rules, admins can broadcast, and the map gains depth; the two Icebox spikes reach a decision. The milestone ends in a release to `main`.
+
+- [ ] **Phase 13: Accessibility & Design Polish** - WCAG contrast, ARIA patterns, and scoped visual fixes
+- [ ] **Phase 14: Site Features & Easter Eggs** - Admin broadcasts, the Ministry of Truth toggle, faction vernacular, and API dashboard hygiene
+- [ ] **Phase 15: Map Visuals & Icebox Investigative Spikes** - CSS 3D map depth and animation, plus the two open-ended Icebox spikes reach terminal decisions
+
 ### Phase 13: Accessibility & Design Polish
 
 **Goal**: The site meets WCAG contrast and ARIA expectations and has had its rough visual edges scoped and fixed
@@ -368,6 +396,14 @@ Plans:
 
 **Plans**: TBD
 **UI hint**: yes
+
+## 📋 M12 · Staging runs on the Pi and live updates are decided (planned)
+
+**Milestone goal:** A push to `develop` deploys to staging on the Pi swarm, a spike decides whether SSE replaces polling, and the public docs describe what shipped. The milestone ends in a release to `main`.
+
+- [ ] **Phase 16: Staging on the Pi Swarm** - `develop` pushes deploy automatically to a validated staging environment
+- [ ] **Phase 17: SSE Spike & Conditional Implementation** - The four SSE gating questions are answered empirically; polling is replaced only if the spike says yes
+- [ ] **Phase 18: Final Documentation Pass** - All public docs describe the system as it shipped across this entire milestone
 
 ### Phase 16: Staging on the Pi Swarm
 

@@ -1,6 +1,7 @@
 ---
 gsd_state_version: "1.0"
-milestone: v0.96.2
+milestone: M7
+milestone_name: Production is stable on the Hetzner swarm
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
