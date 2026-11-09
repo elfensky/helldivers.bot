@@ -337,5 +337,6 @@
     "phase-2-documentation-and-operations",
     "phase-3-test-co-location",
     "v0-96-2"
-  ]
+  ],
+  "architecture": true
 }
