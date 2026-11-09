@@ -24,7 +24,7 @@ GitHub milestones "Phase 1" to "Phase 8", so it has no plan, summary or requirem
 
 **Source:** CHANGELOG.md, versions 0.10.0–0.29.2; GitHub milestones "Phase 1" to "Phase 8".
 
-**Notes:** GitHub milestone "Phase 8: WebSocket Real-Time" shipped as SSE, not WebSocket, and 0.27.0 replaced SSE with polling. The snapshot tables of 0.10.0 gave way to the normalized schema of M3 in 0.41.0.
+**Notes:** GitHub milestone "Phase 8: WebSocket Real-Time" shipped as SSE, not WebSocket, and 0.27.0 replaced SSE with polling. Versions 0.25.0–0.29.2 have no release tag; 0.25.1–0.29.0 were added to CHANGELOG.md afterwards (retroactive). The snapshot tables of 0.10.0 gave way to the normalized schema of M3 in 0.41.0.
 
 ---
 
