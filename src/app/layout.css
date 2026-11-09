@@ -47,7 +47,7 @@
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
     --font-mono: var(--font-space-mono), monospace;
-    --font-cyberstan: 'Collective Consciousness', monospace;
+    --font-cyberstan: var(--font-glyphs), monospace;
 
     /* === SPACING === */
     --space-1: 0.25rem;
@@ -99,7 +99,7 @@
     --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
     --font-mono: var(--font-space-mono), monospace;
-    --font-cyberstan: 'Collective Consciousness', monospace;
+    --font-cyberstan: var(--font-glyphs), monospace;
 
     /* Typography — fluid type scale (5 steps) */
     --text-h1: clamp(1.5rem, 1rem + 2vw, 2.5rem);
@@ -129,14 +129,6 @@
 @font-face {
     font-family: 'Insignia';
     src: url('/fonts/insignia.regular.otf') format('opentype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Collective Consciousness';
-    src: url('/fonts/collectiveconsciousness.regular.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
