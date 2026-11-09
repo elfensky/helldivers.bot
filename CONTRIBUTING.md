@@ -44,8 +44,8 @@ developer handbook (`~/vault/knowledge/developer/developer.md`), chapter
 
 ## Release Process
 
-PR `develop` → `main` (merge commit), tag `vX.Y.Z` on the merge commit, push the tag, then merge
-`main` back into `develop` by PR. The tag triggers the production Docker build. Full steps:
+PR `develop` → `main` (merge commit), tag `vX.Y.Z` on the merge commit, push the tag. There is no
+merge-back into `develop`. The tag triggers the production Docker build. Full steps:
 [AGENTS.md § Branches](AGENTS.md#branches).
 
 ## Hotfix Process
@@ -54,7 +54,7 @@ PR `develop` → `main` (merge commit), tag `vX.Y.Z` on the merge commit, push t
 2. Fix, commit with tests
 3. PR to `main`, merge
 4. Tag and push (triggers production build)
-5. Merge `main` back into `develop` by PR
+5. Bring the fix to `develop` through its own PR (cherry-pick onto a branch from `develop`)
 
 ## Versioning
 

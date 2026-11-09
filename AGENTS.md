@@ -40,9 +40,11 @@ composite action in `.github/actions/verify/`. Env vars are documented in `.exam
 
 `develop` integrates, `main` releases on a `v*.*.*` tag push (the tag triggers the production build).
 The `develop` ruleset requires a PR with checks `Test & Build`, `Visual Regression`,
-`Review Dependencies`. Merge work PRs with `gh pr merge --rebase --delete-branch`. A release PR
-`develop` → `main` uses a merge commit, gets tagged `vX.Y.Z`, and `main` is merged back into
-`develop` by PR.
+`Review Dependencies` and allows only the `rebase` merge method. Merge work PRs with
+`gh pr merge --rebase --delete-branch`. A release PR `develop` → `main` uses a merge commit and gets
+tagged `vX.Y.Z`. There is no merge-back (#621): `main` does not require an up-to-date branch, so the
+next release PR merges without `main`'s merge commit on `develop`. A fix made directly on `main`
+reaches `develop` through its own PR.
 
 ## This repo's own rules
 
