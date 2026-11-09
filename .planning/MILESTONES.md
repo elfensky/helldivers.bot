@@ -19,3 +19,93 @@
 **Archive:** [roadmap](milestones/M7-ROADMAP.md), [requirements](milestones/M7-REQUIREMENTS.md), [phase evidence](milestones/M7-phases/).
 
 ---
+
+## M6 The dashboard predicts the next events (Shipped: 2026-08-13)
+
+**Delivered:** The dashboard forecasts the next wave, the assault timing and the counterattack clock, and the develop backlog ships as v0.90.4.
+
+**Phases completed:** 0.17–0.18 (2 phases, recorded after the fact; no plans)
+
+**Key accomplishments:**
+- Event predictions: The next-wave card, the assault ETA, the counterattack clock and published verdicts, with `/docs/predict` (0.68.0–0.88.3; #472, #482, #483)
+- Release and CI: Visual regression tests, sourcemap upload, the browser-floor lint, CI hardening and the AGPL licence (0.89.0–0.91.1)
+
+**Archive:** [roadmap](milestones/M6-ROADMAP.md).
+
+---
+
+## M5 The archives tell each season's story (Shipped: 2026-07-27)
+
+**Delivered:** The archives and `/stats` explain each season through combat telemetry, engagement, a written war narrative and faction markers.
+
+**Phases completed:** 0.15–0.16 (2 phases, recorded after the fact; no plans)
+
+**Key accomplishments:**
+- Season stories: Combat telemetry and engagement on `/stats`, the War Narrative on `/archives`, and faction markers (0.60.0–0.64.0; #178, #275, #274, #157)
+- Test rigour: Mutation testing finds four bugs that no test caught, and the v1 handlers get their own tests (0.65.0–0.67.6)
+
+**Archive:** [roadmap](milestones/M5-ROADMAP.md).
+
+---
+
+## M4 Developers can use a public API (Shipped: 2026-06-23)
+
+**Delivered:** Developers query versioned `/api/v1/h1` endpoints with API keys, rate limits and an OpenAPI document, released to `main` as v0.59.0.
+
+**Phases completed:** 0.13–0.14 (2 phases, recorded after the fact; no plans)
+
+**Key accomplishments:**
+- Versioned endpoints: A config module and the `/api/v1/h1` status, stats, season and map endpoints (0.53.0–0.56.0; #29, #30, #31, #33)
+- Limits and docs: ETags, a Postgres rate limiter and the OpenAPI spec for the v1 endpoints (0.57.0–0.59.0; #435, #436, #438)
+
+**Archive:** [roadmap](milestones/M4-ROADMAP.md).
+
+---
+
+## M3 The archive holds every season in five tables (Shipped: 2026-06-21)
+
+**Delivered:** Every season sits in a normalized five-table schema with bucket upserts, and the archives and the new /stats page read it.
+
+**Phases completed:** 0.9–0.12 (4 phases, recorded after the fact; no plans)
+
+**Key accomplishments:**
+- Archives redesign: The archives show each season with per-faction analytics, closest calls and a unified event log (0.30.0–0.40.7; #279)
+- Normalized schema: Ten tables become the five `h1_*` tables, and polls upsert into time buckets (0.41.0)
+- Hardening: The image moves to Chainguard, the stale-version reload ships, and ESLint with strict checkJs gates the code (0.42.0–0.47.6)
+- Cross-season stats: `/stats` compares every season, the Ministry of Truth effect runs sitewide, and cascades are tracked (0.48.0–0.52.9; #394, #272)
+
+**Archive:** [roadmap](milestones/M3-ROADMAP.md).
+
+---
+
+## M2 The rebuilt dashboard works on every screen (Shipped: 2026-04-08)
+
+**Delivered:** The relaunched site makes the live war dashboard its homepage and works on phone, tablet and desktop, with notifications and accounts.
+
+**Phases completed:** 0.5–0.8 (4 phases, recorded after the fact; no plans)
+
+**Key accomplishments:**
+- Relaunch: The homepage becomes the live war dashboard, on a rewritten schema with seeded seasons, an API-key gate and war outcomes (0.10.0–0.14.0; GitHub Phases 1–4)
+- Responsive redesign: Design tokens and a mobile-first layout scale the dashboard to tablet and desktop (0.15.0–0.22.3; GitHub Phases 5–7; #167, #168, #186)
+- Live updates and notifications: Toasts, web push and the PWA ship; live data arrives by SSE in 0.24.0 and by 10 s polling from 0.27.0 (GitHub Phase 8; #24, #41, #229)
+- Accounts: Players sign in through BetterAuth and get a profile page, and admins get a panel (0.25.0–0.26.0; #198, #248)
+
+**Archive:** [roadmap](milestones/M2-ROADMAP.md).
+
+---
+
+## M1 The first site caches the war and draws the map (Shipped: 2025-12-09)
+
+**Delivered:** The first site caches the Helldivers 1 API in Postgres, serves it again in the game's format, and shows the map, stats and timeline.
+
+**Phases completed:** 0.1–0.4 (4 phases, recorded after the fact; no plans)
+
+**Key accomplishments:**
+- API cache: The site polls the HD1 API into Postgres and runs from a Docker image (0.1.0–0.3.2)
+- Rebroadcast API: `POST /api/h1/rebroadcast` serves `get_campaign_status` and `get_snapshots` in the game's format, with Swagger docs (0.4.0–0.4.1)
+- Map, stats and timeline: Players see the galaxy map, the stats and the war timeline (0.4.2–0.7.3)
+- Landing page: The layout and the navigation are rebuilt around a real landing page (0.8.0)
+
+**Archive:** [roadmap](milestones/M1-ROADMAP.md).
+
+---

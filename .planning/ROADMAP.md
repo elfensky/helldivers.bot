@@ -2,6 +2,12 @@
 
 ## Milestones
 
+- ✅ **M1 The first site caches the war and draws the map** — Phases 0.1–0.4 (shipped 2025-12-09)
+- ✅ **M2 The rebuilt dashboard works on every screen** — Phases 0.5–0.8 (shipped 2026-04-08)
+- ✅ **M3 The archive holds every season in five tables** — Phases 0.9–0.12 (shipped 2026-06-21)
+- ✅ **M4 Developers can use a public API** — Phases 0.13–0.14 (shipped 2026-06-23)
+- ✅ **M5 The archives tell each season's story** — Phases 0.15–0.16 (shipped 2026-07-27)
+- ✅ **M6 The dashboard predicts the next events** — Phases 0.17–0.18 (shipped 2026-08-13)
 - ✅ **M7 Production is stable on the Hetzner swarm** — Phases 1–1.1 (shipped 2026-10-25)
 - 🚧 **M8 The site is documented, tested and findable** — Phases 2–6 (in progress)
 - 📋 **M9 Players can build and share loadouts** — Phases 7–9 (planned)
@@ -23,6 +29,86 @@ This milestone drains every open GitHub issue to a terminal state: stability bug
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 Decimal phases appear between their surrounding integers in numeric order.
+
+Phases 0.1–0.18 belong to the shipped milestones M1–M6. They were recorded after the fact and predate the GSD plan.
+
+<details>
+<summary>✅ M1 · The first site caches the war and draws the map (Phases 0.1–0.4) — SHIPPED 2025-12-09</summary>
+
+Versions 0.1.0–0.8.0 (2025-05-10 to 2025-12-09); recorded from CHANGELOG.md and GitHub milestone "Phase 0: Initial Release", before the GSD plan.
+
+- Phase 0.1 — API cache, completed 2025-05-15
+- Phase 0.2 — Rebroadcast API, completed 2025-05-20
+- Phase 0.3 — Map, stats and timeline, completed 2025-06-24
+- Phase 0.4 — Landing page, completed 2025-12-09
+
+[Archived roadmap](milestones/M1-ROADMAP.md)
+
+</details>
+
+<details>
+<summary>✅ M2 · The rebuilt dashboard works on every screen (Phases 0.5–0.8) — SHIPPED 2026-04-08</summary>
+
+Versions 0.10.0–0.29.2 (2026-03-26 to 2026-04-08); recorded from CHANGELOG.md and GitHub milestones "Phase 1" to "Phase 8", before the GSD plan.
+
+- Phase 0.5 — Relaunch, completed 2026-03-27
+- Phase 0.6 — Responsive redesign, completed 2026-04-04
+- Phase 0.7 — Live updates and notifications, completed 2026-04-08
+- Phase 0.8 — Accounts, completed 2026-04-08
+
+[Archived roadmap](milestones/M2-ROADMAP.md)
+
+</details>
+
+<details>
+<summary>✅ M3 · The archive holds every season in five tables (Phases 0.9–0.12) — SHIPPED 2026-06-21</summary>
+
+Versions 0.30.0–0.52.9 (2026-04-08 to 2026-06-21); recorded from CHANGELOG.md and no GitHub milestone, before the GSD plan.
+
+- Phase 0.9 — Archives redesign, completed 2026-04-15
+- Phase 0.10 — Normalized schema, completed 2026-04-16
+- Phase 0.11 — Hardening, completed 2026-05-21
+- Phase 0.12 — Cross-season stats, completed 2026-06-21
+
+[Archived roadmap](milestones/M3-ROADMAP.md)
+
+</details>
+
+<details>
+<summary>✅ M4 · Developers can use a public API (Phases 0.13–0.14) — SHIPPED 2026-06-23</summary>
+
+Versions 0.53.0–0.59.0 (2026-06-21 to 2026-06-23), released to `main` as v0.59.0; recorded from CHANGELOG.md and GitHub milestone "Public API & Config", before the GSD plan.
+
+- Phase 0.13 — Versioned endpoints, completed 2026-06-21
+- Phase 0.14 — Limits and docs, completed 2026-06-23
+
+[Archived roadmap](milestones/M4-ROADMAP.md)
+
+</details>
+
+<details>
+<summary>✅ M5 · The archives tell each season's story (Phases 0.15–0.16) — SHIPPED 2026-07-27</summary>
+
+Versions 0.59.1–0.67.6 (2026-06-24 to 2026-07-27), released to `main` as v0.65.0 and v0.67.1; recorded from CHANGELOG.md and no GitHub milestone, before the GSD plan.
+
+- Phase 0.15 — Season stories, completed 2026-06-28
+- Phase 0.16 — Test rigour, completed 2026-07-27
+
+[Archived roadmap](milestones/M5-ROADMAP.md)
+
+</details>
+
+<details>
+<summary>✅ M6 · The dashboard predicts the next events (Phases 0.17–0.18) — SHIPPED 2026-08-13</summary>
+
+Versions 0.68.0–0.91.1 (2026-07-27 to 2026-08-13), released to `main` as v0.90.4; recorded from CHANGELOG.md and no GitHub milestone, before the GSD plan.
+
+- Phase 0.17 — Event predictions, completed 2026-08-04
+- Phase 0.18 — Release and CI, completed 2026-08-13
+
+[Archived roadmap](milestones/M6-ROADMAP.md)
+
+</details>
 
 <details>
 <summary>✅ M7 · Production is stable on the Hetzner swarm (Phases 1–1.1) — SHIPPED 2026-10-25</summary>
