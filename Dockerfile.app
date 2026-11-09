@@ -46,6 +46,10 @@ RUN POSTGRES_URL=postgresql://dummy npx prisma generate
 # fallback chain in instrumentation-client.js drops down to DEPLOY_ENV / NODE_ENV.
 ARG NEXT_PUBLIC_DEPLOY_ENV
 ENV NEXT_PUBLIC_DEPLOY_ENV=$NEXT_PUBLIC_DEPLOY_ENV
+# APP_VERSION overrides package.json's version in next.config.mjs. Staging
+# passes `<version>-dev.<sha7>`; empty (release builds) keeps package.json's.
+ARG APP_VERSION
+ENV APP_VERSION=$APP_VERSION
 # NEXT_PUBLIC_SENTRY_DSN is the browser-side GlitchTip DSN. Like DEPLOY_ENV
 # it is inlined into the client bundle at build time, so it MUST be set here as
 # a build arg — setting it only at runtime leaves the browser SDK inert (no

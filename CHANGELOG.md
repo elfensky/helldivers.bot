@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Versioning is "accumulate, then cut" (#618): PRs into `develop` raise no version and add their
+  notes here; the cut is its own PR into `develop`, then the release PR. `Check: Version Bump` runs
+  only on PRs into `main`. Staging images carry `<version>-dev.<sha7>` through a new `APP_VERSION`
+  build arg, so the stale-tab reload, `deploymentId` and the GlitchTip release change on every
+  staging build. The release-notes step matches `## X.Y.Z` and `## [X.Y.Z] - date` headings exactly.
 - AGENTS.md rewritten from the developer-handbook template (271 → 117 lines): shared standards now
   live in the handbook, the file keeps only repo-specific rules, invariants and the cockpit pointer.
   `.planning/architecture/` notes added; CONTRIBUTING.md links repointed at the surviving anchors.

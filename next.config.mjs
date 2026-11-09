@@ -1,7 +1,9 @@
 import { withSentryConfig } from '@sentry/nextjs/config';
 import createMDX from '@next/mdx';
 
-const APP_VERSION = process.env.npm_package_version || '0.0.0';
+// Staging builds pass `<version>-dev.<sha7>` (build-staging.yml), because develop
+// keeps one version between cuts and the reload, deploymentId and release need a change.
+const APP_VERSION = process.env.APP_VERSION || process.env.npm_package_version || '0.0.0';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

@@ -1,10 +1,10 @@
 name: 'Check: Version Bump'
 
-# CLAUDE.md § Git Workflow #2 requires every PR to carry its own version
-# bump. This is the only automated enforcement of that rule.
+# A release PR into main must raise the version (AGENTS.md § This repo's own
+# rules, "The version cut"). PRs into develop raise none, so they skip this.
 on:
     pull_request:
-        branches: [develop, main]
+        branches: [main]
         # Anything whose change ships to users. `pyproject.toml` used to be
         # listed here — there is no Python in this repo, so it never matched.
         paths: ['src/**', 'prisma/**', 'public/**', 'package.json']

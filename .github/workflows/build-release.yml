@@ -227,9 +227,11 @@ jobs:
                   TAG_NAME: ${{ github.ref_name }}
               run: |
                   VERSION="${TAG_NAME#v}"
-                  # State-machine awk: find "## <version>" header, collect until next "## " header or EOF
+                  # State-machine awk: find the "## <version>" header, collect until the next "## " header or EOF.
+                  # The heading's first word must equal the version exactly, with or without brackets and
+                  # with or without a trailing date: "## 0.98.0", "## [0.98.0] - 2026-11-10" (#618).
                   awk -v ver="$VERSION" '
-                    /^## / { if (found) exit; if (index($0, "## " ver) == 1) { found=1; next } }
+                    /^## / { if (found) exit; v = $2; gsub(/[][]/, "", v); if (v == ver) { found=1; next } }
                     found { print }
                   ' CHANGELOG.md > /tmp/release-notes.md
 
