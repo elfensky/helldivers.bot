@@ -4,7 +4,7 @@ title: helldivers.bot architecture
 status: implemented
 source_revision: baedce5517026883bf27556ba63ce897db4fd106
 source_evidence_date: 2026-11-09
-forwards: phase-1-stability-release, phase-1-1-production-migration, phase-2-documentation-and-operations, phase-3-test-co-location
+forwards: phase-1-stability-release, phase-1-1-production-migration, phase-2-documentation-and-operations, phase-3-test-co-location, v0-96-2
 ---
 
 # helldivers.bot architecture
