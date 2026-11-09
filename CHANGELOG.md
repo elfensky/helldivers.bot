@@ -11,6 +11,8 @@
   architecture notes as pages; AGENTS.md says how to republish it.
 - Dependabot also updates the actions pinned in the composite actions under `.github/actions/`, and
   opens a major GitHub Actions update as its own PR instead of inside the minor/patch group.
+- `.example.env` lists every key the app, the seed, the scripts and the smoke tests read, with the
+  source of each value and the `<KEY>_FILE` convention. Its `WORKER_ENABLED` note describes the lease.
 
 ## 0.98.0
 
