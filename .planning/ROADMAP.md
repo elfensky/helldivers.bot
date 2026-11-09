@@ -152,7 +152,7 @@ Phase 1.1 moved production to the Hetzner swarm and released v0.96.4.
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Release develop 0.95.7 to main (tag, release build with sourcemap upload, merge-back; production pull handed to Andrei) (HOUSE-03 input, D-21)
+- [ ] 02-01-PLAN.md — Release develop 0.95.7 to main (tag, release build with sourcemap upload; production pull handed to Andrei) (HOUSE-03 input, D-21)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -186,7 +186,7 @@ Plans:
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 02-11-PLAN.md — Phase-end release (tag, release build with upload lines, merge-back, production pull) (HOUSE-03, DOCS-02)
+- [ ] 02-11-PLAN.md — Phase-end release (tag, release build with upload lines, production pull) (HOUSE-03, DOCS-02)
 
 **Wave 10** *(blocked on Wave 9 completion)*
 

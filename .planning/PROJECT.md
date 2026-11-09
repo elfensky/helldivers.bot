@@ -77,7 +77,7 @@ The live dashboard and API are **stable and correct** — the poller never loses
 
 - **Tech stack**: Next.js 16 App Router, React 19 + Compiler, Prisma 7 + `@prisma/adapter-pg`, Tailwind v4 tokens, Vitest 5, Node 26 (mise) — locked; read `node_modules/next/dist/docs/` before writing Next code, the version has breaking changes
 - **Process**: GitHub Issues are the source of truth for *what*; every finished issue is closed with an implementation comment; every merge to `develop` bumps version + moves CHANGELOG
-- **Release**: production deploys only on `vX.Y.Z` tags on `main`; forgetting the tag means no deploy; merge `main` back into `develop` after each release
+- **Release**: production deploys only on `vX.Y.Z` tags on `main`; forgetting the tag means no deploy; no merge-back: `develop` takes rebase merges only and `main` does not require an up-to-date branch (#621)
 - **Data**: telemetry (`h1_statistic`) exists for seasons 157+ only — telemetry-backed UI hides when empty rather than rendering zeros; two-season comparisons drop rows with mixed coverage
 - **Browser floor**: `browserslist` in `package.json` (Firefox ≥115, Chrome ≥109, Safari ≥15.6) — enforced by `eslint-plugin-compat`; `Map.groupBy`/`Object.groupBy` are lint errors
 - **Security**: never `npm audit fix --force`; sourcemaps leave the image only once GlitchTip symbolication is proven (#502)

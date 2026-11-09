@@ -43,7 +43,7 @@ All commands run with the plan's lane worktree as cwd (repo-root-relative paths)
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 02-01-01 | 01 | 1 | HOUSE-03 | T-02-01, T-02-02, T-02-03, T-02-04 | PR-only release, annotated tag on the main tip, upload lines >= 2, no secret values in the record | git / gh | `git tag --points-at origin/main` = v0.95.7; `gh run list --workflow build-release.yml --branch v0.95.7` success; `grep '^Upload-line count: ' 02-RELEASE-RECORD.md` >= 2 | ✅ | ⬜ pending |
-| 02-01-02 | 01 | 1 | HOUSE-03 | T-02-03 | merge-back, never delete main | git | `git merge-base --is-ancestor origin/main origin/develop`; Land | ✅ | ⬜ pending |
+| 02-01-02 | 01 | 1 | HOUSE-03 | T-02-03 | no merge-back (#621): develop holds main's files | git | `git diff --quiet origin/main origin/develop`; Land | ✅ | ⬜ pending |
 | 02-02-01 | 02 | 2 | DOCS-01 | T-02-05, T-02-06 | comment-only code edits, 403 guard kept, no private IPs | grep + unit | retired-statement sweep on AGENTS.md = 0; required-terms loop; `grep "errorResponse(403" route.js`; `npm run test:unit -- src/__tests__/unit/_meta` | ✅ | ⬜ pending |
 | 02-02-02 | 02 | 2 | DOCS-01 | — | N/A | grep | map-error loop = 0; ARCHITECTURE step 7 negation; `Vitest 4` = 0 in PROJECT.md; `AGENTS.md: CHECKED` | ✅ | ⬜ pending |
 | 02-02-03 | 02 | 2 | DOCS-01 | T-02-SC | lockfile-pinned install only | lint/type/unit/build | `npm run lint`; `npm run typecheck`; `npm run test:unit`; Build; Land | ✅ | ⬜ pending |
@@ -71,7 +71,7 @@ All commands run with the plan's lane worktree as cwd (repo-root-relative paths)
 | 02-10-02 | 10 | 8 | HOUSE-03 | T-02-SC | lockfile-pinned install only | lint/type/unit/build | verify chain; Land | ✅ | ⬜ pending |
 | 02-10-03 | 10 | 8 | HOUSE-03 | T-02-19, T-02-20, T-02-21 | nothing executed from the exported image; token never echoed | docker + gh | `^Verdict: (NOT )?STRIPPED`; static-map-count row (v0.95.2 above 0, new image 0); #502 check-1 comment; Land | ✅ | ⬜ pending |
 | 02-11-01 | 11 | 9 | HOUSE-03, DOCS-02 | T-02-22, T-02-23, T-02-24, T-02-25 | release gated on STRIPPED; pull withheld without 2+ upload lines | git / gh | new tag on the origin/main tip equals main's version, annotated; Build: Release success; Release 2 upload-line count >= 2 | ✅ | ⬜ pending |
-| 02-11-02 | 11 | 9 | HOUSE-03 | T-02-25 | merge-back, never delete main | git | `git merge-base --is-ancestor origin/main origin/develop`; Land | ✅ | ⬜ pending |
+| 02-11-02 | 11 | 9 | HOUSE-03 | T-02-25 | no merge-back (#621): develop holds main's files | git | `git diff --quiet origin/main origin/develop`; Land | ✅ | ⬜ pending |
 | 02-11-03 | 11 | 9 | HOUSE-03 | — | human production pull | checkpoint:human-action | — (re-checked by 02-12-01) | n/a | ⬜ pending |
 | 02-12-01 | 12 | 10 | HOUSE-03, DOCS-02 | — | read-only probes | curl + grep | live chunk `.map` = 404; `Check 2 verdict: PASS`; `Docs live: PASS`; infrastructure page serves `Deployment topology` | ✅ | ⬜ pending |
 | 02-12-02 | 12 | 10 | HOUSE-03 | T-02-26 | correct filter, browser frames only | checkpoint:human-verify | — (GlitchTip read) | n/a | ⬜ pending |
