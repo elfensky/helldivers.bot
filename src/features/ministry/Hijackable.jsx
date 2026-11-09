@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useId, useRef, useState, useCallback } from 'react';
 import './MinistryInterference.css';
-import GlitchText from '@/features/archives/GlitchText';
+import GlitchText, { randomChar as randomGlyph } from '@/features/archives/GlitchText';
 import { useMinistryContext } from '@/features/ministry/MinistryContext.mjs';
 import {
     useMinistryHijackCycle,
@@ -157,9 +157,4 @@ export default function Hijackable({
     }
 
     return null;
-}
-
-const GLYPH_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-function randomGlyph() {
-    return GLYPH_CHARS[Math.floor(Math.random() * GLYPH_CHARS.length)];
 }

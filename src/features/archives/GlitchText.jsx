@@ -1,11 +1,14 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+// The 60 sextant blocks (U+1FB00–1FB3B), drawn by --font-cyberstan. An array,
+// because each is a surrogate pair that string indexing would split.
+const GLYPHS = Array.from({ length: 60 }, (_, i) => String.fromCodePoint(0x1fb00 + i));
 const TICK_MS = 50;
 
-function randomChar() {
-    return CHARSET[Math.floor(Math.random() * CHARSET.length)];
+/** @returns {string} one random glitch glyph; Hijackable's flicker uses it too */
+export function randomChar() {
+    return GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
 }
 
 /**

@@ -9,6 +9,10 @@
   only on PRs into `main`. Staging images carry `<version>-dev.<sha7>` through a new `APP_VERSION`
   build arg, so the stale-tab reload, `deploymentId` and the GlitchTip release change on every
   staging build. The release-notes step matches `## X.Y.Z` and `## [X.Y.Z] - date` headings exactly.
+- The Cyberstan glitch letters are now sextant blocks (U+1FB00–1FB3B) from Noto Sans Symbols 2
+  (SIL OFL 1.1, self-hosted by `next/font`, loaded on first use). They replace the Collective
+  Consciousness font, whose author and licence could not be found (#620). The archives glitch and
+  the Ministry flicker share one glyph picker.
 - AGENTS.md rewritten from the developer-handbook template (271 → 117 lines): shared standards now
   live in the handbook, the file keeps only repo-specific rules, invariants and the cockpit pointer.
   `.planning/architecture/` notes added; CONTRIBUTING.md links repointed at the surviving anchors.

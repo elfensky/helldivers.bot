@@ -23,6 +23,28 @@ describe('GlitchText', () => {
         expect(container.querySelectorAll('.glitch-char').length).toBe(0);
     });
 
+    it('scrambles into sextant glyphs (U+1FB00–1FB3B) during takeover', () => {
+        const { container } = render(
+            // Many words: the first word batch settles at 0 ms, the rest scramble.
+            <GlitchText
+                text="ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT"
+                phase="takeover"
+                className="test"
+            />,
+        );
+        act(() => {
+            vi.advanceTimersByTime(60);
+        });
+        const glyphs = [...container.querySelectorAll('.glitch-char')];
+        expect(glyphs.length).toBeGreaterThan(0);
+        for (const g of glyphs) {
+            expect([...g.textContent]).toHaveLength(1);
+            const cp = g.textContent.codePointAt(0);
+            expect(cp).toBeGreaterThanOrEqual(0x1fb00);
+            expect(cp).toBeLessThanOrEqual(0x1fb3b);
+        }
+    });
+
     it('renders base text initially (SSR-safe)', () => {
         const { container } = render(
             <GlitchText text="TEST" active={true} className="test" />,
