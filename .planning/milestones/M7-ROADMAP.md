@@ -3,7 +3,7 @@
 **Status:** ✅ SHIPPED 2026-10-25
 **Phases:** 1–1.1
 **Total Plans:** 9 (22 tasks); Phase 1.1 was an operational release without plans
-**Versions:** 0.92.0–0.96.4, released to `main` as v0.95.2 (2026-10-14) and v0.96.4 (2026-10-25)
+**Versions:** 0.92.0–0.96.4 (2026-08-27 to 2026-10-25); 4 release tags: v0.95.2 (2026-10-14), v0.95.8 (2026-10-23), v0.96.3 (no app image) and v0.96.4 (2026-10-25)
 
 ## Overview
 

@@ -2,14 +2,14 @@
 
 **Status:** ✅ SHIPPED 2026-08-13
 **Phases:** 0.17–0.18
-**Versions:** 0.68.0–0.91.1 (2026-07-27 to 2026-08-13), released to `main` as v0.90.4
+**Versions:** 0.68.0–0.91.1 (2026-07-27 to 2026-08-13); 3 release tags, the last v0.90.14
 
 ## Overview
 
 **Milestone goal:** The dashboard forecasts the next wave, the assault timing and the counterattack clock, and the develop backlog ships as v0.90.4.
 
-This milestone predates the GSD plan, which started on 2026-08-29. It was recorded on 2026-11-09 from CHANGELOG.md and
-no GitHub milestone, so it has no plan, summary or requirements files.
+This milestone predates the GSD plan, which started on 2026-08-29. It was recorded on 2026-11-09 from CHANGELOG.md
+(no GitHub milestone), so it has no plan, summary or requirements files.
 
 ## Phases
 

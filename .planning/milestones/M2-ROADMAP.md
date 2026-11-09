@@ -2,7 +2,7 @@
 
 **Status:** ✅ SHIPPED 2026-04-08
 **Phases:** 0.5–0.8
-**Versions:** 0.10.0–0.29.2 (2026-03-26 to 2026-04-08)
+**Versions:** 0.10.0–0.29.2 (2026-03-26 to 2026-04-08); 19 release tags, the last v0.24.1
 
 ## Overview
 
