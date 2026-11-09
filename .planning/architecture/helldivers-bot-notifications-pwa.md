@@ -3,8 +3,8 @@ kind: component
 title: Notifications and PWA
 component: notifications-pwa
 status: implemented
-source_revision: 4290817ec6e08c558c8463ccfd3d5f28cc866bd5
-source_evidence_date: 2026-11-07
+source_revision: baedce5517026883bf27556ba63ce897db4fd106
+source_evidence_date: 2026-11-09
 ---
 
 # Notifications and PWA
@@ -36,4 +36,4 @@ Event-transition notifications (Sonner toasts + Web Notifications + web-push), t
 ## Sources
 
 - `AGENTS.md` § Architecture invariants checked against `src/update/pushNotifier.mjs`,
-  `src/sw.js`, `serwist.config.js`, `src/shared/utils/reloadGuard.mjs` at `4290817e` on 2026-11-07.
+  `src/sw.js`, `serwist.config.js`, `src/shared/utils/reloadGuard.mjs` at `baedce55` on 2026-11-09.
