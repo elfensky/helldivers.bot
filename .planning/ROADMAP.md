@@ -2,8 +2,8 @@
 
 ## Milestones
 
-- 🚧 **M7 Production is stable on the Hetzner swarm** — Phases 1–1.1 (in progress)
-- 📋 **M8 The site is documented, tested and findable** — Phases 2–6 (planned)
+- ✅ **M7 Production is stable on the Hetzner swarm** — Phases 1–1.1 (shipped 2026-10-25)
+- 🚧 **M8 The site is documented, tested and findable** — Phases 2–6 (in progress)
 - 📋 **M9 Players can build and share loadouts** — Phases 7–9 (planned)
 - 📋 **M10 Players can explore season analytics** — Phases 10–12 (planned)
 - 📋 **M11 The site is accessible and polished** — Phases 13–15 (planned)
@@ -24,77 +24,20 @@ This milestone drains every open GitHub issue to a terminal state: stability bug
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-## 🚧 M7 · Production is stable on the Hetzner swarm (in progress)
+<details>
+<summary>✅ M7 · Production is stable on the Hetzner swarm (Phases 1–1.1) — SHIPPED 2026-10-25</summary>
 
-**Milestone goal:** The known production bug classes are fixed or tracked, and production runs on the Hetzner swarm, released as v0.96.4.
+Versions 0.92.0–0.96.4. Phase 1 fixed or tracked the five known production bug classes and released v0.95.2.
+Phase 1.1 moved production to the Hetzner swarm and released v0.96.4.
 
-- [x] **Phase 1: Stability Fixes & Release** - The five known production bug classes are fixed at root cause, verified live, and `develop` is released to `main` (completed 2026-10-21)
-- [x] **Phase 1.1: Production on the Hetzner Swarm** (INSERTED) - Production runs on the Hetzner swarm, and every release reaches it through `pin-production` (#588) (completed 2026-10-25)
+- Phase 1 — Stability Fixes & Release (9/9 plans), completed 2026-10-21
+- Phase 1.1 — Production on the Hetzner Swarm (inserted, no plans), completed 2026-10-25
 
-### Phase 1: Stability Fixes & Release
+[Archived roadmap](milestones/M7-ROADMAP.md) · [requirements](milestones/M7-REQUIREMENTS.md) · [phase evidence](milestones/M7-phases/)
 
-**Goal**: The five known production bug classes are fixed at root cause, verified in production, and `develop` is released to `main`
-**Mode:** mvp
-**Depends on**: Nothing (first phase)
-**Requirements**: STAB-01, STAB-02, STAB-03, STAB-04, STAB-05, STAB-06, STAB-07
-**Success Criteria** (what must be TRUE):
+</details>
 
-  1. The hydration taxonomy on `/` is swept in a real browser across timezones with every date/locale divergence confirmed guarded and the sweep harness committed; residual #418 mismatches on 0.95.2 are tracked in #496 and #526 (STAB-01, re-scoped 2026-10-21: the planned per-variant fix made no source change and the class measured RESIDUAL)
-  2. `/opengraph-image` never 500s — it falls back to a static image on render failure, and null-slot, no-active-event, and homeworld-only map states have render coverage (STAB-02)
-  3. The notification toggle resolves to an explicit error state with a visible retry when `serviceWorker.ready` hangs or `getSubscription()` rejects, instead of spinning forever (STAB-03)
-  4. `--font-mono` is resolved one way or the other (loaded via `next/font`, or dropped from the token) with before/after measurements of affected elements recorded on the issue (STAB-04)
-  5. `getWarOutcome` tolerates a null faction slot instead of throwing, pinned by a regression test (STAB-05)
-  6. the #496/#503/#485 classes are re-counted in GlitchTip on the new deployment id over a 48-hour window and dispositioned on the measured numbers (re-scoped 2026-10-21: all three RESIDUAL, tracked in the open issues) after `develop` is tagged and released to `main`, with `main` merged back into `develop` (STAB-06, STAB-07)
-
-**Plans**: 9/9 plans complete
-
-Plans:
-**Wave 1**
-
-- [x] 01-01-PLAN.md — Tracer: getWarOutcome null-slot guard + buildPlayerBeats zero-baseline coverage (STAB-05)
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 01-02-PLAN.md — Hydration sweep, per-variant fixes and regression tests on `/` (STAB-01)
-- [x] 01-03-PLAN.md — OG static crash fallback served as raw bytes, per-outcome cache headers (STAB-02)
-- [x] 01-06-PLAN.md — NotificationToggle error state, 5s timeout, Retry and VAPID surfacing (STAB-03)
-- [x] 01-07-PLAN.md — Space Mono via next/font, token repoint, before/after measurements (STAB-04)
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 01-04-PLAN.md — OG render telemetry, getCampaign failure-mode audit, edge-case map-state coverage (STAB-02)
-
-**Wave 4** *(blocked on Wave 3 completion)*
-
-- [x] 01-05-PLAN.md — Time-boxed sharp-rejection reproduction against the standalone image (STAB-02)
-
-**Wave 5** *(blocked on Wave 4 completion)*
-
-- [x] 01-08-PLAN.md — Symbolication gate, single develop→main release, tag and merge-back (STAB-07)
-
-**Wave 6** *(blocked on Wave 5 completion)*
-
-- [x] 01-09-PLAN.md — 48h GlitchTip re-count on the new deployment id, issue disposition (STAB-06)
-
-**UI hint**: yes
-
-### Phase 1.1: Production on the Hetzner Swarm (INSERTED)
-
-**Goal:** Production runs on the Hetzner swarm, and every release reaches it through `pin-production`
-**Issue:** #588
-**Requirements**: none (an infrastructure move, tracked by #588)
-**Depends on:** Phase 1
-**Success Criteria** (what must be TRUE):
-
-  1. Stack `helldiversbot` (`app` ×2, `cloudflared` ×2) runs on the Arcane environment production01, applied by Arcane Git Sync from the CI-owned branch `deploy/production` (`deploy/README.md` § Production)
-  2. A release tag `vX.Y.Z` builds both images, and `pin-production` force-pushes `deploy/production` with that tag; no manual image pull happens on the production host
-  3. The unreleased `develop` backlog (0.95.9 to 0.96.4) ships as v0.96.4 through this pipeline, and production reports `appVersion` 0.96.4 (v0.96.3 built no app image: its arm64 leg failed under QEMU)
-
-**Impact on Phase 2:** plans 02-01, 02-09, 02-11 and 02-12 assume release v0.95.7 and a manual production pull. Production now runs releases pinned by `pin-production`, so these four plans need a re-plan before Phase 2 executes.
-
-**Plans:** none — an operational release; evidence in `01.1-RELEASE-RECORD.md`
-
-## 📋 M8 · The site is documented, tested and findable (planned)
+## 🚧 M8 · The site is documented, tested and findable (in progress)
 
 **Milestone goal:** The docs match the code, tests sit beside their modules, dependency updates merge themselves, and search and analytics are wired in. The five decided Icebox issues close with written reasons, and the milestone ends in a release to `main`.
 
