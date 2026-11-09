@@ -110,6 +110,9 @@ look with its breadcrumb header. Republish only on request, through the `publish
 to the Mac that published it (`.local/roadmap-page-kit/render-project-pages.mjs`, git-excluded). Every upload replaces the
 whole folder: keep `roadmap/files/logo.webp` (from `public/images/logo.webp`; the projects list shows it too), the
 `/helldivers-bot/` forward page and the four `phase-*` forwards from the retired vault milestone pages.
+Milestones: GSD milestones are labelled M1, M2, … (`.planning/ROADMAP.md` § Milestones, decided 2026-11-09). GSD exempts
+archived phases only in `milestones/v*-phases/`, so at a milestone close the `<details>` block lists its phases without
+checkboxes, and the closed milestone's phase references move from STATE.md into its archive.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
