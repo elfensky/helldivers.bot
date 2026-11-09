@@ -6,7 +6,7 @@
 
 ## Overview
 
-**Milestone goal:** The dashboard forecasts the next wave, the assault timing and the counterattack clock, and the develop backlog ships as v0.90.4.
+**Milestone goal:** The dashboard forecasts the next wave, the assault timing and the counterattack clock, and the develop backlog ships from v0.90.4 on.
 
 This milestone predates the GSD plan, which started on 2026-08-29. It was recorded on 2026-11-09 from CHANGELOG.md
 (no GitHub milestone), so it has no plan, summary or requirements files.
