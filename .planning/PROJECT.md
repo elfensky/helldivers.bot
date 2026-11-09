@@ -8,6 +8,12 @@ A Next.js 16 app that caches the official Helldivers 1 API, stores the full hist
 
 The live dashboard and API are **stable and correct** — the poller never loses data across season transitions or replica handovers, and production error volume stays at zero known classes.
 
+## Current Milestone: M8 The site is documented, tested and findable
+
+**Goal:** The docs match the code, tests sit beside their modules, dependency updates merge themselves, and search and analytics are wired in (Phases 2–6).
+
+`.planning/ROADMAP.md` § Milestones lists all twelve milestones: M1–M7 shipped, M9–M12 planned.
+
 ## Requirements
 
 ### Validated
@@ -27,8 +33,8 @@ The live dashboard and API are **stable and correct** — the poller never loses
 - ✓ Test suite: ~190 Vitest unit tests in a mirrored tree, smoke tests, visual regression baselines — existing
 - ✓ Public `/docs` site (architecture, database, data-flow, infrastructure, api, testing, notifications, authentication, hd1-api, predict, brandkit…) — existing
 
-- ✓ Stability release: the five Engineering Health bug classes (#496 hydration, #503 OG 500s, #485 toggle, #476 Space Mono, #459 null slot) fixed or guarded and released as v0.95.2; the 48 h GlitchTip re-count on the new deployment id found #496/#503/#485 RESIDUAL, tracked in the open issues plus #565/#566/#567 — Phase 1
-- ✓ Release cadence restored: `develop` released to `main` as v0.95.2 (2026-10-14), merged back; the develop/main gap is 2 versions — Phase 1
+- ✓ Stability release: the five Engineering Health bug classes (#496 hydration, #503 OG 500s, #485 toggle, #476 Space Mono, #459 null slot) fixed or guarded and released as v0.95.2; the 48 h GlitchTip re-count on the new deployment id found #496/#503/#485 RESIDUAL, tracked in the open issues plus #565/#566/#567 — M7, Phase 1
+- ✓ Release cadence restored: `develop` released to `main` as v0.95.2 (2026-10-14), merged back; the develop/main gap is 2 versions — M7, Phase 1
 
 ### Active
 
@@ -112,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-21 after Phase 1 (Stability Fixes & Release)*
+*Last updated: 2026-11-09 after the milestone split (M7 archived, M8 current)*

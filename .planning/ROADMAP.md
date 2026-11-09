@@ -19,7 +19,7 @@
 
 Every open GitHub issue reaches a terminal state: fixed and released, shipped as a feature, or closed with a written decision.
 
-This milestone drains every open GitHub issue to a terminal state: stability bugs fixed and released first, then three prerequisite gates — docs accuracy, test co-location (before any phase adds more tests), and dependency cleanup — followed by an SEO & Analytics foundation locked in before any feature page can accrue ranking drift, then the independent feature tracks — Icebox disposition, Loadout Builder, Archive Analytics, Accessibility, Site Features, Map Visuals — and finally the two infrastructure bets (Pi Swarm staging, then a spike-gated SSE rewrite) before a closing documentation pass — including a Search Console findings review — describes what actually shipped. Every phase is a releasable vertical slice: a bug class eliminated and verified in production, a feature a player can use end to end, or a written terminal decision on an issue.
+The plan holds the project's history and its future as twelve milestones (decided 2026-11-09). M1–M7 record what shipped, from 0.1.0 (May 2025) to v0.96.4 (October 2026). M1–M6 predate the GSD plan and were recorded from CHANGELOG.md and the closed GitHub milestones; `milestone complete` archived M7. M8 is current: accurate docs, co-located tests and unattended dependency updates come first, then SEO and analytics, before any feature track. M9 to M12 follow in order: the Loadout Builder, Archive Analytics, accessibility and polish, then staging on the Pi swarm, the spike-gated SSE decision and a closing documentation pass. Each milestone ends in a release to `main`. Every phase is a releasable vertical slice: a bug class eliminated and verified in production, a feature a player can use end to end, or a written terminal decision on an issue.
 
 ## Phases
 
@@ -428,7 +428,7 @@ Plans:
 
 ## 📋 M12 · Staging runs on the Pi and live updates are decided (planned)
 
-**Milestone goal:** A push to `develop` deploys to staging on the Pi swarm, a spike decides whether SSE replaces polling, and the public docs describe what shipped. The milestone ends in a release to `main`.
+**Milestone goal:** A push to `develop` deploys to staging on the Pi swarm, a spike decides on SSE against polling, and the public docs describe what shipped. The milestone ends in a release to `main`.
 
 - [ ] **Phase 16: Staging on the Pi Swarm** - `develop` pushes deploy automatically to a validated staging environment
 - [ ] **Phase 17: SSE Spike & Conditional Implementation** - The four SSE gating questions are answered empirically; polling is replaced only if the spike says yes
