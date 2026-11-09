@@ -31,19 +31,22 @@ not hold yet backfills it through the update pipeline's `updateSeason()`.
 | `src/app/api/auth/[...all]/route.js` | — | BetterAuth catch-all (503 when auth is disabled) |
 | `src/app/api/healthcheck/route.js` | none | Liveness for the swarm health check |
 | `src/app/api/glitchtip/route.js`, `src/app/api/umami/route.js` | none | Sentry tunnel and Umami proxy, so ad blockers don't break them |
+| `src/app/stats.js/route.js`, `src/app/recorder.js/route.js` | none | Umami script proxies (`proxyUmamiScript`) |
 
 ## Rules it keeps
 
 - Responses go through `errorResponse`/`successResponse` (`src/shared/utils/api/responses.mjs`),
-  except the auth catch-all and the glitchtip and umami proxies. The response helpers set `time`
-  with `performanceTime`; `roundedPerformanceTime` (`src/shared/utils/time.mjs`) rounds to 50 ms
-  for Umami event data.
+  except the auth catch-all, the glitchtip and umami proxies and the two Umami script proxies.
+  The response helpers set `time` with `performanceTime`; `roundedPerformanceTime`
+  (`src/shared/utils/time.mjs`) rounds up to the next 50 ms for Umami event data.
 - Every route except the auth catch-all exports `methodNotAllowed`
   (`src/shared/utils/api/methodNotAllowed.mjs`) for unsupported methods.
 - Rate limiting is `src/shared/utils/api/rateLimit.mjs`, a fixed-window counter in Postgres. The
-  limit for each group is in `src/config/policy.mjs`. The v1 and push groups use `getClientIp`:
-  the first `X-Forwarded-For` hop, then `X-Real-IP`. The rebroadcast group uses the API key id.
-  `getClientIp` trusts the proxy to remove an `X-Forwarded-For` header that the client sent.
+  limit for each group is in `src/config/policy.mjs`. The `public_read`, `history_read`,
+  `backfill_trigger` and `push` groups use `getClientIp`: the first `X-Forwarded-For` hop, then
+  `X-Real-IP`. The rebroadcast group uses the API key id.
+  `getClientIp` assumes that the proxy removes an `X-Forwarded-For` header that the client sent
+  (`src/shared/utils/api/clientIp.mjs`); unverified for the Cloudflare Tunnel in front of both stacks.
 - Live map reads must go through `computeLiveMap` (`src/shared/utils/game/computeMapState.mjs`) so
   internal and public map endpoints cannot drift.
 

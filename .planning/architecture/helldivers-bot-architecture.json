@@ -23,7 +23,7 @@
       "does": "Optional BetterAuth sign-in, public API keys and the admin section. Auth is off by default." },
     { "id": "update-pipeline", "name": "Update pipeline", "role": "Polls and stores war data",
       "kind": "component", "lane": "system", "row": 3, "col": 3,
-      "does": "Polls the official HD1 API about every 20 s, validates the data and bucket-upserts it, exactly once across all replicas." },
+      "does": "Polls the official HD1 API about every 20 s, validates the data and bucket-upserts it, with one lease holder across replicas." },
     { "id": "oauth", "name": "OAuth providers", "role": "Discord, GitHub, Google sign-in",
       "kind": "outside", "lane": "outside", "row": 1, "col": 1,
       "does": "Discord, GitHub and Google. BetterAuth signs a user in through them when auth is on." },

@@ -15,7 +15,8 @@ source_evidence_date: 2026-11-09
 
 Poll the official Helldivers 1 API (`get_campaign_status` + `get_snapshots`) roughly every
 `UPDATE_INTERVAL` seconds (required, no default; 20 s in both deploy stacks), validate, and
-bucket-upsert into the normalized `h1_*` tables — exactly once across all app replicas.
+bucket-upsert into the normalized `h1_*` tables — through one lease holder at a time across all app
+replicas.
 
 ### Moving parts
 
@@ -34,7 +35,8 @@ bucket-upsert into the normalized `h1_*` tables — exactly once across all app 
 
 - Only the lease holder polls; standbys answer `200 {role:'standby'}`. Failover hands over the
   poller state inside the lease row. A holder that dies after a push but before `prevEvents` is
-  saved can make the next holder send that push again.
+  saved can make the next holder send that push again. The lease lasts 60 s (`LEASE_TTL_S`) and
+  the HD1 request has no timeout, so a poll slower than 60 s can overlap with the next holder's poll.
 - The season-transition closing pass runs once when the polled season advances, capturing the
   outgoing season's delayed final snapshot. It reads `lastSeasonObserved` from the lease row
   (`route.js` destructures it from `claimLease()`), so it survives restarts and failovers; a
