@@ -22,7 +22,7 @@
 
 ## M6 The dashboard predicts the next events (Shipped: 2026-08-13)
 
-**Delivered:** The dashboard forecasts the next wave, the assault timing and the counterattack clock, and the develop backlog ships as v0.90.4.
+**Delivered:** The dashboard forecasts the next wave, the assault timing and the counterattack clock, and the develop backlog ships from v0.90.4 on.
 
 **Phases completed:** 0.17–0.18 (2 phases, recorded after the fact; no plans)
 

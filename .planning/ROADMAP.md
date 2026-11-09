@@ -113,7 +113,7 @@ Versions 0.68.0–0.91.1 (2026-07-27 to 2026-08-13); 3 release tags, the last v0
 <details>
 <summary>✅ M7 · Production is stable on the Hetzner swarm (Phases 1–1.1) — SHIPPED 2026-10-25</summary>
 
-Versions 0.92.0–0.96.4. Phase 1 fixed or tracked the five known production bug classes and released v0.95.2.
+Versions 0.92.0–0.96.4 (2026-08-27 to 2026-10-25); 4 release tags, the last v0.96.4. Phase 1 fixed or tracked the five known production bug classes and released v0.95.2.
 Phase 1.1 moved production to the Hetzner swarm and released v0.96.4.
 
 - Phase 1 — Stability Fixes & Release (9/9 plans), completed 2026-10-21
