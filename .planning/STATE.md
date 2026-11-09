@@ -20,7 +20,7 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-21)
+See: .planning/PROJECT.md (updated 2026-11-09)
 
 **Core value:** The live dashboard and API are stable and correct — the poller never loses data across season transitions or replica handovers, and production error volume stays at zero known classes.
 **Current focus:** Phase 2 — Docs Accuracy & Operational Housekeeping

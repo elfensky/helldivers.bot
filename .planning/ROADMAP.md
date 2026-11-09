@@ -19,7 +19,7 @@
 
 Every open GitHub issue reaches a terminal state: fixed and released, shipped as a feature, or closed with a written decision.
 
-The plan holds the project's history and its future as twelve milestones (decided 2026-11-09). M1–M7 record what shipped, from 0.1.0 (May 2025) to v0.96.4 (October 2026). M1–M6 predate the GSD plan and were recorded from CHANGELOG.md and the closed GitHub milestones; `milestone complete` archived M7. M8 is current: accurate docs, co-located tests and unattended dependency updates come first, then SEO and analytics, before any feature track. M9 to M12 follow in order: the Loadout Builder, Archive Analytics, accessibility and polish, then staging on the Pi swarm, the spike-gated SSE decision and a closing documentation pass. Each milestone ends in a release to `main`. Every phase is a releasable vertical slice: a bug class eliminated and verified in production, a feature a player can use end to end, or a written terminal decision on an issue.
+The plan holds the project's history and its future as twelve milestones (decided 2026-11-09). M1–M7 record what shipped, from 0.1.0 (May 2025) to v0.96.4 (October 2026). M1–M6 predate the GSD plan and were recorded from CHANGELOG.md and the closed GitHub milestones; `milestone complete` archived M7. M8 is current: accurate docs, co-located tests and unattended dependency updates come first, then SEO and analytics, before any feature track. M9 to M12 follow in order: the Loadout Builder, Archive Analytics, accessibility and polish, then staging on the Pi swarm, the spike-gated SSE decision and a closing documentation pass. Each milestone from M8 on ends in a release to `main`. Every phase is a releasable vertical slice: a bug class eliminated and verified in production, a feature a player can use end to end, or a written terminal decision on an issue.
 
 ## Phases
 
@@ -35,9 +35,9 @@ Phases 0.1–0.18 belong to the shipped milestones M1–M6. They were recorded a
 <details>
 <summary>✅ M1 · The first site caches the war and draws the map (Phases 0.1–0.4) — SHIPPED 2025-12-09</summary>
 
-Versions 0.1.0–0.8.0 (2025-05-10 to 2025-12-09); recorded from CHANGELOG.md and GitHub milestone "Phase 0: Initial Release", before the GSD plan.
+Versions 0.1.0–0.8.0 (2025-05-10 to 2025-12-09); 24 release tags, the last v0.8.0; recorded from CHANGELOG.md and GitHub milestone "Phase 0: Initial Release", before the GSD plan.
 
-- Phase 0.1 — API cache, completed 2025-05-15
+- Phase 0.1 — Base app, completed 2025-05-19
 - Phase 0.2 — Rebroadcast API, completed 2025-05-20
 - Phase 0.3 — Map, stats and timeline, completed 2025-06-24
 - Phase 0.4 — Landing page, completed 2025-12-09
@@ -49,7 +49,7 @@ Versions 0.1.0–0.8.0 (2025-05-10 to 2025-12-09); recorded from CHANGELOG.md an
 <details>
 <summary>✅ M2 · The rebuilt dashboard works on every screen (Phases 0.5–0.8) — SHIPPED 2026-04-08</summary>
 
-Versions 0.10.0–0.29.2 (2026-03-26 to 2026-04-08); recorded from CHANGELOG.md and GitHub milestones "Phase 1" to "Phase 8", before the GSD plan.
+Versions 0.10.0–0.29.2 (2026-03-26 to 2026-04-08); 19 release tags, the last v0.24.1; recorded from CHANGELOG.md and GitHub milestones "Phase 1" to "Phase 8", before the GSD plan.
 
 - Phase 0.5 — Relaunch, completed 2026-03-27
 - Phase 0.6 — Responsive redesign, completed 2026-04-04
@@ -63,11 +63,11 @@ Versions 0.10.0–0.29.2 (2026-03-26 to 2026-04-08); recorded from CHANGELOG.md 
 <details>
 <summary>✅ M3 · The archive holds every season in five tables (Phases 0.9–0.12) — SHIPPED 2026-06-21</summary>
 
-Versions 0.30.0–0.52.9 (2026-04-08 to 2026-06-21); recorded from CHANGELOG.md and no GitHub milestone, before the GSD plan.
+Versions 0.30.0–0.52.9 (2026-04-08 to 2026-06-21); 12 release tags, the last v0.52.6; recorded from CHANGELOG.md (no GitHub milestone), before the GSD plan.
 
 - Phase 0.9 — Archives redesign, completed 2026-04-15
 - Phase 0.10 — Normalized schema, completed 2026-04-16
-- Phase 0.11 — Hardening, completed 2026-05-21
+- Phase 0.11 — Hardening, completed 2026-05-22
 - Phase 0.12 — Cross-season stats, completed 2026-06-21
 
 [Archived roadmap](milestones/M3-ROADMAP.md)
@@ -77,7 +77,7 @@ Versions 0.30.0–0.52.9 (2026-04-08 to 2026-06-21); recorded from CHANGELOG.md 
 <details>
 <summary>✅ M4 · Developers can use a public API (Phases 0.13–0.14) — SHIPPED 2026-06-23</summary>
 
-Versions 0.53.0–0.59.0 (2026-06-21 to 2026-06-23), released to `main` as v0.59.0; recorded from CHANGELOG.md and GitHub milestone "Public API & Config", before the GSD plan.
+Versions 0.53.0–0.59.0 (2026-06-21 to 2026-06-23); 1 release tag, v0.59.0; recorded from CHANGELOG.md and GitHub milestone "Public API & Config", before the GSD plan.
 
 - Phase 0.13 — Versioned endpoints, completed 2026-06-21
 - Phase 0.14 — Limits and docs, completed 2026-06-23
@@ -89,9 +89,9 @@ Versions 0.53.0–0.59.0 (2026-06-21 to 2026-06-23), released to `main` as v0.59
 <details>
 <summary>✅ M5 · The archives tell each season's story (Phases 0.15–0.16) — SHIPPED 2026-07-27</summary>
 
-Versions 0.59.1–0.67.6 (2026-06-24 to 2026-07-27), released to `main` as v0.65.0 and v0.67.1; recorded from CHANGELOG.md and no GitHub milestone, before the GSD plan.
+Versions 0.59.1–0.67.6 (2026-06-24 to 2026-07-27); 5 release tags, the last v0.67.1; recorded from CHANGELOG.md (no GitHub milestone), before the GSD plan.
 
-- Phase 0.15 — Season stories, completed 2026-06-28
+- Phase 0.15 — Season stories, completed 2026-06-29
 - Phase 0.16 — Test rigour, completed 2026-07-27
 
 [Archived roadmap](milestones/M5-ROADMAP.md)
@@ -101,7 +101,7 @@ Versions 0.59.1–0.67.6 (2026-06-24 to 2026-07-27), released to `main` as v0.65
 <details>
 <summary>✅ M6 · The dashboard predicts the next events (Phases 0.17–0.18) — SHIPPED 2026-08-13</summary>
 
-Versions 0.68.0–0.91.1 (2026-07-27 to 2026-08-13), released to `main` as v0.90.4; recorded from CHANGELOG.md and no GitHub milestone, before the GSD plan.
+Versions 0.68.0–0.91.1 (2026-07-27 to 2026-08-13); 3 release tags, the last v0.90.14; recorded from CHANGELOG.md (no GitHub milestone), before the GSD plan.
 
 - Phase 0.17 — Event predictions, completed 2026-08-04
 - Phase 0.18 — Release and CI, completed 2026-08-13
@@ -432,7 +432,7 @@ Plans:
 
 - [ ] **Phase 16: Staging on the Pi Swarm** - `develop` pushes deploy automatically to a validated staging environment
 - [ ] **Phase 17: SSE Spike & Conditional Implementation** - The four SSE gating questions are answered empirically; polling is replaced only if the spike says yes
-- [ ] **Phase 18: Final Documentation Pass** - All public docs describe the system as it shipped across this entire milestone
+- [ ] **Phase 18: Final Documentation Pass** - All public docs describe the system as it shipped across M8 to M12
 
 ### Phase 16: Staging on the Pi Swarm
 
@@ -464,14 +464,14 @@ Plans:
 
 ### Phase 18: Final Documentation Pass
 
-**Goal**: All public documentation describes the system as it actually shipped across this entire milestone
+**Goal**: All public documentation describes the system as it actually shipped across M8 to M12
 **Mode:** mvp
 **Depends on**: Phase 9, Phase 12, Phase 16, Phase 17 (describes what shipped, so it runs after every feature track lands)
 **Requirements**: DOCS-03
 **Success Criteria** (what must be TRUE):
 
   1. `/docs` and AGENTS.md describe the Loadout Builder, Archive Analytics, staging on the Pi swarm, and the SSE outcome as they actually shipped, not as originally planned (DOCS-03)
-  2. No public doc references superseded architecture (pre-lease model, single-replica assumptions, or a schema this milestone changed) (DOCS-03)
+  2. No public doc references superseded architecture (pre-lease model, single-replica assumptions, or a schema that M8 to M12 changed) (DOCS-03)
 
 **Plans**: TBD
 **Note**: This pass also runs SEO-07's recurring Google Search Console review; findings become GitHub issues rather than being fixed inline here.

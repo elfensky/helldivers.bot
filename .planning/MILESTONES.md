@@ -41,7 +41,7 @@
 **Phases completed:** 0.15–0.16 (2 phases, recorded after the fact; no plans)
 
 **Key accomplishments:**
-- Season stories: Combat telemetry and engagement on `/stats`, the War Narrative on `/archives`, and faction markers (0.60.0–0.64.0; #178, #275, #274, #157)
+- Season stories: Combat telemetry on `/stats`, the Player Engagement chart and the War Narrative on `/archives`, and faction markers (0.59.1–0.64.1; #178, #275, #274, #157)
 - Test rigour: Mutation testing finds four bugs that no test caught, and the v1 handlers get their own tests (0.65.0–0.67.6)
 
 **Archive:** [roadmap](milestones/M5-ROADMAP.md).
@@ -70,8 +70,8 @@
 
 **Key accomplishments:**
 - Archives redesign: The archives show each season with per-faction analytics, closest calls and a unified event log (0.30.0–0.40.7; #279)
-- Normalized schema: Ten tables become the five `h1_*` tables, and polls upsert into time buckets (0.41.0)
-- Hardening: The image moves to Chainguard, the stale-version reload ships, and ESLint with strict checkJs gates the code (0.42.0–0.47.6)
+- Normalized schema: Ten tables become the five `h1_*` tables, and polls upsert into time buckets (0.41.0–0.41.1)
+- Hardening: The image moves to Chainguard, the stale-version reload ships, and ESLint with strict checkJs gates the code (0.42.0–0.47.17)
 - Cross-season stats: `/stats` compares every season, the Ministry of Truth effect runs sitewide, and cascades are tracked (0.48.0–0.52.9; #394, #272)
 
 **Archive:** [roadmap](milestones/M3-ROADMAP.md).
@@ -101,10 +101,10 @@
 **Phases completed:** 0.1–0.4 (4 phases, recorded after the fact; no plans)
 
 **Key accomplishments:**
-- API cache: The site polls the HD1 API into Postgres and runs from a Docker image (0.1.0–0.3.2)
+- Base app: Next.js and Prisma run from a Docker image, with sign-in and an API-key dashboard (0.1.0–0.3.3)
 - Rebroadcast API: `POST /api/h1/rebroadcast` serves `get_campaign_status` and `get_snapshots` in the game's format, with Swagger docs (0.4.0–0.4.1)
-- Map, stats and timeline: Players see the galaxy map, the stats and the war timeline (0.4.2–0.7.3)
-- Landing page: The layout and the navigation are rebuilt around a real landing page (0.8.0)
+- Map, stats and timeline: A worker polls the HD1 API every 20 seconds, and players see the galaxy map, the stats and the war timeline (0.4.2–0.7.3)
+- Landing page: The layout and the navigation are rebuilt around a real landing page (0.7.4–0.8.0)
 
 **Archive:** [roadmap](milestones/M1-ROADMAP.md).
 
