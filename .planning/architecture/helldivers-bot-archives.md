@@ -24,7 +24,7 @@ and `h1_event`, then stamps `h1_season.last_updated`. The seed holds seasons 1 t
 
 ## Rules it keeps
 
-- The season selector derives from the current season number, not a DB query.
+- The season selector derives from the current season (`getCampaign()`), not from a list of stored seasons.
 - Telemetry (`h1_statistic`) exists for seasons ~157+ only: telemetry-backed UI must hide when
   empty, never render zeros. The planned two-season comparison (#269) must drop mixed-coverage rows.
 - Prediction/analysis work reads the living handoff `docs/superpowers/predictions-handoff.md` first.

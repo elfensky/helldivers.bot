@@ -36,7 +36,8 @@ Optional authentication, public API keys, and the admin surface.
 
 - Auth is off by default: when `BETTER_AUTH_SECRET` is absent, `src/auth.js` exports `null`, the
   header shows no sign-in link, `/profile` redirects home, and the auth API answers 503. When auth
-  is on, all three OAuth providers are required.
+  is on, the start-up env check (`checkAuth()` in `src/shared/utils/initializeEnv.mjs`) requires
+  all three OAuth providers.
 
 ## Code paths
 

@@ -63,7 +63,7 @@ flowchart TD
 
 ## Rules
 
-- Exactly one poller across replicas via the `worker_heartbeat` lease; handover state
+- One poller at a time across replicas via the 60 s `worker_heartbeat` lease; handover state
   (`prevEvents`, `lastSeasonObserved`) lives in the lease row, never in module memory.
 - No raw-cache tables: the rebroadcast and public APIs reconstruct wire format from the normalized
   `h1_*` tables on read.
