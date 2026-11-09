@@ -62,6 +62,12 @@ The `develop` ruleset requires a PR with checks `Test & Build`, `Visual Regressi
 - Unit tests mirror the source tree under `src/__tests__/unit/`, enforced by
   `src/__tests__/unit/_meta/mirrorTree.test.mjs`.
 - `@/*` maps to `./src/*` (`jsconfig.json`).
+- **Feature-folder layout** (exception to the handbook's Next.js layout, decided 2026-11-09, #635): a
+  feature keeps its view and logic files together in `src/features/<feature>/`; modules that more than
+  one feature uses live in `src/shared/`. Do not move them to `src/components/` or `src/lib/`.
+- **One type declaration file** (exception to "no `.ts` files", decided 2026-11-09, #636):
+  `src/types/global.d.ts` declares `window.umami` for the type checker, because JSDoc cannot extend the
+  global `Window` type. It holds types only; add no runtime code and no other `.ts` file.
 - Migrations apply on app start under a Postgres advisory lock; after merging a branch that adds a
   migration, restart the dev server and check the `[migrate]` log lines.
 
