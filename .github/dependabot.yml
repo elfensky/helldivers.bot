@@ -53,7 +53,7 @@ updates:
 
     # Keep GitHub Actions up to date
     - package-ecosystem: 'github-actions'
-      # '/' reads only .github/workflows; the composite actions need their own entry
+      # '/' reads .github/workflows and a root action.yml, not .github/actions/*
       directories:
           - '/'
           - '/.github/actions/*'
