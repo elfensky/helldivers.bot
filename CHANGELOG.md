@@ -9,6 +9,8 @@
   `.planning/architecture/` notes added; CONTRIBUTING.md links repointed at the surviving anchors.
 - The hosted roadmap at projects.static.lav.ren/helldivers-bot/ is now built from `.planning/`, with the
   architecture notes as pages; AGENTS.md says how to republish it.
+- Dependabot also updates the actions pinned in the composite actions under `.github/actions/`, and
+  opens a major GitHub Actions update as its own PR instead of inside the minor/patch group.
 
 ## 0.98.0
 

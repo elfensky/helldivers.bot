@@ -53,7 +53,10 @@ updates:
 
     # Keep GitHub Actions up to date
     - package-ecosystem: 'github-actions'
-      directory: '/'
+      # '/' reads only .github/workflows; the composite actions need their own entry
+      directories:
+          - '/'
+          - '/.github/actions/*'
       target-branch: 'develop'
       schedule:
           interval: 'weekly'
@@ -61,9 +64,13 @@ updates:
           time: '09:00'
           timezone: 'Europe/Brussels'
       groups:
+          # Minor and patch in one PR; a major arrives on its own
           actions:
               patterns:
                   - '*'
+              update-types:
+                  - 'minor'
+                  - 'patch'
       labels:
           - 'dependencies'
           - 'github-actions'
