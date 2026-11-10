@@ -115,8 +115,8 @@ Every interactive element (links, buttons, nav items) needs Umami tracking, usin
 
 **Hard rules (`CLAUDE.md` § Git Workflow):**
 1. **Work PRs into `develop` merge by rebase only** (`gh pr merge --rebase --delete-branch`), never squash. A release PR `develop` → `main` uses a merge commit (#621).
-2. **Version bump + CHANGELOG move happen in the SAME commit as the merge to `develop`** — move entries from `## Unreleased` into a new `## X.Y.Z` section in `CHANGELOG.md` and bump `"version"` in `package.json`, as part of the merge step, never deferred or asked about. Semver: patch=bugfix, minor=feature, major=breaking. Skipping version numbers on `develop` between tagged releases is fine.
-3. **Release process:** `develop` → `main` via PR → tag `vX.Y.Z` on the `main` merge commit (matching `CHANGELOG.md`'s latest version) → push tag. No merge-back (#621): `main` does not require an up-to-date branch, so the next release PR merges without it. The production Docker build (`build-release.yml`) only triggers on version tags — forgetting the tag means no deployment.
+2. **The version cut** (#618): work PRs add notes under `## Unreleased` in `CHANGELOG.md` and raise no version. Before a release, one PR into `develop` bumps `"version"` in `package.json` and moves the notes into a new `## X.Y.Z` section. Semver: patch=bugfix, minor=feature, major=breaking.
+3. **Release process:** the cut PR into `develop`, then `develop` → `main` via PR → tag `vX.Y.Z` on the `main` merge commit (matching `CHANGELOG.md`'s latest version) → push tag. No merge-back (#621): `main` does not require an up-to-date branch, so the next release PR merges without it. The production Docker build (`build-release.yml`) only triggers on version tags — forgetting the tag means no deployment.
 4. **Hotfix process:** branch `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` → PR to `main` → tag `vX.Y.Z` → bring the fix to `develop` by its own PR (#621).
 5. **Tag format:** `v<major>.<minor>.<patch>` on `main` only, always `v`-prefixed.
 
