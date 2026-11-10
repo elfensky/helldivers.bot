@@ -44,14 +44,19 @@ developer handbook (`~/vault/knowledge/developer/developer.md`), chapter
 
 ## Release Process
 
-PR `develop` → `main` (merge commit), tag `vX.Y.Z` on the merge commit, push the tag. There is no
-merge-back into `develop`. The tag triggers the production Docker build. Full steps:
-[AGENTS.md § Branches](AGENTS.md#branches).
+1. Cut the version: a PR into `develop` that bumps `"version"` in `package.json` and moves the
+   `## Unreleased` notes in `CHANGELOG.md` into a new `## X.Y.Z` section. Rebase-merge it like any
+   work PR.
+2. PR `develop` → `main` (merge commit). `Check: Version Bump` fails if the version equals `main`'s.
+3. Tag `vX.Y.Z` on the merge commit and push the tag. The tag triggers the production Docker build.
+
+There is no merge-back into `develop`. Full rules: [AGENTS.md § Branches](AGENTS.md#branches) and
+§ This repo's own rules, "The version cut".
 
 ## Hotfix Process
 
 1. Worktree on `hotfix/<semver>` from `origin/main`
-2. Fix, commit with tests
+2. Fix, commit with tests, bump `"version"` and add its `## X.Y.Z` notes in `CHANGELOG.md`
 3. PR to `main`, merge
 4. Tag and push (triggers production build)
 5. Bring the fix to `develop` through its own PR (cherry-pick onto a branch from `develop`)
