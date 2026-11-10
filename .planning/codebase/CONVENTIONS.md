@@ -111,16 +111,16 @@ Every interactive element (links, buttons, nav items) needs Umami tracking, usin
 
 ## Git Workflow
 
-**Branching model:** Simplified Git Flow, no release branches. `main` (production, PR-only, protected), `develop` (integration/staging, direct-merge, unprotected), `feature/<desc>`, `bugfix/<desc>`, `hotfix/<semver>`, standalone `metrics` (CI-generated, never merges with the flow).
+**Branching model:** Simplified Git Flow, no release branches. `main` (production, PR-only, protected), `develop` (integration/staging, PR-only through a ruleset, rebase merges only), `feature/<desc>`, `bugfix/<desc>`, `hotfix/<semver>`, standalone `metrics` (CI-generated, never merges with the flow).
 
 **Hard rules (`CLAUDE.md` § Git Workflow):**
-1. **Never squash merge, never fast-forward merge, never rebase** — always `git merge --no-ff` so every merge creates a merge commit and branch history stays visible in `git log --graph`.
+1. **Work PRs into `develop` merge by rebase only** (`gh pr merge --rebase --delete-branch`), never squash. A release PR `develop` → `main` uses a merge commit (#621).
 2. **Version bump + CHANGELOG move happen in the SAME commit as the merge to `develop`** — move entries from `## Unreleased` into a new `## X.Y.Z` section in `CHANGELOG.md` and bump `"version"` in `package.json`, as part of the merge step, never deferred or asked about. Semver: patch=bugfix, minor=feature, major=breaking. Skipping version numbers on `develop` between tagged releases is fine.
 3. **Release process:** `develop` → `main` via PR → tag `vX.Y.Z` on the `main` merge commit (matching `CHANGELOG.md`'s latest version) → push tag. No merge-back (#621): `main` does not require an up-to-date branch, so the next release PR merges without it. The production Docker build (`build-release.yml`) only triggers on version tags — forgetting the tag means no deployment.
 4. **Hotfix process:** branch `hotfix/X.Y.Z` from `main` → fix → update `CHANGELOG.md` → PR to `main` → tag `vX.Y.Z` → bring the fix to `develop` by its own PR (#621).
 5. **Tag format:** `v<major>.<minor>.<patch>` on `main` only, always `v`-prefixed.
 
-**Feature work uses an isolated git worktree** off `develop` (`.worktrees/<branch-dir>`, e.g. `feature/ministry-interference` → `.worktrees/feature-ministry-interference`); small chores/bugfixes/dependency bumps skip the worktree and branch+merge directly in the main checkout. See `CLAUDE.md` § Worktree Workflow for the full 7-step sequence (copy env files, `npm install && npx prisma generate`, verify all four gates, merge with `--no-ff` including the version bump, push, clean up worktree + branch).
+**Feature work uses an isolated git worktree** off `develop` (`.worktrees/<branch-dir>`, e.g. `feature/ministry-interference` → `.worktrees/feature-ministry-interference`); small chores/bugfixes/dependency bumps skip the worktree and branch+merge directly in the main checkout. See `CLAUDE.md` § Worktree Workflow for the full 7-step sequence (copy env files, `npm install && npx prisma generate`, verify all four gates, push, open a PR into `develop` and merge it by rebase, clean up worktree + branch).
 
 **Verification gate before any merge:** `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build` must all pass — same four checks CI runs via the composite `.github/actions/verify` action.
 
