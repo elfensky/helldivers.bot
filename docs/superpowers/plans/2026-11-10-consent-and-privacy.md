@@ -19,6 +19,9 @@
 - Signup: two boxes. The terms box is required; tongue-in-cheek Helldivers style, but the no-warranty and no-guaranteed-uptime lines stay plain. The optional box is empty by default, reads "the Ministry of Truth wants to know who you are", links to `/privacy` and says in one plain sentence what is linked (#617).
 - Existing users: at their next login, a page that stays until they accept the terms; it offers the same optional box; "terms only" is as easy to choose as "both" (#617).
 - A switch on the profile page withdraws the link consent as easily as it was given (GDPR Art. 7(3)) (#617).
+- Withdrawal of the link deletes that account's Umami sessions through Umami's own API at once, not on request (analytics-standard §5.2, decision 14). Backups keep them until the backup window ends (trap 23); the notice says so.
+- With Global Privacy Control or Do Not Track set, replay, the preference snapshot and `identify()` never run (analytics-standard decision 7). Counting honours both signals through #631, and the `/privacy` PR (#619) merges only after #631, so its signals section states a fact.
+- A consent change that stops replay, or starts or stops `identify()`, takes effect at once: the page ends the current document with one full navigation, `window.location.assign(window.location.href)`. A running recorder cannot be stopped (analytics-standard trap 19), and `router.refresh()` keeps the current document, so the recorder and `identify()` could run on the same page (trap 22). The navigation runs once per click and cannot loop, so it is not a stale-version reload and does not go through `guardedReload()`, which declines after three reloads in 30 s and throws when storage is blocked.
 - `identify()` ships only on Umami 3.4.0 or later. **Checked 2026-11-10: the running Umami is 3.4.1**, read without credentials from the public login-page bundle of the Umami instance (the `CURRENT_VERSION` constant beside `umami.currency` and `umami.date-range`). Re-check before release: the instance may change.
 - Controller: the owner, by legal name, as a private person. Contact: `privacy@lav.ren` only — no contact form, no postal address, no Discord route (#619).
 - The notice moves to `/privacy`; `/legal#privacy` points to it (#619).
@@ -31,7 +34,9 @@
 2. **Opted out of counting earlier (`umami.disabled` set):** the replay prompt does not show and replay never loads, whatever the stored replay answer. Test in Task 3 and Task 4.
 3. **Signed-in user with link consent opens a page after saying yes to replay:** replay does not load; `identify()` runs. Test in Task 3.
 4. **User without accepted terms opens `/legal` or `/privacy`:** the page renders, not the terms gate, so the terms can be read before accepting. Test in Task 6.
-5. **Withdrawal of the link consent:** after the switch goes off, the next page load calls no `identify()`. Test in Task 7.
+5. **Withdrawal of the link consent:** the switch going off deletes the account's Umami sessions and ends the document; the new page load calls no `identify()`. A failed delete still turns the link off and is reported. Test in Task 5 and Task 7.
+6. **Link turned on while the recorder runs** (replay allowed, then box 2 ticked or the switch turned on): the page ends the document with `window.location.assign(window.location.href)`, so the new load starts no recorder and calls `identify()`. Test in Task 6 and Task 7.
+7. **GPC or DNT set:** no recorder, no preference snapshot and no `identify()`, whatever the stored answers. Test in Task 3 and Task 7.
 
 ---
 
@@ -79,10 +84,12 @@ The migration applies on app start (AGENTS.md); staging holds a `prisma/` change
 
 **Interfaces:**
 - Consumes: `readReplayConsent` (Task 2), `readOptOut` (`AnalyticsOptOut.jsx`), `session.user.identifyConsent` (Task 1).
-- Produces: `canReplay({ consent, optOut, identified }): boolean` exported from `src/features/consent/replayConsent.mjs` — true only for `consent === 'yes' && optOut === false && identified === false`. `RecorderScript` takes a new prop `identified: boolean`; `PreferenceTracker` reads the same two stores and runs only when `canReplay` is true.
+- Produces: `privacySignal(): boolean` and `canReplay({ consent, optOut, identified, signal }): boolean`, both exported from `src/features/consent/replayConsent.mjs`. `privacySignal()` is true when `navigator.globalPrivacyControl === true`, `navigator.doNotTrack === '1'` or `window.doNotTrack === '1'`. `canReplay` is true only for `consent === 'yes' && optOut === false && identified === false && signal === false`. `RecorderScript` takes a new prop `identified: boolean`; `PreferenceTracker` reads the same two stores and runs only when `canReplay` is true.
 
 - [ ] **Step 1: Write the failing tests**
-  - `canReplay` truth table: only `{ 'yes', false, false }` is true; `null` consent, `undefined` consent, `'no'`, `optOut: true`, `optOut: null` and `identified: true` are each false.
+  - `canReplay` truth table: only `{ 'yes', false, false, false }` is true; `null` consent, `undefined` consent, `'no'`, `optOut: true`, `optOut: null`, `identified: true` and `signal: true` are each false.
+  - `privacySignal` is true with `navigator.globalPrivacyControl = true`, with `navigator.doNotTrack = '1'` and with `window.doNotTrack = '1'`; false with none.
+  - `RecorderScript` and `PreferenceTracker` stay off with a stored yes when `privacySignal()` is true.
   - `RecorderScript` renders no `<script>` when consent is unanswered, and renders it after `writeReplayConsent('yes')` with `identified={false}`; with `identified` true it renders nothing.
   - `PreferenceTracker` calls `window.umami.track` zero times and writes no `sessionStorage` key without a yes; once with a yes.
 - [ ] **Step 2:** Run the two test files. Expected: FAIL.
@@ -116,19 +123,25 @@ Copy (themed, plain where it matters): heading "The Ministry of Truth requests y
 ### Task 5: Consent server actions
 
 **Files:**
-- Create: `src/features/consent/actions.mjs`
-- Test: `src/__tests__/unit/features/consent/actions.test.mjs`
+- Create: `src/features/consent/actions.mjs`, `src/features/consent/umamiSessions.mjs` (server only)
+- Modify: `.example.env` (`UMAMI_API_KEY`, with the `<KEY>_FILE` convention)
+- Test: `src/__tests__/unit/features/consent/actions.test.mjs`, `src/__tests__/unit/features/consent/umamiSessions.test.mjs`
 
 **Interfaces:**
 - Consumes: `requireSession()` (`src/shared/utils/api/authGuards.mjs`), `db.user.update`.
-- Produces (`'use server'`): `acceptTerms(formData: FormData): Promise<{ errors?: { auth?: string, terms?: string } }>` — requires `formData.get('terms') === 'on'`; sets `termsAcceptedAt = now`, and `identifyConsent = formData.get('identify') === 'on'` with `identifyConsentAt = now` when on. `setIdentifyConsent(on: boolean): Promise<{ errors?: { auth?: string } }>` — sets `identifyConsent` and `identifyConsentAt` (`null` when off). Both call `revalidatePath('/', 'layout')`.
+- Produces (`'use server'`): `acceptTerms(prevState: object | undefined, formData: FormData): Promise<{ ok?: true, errors?: { auth?: string, terms?: string } }>` — the two-argument form that `useActionState` calls (previous state first); it ignores `prevState`; — requires `formData.get('terms') === 'on'`; sets `termsAcceptedAt = now`, and `identifyConsent = formData.get('identify') === 'on'` with `identifyConsentAt = now` when on. `setIdentifyConsent(on: boolean): Promise<{ ok?: true, errors?: { auth?: string, delete?: string } }>` — sets `identifyConsent` and `identifyConsentAt` (`null` when off); when off, it then calls `deleteLinkedSessions(session.user.id)`. Both call `revalidatePath('/', 'layout')`.
+- Produces (server only): `deleteLinkedSessions(userId: string): Promise<boolean>` in `umamiSessions.mjs` — finds the account's sessions on the site's Umami website and deletes each one with `DELETE /api/websites/{websiteId}/sessions/{sessionId}` and `UMAMI_API_KEY` (analytics-standard §5.2; Umami's delete removes every dependent row). It validates Umami's responses with a Zod schema in `src/validators/` and returns false on any failure.
+
+**Precondition (check, never guess):** before Step 3, find the Umami 3.4.1 API call that lists a website's sessions for one distinct id, against the running instance. The standard's recipe reads `session_link` in the Umami database, which the app cannot reach. If the API has no such call, stop and ask the owner — **not checked**.
 
 - [ ] **Step 1: Write the failing tests** (mock pattern of `actions.userData.test.mjs`)
   - No session → `errors.auth`, no `db.user.update` call.
-  - `acceptTerms` without `terms=on` → `errors.terms`, no update.
+  - `acceptTerms(undefined, formData)` without `terms=on` → `errors.terms`, no update. Every `acceptTerms` test passes `undefined` as the first argument, the way `useActionState` calls it.
   - `acceptTerms` with `terms=on` only → update with `termsAcceptedAt` a `Date` and `identifyConsent: false`.
   - `acceptTerms` with both → `identifyConsent: true`, `identifyConsentAt` a `Date`.
-  - `setIdentifyConsent(false)` → `identifyConsent: false, identifyConsentAt: null`, scoped `where: { id: session.user.id }`.
+  - `setIdentifyConsent(false)` → `identifyConsent: false, identifyConsentAt: null`, scoped `where: { id: session.user.id }`, then `deleteLinkedSessions(session.user.id)` once; `setIdentifyConsent(true)` never calls it.
+  - `deleteLinkedSessions` resolving false → the link stays off, the result holds `errors.delete`, and `reportError` is called once (a real failure: the operator then runs the standard's §5.2 script by hand).
+  - `deleteLinkedSessions` (fetch mocked): one `DELETE` per session found, with the API key header; a non-2xx answer or a response that fails the schema returns false.
 - [ ] **Step 2:** Run the test. Expected: FAIL.
 - [ ] **Step 3:** Implement with `tryCatch`; validate `formData` with a Zod schema in `src/validators/` (AGENTS.md: validate before any write).
 - [ ] **Step 4:** Run the test. Expected: PASS.
@@ -149,9 +162,9 @@ Copy (themed, plain where it matters): heading "The Ministry of Truth requests y
 
 - [ ] **Step 1: Write the failing tests**
   - `TermsGate` renders children when `needsTerms` is false; renders the prompt when true on `/`; renders children when true on `/legal` and `/privacy`.
-  - `TermsPrompt`: box 2 is unchecked on first render; submit without box 1 shows the `errors.terms` message; submit with box 1 only sends `terms=on` and no `identify`; the `/privacy` link exists inside box 2's label.
+  - `TermsPrompt`: box 2 is unchecked on first render; submit without box 1 shows the `errors.terms` message; submit with box 1 only sends `terms=on` and no `identify`; a successful submit calls `window.location.assign(window.location.href)` once; the `/privacy` link exists inside box 2's label.
 - [ ] **Step 2:** Run the tests. Expected: FAIL.
-- [ ] **Step 3:** Implement with `useActionState(acceptTerms, …)`; on success `router.refresh()`.
+- [ ] **Step 3:** Implement with `useActionState(acceptTerms, {})`; on success (`state.ok`) end the document with `window.location.assign(window.location.href)` (Global Constraints), not `router.refresh()`: with box 2 ticked, a recorder may run in this document.
 - [ ] **Step 4:** Run the tests. Expected: PASS.
 - [ ] **Step 5:** Commit `feat(consent): terms gate for signup and next login`.
 
@@ -166,18 +179,18 @@ The OAuth `callbackURL` stays `/profile`: a first sign-in lands there and meets 
 - Test: `src/__tests__/unit/shared/components/Navigation/UserSection.test.jsx` (extend), `src/__tests__/unit/features/account/IdentifySwitch.test.jsx`
 
 **Interfaces:**
-- Consumes: `session.user.identifyConsent` (Task 1), `setIdentifyConsent` (Task 5).
+- Consumes: `session.user.identifyConsent` (Task 1), `privacySignal` (Task 3), `setIdentifyConsent` (Task 5).
 - Produces: `<IdentifySwitch initial={boolean} />`.
 
 - [ ] **Step 1: Write the failing tests**
-  - `UserSection` calls `window.umami.identify` zero times when `identifyConsent` is false or missing, and once when true.
-  - `IdentifySwitch` is a `role="switch"` with `aria-checked` equal to `initial`; one click calls `setIdentifyConsent(!initial)` and then `router.refresh()` (no `location.reload()`: AGENTS.md allows only `guardedReload()`, and that is for stale versions). The next page load runs no `identify()`. It carries `data-umami-event="account-identify-toggle"`.
+  - `UserSection` calls `window.umami.identify` zero times when `identifyConsent` is false or missing, or when `privacySignal()` is true, and once when true without a signal.
+  - `IdentifySwitch` is a `role="switch"` with `aria-checked` equal to `initial`; one click calls `setIdentifyConsent(!initial)` and then `window.location.assign(window.location.href)`, in both directions (Global Constraints). Off: the new page load runs no `identify()`. On: the new page load starts no recorder. It carries `data-umami-event="account-identify-toggle"`.
 - [ ] **Step 2:** Run the tests. Expected: FAIL.
 - [ ] **Step 3:** Implement. Switch label: "Link my use of this site to my account"; help text: the same plain sentence as box 2 in Task 6, and "Switch off at any time."
 - [ ] **Step 4:** Run the tests. Expected: PASS.
 - [ ] **Step 5:** Commit `feat(consent): identify only with consent, profile switch`.
 
-Data already linked stays in Umami after withdrawal. Deleting that account's sessions through Umami's API needs an Umami API key and is an operator step (analytics-standard §5.2); record it in the privacy page as "on request".
+Withdrawal deletes the account's linked Umami sessions at once (`deleteLinkedSessions`, Task 5). Backups keep them until the backup window ends; the privacy page says so.
 
 ### Task 8: The `/privacy` page (#619)
 
@@ -190,7 +203,7 @@ Data already linked stays in Umami after withdrawal. Deleting that account's ses
 
 **Interfaces:**
 - Consumes: `readReplayConsent`, `writeReplayConsent`, `AnalyticsOptOut`.
-- Produces: `<ReplayChoice />` — shows the stored answer and one button to switch it; after a change to "no", reloads the page through `guardedReload()` (`src/shared/utils/reloadGuard.mjs`; AGENTS.md forbids a bare `location.reload()`) so a running recorder stops.
+- Produces: `<ReplayChoice />` — shows the stored answer and one button to switch it; after a change to "no", it ends the document with `window.location.assign(window.location.href)` (Global Constraints) so a running recorder stops. It does not use `guardedReload()`: that guard can decline, and the recorder would then keep running.
 
 Sections, in this order (template: analytics-standard §7, slots filled):
 
@@ -198,11 +211,11 @@ Sections, in this order (template: analytics-standard §7, slots filled):
 |---|---|
 | Who is responsible | The owner's legal name, a private person; `privacy@lav.ren`. No postal address, no form. |
 | What is measured without asking you | The template text: page address, title, referrer, screen size, language, page-speed metrics; the daily-rotated pseudonymous hash; basis Art. 6(1)(f). |
-| What happens only if you agree | Session recording (the prompt, Task 4) and the account link (the signup box, Task 6, and the profile switch, Task 7), with the concrete purpose sentence; basis Art. 6(1)(a) and Art. 10/2 of the Belgian Law of 30 July 2018. |
+| What happens only if you agree | Session recording (the prompt, Task 4) and the account link (the signup box, Task 6, and the profile switch, Task 7), with the concrete purpose sentence; withdrawing the link deletes the visits linked to the account; basis Art. 6(1)(a) and Art. 10/2 of the Belgian Law of 30 July 2018. |
 | Your account | Data from Discord, GitHub or Google sign-in (name, email, avatar, provider id); basis Art. 6(1)(b); kept until the account is deleted from the profile page. |
 | Error tracking | Self-hosted GlitchTip: error reports with browser and page; basis Art. 6(1)(f). |
 | Push notifications | The push subscription endpoint and keys, only after the browser's permission; basis Art. 6(1)(a); deleted on unsubscribe. |
-| Your browser's privacy signals | GPC and DNT (see Preconditions). |
+| Your browser's privacy signals | The template text: with GPC or DNT, nothing is loaded or sent (true only after #631; see Preconditions). |
 | What we do not do | The template text. |
 | Server logs | IP per request, kept `{{log_days}}` days (see Preconditions). |
 | Who else sees it | The hosting provider, Discord/GitHub/Google for sign-in, and the push services of the browser vendor; transfers outside the EEA for those three sign-in providers and the push services. |
@@ -214,7 +227,7 @@ Sections, in this order (template: analytics-standard §7, slots filled):
 - [ ] **Step 1: Write the failing tests**
   - `/privacy` renders a heading for each section above and contains `privacy@lav.ren` exactly once as a `mailto:` link and no other email address.
   - `/legal` `#privacy` section contains a link to `/privacy`; the footer links to `/privacy`; the sitemap contains `${SITE_URL}/privacy`.
-  - `ReplayChoice` shows "Recording: off" for `undefined`/`'no'` and "Recording: on" for `'yes'`; switching to off writes `'no'`.
+  - `ReplayChoice` shows "Recording: off" for `undefined`/`'no'` and "Recording: on" for `'yes'`; switching to off writes `'no'` and calls `window.location.assign(window.location.href)` once, also when the reload guard key in `localStorage` already holds three attempts.
 - [ ] **Step 2:** Run the tests. Expected: FAIL.
 - [ ] **Step 3:** Implement.
 - [ ] **Step 4:** Run the tests. Expected: PASS.
@@ -223,20 +236,20 @@ Sections, in this order (template: analytics-standard §7, slots filled):
 **Preconditions (the notice must be true on the day it ships; check each, never guess):**
 - Umami `SALT_ROTATION=day` (the "changes every day" wording) — **not checked**.
 - The Umami retention jobs (13 months / 30 days, analytics-standard §6.1) run on the analytics server — **not checked**.
-- GPC and DNT: the site honours them only after #631 lands. Until then the section says the site does not yet act on these signals and points to the opt-out switch — **not checked**.
+- GPC and DNT: #631 has merged, so nothing is loaded or sent with either signal. If #631 has not merged, this PR waits; it never ships a disclosure in place of the check — **not checked**.
 - `{{log_days}}`: the reverse-proxy log retention on the production host — **not checked**.
 - The backup window of the analytics and app databases — **not checked**.
 
 ### Task 9: Docs, changelog, gate
 
 **Files:**
-- Modify: `CHANGELOG.md`, and `package.json` only if the per-PR bump rule is still in force (#618)
+- Modify: `CHANGELOG.md` (notes under `## Unreleased`; no version bump, #618)
 - Modify: `src/app/docs/` pages that describe analytics or the opt-out, if any (`/usr/bin/grep -rln "opt-out\|replay\|identify" src/app/docs`)
 
 - [ ] **Step 1:** Update the docs pages the grep finds.
 - [ ] **Step 2:** Add the notes under `## Unreleased`.
 - [ ] **Step 3:** Run `npm run lint && npm run typecheck && npm run test:unit && npm run build`. Expected: all pass.
-- [ ] **Step 4:** Run `npm run dev`, then by hand: a fresh browser profile shows the prompt; "Decline" → no `/recorder.js` request on the next load; "Allow" → `/recorder.js` loads on the next load; a new account meets the terms page; ticking box 2 → `identify` call in the Network tab and no `/recorder.js`; the profile switch off → no `identify` on the next load.
+- [ ] **Step 4:** Run `npm run dev`, then by hand: a fresh browser profile shows the prompt; "Decline" → no `/recorder.js` request on the next load; "Allow" → `/recorder.js` loads on the next load; a new account meets the terms page; ticking box 2 after "Allow" → the page loads again, with an `identify` call in the Network tab and no `/recorder.js`; the profile switch off → the page loads again, with no `identify`, and the account's sessions are gone in Umami; with GPC on (a browser setting) → no `/recorder.js` and no `identify`.
 - [ ] **Step 5:** Commit `docs(consent): changelog and docs for consent and /privacy`.
 
 Ship #617 (Tasks 1–7) and #619 (Task 8) as two PRs, #617 first (#619's Decision: "write it after #617").
