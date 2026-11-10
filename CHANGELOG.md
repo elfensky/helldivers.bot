@@ -13,6 +13,11 @@
   (SIL OFL 1.1, self-hosted by `next/font`, loaded on first use). They replace the Collective
   Consciousness font, whose author and licence could not be found (#620). The archives glitch and
   the Ministry flicker share one glyph picker.
+- Insignia, a commercial Adobe/Linotype font served without a licence, is removed. Space Grotesk
+  (Google Fonts, self-hosted by `next/font`) is now the display and heading font (#620).
+- `docs/website-standard.md` records the website-standard scope: the EAA is out of scope, the
+  operator is a private, non-commercial person, the reason every page hydrates, and the credits for
+  the fonts, artwork and brand marks (#620).
 - AGENTS.md rewritten from the developer-handbook template (271 → 117 lines): shared standards now
   live in the handbook, the file keeps only repo-specific rules, invariants and the cockpit pointer.
   `.planning/architecture/` notes added; CONTRIBUTING.md links repointed at the surviving anchors.

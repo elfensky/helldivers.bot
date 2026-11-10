@@ -44,7 +44,7 @@
     --color-gold-muted: #8a7a3a;
 
     /* === TYPOGRAPHY === */
-    --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
+    --font-display: var(--font-space-grotesk), 'Impact', sans-serif;
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
     --font-mono: var(--font-space-mono), monospace;
     --font-cyberstan: var(--font-glyphs), monospace;
@@ -96,7 +96,7 @@
     --color-gold-muted: #8a7a3a;
 
     /* Typography — font families */
-    --font-display: 'Insignia', 'Space Grotesk', 'Impact', sans-serif;
+    --font-display: var(--font-space-grotesk), 'Impact', sans-serif;
     --font-body: 'Inter', Arial, Helvetica, sans-serif;
     --font-mono: var(--font-space-mono), monospace;
     --font-cyberstan: var(--font-glyphs), monospace;
@@ -124,14 +124,6 @@
     /* Animation durations */
     --duration-pulse-fast: 1.5s;
     --duration-pulse-slow: 3s;
-}
-
-@font-face {
-    font-family: 'Insignia';
-    src: url('/fonts/insignia.regular.otf') format('opentype');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
 }
 
 /* Shared pulse animation — used by EventCard and toast accent borders */
@@ -249,7 +241,7 @@ h4,
 h5,
 h6 {
     @apply flex flex-col sm:block;
-    font-family: 'Insignia', 'Impact', sans-serif;
+    font-family: var(--font-display);
     text-transform: uppercase;
     font-weight: 900;
 }

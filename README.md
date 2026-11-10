@@ -248,3 +248,6 @@ interact with it over a network, you have to offer them the source.
 Everything released up to and including `v0.91.0` remains available under MIT; the change binds
 what comes after. MIT grants the right to sublicense, so contributions made under it can be
 carried forward — thanks to everyone who has contributed.
+
+Fonts, images and icons carry their own licences; the credits are in
+[docs/website-standard.md](docs/website-standard.md#credits-and-licences-leg-08).

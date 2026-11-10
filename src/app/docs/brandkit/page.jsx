@@ -280,7 +280,7 @@ function TypeAndSpacing() {
                             textTransform: 'uppercase',
                         }}
                     >
-                        Insignia / Space Grotesk
+                        Space Grotesk
                     </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
