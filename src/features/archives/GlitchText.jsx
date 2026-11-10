@@ -1,15 +1,8 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { randomGlyph } from '@/shared/utils/glitchGlyph.mjs';
 
-// The 60 sextant blocks (U+1FB00–1FB3B), drawn by --font-cyberstan. An array,
-// because each is a surrogate pair that string indexing would split.
-const GLYPHS = Array.from({ length: 60 }, (_, i) => String.fromCodePoint(0x1fb00 + i));
 const TICK_MS = 50;
-
-/** @returns {string} one random glitch glyph; Hijackable's flicker uses it too */
-export function randomChar() {
-    return GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-}
 
 /**
  * Get word boundaries: [{ start, end }, ...] for each word in text.
@@ -128,7 +121,7 @@ export default function GlitchText({
                                 c.display !== ' ' &&
                                 c.display !== ''
                             ) ?
-                                { display: randomChar(), style: 'cyberstan' }
+                                { display: randomGlyph(), style: 'cyberstan' }
                             :   c,
                         ),
                     );
@@ -186,9 +179,7 @@ export default function GlitchText({
                             if (roll < 0.25)
                                 return { display: tc || ac, style: 'normal' };
                             if (roll < 0.5) return { display: ac || tc, style: 'alt' };
-                            if (roll < 0.8)
-                                return { display: randomChar(), style: 'cyberstan' };
-                            return { display: randomChar(), style: 'normal' };
+                            return { display: randomGlyph(), style: 'cyberstan' };
                         }),
                     );
                 }, TICK_MS);
@@ -200,7 +191,7 @@ export default function GlitchText({
                     setChars((prev) =>
                         prev.map((c) =>
                             c.style !== 'normal' && c.display !== '' ?
-                                { display: randomChar(), style: 'cyberstan' }
+                                { display: randomGlyph(), style: 'cyberstan' }
                             :   c,
                         ),
                     );

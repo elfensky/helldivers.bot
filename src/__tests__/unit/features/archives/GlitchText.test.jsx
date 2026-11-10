@@ -45,6 +45,30 @@ describe('GlitchText', () => {
         }
     });
 
+    it('draws every fight-phase glyph inside a .glitch-char span', () => {
+        const { container } = render(
+            <GlitchText
+                text="ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT"
+                altText="NINE TEN ELEVEN TWELVE"
+                phase="fight"
+                className="test"
+            />,
+        );
+        // Several ticks: each re-rolls every character.
+        act(() => {
+            vi.advanceTimersByTime(500);
+        });
+        const isSextant = (ch) =>
+            ch.codePointAt(0) >= 0x1fb00 && ch.codePointAt(0) <= 0x1fb3b;
+        const all = [...container.textContent].filter(isSextant).length;
+        const spans = container.querySelectorAll('.glitch-char');
+        const inSpans = [...spans]
+            .flatMap((g) => [...g.textContent])
+            .filter(isSextant).length;
+        expect(all).toBeGreaterThan(0);
+        expect(inSpans).toBe(all);
+    });
+
     it('renders base text initially (SSR-safe)', () => {
         const { container } = render(
             <GlitchText text="TEST" active={true} className="test" />,

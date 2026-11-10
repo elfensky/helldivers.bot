@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useId, useRef, useState, useCallback } from 'react';
 import './MinistryInterference.css';
-import GlitchText, { randomChar as randomGlyph } from '@/features/archives/GlitchText';
+import GlitchText from '@/features/archives/GlitchText';
+import { randomGlyph } from '@/shared/utils/glitchGlyph.mjs';
 import { useMinistryContext } from '@/features/ministry/MinistryContext.mjs';
 import {
     useMinistryHijackCycle,
