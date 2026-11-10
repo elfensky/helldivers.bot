@@ -95,6 +95,11 @@ reaches `develop` through its own PR.
   (`src/shared/utils/reloadGuard.mjs`: localStorage circuit breaker, 30 s TTL, max 3 attempts). Never add
   an unguarded `location.reload()`.
 
+## Website standard
+
+This site follows the developer handbook's `website-standard`, revision 1.3. Scope calls, deviations
+and asset credits are in `docs/website-standard.md` with the item ID and the reason.
+
 ## Docs
 
 | Code path | Doc path | What drifts |
