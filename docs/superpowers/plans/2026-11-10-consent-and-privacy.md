@@ -75,7 +75,7 @@ The migration applies on app start (AGENTS.md); staging holds a `prisma/` change
 
 **Files:**
 - Modify: `src/shared/components/RecorderScript.jsx`, `src/shared/components/PreferenceTracker.jsx`, `src/app/layout.jsx`
-- Test: `src/__tests__/unit/shared/components/RecorderScript.test.jsx`, `src/__tests__/unit/shared/components/PreferenceTracker.test.jsx` (extend or create)
+- Test: `src/__tests__/unit/shared/components/RecorderScript.test.jsx` (extend), `src/__tests__/unit/shared/components/PreferenceTracker.test.jsx` (create)
 
 **Interfaces:**
 - Consumes: `readReplayConsent` (Task 2), `readOptOut` (`AnalyticsOptOut.jsx`), `session.user.identifyConsent` (Task 1).
@@ -163,7 +163,7 @@ The OAuth `callbackURL` stays `/profile`: a first sign-in lands there and meets 
 - Modify: `src/shared/components/Navigation/UserSection.jsx` (the `identify` effect)
 - Create: `src/features/account/IdentifySwitch.jsx`
 - Modify: `src/features/account/AccountSection.jsx` (render the switch)
-- Test: `src/__tests__/unit/shared/components/Navigation/UserSection.test.jsx` (extend or create), `src/__tests__/unit/features/account/IdentifySwitch.test.jsx`
+- Test: `src/__tests__/unit/shared/components/Navigation/UserSection.test.jsx` (extend), `src/__tests__/unit/features/account/IdentifySwitch.test.jsx`
 
 **Interfaces:**
 - Consumes: `session.user.identifyConsent` (Task 1), `setIdentifyConsent` (Task 5).
@@ -186,7 +186,7 @@ Data already linked stays in Umami after withdrawal. Deleting that account's ses
 - Create: `src/features/consent/ReplayChoice.jsx` (the change-your-mind control on `/privacy`)
 - Modify: `src/app/legal/page.jsx` (replace the `#privacy` section body with one paragraph and a link to `/privacy`; keep `id="privacy"`)
 - Modify: `src/shared/components/Footer/Footer.jsx` (`/legal#privacy` → `/privacy`), `src/app/sitemap.js` (add `/privacy`)
-- Test: `src/__tests__/unit/app/privacy/page.test.jsx`, `src/__tests__/unit/features/consent/ReplayChoice.test.jsx`, extend the legal page and sitemap tests
+- Test: `src/__tests__/unit/app/privacy/page.test.jsx`, `src/__tests__/unit/features/consent/ReplayChoice.test.jsx`, `src/__tests__/unit/app/legal/page.test.jsx` (create), `src/__tests__/unit/app/sitemap.test.mjs` (extend)
 
 **Interfaces:**
 - Consumes: `readReplayConsent`, `writeReplayConsent`, `AnalyticsOptOut`.
