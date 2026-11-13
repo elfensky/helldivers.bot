@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Hijackable from '@/features/ministry/Hijackable';
-import AnalyticsOptOut from '@/shared/components/AnalyticsOptOut';
 
 export const metadata = {
     title: 'Civic Compliance Protocols',
@@ -106,7 +105,7 @@ export default function LegalPage() {
                         Citizen Accounts
                     </h3>
                     <p>
-                        Registration is facilitated through Discord or GitHub
+                        Registration is facilitated through Discord, GitHub or Google
                         authentication. Accounts may be suspended or terminated for abuse.
                         Citizens may delete their account at any time from the{' '}
                         <Link
@@ -141,162 +140,20 @@ export default function LegalPage() {
                     text="Bureau of Intelligence Data Protocols"
                     className="font-display text-h2 text-primary uppercase"
                 />
-                <p className="mt-1 text-small text-text-muted italic">
-                    Classification: PUBLIC · Clearance: CITIZEN · Bureau of Digital
-                    Intelligence
-                </p>
-
                 <div className="mt-6 flex flex-col gap-4 text-body text-text">
                     <p>
-                        The Ministry of Truth operates a surveillance-free intelligence
-                        network. Unlike certain hostile civilizations, Super Earth
-                        respects the digital autonomy of its citizens. All monitoring
-                        infrastructure is self-hosted on Ministry-controlled servers. No
-                        intelligence is sold, traded, or shared with third parties,
-                        advertising networks, or data brokers.
-                    </p>
-
-                    <h3 className="text-h3 font-bold text-text uppercase">
-                        Operational Analytics
-                    </h3>
-                    <p>
-                        This terminal employs a self-hosted analytics system (Umami) to
-                        monitor operational efficiency. It sets no cookies, and its only
-                        storage in your browser is the opt-out flag described under
-                        Citizen Rights — sessions are identified by a one-way hash of your
-                        IP address, browser user-agent, and hostname, which cannot be
-                        reversed and is never reused on another site. Recorded: pages
-                        visited, referrer, browser, operating system, device type, screen
-                        size, language, approximate location (country, region, city) and
-                        loading performance (Core Web Vitals — LCP, FCP, CLS, INP, TTFB).
-                        Your IP address is processed to produce the hash and resolve that
-                        location. Stated plainly rather than marketed: an IP address is
-                        personal data under the GDPR and a hash derived from one is
-                        pseudonymous, not anonymous. The lawful basis is legitimate
-                        interest (Article 6(1)(f)). Analytics run in production only.
-                    </p>
-
-                    <h3 className="text-h3 font-bold text-text uppercase">
-                        Authenticated Citizen Analytics
-                    </h3>
-                    <p>
-                        When you are logged in, your internal citizen ID and
-                        authentication provider (Discord or GitHub) are linked to your
-                        analytics session. This allows the Ministry to understand how
-                        authenticated citizens use the terminal. This data is used for
-                        internal operational analysis only and is never shared externally.
-                    </p>
-
-                    <h3 className="text-h3 font-bold text-text uppercase">
-                        Session Recording Protocols
-                    </h3>
-                    <p>
-                        A sample of visits may be recorded for review. A recording is not
-                        video and not a capture of your screen — the page structure and
-                        its text are re-serialised and replayed, which is how the Ministry
-                        identifies where the interface fails its citizens. Anything you
-                        type into a form field is masked inside your own browser before
-                        transmission, so the value itself never leaves your device. Click
-                        and scroll heatmaps are collected separately from recordings:
-                        pointer positions and scroll depth per page, sampled on their own,
-                        so a visit can add to a heatmap without being recorded. A browser
-                        that has opted out (see Citizen Rights) does not load the
-                        recorder. Note that while you are signed in, a recording is linked
-                        to your citizen ID by the section above, and is therefore
-                        attributable to your account rather than anonymous.
-                    </p>
-
-                    <h3 className="text-h3 font-bold text-text uppercase">
-                        Authentication Intelligence
-                    </h3>
-                    <p>
-                        Signing in via Discord or GitHub provides this terminal with your
-                        username, avatar URL, and provider account ID. This data is stored
-                        in a Ministry-controlled database. Your session is maintained via
-                        a secure, HttpOnly cookie. You may unlink authentication providers
-                        or delete your account entirely from the{' '}
+                        The privacy notice has its own page:{' '}
                         <Link
-                            href="/profile"
+                            href="/privacy"
                             prefetch={false}
+                            data-umami-event="legal-privacy"
                             className="text-primary hover:underline"
                         >
-                            profile page
+                            Privacy
                         </Link>
-                        .
-                    </p>
-
-                    <h3 className="text-h3 font-bold text-text uppercase">
-                        Stability Monitoring
-                    </h3>
-                    <p>
-                        A self-hosted error tracking system (GlitchTip) collects crash
-                        reports when the terminal malfunctions. These reports may include
-                        device information, IP address, and browser user-agent. This data
-                        is used solely to diagnose and repair technical failures. Session
-                        tracking is disabled.
-                    </p>
-
-                    <h3 className="text-h3 font-bold text-text uppercase">
-                        Push Alert Subscriptions
-                    </h3>
-                    <p>
-                        When you enable push notifications, your browser&apos;s
-                        subscription endpoint is stored in the database to deliver game
-                        event alerts. This subscription is deleted immediately when you
-                        disable notifications. It is used for no other purpose.
-                    </p>
-
-                    <h3 className="text-h3 font-bold text-text uppercase">
-                        Data Retention Protocols
-                    </h3>
-                    <p>
-                        Account data persists while your account exists. Analytics data,
-                        including session recordings, is retained until deleted by the
-                        operator; no automatic expiry is configured. Error reports are
-                        retained per standard stability monitoring practices. Push
-                        notification subscriptions are deleted on unsubscribe.
-                    </p>
-
-                    <h3 className="text-h3 font-bold text-text uppercase">
-                        Citizen Rights
-                    </h3>
-                    <p>
-                        You may delete your account from the profile page at any time.
-                        This triggers a cascading deletion of all associated data. You may
-                        disable push notifications at any time. Analytics data cannot be
-                        traced back to you without an authenticated session. Under the
-                        GDPR you may also request access to data concerning you, request
-                        its erasure, or object to its collection. The switch below stops
-                        analytics collection in this browser only, until you clear its
-                        site data, and does not carry over to other browsers or devices.
-                        For a request that does not depend on your browser, contact the
-                        operator through the routes below.
-                    </p>
-                    <AnalyticsOptOut />
-
-                    <h3 className="text-h3 font-bold text-text uppercase">
-                        Contact the Operator
-                    </h3>
-                    <p>
-                        Inquiries may be directed through{' '}
-                        <a
-                            href="https://github.com/elfensky/helldivers.bot"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                        >
-                            GitHub
-                        </a>{' '}
-                        or the operator&apos;s{' '}
-                        <a
-                            href="https://lav.ren"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                        >
-                            portfolio
-                        </a>
-                        .
+                        . It names who is responsible, what is collected and why, how long
+                        it is kept, who else sees it, and your rights. Contact for privacy
+                        matters: privacy@lav.ren.
                     </p>
                 </div>
             </section>
@@ -359,8 +216,9 @@ export default function LegalPage() {
                         </table>
                     </div>
                     <p className="text-small text-text-muted">
-                        This cookie is set only when you sign in via Discord or GitHub. It
-                        is strictly necessary for authentication and requires no consent.
+                        This cookie is set only when you sign in via Discord, GitHub or
+                        Google. It is strictly necessary for authentication and requires
+                        no consent.
                     </p>
 
                     <h3 className="text-h3 font-bold text-text uppercase">
@@ -393,8 +251,28 @@ export default function LegalPage() {
                                     </td>
                                     <td className="py-2">
                                         Records your analytics opt-out. Set only when you
-                                        press the transponder switch under Citizen Rights;
+                                        press the transponder switch on the privacy page;
                                         removed when you re-enable analytics.
+                                    </td>
+                                </tr>
+                                <tr className="border-b border-ghost/50">
+                                    <td className="py-2 pr-4 font-mono text-primary">
+                                        hd1.replay-consent
+                                    </td>
+                                    <td className="py-2">
+                                        Records your answer to the session-recording
+                                        prompt. Set only when you answer it, or change it
+                                        on the privacy page.
+                                    </td>
+                                </tr>
+                                <tr className="border-b border-ghost/50">
+                                    <td className="py-2 pr-4 font-mono text-primary">
+                                        hd1-prefs-snapshotted (session storage)
+                                    </td>
+                                    <td className="py-2">
+                                        Notes that your display settings were counted once
+                                        in this visit. Set only after you allow session
+                                        recording; gone when you close the tab.
                                     </td>
                                 </tr>
                             </tbody>
@@ -411,8 +289,9 @@ export default function LegalPage() {
                         <li>No browser fingerprinting</li>
                     </ul>
                     <p>
-                        The operational analytics system (Umami) sets no cookies. Its only
-                        browser storage is the opt-out flag listed above.
+                        The operational analytics system (Umami) sets no cookies and
+                        stores nothing in your browser. The opt-out flag and the recording
+                        answer above are your own choices, kept so the choice works.
                     </p>
 
                     <h3 className="text-h3 font-bold text-text uppercase">
@@ -423,7 +302,8 @@ export default function LegalPage() {
                         time. Clearing the session cookie will log you out. Clearing local
                         storage removes the offline campaign cache — it will repopulate
                         automatically on your next visit. It also removes the analytics
-                        opt-out, so analytics resume until you press the switch again.
+                        opt-out and your recording answer: analytics resume until you
+                        press the switch again, and the recording prompt asks again.
                     </p>
                 </div>
             </section>
