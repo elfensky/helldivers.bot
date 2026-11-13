@@ -1,9 +1,14 @@
 import sitemap, { dynamic } from '@/app/sitemap.js';
 
 describe('sitemap', () => {
-    test('returns array of 8 entries', async () => {
+    test('returns array of 9 entries', async () => {
         const entries = await sitemap();
-        expect(entries).toHaveLength(8);
+        expect(entries).toHaveLength(9);
+    });
+
+    test('lists the privacy notice', async () => {
+        const entries = await sitemap();
+        expect(entries.map((e) => e.url)).toContain('https://helldivers.bot/privacy');
     });
 
     test('each entry has url, lastModified, changeFrequency, and priority', async () => {

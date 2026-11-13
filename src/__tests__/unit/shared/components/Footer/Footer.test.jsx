@@ -40,7 +40,7 @@ describe('Footer', () => {
         expect(screen.getByText('Twitter')).toBeInTheDocument();
     });
 
-    test('renders legal links pointing to /legal', () => {
+    test('renders legal links pointing to /legal and /privacy', () => {
         render(<Footer />);
         expect(screen.getByText('Legal')).toBeInTheDocument();
 
@@ -48,7 +48,7 @@ describe('Footer', () => {
         expect(terms.closest('a')).toHaveAttribute('href', '/legal#terms');
 
         const privacy = screen.getByText('Privacy Policy');
-        expect(privacy.closest('a')).toHaveAttribute('href', '/legal#privacy');
+        expect(privacy.closest('a')).toHaveAttribute('href', '/privacy');
 
         const cookies = screen.getByText('Cookies');
         expect(cookies.closest('a')).toHaveAttribute('href', '/legal#cookies');

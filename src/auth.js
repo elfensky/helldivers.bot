@@ -56,6 +56,14 @@ export const auth =
                         defaultValue: ROLE.USER,
                         input: false,
                     },
+                    // Consent (#617). Only the consent actions write these.
+                    termsAcceptedAt: { type: 'date', required: false, input: false },
+                    identifyConsent: {
+                        type: 'boolean',
+                        defaultValue: false,
+                        input: false,
+                    },
+                    identifyConsentAt: { type: 'date', required: false, input: false },
                 },
             },
         })

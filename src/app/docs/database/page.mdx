@@ -137,6 +137,9 @@ erDiagram
         Boolean  emailVerified
         String   role
         Boolean  banned
+        DateTime termsAcceptedAt
+        Boolean  identifyConsent
+        DateTime identifyConsentAt
         DateTime createdAt
         DateTime updatedAt
     }
@@ -420,7 +423,7 @@ These models implement [BetterAuth](https://www.better-auth.com/) with the Prism
 
 ### User
 
-Central user record. Extended beyond the BetterAuth baseline with `username`, `role`, `banned`, and application-specific relations.
+Central user record. Extended beyond the BetterAuth baseline with `username`, `role`, `banned`, the consent fields, and application-specific relations.
 
 | Field           | Prisma Type | PostgreSQL Type | Constraints / Notes                                                    |
 | --------------- | ----------- | --------------- | ---------------------------------------------------------------------- |
@@ -432,6 +435,9 @@ Central user record. Extended beyond the BetterAuth baseline with `username`, `r
 | `image`         | `String?`   | `TEXT`          | Avatar URL from OAuth provider or Gravatar fallback                    |
 | `role`          | `String`    | `TEXT`          | `@default("user")` — application role string, not an enum              |
 | `banned`        | `Boolean`   | `BOOLEAN`       | `@default(false)` — banned users have sessions revoked on next request |
+| `termsAcceptedAt` | `DateTime?` | `TIMESTAMP(3)` | When the terms were accepted; `null` shows the terms page (#617) |
+| `identifyConsent` | `Boolean` | `BOOLEAN` | `@default(false)` — consent to the account link, `umami.identify()` (#617) |
+| `identifyConsentAt` | `DateTime?` | `TIMESTAMP(3)` | When that consent was given; `null` while it is off |
 | `createdAt`     | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                      |
 | `updatedAt`     | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                                           |
 

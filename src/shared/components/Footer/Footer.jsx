@@ -144,7 +144,7 @@ export default function Footer() {
                         </li>
                         <li>
                             <Link
-                                href="/legal#privacy"
+                                href="/privacy"
                                 prefetch={false}
                                 data-umami-event="footer-privacy"
                                 className="footer-link"

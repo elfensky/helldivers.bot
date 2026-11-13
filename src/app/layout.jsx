@@ -9,6 +9,8 @@ import Footer from '@/shared/components/Footer/Footer';
 import BottomNav from '@/shared/components/BottomNav/BottomNav';
 import PreferenceTracker from '@/shared/components/PreferenceTracker';
 import RecorderScript from '@/shared/components/RecorderScript';
+import ReplayPrompt from '@/features/consent/ReplayPrompt';
+import TermsGate from '@/features/consent/TermsGate';
 import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 import MinistryProvider from '@/features/ministry/MinistryProvider';
 import MinistryTriggerWidget from '@/features/admin/MinistryTriggerWidget';
@@ -97,8 +99,16 @@ export default async function RootLayout({ children }) {
     const session = auth ? await auth.api.getSession({ headers: await headers() }) : null;
     // `role` is a custom BetterAuth additionalField (and a real DB column) not
     // reflected in the inferred session-user type — see auth.js / prisma schema.
-    const sessionUser = /** @type {{ role?: string } | undefined} */ (session?.user);
+    const sessionUser =
+        /** @type {{ role?: string, termsAcceptedAt?: Date | null, identifyConsent?: boolean } | undefined} */ (
+            session?.user
+        );
     const isAdmin = sessionUser?.role === ROLE.ADMIN;
+    // Consent (#617): with the account link on, this page load runs identify()
+    // and never the recorder or the preference snapshot.
+    const identified = sessionUser?.identifyConsent === true;
+    const needsTerms = Boolean(sessionUser && !sessionUser.termsAcceptedAt);
+    const analytics = isProduction && Boolean(process.env.UMAMI_SITE_ID);
 
     return (
         <html
@@ -234,20 +244,21 @@ export default async function RootLayout({ children }) {
                     initialMapState={initialMapState}
                 >
                     <MinistryProvider warTone={warTone}>
-                        <PreferenceTracker />
+                        <PreferenceTracker identified={identified} />
                         <Header />
                         <main
                             id="main"
                             className="flex min-h-screen w-full flex-col pt-[50px] pb-[48px] sm:pt-[80px] md:pb-0"
                         >
-                            {children}
+                            <TermsGate needsTerms={needsTerms}>{children}</TermsGate>
                         </main>
                         <Footer />
                         <BottomNav />
                         <MinistryTriggerWidget isAdmin={isAdmin} />
+                        {analytics && <ReplayPrompt identified={identified} />}
                     </MinistryProvider>
                 </LiveDataProvider>
-                {isProduction && process.env.UMAMI_SITE_ID ?
+                {analytics ?
                     <>
                         <Script
                             nonce={nonce}
@@ -258,12 +269,13 @@ export default async function RootLayout({ children }) {
                             strategy="afterInteractive"
                         />
                         {/* Session replay + heatmaps, served same-origin by
-                            src/app/recorder.js/route.js. Rendered only for
-                            browsers that have not opted out; inert until
-                            turned on for this site in Umami. */}
+                            src/app/recorder.js/route.js. Rendered only after a
+                            yes to ReplayPrompt and never with the account link
+                            on; inert until turned on for this site in Umami. */}
                         <RecorderScript
                             nonce={nonce}
                             siteId={process.env.UMAMI_SITE_ID}
+                            identified={identified}
                         />
                     </>
                 :   null}

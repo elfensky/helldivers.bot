@@ -2,6 +2,12 @@ import { describe, test, expect, vi } from 'vitest';
 import db from '@/db/db';
 import { auth } from '@/auth';
 import { exportUserData, deleteUserAccount } from '@/features/account/actions.mjs';
+import { deleteLinkedSessions } from '@/features/consent/umamiSessions.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
+
+vi.mock('@/features/consent/umamiSessions.mjs', () => ({
+    deleteLinkedSessions: vi.fn(),
+}));
 
 const userId = '01908174-d3a5-7e50-b964-6f5e9e48c0a1';
 const otherUserId = '01908174-d3a5-7e50-b964-6f5e9e48c0a2';
@@ -83,5 +89,28 @@ describe('deleteUserAccount', () => {
         const result = await deleteUserAccount(null, createFormData({ userId }));
         expect(result.data).toBeDefined();
         expect(db.user.delete).toHaveBeenCalledWith({ where: { id: userId } });
+        expect(deleteLinkedSessions).not.toHaveBeenCalled();
+    });
+
+    test('with the account link on, deletes the linked Umami sessions too', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue({
+            user: { ...session.user, identifyConsent: true },
+        });
+        vi.mocked(deleteLinkedSessions).mockResolvedValue(true);
+
+        await deleteUserAccount(null, createFormData({ userId }));
+        expect(deleteLinkedSessions).toHaveBeenCalledExactlyOnceWith(userId);
+        expect(db.user.delete).toHaveBeenCalled();
+    });
+
+    test('a failed Umami delete is reported and the account is still deleted', async () => {
+        vi.mocked(auth.api.getSession).mockResolvedValue({
+            user: { ...session.user, identifyConsent: true },
+        });
+        vi.mocked(deleteLinkedSessions).mockResolvedValue(false);
+
+        await deleteUserAccount(null, createFormData({ userId }));
+        expect(reportError).toHaveBeenCalledOnce();
+        expect(db.user.delete).toHaveBeenCalled();
     });
 });

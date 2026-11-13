@@ -76,6 +76,11 @@ model User {
     image         String?
     role          String    @default("user")
     banned        Boolean   @default(false)
+    // Consent (#617): terms accepted at signup or the next login; the
+    // optional account link for umami.identify(), off by default.
+    termsAcceptedAt   DateTime?
+    identifyConsent   Boolean   @default(false)
+    identifyConsentAt DateTime?
     accounts      Account[]
     sessions      Session[]
     createdAt     DateTime  @default(now())
