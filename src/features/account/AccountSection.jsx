@@ -1,5 +1,6 @@
 import ApiDashboard from '@/features/account/ApiDashboard';
 import AccountActions from '@/features/account/AccountActions';
+import IdentifySwitch from '@/features/account/IdentifySwitch';
 
 export default function AccountSection({ user, avatarUrl, providers, canUnlink }) {
     return (
@@ -11,6 +12,7 @@ export default function AccountSection({ user, avatarUrl, providers, canUnlink }
                 providers={providers}
                 canUnlink={canUnlink}
             />
+            <IdentifySwitch initial={user.identifyConsent === true} />
             <ApiDashboard user={user} />
         </div>
     );

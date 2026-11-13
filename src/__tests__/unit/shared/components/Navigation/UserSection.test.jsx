@@ -207,19 +207,52 @@ describe('UserSection — avatar URL resolution', () => {
 });
 
 describe('UserSection — umami identify side effect', () => {
+    // Every identify test below runs with the account link on (#617).
+    const consenting = (image) => ({
+        data: { user: { ...baseSession.user, image, identifyConsent: true } },
+        isPending: false,
+    });
+
+    afterEach(() => {
+        delete navigator.globalPrivacyControl;
+    });
+
+    test('does NOT call identify without the account-link consent', async () => {
+        const identify = vi.fn();
+        window.umami = { identify, track: vi.fn() };
+        vi.mocked(useSession).mockReturnValue({
+            data: { user: { ...baseSession.user, image: 'https://x/y.png' } },
+            isPending: false,
+        });
+
+        render(<UserSection />);
+
+        await waitFor(() => expect(screen.getByText('Sign Out')).toBeInTheDocument());
+        expect(identify).not.toHaveBeenCalled();
+    });
+
+    test('does NOT call identify with Global Privacy Control, despite consent', async () => {
+        const identify = vi.fn();
+        window.umami = { identify, track: vi.fn() };
+        Object.defineProperty(navigator, 'globalPrivacyControl', {
+            value: true,
+            configurable: true,
+        });
+        vi.mocked(useSession).mockReturnValue(consenting('https://x/y.png'));
+
+        render(<UserSection />);
+
+        await waitFor(() => expect(screen.getByText('Sign Out')).toBeInTheDocument());
+        expect(identify).not.toHaveBeenCalled();
+    });
+
     test('calls window.umami.identify with id + provider when umami is loaded', async () => {
         const identify = vi.fn();
         window.umami = { identify, track: vi.fn() };
 
-        vi.mocked(useSession).mockReturnValue({
-            data: {
-                user: {
-                    ...baseSession.user,
-                    image: 'https://cdn.discordapp.com/avatars/abc.png',
-                },
-            },
-            isPending: false,
-        });
+        vi.mocked(useSession).mockReturnValue(
+            consenting('https://cdn.discordapp.com/avatars/abc.png'),
+        );
 
         render(<UserSection />);
 
@@ -233,15 +266,9 @@ describe('UserSection — umami identify side effect', () => {
         const identify = vi.fn();
         window.umami = { identify, track: vi.fn() };
 
-        vi.mocked(useSession).mockReturnValue({
-            data: {
-                user: {
-                    ...baseSession.user,
-                    image: 'https://avatars.githubusercontent.com/u/1234',
-                },
-            },
-            isPending: false,
-        });
+        vi.mocked(useSession).mockReturnValue(
+            consenting('https://avatars.githubusercontent.com/u/1234'),
+        );
 
         render(<UserSection />);
 
@@ -254,15 +281,9 @@ describe('UserSection — umami identify side effect', () => {
         const identify = vi.fn();
         window.umami = { identify, track: vi.fn() };
 
-        vi.mocked(useSession).mockReturnValue({
-            data: {
-                user: {
-                    ...baseSession.user,
-                    image: 'https://lh3.googleusercontent.com/abc',
-                },
-            },
-            isPending: false,
-        });
+        vi.mocked(useSession).mockReturnValue(
+            consenting('https://lh3.googleusercontent.com/abc'),
+        );
 
         render(<UserSection />);
 
@@ -275,15 +296,9 @@ describe('UserSection — umami identify side effect', () => {
         const identify = vi.fn();
         window.umami = { identify, track: vi.fn() };
 
-        vi.mocked(useSession).mockReturnValue({
-            data: {
-                user: {
-                    ...baseSession.user,
-                    image: 'https://cdn.discordapp.com/avatars/abc.png',
-                },
-            },
-            isPending: false,
-        });
+        vi.mocked(useSession).mockReturnValue(
+            consenting('https://cdn.discordapp.com/avatars/abc.png'),
+        );
 
         const { rerender } = render(<UserSection />);
         await waitFor(() => expect(identify).toHaveBeenCalledTimes(1));

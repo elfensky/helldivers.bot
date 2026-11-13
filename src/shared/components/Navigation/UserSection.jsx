@@ -8,6 +8,7 @@ import { useSession } from '@/auth-client';
 import { SignIn, SignOut } from '@/shared/components/Auth/Auth';
 import { getGravatarUrl } from '@/shared/utils/gravatar.mjs';
 import { useLiveDataContext } from '@/shared/providers/LiveDataContext.mjs';
+import { privacySignal } from '@/features/consent/replayConsent.mjs';
 
 export default function UserSection() {
     const { status } = useLiveDataContext();
@@ -26,8 +27,19 @@ export default function UserSection() {
         }
     }, [user]);
 
+    // The account link (#617): only with the account's consent and without a
+    // GPC/DNT signal. The layout keeps the recorder off on such a page load.
+    const identifyConsent =
+        /** @type {{ identifyConsent?: boolean } | undefined} */ (session?.user)
+            ?.identifyConsent === true;
     useEffect(() => {
-        if (session?.user?.id && !identifiedRef.current && window.umami) {
+        if (
+            session?.user?.id &&
+            identifyConsent &&
+            !privacySignal() &&
+            !identifiedRef.current &&
+            window.umami
+        ) {
             identifiedRef.current = true;
             const provider =
                 session.user.image?.includes('discord') ? 'discord'
@@ -35,7 +47,7 @@ export default function UserSection() {
                 : 'unknown';
             window.umami.identify(session.user.id, { provider });
         }
-    }, [session?.user?.id, session?.user?.image]);
+    }, [session?.user?.id, session?.user?.image, identifyConsent]);
 
     if (status === 'offline') {
         return null;

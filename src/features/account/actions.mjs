@@ -9,6 +9,8 @@ import { performanceTime } from '@/shared/utils/time.mjs';
 import { randomUUID, createHash } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { requireSession, requireUser } from '@/shared/utils/api/authGuards.mjs';
+import { reportError } from '@/shared/utils/observability.mjs';
+import { deleteLinkedSessions } from '@/features/consent/umamiSessions.mjs';
 
 /**
  * Result shape returned by the API-key server actions and threaded through
@@ -242,6 +244,14 @@ export async function deleteUserAccount(_, formData) {
             errors: { auth: 'Not authorized' },
             time: performanceTime(start),
         };
+    }
+
+    // The account link's Umami sessions go with the account (#617).
+    if (user.identifyConsent && !(await deleteLinkedSessions(user.id))) {
+        reportError(new Error('Linked Umami sessions not deleted with the account'), {
+            stage: 'account-delete-umami',
+            userId: user.id,
+        });
     }
 
     const { error } = await tryCatch(

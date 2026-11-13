@@ -7,6 +7,8 @@ import {
     REGIONS_VIEW_DEFAULT,
 } from '@/shared/preferences/regionsView.mjs';
 import { SORT_ORDER_KEY, SORT_ORDER_DEFAULT } from '@/shared/preferences/sortOrder.mjs';
+import { replayAllowed } from '@/features/consent/replayConsent.mjs';
+import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 
 const SESSION_FLAG = 'hd1-prefs-snapshotted';
 
@@ -17,26 +19,38 @@ const SESSION_FLAG = 'hd1-prefs-snapshotted';
  * click-event tracking on each toggle: clicks measure churn, snapshots measure
  * state distribution (including users who never touch a toggle).
  *
- * Guarded by sessionStorage so SPA navigation doesn't double-count.
- * Fires fire-and-forget via `window.umami?.track` — if Umami hasn't
- * loaded yet (unusual, but possible on first-ever mount), the event
- * silently drops. Production-only in practice since Umami only loads
- * when UMAMI_SITE_ID is set.
+ * It reads the preference cookies and writes sessionStorage for an analytics
+ * purpose, so it runs only after the same yes as session replay (#617), under
+ * the same gate. Guarded by sessionStorage so SPA navigation doesn't
+ * double-count; blocked storage sends nothing. Fires fire-and-forget via
+ * `window.umami?.track` — if Umami hasn't loaded yet, the event silently drops.
+ *
+ * @param {object} props - Component props.
+ * @param {boolean} [props.identified] - The account link is on for this page load.
+ * @returns {null}
  */
-export default function PreferenceTracker() {
+export default function PreferenceTracker({ identified = false }) {
     useEffect(() => {
-        try {
-            if (sessionStorage.getItem(SESSION_FLAG)) return;
-            sessionStorage.setItem(SESSION_FLAG, '1');
-        } catch {
-            // sessionStorage unavailable — fall through and fire anyway
-        }
+        const snapshot = async () => {
+            if (!(await replayAllowed(identified))) return;
 
-        window.umami?.track('preference-snapshot', {
-            faction: readPreferenceCookie(FACTION_KEY) ?? FACTION_DEFAULT,
-            regions_view: readPreferenceCookie(REGIONS_VIEW_KEY) ?? REGIONS_VIEW_DEFAULT,
-            sort_order: readPreferenceCookie(SORT_ORDER_KEY) ?? SORT_ORDER_DEFAULT,
-        });
-    }, []);
+            const { data: first, error } = await tryCatch(
+                Promise.resolve().then(() => {
+                    if (sessionStorage.getItem(SESSION_FLAG)) return false;
+                    sessionStorage.setItem(SESSION_FLAG, '1');
+                    return true;
+                }),
+            );
+            if (error || !first) return;
+
+            window.umami?.track('preference-snapshot', {
+                faction: readPreferenceCookie(FACTION_KEY) ?? FACTION_DEFAULT,
+                regions_view:
+                    readPreferenceCookie(REGIONS_VIEW_KEY) ?? REGIONS_VIEW_DEFAULT,
+                sort_order: readPreferenceCookie(SORT_ORDER_KEY) ?? SORT_ORDER_DEFAULT,
+            });
+        };
+        snapshot();
+    }, [identified]);
     return null;
 }
