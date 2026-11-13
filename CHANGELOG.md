@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Added
+
+- Analytics consent (#617). Session replay and the preference snapshot load only after a yes to
+  the Ministry of Truth prompt, where "Decline" sits beside "Allow" at the same size. They never
+  run with a GPC or Do Not Track signal, for an opted-out browser, or on a page load with the
+  account link on. `umami.identify()` runs only for an account that ticked the optional box on the
+  new terms page or turned the switch on in the profile. Signup and the next login of an existing
+  account show the terms page until the terms are accepted; `/legal` and `/privacy` stay readable.
+  Turning the switch off deletes the account's Umami sessions through Umami's API (new optional
+  `UMAMI_API_KEY`); so does deleting the account. Migration `20261114000000_user_consent` adds
+  `User.termsAcceptedAt`, `identifyConsent` and `identifyConsentAt`.
+- `/privacy`, the GDPR Art. 13 notice (#619): the controller, `privacy@lav.ren` as the only
+  contact, purposes and legal bases per activity, recipients, transfers, retention, the rights and
+  the Belgian authority. `/legal#privacy` and the footer point to it. Facts the repository cannot
+  prove are marked in the page and must be filled before release.
+
 ### Changed
 
 - Versioning is "accumulate, then cut" (#618): PRs into `develop` raise no version and add their

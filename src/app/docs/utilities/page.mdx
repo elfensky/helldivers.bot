@@ -360,7 +360,7 @@ Umami v3 (self-hosted, cookieless) with three tracking layers:
 
 **Ad-blocker bypass:** The client-side tracker posts through a same-origin proxy chain: tracker → `/api/send` (Next.js rewrite) → `/api/umami` (proxy route) → `umami.lav.ren/api/send`. The browser sends no request to an external Umami domain. The proxy writes the visitor's IP from Cloudflare's `cf-connecting-ip` into the hit as `payload.ip`, so Umami uses the visitor for its cookieless session hash and its location.
 
-**User identification:** Authenticated users are identified via `umami.identify(userId, { provider })` in `UserSection.jsx`. Anonymous visitors remain fully anonymous.
+**User identification:** `UserSection.jsx` calls `umami.identify(userId, { provider })` only for an account whose holder ticked the optional box on the terms page or turned the switch on in the profile (`User.identifyConsent`, #617), and never with a Global Privacy Control or Do Not Track signal. On that page load the recorder and the preference snapshot stay off. Turning the switch off deletes the account's Umami sessions through Umami's API (`src/features/consent/umamiSessions.mjs`, needs `UMAMI_API_KEY`). Visitors without an account are never identified.
 
 **Event naming:** `category-action` format. Categories: `nav`, `auth`, `footer`, `docs`, `diagram`, `faction`, `archive`, `notification`, `push`, `sw`, `toast`, `dashboard`, `api`.
 
