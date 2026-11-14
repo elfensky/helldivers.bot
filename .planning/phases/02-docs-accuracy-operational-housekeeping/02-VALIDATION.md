@@ -61,7 +61,8 @@ Task IDs are filled by the planner. The rows below are the per-requirement check
 
 - [ ] `scripts/check-mermaid-fences.mjs` — DOCS-02 fence parse (D-23); tested script in `02-RESEARCH.md` § Code Examples 1
 - [ ] Lane `npm ci` + `npx prisma generate` — typecheck, unit tests and build need the generated client
-- [ ] Decision on the D-15 (1) event source (`02-RESEARCH.md` Open Question 1)
+- [x] Decision on the D-15 (1) event source: staging gets the production DSN (CONTEXT.md D-30, 2026-11-14)
+- [ ] `SENTRY_DSN` live on staging before D-15 step (1) (D-30)
 
 Existing checks to keep green: `src/__tests__/unit/_meta/mirrorTree.test.mjs`, `src/__tests__/unit/_meta/exampleEnv.test.mjs`, `src/__tests__/unit/app/docs/_diagram.test.mjs`.
 

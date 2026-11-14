@@ -151,6 +151,17 @@ its replacement.
   No symbolicated Sentry 11 event is recorded yet. D-15 step (1) is the proof. A v0.97.2 production
   event is not a clean proof: production still serves public maps there. The GlitchTip connector
   needs re-authorization before any GlitchTip check.
+- **D-30:** (Andrei, 2026-11-14) Staging reports to GlitchTip with the same DSN as production. It is
+  one GlitchTip project, split by the `environment` tag (`development`, `staging`, `production`;
+  `sentry.server.config.js:9-11`, `src/instrumentation-client.js:12-14`; `build-staging.yml:212`
+  passes `NEXT_PUBLIC_DEPLOY_ENV=staging`). Add `SENTRY_DSN` to `deploy/staging/compose.yaml` as a
+  plain value, the same as `deploy/production/compose.yaml:93`. Not `SENTRY_DSN_FILE`:
+  `src/instrumentation.js` reads `SENTRY_DSN` before `hydrateFileSecrets()` runs (f55c17cb). The
+  quick task 260829-219 wired a staging DSN on 2026-08-29, but its commits (`22030b72`, `d8323eef`)
+  never reached `develop`. The same PR corrects the Sentry part of `deploy/README.md:36` ("Sentry
+  unset on purpose"), which this change makes false; the other stale lines stay on #624 (D-28). The
+  DSN must be live on staging before D-15 step (1): its event is a real staging browser error with
+  `environment: staging`, not a synthetic probe.
 
 ### HOUSE-04 and the issues (Andrei, 2026-11-14)
 - **D-17:** #501 closes on PR #642 (run 42603725952, 2026-11-09, only
@@ -166,6 +177,9 @@ its replacement.
   failures); (2) the force-push deletes the note commit that the PR body (`:65`) and
   `prisma/seed/readme.md:49-51` tell the human to push. The workflow file does not change in this
   phase.
+- **D-31:** (Andrei, 2026-11-14) #642 merges after the release-1 tag (D-21 (1)), in the same sitting
+  as D-17, before Monday 2026-11-16 03:00 UTC. Release 1 then holds #599 alone. Season 161 reaches
+  staging when #642 lands and production with release 2.
 - **D-18:** Done: #469 is ARCH-11 in Phase 11 (`REQUIREMENTS.md:87,218`).
 - **D-19:** Done (superseded 2026-11-02): `docs/roadmap.md` is deleted, not a pointer. See
   `02-03-SUMMARY.md`.

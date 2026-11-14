@@ -252,6 +252,8 @@ Structurally safe. Nothing in the GlitchTip code, the Sentry upload path or the 
 - `src/instrumentation-client.js:25` `tunnel: '/api/glitchtip',` and `src/app/api/glitchtip/route.js:12,14` `const dsn = process.env.SENTRY_DSN;` … `return new Response('Tunnel not configured', { status: 503 });`. So staging browsers have a build-time DSN (`NEXT_PUBLIC_SENTRY_DSN` is passed by `build-staging.yml`) but the tunnel refuses to forward.
 - `sentry.server.config.js:8` `dsn: process.env.SENTRY_DSN,` → the server SDK is off on staging too.
 
+**Resolved 2026-11-14: option (b), CONTEXT.md D-30.** The table stays as the record of the options.
+
 Options for the plan (Andrei decides; offer these at the planning stop):
 
 | Option | What | Trade-off |
@@ -523,9 +525,11 @@ return successResponse(200, start, { role: 'standby', holder: HOLDER_ID });
    - Known: staging has no `SENTRY_DSN`; the tunnel returns 503.
    - Unclear: whether Andrei accepts a synthetic probe event in the production GlitchTip project (option a), or wants a staging DSN (option b).
    - Recommendation: option (a), with the event tagged `staging-probe`. Ask at the planning stop. If there is no answer, the plan falls back to option (c) and a human checkpoint.
+   - **Resolved 2026-11-14 (Andrei): option (b), CONTEXT.md D-30.** Staging uses the production DSN; GlitchTip splits by `environment`. The staging DSN of quick task 260829-219 never reached `develop`.
 2. **Order of release 1 and #642.**
    - Known: #642 merged first would put season 161 in release 1 and may collide with the cut.
    - Recommendation: release 1 first. If Andrei wants season 161 live at once, accept both in release 1 and drop the "isolates #599" claim.
+   - **Resolved 2026-11-14 (Andrei): release 1 first, CONTEXT.md D-31.**
 3. **Where does 02-04 sit in the waves?** Today it is wave 4 after the old 0.95.7 release. With D-21 (1) first, it follows the release-1 tag.
 4. **Remaining `01-REVIEW-DISPOSITION.md` rows.** Only IN-03, WR-07 and WR-08 are in scope; the other rows stay `open` (rows IN-01, IN-02, IN-04, IN-05 seen as `open`).
 
