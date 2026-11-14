@@ -4,12 +4,89 @@
 > Decisions captured in CONTEXT.md — this log preserves the analysis.
 > Exception: CONTEXT.md D-12 names § Drift Inventory below as the executor's starting checklist.
 
-**Date:** 2026-10-14; refreshed 2026-10-23 against develop 0.95.7 (c479fde1)
+**Date:** 2026-10-14; refreshed 2026-10-23 against develop 0.95.7 (c479fde1); refreshed 2026-11-14 against develop 0.98.0 (70ccc071)
 **Phase:** 02-docs-accuracy-operational-housekeeping
 **Mode:** assumptions
 **Areas analyzed:** Ground truth and DOCS-01, Topology, DOCS-02 scope and drift status, HOUSE-03 sourcemaps under Sentry 11, HOUSE-04/05 and requirement IDs, Release and process, WR-07/WR-08 triage
 
-## Why a refresh
+## Refresh 2026-11-14 (develop 0.98.0, 70ccc071)
+
+### Why
+106 commits landed since 2026-10-23. Phase 1.1 moved production to the Hetzner swarm (#588) with
+`pin-production` deploys; v0.95.8, v0.96.0–v0.96.4, v0.97.x shipped (tag v0.97.2 is live, pinned by
+e09484b9). AGENTS.md was rewritten to the handbook shape (139 lines). The release process changed: the
+version cut (#618), rebase-only `develop`, no merge-back (#621). Migrate-on-start (#599) and the
+`app_instance` registry (#596) landed. A `gsd-assumptions-analyzer` run re-checked D-01..D-26; the
+orchestrator re-verified the key facts (production compose replicas, the pin commit,
+`next.config.mjs:17`, `migrateOnStart.mjs` absent from v0.97.2, PR #642 checks, issue states).
+
+### Decision status
+| ID | Status | Note |
+|---|---|---|
+| D-01 | changed | Source order: code → compose files and `build-*.yml` → `.planning/architecture/` → `deploy/README.md` → maps |
+| D-02 | changed | PROJECT.md Vitest fix already done (`:78`); INTEGRATIONS.md:79-80 → both stacks 2 replicas |
+| D-03 | changed | Old AGENTS.md sections gone; ~2 lines at `:79-83` plus 4 code comments |
+| D-04 | obsolete → replaced | Production = Hetzner swarm, app ×2 |
+| D-05 | holds | |
+| D-06 | obsolete → replaced | The move is done; 20 s on both stacks; no LAN details |
+| D-07 | holds | |
+| D-08 | holds + add | `migrateOrWait` before the worker |
+| D-09 | changed | `app_instance`, `seed_state` already documented |
+| D-10 | changed | migrate-on-start, Node 26, 900 s done; runner is `node:26-slim`, 11 workflows |
+| D-11 | changed | "AGENTS.md § Test Layout" gone; rule stated inline |
+| D-12 | holds | ~50 of ~58 sampled items still stale |
+| D-13 | holds | #502 still 0 comments |
+| D-14 | holds | refs refreshed to Sentry 11.10.0 |
+| D-15 | changed | Runtime has a shell; v0.97.2 baseline; staging-first proof |
+| D-16 | holds | |
+| D-17 | changed | Second real run: PR #642; gap 1 evidence corrected (`action_required`, not "0 check runs") |
+| D-18 | done | |
+| D-19, D-20 | done (superseded) | |
+| D-21 | obsolete → replaced | Release 1 now isolates #599 |
+| D-22 | obsolete → replaced | Notes under `## Unreleased`, no bump |
+| D-23 | holds | |
+| D-24 | changed | Uploads proven, symbolication not; a v0.97.2 event is ambiguous while public maps exist |
+| D-25 | holds | not filed; link #631 |
+| D-26 | holds | not filed; link #629 |
+| D-27 | new | No `--delete-branch` from a lane (handbook git-and-prs § Merging); AGENTS.md:44 |
+| D-28 | new | `deploy/README.md` stale lines stay with #624 |
+| D-29 | new | Plan disposition |
+
+### Assumptions presented
+| Assumption | Confidence | Evidence |
+|---|---|---|
+| Production is the Hetzner swarm, app ×2, cloudflared ×2, lease-coordinated, pinned by CI | Confident | `deploy/production/compose.yaml:79,118,151`; e09484b9 |
+| Public docs describe both swarms without IPs, host names, node labels, secret names | Likely | `deploy/README.md:30` |
+| `deploy/README.md` stale lines stay with #624 | Likely | #624 scope |
+| No manual production pull; plan 02-01 drops | Confident | `build-release.yml:278`; tags v0.95.8, v0.96.4, v0.97.2 |
+| Version cut, release PR, no merge-back; work PRs add `## Unreleased` notes | Confident | `AGENTS.md:41-56`; `check-version.yml:3-10` |
+| Number of releases | Unclear | `migrateOnStart.mjs` not in v0.97.2 |
+| Strip proven on staging first | Likely | `build-staging.yml:210-224` |
+| Strip change unchanged from D-14 | Confident | Sentry 11.10.0 tarball |
+| DOCS-01 is ~2 lines plus 4 comments | Confident | `AGENTS.md:7-9,79-83`; `lease.mjs:20` |
+| AGENTS.md merge line drops `--delete-branch` | Likely | handbook git-and-prs § Merging |
+| Code is the referee; maps get the D-02 fixes | Likely | maps 2026-08-28, architecture notes 2026-11-09 |
+| ~50 of ~58 drift items still stale; new drift from #596/#599/#588/Node 26 | Confident | sampled page lines |
+| How #501 closes | Likely | PR #642 runs `action_required` |
+| The 3 deferred issues are not filed yet | Confident | `gh issue list` |
+
+### Corrections made
+No corrections. Andrei answered the 2 open questions with the recommended options (2026-11-14):
+- **Releases:** two releases — develop now, so #599 reaches production alone; the strip and docs at
+  phase end.
+- **HOUSE-04:** land #642 under today's rules, then close #501.
+
+### External research
+- Not run in this step. Two topics went to the plan-phase researcher (CONTEXT.md § Research topics):
+  `action_required` runs on `github.token` PRs; GlitchTip with per-arch debug-ID bundles. The
+  staging-first proof (D-15 step 1) removes the question of whether GlitchTip fetches public maps.
+- GlitchTip connector needs re-authorization; no GlitchTip check ran.
+- GitHub (2026-11-14): #502, #501 open; #624, #629, #631 open (Engineering Health); PR #642 open,
+  only CodeQL checks completed, 4 runs `action_required`.
+- Nowledge Mem: release plans 02-01:132 and 02-11:136 used `gh pr merge --delete-branch` from a lane
+  (PR #649 review) → D-27.
+
+## Why the 2026-10-23 refresh
 
 The 2026-10-14 context sat on an unmerged lane while develop moved 34 commits (Phase 1 close-out,
 Dependabot round 0.95.3-0.95.7 incl. Sentry 10 → 11, vitest 4 → 5, mermaid 11 → 12). Every
@@ -103,6 +180,9 @@ No corrections to the analyzer's assumptions. Andrei answered the two open quest
 - `@sentry/nextjs` 11.8.0 read from the lockfile-pinned tarball (integrity matches `package-lock.json:4930`), because the main checkout's `node_modules` is stale.
 
 ## Drift Inventory (re-checked 2026-10-23)
+
+A 2026-11-14 sample found about 50 of about 58 items still stale; line numbers have moved since. The
+2026-11-14 line refs are in CONTEXT.md D-08..D-11.
 
 Starting checklist for the executor (re-verify each against code before editing). Paths relative to
 repo root. Status: **stale** = still wrong today; **fixed** = already correct; **new** = found in the
