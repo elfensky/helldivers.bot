@@ -5,15 +5,17 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Phase 2 context refreshed (assumptions mode)
-last_updated: "2026-11-09T11:32:39.887Z"
-last_activity: 2026-11-09
+stopped_at: Phase 2 context refreshed against develop 0.98.0 (assumptions mode)
+last_updated: "2026-11-14T16:17:51.393Z"
+last_activity: 2026-11-14
+last_activity_desc: Phase 2 context refreshed against develop 0.98.0
+state_head: 70ccc071ab2dc2765e76677b823932460670bd96
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 12
   completed_plans: 1
-  percent: 8
+  percent: 0
 ---
 
 # Project State
@@ -27,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 
 ## Current Position
 
-Phase: 02 (Docs Accuracy & Operational Housekeeping) — READY TO EXECUTE
-Plan: 02-03 done; plans 02-01, 02-09, 02-11 and 02-12 need a re-plan first
-Status: Ready to execute
-Last activity: 2026-11-09 — Milestone M7 archived; M8 is current (roadmap split into M1–M12)
+Phase: 02 (Docs Accuracy & Operational Housekeeping) — READY TO RE-PLAN
+Plan: 02-03 done; 02-01 dropped; 02-05, 02-06, 02-10 keep with edits; the other 7 re-plan (02-CONTEXT.md D-29)
+Status: Ready to plan
+Last activity: 2026-11-14 — Phase 2 context refreshed against develop 0.98.0 (two releases, #501 closes on #642)
 
-Progress: [█░░░░░░░░░] 8%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -106,10 +108,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-23T09:01:15.039Z
-Stopped at: Phase 2 context refreshed (assumptions mode)
+Last session: 2026-11-14T16:17:50.635Z
+Stopped at: Phase 2 context refreshed against develop 0.98.0 (assumptions mode)
 Resume file: .planning/phases/02-docs-accuracy-operational-housekeeping/02-CONTEXT.md
 
 ## Operator Next Steps
 
-- Re-plan Phase 2 plans 02-01, 02-09, 02-11 and 02-12 (they assume a manual production pull), then execute Phase 2
+- Run `/gsd-plan-phase 2 --research --skip-ui` to re-plan per 02-CONTEXT.md D-29, then execute Phase 2
+- Before execution, re-authorize the GlitchTip connector (D-15, D-24)
