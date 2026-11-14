@@ -147,7 +147,7 @@ Phase 1.1 moved production to the Hetzner swarm and released v0.96.4.
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
   5. `docs/roadmap.md` is deleted and its live items are carried into `.planning/` (ARCH-11 and § Carried over), leaving `.planning/ROADMAP.md` as the one roadmap file (HOUSE-05, done 2026-11-02)
 
-**Plans**: 1/13 plans executed (re-planned 2026-11-14 per 02-CONTEXT.md D-29; 02-01 superseded by 02-13)
+**Plans**: 1/14 plans executed (re-planned 2026-11-14 per 02-CONTEXT.md D-29; 02-01 superseded by 02-13)
 
 Plans:
 **Wave 1**
@@ -177,11 +177,12 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 02-05-PLAN.md — Rendered-diagram pages (architecture, overview, notifications) with a browser render check (DOCS-02)
+- [ ] 02-05-PLAN.md — Rendered-diagram pages (architecture, overview, notifications) with a browser render check at a checkpoint before the PR (DOCS-02; D-23)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
 - [ ] 02-06-PLAN.md — Mermaid fence parse check script and the data-flow page with migrate-on-start (DOCS-02)
+- [ ] 02-15-PLAN.md — Staging re-check: the three rendered-diagram pages render from a production build on staging, at a browser checkpoint; release 2 depends on it (DOCS-02; D-23)
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
