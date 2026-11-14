@@ -1,9 +1,8 @@
 # Phase 2: Docs Accuracy & Operational Housekeeping - Research
 
-**Researched:** 2026-10-23
-**Domain:** Documentation accuracy (MDX docs pages, AGENTS.md, codebase maps), Sentry 11 sourcemap strip (Next.js 16 / Turbopack / Docker distroless), GitHub Actions seed-refresh verification, planning-doc retirement
-**Confidence:** HIGH for in-repo facts and Sentry 11.8.0 behaviour (read from files this session); MEDIUM for GlitchTip-side symbolication of a Sentry 11 upload (not testable here)
-**Lane:** `/Users/andrei/Developer/helldivers.bot/.worktrees/docs-phase-02-plan`, branch `docs/phase-02-plan`, `package.json` version `0.95.7` (read this session)
+**Researched:** 2026-11-14 (develop 0.98.0, commit `70ccc071`; this file replaces the 2026-10-23 research written against 0.95.7)
+**Domain:** MDX docs pages and AGENTS.md accuracy, Sentry 11 sourcemap strip (Next.js 16 / Turbopack / Docker), GitHub Actions seed-refresh PR path, two production releases
+**Confidence:** HIGH for in-repo facts and the Sentry 11.10.0 code path (opened this session). MEDIUM for GlitchTip symbolication of Sentry 11 bundles (server code read, no live event read). MEDIUM for "approval satisfies the ruleset" (docs plus API state, not yet executed).
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
@@ -11,60 +10,62 @@
 ### Locked Decisions
 
 **Ground truth and DOCS-01**
-- **D-01:** The reference for every docs check is the live code plus `deploy/staging/compose.yaml` and `deploy/README.md`. The `.planning/codebase/*.md` maps (2026-08-28) are a starting point only; they contain errors.
-- **D-02:** Fix the 5 wrong map lines in the same pass: `.planning/codebase/STACK.md:85` (dedicated worker service — does not exist), `ARCHITECTURE.md:125` (#516 "stale state" 403 reason), `ARCHITECTURE.md:127` (`updateStatus` also writes `h1_event_progress`, `src/update/status.mjs:101,118`), `ARCHITECTURE.md:130` (`updateSeason` does not write `h1_statistic`/`h1_event_progress`), `INTEGRATIONS.md:80` ("production runs 3 app replicas" — contradicts D-04). Also fix `.planning/PROJECT.md:72` ("Vitest 4" → "Vitest 5"). Then regenerate the main checkout's `.claude/CLAUDE.md` from the maps (GSD `source:` markers at lines 1, 23, 169). Never hand-edit `.claude/CLAUDE.md` — it is gitignored (`.gitignore:58`) and generated; today it is stale at lines 13, 44, 62-64 and 87.
-- **D-03:** DOCS-01 rewrites AGENTS.md § Architecture — Stack (lines 184-206), § Frontend Layout items (210-212) and § Task Tracking (220). Content: the closing pass reads/writes `last_season_observed` in the lease row; the `worker_heartbeat` lease (60 s TTL, holder/standby, `200 {role:'standby'}`); every replica spawns the cron thread, and `WORKER_ENABLED=false` is an optional opt-out, not a multi-replica requirement; `prevEvents` lives in the lease row; `updateSeason` writes `h1_season`, `h1_event`, `h1_status` only; current component names (`EventLog`, `LastUpdated`). The same pass fixes the comments that still describe the #516 model: `src/app/api/h1/update/route.js:75-77` (and the "~15s" at `:34`), `src/shared/utils/initializeWorker.mjs:2-6`, `.example.env:11-13`, `public/workers/cron.js:13`.
+- **D-01:** The code decides what is true. Source order for every docs check: (1) the code; (2) `deploy/staging/compose.yaml`, `deploy/production/compose.yaml`, `.github/workflows/build-*.yml`; (3) `.planning/architecture/*.md` (evidence 2026-11-09, rev 8f831f68); (4) `deploy/README.md` (partly stale, D-28); (5) the `.planning/codebase/*.md` maps (2026-08-28, contain errors).
+- **D-02:** Fix the wrong map lines in the same pass: `.planning/codebase/STACK.md:85` (dedicated worker service — does not exist), `ARCHITECTURE.md:125` (#516 "stale state" 403 reason), `ARCHITECTURE.md:127` (`updateStatus` also writes `h1_event_progress`), `ARCHITECTURE.md:130` (`updateSeason` does not write `h1_statistic`/`h1_event_progress`), `INTEGRATIONS.md:79-80` (both stacks run 2 app replicas). With these fixed, criterion 2 ("against `.planning/codebase/`") and D-01 agree. Then regenerate the main checkout's `.claude/CLAUDE.md` from the maps (GSD `source:` markers at lines 1, 23, 93, 169; it still lists the removed `eslint-plugin-react-compiler`). Never hand-edit `.claude/CLAUDE.md`: it is generated and gitignored (`.gitignore:58`).
+- **D-03:** DOCS-01 is a small edit. `AGENTS.md:77-83` (§ Architecture invariants) already states the lease and the lease-row state. Add about 2 lines to the bullet at `:79-83`: every replica spawns the cron thread and only the lease holder polls; `WORKER_ENABLED=false` is an optional opt-out, not a multi-replica requirement (0 hits in AGENTS.md today); the lease lasts 60 s (`LEASE_TTL_S`, `src/update/lease.mjs:20`) and a standby replica answers `200 {role:'standby'}`; both stacks run 2 app replicas. AGENTS.md holds repo facts only (`AGENTS.md:7-9`): do not restore the old Stack, Frontend Layout or Task Tracking sections. The same PR fixes the 4 comments that still describe the #516 model: `src/app/api/h1/update/route.js:35` ("~15s" — the cadence is `UPDATE_INTERVAL`, 20 s), `route.js:76-78` (state lives in the lease row, not in the process), `src/shared/utils/initializeWorker.mjs:2-6` (no "N web replicas plus one worker replica"), `public/workers/cron.js:13` (spawned from `src/instrumentation.node.js`). `.example.env:17-19` is already correct.
+- **D-27:** The same PR changes the merge line at `AGENTS.md:44` to `gh pr merge <n> --rebase`, then `git push origin --delete <branch>`. The handbook forbids `--delete-branch` from a worktree that has the PR branch checked out (`~/vault/knowledge/developer/stack/git-and-prs.md` § Merging): it removed the lane worktree twice on 2026-11-07. Every plan uses this form for work and record PRs. A release PR (head `develop`) never deletes its head branch. Delete a branch only after `gh pr view <n> --json state` reports `MERGED`.
 
-**Topology (Andrei, 2026-10-14)**
-- **D-04:** Production today = one app container on one Docker host behind the reverse proxy and CrowdSec (`docker-compose.yml:2-23`). The lease always has one holder there. Docs describe this as the current production.
-- **D-05:** Staging = Pi Docker Swarm, 2 app replicas (`deploy/staging/compose.yaml:114`), one shared Postgres, lease-coordinated (`compose.yaml:58-67`, `deploy/README.md:16-29`). Docs describe this as the proven multi-replica topology.
-- **D-06:** The planned production move to the swarm (≥2 replicas, same DB) is not described as current. Docs may state that the lease makes any replica count safe. No production `UPDATE_INTERVAL` value is stated — name the env var and the `.example.env:10` value (`20`).
+**Topology**
+- **D-04:** Production is the Hetzner Docker Swarm, stack `helldiversbot`: app ×2 (`deploy/production/compose.yaml:118`), cloudflared ×2 (`:151`), one shared Postgres, lease-coordinated. A `vX.Y.Z` tag runs `build-release.yml`; its `pin-production` job (`:278`) pins `deploy/production`, and Arcane Git Sync applies the stack. `origin/deploy/production` (e09484b9) pins v0.97.2 today. `docker-compose.yml` is a single-host compose, not the production deployment.
+- **D-05:** Staging is the 3-Pi Docker Swarm: app ×2 (`deploy/staging/compose.yaml:112`), cloudflared ×2 (`:146`), one shared Postgres, lease-coordinated (`deploy/README.md:15-29`). It builds from every push to `develop` and pins each green build.
+- **D-06:** The docs state that the lease makes any replica count safe and that both stacks run 2 app replicas. `UPDATE_INTERVAL` is 20 on both stacks (`deploy/production/compose.yaml:79`). The public pages leave out IP addresses, host names, node labels and secret names (`deploy/README.md:30` holds such LAN details).
+- **D-28:** The stale lines in `deploy/README.md` (`:11` "What's live (2026-08-25)", `:124` "ready, not deployed yet", `:167`) are fixed under #624, not in this phase. The executor does not copy facts from that file without checking them against D-01 sources (1)–(3).
 
 **DOCS-02 scope**
 - **D-07:** Scope = the 5 listed pages (`src/app/docs/{architecture,data-flow,infrastructure,database,testing}/`, page plus diagram config `.mjs` files) plus the lease lines on 2 other pages: `notifications/page.mdx:115`, `notifications/notificationFlowConfig.mjs:175`, `notifications/pushFlowConfig.mjs:36` (push dedup "in memory" → lease row), and `src/app/docs/page.mdx:32`, `src/app/docs/overviewConfig.mjs:92`. All other pages wait for DOCS-03.
-- **D-08:** data-flow gets a short poller-lease subsection (~15 lines) and loses the retired pieces (`?key=` auth, `initializeOpenApiSpec()`, module-level state, "on-demand" season pipeline).
-- **D-09:** database drops `Review` and `App` (migration `20260416091157_drop_unused_tables`), adds the lease columns and `api_rate_limit`, and states `TIMESTAMP(3)` (naive UTC), not `TIMESTAMPTZ` (19 cells today).
-- **D-10:** infrastructure (largest page, ~150-220 lines) gets a deployment-topology section per D-04..D-06, current workflow file names and the full workflow list (10 files), the distroless runtime image, a complete env table (adds `WORKER_ENABLED`, `BUCKET_SIZE`, `SENTRY_SERVER_NAME`, `FORCE_SEED`, the `*_FILE` convention; removes `POSTGRES_SSL`, `SKIP_MIGRATIONS` at `:433-434`), and the post-HOUSE-03 Sentry block (`:373-387`): no `productionBrowserSourceMaps`, no `silent`, the wrapper only when `SENTRY_AUTH_TOKEN` is set, maps deleted after upload. `.planning/codebase/CONCERNS.md:50-53` (#502) is updated in the same pass.
-- **D-11:** testing: fix all drift outside the test layout now. Replace the enumerated directory tree, mermaid directory list and naming table with a short rule statement that links to AGENTS.md § Test Layout, so Phase 3 changes one paragraph. Remove the "euraika/aegis" reference (`:22`), the "Audience: … AI assistants" line (`:11`) and the instruction aimed at AI assistants (`:114`). `:271` (Playwright 1.64.1) and `:280,296` (`.vitest-attachments/`) are already correct.
-- **D-12:** § Drift Inventory in `02-DISCUSSION-LOG.md` (re-checked 2026-10-23) is the executor's starting checklist. Each item is re-verified against code before editing. Criterion 2 closes on a final page-by-page check against the live code, recorded in the phase verification.
-- **D-23:** Every edited Mermaid diagram is rendered in a real browser (DevTools) before the PR. mermaid went 11 → 12 (commit f58e3052) with no re-render of the docs pages, and `data-flow/page.mdx:55` styles a subgraph that no longer exists. `next build` does not execute client-side mermaid, so the build proves nothing about rendering.
+- **D-08:** data-flow gets a short poller-lease subsection (~15 lines) and a note that `migrateOrWait` (migrations and seed under an advisory lock) runs before the worker starts (`src/instrumentation.node.js:18,22`). It loses the retired pieces: `?key=` auth, `initializeOpenApiSpec()`, module-level poller state. The on-demand season pipeline is NOT retired: `updateSeason` is still called by `getCampaignOrSeed`, `/api/h1/rebroadcast`, `backfillAndRetry` and `reseedSeason` — keep those sections. Stale lines today: `data-flow/page.mdx:4,55,90,102-103,117,153,190,200,441,460-462`.
+- **D-09:** database: drop `Review` and `App` (migration `20260416091157_drop_unused_tables`; `database/page.mdx:130,174,188,523,578`), add the lease columns to `worker_heartbeat` (`:194-201`), add `api_rate_limit`, state `TIMESTAMP(3)` (naive UTC), not `TIMESTAMPTZ` (19 cells), and fix the `dotenv/config` lines (`:41,51`) against `prisma.config.mjs:1-3`. `app_instance` and `seed_state` are already documented (`:203,212,613-638`): no work.
+- **D-10:** infrastructure (largest page). Already correct: migrate-on-start (`:114-122`), Node 26 (`:82-86`), the 900 s start period (`:98`), `MIGRATE_ROOT` (`:428`). To do: a deployment-topology section per D-04..D-06; the release path (tag → per-arch build legs + `merge-app` → `pin-production` → Arcane Git Sync); staging images carry `<version>-dev.<sha7>` (`APP_VERSION` build arg); all 11 workflow files with current names (old names at `:149,171,177,195`; softprops/RELEASE.md at `:193`; "direct merges" at `:153`); the runner image is `node:26-slim`, uid 65532, no tini (`Dockerfile.app:131-138`) — remove the distroless, uid 1001 and tini text (`:90-95`); remove `initializeOpenApiSpec` (`:211,244`); fix `:304`, `:373`, `:427`. Env table: re-check every row against `.example.env` (rewritten 2026-11-09, commits 1d475f75, 2a86e6c8); the 2026-10-23 list (add `WORKER_ENABLED`, `BUCKET_SIZE`, `SENTRY_SERVER_NAME`, `FORCE_SEED`, the `*_FILE` convention; remove `POSTGRES_SSL`, `SKIP_MIGRATIONS`) is the starting point. The Sentry block describes the post-HOUSE-03 state: no `productionBrowserSourceMaps`, the wrapper only when `SENTRY_AUTH_TOKEN` is set, maps deleted after upload. `.planning/codebase/CONCERNS.md:50-53` (#502) is updated in the same pass.
+- **D-11:** testing: replace the enumerated directory tree, the mermaid directory list and the naming table with one rule stated on the page: unit tests mirror the source tree under `src/__tests__/unit/`, enforced by `src/__tests__/unit/_meta/mirrorTree.test.mjs` (`AGENTS.md:65-66`). Phase 3 then changes one paragraph. Remove the "euraika/aegis" reference (`testing/page.mdx:22`), the "Audience: … AI assistants" line (`:11`) and the instruction aimed at AI assistants (`:107`). Other stale lines: `:27-32,73-88,137,282`. `:271` is correct.
+- **D-12:** § Drift Inventory in `02-DISCUSSION-LOG.md` is the executor's starting checklist. A 2026-11-14 sample found about 50 of about 58 items still stale; about 6 were fixed by #596, #599 and Node 26; line numbers have moved. Re-verify each item against the code before editing. Criterion 2 closes on a final page-by-page check against the live code, recorded in the phase verification.
+- **D-23:** Only `<MermaidDiagram>` renders (5 diagrams: architecture, docs overview, notifications ×3). Each edited one is rendered in a real browser (DevTools) before the PR. The ```` ```mermaid ```` fences on architecture, data-flow, infrastructure, database and testing render as raw `<pre>` text (`mdx-components.jsx:26-30`); check them with a `mermaid.parse` script (it does not exist yet — the plan adds it). mermaid is ^12.3.0. `next build` does not run client-side mermaid, so the build proves nothing about rendering.
 
 **HOUSE-03 sourcemap strip**
-- **D-13:** The #502 gate is met. Evidence: GlitchTip HELLDIVERSBOT-6C, event `69dc63bfe21b4745a561db74d2f99c35`, release `0.95.2`, environment `production`, a real Opera user; raw frame `29db8qr-sdvxo.js:2:2648` resolves to `src/features/notifications/NotificationToggle.jsx:118` with source context. Record this on #502 (the issue has 0 comments today).
-- **D-14:** The change has 2 parts: delete `productionBrowserSourceMaps: true` (`next.config.mjs:15`) and add `sourcemaps: { deleteSourcemapsAfterUpload: true }` to the `withSentryConfig` options (`next.config.mjs:213-222`, inside the ternary at `:212-223`). Verified against `@sentry/nextjs` 11.8.0 (the version on develop since f58e3052): a user-set `productionBrowserSourceMaps` still cancels the SDK's own map switch and delete default (`withSentryConfig/getFinalConfigObjectBundlerUtils.js:127-129`, default delete at `:135-146`); the option name is unchanged (`types/config/types.d.ts:391`) and covers the Turbopack build the project uses (`package.json` `build` has no `--webpack`; delete globs in `getBuildPluginOptions.js:128-139`, applied in `handleRunAfterProductionCompile.js:43-58`). Keep the explicit option even though it matches the v11 default: it fixes the intent in place. Without `SENTRY_AUTH_TOKEN` the wrapper is skipped entirely, so after the change token-less builds (docker-smoke, self-hosters) produce no browser maps at all. This change also resolves review finding IN-03 (`01-REVIEW.md:207-214`; its import half landed in f58e3052) — mark it in `01-REVIEW-DISPOSITION.md`.
-- **D-15:** Verification, all three recorded on #502 before it closes: (1) `.map` count and size in the image vs v0.95.2 (`docker create` + `docker export | tar -t` — the runtime is distroless, `Dockerfile.app:107`, no shell); (2) a production `.js.map` URL returns 404; (3) a symbolicated GlitchTip event from the phase-end release (D-21). Measure in a lane worktree after `npm ci`: the main checkout's `node_modules` still holds Sentry 10 and vitest 4.
-- **D-16:** Server maps in `.next/standalone` (~46 files, ~184 KB) stay. They are not served over HTTP (`Dockerfile.app:137`).
-- **D-24:** Sentry 11 symbolication on GlitchTip is proven on the first release (0.95.7, D-21) before the strip ships. The 0.95.2 proof used the old `sentry-cli` upload stack; f58e3052 replaced it with `@sentry/bundler-plugins` 11.8.0 + `sentry` 0.45.0 (debug-ID artifact bundles), which already reports "Successfully uploaded source maps" on the staging build (run 39574238756). Evidence = one 0.95.7 production event in GlitchTip whose frames resolve to source paths. If it does not symbolicate, HOUSE-03 blocks until the uploader is fixed; the public maps stay as the fallback meanwhile. The GlitchTip MCP connector needs re-authentication before this check.
+- **D-13:** The #502 gate is met. Evidence: GlitchTip HELLDIVERSBOT-6C, event `69dc63bfe21b4745a561db74d2f99c35`, release `0.95.2`, environment `production`; raw frame `29db8qr-sdvxo.js:2:2648` resolves to `src/features/notifications/NotificationToggle.jsx:118` with source context. Record this on #502 (0 comments today).
+- **D-14:** The change has 2 parts: delete `productionBrowserSourceMaps: true` (`next.config.mjs:17`) and add `sourcemaps: { deleteSourcemapsAfterUpload: true }` to the `withSentryConfig` options (ternary at `next.config.mjs:214-225`). Verified against `@sentry/nextjs` 11.10.0 (`package-lock.json:4800-4801`): a user-set `productionBrowserSourceMaps` still cancels the SDK's own map switch and delete default (`getFinalConfigObjectBundlerUtils.js:127-129`, default delete at `:135-146`); the option is at `types.d.ts:406` and covers the Turbopack build. Keep the explicit option even though it matches the default: it fixes the intent in place. Without `SENTRY_AUTH_TOKEN` the wrapper is skipped, so token-less builds (docker-smoke, self-hosters) ship no browser maps. Mark review finding IN-03 resolved in `.planning/milestones/M7-phases/01-stability-fixes-release/01-REVIEW-DISPOSITION.md:31`.
+- **D-15:** Verification, in this order, each recorded on #502 before it closes: (1) staging first — the stripped build reaches staging (release `<version>-dev.<sha7>`, `build-staging.yml:210-224`), and one GlitchTip event from it resolves to source paths; staging then serves no public maps, so this proves the uploaded maps alone; (2) `.map` count and size in the image vs the v0.97.2 image (same base, has `/app/migrate`; the runtime has a shell now); (3) after the phase-end release, a production `.js.map` URL returns 404; (4) one symbolicated production GlitchTip event from the phase-end release. If (1) fails, the strip does not enter the release: fix the uploader first. Measure in a lane worktree after `npm ci`.
+- **D-16:** Server maps in `.next/standalone` stay. They are not served over HTTP (`Dockerfile.app:167-169`).
+- **D-24:** Sentry 11 uploads succeed: both legs of v0.97.2 (run 41832856848) and v0.96.4 (`.planning/milestones/M7-phases/01.1-production-on-the-hetzner-swarm/01.1-RELEASE-RECORD.md:38-43`). No symbolicated Sentry 11 event is recorded yet. D-15 step (1) is the proof. A v0.97.2 production event is not a clean proof: production still serves public maps there. The GlitchTip connector needs re-authorization before any GlitchTip check.
 
-**HOUSE-04 and HOUSE-05**
-- **D-17:** #501 closes on the real run: run 35578125172 (2026-09-21) → PR #531 (only `prisma/seed/seasons/season-160.json`, bot commit `76865ef3`) → merged 2026-09-21 by merge commit `66093080`. The workflow runs Mondays (`scheduled-seed-refresh.yml:5`); the 4 runs since (09-28, 10-05, 10-12, 10-19) opened no PR, since season 161 is still active. The closing comment also records 2 gaps, both still in the current file (only setup-node changed since, fd0bd38c): (1) the PR is opened with `GH_TOKEN: ${{ github.token }}` (`:49`), so no workflow runs on it — #531 had 0 check runs and merged with no version bump; (2) a second run while the PR is open rebuilds the branch from develop (`:59`) with `push --force` (`:62`) and deletes any bump commit on it — exactly the commit the PR body (`:65`) and `prisma/seed/readme.md:49-51` tell the human to push. The gaps go into one new issue (milestone Engineering Health). The workflow does not change in this phase.
-- **D-18:** Before `docs/roadmap.md` is retired, #469 (open, "Archives map: hide factions until their introduction point", milestone Archive Analytics & Dashboard) gets a requirement, **ARCH-11** (ARCH-10 is already closed-season caching, Phase 12), mapped to Phase 11 (War Playback, ARCH-05, shares the archives map surface) in `REQUIREMENTS.md` (requirement line, traceability table, coverage footer 79 → 80) and `ROADMAP.md`. Today `docs/roadmap.md:168` and `PROJECT.md:43` are its only schedule entries.
-- **D-19:** `docs/roadmap.md` (576 lines, last change bb01517d) becomes a pointer of about 5 lines to `.planning/ROADMAP.md`. Update AGENTS.md:220 and `.planning/PROJECT.md:49,51,65,93`; `PROJECT.md:49` cites "`docs/roadmap.md` § Track F" for the four SSE questions — repoint it to SSE-01 / Phase 17, which already list them. Keep REQUIREMENTS.md:37, ROADMAP.md:96, CHANGELOG entries (`:566,1643,1651`) and the dated `.planning/research/*.md` files unchanged — the pointer keeps their links working.
-- **D-20:** The prep ladder, per-issue prediction unblock gates and feature-reach table are not migrated. The pointer links to the last full version of the file (commit permalink), so the content stays one click away.
+**HOUSE-04 and the issues (Andrei, 2026-11-14)**
+- **D-17:** #501 closes on PR #642 (run 42603725952, 2026-11-09, only `prisma/seed/seasons/season-161.json`), landed the current way: approve its runs (4 in `action_required` at a22b7efc) or push an `## Unreleased` note commit, wait for the required checks (`Test & Build`, `Visual Regression`, `Review Dependencies`), rebase-merge per D-27, then confirm that staging seeds season 161 on start. Do all of it in one sitting that does not cross Monday 03:00 UTC (`scheduled-seed-refresh.yml:5`): that run rebuilds the branch from `develop` (`:59`) and force-pushes (`:62`), which deletes any human commit. The closing comment on #501 cites #531 (run 35578125172 → merge `66093080`, 2026-09-21) as the first real run and #642 as the second. One new issue (milestone Engineering Health) records 2 gaps: (1) a PR opened with `GH_TOKEN: ${{ github.token }}` (`:49`) gets runs that wait in `action_required` (on #531 they ended as 0-job failures); (2) the force-push deletes the note commit that the PR body (`:65`) and `prisma/seed/readme.md:49-51` tell the human to push. The workflow file does not change in this phase.
+- **D-18:** Done: #469 is ARCH-11 in Phase 11 (`REQUIREMENTS.md:87,218`).
+- **D-19:** Done (superseded 2026-11-02): `docs/roadmap.md` is deleted, not a pointer. See `02-03-SUMMARY.md`.
+- **D-20:** Done (superseded 2026-11-02): its live items are in `ROADMAP.md` § Carried over.
 
-**Release**
-- **D-21:** Two production releases (Andrei, 2026-10-23). (1) At the start of Phase 2: release develop as it stands (0.95.7: the Dependabot round incl. Sentry 11; `## Unreleased` is empty) — the develop/main gap is already at the STAB-07 limit of ~5 versions, and this release is the D-24 symbolication proof. (2) At phase end: HOUSE-03 and the docs, with D-15 check 3 on it. Each release follows AGENTS.md § Git Workflow rule 3 (develop → main PR, `vX.Y.Z` tag, merge-back). The Phase 1 STAB-06 gate is satisfied (window closed 2026-10-16, re-count done 2026-10-21).
-- **D-22:** Each PR into develop carries its version bump and CHANGELOG move as its last commit (AGENTS.md rule 2). `Check: Version Bump` enforces this only for `src/**`, `prisma/**`, `public/**` and `package.json` (`.github/workflows/check-version.yml:10`); PRs that touch only `next.config.mjs`, AGENTS.md, `.example.env`, `docs/roadmap.md` or `.planning/**` get no CI reminder and must bump by hand. `.planning/`-only PRs (this context, plan docs) carry no bump.
+**Release (Andrei, 2026-11-14)**
+- **D-21:** Two production releases. (1) At the start of Phase 2: release `develop` as it stands (0.97.3, 0.97.4, 0.98.0 and `## Unreleased`), so migrate-on-start (#599, `src/update/migrateOnStart.mjs`, not in v0.97.2) reaches production alone, with its own rollback point. (2) At phase end: the HOUSE-03 strip and the docs, carrying D-15 steps (3) and (4). Each release: the version cut as its own PR into `develop` (the `"version"` bump plus the move of `## Unreleased` into `## X.Y.Z`), then the release PR `develop` → `main` (merge commit; no `--delete-branch`), then the `vX.Y.Z` tag. `pin-production` deploys it; there is no manual pull and no merge-back (#621). A release is live once `deploy/production` pins the new tag and production reports the new version.
+- **D-22:** Work PRs into `develop` raise no version and add their notes under `## Unreleased` (`AGENTS.md:50-56`). `Check: Version Bump` runs only on PRs into `main` (`.github/workflows/check-version.yml:3-10`). `.planning/`-only PRs carry no note.
 
 **Review findings outside the requirements (Andrei, 2026-10-23)**
-- **D-25:** WR-07 (`01-REVIEW.md:137-146`: the rewrites at `next.config.mjs:67-74` proxy `/api/record` and `/api/websites/:id/recorder` to the fixed Umami host on every deployment) is filed as a GitHub issue and deferred. It is not a ride-along: the suggested build-time env gate would strip the rewrites from production images, since `UMAMI_*` exist only at runtime (`:65-66`) and `Dockerfile.app` has no UMAMI build arg. The safe fix is a route handler like `/stats.js`. Natural home: Phase 5 (SEO-09 owns the Umami proxy wiring).
-- **D-26:** WR-08 (`01-REVIEW.md:148-157`: the catch-all `public, s-maxage=30` rule at `next.config.mjs:193-199` caches HTML whose root layout renders `MinistryTriggerWidget` from the session, `src/app/layout.jsx:84-91,237`) is filed as a GitHub issue (milestone Engineering Health) and deferred. Impact is an easter-egg trigger with no privileged action behind it.
+- **D-25:** WR-07 (the rewrites at `next.config.mjs:69-76` proxy `/api/record` and `/api/websites/:id/recorder` to the fixed Umami host on every deployment) is filed as a GitHub issue and deferred; not filed yet. Link #631 (it touches the same lines, for cookies). The suggested build-time env gate would strip the rewrites from production images, since `UMAMI_*` exist only at runtime; the safe fix is a route handler like `/stats.js`. Natural home: Phase 5 (SEO-09).
+- **D-26:** WR-08 (the catch-all `public, s-maxage=30` rule at `next.config.mjs:195-199` caches HTML whose root layout renders `MinistryTriggerWidget` from the session, `src/app/layout.jsx:97,247`) is filed as a GitHub issue (milestone Engineering Health) and deferred; not filed yet. Link #629 (its HTML `no-cache` change would close it). Impact is an easter-egg trigger with no privileged action.
+
+**Plans**
+- **D-29:** Plan disposition against this refresh: drop 02-01 (release 0.95.7 — v0.95.8, v0.96.4 and v0.97.2 already shipped Sentry 11; D-21 (1) replaces it); 02-03 is done; keep 02-05, 02-06 and 02-10 with edits (D-22 notes instead of bumps; refreshed line refs; 02-06 adds `migrateOrWait`; 02-10 uses Sentry 11.10.0 and the v0.97.2 baseline); re-plan 02-02, 02-04, 02-07, 02-08, 02-09, 02-11 and 02-12. No plan contains a manual production pull, a merge-back or `--delete-branch` from a lane. `02-PATTERNS.md` is deleted so that plan-phase makes it again.
 
 ### Claude's Discretion
 - Exact wording and structure of each rewritten docs section, within D-03..D-11.
-- How the work is split into plans and PRs.
-- Semver level of each bump (patch fits docs and config).
+- How the work is split into plans and PRs, and the version number each cut takes.
 - Wording of the new issues (D-17 seed-refresh gaps, D-25 WR-07, D-26 WR-08).
-- Whether AGENTS.md:222/224 "Phase N" milestone wording is touched (out of scope unless trivial).
 
 ### Deferred Ideas (OUT OF SCOPE)
-- **Production move to the Pi swarm** (≥2 app replicas, one shared DB) — Andrei's stated plan. No requirement covers it; Phase 16 covers staging only. It needs a GitHub issue first (PROJECT.md § Out of Scope: new work gets an issue first).
-- **Seed-refresh workflow gaps** (no CI on the bot PR; force-push deletes a bump commit) — new issue per D-17, later phase.
-- **WR-07 Umami rewrite open proxy** — issue per D-25; route-handler fix in Phase 5.
-- **WR-08 session-dependent HTML in shared cache** — issue per D-26; ~6-line cookie exclusion on the catch-all header rule, verified in a production build.
+- **Seed-refresh workflow gaps** (`action_required` runs on the bot PR; force-push deletes a human commit) — new issue per D-17, later phase.
+- **`deploy/README.md` stale lines** — #624 (D-28).
+- **WR-07 Umami rewrite open proxy** — issue per D-25; route-handler fix in Phase 5; see #631.
+- **WR-08 session-dependent HTML in shared cache** — issue per D-26; see #629.
 - **Docs drift outside the DOCS-02 list** (api, utilities, frontend-layout, …) — DOCS-03, Phase 18.
 - **Lighthouse `valid-source-maps` audit** in `scheduled-pagespeed.yml` may change after D-14 — minor; check on the next PageSpeed run.
-- **AGENTS.md:222/224 "Phase N" milestone wording** collides with GSD phase numbers — adjacent to D-03, touch only if trivial.
 </user_constraints>
 
 <phase_requirements>
@@ -72,261 +73,214 @@
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| DOCS-01 | CLAUDE.md (= AGENTS.md) § Architecture describes the lease/`worker_heartbeat` model, `WORKER_ENABLED`, multi-replica web tier; no module-level `lastSeasonObserved` | § Drift Verification A (AGENTS.md + stale comments, all quoted lines confirmed); lease facts in § Code Examples 1 |
-| DOCS-02 | 5 public `/docs` pages match the code, verified page-by-page | § Drift Verification B-F; § Mermaid findings (only 5 pages render diagrams; on-demand correction); § Validation (stale-string sweep) |
-| HOUSE-03 | Sourcemaps uploaded at build, stripped from the image after symbolication is proven | § HOUSE-03 (Sentry 11.8.0 file/line evidence, measurement procedure, baseline tag `v0.95.2`, 404 probe, release sequencing) |
-| HOUSE-04 | Seed-refresh PR path verified end-to-end, run recorded on #501 | § HOUSE-04 (workflow line numbers, run/PR facts, what #501's checklist did and did not get) |
-| HOUSE-05 | `docs/roadmap.md` retired to a pointer at `.planning/ROADMAP.md` | § HOUSE-05 (full reference classification, ARCH-11 row positions, permalink) |
+| DOCS-01 | AGENTS.md § Architecture invariants describes the lease/`worker_heartbeat` model, `WORKER_ENABLED`, multi-replica web tier; poller state in the lease row | § DOCS-01 facts (every stale line re-read at 0.98.0; lease constants quoted) |
+| DOCS-02 | 5 public `/docs` pages match the code, page-by-page | § DOCS-02 facts (per-page line refs, sweep baselines, mermaid parse baseline) |
+| HOUSE-03 | Sourcemaps uploaded at build time, stripped from the image once symbolication is proven | § Research topic 2, § HOUSE-03 facts (v0.97.2 baseline measured, Sentry 11.10.0 code path, staging event-source gap) |
+| HOUSE-04 | Seed-refresh PR path verified end-to-end, run recorded on #501 | § Research topic 1, § HOUSE-04 facts (ruleset, PR #642 state, ordering vs release 1) |
+| HOUSE-05 | `docs/roadmap.md` deleted, live items in `.planning/` | Done 2026-11-02 (`02-03-SUMMARY.md`). `docs/roadmap.md` is absent: `ls docs/roadmap.md` → "No such file or directory" [VERIFIED: Bash this session]. Record as done. Not researched further. |
 </phase_requirements>
 
 ## Summary
 
-All line numbers in CONTEXT.md D-02, D-03, D-14, D-17, D-19 and the Drift Inventory were re-checked against the lane checkout and **hold** (see tables). Three CONTEXT/Drift claims need correction before planning, and four facts are new and change the plan:
+Most of CONTEXT.md holds at develop 0.98.0. I re-read the line refs of D-02, D-03, D-09, D-11, D-14 and D-17, and most of those in D-08 and D-10, against the worktree. They are exact, except where noted in § DOCS-02 facts (a few infrastructure and fence line numbers drifted; the `schema.prisma` lines are new). The executor still re-verifies each item (D-12). The two open research topics have answers, and the research found five facts that change the plan.
 
-1. **Mermaid fences in MDX are not rendered.** Only the `<MermaidDiagram>` component renders diagrams. Every ```` ```mermaid ```` fence in `data-flow`, `infrastructure`, `database` and `testing` is shown as raw source text in a `<pre>` (`mdx-components.jsx:26-30`, `next.config.mjs:205-209` has `remark-gfm` only). D-23 ("render every edited diagram in a browser") therefore applies to exactly 5 pages: `/docs/architecture`, `/docs`, `/docs/notifications` (3 diagrams). For the fences, the useful check is a `mermaid.parse` pass under mermaid 12.2.0 (script in § Code Examples 4). That pass found one real failure: `database/page.mdx:170` `String userId PK-FK` does not parse (should be `PK, FK`).
-2. **"On-demand" season fetching is NOT retired.** `updateSeason` still has on-demand callers: `/archives` and `/api/h1/campaign` via `getCampaignOrSeed`, `/api/h1/rebroadcast` (`route.js:126`), the four `/api/v1/h1/*` routes via `backfillAndRetry`, and the admin refresh via `reseedSeason`. D-08's "loses the on-demand season pipeline" and Drift line `:90` must be read as "also runs every poll and in the closing pass", not "on-demand is gone". `data-flow/page.mdx:439-458` ("On-demand invocation", "Frontend on-demand fetching") stays true in substance; `:441` ("not called on a schedule") is the false sentence.
-3. **`ARCHITECTURE.md:125` keeps its behaviour.** `route.js:78-79` still returns 403 when `!isWorkerEnabled()`. Only the stated reason (stale in-process state) is wrong. Do not delete the 403.
-4. **A `next.config.mjs` change is only provable on a build that has `SENTRY_AUTH_TOKEN`.** A local `npm run build` skips `withSentryConfig`, so it proves nothing about the strip. The `Build: Staging` workflow builds with the real token; measure the staging image `ghcr.io/elfensky/helldiversbot:sha-<commit>` for D-15 check 1 before cutting the phase-end release.
+**Five facts that change the plan**
+1. **D-15 step (1) has no event source today.** Staging sets no `SENTRY_DSN`. The browser SDK sends through the tunnel `/api/glitchtip`, and that route answers 503 when `SENTRY_DSN` is unset. A browser error on staging therefore never reaches GlitchTip. The plan needs a decision (§ Research topic 2, "Event source for D-15 (1)").
+2. **A failed sourcemap upload does not fail the build, and the maps are still deleted.** Sentry 11.10.0 logs the upload error and continues; `deleteArtifacts()` runs next. The log line `Successfully uploaded source maps to Sentry` is the only per-leg gate. GlitchTip also answers the assemble call before it assembles, so even that line does not prove the bundle was stored.
+3. **PR #642 cannot merge as it stands.** The `develop` ruleset (created 2026-09-25, after #531) requires `Test & Build`, `Visual Regression` and `Review Dependencies`; none ran. `mergeStateStatus` is `BLOCKED`, and `current_user_can_bypass` is `never`. The approval gate is documented GitHub behaviour for PRs that a `GITHUB_TOKEN` workflow creates or updates.
+4. **Sequence #642 after release 1.** The seed hash covers `prisma/seed/seasons/*`, so merging #642 before the release-1 cut puts season 161 into release 1 and also risks a `CHANGELOG.md` conflict with the cut. Merge #642 after release 1 is tagged.
+5. **Measured v0.97.2 baseline (amd64):** 142 `.map` files and 31,057,870 bytes in `.next/static`; 135 `.js` files and 7,264,852 bytes; 48 server `.map` files of 6,672 bytes in total. `docker image inspect .Size` returns 0 under this daemon's containerd store, so measure by export.
 
-Also confirmed: the 0.95.2 symbolication proof was already an **artifact-bundle** upload (`01-RELEASE-RECORD.md:370` "Upload type: artifact bundle"), so GlitchTip accepting Sentry-11 debug-ID bundles is plausible but still unproven for 0.95.7 (D-24 stands). Extra drift not in the inventory: `architecture/dataFlowConfig.mjs` and `dataFlowDefinition.mjs` carry nine "~15s" strings and a wrong `snapshot` flow (lists `h1_statistic` and `h1_event_progress`, which `updateSeason` does not write).
-
-**Primary recommendation:** Run the work as: release 0.95.7 → wait for a 0.95.7 production event and prove symbolication → one code/docs PR group (DOCS-01, DOCS-02, HOUSE-03 + infrastructure Sentry block together, HOUSE-05, ARCH-11) → measure the staging image → phase-end release → record #502 checks 2 and 3, close #501/#502.
+**Primary recommendation:** Run in this order: release 1 (D-21 (1)) → DOCS-01/02 PRs and the HOUSE-03 PR into `develop` → #642 landed and #501 closed → staging proof of the strip (with an agreed event source) → release 2 → production checks (3) and (4) → close #502.
 
 ## Architectural Responsibility Map
 
-This phase changes documents, one build config and CI evidence, not runtime tiers. The map assigns each capability to the place that owns its truth.
+This phase changes documents, one build option and CI/ops evidence. The map names where each truth lives.
 
 | Capability | Primary Tier | Secondary Tier | Rationale |
 |------------|-------------|----------------|-----------|
-| Lease/poller description (DOCS-01/02) | Source code (`src/update/lease.mjs`, `route.js`, `initializeWorker.mjs`) | `deploy/` compose files | D-01: live code + `deploy/` is ground truth; docs and maps follow |
-| Rendered diagrams | Browser (client-only `import('mermaid')`) | Next server (MDX compile) | `useMermaidRender.mjs:27` loads mermaid in an effect; SSR returns empty string; `next build` only compiles MDX |
-| Sourcemap generation and delete | Build (`next build` + Sentry `runAfterProductionCompile` hook, Turbopack) | Docker build stage | Maps are made, uploaded and deleted inside the `RUN npm run build` layer (`Dockerfile.app:89-96`); the runner stage copies what is left |
-| Symbolication | GlitchTip (server) | Browser SDK (sends minified frames + debug IDs) | Resolution happens on GlitchTip from the uploaded artifact bundle |
-| Seed refresh PR | GitHub Actions (`scheduled-seed-refresh.yml`) | `prisma/seed/fetch-seasons.mjs` | Workflow creates branch + PR with `github.token` |
-| Execution-order source of truth | `.planning/ROADMAP.md` | GitHub issues (what) | HOUSE-05, PROJECT.md decision row 93 |
-| Version bump enforcement | CI (`check-version.yml`) | Human (AGENTS.md rule 2) | Path-filtered; root files escape it (D-22) |
+| Lease / poller description (DOCS-01, DOCS-02) | Source code (`src/update/lease.mjs`, `route.js`, `initializeWorker.mjs`) | `deploy/*/compose.yaml` | D-01: code and compose files are ground truth; docs and maps follow |
+| Rendered diagrams | Browser (client-only mermaid import) | Next server (MDX compile) | `next build` compiles MDX only; mermaid runs in the browser |
+| Sourcemap generate, upload, delete | Build (`next build` + Sentry `runAfterProductionCompile` hook) | Docker builder stage | All three happen inside `RUN npm run build` (`Dockerfile.app:93-101`) |
+| Symbolication | GlitchTip server (6.2.6) | Browser SDK (sends `debug_meta`) | GlitchTip resolves frames by debug ID from uploaded bundles |
+| Seed-refresh PR | GitHub Actions (`scheduled-seed-refresh.yml`) | `develop` ruleset | The ruleset decides whether the bot PR can merge |
+| Release / deploy | GitHub Actions (`build-release.yml` → `pin-production`) | Arcane Git Sync | Tag triggers build; pin commit triggers deploy; no manual pull |
 
 ## Standard Stack
 
-No new packages are installed in this phase. The relevant installed versions were read from the lane:
+No package is added in this phase. Installed versions (read from `package-lock.json` and `package.json` this session):
 
-| Library | Version (lane) | Purpose | Source |
-|---------|---------------|---------|--------|
-| `@sentry/nextjs` | 11.8.0 | `withSentryConfig`, build-time upload and delete | `[VERIFIED: node_modules/@sentry/nextjs/package.json]` `"version": "11.8.0"` |
-| `mermaid` | 12.2.0 | Client-side diagram render | `[VERIFIED: node_modules/mermaid/package.json:3]` `"version": "12.2.0"` |
-| `next` | 16.4.2 (`^16.4.2` in `package.json:39`) | Build, Turbopack default | `[VERIFIED: node_modules/next/package.json]` |
-| `@next/mdx` | `^16.4.2` | MDX docs pages, `remark-gfm` only | `[VERIFIED: package.json:29, next.config.mjs:205-209]` |
-| `jsdom` | `^30.1.3` (devDependency) | DOM for the offline `mermaid.parse` check | `[VERIFIED: package.json:75]` |
-| `vitest` | `^5.0.5` | `npm run test:unit` | `[VERIFIED: package.json:82]` |
+| Library | Version | Purpose | Source |
+|---------|---------|---------|--------|
+| `@sentry/nextjs` | 11.10.0 | `withSentryConfig`, post-compile upload and delete | [VERIFIED: package-lock.json:4800-4801] `"node_modules/@sentry/nextjs": {` / `"version": "11.10.0",` |
+| `@sentry/bundler-plugins` | 11.10.0 (dependency of `@sentry/nextjs`) | Upload, release, delete logic | [VERIFIED: /tmp/sentry-src/package/package.json:88] `"@sentry/bundler-plugins": "11.10.0",` |
+| `sentry` (CLI) | ^0.45.0 (dependency of `@sentry/bundler-plugins`) | Performs the upload | [VERIFIED: bundler-plugins package.json:123] `"sentry": "^0.45.0",` |
+| `mermaid` | 12.3.0 | Client-side diagram render; parse check | [VERIFIED: package-lock.json] `"version": "12.3.0",` |
+| `jsdom` | 30.1.3 (devDependency) | DOM for the offline `mermaid.parse` script | [VERIFIED: package.json:75] `"jsdom": "^30.1.3",` |
+| `vitest` | 5.1.0 | `npm run test:unit` | [VERIFIED: package-lock.json] `"version": "5.1.0",` |
+| `next` / `@next/mdx` | 16.4.5 | Build, MDX pages | [VERIFIED: package-lock.json] `"version": "16.4.5",` |
 
-**Installation:** none. **Executor prerequisite** (lane has no Prisma client yet, so `typecheck`, `test:unit` and `build` fail until it exists). CI does it without any env file, so the executor can too `[VERIFIED: .github/actions/verify/action.yml]`:
-
-```bash
-cd /Users/andrei/Developer/helldivers.bot/.worktrees/docs-phase-02-plan
-POSTGRES_URL='postgresql://ci:ci@localhost:5432/ci' npx prisma generate
-# build needs the three stub vars (action.yml Build step):
-POSTGRES_URL='postgresql://ci:ci@localhost:5432/ci' UPDATE_KEY='ci-stub-key' UPDATE_INTERVAL='20' npm run build
-```
-
-Node: my shell reported `v26.8.1`, while `mise.toml` pins `node = "24"` and `.node-version` is `24`. The executor must confirm `node --version` prints 24 before running the verify chain (same trap as MEMORY: untrusted mise falls back to Homebrew).
+**Installation:** none. **Executor prerequisite** in a lane: `npm ci`, then `POSTGRES_URL='postgresql://ci:ci@localhost:5432/ci' npx prisma generate` (the client output is gitignored; `AGENTS.md` Stack row). This worktree has no `node_modules` (0 entries), so the Sentry sources below were read from `npm pack @sentry/nextjs@11.10.0` and `npm pack @sentry/bundler-plugins@11.10.0` in a scratch folder; the version equals the lockfile version.
 
 ## Package Legitimacy Audit
 
-No external package is installed or added in this phase (`package.json` is touched only by the version bump). The `package-legitimacy` gate is not applicable.
+No package is installed or added. The new `mermaid.parse` script uses only `mermaid` and `jsdom`, which are already in `package.json`. The legitimacy gate does not apply.
 
 **Packages removed due to [SLOP] verdict:** none
 **Packages flagged as suspicious [SUS]:** none
 
 ## Architecture Patterns
 
-### Work-flow diagram (phase data/evidence flow)
+### Phase flow
 
 ```
-develop @0.95.7 ──release PR──▶ main ──tag v0.95.7──▶ Build: Release (verify, app+migrate images, GitHub Release)
-                                                         │  (build log must show "Successfully uploaded source maps to Sentry")
-                                                         ▼
-                                  Andrei pulls image on production host by hand  (no deploy step in build-release.yml)
-                                                         ▼
-                      GlitchTip: event release:0.95.7 environment:production, frames resolve to src/...  ── D-24 gate
-                                                         │ pass
-                                                         ▼
- lane PR(s) ──▶ develop ──Check: CI ▶ Build: Staging (real SENTRY_AUTH_TOKEN) ──▶ ghcr ...:sha-<commit>
-   DOCS-01 / DOCS-02 / HOUSE-03 / HOUSE-05 / ARCH-11                                  │
-                                                                                      ▼
-                                              D-15 check 1: docker create + export on the staging image (.map count)
-                                                         │
-                                  release PR ─▶ main ─▶ tag v0.95.N ─▶ production pull ─▶ D-15 check 2 (404) + check 3 (symbolicated event)
-                                                                                      ▼
-                                                    close #502 (3 checks), comment+close #501, file 3 issues
+develop 0.98.0
+  │  release 1: cut PR (version + CHANGELOG) → release PR develop→main (merge commit) → tag vX.Y.Z
+  ▼
+Build: Release ─ verify ─ build-app (amd64 | arm64) ─ merge-app ─ pin-production ─▶ deploy/production ─ Arcane ─▶ production (migrate-on-start #599 live)
+  │
+  ▼  work PRs into develop (rebase-merge, notes under ## Unreleased, no version)
+  ├─ DOCS-01  AGENTS.md + 4 comments + maps          ├─ DOCS-02  5 pages + 2 lease-line pages
+  ├─ HOUSE-03 next.config.mjs + infra Sentry block   └─ #642 seed PR (after release 1 tag) ─▶ staging seeds season 161
+  ▼
+Check: CI ─▶ Build: Staging (token build, 2 legs) ─▶ staging image sha-<commit>
+  ▼  D-15 (1): event from staging build resolves   D-15 (2): .map count/size vs v0.97.2
+release 2 ─▶ production ─▶ D-15 (3): .js.map → 404   D-15 (4): symbolicated production event ─▶ close #502
 ```
 
-### Recommended PR slicing (Claude's discretion; this is the research recommendation)
+### Recommended PR slicing (Claude's discretion, research recommendation)
 
-Parallel PRs each carry their own bump and would conflict on `package.json` and `CHANGELOG.md`. Use **two lane PRs, merged one after the other**, then one release:
-
-| PR | Contents | Version-Bump CI trigger? |
-|----|----------|--------------------------|
-| A | `next.config.mjs` (HOUSE-03), `infrastructure/page.mdx` Sentry block + rest of infrastructure, CONCERNS.md:50-53, `01-REVIEW-DISPOSITION.md` IN-03/WR-07/WR-08 rows | yes (`src/**`); bump is mandatory anyway because `next.config.mjs` alone would escape the check |
-| B | AGENTS.md (DOCS-01), stale comments (`route.js`, `initializeWorker.mjs`, `.example.env`, `cron.js`), other 4 docs pages + 2 lease-line pages, codebase maps + PROJECT.md:72, `docs/roadmap.md` pointer, ARCH-11 rows | yes (`src/**`, `public/**`) |
-
-Hold PR A until the 0.95.7 symbolication proof (D-24). PR B does not depend on it and can merge first. Whichever merges second rebases onto the first's bump and takes the next patch number. Because the bump commit edits `package.json`, every such PR triggers `Check: Version Bump` anyway (and passes); the "no CI reminder" in D-22 only matters if the author forgets the bump.
+| PR | Contents | Notes |
+|----|----------|-------|
+| R1-cut, R1-release | Version cut, release PR, tag (D-21 (1)) | First. Isolates #599. |
+| A (DOCS-01) | `AGENTS.md:44` and `:79-83`, 4 comments, 5 map lines, CONCERNS.md `:35-39` and `:50-53` | Comment-only code edits; keep the 403 at `route.js:79-80` |
+| B (rendered pages) | architecture, `docs/page.mdx`, `overviewConfig.mjs`, notifications lease lines | Browser render check (D-23) |
+| C (text pages) | data-flow, database, testing, infrastructure, `scripts/check-mermaid-fences.mjs` | Parse script is the Wave 0 item |
+| D (HOUSE-03) | `next.config.mjs`, infrastructure Sentry block, IN-03 row | Must reach staging before release 2 |
+| E (#642) | Existing bot PR | After release 1 tag; one sitting |
 
 ### Anti-Patterns to Avoid
-- **Hand-editing `.claude/CLAUDE.md`.** Generated, gitignored (`.gitignore:58` is `.claude`). The lane has no `.claude/` directory at all. Regeneration targets the **main checkout** and can only run after the PR merges and `git pull --ff-only` there (the maps are tracked in git). Treat it as a post-merge step; the command family is `generate-claude-md` in `gsd-tools.cjs` `[CITED: ~/.claude/gsd-core/bin/gsd-tools.cjs:5097]`; exact flags `[ASSUMED]`.
-- **Deleting the 403 in `route.js` while fixing its comment.** Only the comment at `route.js:75-77` is stale.
-- **Copying private infra detail into public pages.** `deploy/README.md:22` names a private IP and DB host, and the swarm secrets. Reuse the lease wording from `deploy/README.md:27-32` and `compose.yaml:58-66`, but do not copy host names, IPs, tunnel or secret names into `/docs/infrastructure`.
-- **Renaming a node ID in a Mermaid definition without updating its config.** `MermaidDiagram.jsx:13-20` extracts IDs with `/flowchart-(.+)-\d+$/`; `flows` and `details` in the config key on those IDs. A renamed node silently loses its detail panel and flow highlight.
+- **Hand-editing `.claude/CLAUDE.md`.** Generated and gitignored (`.gitignore:58` is `.claude`). Regenerate in the main checkout after the maps merge: `gsd_run query generate-claude-md --output <file>` [CITED: ~/.claude/gsd-core/workflows/new-project.md:1107]. How it treats an existing file is [ASSUMED] (A7).
+- **Deleting the 403 in `route.js` while fixing its comment.** Only the comment at `route.js:76-78` is stale; the guard at `:79-80` stays.
+- **Copying private topology into public pages.** `deploy/README.md:30` names LAN details; `deploy/staging/compose.yaml:83-84` names a host and port. Describe roles and replica counts only (D-06).
+- **Renaming a Mermaid node ID without updating `flows` and `details`** in the matching config `.mjs`. A renamed node silently loses its panel and highlight.
+- **Copying facts from `deploy/README.md`** without checking sources (1)-(3) (D-28).
 
 ## Don't Hand-Roll
 
 | Problem | Don't Build | Use Instead | Why |
 |---------|-------------|-------------|-----|
-| Sourcemap delete after upload | A `postbuild` script or a Dockerfile `find -delete` | `sourcemaps.deleteSourcemapsAfterUpload: true` | The SDK deletes only after its own upload, strips `//# sourceMappingURL=` comments afterwards (`handleRunAfterProductionCompile.js:56-58`), and warns about uncovered maps. A Dockerfile delete runs even when upload failed |
-| Seed-refresh PR checks | Changing the workflow now | New issue only | D-17: workflow does not change in this phase |
-| Mermaid syntax check | Eyeballing | `mermaid.parse` under jsdom (script below) | Same engine and version as the browser |
-| Registry size/count measurement | `docker run ... find` | `docker create` + `docker export` | Distroless has no shell; `docker run` cannot exec `find` |
+| Delete maps after upload | A `postbuild` script or a Dockerfile `find -delete` | `sourcemaps.deleteSourcemapsAfterUpload: true` | The SDK also strips `//# sourceMappingURL=` comments afterwards (`handleRunAfterProductionCompile.js:57`). A Dockerfile delete would run even when the build had no upload. |
+| Mermaid syntax check | Eyeballing fences | `mermaid.parse` under jsdom (script below, tested on 12.3.0) | Same engine as the browser |
+| Image size and `.map` count | `docker run … find` or `docker image inspect .Size` | `docker create` + `docker export` + `tar` | `.Size` is 0 here; export is exact |
+| Seed-refresh CI on the bot PR | Editing the workflow in this phase | A new issue (D-17) | The workflow file does not change in this phase |
+| Approval of the bot PR runs | A custom workflow or token swap | UI "Approve workflows to run" or a human push | A token swap is the later fix and belongs in the new issue |
 
-## Runtime State Inventory
+## Research topic 1: `action_required` on a `github.token` PR, and the ruleset (D-17)
 
-Not a rename/refactor phase. The only rename-like change is the doc pointer for `docs/roadmap.md`.
+### Why the runs wait
 
-| Category | Items Found | Action Required |
-|----------|-------------|------------------|
-| Stored data | None — no data keyed on any renamed string | none |
-| Live service config | GitHub issue bodies cite `.github/workflows/seed-refresh.yml` (#501 body) — old name, file is now `scheduled-seed-refresh.yml` | Closing comment on #501 uses the current name |
-| OS-registered state | Production host runs `docker-compose.yml` with image tag `:staging` (`docker-compose.yml:5,16`); the HOUSE-03 change reaches it only when Andrei pulls a new image | none in repo; human pull step after each release |
-| Secrets/env vars | `SENTRY_AUTH_TOKEN`, `SENTRY_URL`, `SENTRY_ORG`, `SENTRY_PROJECT` (names unchanged; passed as BuildKit secrets, `Dockerfile.app:89-93`) | none |
-| Build artifacts | `.claude/CLAUDE.md` in the main checkout is generated from the maps and stale | Regenerate after the maps merge (post-merge step) |
+| Claim | Evidence | Tag |
+|-------|----------|-----|
+| GitHub holds `pull_request` runs for approval when a workflow using `GITHUB_TOKEN` creates or updates the PR | Docs: "when a workflow using `GITHUB_TOKEN` creates or updates a pull request" leads to approval-required runs; affected types are `opened`, `synchronize`, `reopened`; "a user with write access to the repository can start the runs by selecting **Approve workflows to run**"; the recommended fix is "a GitHub App installation access token or a personal access token instead of `GITHUB_TOKEN`" | [CITED: docs.github.com/en/actions/concepts/security/github_token · archived 2026-11-14 https://linkding.lav.ren/bookmarks?details=2239] |
+| It is a recent rollout | A community thread reports it started about 2026-06-17 for same-repo bot PRs; no GitHub staff reply in the thread | [CITED: github.com/orgs/community/discussions/199292 · archived 2026-11-14 https://linkding.lav.ren/bookmarks?details=6370] (user report, not official) |
+| This repo shows it | Four runs of PR #642 at head `a22b7efc` have `event: pull_request`, `status: completed`, `conclusion: action_required`, `actor: github-actions[bot]`, 0 jobs | [VERIFIED: gh api repos/elfensky/helldivers.bot/actions/runs?head_sha=a22b7efc…] ids 42603804822 (`Check: CI`), 42603804939 (`Check: Dependencies`), 42603804837 (`Check: Migrate Image (arm64)`), 42603804918 (`Check: Version Bump`) |
+| The workflow uses the default token | `scheduled-seed-refresh.yml:49` `GH_TOKEN: ${{ github.token }}` | [VERIFIED: file read this session] |
+| The repo approval setting is not the cause | `GET …/actions/permissions/fork-pr-contributor-approval` → `{"approval_policy":"first_time_contributors"}`. That setting covers fork PRs. I found no documented setting that turns the `GITHUB_TOKEN` gate off. This is an absence. | [ASSUMED] (A10) |
+| Unapproved runs turn into `failure` when the PR merges | #531 runs ended `failure` with 0 jobs; run 35578183114 has `updated_at` `2026-09-21T22:10:18Z`, one second after #531 `mergedAt` `2026-09-21T22:10:17Z`. That they were `action_required` before is inferred. | [ASSUMED] (A11) |
 
-## Drift Verification (lane checkout, 2026-10-23)
+CodeQL default setup is not affected: PR #642 has three CodeQL check runs with `event: dynamic` (run 42603799030, `PR #642`) that finished `SUCCESS`. They are not required checks.
 
-Legend: **holds** = the quoted line still says the stale thing at the quoted number. **Moved** and **New** are flagged explicitly. No quoted number had moved.
+### Does approval satisfy the `develop` ruleset?
 
-### A. AGENTS.md and code comments (DOCS-01)
+Ruleset state, read this session [VERIFIED: gh api repos/elfensky/helldivers.bot/rulesets/24004681]:
+- `"enforcement":"active"`, `"bypass_actors":[]`, `"created_at":"2026-09-25T17:03:19.679+02:00"`, `"current_user_can_bypass":"never"`.
+- `"required_status_checks"` with `"context":"Test & Build"`, `"context":"Visual Regression"`, `"context":"Review Dependencies"`, each `"integration_id":15368`; `"strict_required_status_checks_policy":false`.
+- `"pull_request"` rule: `"allowed_merge_methods":["rebase"]`, `"required_approving_review_count":0`.
+- Legacy branch protection on `develop` is empty (`required_signatures` false, no status checks).
 
-| Item | Result | Evidence |
-|------|--------|----------|
-| AGENTS.md § Stack 184-206, Frontend Layout 210-212, Task Tracking 220 | holds | `AGENTS.md:184` is `## Architecture — Stack`; `:186-206` are the bullets; `:210-212` are Mobile-first/Key components/Dashboard hero; `:220` is `**Execution order lives in [\`docs/roadmap.md\`](docs/roadmap.md)**` |
-| AGENTS.md :188, :189, :191, :200, :211 stale | holds | `:188` "The worker polls both every ~15 seconds"; `:189` "module-level state (`lastSeasonObserved`)"; `:191` "Both API endpoints polled every ~15s"; `:211` lists `TimelineSection`, `ConnectionStatus` |
-| `EventLog` / `LastUpdated` exist, old names gone | confirmed | `src/features/timeline/EventLog.jsx` and `src/shared/components/LastUpdated.jsx` exist; `grep TimelineSection\|ConnectionStatus src` returns no source file |
-| AGENTS.md :195 tracesSampleRate | holds | client `src/instrumentation-client.js:24` is `tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,`; server `sentry.server.config.js:31` is `tracesSampleRate: 1.0,` |
-| `route.js:75-77` stale comment, `:34` "~15s" | holds | `:75-77`: "A web-only replica must never run the update: prevEvents and / lastSeasonObserved live in this process, so a poll landing here would / diff against stale state and re-send push notifications (#516)."; `:34`: "The worker polls every ~15s, so" |
-| `route.js` 403 still exists | **keep** | `route.js:78-79` `if (!isWorkerEnabled()) return errorResponse(403, start, 'worker disabled on this instance');` |
-| `route.js` top comment (`:27-29`) already correct | note | says the season and event snapshot "both live in the lease row, not in this process" — the file contradicts itself until `:75-77` is fixed |
-| `initializeWorker.mjs:2-6` | holds | "Lets a horizontally scaled web tier run with the poller switched off: the update path keeps state in memory (prevEvents, lastSeasonObserved), so exactly one instance may poll — see #516. Deployments run N web replicas with WORKER_ENABLED=false and one worker replica with it on" |
-| `initializeWorker.mjs` exit handling | confirms D-03 | `worker.on('exit', ...)`: `if (!shuttingDown) process.exit(1);` |
-| `.example.env:11-13` | holds | "# WORKER_ENABLED="false" — serve web only, no poller. Exactly ONE instance per / # database may poll (#516); scaled deployments set this on the web replicas and / # run a separate 1-replica worker service from the same image." |
-| `.example.env:10` | holds | `UPDATE_INTERVAL="20" # update interval in seconds` |
-| `public/workers/cron.js:13` | holds | " * 1. Spawned by src/instrumentation.js during application startup" ; real chain: `src/instrumentation.js` imports `./instrumentation.node` and `src/instrumentation.node.js:16` calls `initializeWorker()` |
-| Lease facts for the new text | confirmed | `lease.mjs`: `export const WORKER_TYPE = 'cron_api_poller';`, `export const LEASE_TTL_S = 60; // 3 polls at the 20 s staging cadence`; standby: `route.js` `successResponse(200, start, { role: 'standby', holder: HOLDER_ID })`; closing pass reads `lastSeasonObserved` from the lease at `route.js:91,126,130` and writes it at `:144`; `prevEvents` persisted at `:196` |
-| `updateSeason` writes only 3 tables | confirmed | `src/update/season.mjs:10-12` imports `upsertSeason`, `upsertEvent`, `upsertStatus` only |
-| `updateStatus` writes 5 tables | confirmed | `src/update/status.mjs:8-12` imports `upsertSeason`, `upsertEvent`, `upsertStatus`, `upsertStatistic`, `upsertEventProgress`; `upsertEventProgress` calls at `:101,118` |
+Job names map to the contexts [VERIFIED: file reads]: `check-ci.yml` job `name: Visual Regression` and `name: Test & Build`; `check-dependencies.yml` job `name: Review Dependencies`. Triggers: `check-ci.yml` `pull_request: branches: [main, develop]`; `check-dependencies.yml` `pull_request: branches: [main, develop]`.
 
-### B. Codebase maps (D-02)
+PR #642 today: `mergeStateStatus` `BLOCKED`, `statusCheckRollup` holds only the 3 CodeQL runs. #531 merged with no checks because the ruleset did not exist yet (created 2026-09-25).
 
-All five quoted lines hold (`STACK.md:85` "one dedicated 1-replica worker service"; `ARCHITECTURE.md:125` "a web-only replica must 403 rather than run stale-state logic"; `:127` "upserts into `h1_status` / `h1_statistic`" without `h1_event_progress`; `:130` "`h1_event`, `h1_event_progress`, `h1_season` ..., and `h1_statistic`"; `INTEGRATIONS.md:80` "Production runs 3 app replicas"). `PROJECT.md:72` holds ("Vitest 4").
-**New (not in D-02):** `.planning/codebase/CONCERNS.md:35-39` is an entire concern titled "Worker poller state: CLAUDE.md describes module-level state that code no longer has". DOCS-01 resolves it; mark it resolved or remove it in the same pass. `CONCERNS.md:50-53` (#502) is already in D-10.
+**Answer.** Approval is the documented way to start the held runs. Once they run, they attach as `pull_request` check runs from GitHub Actions to head `a22b7efc`, with the same job names the ruleset requires. That should satisfy the three contexts. This is an inference from docs plus ruleset state; nobody has run it on this repo. Tag [ASSUMED] (A2). It needs a live check: after approval, `gh pr view 642 --json mergeStateStatus,statusCheckRollup` must show the three contexts `SUCCESS` and `mergeStateStatus` `CLEAN` (or `BEHIND` is fine; `strict` is false).
 
-### C. architecture page (`src/app/docs/architecture/`)
+### Two ways to unblock (D-17 names both)
 
-| Item | Result |
-|------|--------|
-| `page.mdx:34` "polls the official API every 5-15 seconds" | holds |
-| `dataFlowConfig.mjs:125-150` worker node (no lease), `:121` ends at `season-155.json`, `:153` subtitle `'prisma db seed'` | holds; `prisma/seed/seasons/` has **160** files |
-| seed command | `Dockerfile.migrate:157` "`node --experimental-strip-types prisma/seed/seed.mjs`" |
-| **New** `~15s` strings | `dataFlowDefinition.mjs:30` `api_status -->|"~15s"| worker`, `:31` `"~15s + on demand"`; `dataFlowConfig.mjs:6,65,69,86,90,132,136` — poll interval is `UPDATE_INTERVAL` (20 in `.example.env:10`); replace with the env var wording, not a number |
-| **New** wrong `snapshot` flow | `dataFlowConfig.mjs` `flows.snapshot` includes `h1_statistic` and `h1_event_progress`; `updateSeason` writes neither. `flows.live` is correct (status path writes all five) |
-| **New** `dataFlowDefinition.mjs:11` `seed_script` label `prisma db seed / startup` | same seed-command drift as `:153` |
-| Diagram parses under mermaid 12.2.0 | yes (`DEFINITION_LR` and `DEFINITION_TD` both OK) |
-| Subgraph/node names that no longer exist | **none** — `Sources`, `Processing`, `Normalized`, `Frontend` and every node ID exist. The fix is adding a lease/standby element (new node ID needs entries in `flows`/`details`) and correcting labels |
+| Path | How | Evidence | Risk |
+|------|-----|----------|------|
+| Approve | PR page → "Approve workflows to run". The REST endpoint `POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve` is documented for "a pull request from a public fork of a first time contributor" only | [CITED: docs.github.com/en/rest/actions/workflow-runs · archived https://linkding.lav.ren/bookmarks?details=6371]. Whether it accepts a same-repo bot PR is untested [ASSUMED] (A3) | The UI click is a human step (`checkpoint:human-action`). Try the API once; fall back to the UI. |
+| Human push of the `## Unreleased` note commit | Worktree on `chore/seed-refresh`, add a `CHANGELOG.md` line, push as Andrei | The `synchronize` event is then caused by Andrei's push, not by a `GITHUB_TOKEN` workflow. The docs name only `GITHUB_TOKEN`-created or -updated PRs. Tag [ASSUMED] (A1). | Rebase-merge can conflict on `CHANGELOG.md` if another PR (or the release-1 cut) edits `## Unreleased` meanwhile. This is a second reason to merge #642 after release 1. |
 
-### D. data-flow page (`src/app/docs/data-flow/page.mdx`)
+### Timing and ordering facts (all [VERIFIED] unless tagged)
+- Today is Saturday 2026-11-14. The next scheduled run is Monday 2026-11-16 `0 3 * * 1` (`scheduled-seed-refresh.yml:5`). Real start times drift late: the last six scheduled runs started at 08:23-10:47 UTC (run 42603725952 at `2026-11-09T10:47:14Z`). "Before 03:00 UTC" is a safe, conservative cut.
+- A second run does `git checkout -B chore/seed-refresh` (`:59`) and `git push --force origin chore/seed-refresh` (`:62`). The work tree is `develop`, which lacks `season-161.json` until #642 merges, so the run recreates the file, force-pushes a new SHA, and starts a new round of `action_required` runs. Any human commit on the branch is lost.
+- `gh pr create … || echo 'PR already open — branch updated.'` (`:63-66`) hides a real `gh pr create` failure as well as the "already open" case.
+- The seed hash covers the seed script and every file under `prisma/seed/seasons/` (`src/update/migrateOnStart.mjs:82-91`: `hash.update(await readFile(path.join(seedDir, 'seed.mjs')))` and `hash.update(await readFile(path.join(seedDir, 'seasons', name)))`). Adding `season-161.json` changes the hash, so the next app start logs `[migrate] seed data changed, seeding` (`migrateOnStart.mjs:111`; the unchanged case logs `[migrate] seed unchanged, skipped`, `:108`). That log line is the D-17 "staging seeds season 161" check.
+- `prisma/seed/seasons/` holds 160 files today; #642 adds `season-161.json` (1164 lines, `changeType ADDED`).
+- Repo merge settings allow rebase, merge commit and squash; the ruleset allows only `rebase` on `develop`. Merge #642 with `gh pr merge 642 --rebase` (D-27), then delete the branch only after `gh pr view 642 --json state` is `MERGED`.
 
-All Drift Inventory line numbers hold: `:4`, `:55`, `:90`, `:102-103` (`initializeOpenApiSpec()`), `:117`, `:150-155` (url at `:153` `?key=${key}`), `:177-180`, `:200`, `:441`, `:460-462`.
-- `:55` `style Raw fill:#1c1917,...` — there is no `Raw` subgraph or node in the block at `:19-58`. Mermaid ignores a `style` for an unknown ID (the block parses OK), so this is dead text, not a render failure. It is also never rendered (fence).
-- **Correction to `:90` and D-08:** see Summary item 2. Keep "On-demand invocation" (`:439-446`) and "Frontend on-demand fetching" (`:448-458`) in substance; fix `:441` ("`updateSeason()` is not called on a schedule") and `:90` ("runs on-demand"), and add the callers `backfillAndRetry` (4 v1 routes) and `reseedSeason` to the list.
-- The `?key=` replacement is the header `Authorization: Bearer ${key}` plus `X-Worker-Startup` on the first poll and an optional `GLITCHTIP_HEARTBEAT_URL` POST `[VERIFIED: public/workers/cronLogic.js:28-43]`.
-- `X-Worker-Startup`: `route.js:17` `export const WORKER_STARTUP_HEADER = 'x-worker-startup';`.
+**What the new issue should state (D-17):** gap 1: GitHub holds `pull_request` runs for PRs that a `GITHUB_TOKEN` workflow creates or updates, and since 2026-09-25 the ruleset blocks the merge until a human approves; the documented fix is a GitHub App installation token or PAT [CITED]. Gap 2: `-B` + `--force` deletes the human note commit that the PR body (`:65`) and `prisma/seed/readme.md:49-51` ask for. Gap 3 (minor): `|| echo` hides a failed `gh pr create`. #501's own title says "when season 160 ends"; #501 has 0 comments, state OPEN.
 
-### E. infrastructure page
+## Research topic 2: GlitchTip and debug-ID bundles from two per-arch legs (D-15 (1))
 
-All inventory lines hold (`:24`, `:43`, `:49`, `:80`, `:88`, `:95`, `:105`, `:133`, `:155`, `:159`, `:171`, `:177`, `:185`, `:199`, `:201`, `:209`, `:217`, `:250`, `:310`, `:373-387`, `:401`, `:433-434`, `:452`). `:375` already says `@sentry/nextjs/config`. Workflow facts for the new section (all read this session):
+### Verdict
+Structurally safe. Nothing in the GlitchTip code, the Sentry upload path or the build output ties symbolication to the release name or to one leg. The remaining risks are operational and need a live read; they are listed under "Needs live check at execution".
 
-| File (`.github/workflows/`) | `name:` | Trigger |
-|---|---|---|
-| `build-release.yml` | `Build: Release` | `push: tags: 'v*.*.*'` (`:3-5`); app image `linux/amd64,linux/arm64`; tags `:<tag>`, `:production`, `:latest` (`:64-68`) |
-| `build-staging.yml` | `Build: Staging` | `workflow_run` of `Check: CI` completed (`:21-25`); tags `:staging` and `:sha-<TESTED_SHA>` (`:208-211`); `NODE_ENV=production`, `NEXT_PUBLIC_DEPLOY_ENV=staging` (`:212-213`) |
-| `check-ci.yml` | `Check: CI` | PR and push on `main`, `develop`; name is load-bearing for `build-staging.yml` (`:1-3` comment) |
-| `check-codeql.yml` | `Check: CodeQL` | PR/push `main`, `develop`, plus `schedule` |
-| `check-dependencies.yml` | `Check: Dependencies` | PR `main`, `develop` |
-| `check-docker-smoke.yml` | `Check: Docker Smoke` | PR to `main` |
-| `check-migrate-arm64.yml` | `Check: Migrate Image (arm64)` | PR `develop`, `main` |
-| `check-version.yml` | `Check: Version Bump` | PR to `develop`, `main`, paths `['src/**', 'prisma/**', 'public/**', 'package.json']` (`:6-10`) |
-| `scheduled-pagespeed.yml` | `Scheduled: Pagespeed` | cron `0 0 * * 1` and `0 6 * * 5` |
-| `scheduled-seed-refresh.yml` | `Scheduled: Seed Refresh` | cron `0 3 * * 1`, `workflow_dispatch` |
+### What was read
+- **Deployed GlitchTip version:** `GET https://glitchtip.lav.ren/api/settings/` returns `"version": "6.2.6"` [VERIFIED: curl this session; public settings endpoint]. Tag `v6.2.6` is dated 2026-08-07; `v7.0.0` is dated 2026-11-09 (GitLab tags API). An upgrade can happen at any time.
+- **GlitchTip source at tag `v6.2.6`** (GitLab `glitchtip/glitchtip-backend`, files read via the repository files API at `ref=v6.2.6`):
+  - Event lookup: `apps/event_ingest/process_event.py:826` `| Q(debug_id__in={image.debug_id for image in sourcemap_images})` inside a `DebugSymbolBundle` query filtered by `organization__in`. The query matches bundles by debug ID across the whole organization. The release is only an alternative `Q(release__version__in=…, file__name__in=…)` branch. [VERIFIED]
+  - Frame matching: `javascript_event_processor.py` `find_source_files` takes `debug_id_map.get(minified_filename)` and compares `str(debug_id) == str(debug_bundle.debug_id)`. `build_debug_id_map` reads `debug_meta.images` of `type == "sourcemap"` and uses the basename of `code_file`. [VERIFIED at tag v6.2.6: `build_debug_id_map` at line 191 and `find_source_files` at line 200 of the same file]
+  - Storage: `apps/sourcecode/models.py` `UniqueConstraint(fields=["organization", "debug_id"], name="unique_org_debug_id")`. `apps/files/assemble.py` upserts complete bundles with `update_conflicts=True, unique_fields=["organization", "debug_id"], update_fields=["file", "sourcemap_file", "release"]`. [VERIFIED v6.2.6 line 64 of models.py; assemble upsert read on master and constraint present at v6.2.6]
+  - Accepted upload type: `apps/files/api.py` `CHUNK_UPLOAD_ACCEPT` contains `"artifact_bundles",  # Artifact bundles contain debug ids to link source to sourcemaps`. [VERIFIED master]
+  - Docs: "GlitchTip 4.2 includes support for sentry SDK \"artifact bundles\"" and "Previously with GlitchTip, a release had to be set to enable source map look ups. That restriction is removed". [CITED: glitchtip.com/blog/2024-11-01-glitchtip-4-2-release · archived https://linkding.lav.ren/bookmarks?details=6374]
+- **Sentry 11.10.0 upload path** (opened from `npm pack`, version = lockfile):
+  - Release name: `getFinalConfigObjectUtils.js:20` `userSentryOptions.release?.name ?? node.getSentryRelease() ?? buildTime.getGitRevision()`. The Docker build has no `.git` (`.dockerignore` lists `.git`) and no release env var, so the name is probably unset [ASSUMED] (A4).
+  - `build-plugin-manager.js:387` `options.release.name ?? "undefined",` and `:463` the same: with no release the CLI is called with the literal string `"undefined"`. How GlitchTip stores that is unknown; a GlitchTip release named `undefined` may exist (live check).
+  - `build-plugin-manager.js:476` `handleRecoverableError(e, false);` and `:118` `if (throwByDefault) {`: an upload error is logged with `logger.error("An error occurred. Couldn't finish all operations:", …)` and the build continues. [VERIFIED]
+  - `handleRunAfterProductionCompile.js:43` `uploadSourcemaps`, `:55` `deleteArtifacts()`, `:57` `stripSourceMappingURLComments`: delete follows upload without checking its result. [VERIFIED]
+  - Success line: `build-plugin-manager.js:395` `logger$1.info("Successfully uploaded source maps to Sentry");`. Both legs of run 41832856848 print it with the prefix `[@sentry/nextjs - After Production Compile]` [VERIFIED: gh run view --log].
+- **GlitchTip answers the assemble call before it assembles:** `apps/sourcecode/api.py` ends `return {"state": "created", "missingChunks": []}` after `assemble_artifacts_task.aenqueue(…)`. Assemble failures (bad manifest, "Release does not match uploaded bundle", "Organization does not match uploaded bundle") set a status and log a warning on the server; the client does not read it back. So "Successfully uploaded" proves chunk upload and request acceptance, not storage. [VERIFIED v6.2.6 api.py:96 and assemble.py:191]
+- **Shipped output, both arches** (v0.97.2 images pulled and exported this session):
+  - amd64: 135 `.js` files, 131 carry a `//# debugId=` line; a chunk starts with `;!function(){try { var e="undefined"!=typeof globalThis?globalThis:…;n=(new e.Error).stack;n&&((e._debugIds|| (e._debugIds={}))[n]="ba636990-7610-55db-659c-70887f8a9c88")}catch(e){}}();` and ends `//# debugId=ba636990-7610-55db-659c-70887f8a9c88` then `//# sourceMappingURL=39cf4phf896re.js.map`. The SDK chunk reads both globals: `let e=l._sentryDebugIds,n=l._debugIds;`. [VERIFIED: chunks/0wt056db0unhv.js and chunks/04o2_8fpjurm0.js in the v0.97.2 amd64 image]
+  - arm64: also 131 debug IDs. **129 of 131 IDs are identical** to amd64; two chunks differ by name and by ID (`1p_aiedyup9ax.js`, `3c2eqryhu_e-o.js` on amd64; `2h9lpwusorfkj.js`, `3bl0qa_gi5jgr.js` on arm64). [VERIFIED: sorted `debugId=` sets, `comm -12`]
+  - Consequence: each leg uploads its own IDs. 129 are the same IDs, so the second assemble upserts the first (same unique key; GlitchTip replaces file and sourcemap). The two arch-specific chunks keep separate IDs. Lookup is by ID, so whichever replica serves the page, its chunk's ID is in GlitchTip, provided both uploads assembled.
 
-Composite actions: `.github/actions/verify` (lint, typecheck, unit, build with stub env) and `.github/actions/docker-publish`. Runtime image facts: `Dockerfile.app:107` `FROM gcr.io/distroless/nodejs24-debian12:nonroot AS runner`, `:146` `CMD ["server.js"]`, `:150-151` HEALTHCHECK `--interval=30s --timeout=5s --start-period=30s --retries=3` with a `node -e fetch(...)` probe.
-The release body comes from `CHANGELOG.md` via awk (`build-release.yml:176-180`), not `RELEASE.md`.
+### Event source for D-15 (1): the gap
+- `deploy/staging/compose.yaml` has no `SENTRY_DSN`: `grep -n SENTRY_DSN deploy/staging/compose.yaml` returns 0 lines; the only Sentry key is `SENTRY_SERVER_NAME` at `:79`. `deploy/README.md:36` says "Auth/Umami/Sentry unset on purpose".
+- `src/instrumentation-client.js:25` `tunnel: '/api/glitchtip',` and `src/app/api/glitchtip/route.js:12,14` `const dsn = process.env.SENTRY_DSN;` … `return new Response('Tunnel not configured', { status: 503 });`. So staging browsers have a build-time DSN (`NEXT_PUBLIC_SENTRY_DSN` is passed by `build-staging.yml`) but the tunnel refuses to forward.
+- `sentry.server.config.js:8` `dsn: process.env.SENTRY_DSN,` → the server SDK is off on staging too.
 
-### F. database page
+Options for the plan (Andrei decides; offer these at the planning stop):
 
-Inventory holds. `Review` at ER `:130,174`, section `:507`; `App` at ER `:187`, section `:561-563`; `TIMESTAMPTZ` count is **19** (`grep -c`). Lease columns, verbatim from `prisma/schema.prisma:237-250`: `holder_id String?`, `lease_until DateTime?`, `prev_events Json?`, `last_season_observed Int?`. `api_rate_limit` at `schema.prisma:258-266`: `@@id([key, route_group, window_start])`, `@@index([window_start])`. No `@db.Timestamptz` anywhere in the schema (grep returned nothing). The migration exists: `prisma/migrations/20260416091157_drop_unused_tables`. **New:** the ER block fails `mermaid.parse` at diagram line 97, file line `database/page.mdx:170` `String userId PK-FK`; mermaid 12.2.0 expects `PK, FK`. Because the fence is not rendered, this is invisible to readers; fix it while editing the ER block.
+| Option | What | Trade-off |
+|--------|------|-----------|
+| (a) Recommended | Controlled synthetic envelope to GlitchTip ingest (the DSN is public, `deploy/README.md:139`): event with `debug_meta.images=[{type:'sourcemap', code_file:'<chunk url>', debug_id:'<id from the staging image chunk>'}]` and a frame whose `abs_path` basename equals the chunk file name, at a mapped line and column; tag `environment: staging-probe`. | No staging config change. Proves server-side resolution of the uploaded maps. It is not an SDK-generated event, so it does not prove the SDK sends `debug_meta`; step (4) does. Writes one test event into the production GlitchTip project; ask first. |
+| (b) | Add `SENTRY_DSN` to `deploy/staging/compose.yaml` and trigger a real client error on staging | Real SDK path. Changes staging semantics ("unset on purpose"); every staging error then lands in the production project. |
+| (c) | Run the staging image locally with `SENTRY_DSN` and a Postgres | Real SDK path without touching staging; needs a database and several steps |
 
-### G. testing page
+Step (4) needs a natural production event. `REQUIREMENTS.md` STAB-01 says residual React #418 mismatches stay tracked, so browser events with minified frames exist; whether one arrives within the window is [ASSUMED] (A6). Put a human checkpoint with a fallback (Andrei picks a probe) in the plan.
 
-Holds: `:11`, `:22`, `:107` (`npm test` row says "Run unit tests then smoke tests sequentially"; `package.json:15` `"test": "vitest run"`, `:16` `test:unit`, `:19` `test:smoke`, `:20` `"test:all": "vitest run && vitest run --config vitest.smoke.config.mjs"`), `:114`, `:137`, `:271` (already `v1.64.1`; `check-ci.yml:33` `container: mcr.microsoft.com/playwright:v1.64.1-noble`), `:280`, `:282` (`ci.yml`), `:296`. `vitest.visual.config.mjs:12-14` pins `attachmentsDir: '.vitest-attachments'`.
+### Needs live check at execution (no GlitchTip read was possible; the connector is not authorized in this session)
+1. GlitchTip version is still 6.2.6 (`curl -s https://glitchtip.lav.ren/api/settings/ | jq .version`; a `v7.0.0` upgrade would need a re-read of `assemble.py` and `process_event.py`).
+2. After the staging build: GlitchTip holds bundles for the uploaded debug IDs. UI: project settings, Source Maps / artifact bundles. Compare 3 IDs from `grep -rhoE 'debugId=[0-9a-f-]{36}'` over the staging image's `.next/static`.
+3. GlitchTip server logs show no `assemble_artifacts:` warning for the upload times of both legs (bad manifest, org or release mismatch, extraction limits).
+4. A release named `undefined` exists or not (A4). Harmless for debug-ID lookup; report it.
+5. A real browser event from a stripped build carries `debug_meta.images` and resolves with `context_line`. The 0.95.2 proof (D-13) used the old `sentry-cli` stack; Sentry 11.10.0 with `sentry` 0.45.0 has none yet (D-24).
+6. A third-party report (jv3n/trade #568) saw artifact-bundle uploads accepted but events still minified on some GlitchTip versions; its author calls the cause an inference, and it involved Angular, not Next.js [CITED: github.com/jv3n/trade/issues/568 · archived https://linkding.lav.ren/bookmarks?details=6377]. Treat it as the reason to prove step (1) before the strip ships, as D-15 already says.
 
-### H. Other pages (D-07 lease lines)
+## HOUSE-03 facts
 
-`notifications/page.mdx:115` "Keeps previous events in memory. ... Resets on server restart (acceptable — misses one transition at most)."; `notificationFlowConfig.mjs:175` "Keeps previous events in memory"; `pushFlowConfig.mjs:36` same; `docs/page.mdx:32` "worker pipeline, two-table strategy, and snapshot throttling"; `overviewConfig.mjs:92` "Internal POST endpoint called by the worker thread". Truth: `checkAndNotify(prevEvents)` receives the baseline from the lease (`route.js:189,196`); the endpoint is `GET` with `export const POST = methodNotAllowed;` (`route.js:212`). **Also stale, not in the inventory:** `data-flow` metadata `:4` repeats the same phrase as `docs/page.mdx:32`; and `notificationFlowConfig.mjs:57,63`, `inAppFlowConfig.mjs:47` say "Validates bearer token, then runs updateStatus() and updateSeason()" (true, but they omit the lease claim and standby early return; treat as optional wording, out of D-07).
+**Sentry 11.10.0 code path** [VERIFIED: files from `npm pack @sentry/nextjs@11.10.0`, `build/cjs/config/…`]:
+- `withSentryConfig/getFinalConfigObjectBundlerUtils.js:127` `if (incomingUserNextConfigObject.productionBrowserSourceMaps !== void 0) {` followed by `return;`; `:134` `incomingUserNextConfigObject.productionBrowserSourceMaps = true;`; `:143-145` `userSentryOptions.sourcemaps = { …, deleteSourcemapsAfterUpload: true }`. With the option unset, the SDK enables maps and the delete default. With today's explicit `true`, it stands down.
+- `types.d.ts:406` `deleteSourcemapsAfterUpload?: boolean;`. `getBuildPluginOptions.js:184` `const deleteSourcemapsAfterUpload = sentryBuildOptions.sourcemaps?.deleteSourcemapsAfterUpload ?? false;`.
+- `next.config.mjs` has no `turbopack` key (grep), so Sentry injects the debug IDs itself (`handleRunAfterProductionCompile.js:41` `injectDebugIds`).
 
-### Mermaid: what actually renders (D-23)
-
-`[VERIFIED: grep '<MermaidDiagram' src/app/docs --include=*.mdx]` — five pages instantiate the component. Everything else is a text fence.
-
-| Page | Rendered diagram (needs a browser check if its files change) | Files in DOCS-02 scope that feed it |
-|------|------------------------------------------------------------|---|
-| `/docs/architecture` | `architecture/page.mdx:19` `id="data-flow"` | `dataFlowDefinition.mjs`, `dataFlowConfig.mjs` (definition, flows, details, legend) |
-| `/docs` | `page.mdx:17` `id="docs-overview"` | `overviewConfig.mjs:92` (detail-panel text only; `overviewDefinition.mjs` unchanged) |
-| `/docs/notifications` | `page.mdx:39,48,57` ids `notification-flow`, `inapp-flow`, `push-flow` | `notificationFlowConfig.mjs:175`, `pushFlowConfig.mjs:36` (detail-panel text only) |
-
-Fences (text only, parse-check instead): architecture `:46`, data-flow `:19,:100`, infrastructure `:13,:135,:211`, database `:73,:215`, testing `:24`. Baseline `mermaid.parse` result under 12.2.0: all OK except `database/page.mdx` fence at `:73` (`PK-FK`).
-
-**Rendering failure is silent.** `useMermaidRender.mjs:34-36` catches and logs `console.error('[MermaidDiagram] render failed:', err)` and leaves the SVG empty. A browser check must read the console and the DOM, not just look for a crash.
-
-**Browser verification procedure (chrome-devtools MCP, no login needed per the user's browser rule):**
-1. The dev server on `:3000` serves the **main checkout's** code (stale `node_modules`), not the lane. Start a lane server on another port. `[ASSUMED]` that this starts with no reachable DB, because `layout.jsx:80` wraps `getCampaign()` in `tryCatch` and `:81` handles `data` null; not run here because `prisma generate` has not run: `WORKER_ENABLED=false POSTGRES_URL='postgresql://ci:ci@localhost:5432/ci' UPDATE_KEY=x UPDATE_INTERVAL=20 npx next dev -p 3100` (or `npm run build` then `npx next start -p 3100`). `WORKER_ENABLED=false` keeps `initializeWorker` from spawning a poller (`initializeWorker.mjs`).
-2. `navigate_page` to `http://localhost:3100/docs/architecture`, `/docs`, `/docs/notifications`.
-3. `list_console_messages` — fail on any `[MermaidDiagram] render failed:`.
-4. `evaluate_script`: `document.querySelectorAll('.diagram-canvas svg').length` equals the number of diagrams on the page; each `svg` contains `.cluster` elements for every `subgraph` and `.node` elements for every node ID in the definition (node `id` attributes look like `...flowchart-<nodeId>-<n>`, `MermaidDiagram.jsx:13-20`).
-5. Click one changed node: the `DetailPanel` shows the new text. Click each view button (`All Flows`, `Live Polling`, `Snapshot Sync`, ...): non-flow nodes dim.
-6. `resize_page` to ≤ 768 px wide and repeat: `MermaidDiagram.jsx:162` switches to `mobileDefinition` (the `TD` layout) via `matchMedia('(max-width: 768px)')`.
-7. Production build check for the same pages once (`next start`), because `CLAUDE.md` and Phase 1 record that some rendering behaviour appears only in production builds.
-
-**What `next build` does NOT prove:** (1) any client-side mermaid render (the import is client-only, `useMermaidRender.mjs:27`); (2) that a text fence still parses as Mermaid; (3) that prose matches the code; (4) the `SENTRY_AUTH_TOKEN` branch of `next.config.mjs` (skipped without the token); (5) the symbolication path. `next build` **does** fail on MDX syntax errors (stray `{`, `<`, unclosed tag), and `npm run lint` does **not** cover `.mdx` (`eslint.config.mjs:40` `files: ['**/*.{js,mjs,jsx}']`) — so for MDX the build is the only automatic gate, and the `.mjs` config files are covered by lint (Prettier) and typecheck.
-
-## HOUSE-03: Sourcemap strip (verified against `@sentry/nextjs` 11.8.0 in the lane)
-
-`[VERIFIED]` against files opened this session (paths under `node_modules/@sentry/nextjs/build/cjs/config/`):
-
-| Behaviour | Evidence |
-|-----------|----------|
-| User-set `productionBrowserSourceMaps` makes the SDK stand down | `withSentryConfig/getFinalConfigObjectBundlerUtils.js:127` `if (incomingUserNextConfigObject.productionBrowserSourceMaps !== void 0) {` followed by `return;` — so today's explicit `true` also skips the delete default |
-| With the option **unset**, the SDK enables maps on Turbopack and defaults to delete | `:134` `incomingUserNextConfigObject.productionBrowserSourceMaps = true;`, `:135` `if (userSentryOptions.sourcemaps?.deleteSourcemapsAfterUpload !== void 0) { return; }`, `:143-146` `userSentryOptions.sourcemaps = { ...userSentryOptions.sourcemaps, deleteSourcemapsAfterUpload: true }` — gated at `:124` by `!bundlerInfo.isTurbopackSupported \|\| !bundlerInfo.isTurbopack \|\| userSentryOptions.sourcemaps?.disable` |
-| Delete globs (Turbopack) | `getBuildPluginOptions.js:48` `const SOURCEMAP_EXTENSIONS = ["*.js.map", "*.mjs.map", "*.cjs.map", "*.css.map"];` and `:138` `return SOURCEMAP_EXTENSIONS.map((ext) => path.posix.join(normalizedDistPath, "static", "**", ext));` — returns `undefined` for `webpack-nodejs`/`webpack-edge` (`:132`). Only `.next/static/**` is covered, so server maps stay (consistent with D-16) |
-| Delete default is `false` unless set | `getBuildPluginOptions.js:184` `const deleteSourcemapsAfterUpload = sentryBuildOptions.sourcemaps?.deleteSourcemapsAfterUpload ?? false;` |
-| Order in the post-compile hook | `handleRunAfterProductionCompile.js:43-46` `uploadSourcemaps`, then `:56` `await sentryBuildPluginManager.deleteArtifacts();`, then `:57-59` strips `sourceMappingURL` comments when `deleteSourcemapsAfterUpload && buildTool === "turbopack" && !sriEnabled` |
-| Option name unchanged | `build/types/config/types.d.ts:391` `deleteSourcemapsAfterUpload?: boolean;` |
-| Project builds with Turbopack | `package.json:9` `"build": "next build && serwist build"` (no `--webpack`); Next 16.4.2 |
-
-Consequence for D-14: after deleting `next.config.mjs:15`, with the wrapper active the SDK itself sets `productionBrowserSourceMaps = true`; the explicit `deleteSourcemapsAfterUpload: true` is redundant but harmless and survives a default change. Without `SENTRY_AUTH_TOKEN` (`next.config.mjs:212` ternary) the wrapper is skipped, `productionBrowserSourceMaps` is undefined, and Next generates **no** browser maps.
-
-**Risk (new):** the delete runs after the upload attempt. If an upload fails, the build can still finish, and the image has neither public maps nor an uploaded bundle (the #496 failure class). Keep `silent` unset (`next.config.mjs:214-217` comment) and make the release gate a log check: the build log must contain `[@sentry/nextjs - After Production Compile] Info: Successfully uploaded source maps to Sentry` once per architecture. Staging run 39574238756 (`Build: Staging`, sha `850011bb`, 2026-10-21) shows that line for `linux/amd64` and `linux/arm64` `[VERIFIED: gh run view --log]`. Whether an upload failure aborts the build was not tested `[ASSUMED]`.
-
-**Edit shape** (`next.config.mjs`; Prettier `experimentalTernaries`, 4 spaces):
+**Edit shape** (`next.config.mjs`; current text at `:17` and `:214-225`):
 
 ```js
-// line 15: delete  productionBrowserSourceMaps: true,
+// delete line 17:  productionBrowserSourceMaps: true,
 export default process.env.SENTRY_AUTH_TOKEN ?
     withSentryConfig(finalConfig, {
         // (keep the existing "No `silent: true`" comment)
@@ -334,365 +288,374 @@ export default process.env.SENTRY_AUTH_TOKEN ?
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,
         sentryUrl: process.env.SENTRY_URL,
-        // Maps are generated only when this wrapper is active (the SDK turns on
-        // productionBrowserSourceMaps itself), uploaded, then removed from .next/static.
         sourcemaps: { deleteSourcemapsAfterUpload: true },
     })
 :   finalConfig;
 ```
 
-**Other effects to check after the strip** (cheap):
-- `public/sw.js` (generated by `serwist build` after `next build`) has no `.map` entries: `grep -c '\.map' public/sw.js` after a token build. `serwist.config.js` sets only `swSrc`, `swDest`, `additionalPrecacheEntries`, so precache is derived from the post-strip `.next/static` `[ASSUMED]` that `.map` was never precached.
-- `scheduled-pagespeed.yml` Lighthouse `valid-source-maps` audit (deferred note in CONTEXT).
-- IN-03 row in `01-REVIEW-DISPOSITION.md` is `open`, note "next.config.mjs details"; its import half is done (`next.config.mjs:1` is `import { withSentryConfig } from '@sentry/nextjs/config';`).
+**A local build proves nothing about the strip.** Without `SENTRY_AUTH_TOKEN` the wrapper is skipped (`next.config.mjs:214`). Only `Build: Staging` and `Build: Release` build with the token (`Dockerfile.app:94-97` secret mounts).
 
-### D-15 check 1 — measurement procedure (distroless, no shell)
+**Release gate (replaces "the build passed").** For each leg of the staging build and of release 2, the job log must contain `[@sentry/nextjs - After Production Compile] Info: Successfully uploaded source maps to Sentry` (v0.97.2: amd64 job 126585351874, arm64 job 126585351914). Keep `silent` unset (`next.config.mjs:22-25` comment). A missing line on either leg blocks the release, because the maps are deleted anyway.
 
-Baseline image: **`ghcr.io/elfensky/helldiversbot:v0.95.2`** (GitHub package version id `1384368055`, created `2026-10-14T10:21:40Z`, tags `v0.95.2,latest,production`) `[VERIFIED: gh api /users/elfensky/packages/container/helldiversbot/versions]`. `:latest` and `:production` float to the new release, so always pin `:v0.95.2`. The image is multi-arch (`build-release.yml:64` `platforms: linux/amd64,linux/arm64`); pin `--platform linux/amd64` for both sides so numbers compare.
-Comparison image after the change: the staging build of the merge commit, `ghcr.io/elfensky/helldiversbot:sha-<full-commit-sha>` (`build-staging.yml:210`), and later `:v<new>`.
-The Docker daemon was **not running** in this session (`docker version` could not reach the socket), so the commands below were not executed; the executor must start Docker first. The numbers "142 maps / ~24.6 MB" in CONTEXT and #502 are from a **v0.90.5 / main-checkout build**, not from the v0.95.2 image — re-measure the baseline.
+**Baseline for D-15 (2): `ghcr.io/elfensky/helldiversbot:v0.97.2`** [VERIFIED: `docker pull`, `docker create`, `docker export | tar` this session; digest `sha256:c5534747f4d2e80815d74c2c0308ab487497f4c02e316477f3093270adf8ed20`]:
+
+| Item | amd64 value |
+|------|-------------|
+| `.map` files in image (all) | 190 |
+| `.map` in `app/.next/static` | 142 files, 31,057,870 bytes (`stat -f%z` sum) |
+| `.map` in `app/.next/server` | 48 files, 6,672 bytes |
+| `.js` in `app/.next/static` | 135 files, 7,264,852 bytes |
+| `docker images` | disk usage 505 MB, content size 119 MB |
+
+The #502 body figure (24.6 MB, 142 files) is from v0.90.5; the file count is unchanged, the size is now 31.06 MB. Expected after the strip: `static` `.map` count 0, `server` count 48 (unchanged), and no `sourceMappingURL` lines in `static` JS (`grep -rhoE 'sourceMappingURL=[^ ]*'`); the `//# debugId=` lines stay. `docker image inspect --format '{{.Size}}'` printed `0` on this daemon (containerd image store); use the export method.
 
 ```bash
-# Run in an empty scratch dir; extraction targets are untrusted data, never run anything from them.
-IMG=ghcr.io/elfensky/helldiversbot:v0.95.2
+# empty scratch folder; extracted data is untrusted: only read it
+IMG=ghcr.io/elfensky/helldiversbot:v0.97.2
 docker pull --platform linux/amd64 "$IMG"
-CID=$(docker create --platform linux/amd64 "$IMG")        # create does not run the image
-mkdir -p ./extract-v0952
-docker export "$CID" | tar -x -C ./extract-v0952 app/.next app/public
-docker rm "$CID"
-# count and size of every .map in the image tree, split by location
-find ./extract-v0952/app -name '*.map' | wc -l
-find ./extract-v0952/app/.next/static -name '*.map' | wc -l
-find ./extract-v0952/app/.next/static -name '*.map' -exec du -ck {} + | tail -1
-find ./extract-v0952/app/.next/server -name '*.map' | wc -l      # D-16: expect ~46 files, stays
-docker image inspect --format '{{.Size}}' "$IMG"                  # uncompressed image size
+docker create --name hdb-measure --platform linux/amd64 "$IMG" >/dev/null
+docker export hdb-measure | tar -x -C ./ex app/.next/static app/.next/server
+docker rm hdb-measure
+find ./ex/app/.next/static -name '*.map' | wc -l
+find ./ex/app/.next/static -name '*.map' -exec stat -f%z {} + | awk '{s+=$1} END {print s}'   # macOS; GNU: stat -c%s
 ```
-`docker export "$CID" | tar -t | grep -c '\.map$'` is the list-only variant (D-15 wording) and gives the count without extracting. Expected after the change: `.next/static` count `0`, `.next/server` unchanged, image size lower by roughly the static-map size (CONTEXT: ~24.6 MB). Record all numbers for both images on #502.
 
-### D-15 check 2 — production `.js.map` returns 404
-
-Run after the phase-end release is deployed on the production host (the release workflow has no deploy step; Andrei pulls the image by hand, `01-RELEASE-RECORD.md` § Production deployment). Take a real chunk URL from the live HTML rather than guessing a hash:
+**D-15 (3) probe** (production, after release 2): take a real chunk URL from the live HTML, then request it with `.map` appended; expect 404. Use `/usr/bin/curl` by full path: the `rtk` hook replays cached bodies for identical `curl` strings (global memory).
 
 ```bash
-URL=$(curl -s https://helldivers.bot/ | grep -o '/_next/static/[^"]*\.js' | head -1)
-curl -s -o /dev/null -w '%{http_code}\n' "https://helldivers.bot${URL}.map"     # after: 404
-curl -s "https://helldivers.bot${URL}" | tail -c 200 | grep -c sourceMappingURL  # after: 0 (comment stripped)
+URL=$(/usr/bin/curl -s https://helldivers.bot/ | /usr/bin/grep -o '/_next/static/[^"]*\.js' | head -1)
+/usr/bin/curl -s -o /dev/null -w '%{http_code}\n' "https://helldivers.bot${URL}.map"    # expect 404
 ```
-Run the same two lines against `:v0.95.2`-era production before the release if a "before" value (expected `200`) is wanted for the #502 comment; #502's own text uses the same probe shape.
 
-### D-15 check 3 and D-24 — symbolicated GlitchTip event
+**Other effects to check after the strip** (cheap): `grep -c '\.map' public/sw.js` after a token build (Serwist precache; A8); the Lighthouse `valid-source-maps` audit in `scheduled-pagespeed.yml` (deferred note); IN-03 row in `01-REVIEW-DISPOSITION.md:31` is `| IN-03 | info | next.config.mjs:1,15 | open | next.config.mjs details |` and becomes resolved.
 
-The GlitchTip MCP connector is not authenticated here, so this is a human or re-authenticated step. What the executor must verify:
-- Filter: `release:<version> environment:production` (method of `01-GLITCHTIP-RECOUNT.md`). Runtime release string is `NEXT_PUBLIC_APP_VERSION` (`sentry.server.config.js:17`, `src/instrumentation-client.js:18`), i.e. the `package.json` version at build.
-- Pass condition: at least one event from a **browser** bundle frame (a raw `NNNN.js:L:C` frame) shows the original path, e.g. `src/features/.../X.jsx:<line>`, with `context_line`. Server frames are not minified the same way and do not count.
-- Debug-ID matching means the upload's own release name does not need to equal the event release; the 0.95.2 proof worked with "Upload type: artifact bundle" (`01-RELEASE-RECORD.md:370`) `[VERIFIED]`, with the caveat that 0.95.2 used `sentry-cli` and 0.95.7 uses `@sentry/bundler-plugins` (D-24).
-- Release build log: grep `Successfully uploaded source maps to Sentry` in the `Build App Image` job of `Build: Release`.
+**Record on #502** (0 comments today; state OPEN): the D-13 evidence, then D-15 steps (1)-(4). Do not write tokens, DSNs with keys or private hosts into the comment; the DSN host `glitchtip.lav.ren` is already public in workflow logs.
 
-## HOUSE-04: Seed refresh (D-17 facts, verified)
+## HOUSE-04 facts
 
-`[VERIFIED]` against `.github/workflows/scheduled-seed-refresh.yml` and `gh`:
+| Fact | Value | Tag |
+|------|-------|-----|
+| PR #642 | OPEN, base `develop`, head `chore/seed-refresh` @ `a22b7efc0ee26b65ed13baf55c10a0b9a9b3211a`, one commit `chore(seed): add newly completed seasons`, one file `prisma/seed/seasons/season-161.json` (+1164), `mergeStateStatus` BLOCKED, 0 comments, 0 reviews | [VERIFIED: gh pr view 642] |
+| Base of #642 | `2a86e6c8…`; `origin/develop` is `70ccc071` (the PR needs no rebase: `strict_required_status_checks_policy` is false) | [VERIFIED] |
+| Run that opened it | 42603725952, `schedule`, `success`, created `2026-11-09T10:47:14Z`, one job `Fetch New Seasons` | [VERIFIED: gh run view] |
+| First real run | 35578125172 (2026-09-21) → PR #531 → merge `66093080`; #531 `statusCheckRollup` empty | [VERIFIED: gh pr view 531] |
+| #501 | OPEN, 0 comments, title "Verify seed-refresh workflow PR path end-to-end when season 160 ends", milestone Engineering Health | [VERIFIED] |
+| Open related issues | #624 (deploy guide), #629 (cache headers), #631 (analytics plumbing), all milestone Engineering Health; milestone number 17, state open | [VERIFIED: gh issue list, gh api milestones] |
+| Workflow lines | `:5` cron, `:49` `GH_TOKEN: ${{ github.token }}`, `:59` `git checkout -B chore/seed-refresh`, `:62` `git push --force origin chore/seed-refresh`, `:65` `--body 'Automated weekly run of \`prisma/seed/fetch-seasons.mjs\`. Push a CHANGELOG commit (under \`## Unreleased\`) onto this branch, then rebase-merge.' \` | [VERIFIED: file read] |
+| Readme text | `prisma/seed/readme.md:49-51` "Push a CHANGELOG entry under `## Unreleased` onto that branch as usual (from a worktree), then rebase-merge the PR" | [VERIFIED] |
 
-| Claim | Evidence |
-|-------|----------|
-| Cron Mondays | `:5` `- cron: '0 3 * * 1' # Every Monday at 03:00 UTC` |
-| PR opened with the default token | `:49` `GH_TOKEN: ${{ github.token }}` (a PR created with `github.token` does not trigger other workflows) |
-| Branch rebuilt from develop | `:28` checkout `ref: develop`; `:59` `git checkout -B chore/seed-refresh` |
-| Force push | `:62` `git push --force origin chore/seed-refresh` |
-| PR body tells the human to push the bump | `:65` `--body 'Automated weekly run of ... Push the version bump + CHANGELOG commit onto this branch, then rebase-merge.'` |
-| Fallback when PR exists | `:66` `|| echo 'PR already open — branch updated.'` |
-| Readme tells the same | `prisma/seed/readme.md:49-51` "Push the version bump + CHANGELOG entry onto / that branch as usual (from a worktree), then rebase-merge the PR — the / workflow deliberately does not touch either." |
-| Run 35578125172 | `schedule`, `success`, created `2026-09-21T08:29:00Z`, head `4647314564ef...` |
-| PR #531 | `MERGED`, `mergedAt 2026-09-21T22:10:17Z`, merge commit `66093080a32be20c6adc4c3a3eb8e9239cb7bf9d`, one commit `76865ef3 chore(seed): add newly completed seasons`, one file `prisma/seed/seasons/season-160.json`, `statusCheckRollup` length `0` |
-| Merged with no bump | `package.json` is `0.94.0` on both `66093080` and its first parent |
-| 4 later runs, no PR | `39222367398` (10-19), `38234178730` (10-12), `37293119742` (10-05), `36402324349` (09-28): all `success`, `schedule`; no PR |
-| #501 state | `OPEN`, 0 comments, milestone Engineering Health, labels `infrastructure, chore, testing` |
+What the two real runs prove for #501's checklist: PR creation under `github.token` (both), and, new with #642, that the PR cannot merge without a human action. The "PR already open" fallback (`:66`) has not run for real; say so in the closing comment instead of claiming full coverage. HOUSE-04's wording ("a real season transition, or a controlled simulation") is met by a real run landed through the ruleset.
 
-**What the real run did and did not prove (the closing comment must say this).** #501's own checklist lists three unverified items: (1) `checkout -B` + `push --force`, (2) `gh pr create` under `github.token`, (3) "the `|| echo 'PR already open'` fallback when a second run precedes the merge". Run 35578125172 proves (1) and (2). Item (3) was **not** exercised: PR #531 merged the same day, so the next run found no changes and exited at `:54`. #501's close criterion 3 ("Merging it locally with `--no-ff` + version bump + CHANGELOG works as documented") was met only in part: #531 merged by a merge commit with no bump and no CHANGELOG entry. HOUSE-04's wording allows "a real season transition, or a controlled simulation"; the real transition satisfies it, but the fallback path stays code-reading only. Offer Andrei a choice (Open Question 1) rather than closing silently.
+Ordering: land #642 after release 1 is tagged and before the next Monday 03:00 UTC (2026-11-16), in one sitting (see Research topic 1). If that window is missed, the Monday run recreates the branch and the approval or push step repeats; nothing is lost but time.
 
-The new "gaps" issue should state: gap 1 (no CI on bot PR; `Check: Version Bump` would match `prisma/**` but never runs), gap 2 (second run force-pushes over the bump commit; the fallback `|| echo` also hides a real `gh pr create` failure), and the #501 body's stale file name `seed-refresh.yml`. Milestone Engineering Health; labels `infrastructure`, `chore`.
+## DOCS-01 facts (every ref re-read at 0.98.0)
 
-## HOUSE-05: `docs/roadmap.md` references (grep of the whole lane, excluding `node_modules`, `.git`, `.next`, `graphify-out`)
+| Item | Current text / value | Tag |
+|------|---------------------|-----|
+| `AGENTS.md:44` | `` `gh pr merge --rebase --delete-branch`. A release PR `develop` → `main` uses a merge commit and gets `` (the command is on line 44) | [VERIFIED: grep -n delete-branch → 44] |
+| `AGENTS.md:77` / `:79-83` | `## Architecture invariants` / bullet `- **Exactly one poller across replicas.** Every replica runs the worker (…), but only the holder of the `worker_heartbeat` lease (`src/update/lease.mjs`) polls the HD1 API; handover state (`prevEvents`, `lastSeasonObserved`) lives in the lease row, not in module memory.` | [VERIFIED] |
+| `WORKER_ENABLED` in AGENTS.md | 0 hits (`grep -n WORKER_ENABLED AGENTS.md` empty) | [VERIFIED] |
+| Lease constants | `src/update/lease.mjs:19` `export const WORKER_TYPE = 'cron_api_poller';` and `:20` `export const LEASE_TTL_S = 60; // 3 polls at the 20 s staging cadence` | [VERIFIED] |
+| Standby answer | `route.js:91` `return successResponse(200, start, { role: 'standby', holder: HOLDER_ID });` | [VERIFIED] |
+| Replica counts | `deploy/staging/compose.yaml:112` and `:146` `replicas: 2`; `deploy/production/compose.yaml:118` and `:151` `replicas: 2`; `:79` `UPDATE_INTERVAL: '20'` | [VERIFIED] |
+| Comment 1 | `route.js:35` "The worker polls every ~15s, so" (inside the `lastRateLimitCleanup` throttle comment at `:34-38`) | [VERIFIED: sed 25-40 → line 11 of excerpt] |
+| Comment 2 | `route.js:76-78` "A web-only replica must never run the update: prevEvents and / lastSeasonObserved live in this process, so a poll landing here would / diff against stale state and re-send push notifications (#516)." Guard stays at `:79-80`: `if (!isWorkerEnabled()) return errorResponse(403, start, 'worker disabled on this instance');` | [VERIFIED] |
+| Comment 3 | `initializeWorker.mjs:2-6` "True unless WORKER_ENABLED is explicitly "false". Lets a horizontally scaled web tier run with the poller switched off: the update path keeps state in memory (prevEvents, lastSeasonObserved), so exactly one instance may poll — see #516. Deployments run N web replicas with WORKER_ENABLED=false and one worker replica with it on (deploy/staging/compose.yaml)." | [VERIFIED] |
+| Comment 4 | `public/workers/cron.js:13` " * 1. Spawned by src/instrumentation.js during application startup"; real chain `src/instrumentation.node.js:18` `await migrateOrWait();` and `:22` `const worker = await initializeWorker();` | [VERIFIED] |
+| Already correct | `.example.env:17-19` "# WORKER_ENABLED="false" — serve web only, no poller. Not needed to scale: every / # replica runs the worker, and the worker_heartbeat lease lets only one of them / # poll (src/update/lease.mjs)." | [VERIFIED] |
+| `initializeWorker` crash handling | `initializeWorker.mjs:68` `if (!shuttingDown) process.exit(1);` | [VERIFIED] |
+| Map lines | `STACK.md:85`, `ARCHITECTURE.md:125`, `:127`, `:130`, `INTEGRATIONS.md:79` ("docker-compose.yml for staging pull-based compose") and `:80` ("Production runs 3 app replicas behind a service VIP…") all still hold. | [VERIFIED] |
+| Extra stale map text | `CONCERNS.md:35-39` (entire concern "Worker poller state: CLAUDE.md describes module-level state that code no longer has"), `:44-48` (#501 "unverified", changes when #501 closes), `:50-53` (#502, D-10). `PROJECT.md:78` already says Vitest 5 (the old "Vitest 4" fix is done). | [VERIFIED] |
+| Writes per path | `season.mjs:10-12` imports `upsertSeason`, `upsertEvent`, `upsertStatus` only; `status.mjs:8-12` imports those plus `upsertStatistic` and `upsertEventProgress` (calls at `:88`, `:101`, `:118`) | [VERIFIED] |
+| `.claude/CLAUDE.md` | Exists in the main checkout `/Users/andrei/Developer/helldivers.bot/.claude/CLAUDE.md`; GSD markers at `:1` (`source:PROJECT.md`), `:23` (`source:codebase/STACK.md`), `:93` (`source:CONVENTIONS.md`), `:169` (`source:ARCHITECTURE.md`). Regenerate only after the maps merge and a `git pull --ff-only` there. | [VERIFIED: grep -n source:] |
 
-| File:line | Classification | Reason |
-|-----------|----------------|--------|
-| `AGENTS.md:220` | **repoint** | Task Tracking sentence; D-03/D-19 |
-| `.planning/PROJECT.md:49` | **repoint** | "§ Track F" → SSE-01 / Phase 17 (the four questions are already listed there) |
-| `.planning/PROJECT.md:51` | **rewrite** | "reconciled or retired" checkbox → retired (tick it) |
-| `.planning/PROJECT.md:65` | **rewrite** | "Execution order doc: `docs/roadmap.md`..." bullet now points to the pointer file; its "Stale items" list can go |
-| `.planning/PROJECT.md:93` | **update** | decision row `— Pending` → resolved once done |
-| `.planning/PROJECT.md:43` | **edit for D-18** | mentions #469 under Housekeeping (Track A); add ARCH-11 / Phase 11 |
-| `.planning/REQUIREMENTS.md:37` | leave | HOUSE-05 text |
-| `.planning/ROADMAP.md:96` | leave | Phase 2 SC 5 text |
-| `.planning/research/{ARCHITECTURE:5,86,115,168; PITFALLS:165; FEATURES:9,189,237; SUMMARY:102,146}.md` | leave | dated research; the pointer keeps the file path valid |
-| `CHANGELOG.md:566,1643,1651` | leave | history |
-| `.planning/phases/02-*/02-CONTEXT.md`, `02-DISCUSSION-LOG.md` | leave | planning record |
-| Other roots (`README.md`, `src/`, `.github/`, `docs/superpowers/`) | none | grep for `roadmap` outside `.planning`, `CHANGELOG.md`, `AGENTS.md`, `docs/roadmap.md` returned no file |
+## DOCS-02 facts
 
-`docs/roadmap.md`: 576 lines `[VERIFIED: wc]`; `git log -1 -- docs/roadmap.md` is `bb01517d560cc7ec1d673a280628ce5e86f00dc4`; `git show bb01517d:docs/roadmap.md | wc -l` is 576, and that commit is an ancestor of both `origin/develop` and `origin/main`, so a permalink `https://github.com/elfensky/helldivers.bot/blob/bb01517d560cc7ec1d673a280628ce5e86f00dc4/docs/roadmap.md` is stable and survives rebase-merges (use this commit, not a lane commit, whose SHA a rebase-merge would rewrite). `docs/roadmap.md:168` is `### S2a — Archives map: hide factions until introduced ([#469](...))`; its Prep line says "plan — the risk is in the blast radius, not the logic" (carry that into the ARCH-11 text).
+**Sweep baselines** (run at 0.98.0 with `bash`, patterns in § Code Examples 3): sweep 1 (retired strings) = 46 lines (architecture 3, data-flow 4, infrastructure 15, database 19, testing 4, notifications 0); sweep 2 (`~15s`, `every ~15`, `in memory`) = 11 lines (architecture 8, notifications 3). Target for both: 0, minus any legitimate use (review each remaining hit by hand).
 
-**#469 now has 1 comment** (2026-07-27, "Verified in the browser ... season 160 ... `introduction_order` is `[0, 1, 2]`", Bugs day 1, Illuminate day 2, Cyborgs day 3), not 0 as the discussion log recorded; state `OPEN`, milestone "Archive Analytics & Dashboard" `[VERIFIED: gh issue view 469]`. `#469` appears in neither `REQUIREMENTS.md` nor `ROADMAP.md` today (grep for `469` in `.planning/REQUIREMENTS.md`, `ROADMAP.md` and `STATE.md` returned no line mentioning it).
+**CONTEXT line refs: exact vs moved.**
+- Exact: `database/page.mdx` `:41` (`import 'dotenv/config';`), `:51`, `:130`, `:174`, `:188`, `:194`, `:203`, `:212`, `:523` (`### Review`), `:578` (`## 7. App Configuration Model`), `:613`, `:638`; `testing/page.mdx` `:11`, `:22`, `:107`, `:137`, `:271`, `:282`; `infrastructure/page.mdx` `:82`, `:86`, `:98`, `:114`, `:122`, `:193`, `:211`, `:244`, `:304`, `:373`, `:428`, and old workflow names at `:149`, `:171`, `:195`; `data-flow/page.mdx` `:4`, `:90`, `:103`, `:153`, `:200`, `:441`.
+- Moved or different: the `POSTGRES_SSL` row is at `infrastructure/page.mdx:427` (not `:433`); `SKIP_MIGRATIONS` is already gone from the page; the word "distroless" no longer appears on the infrastructure page (the `:90-95` text to remove is `NODE_ENV=staging` at `:90`, `uid 1001` at `:91`, `/sbin/tini --` at `:95`, and migrate-image tini at `:44` and `:50`); the database ER fences are at `:73` and `:231` (not `:215`); `.mdx` fences: architecture `:46`, data-flow `:19,:100`, infrastructure `:13,:129,:205`, database `:73,:231`, testing `:24`.
+- New facts for database: `prisma/schema.prisma:238-251` `model worker_heartbeat` with `holder_id String?`, `lease_until DateTime?`, `prev_events Json?`, `last_season_observed Int?` (lines 247-250); `:284-292` `model api_rate_limit { key String / route_group String / window_start Int / count Int @default(0) / @@id([key, route_group, window_start]) / @@index([window_start]) }`. `window_start` is `Int`, not a timestamp. `grep -n Timestamptz prisma/schema.prisma` finds nothing. The page has 19 `TIMESTAMPTZ` cells. Schema models: Account, Session, Verification, User, Settings, ApiKey, h1_season, h1_event, h1_status, h1_statistic, h1_event_progress, push_subscription, worker_heartbeat, app_instance, seed_state, api_rate_limit. `prisma.config.mjs:1-3`: `import dotenv from 'dotenv';` / `dotenv.config({ path: '.env.development' });` / `dotenv.config(); // fallback to .env (production/Docker)`.
 
-**ARCH-11 placement** `[VERIFIED: file reads]`:
-- `REQUIREMENTS.md:86` is `- [ ] **ARCH-10**: ...` (taken) → ARCH-11 is next free. Add `- [ ] **ARCH-11**: #469 — archives map hides each faction until its introduction point (...)` after `:86`. The #469 comment's data (intro order, `first_seen`) is the acceptance basis.
-- Traceability table: `| ARCH-10 | Phase 12 | Pending |` is at `:216`; add `| ARCH-11 | Phase 11 | Pending |` after it (the table is ordered by ID, not by phase).
-- Coverage footer `:242-243`: `- v1 requirements: 79 total` and `- Mapped to phases: 79` → `80`/`80`. Optionally refresh the `*Last updated:` line at `:247`.
-- `ROADMAP.md`: Phase 11 header block at `:224-236`; `:229` `**Requirements**: ARCH-02, ARCH-03, ARCH-04, ARCH-05` → append `ARCH-11`; add success criterion 5 after `:235` (`4. A player can scrub ...`). The phase-list line `:26` and Phase 11 goal need no change.
-- Pointer content for `docs/roadmap.md` (~5 lines): title, one sentence "Execution order lives in `.planning/ROADMAP.md`; what-to-build lives in GitHub issues", link to `.planning/ROADMAP.md`, link to the `bb01517d` permalink. The `docs/roadmap.md` path must keep existing (research files link it).
+**Architecture diagram files** (rendered, D-23): `architecture/dataFlowConfig.mjs` `:6` `Live Polling (~15s)`, `:65` `Polled every ~15 seconds.`, `:69` `~15s poll`, `:90` `~15s poll + on demand`, `:121` file list (ends before `season-160`; 160 seed files exist), `:136` `~15s loop`, `:153` `subtitle: 'prisma db seed'`; `dataFlowDefinition.mjs:12` seed node label `prisma db seed / startup`, `:30-31` `~15s`, `~15s + on demand`. The `snapshot` flow at `dataFlowConfig.mjs:24-31` lists `h1_statistic` and `h1_event_progress`, which `updateSeason` does not write. Seed command now: `Dockerfile.migrate:143` "`node --experimental-strip-types prisma/seed/seed.mjs`"; at app start the seed runs through `migrateOrWait` when the seed hash changed (`migrateOnStart.mjs:105-111`). Exports for scripted parsing: `DEFINITION_LR`, `DEFINITION_TD` (`dataFlowDefinition.mjs:75`), built by `buildMermaidDefinition(body)` (`_diagram.mjs:12`).
 
-## Release mechanics (D-21, D-22)
+**data-flow "on-demand" is not retired** (D-08). Callers of `updateSeason(` outside tests [VERIFIED: grep]: `route.js:139` (closing pass) and `:160` (every poll, with `{ protectedBucket }`), `src/app/api/h1/rebroadcast/route.js:126`, `src/features/archives/reseedSeason.mjs:55`, `src/shared/utils/api/backfillSeason.mjs:15`, `src/db/queries/getCampaignOrSeed.mjs:27`. Edit the false sentences (`:90` "runs on-demand", `:441` "not called on a schedule"); keep the sections. The `?key=` replacement is the header: `public/workers/cronLogic.js:32` `Authorization: \`Bearer ${key}\`,` and `:14` `const WORKER_STARTUP_HEADER = 'X-Worker-Startup';`, optional `GLITCHTIP_HEARTBEAT_URL` POST (`:41-42`). Route side: `route.js:26` `export const WORKER_STARTUP_HEADER = 'x-worker-startup';`; `GET` at `:62`; `POST` is `methodNotAllowed` (`:221`), which fixes `overviewConfig.mjs:92` "Internal POST endpoint".
 
-- `check-version.yml:6-10`: `pull_request: branches: [develop, main]`, `paths: ['src/**', 'prisma/**', 'public/**', 'package.json']`; job skipped for `dependabot[bot]` (`:24`); fails when `package.json` version equals the base branch's (`:35-40`). A release PR `develop → main` triggers it and passes (0.95.7 vs `main` 0.95.2). A bump commit always edits `package.json`, so any PR that includes it also runs the check.
-- `check-ci.yml` has **no** `paths` filter, so docs-only and `.planning`-only PRs still run `Check: CI` (lint, typecheck, unit tests, build with stub env via `.github/actions/verify`).
-- Rule 3 (AGENTS.md § Git Workflow): PR `develop` → `main`, merged `gh pr merge --merge`; **tag `vX.Y.Z` on that merge commit** (latest `CHANGELOG.md` version); push tag; merge-back by PR `gh pr create --base develop --head main --fill && gh pr merge main --merge` (never `--delete-branch`). Tag trigger: `build-release.yml:3-5` `push: tags: - 'v*.*.*'`. `Check: Docker Smoke` runs on PRs to `main` (`check-docker-smoke.yml:23`).
-- State now: `package.json` `"version": "0.95.7"`; `CHANGELOG.md:3` `## Unreleased` (empty), `:5` `## 0.95.7`; latest tag `v0.95.2`; `origin/develop` is 42 commits ahead of `origin/main`.
-- The GitHub Release body is awk-extracted from the `## <version>` section of `CHANGELOG.md` (`build-release.yml:176-180`); a missing or empty section degrades to "Release <tag>" with a warning, so the bump commit's CHANGELOG move is not optional for release 2.
-- The merge-back and release PRs use merge commits; all other PRs use `--rebase` (rule 0). Note for awareness only: `REQUIREMENTS.md` DEPS-03/DEPS-04 (Phase 4) plan to change the allowed merge methods; until then AGENTS.md rule 0 stands.
-- Suggested sequence for the planner: (1) release 0.95.7 (`.planning`-only plan PR for this phase does not need to land first); (2) Andrei deploys and reports a 0.95.7 production event; (3) HOUSE-03 symbolication proof recorded; (4) lane PRs; (5) measure staging image; (6) release 2 with its own version; (7) D-15 checks 2 and 3; (8) close #502, comment+close #501, file the three issues (D-17 gaps, WR-07, WR-08), update `01-REVIEW-DISPOSITION.md`.
+**infrastructure facts for the new sections** [VERIFIED: file reads]:
+- 11 workflow files and their `name:` values: `build-release.yml` "Build: Release" (tag `v*.*.*`; `workflow_dispatch` input `tag` re-pins only), `build-staging.yml` "Build: Staging" (`workflow_run` of "Check: CI"), `check-ci.yml` "Check: CI" (PR/push `main`, `develop`), `check-codeql.yml` "Check: CodeQL" (+ cron `0 6 * * 1`), `check-dependencies.yml` "Check: Dependencies", `check-docker-smoke.yml` "Check: Docker Smoke" (PR to `main`), `check-migrate-arm64.yml` "Check: Migrate Image (arm64)" (path filter), `check-version.yml` "Check: Version Bump" (PR to `main` only, paths `src/**`, `prisma/**`, `public/**`, `package.json`), `cleanup-ghcr.yml` "Cleanup: GHCR" (cron `17 4 * * 1`), `scheduled-pagespeed.yml` "Scheduled: Pagespeed" (Mon 00:00 and Fri 06:00 UTC), `scheduled-seed-refresh.yml` "Scheduled: Seed Refresh". Composite actions: `.github/actions/verify`, `.github/actions/docker-publish`.
+- Release path: `build-release.yml` jobs `verify` (`Test & Build`), `build-app` (matrix `amd64` on `ubuntu-latest`, `arm64` on `ubuntu-24.04-arm`), `merge-app` (`docker buildx imagetools create -t "$IMAGE:$TAG" -t "$IMAGE:production" -t "$IMAGE:latest" …`), migrate legs, `pin-production` (`:278-279`). Staging: `build-staging.yml` stamp step `echo "version=$(jq -r .version package.json)-dev.${TESTED_SHA::7}"`, `bump-staging-tag` (`:267`).
+- Runner image: `Dockerfile.app:138` `FROM node:26-slim AS runner`; user 65532 (`--chown=65532:65532`, `:167-169`); the comment above says it replaced distroless on 2026-10-23.
+- Env keys in `.example.env` (36): AUTH_DISCORD_ID, AUTH_DISCORD_SECRET, AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, BETTER_AUTH_SECRET, BETTER_AUTH_URL, BUCKET_SIZE, DEPLOY_ENV, FORCE_SEED, GLITCHTIP_HEARTBEAT_URL, LEGACY_POSTGRES_URL, MIGRATE_ROOT, NEXT_PUBLIC_DEPLOY_ENV, NEXT_PUBLIC_SENTRY_DSN, NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_VAPID_PUBLIC_KEY, PORT, POSTGRES_URL, SEED_TEST_API_KEY, SEED_TEST_API_KEY_HASH, SENTRY_AUTH_TOKEN, SENTRY_DSN, SENTRY_ORG, SENTRY_PROJECT, SENTRY_SERVER_NAME, SENTRY_URL, SMOKE_ALLOW_SKIP, TEST_SERVER_URL, UMAMI_SITE_ID, UMAMI_SITE_URL, UPDATE_INTERVAL, UPDATE_KEY, VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY, VAPID_SUBJECT, WORKER_ENABLED (names only; extracted with a regexp, so re-read the file for commented-out keys).
+- The page's env table is `infrastructure/page.mdx:399-430`. It lacks `BUCKET_SIZE`, `FORCE_SEED`, `WORKER_ENABLED`, `SENTRY_SERVER_NAME`, `LEGACY_POSTGRES_URL`, `SEED_TEST_API_KEY(_HASH)`, `SMOKE_ALLOW_SKIP`, `TEST_SERVER_URL`; it has `POSTGRES_SSL` (`:427`), which no code reads (`grep` over `src` finds only the test `exampleEnv.test.mjs:22` `expect(exampleEnv).not.toContain('POSTGRES_SSL=')`). `docker-compose.ci.yml:70` still sets `POSTGRES_SSL: 'false'` (not in scope; mention in the PR).
+
+**testing facts:** `src/__tests__` holds `smoke`, `unit`, `utils`, `visual`; `src/__tests__/unit` holds `_meta`, `app`, `auth.test.mjs`, `config`, `db`, `features`, `shared`, `update`, `validators`, `workers` (199 test files under `unit`). `_meta` holds `browserslist`, `exampleEnv`, `jsconfig`, `mirrorTree`, `packageScripts`, `seedSkip`. `package.json:15-20`: `"test": "vitest run"`, `"test:unit": "vitest run"`, `"test:smoke": "vitest run --config vitest.smoke.config.mjs"`, `"test:all": "vitest run && vitest run --config vitest.smoke.config.mjs"`. `smoke.test.mjs:1` `const BASE_URL = process.env.TEST_SERVER_URL || 'http://localhost:3000';` and `:11` `const allowSkip = /^(1|true)$/i.test(process.env.SMOKE_ALLOW_SKIP ?? '');`. `vitest.config.mjs` coverage `exclude` has 3 globs (`src/generated/**`, `src/**/*.{test,spec}.{js,jsx,mjs}`, `src/__tests__/**`).
+
+**Mermaid baseline under 12.3.0** (script below, run on this worktree): all fences `OK` except `FAIL database fence@73 Parse error on line 97: … String userId PK-FK`. Fix: `PK, FK` (`database/page.mdx:170`). Fences render only as `<pre>` (`mdx-components.jsx:26` `pre: ({ children }) => (`). Only five `<MermaidDiagram>` uses exist: `architecture/page.mdx`, `page.mdx`, `notifications/page.mdx` (3 diagrams). Render failure is silent in the page: `useMermaidRender.mjs` logs `[MermaidDiagram] render failed:` to the console and leaves the SVG empty, so the browser check reads the console and the DOM.
+
+**Lease lines on other pages (D-07):** `notifications/page.mdx:115`, `notificationFlowConfig.mjs:175`, `pushFlowConfig.mjs:36` ("in memory"); `docs/page.mdx:32` (also `data-flow/page.mdx:4`, same phrase); `overviewConfig.mjs:92`. Optional extra wording (out of D-07): `notificationFlowConfig.mjs:57,63`, `inAppFlowConfig.mjs:47` omit the lease claim.
 
 ## Common Pitfalls
 
-### Pitfall 1: Verifying a diagram that is not rendered
-**What goes wrong:** executor opens `/docs/data-flow` expecting an SVG and sees code text, or "verifies" a fence by eye.
-**Why:** `mdx-components.jsx:26-30` maps `pre` to a plain `<pre>`; no remark/rehype mermaid plugin (`next.config.mjs:205-209`).
-**How to avoid:** use the table in § Mermaid; run the parse script for fences; use the browser only for the 5 component pages.
-**Warning signs:** `.diagram-canvas svg` count is 0 on a page that has only fences.
+### Pitfall 1: Staging cannot produce the D-15 (1) event
+**What goes wrong:** the plan says "open staging, throw an error, read GlitchTip"; the tunnel answers 503 and nothing arrives.
+**Why:** staging has no runtime `SENTRY_DSN` (§ Research topic 2).
+**How to avoid:** decide the event source (a/b/c) at planning; make it a `checkpoint:decision`.
+**Warning signs:** `POST /api/glitchtip` returns 503 on staging.
 
-### Pitfall 2: Treating the local build as proof of the strip
-**What goes wrong:** `npm run build` passes locally, executor reports HOUSE-03 verified.
-**Why:** no `SENTRY_AUTH_TOKEN` locally, wrapper skipped (`next.config.mjs:212`).
-**How to avoid:** the only valid proof is the image from a token build (`Build: Staging` / `Build: Release`) measured with § D-15 check 1.
+### Pitfall 2: "Successfully uploaded" read as "symbolication works"
+**What goes wrong:** the maps are deleted, and GlitchTip never assembled the bundle.
+**Why:** upload errors do not fail the build; GlitchTip assembles after it answers `created`.
+**How to avoid:** gate on the log line per leg, then prove with an event (D-15 (1)). Never skip step (1).
 
-### Pitfall 3: Deleting "on-demand" because the inventory says retired
-See Summary item 2. Edit sentences, not sections.
+### Pitfall 3: Treating a local `npm run build` as proof of the strip
+**Why:** no token locally, the wrapper is skipped. Use the staging image.
 
-### Pitfall 4: Wrong baseline for the size comparison
-`:latest`/`:production` move on each release; `142 maps / 24.6 MB` is a v0.90.5 figure. Pin `:v0.95.2` and re-measure.
+### Pitfall 4: Merging #642 before release 1, or across Monday 03:00 UTC
+**Why:** release 1 would carry season 161 (seed hash), the note commit can collide with the cut, and the Monday run force-pushes over human commits. See § HOUSE-04 facts.
 
-### Pitfall 5: Detail-panel keys out of sync with the diagram
-Adding a lease node to `dataFlowDefinition.mjs` without a `details.<id>` entry and `flows` membership gives a node that opens an empty panel and never highlights. Add all three in one edit.
+### Pitfall 5: Verifying a diagram that is not rendered
+Fences are text. Use the parse script for fences and the browser only for the five component diagrams.
 
-### Pitfall 6: Version conflicts between parallel docs PRs
-Each PR bumps `package.json` and moves `CHANGELOG.md`. Merge in sequence; the second PR re-bumps after rebase.
+### Pitfall 6: Detail-panel keys out of sync
+Adding a lease node to `dataFlowDefinition.mjs` needs matching `flows` and `details` entries in `dataFlowConfig.mjs`, in the same edit. `src/__tests__/unit/app/docs/_diagram.test.mjs` covers `_diagram.mjs`; keep its exports unchanged.
 
-### Pitfall 7: `.claude/CLAUDE.md` regenerated in the wrong checkout
-It lives in the main checkout, is gitignored, and is generated from tracked maps. Regenerating in the lane produces a file no session loads. Do it after the merge and `git pull --ff-only` there.
+### Pitfall 7: `docker image inspect .Size` and `grep` under `rtk`
+`.Size` is 0 under the containerd store. Use the export method. The Bash hook rewrites `grep` and `curl`; call `/usr/bin/grep` and `/usr/bin/curl` for measurements and probes (global memory).
 
-### Pitfall 8: Public docs leaking private topology
-See § Anti-Patterns (host, IP, secret names from `deploy/README.md`).
+### Pitfall 8: `--delete-branch` from a lane
+Use `gh pr merge <n> --rebase`, check `gh pr view <n> --json state` is `MERGED`, then `git push origin --delete <branch>` (D-27). A release PR never deletes `develop`.
 
-### Pitfall 9: Claiming #501 is fully verified
-See § HOUSE-04. State the unexercised fallback path and the missing bump/CHANGELOG on #531 plainly (AGENTS.md "Report outcomes faithfully").
+### Pitfall 9: Claiming #501 fully verified
+The "PR already open" path did not run. Say so.
+
+### Pitfall 10: Regenerating `.claude/CLAUDE.md` in the lane
+It lives in the main checkout, is gitignored, and loads only there. Regenerate after the maps merge.
 
 ## Code Examples
 
-### 1. Lease facts for DOCS-01/02 text (all read this session)
+### 1. Mermaid fence parse script (tested here on mermaid 12.3.0 + jsdom 30.1.3; place as `scripts/check-mermaid-fences.mjs`)
 
 ```js
-// src/update/lease.mjs
-export const WORKER_TYPE = 'cron_api_poller';
-export const LEASE_TTL_S = 60; // 3 polls at the 20 s staging cadence
-// src/app/api/h1/update/route.js
-if (!lease)
-    return successResponse(200, start, { role: 'standby', holder: HOLDER_ID });
-const { prevEvents, lastSeasonObserved } = lease;
-// src/shared/utils/initializeWorker.mjs
-return !['false', '0', 'no', 'off'].includes(v);
-```
-`SENTRY_SERVER_NAME` feeds the holder id (`makeHolderId`: `` `${host}:${process.pid}:${randomUUID().slice(0, 8)}` ``). `started_at` resets only when the holder changes (`claimLease` SQL `CASE WHEN worker_heartbeat.holder_id IS DISTINCT FROM EXCLUDED.holder_id`). Timestamps use `now() AT TIME ZONE 'UTC'` because columns are naive `timestamp(3)`.
-
-### 2. Mermaid parse check for text fences and definition files (jsdom needed for DOMPurify)
-
-```js
-// Run from outside the repo: node /abs/path/parse.mjs   (reads, never writes, the lane)
+// usage: node scripts/check-mermaid-fences.mjs   (reads src/app/docs/*/page.mdx, never writes)
 import fs from 'node:fs';
-const L = '/Users/andrei/Developer/helldivers.bot/.worktrees/docs-phase-02-plan';
-const { JSDOM } = await import(L + '/node_modules/jsdom/lib/api.js');
+import { JSDOM } from 'jsdom';
+
 const dom = new JSDOM('<!doctype html><body></body>');
-globalThis.window = dom.window; globalThis.document = dom.window.document;
-const mermaid = (await import(L + '/node_modules/mermaid/dist/mermaid.core.mjs')).default;
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+const mermaid = (await import('mermaid')).default;
+
+let fail = 0;
 for (const p of ['architecture', 'data-flow', 'infrastructure', 'database', 'testing', 'notifications']) {
-    const t = fs.readFileSync(`${L}/src/app/docs/${p}/page.mdx`, 'utf8');
+    const t = fs.readFileSync(`src/app/docs/${p}/page.mdx`, 'utf8');
     for (const m of t.matchAll(/```mermaid\n([\s\S]*?)```/g)) {
         const line = t.slice(0, m.index).split('\n').length;
-        try { await mermaid.parse(m[1]); console.log('OK  ', p, 'fence@' + line); }
-        catch (e) { console.log('FAIL', p, 'fence@' + line, String(e.message).split('\n').slice(0, 4).join(' | ')); }
+        try {
+            await mermaid.parse(m[1]);
+            console.log('OK  ', p, `fence@${line}`);
+        } catch (e) {
+            fail++;
+            console.log('FAIL', p, `fence@${line}`, String(e.message).split('\n').slice(0, 3).join(' | '));
+        }
     }
 }
-// Definition files: read BODY, wrap as "graph LR\n"+BODY and "graph TD\n"+BODY (see _diagram.mjs), then mermaid.parse each.
+process.exit(fail ? 1 : 0);
 ```
-Baseline output today: every line `OK` except `FAIL database fence@73 ... Expecting 'BLOCK_STOP', 'ATTRIBUTE_WORD', ',', 'COMMENT', got '-'` (`PK-FK`).
 
-### 3. Stale-string sweep (a cheap guard for DOCS-02, bash)
+Baseline output today: 8 lines `OK`, `FAIL database fence@73 Parse error on line 97: | ...    String userId PK-FK        Json   s`, exit code 1. Run it fail-first, fix `PK-FK` → `PK, FK`, run again. The five rendered definitions (`DEFINITION_LR`, `DEFINITION_TD` exports) can be parsed the same way by importing the `*Definition.mjs` files. Repo lint ignores `scripts/**` in one list (`eslint.config.mjs:89`); check that `npm run lint` and `npm run typecheck` (`jsconfig.json` includes only `src/**`) stay green with the new file.
+
+### 2. Browser check for the five rendered diagrams (D-23)
+
+Start a lane server on its own port (the dev server on :3000 may serve another checkout): `WORKER_ENABLED=false POSTGRES_URL='postgresql://ci:ci@localhost:5432/ci' UPDATE_KEY=x UPDATE_INTERVAL=20 npx next dev -p 3100` (or `npm run build` then `npx next start -p 3100`). Whether the server starts with no reachable database is [ASSUMED] (A9). Pages: `/docs/architecture`, `/docs`, `/docs/notifications`. With chrome-devtools: `list_console_messages` must hold no `[MermaidDiagram] render failed:`; `document.querySelectorAll('.diagram-canvas svg').length` must equal the diagrams on the page (1, 1, 3); click one changed node and read the `DetailPanel`; repeat at width ≤ 768 px (the mobile `TD` definition).
+
+### 3. Stale-string sweep (run under `bash`; zsh aborts on unmatched globs)
 
 ```bash
 PAGES="src/app/docs/architecture src/app/docs/data-flow src/app/docs/infrastructure src/app/docs/database src/app/docs/testing src/app/docs/notifications src/app/docs/page.mdx src/app/docs/overviewConfig.mjs"
-grep -rnE "TIMESTAMPTZ|initializeOpenApiSpec|\?key=|staging\.docker\.yml|release\.docker\.yml|metrics\.yml|[^-a-z]ci\.yml|euraika|aegis|POSTGRES_SSL|SKIP_MIGRATIONS|5-15 seconds|silent: true|snapshot throttling|AI assistants|Never start the dev server from Claude" $PAGES   # baseline today: 42 lines; target 0
-grep -rnE "~15 ?s|every ~15|in memory" $PAGES                                                                                         # baseline today: 11 lines; target 0
-grep -nE "module-level state|~15 seconds|~15s|docs/roadmap\.md|TimelineSection|ConnectionStatus" AGENTS.md                              # baseline: lines 188,189,191,211,212,220; target none
+/usr/bin/grep -rnE 'TIMESTAMPTZ|initializeOpenApiSpec|\?key=|staging\.docker\.yml|release\.docker\.yml|metrics\.yml|[^-a-z]ci\.yml|euraika|aegis|POSTGRES_SSL|SKIP_MIGRATIONS|5-15 seconds|silent: true|snapshot throttling|AI assistants|distroless|tini|uid 1001|RELEASE\.md|softprops|prisma db seed' $PAGES   # baseline 46
+/usr/bin/grep -rnE '~15 ?s|every ~15|in memory' $PAGES                                                                                                                                           # baseline 11
+/usr/bin/grep -nE 'module-level state|~15 seconds|~15s|--delete-branch' AGENTS.md                                                                                                                  # baseline: line 44 only
 ```
-Run under `bash -c`; the interactive shell is zsh and an unmatched glob aborts the command.
 
-### 4. Lane-local dev server for the browser check (assumption, not run)
-See § Mermaid step 1.
+### 4. Quick facts for the DOCS-01 text (verbatim sources)
+
+```js
+// src/update/lease.mjs:19-20
+export const WORKER_TYPE = 'cron_api_poller';
+export const LEASE_TTL_S = 60; // 3 polls at the 20 s staging cadence
+// src/app/api/h1/update/route.js:91
+return successResponse(200, start, { role: 'standby', holder: HOLDER_ID });
+```
 
 ## State of the Art
 
-| Old | Current | Changed | Impact |
-|-----|---------|---------|--------|
-| `sentry-cli` upload (0.95.2) | `@sentry/bundler-plugins` 11.8.0 + `sentry` 0.45.0, debug-ID artifact bundles | f58e3052 (0.95.7 line) | D-24 re-proof; log line `[@sentry/nextjs - After Production Compile] Info: Successfully uploaded source maps to Sentry` |
-| `withSentryConfig` from `@sentry/nextjs` | from `@sentry/nextjs/config` | f58e3052 (`next.config.mjs:1`) | IN-03 import half done |
-| mermaid 11 | 12.2.0 | f58e3052 | `PK-FK` ER attribute no longer parses; `MermaidDiagram.jsx:11` documents v12 ID format |
-| vitest 4 | 5.0.5 | f58e3052 | `attachmentsDir` pinned (`vitest.visual.config.mjs:12-14`); `PROJECT.md:72` fix |
-| Sentry 10 `sendDefaultPii` | v11 `dataCollection` | f58e3052 | infrastructure page Sentry text (`:302-313,375` already touched by 48c056ee) |
-| #516 model (web-only replicas, one worker service) | #517 lease (every replica polls, one holder) | before 0.95.2 | the core DOCS-01/02 subject |
+| Old approach | Current approach | When changed | Impact |
+|--------------|------------------|--------------|--------|
+| `sentry-cli` artifact bundle (0.95.2) | `@sentry/bundler-plugins` 11.10.0 + `sentry` CLI ^0.45.0, debug-ID bundles, `_debugIds` global | Sentry 11 (v0.95.8 → v0.97.2) | D-24: no symbolicated Sentry 11 event recorded yet |
+| Distroless runner | `node:26-slim`, uid 65532, shell present | 2026-10-23 (`Dockerfile.app` comment) | Docs text to fix; `docker run … find` works now |
+| Manual production pull | `pin-production` + Arcane Git Sync | v0.96.4 | Plans contain no manual pull (D-29) |
+| Version bump per PR | Accumulate, then cut (#618) | 2026-11 | Work PRs add notes only (D-22) |
+| `GITHUB_TOKEN` PR runs no workflows | PR runs wait for approval | GitHub rollout, reported from 2026-06 | #642 blocked by the ruleset |
+| Merge-back after release | None (#621) | 2026-11 | Release = cut PR + release PR + tag |
 
-**Deprecated/outdated:** `initializeOpenApiSpec()` / `src/utils/initialize.openapi.mjs` (gone from `src`, grep empty), `?key=` auth, `POSTGRES_SSL`, `SKIP_MIGRATIONS` (unused), `RELEASE.md` as release body source.
+**Deprecated/outdated:** `initializeOpenApiSpec()` (gone from `src`), `?key=` auth, `POSTGRES_SSL`, `SKIP_MIGRATIONS`, `RELEASE.md` as release body source (now awk from `CHANGELOG.md`, `build-release.yml`).
 
 ## Assumptions Log
 
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
-| A1 | A lane dev/prod server starts without a reachable Postgres because `layout.jsx:80-81` tolerates `getCampaign()` failure | Mermaid step 1 | Executor needs a real DB or env file to view docs pages; add an env file or use a prod build |
-| A2 | If the Sentry upload fails, the build still completes and the delete still runs | HOUSE-03 risk | If the build aborts instead, the risk is smaller than stated; the log-grep gate remains useful either way |
-| A3 | `.map` files were never in the Serwist precache | HOUSE-03 other effects | `public/sw.js` size shrinks or a precache entry 404s after the strip; grep `public/sw.js` after a token build |
-| A4 | `generate-claude-md` flags/behaviour for the main checkout regeneration | Anti-Patterns | Wrong command; fall back to the `/gsd-profile-user`-adjacent GSD command in the main checkout |
-| A5 | GlitchTip resolves Sentry-11 debug-ID bundles the same way as the `sentry-cli` 0.95.2 bundle | HOUSE-03 / D-24 | Strip blocked until uploader fixed (CONTEXT already plans for this) |
-| A6 | A production event on 0.95.7 with a minified browser frame will arrive without help | D-24 | Gate stalls; see Open Question 3 |
+| A1 | A human push to `chore/seed-refresh` starts the PR runs without approval | Research topic 1 | The push path also waits; fall back to the UI approval |
+| A2 | After approval, the 3 jobs attach to head `a22b7efc` and satisfy the ruleset contexts | Research topic 1 | Merge stays BLOCKED; read `statusCheckRollup`, then ask Andrei |
+| A3 | The `/actions/runs/{id}/approve` REST endpoint rejects same-repo bot PRs | Research topic 1 | None; the UI path works either way |
+| A4 | In the Docker build the Sentry release name is unset (CLI gets `"undefined"`) | Research topic 2 | A GlitchTip release named `undefined` appears; harmless for debug-ID lookup |
+| A5 | Production runs amd64 images, staging (Pi) runs arm64 | Research topic 2 | Only changes which leg's IDs the browsers see; both legs upload |
+| A6 | A natural production browser event with a minified frame arrives after release 2 | Research topic 2 | D-15 (4) stalls; Andrei picks a probe |
+| A7 | `generate-claude-md --output` regenerates an existing `.claude/CLAUDE.md` in place | DOCS-01 | Wrong command; find the GSD regeneration command in the main checkout |
+| A8 | `.map` files were never in the Serwist precache | HOUSE-03 | `sw.js` references a missing file; `grep '\.map' public/sw.js` after a token build |
+| A9 | The lane server starts without a reachable Postgres | Code Examples 2 | Executor needs a database or a production build |
+| A10 | No documented setting disables the `GITHUB_TOKEN` approval gate | Research topic 1 | A setting exists and the new issue's fix is simpler |
+| A11 | #531's unapproved runs were `action_required` until the merge turned them into `failure` | Research topic 1 | Wording only in the issue |
 
 ## Open Questions
 
-1. **Should #501 close on the real run alone, or also on a controlled simulation of the "second run while PR is open" path?**
-   - Known: item (3) of #501's checklist (the `|| echo 'PR already open'` fallback) never ran for real; D-17 says the workflow does not change.
-   - Unclear: whether Andrei accepts "unexercised, recorded as a gap" as closure.
-   - Recommendation: close #501 with the facts above, state item 3 as "not exercised, see new issue", and put the simulation in the new gaps issue. Ask Andrei at the natural stop.
-2. **Where to run the lane server for the browser check?**
-   - Known: `:3000` serves the main checkout's stale build.
-   - Recommendation: port 3100 from the lane, stub env (A1).
-3. **How to get a 0.95.7 browser event on demand?**
-   - Known: the 0.95.2 proof was a natural Opera event; staging (`Build: Staging`, same uploader, token present) runs the same Sentry 11 build.
-   - Unclear: whether staging reports to the same GlitchTip project (`deploy/README.md:33` says "Auth/Umami/Sentry unset on purpose" on staging, so **probably not**).
-   - Recommendation: planner adds a `checkpoint:human-verify` for D-24, with "wait for a natural 0.95.7 production browser error" as the main path and Andrei choosing a probe method otherwise.
-4. **Remaining `01-REVIEW-DISPOSITION.md` rows.** 14 of 17 rows (WR-01..06, WR-09..11, IN-01, IN-02, IN-04..06) stay `open`; the file says every row is "triaged in Phase 2 or as a GitHub issue". CONTEXT handles only WR-07, WR-08, IN-03. Recommendation: leave the others open and say so; do not fold them in.
-5. **Semver levels.** Patch fits both PRs (Claude's discretion). Release 2 gets the version of whichever PR merges last.
+1. **Event source for D-15 (1).**
+   - Known: staging has no `SENTRY_DSN`; the tunnel returns 503.
+   - Unclear: whether Andrei accepts a synthetic probe event in the production GlitchTip project (option a), or wants a staging DSN (option b).
+   - Recommendation: option (a), with the event tagged `staging-probe`. Ask at the planning stop. If there is no answer, the plan falls back to option (c) and a human checkpoint.
+2. **Order of release 1 and #642.**
+   - Known: #642 merged first would put season 161 in release 1 and may collide with the cut.
+   - Recommendation: release 1 first. If Andrei wants season 161 live at once, accept both in release 1 and drop the "isolates #599" claim.
+3. **Where does 02-04 sit in the waves?** Today it is wave 4 after the old 0.95.7 release. With D-21 (1) first, it follows the release-1 tag.
+4. **Remaining `01-REVIEW-DISPOSITION.md` rows.** Only IN-03, WR-07 and WR-08 are in scope; the other rows stay `open` (rows IN-01, IN-02, IN-04, IN-05 seen as `open`).
 
 ## Environment Availability
 
 | Dependency | Required By | Available | Version | Fallback |
 |------------|------------|-----------|---------|----------|
-| Docker daemon | D-15 check 1 | no (CLI 29.9.1, socket missing: `dial unix /Users/andrei/.docker/run/docker.sock`) | CLI only | Start Docker Desktop; measure on a machine with Docker |
-| `gh` | issues, runs, package versions | yes, logged in as `elfensky` | — | — |
-| Node 24 (mise) | verify chain | not active in my shell (`v26.8.1`) | — | `mise` trust/activate in the executor shell |
-| `npm ci` / lane `node_modules` | all builds | yes (Sentry 11.8.0, mermaid 12.2.0, Next 16.4.2) | — | — |
-| Prisma client in lane | typecheck, unit, build | no | — | `POSTGRES_URL=... npx prisma generate` (prerequisite above) |
-| GlitchTip MCP | D-24, D-15 check 3 | no (not authenticated) | — | Re-authenticate, or read in the GlitchTip UI |
-| chrome-devtools MCP | D-23 | not probed this session | — | executor probes first call; project rule says chrome-devtools for no-login pages |
-| Production host pull | D-15 checks 2 and 3 | human (Andrei) | — | — |
+| Docker daemon | D-15 (2) measurement | yes | client and server 29.9.3 (containerd store) | — |
+| `gh` | issues, runs, PRs, rulesets | yes (logged in as `elfensky`) | — | — |
+| Node (mise) | verify chain | yes | v26.12.1; `mise.toml` `node = "26"`; mise 2026.11.7 | — |
+| `node_modules` / Prisma client in this worktree | typecheck, tests, build | no (0 entries) | — | `npm ci` then `prisma generate` in the lane |
+| GlitchTip MCP connector | D-15 (1), (4), D-13 record | no (not authorized in this session) | — | Re-authorize in claude.ai connector settings; or read the GlitchTip UI; the public `GET /api/settings/` works unauthenticated |
+| chrome-devtools MCP | D-23 render check | not probed | — | Executor probes on first call |
+| Human steps | UI approval of runs, `pin-production` watch, GlitchTip reads | Andrei | — | `checkpoint:human-action` / `human-verify` |
 
-**Missing with no fallback:** none blocking planning. **Blocking at execution:** Docker daemon (check 1), GlitchTip access (D-24 gate), production deploy by Andrei.
+**Blocking at execution:** a GlitchTip read path (connector or UI) for D-15 (1) and (4).
 
 ## Validation Architecture
 
-`workflow.nyquist_validation` is `true` in `.planning/config.json`.
+`workflow.nyquist_validation` is `true` (`.planning/config.json`).
 
 ### Test Framework
 | Property | Value |
 |----------|-------|
-| Framework | Vitest 5.0.5 (`package.json:82`) |
-| Config file | `vitest.config.mjs` (unit), `vitest.smoke.config.mjs`, `vitest.visual.config.mjs` |
-| Quick run | `npx vitest run src/__tests__/unit/_meta` |
-| Full suite | `npm run lint && npm run typecheck && npm run test:unit && npm run build` (stub env, § Standard Stack) |
+| Framework | Vitest 5.1.0 (unit, smoke, visual configs); Playwright container for visual baselines |
+| Config file | `vitest.config.mjs`, `vitest.smoke.config.mjs`, `vitest.visual.config.mjs` |
+| Quick run command | `npx vitest run src/__tests__/unit/_meta` |
+| Full suite command | `npm run lint && npm run typecheck && npm run test:unit && npm run build` (CI order; stub env `POSTGRES_URL=… UPDATE_KEY=… UPDATE_INTERVAL=20` for build) |
 
-### Phase Requirements → Validation Map
-| Req | Behavior | Check type | Command / evidence | Exists |
-|-----|----------|-----------|--------------------|--------|
-| DOCS-01 | AGENTS.md has lease model, no module-level `lastSeasonObserved` | grep guard + review | § Code Examples 3 third command; read AGENTS.md § Architecture | ✅ (command) |
-| DOCS-01 | Edited comments don't break code | unit/lint | `npm run lint && npm run test:unit`; `.example.env` safe: `src/__tests__/unit/_meta/exampleEnv.test.mjs` asserts only `PORT="3000"`, `DEPLOY_ENV=""` and no `POSTGRES_SSL=` | ✅ |
-| DOCS-02 | MDX compiles | build | `npm run build` (only automatic MDX gate; ESLint ignores `.mdx`) | ✅ |
-| DOCS-02 | `.mjs` configs lint/typecheck | lint + typecheck | `npm run lint`, `npm run typecheck` | ✅ |
-| DOCS-02 | Stale strings gone | grep guard | § Code Examples 3 (baselines 42 / 11) | ✅ (command) |
-| DOCS-02 | Mermaid fences parse under 12.2.0 | script | § Code Examples 2 | ❌ Wave 0 (script lives outside repo; copy to scratch) |
-| DOCS-02 | 5 rendered diagrams render | browser | § Mermaid steps 1-7 | manual / human-verify |
-| DOCS-02 | Page-by-page match with live code | human review | record in phase VERIFICATION per D-12 | manual |
-| HOUSE-03 | `next.config.mjs` change correct | review + token build | log line `Successfully uploaded source maps to Sentry` | after merge (staging build) |
-| HOUSE-03 | `.map` gone from image | measurement | § D-15 check 1 | manual (Docker) |
-| HOUSE-03 | prod 404 | probe | § D-15 check 2 | manual (post-deploy) |
-| HOUSE-03 | symbolicated event | GlitchTip | § D-15 check 3 / D-24 | manual (human-verify) |
-| HOUSE-04 | #501 evidence recorded | `gh` | `gh issue view 501 --json comments,state` after closing | manual |
-| HOUSE-05 | pointer exists, links resolve | grep + review | `wc -l docs/roadmap.md` ≈ 5; AGENTS.md:220 no longer links the old content; `.planning/PROJECT.md` lines 49,51,65,93 edited | ✅ (command) |
-| ARCH-11 | row counts consistent | grep | `grep -c '^| ARCH-' .planning/REQUIREMENTS.md` = 11 and footer says 80 | ✅ (command) |
-
-### Existing automated checks that matter
-- `src/__tests__/unit/_meta/mirrorTree.test.mjs` fails `npm run test:unit` if a new test is not at its mirrored path. This phase adds no tests, so it only matters if the executor adds one.
-- `src/__tests__/unit/app/sitemap.test.mjs` touches the docs route list; no page is added or removed here.
-- `src/__tests__/unit/app/docs/_diagram.test.mjs` covers `_diagram.mjs` (`createFlowConfig`, `buildMermaidDefinition`) — keep that file's exports unchanged.
-- No test reads AGENTS.md, `next.config.mjs` or CHANGELOG (grep of `src/__tests__` for those names returned no match outside docs components).
+### Phase Requirements → Test Map
+| Req ID | Behavior | Test Type | Automated Command | File Exists? |
+|--------|----------|-----------|-------------------|-------------|
+| DOCS-01 | AGENTS.md names `WORKER_ENABLED`, the 60 s lease, standby answer, 2 replicas; merge line has no `--delete-branch` | grep guard | `grep -c WORKER_ENABLED AGENTS.md` ≥ 1; `grep -c -- '--delete-branch' AGENTS.md` = 0 | ✅ |
+| DOCS-01 | 4 comments fixed, 403 guard kept | grep + unit | `grep -n '~15s' src/app/api/h1/update/route.js` empty; `grep -n "errorResponse(403" src/app/api/h1/update/route.js` 1 hit; `npm run lint && npm run test:unit` | ✅ |
+| DOCS-01 | Map lines fixed | grep | `grep -n 'dedicated 1-replica worker\|runs 3 app replicas\|must 403 rather' .planning/codebase/*.md` empty | ✅ |
+| DOCS-02 | MDX compiles | build | `npm run build` (ESLint does not cover `.mdx`: `eslint.config.mjs` files glob is `**/*.{js,mjs,jsx}`) | ✅ |
+| DOCS-02 | Stale strings gone | grep sweep | § Code Examples 3 (baselines 46 and 11) | ✅ command |
+| DOCS-02 | Mermaid fences parse | script | `node scripts/check-mermaid-fences.mjs` exit 0 | ❌ Wave 0 |
+| DOCS-02 | 5 rendered diagrams render | browser | § Code Examples 2, recorded in the PR | manual |
+| DOCS-02 | Page-by-page match with code | review | Final check recorded in the phase verification (D-12) | manual |
+| HOUSE-03 | Config change correct | grep | `grep -n productionBrowserSourceMaps next.config.mjs` empty; `grep -n deleteSourcemapsAfterUpload next.config.mjs` 1 hit | ✅ |
+| HOUSE-03 | Upload ran on both legs | CI log | `gh run view <id> --log \| grep -c 'Successfully uploaded source maps to Sentry'` = 2 | after merge |
+| HOUSE-03 | Maps gone from image | measurement | § HOUSE-03 export commands: `static` `.map` = 0, `server` = 48 | manual (Docker) |
+| HOUSE-03 | Production `.map` 404 | probe | § HOUSE-03 D-15 (3) | after release 2 |
+| HOUSE-03 | Symbolicated events | GlitchTip | D-15 (1) and (4) | manual |
+| HOUSE-04 | #642 landed, #501 closed with the run recorded | `gh` | `gh pr view 642 --json state` = `MERGED`; `gh issue view 501 --json state,comments` | manual |
+| HOUSE-04 | Staging seeds 161 | log | `[migrate] seed data changed, seeding` in the staging app log after the pin moves | manual |
+| HOUSE-05 | Done | file | `test ! -e docs/roadmap.md` | ✅ |
 
 ### Sampling Rate
-- **Per task commit:** the relevant grep guard plus `npx vitest run src/__tests__/unit/_meta`.
-- **Per wave merge:** lint, typecheck, `test:unit`, `build` (all four, per AGENTS.md Critical Rules).
-- **Phase gate:** all four green, grep guards at 0, parse script clean, browser check recorded, D-15 numbers on #502.
+- **Per task commit:** the task's grep guard plus `npx vitest run src/__tests__/unit/_meta`
+- **Per wave merge:** `npm run lint && npm run typecheck && npm run test:unit && npm run build`
+- **Phase gate:** all four green, sweeps at 0, parse script exit 0, browser check recorded, D-15 numbers on #502
 
 ### Wave 0 Gaps
-- [ ] Copy the parse script (§ Code Examples 2) to the scratchpad and capture the "before" output.
-- [ ] `POSTGRES_URL=... npx prisma generate` in the lane.
-- [ ] Capture the v0.95.2 baseline (Docker) before the strip lands.
+- [ ] `scripts/check-mermaid-fences.mjs` — covers DOCS-02 fence parse (D-23)
+- [ ] Lane `npm ci` + `npx prisma generate` — typecheck, unit tests and build need the client
+- [ ] Decision on the D-15 (1) event source (Open Question 1)
+
+Existing checks to keep green: `src/__tests__/unit/_meta/mirrorTree.test.mjs` (fails if a new test is not at its mirrored path; this phase adds no test), `src/__tests__/unit/_meta/exampleEnv.test.mjs` (asserts no `POSTGRES_SSL=`; `.example.env` needs no edit), `src/__tests__/unit/app/docs/_diagram.test.mjs`. No test reads `AGENTS.md`, `next.config.mjs` or `CHANGELOG.md` (grep of `src/__tests__` found no match).
 
 ## Security Domain
 
-`security_enforcement: true`, ASVS level 1, block on `high` (`.planning/config.json`).
+`security_enforcement: true`, `security_asvs_level: 1`, `security_block_on: "high"` (`.planning/config.json:47-49`).
 
 ### Applicable ASVS Categories
 | ASVS Category | Applies | Standard Control |
 |---------------|---------|-----------------|
-| V2 Authentication | no (no auth code changes) | — |
-| V3 Session Management | no | — |
-| V4 Access Control | no (WR-08 is filed, not fixed) | — |
-| V5 Input Validation | no new input | — |
+| V2 Authentication | no | no auth code changes |
+| V3 Session Management | no | WR-08 is filed, not fixed |
+| V4 Access Control | no | — |
+| V5 Input Validation | no | no new input; the synthetic probe event (option a) is a one-off |
 | V6 Cryptography | no | — |
-| V8 Data Protection | yes (minor) | sourcemaps removed from the image; repo is public so source exposure is "accepted, not a concern" (#502 body) — the change is about image weight |
-| V14 Configuration | yes | secrets via BuildKit `--mount=type=secret` (`Dockerfile.app:72-93`), never build args; do not paste tokens or private hosts into issues or public docs |
+| V8 Data Protection | yes (minor) | Sourcemaps leave the image; the repo is public, so exposure is "accepted, not a concern" (#502 body). The change is about image weight. |
+| V14 Configuration | yes | Sentry credentials stay BuildKit secrets (`Dockerfile.app:94-97` `--mount=type=secret`), never build args; no token, no DSN key and no private host in issues or public docs |
 
 ### Known Threat Patterns
 | Pattern | STRIDE | Standard Mitigation |
 |---------|--------|---------------------|
-| Secret or token pasted into an issue comment or `/docs` page | Information disclosure | Names only (`SENTRY_AUTH_TOKEN`), never values; the DSN is public by design, the auth token is not |
-| Internal topology in public docs (private IP, DB host, tunnel/secret names from `deploy/README.md`) | Information disclosure | Describe roles and replica counts, omit hosts and secret names |
-| Upload failure silently leaves an image with no maps and no GlitchTip bundle | Repudiation / availability of diagnostics | Keep `silent` unset; gate release on the upload log line |
-| `GH_TOKEN: github.token` PR path runs no CI (gap 1) | Tampering (unchecked changes merge) | Recorded as a gap; bot PR touches only `prisma/seed/seasons/*.json`; fix is a later phase |
+| Secret or private topology pasted into an issue or `/docs` page | Information disclosure | Names only (`SENTRY_AUTH_TOKEN`); describe roles and replica counts (D-06) |
+| Upload failure leaves an image with no maps and no stored bundle | Repudiation (loss of diagnostics) | Gate on the per-leg log line, then prove with an event |
+| Bot PR merges with no CI | Tampering | The ruleset now blocks it (3 required checks); the fix for approval friction is a later phase |
+| Synthetic event pollutes the production error project | Tampering (data quality) | Tag `environment: staging-probe`, ask Andrei first, resolve the issue afterwards |
+| Third-party scripts in probes | — | Run probes with `/usr/bin/curl` and local files only; extracted image data is untrusted, read it, never execute it |
 
 ## Project Constraints (from CLAUDE.md)
 
-`CLAUDE.md` is a symlink to `AGENTS.md` (read this session). Directives that bind this phase:
-- KISS; no abstractions for hypothetical needs.
-- Never commit or push to `main`/`develop`; one locked worktree per session; every change by PR; rebase-merge into `develop`, merge commits only for the release PR and its merge-back.
-- Verify chain before the PR: `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build` — all four green; `npm run lint:fix` before committing, not during development.
-- Version bump as the PR's last commit (patch for docs/config); `## Unreleased` → `## X.Y.Z` in `CHANGELOG.md`.
-- Report outcomes faithfully; do not claim a check ran that did not.
-- Do not hand-edit `.claude/CLAUDE.md`.
-- Browser work with no login uses chrome-devtools; verify via DevTools before declaring a frontend change done.
-- Next.js here has breaking changes: read `node_modules/next/dist/docs/` before writing Next code (this phase edits only `next.config.mjs` options and MDX).
-- Error handling uses `tryCatch`, not try/catch (relevant only if code is touched; this phase edits comments only).
-- Task tracking: GitHub issues are the source of truth for what; close finished issues with an implementation comment; new work gets an issue first.
+`CLAUDE.md` is AGENTS.md. Directives that bind this phase:
+- Shared standards are in the developer handbook; AGENTS.md holds repo facts only. Do not restore removed sections (`AGENTS.md:7-9`).
+- Verification gate, in CI order: `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run build`. Run `lint:fix` before committing, not during development. Env vars: only `POSTGRES_URL`, `UPDATE_KEY`, `UPDATE_INTERVAL` are required.
+- Branches: `develop` ruleset requires a PR with `Test & Build`, `Visual Regression`, `Review Dependencies`; only `rebase` merges. A release PR `develop` → `main` uses a merge commit and a `vX.Y.Z` tag. No merge-back (#621).
+- Version cut (#618): work PRs raise no version; notes go under `## Unreleased`. `Check: Version Bump` runs only on PRs into `main`.
+- `metrics` is a CI-owned branch: never merge or delete it.
+- Use `tryCatch` (no bare try/catch), `errorResponse`/`successResponse`, Zod before DB writes, Umami attributes on interactive elements. This phase edits comments and MDX only.
+- Unit tests mirror the source tree (`mirrorTree.test.mjs`); `@/*` maps to `./src/*`.
+- Read `node_modules/next/dist/docs/` before writing Next code (this phase touches only `next.config.mjs` options and MDX).
+- Migrations apply on start under an advisory lock; after merging a branch that adds a migration, restart the dev server.
+- Never hand-edit `.claude/CLAUDE.md` (generated, gitignored).
+- Project skills in `.agents/skills/` (accessibility, next-best-practices, prisma-*, vitest, zod, and others) do not change this phase's approach.
 
 ## Sources
 
-### Primary (HIGH confidence) — opened this session
-- Lane files: `AGENTS.md`, `next.config.mjs`, `mdx-components.jsx`, `Dockerfile.app`, `docker-compose.yml`, `deploy/staging/compose.yaml`, `deploy/README.md`, `.github/workflows/*.yml` (10), `.github/actions/verify/action.yml`, `prisma/schema.prisma`, `prisma/seed/readme.md`, `src/update/{lease,season,status}.mjs`, `src/app/api/h1/update/route.js`, `src/shared/utils/initializeWorker.mjs`, `public/workers/{cron,cronLogic}.js`, `src/shared/components/MermaidDiagram/*`, all in-scope docs pages and `.mjs` configs, `.planning/{REQUIREMENTS,ROADMAP,STATE,PROJECT}.md`, `.planning/codebase/*.md`, Phase 1 `01-RELEASE-RECORD.md`, `01-REVIEW*.md`
-- `node_modules/@sentry/nextjs` 11.8.0: `build/cjs/config/withSentryConfig/getFinalConfigObjectBundlerUtils.js`, `build/cjs/config/getBuildPluginOptions.js`, `build/cjs/config/handleRunAfterProductionCompile.js`, `build/types/config/types.d.ts`
-- `gh`: issues #501 #502 #469, PR #531, runs 35578125172 and 39574238756 (log), package versions of `ghcr.io/elfensky/helldiversbot`
-- Local run of `mermaid.parse` (12.2.0, jsdom) over every fence and definition in scope
+### Primary (HIGH confidence) — opened or run this session
+- Worktree files: `AGENTS.md`, `next.config.mjs`, `Dockerfile.app`, `mdx-components.jsx`, `.example.env`, `prisma/schema.prisma`, `prisma.config.mjs`, `src/update/{lease,season,status,migrateOnStart}.mjs`, `src/app/api/h1/update/route.js`, `src/app/api/glitchtip/route.js`, `src/instrumentation*.js`, `src/shared/utils/initializeWorker.mjs`, `public/workers/{cron,cronLogic}.js`, `deploy/{staging,production}/compose.yaml`, `deploy/README.md`, all 11 `.github/workflows/*.yml`, in-scope docs pages and `.mjs` configs, `.planning/{codebase,architecture,...}`
+- `gh`: rulesets/24004681, rules/branches/develop, PR #642 and #531, issues #501 #502 #624 #629 #631 #621, actions runs 42603804822 (and the 3 siblings), 35578183114, 41832856848 (log), 42603725952, workflow run list, repo merge settings, variable and secret names
+- GHCR: `ghcr.io/elfensky/helldiversbot:v0.97.2`, amd64 and arm64, pulled, exported and measured (images removed afterwards)
+- `npm pack @sentry/nextjs@11.10.0` and `@sentry/bundler-plugins@11.10.0` (scratch folder `/tmp/sentry-src`)
+- GlitchTip backend source, GitLab `glitchtip/glitchtip-backend`, tag `v6.2.6` and `master`: `apps/event_ingest/{process_event,javascript_event_processor}.py`, `apps/files/{assemble,api}.py`, `apps/sourcecode/{models,api}.py`
+- `GET https://glitchtip.lav.ren/api/settings/` (public) → version 6.2.6
+- Local `mermaid.parse` run, mermaid 12.3.0 + jsdom 30.1.3 (scratch folder `/tmp/mm`)
 
-### Secondary / tertiary
-- None. No web search was needed; no claim in this document rests on a web source.
+### Secondary (MEDIUM confidence)
+- [GITHUB_TOKEN concepts, GitHub Docs](https://docs.github.com/en/actions/concepts/security/github_token) · [archived 2026-11-14](https://linkding.lav.ren/bookmarks?details=2239)
+- [Approve a workflow run for a fork pull request, REST docs](https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#approve-a-workflow-run-for-a-fork-pull-request) · [archived 2026-11-14](https://linkding.lav.ren/bookmarks?details=6371)
+- [Approving workflow runs from forks, GitHub Docs](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/approve-runs-from-forks) · [archived 2026-11-14](https://linkding.lav.ren/bookmarks?details=6372)
+- [GlitchTip 4.2 release notes](https://glitchtip.com/blog/2024-11-01-glitchtip-4-2-release/) · [archived 2026-11-14](https://linkding.lav.ren/bookmarks?details=6374)
+- [GlitchTip CLI docs](https://glitchtip.com/documentation/cli/) · [archived 2026-11-14](https://linkding.lav.ren/bookmarks?details=6375)
+
+### Tertiary (LOW confidence, user reports)
+- [GitHub community discussion 199292](https://github.com/orgs/community/discussions/199292) · [archived 2026-11-14](https://linkding.lav.ren/bookmarks?details=6370)
+- [jv3n/trade issue 568](https://github.com/jv3n/trade/issues/568) · [archived 2026-11-14](https://linkding.lav.ren/bookmarks?details=6377)
 
 ## Metadata
 
 **Confidence breakdown:**
-- Drift items and line numbers: HIGH — each opened and quoted this session
-- Sentry 11.8.0 behaviour: HIGH — read from the installed package
-- GlitchTip resolving Sentry 11 bundles: MEDIUM — only the 0.95.2 `sentry-cli` bundle is proven (A5)
-- Docker measurement commands: MEDIUM — daemon was down, commands not executed
-- Browser verification procedure: MEDIUM — server start with no DB is assumed (A1)
+- In-repo line refs and values: HIGH. Each was opened and quoted this session.
+- Sentry 11.10.0 upload and delete path: HIGH. Read from the packed sources; matches the lockfile.
+- GlitchTip resolution of two-leg debug-ID bundles: MEDIUM. The server code at the deployed tag was read and the shipped IDs were compared; no live event or bundle list was read.
+- Approval satisfies the ruleset: MEDIUM. Docs plus ruleset state; not executed.
+- D-15 (4) event timing: LOW. Depends on natural traffic.
 
-**Research date:** 2026-10-23
-**Valid until:** 2026-10-30 for line numbers (develop moves; re-run the stale-string sweep before editing); Sentry facts valid until the next `@sentry/nextjs` bump
+**Research date:** 2026-11-14
+**Valid until:** 2026-11-21 for line numbers (develop moves; re-run the sweeps before editing). GlitchTip facts hold until its version changes (re-read `/api/settings/`). The #642 facts hold until the Monday 2026-11-16 run.
