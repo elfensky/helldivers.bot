@@ -5,15 +5,15 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Phase 2 context refreshed against develop 0.98.0 (assumptions mode)
-last_updated: "2026-11-14T16:17:51.393Z"
+stopped_at: Phase 2 re-planned (14 plans, 12 waves; 02-01 superseded)
+last_updated: "2026-11-14T23:43:10.991Z"
 last_activity: 2026-11-14
-last_activity_desc: Phase 2 context refreshed against develop 0.98.0
-state_head: 70ccc071ab2dc2765e76677b823932460670bd96
+last_activity_desc: Phase 2 re-planned against develop 0.98.0
+state_head: 1bc0d2a06ae43526ceb977e02a20b3df9a6deee5
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 12
+  total_plans: 14
   completed_plans: 1
   percent: 0
 ---
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 
 ## Current Position
 
-Phase: 02 (Docs Accuracy & Operational Housekeeping) — READY TO RE-PLAN
-Plan: 02-03 done; 02-01 dropped; 02-05, 02-06, 02-10 keep with edits; the other 7 re-plan (02-CONTEXT.md D-29)
-Status: Ready to plan
-Last activity: 2026-11-14 — Phase 2 context refreshed against develop 0.98.0 (two releases, #501 closes on #642)
+Phase: 02 (Docs Accuracy & Operational Housekeeping) — READY TO EXECUTE
+Plan: 02-03 done, 02-01 superseded; next 02-13 (release 1), then 02-04 (#642) in the same sitting, before 2026-11-16 03:00 UTC (D-31)
+Status: Ready to execute
+Last activity: 2026-11-15 — Phase 2 re-planned against develop 0.98.0 (D-29..D-32; 14 plans in 12 waves)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -80,7 +80,7 @@ None yet.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 260829-219 | Wire SENTRY_DSN into the staging Swarm stack so staging reports to GlitchTip | 2026-08-29 | d8323eef | [260829-219-wire-sentry-dsn-into-the-staging-swarm-s](./quick/260829-219-wire-sentry-dsn-into-the-staging-swarm-s/) |
+| 260829-219 | Wire SENTRY_DSN into the staging Swarm stack so staging reports to GlitchTip (its commits 22030b72 and d8323eef never reached `develop`; plan 02-14 does it, D-30) | 2026-08-29 | d8323eef | [260829-219-wire-sentry-dsn-into-the-staging-swarm-s](./quick/260829-219-wire-sentry-dsn-into-the-staging-swarm-s/) |
 | 261013-hu0 | Finish PR 532 (Umami replay) and prepare the repo for GSD | 2026-10-13 | 6a41c266 | [261013-hu0-finish-pr-532-umami-replay-and-prepare-t](./quick/261013-hu0-finish-pr-532-umami-replay-and-prepare-t/) |
 | 261013-luq | Fix review findings WR-01..06 from 261013-hu0-REVIEW.md | 2026-10-13 | 91f9d470 | [261013-luq-fix-review-findings-wr-01-06-from-261013](./quick/261013-luq-fix-review-findings-wr-01-06-from-261013/) |
 | 261020-tlt | Resolve all open Dependabot security alerts with a targeted dependency bump | 2026-10-20 | 4ad6fb84 | [261020-tlt-resolve-all-open-dependabot-security-ale](./quick/261020-tlt-resolve-all-open-dependabot-security-ale/) |
@@ -109,10 +109,10 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-11-14T16:17:50.635Z
-Stopped at: Phase 2 context refreshed against develop 0.98.0 (assumptions mode)
-Resume file: .planning/phases/02-docs-accuracy-operational-housekeeping/02-CONTEXT.md
+Stopped at: Phase 2 re-planned (14 plans, 12 waves; 02-01 superseded)
+Resume file: .planning/phases/02-docs-accuracy-operational-housekeeping/02-13-PLAN.md
 
 ## Operator Next Steps
 
-- Run `/gsd-plan-phase 2 --research --skip-ui` to re-plan per 02-CONTEXT.md D-29, then execute Phase 2
-- Before execution, re-authorize the GlitchTip connector (D-15, D-24)
+- Run `/gsd-execute-phase 2`. Plans 02-13 (release 1) and 02-04 (#642) must finish before 2026-11-16 03:00 UTC (D-31)
+- Before plan 02-09, authorize the GlitchTip connector (D-15, D-24); browser and GlitchTip steps are blocking checkpoints
