@@ -1,0 +1,1 @@
+No external API integration: the phase corrects docs and comments, changes one build option of the already-integrated Sentry SDK (`sourcemaps.deleteSourcemapsAfterUpload`, #502) and the staging `SENTRY_DSN` value, and reads GitHub and GlitchTip only as evidence; it adds no new API, SDK, endpoint or webhook integration.

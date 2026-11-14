@@ -519,7 +519,7 @@ return successResponse(200, start, { role: 'standby', holder: HOLDER_ID });
 | A10 | No documented setting disables the `GITHUB_TOKEN` approval gate | Research topic 1 | A setting exists and the new issue's fix is simpler |
 | A11 | #531's unapproved runs were `action_required` until the merge turned them into `failure` | Research topic 1 | Wording only in the issue |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Event source for D-15 (1).**
    - Known: staging has no `SENTRY_DSN`; the tunnel returns 503.
@@ -531,7 +531,9 @@ return successResponse(200, start, { role: 'standby', holder: HOLDER_ID });
    - Recommendation: release 1 first. If Andrei wants season 161 live at once, accept both in release 1 and drop the "isolates #599" claim.
    - **Resolved 2026-11-14 (Andrei): release 1 first, CONTEXT.md D-31.**
 3. **Where does 02-04 sit in the waves?** Today it is wave 4 after the old 0.95.7 release. With D-21 (1) first, it follows the release-1 tag.
+   - **RESOLVED 2026-11-14 (D-31, plan set):** 02-04 is wave 2, right after the release-1 plan 02-13.
 4. **Remaining `01-REVIEW-DISPOSITION.md` rows.** Only IN-03, WR-07 and WR-08 are in scope; the other rows stay `open` (rows IN-01, IN-02, IN-04, IN-05 seen as `open`).
+   - **RESOLVED 2026-11-14 (D-14, D-25, D-26):** IN-03 is marked resolved by the strip; WR-07 and WR-08 are filed and deferred; the other rows stay `open`.
 
 ## Environment Availability
 

@@ -194,6 +194,13 @@ its replacement.
   the release PR `develop` → `main` (merge commit; no `--delete-branch`), then the `vX.Y.Z` tag.
   `pin-production` deploys it; there is no manual pull and no merge-back (#621). A release is live
   once `deploy/production` pins the new tag and production reports the new version.
+- **D-32:** (Andrei, 2026-11-14) No step in the plan can stop `pin-production` when a build leg's
+  map upload fails: an upload error does not fail the leg (D-24). The plan keeps its own checks: the
+  staging build of the cut commit logs the upload line on both legs before the tag, each release leg
+  is read during the run and cancelled when the line is missing, and Andrei signs off at the 02-11
+  release decision. `.github/workflows/build-release.yml` does not change in this phase. One new
+  issue (milestone Engineering Health) records the residual risk and proposes a CI step that fails
+  a build leg when its upload line is missing.
 - **D-22:** Work PRs into `develop` raise no version and add their notes under `## Unreleased`
   (`AGENTS.md:50-56`). `Check: Version Bump` runs only on PRs into `main`
   (`.github/workflows/check-version.yml:3-10`). `.planning/`-only PRs carry no note.

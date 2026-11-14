@@ -73,7 +73,7 @@ Existing checks to keep green: `src/__tests__/unit/_meta/mirrorTree.test.mjs`, `
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
 | The 5 rendered diagrams render | DOCS-02 | Needs a browser | `02-RESEARCH.md` § Code Examples 2; record the result in the PR |
-| Each docs page matches the code | DOCS-02 | Review against the code (D-12) | Page-by-page check recorded in the phase verification |
+| Each docs page matches the code | DOCS-02 | Review against the code (D-12) | Page-by-page check of the seven docs surfaces at tag vV2 (the release-2 commit), recorded one line per page in the phase verification (`02-11-PLAN.md` backstop truth) |
 | Static `.map` files gone from the image | HOUSE-03 | Needs Docker export of the pulled image | `02-RESEARCH.md` § HOUSE-03 export commands: `static` `.map` = 0, `server` = 48 |
 | Production `.map` answers 404 | HOUSE-03 | Needs release 2 live | `02-RESEARCH.md` § HOUSE-03 D-15 (3) |
 | Symbolicated GlitchTip events | HOUSE-03 | Needs the GlitchTip connector (not authorized at planning) | D-15 (1) and (4) |

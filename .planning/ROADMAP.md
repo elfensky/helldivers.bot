@@ -147,50 +147,59 @@ Phase 1.1 moved production to the Hetzner swarm and released v0.96.4.
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
   5. `docs/roadmap.md` is deleted and its live items are carried into `.planning/` (ARCH-11 and § Carried over), leaving `.planning/ROADMAP.md` as the one roadmap file (HOUSE-05, done 2026-11-02)
 
-**Plans**: 1/12 plans executed
+**Plans**: 1/13 plans executed (re-planned 2026-11-14 per 02-CONTEXT.md D-29; 02-01 superseded by 02-13)
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Release develop 0.95.7 to main (tag, release build with sourcemap upload; production pull handed to Andrei) (HOUSE-03 input, D-21)
+- [ ] 02-13-PLAN.md — Release 1: develop as it stands (0.98.1 expected) to production through pin-production, so migrate-on-start (#599) ships alone (HOUSE-03, HOUSE-04; D-21 (1))
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Wave 2** *(blocked on Wave 1 completion; same sitting, before 2026-11-16 03:00 UTC)*
 
-- [ ] 02-02-PLAN.md — DOCS-01: AGENTS.md lease model, #516-era code comments, codebase maps (DOCS-01)
+- [ ] 02-04-PLAN.md — #642 landed through the ruleset after the release-1 tag, staging seeds season 161, #501 closed, seed-refresh gaps filed (HOUSE-04; D-17, D-31)
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Wave 3**
 
 - [x] 02-03-PLAN.md — #469 as ARCH-11 in Phase 11, then `docs/roadmap.md` retired: deleted, not a pointer (HOUSE-05, done 2026-11-02, see 02-03-SUMMARY.md)
 
-**Wave 4** *(blocked on Wave 3 completion)*
+**Wave 4** *(blocked on Wave 2 completion)*
 
-- [ ] 02-04-PLAN.md — #501 closed on the season-160 run; seed-refresh gaps, WR-07 and WR-08 filed as issues (HOUSE-04)
-- [ ] 02-05-PLAN.md — Rendered-diagram pages (architecture, overview, notifications) with a browser render check (DOCS-02)
+- [ ] 02-14-PLAN.md — Staging reports to GlitchTip with the production DSN (`environment: staging`) (HOUSE-03; D-30)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 02-06-PLAN.md — Mermaid fence parse check script and the data-flow page (DOCS-02)
+- [ ] 02-10-PLAN.md — Sourcemap strip in next.config.mjs, documented Sentry block, #502 gate record, staging upload gate, D-15 (2) image measurement vs v0.97.2 (HOUSE-03, DOCS-02)
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 02-07-PLAN.md — Database and testing pages (DOCS-02)
+- [ ] 02-09-PLAN.md — D-15 (1): a real staging browser error from the stripped build resolves from the uploaded maps alone; D-15 (1) and (2) on #502 (HOUSE-03)
+- [ ] 02-02-PLAN.md — DOCS-01: AGENTS.md lease facts and lane-safe merge line, #516-era comments, codebase maps, WR-07/WR-08 filed, `.claude/CLAUDE.md` regenerated after the merge (DOCS-01)
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 02-08-PLAN.md — Infrastructure page: topology, images, workflows, init flow, env table (DOCS-02)
-- [ ] 02-09-PLAN.md — Production pull of 0.95.7 (Task 1 precondition), Sentry-11 symbolication proof on a 0.95.7 production event, #502 gate record (HOUSE-03, D-24)
+- [ ] 02-05-PLAN.md — Rendered-diagram pages (architecture, overview, notifications) with a browser render check (DOCS-02)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 02-10-PLAN.md — Sourcemap strip in next.config.mjs, documented Sentry block, D-15 check 1 on the staging image (HOUSE-03)
+- [ ] 02-06-PLAN.md — Mermaid fence parse check script and the data-flow page with migrate-on-start (DOCS-02)
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 02-11-PLAN.md — Phase-end release (tag, release build with upload lines, production pull) (HOUSE-03, DOCS-02)
+- [ ] 02-07-PLAN.md — Database and testing pages (DOCS-02)
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 02-12-PLAN.md — D-15 checks 2 and 3 in production, #502 closed, `.claude/CLAUDE.md` regenerated (HOUSE-03, DOCS-01)
+- [ ] 02-08-PLAN.md — Infrastructure page: topology, release path, images, workflows, init flow, env table (DOCS-02)
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
+- [ ] 02-11-PLAN.md — Release 2 (0.99.0 expected): phase gates and Andrei's release-route decision (strip, docs-only, fix or hold), final docs check on the release commit, upload pre-flight and per-leg read, pin-production (HOUSE-03, DOCS-02; D-21 (2))
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
+- [ ] 02-12-PLAN.md — D-15 (3) and (4) in production, docs live, #502 closed, `.claude/CLAUDE.md` checked at phase end (HOUSE-03, DOCS-01, DOCS-02)
+
+Superseded: 02-01-PLAN.md (release 0.95.7; `status: superseded`, D-29)
 
 ### Phase 3: Test Co-location
 
@@ -487,7 +496,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 |-------|----------------|--------|-----------|
 | 1. Stability Fixes & Release | 9/9 | Complete    | 2026-10-21 |
 | 1.1. Production on the Hetzner Swarm (INSERTED) | - | Complete    | 2026-10-25 |
-| 2. Docs Accuracy & Operational Housekeeping | 1/12 | In Progress | - |
+| 2. Docs Accuracy & Operational Housekeeping | 1/13 | In Progress | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
 | 5. SEO & Analytics Foundation | 0/TBD | Not started | - |
