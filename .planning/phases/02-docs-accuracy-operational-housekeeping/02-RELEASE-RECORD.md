@@ -64,7 +64,7 @@ D-32's residual risk is closed by #679 (PR #679, merge commit 7697b38bb4c900b6b2
 
 ## Release 2
 
-Release 2 route: strip (see `## Release 2 route`). Scope change, by Andrei's decisions on 2026-11-15: release 2 also carries #674, #675, #679, #681, #671 and #677. Merge freeze on develop from the cut until the tag existed.
+Route: strip (see `## Release 2 route`). Scope change, by Andrei's decisions on 2026-11-15: release 2 also carries #674, #675, #679, #681, #671 and #677. Merge freeze on develop from the cut until the tag existed.
 
 | Item | Value |
 |------|-------|
