@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-12-PLAN.md
-last_updated: "2026-11-15T18:41:58.698Z"
+stopped_at: Completed 02-16-PLAN.md
+last_updated: "2026-11-15T19:40:34.200Z"
 last_activity: 2026-11-15
-last_activity_desc: "Gap closure planned: 02-16 to 02-25 (10 plans, verification gaps_found 4/5, release 0.99.1 per D-33)"
-state_head: 7dd6ab69c64363b8917fde9fe043555da4555eda
+last_activity_desc: "Plan 02-16 executed: architecture and overview docs corrected, sweep 3 added (lane docs/02-gap-closure at 5087ee61)"
+state_head: 22dd599162d56eaa3b1a86ecc70d6aa30bf50557
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 24
-  completed_plans: 14
+  completed_plans: 15
   percent: 0
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 
 ## Current Position
 
-Phase: 02 (Docs Accuracy & Operational Housekeeping) — READY TO EXECUTE
-Plan: 14 of 24 summarized (02-01 superseded); gap-closure plans 02-16 to 02-25 are planned and ready to execute
-Status: Ready to execute gap closure — `02-VERIFICATION.md` found gaps (4/5, DOCS-02 partial); the docs fixes ship in patch release 0.99.1 (D-33)
-Last activity: 2026-11-15 — gap-closure plans 02-16 to 02-25 created and checked (3 checker iterations and one approved targeted revision)
+Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
+Plan: 15 of 24 summarized (02-01 superseded); gap-closure plan 02-16 done on lane `docs/02-gap-closure` (head 5087ee61); 02-17 to 02-25 follow
+Status: Executing gap closure — `02-VERIFICATION.md` found gaps (4/5, DOCS-02 partial); the docs fixes ship in patch release 0.99.1 (D-33)
+Last activity: 2026-11-15 — plan 02-16 executed (architecture and overview docs re-checked and corrected)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P09 | n/a (paused at checkpoint) | 3 tasks | 1 files |
 | Phase 02 P11 | 50 min | 3 tasks | 3 files |
 | Phase 02 P12 | 5 min | 3 tasks | 2 files |
+| Phase 02 P16 | 8 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-09: one deliberate real staging browser error was allowed as a one-time exception to D-30 (Andrei, 2026-11-15); HELLDIVERSBOT-7D symbolicated, Verdict: SYMBOLICATED, strip may enter release 2
 - [Phase 02]: Release 2 route strip (Andrei, 2026-11-15); release 0.99.0 also carries #671 and #677 by Andrei's decision
 - [Phase 02]: 02-12: #502 closed on four passing D-15 steps (staging symbolication, image strip, production map 404, production event resolved to src/)
+- [Phase 02]: 02-16: the architecture PWA caching clause names exactly the Serwist 9.5.13 strategy classes with one sentence each; the Notifications link carries no fragment
+- [Phase 02]: 02-16: h1_event_progress is written by the poller and read only by scripts/analysis; the architecture diagram no longer draws it into the archives
 
 ### Pending Todos
 
@@ -132,8 +135,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T13:27:55.355Z
-Stopped at: Completed 02-12-PLAN.md
+Last session: 2026-11-15T19:40:34.171Z
+Stopped at: Completed 02-16-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

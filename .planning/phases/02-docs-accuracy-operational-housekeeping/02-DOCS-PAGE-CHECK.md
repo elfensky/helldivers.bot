@@ -57,7 +57,7 @@ Codebase maps: CHECKED
 
 Lane commit: 0f2a2432d907e3ccb75f1e95fdf7a6d347e0c7cb
 
-Page architecture: CHECKED
+Earlier closing line (lane commit 0f2a2432): CHECKED. It missed the drift in § Gap closure: /docs/architecture.
 
 ## /docs (overview)
 
@@ -72,7 +72,7 @@ Page architecture: CHECKED
 
 Lane commit: 0f2a2432d907e3ccb75f1e95fdf7a6d347e0c7cb
 
-Page overview: CHECKED
+Earlier closing line (lane commit 0f2a2432): CHECKED. It missed the drift in § Gap closure: /docs (overview).
 
 ## /docs/notifications
 
@@ -252,3 +252,57 @@ Ten hunks changed the checked pages or their code evidence after c6bcfdb3. Each 
 This check is the release gate; phase verification owns the D-12 page-by-page read at tag v0.99.0.
 
 Final check: PASS
+
+## Gap closure: /docs/architecture
+
+Plan 02-16 re-read `page.mdx`, `dataFlowConfig.mjs` and `dataFlowDefinition.mjs` statement by statement at the lane commit below, in D-01 source order, after the plan 02-05 check recorded CHECKED (02-VERIFICATION.md truth 2; 02-REVIEW.md WR-02).
+
+| Item | Stale statement | Fix | Code evidence |
+|------|-----------------|-----|---------------|
+| `src/app/docs/architecture/page.mdx:74` (§ PWA & Service Worker), update sentence | "new SWs wait for explicit client approval before activating" | "A new service worker activates as soon as it installs and takes control of open tabs (`skipWaiting: true`, `clientsClaim: true` in `src/sw.js`)" | `src/sw.js:6`, `src/sw.js:7` |
+| `page.mdx:74`, caching clause | "network-first for HTML documents and stale-while-revalidate for static assets": no cache-first group, no NetworkOnly rule | One sentence per strategy class that `src/sw.js` and the installed `@serwist/next` 9.5.13 `defaultCache` construct: network-first (HTML pages, RSC payloads, `.json`/`.xml`/`.csv` files), cache-first (`/_next/static` scripts, the site's own audio and video), stale-while-revalidate (the site's own images, font files, other scripts, stylesheets), NetworkOnly for `/api/*` ahead of `defaultCache`. No group under two strategies; no CacheOnly | `src/sw.js:12`, `src/sw.js:15` |
+| `page.mdx:74`, Notifications link | Link target `/docs/notifications#pwa--offline`: the fragment never resolves, because docs headings carry no id | Link without a fragment, pointing at the PWA & Offline section by name; no heading id or rehype plugin added | `mdx-components.jsx:6`, `mdx-components.jsx:9`, `next.config.mjs:208`, `src/app/docs/notifications/page.mdx:186` |
+| `dataFlowConfig.mjs:200,210` (`h1_season` panel) | `season_duration` shown as an array (`Int[]`, "season_duration[]") and every table said to FK to `h1_season` | `season_duration` is an `Int` scalar; `h1_status`, `h1_statistic` and `h1_event` FK to the season, `h1_event_progress` links to `h1_event` | `prisma/schema.prisma:128`, `prisma/schema.prisma:220` |
+| `dataFlowConfig.mjs:240,273,341` (three `bucket` rows) | `bucket` typed `DateTime` | `Int (window start)` | `prisma/schema.prisma:165`, `prisma/schema.prisma:182`, `prisma/schema.prisma:212` |
+| `dataFlowConfig.mjs:240-244` (`h1_status` rows) | Rows `points / points_max` and `players` | Rows `time`, `points / points_taken`, `status`; no `players` row, no `points_max` row | `prisma/schema.prisma:165`, `prisma/schema.prisma:176` |
+| `dataFlowConfig.mjs:273` (`h1_statistic` rows) | No `players` row | Row `players` `Int` before the kills row | `prisma/schema.prisma:190` |
+| `dataFlowConfig.mjs:295-300` (`h1_event` tag and key row) | Tag "upsert by event_id"; `event_id` "Int @unique" | Tag "upsert by (type, event_id)"; `event_id` "Int (unique with type)" | `prisma/schema.prisma:155` |
+| `dataFlowConfig.mjs:322-341` (`h1_event_progress` panel) | "One row per (event_id, bucket)", tag "bucket-upsert by (event_id, bucket)", row `event_id` "Int FK", `points_max` row | Key `(type, event_id, bucket)`; rows `type`, `event_id`, `type + event_id` FK to `h1_event`, `bucket`, `points`; no `points_max` row (it is constant and lives on `h1_event`) | `prisma/schema.prisma:212`, `prisma/schema.prisma:220`, `src/db/queries/upsertEventProgress.mjs:38` |
+| `dataFlowConfig.mjs:322,331`, `:35`, `dataFlowDefinition.mjs:55`. Extra drift | "Used by archives to show event progression charts", tag "Archives progression", edge `h1_event_progress --> fe_archives`, `h1_event_progress` in the archives flow and in the `fe_archives` panel | The app only writes the table; nothing in `src/` reads it, and the offline scripts in `scripts/analysis` do. Panel sentence and tag say so; the edge, the flow entry and the `fe_archives` text no longer name it | `src/db/queries/upsertEventProgress.mjs:38`, `scripts/analysis/lib/dataset.mjs:99`, `src/db/queries/getCampaign.mjs:113` |
+| `dataFlowConfig.mjs:34,35,354-380`, `dataFlowDefinition.mjs:50,55`. Extra drift | `fe_live` and `fe_archives` read `h1_status` only, yet render player counts | `h1_statistic` joins both: edges `h1_statistic --> fe_live` and `--> fe_archives`, flow entries, panel text and tags. `players` lives on `h1_statistic` | `src/db/queries/getCampaign.mjs:73`, `src/db/queries/getCampaign.mjs:113`, `prisma/schema.prisma:190` |
+| `dataFlowConfig.mjs:180` and `seed_files` panel. Extra drift | Seed "processed through the same normalization pipeline used by live updates" | The script writes `h1_season`, `h1_status` and `h1_event` with its own inlined copy of the bucket math, because it cannot import `@/*` aliases | `prisma/seed/seed.mjs:40`, `prisma/seed/seed.mjs:88`, `prisma/seed/seed.mjs:116`, `prisma/seed/seed.mjs:152` |
+| Class: worker versus lease-holder polling | `page.mdx:34`, `worker` and `lease` panels, cycle text | Checked, no drift: every replica runs the thread, the lease claim comes first, a non-holder answers standby | `src/app/api/h1/update/route.js:87`, `src/app/api/h1/update/route.js:93`, `src/update/lease.mjs:45` |
+| Judgment: edges from `api_status` and `api_snapshot` into `worker` stay | The diagram has no update-route node | Left as is: its `worker` node stands for the thread plus the route it calls, and the `worker` panel says that only the lease holder polls | `public/workers/cronLogic.js:30`, `src/app/api/h1/update/route.js:121` |
+| Class: file paths | Every path the five files name | Checked with `git ls-files`: `src/sw.js`, `public/workers/cron.js`, `src/update/lease.mjs`, `prisma/seed/seed.mjs`, `prisma/seed/seasons`, `scripts/analysis` all exist | `prisma/seed/seed.mjs:1`, `public/workers/cron.js:34` |
+| Class: auth providers | none named in the architecture files | Checked, no statement to correct | `src/auth.js:29` |
+| Checked, no drift | Client Polling fence, Confirm Pattern, On-Demand Fetching, `fe_rebroadcast`, `api_status` shape, region 1-10 and 11 | Fence: 10 s poll, leader election, `getCampaign` and `computeMapState`; confirm sets `last_updated` in the last step; archive seasons come from the active season number; the rebroadcast reads four tables; the status response shape matches the validator | `src/shared/hooks/useLiveData.mjs:31`, `src/app/api/h1/live/route.js:13`, `src/update/status.mjs:138`, `src/app/archives/page.jsx:53`, `src/db/queries/rebroadcast.mjs:47`, `src/validators/isValidStatus.mjs:4`, `src/shared/enums/worlds.mjs:2` |
+| Why plan 02-05 missed it | Its check inventoried the lease drift and the interval wording | It did not read the service-worker sentence against `src/sw.js`, nor the panels and edges against `prisma/schema.prisma` and the readers of each table | `src/sw.js:6`, `prisma/schema.prisma:117` |
+| Extra check: private infrastructure detail (D-06, T-02-57) | none found | No IPv4 address, host name, node label or secret name in the three files and the edits | `src/app/docs/architecture/dataFlowConfig.mjs:6`, `src/app/docs/architecture/dataFlowDefinition.mjs:12` |
+
+Lane commit: 5087ee615207218dc4354202a9d435731c3d85cf
+
+Page architecture: CHECKED
+
+## Gap closure: /docs (overview)
+
+Plan 02-16 re-read `page.mdx`, `overviewConfig.mjs` and `overviewDefinition.mjs` statement by statement at the lane commit below, in D-01 source order (02-REVIEW.md WR-04).
+
+| Item | Stale statement | Fix | Code evidence |
+|------|-----------------|-----|---------------|
+| `src/app/docs/overviewDefinition.mjs:28` | Edge `worker --> hd1`: the worker thread only calls the update route | Edge `api_update --> hd1`; the lease holder's update route calls the official API. `worker --> api_update` stays | `public/workers/cronLogic.js:30`, `src/app/api/h1/update/route.js:121`, `src/update/fetch.mjs:8` |
+| `src/app/docs/overviewConfig.mjs:21` (`dash` subtitle) | `src/app/(app)/page.jsx`: that route group does not exist | `src/app/page.jsx` | `src/app/page.jsx:65` |
+| `overviewConfig.mjs:103` (`auth_api` text) | "Discord and GitHub OAuth flows" | "Discord, GitHub and Google OAuth flows" | `src/auth.js:39`, `src/auth.js:43`, `src/auth.js:47` |
+| Class: worker versus lease-holder polling | `worker`, `api_update` and `hd1` panels, edge labels | Checked, no further drift after the edge fix | `src/app/api/h1/update/route.js:87`, `public/workers/cron.js:34` |
+| Class: file paths | Every subtitle path and the `page.mdx` links | Checked with `git ls-files`: every subtitle path and the thirteen linked docs routes exist | `src/app/archives/page.jsx:53`, `src/app/profile/page.jsx:12` |
+| Class: auth providers | `auth_api` text, `profile` text, `page.mdx` Authentication blurb | Fixed above; the 503 when `BETTER_AUTH_SECRET` is absent and the profile redirects match | `src/app/api/auth/[...all]/route.js:10`, `src/app/profile/page.jsx:15` |
+| Class: service worker, scalar versus array types | none on the overview page | Checked, no statement to correct | `src/sw.js:6` |
+| Checked, no drift | `dash` 10 s poll, `api_live` without authentication, `api_rb` with API key, `archives` season range, `db` table list, `hd1` URL | All match | `src/shared/hooks/useLiveData.mjs:31`, `src/app/api/h1/live/route.js:13`, `src/app/api/h1/rebroadcast/route.js:28`, `src/app/archives/page.jsx:53`, `src/update/fetch.mjs:8` |
+| Not checkable in the repo | `hd1` panel: "Updates roughly every second" | Left as is: the official API's own update rate is outside this repository | `src/update/fetch.mjs:8` |
+| UI review: Rebroadcast label | `src/app/docs/page.mdx:39` labels `/docs/api` "Rebroadcast" (02-UI-REVIEW.md) | Not edited: a label choice, not a contradiction. Result: out of scope, DOCS-03 | `src/app/docs/page.mdx:39` |
+| UI review: testing blurb | `src/app/docs/page.mdx:47` lists unit and smoke tests, not visual regression (02-UI-REVIEW.md) | Not edited: an incomplete list, not a contradiction. Result: out of scope, DOCS-03 | `src/app/docs/page.mdx:47` |
+| Why plan 02-05 missed it | Its check inventoried the lease and interval drift | It did not read the diagram edges against the call path, nor the Dashboard path and OAuth list against the route files and `src/auth.js` | `src/auth.js:29`, `public/workers/cronLogic.js:30` |
+| Extra check: private infrastructure detail (D-06, T-02-57) | none found | No IPv4 address, host name, node label or secret name in the three files; the official API host in the `hd1` node was already public | `src/app/docs/overviewDefinition.mjs:21`, `src/app/docs/overviewConfig.mjs:21` |
+
+Lane commit: 5087ee615207218dc4354202a9d435731c3d85cf
+
+Page overview: CHECKED
