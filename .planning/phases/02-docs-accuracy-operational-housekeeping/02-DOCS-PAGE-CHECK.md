@@ -87,3 +87,44 @@ Page overview: CHECKED
 Lane commit: 0f2a2432d907e3ccb75f1e95fdf7a6d347e0c7cb
 
 Page notifications: CHECKED
+
+## /docs/data-flow
+
+| Item | Stale statement | Fix | Code evidence |
+|------|-----------------|-----|---------------|
+| `src/app/docs/data-flow/page.mdx:4` (metadata) | "two-table strategy, snapshot throttling" | "Worker pipeline, poller lease, bucketed upserts" | `src/update/lease.mjs:45`, `src/shared/utils/bucketing.mjs:20` |
+| `page.mdx:55` (overview fence) | `style Raw ...` for a `Raw` subgraph that no longer exists | Line removed; a `LEASE` node (`claimLease()`, standby replicas stop there) now feeds `FETCH`; the seed node reads "Applied on start when the seed data changed" | `src/update/migrateOnStart.mjs:35`, `src/update/lease.mjs:45` |
+| `page.mdx:90` (season pipeline bullet) | "runs on-demand when historical season data is needed" | Runs every poll for the active season (with `protectedBucket`), in the closing pass, and on demand | `src/app/api/h1/update/route.js:162`, `src/app/api/h1/update/route.js:141` |
+| `page.mdx:102-103` (startup fence) | `instrumentation.js` calls `initializeEnvironmentVariables()` then `initializeOpenApiSpec()`; no migration step | Chain `register()` -> `initializeHelldivers1Api()` -> `initializeEnvironmentVariables()` -> `migrateOrWait()` -> `initializeWorker()` -> `isWorkerEnabled()` branch -> `new Worker(cron.js)`; the OpenAPI-spec node is gone | `src/instrumentation.js:9`, `src/instrumentation.node.js:18`, `src/instrumentation.node.js:22` |
+| `page.mdx:117` (startup paragraph) | "`initializeWorker()` is called from `src/instrumentation.js`" | Called from `src/instrumentation.node.js` after `migrateOrWait()`; migrations and seed run under an advisory lock with retries after 30 s, 60 s, 2 min, then every 5 min; `WORKER_ENABLED=false` logs and serves web only | `src/instrumentation.node.js:22`, `src/update/migrateOnStart.mjs:182`, `src/shared/utils/initializeWorker.mjs:20` |
+| `page.mdx:153` (message-loop sample) | `GET http://localhost:${port}/api/h1/update?key=${key}` | `Authorization: Bearer ${key}` header, `X-Worker-Startup` on the first poll only, optional heartbeat POST to `GLITCHTIP_HEARTBEAT_URL` after a 2xx | `public/workers/cronLogic.js:27`, `public/workers/cronLogic.js:32`, `public/workers/cronLogic.js:42` |
+| `page.mdx:170-192` (parent handler, shutdown). Extra drift | Exit handler only logs and nulls the worker; shutdown has no flag | A worker exit outside a shutdown calls `process.exit(1)`; SIGINT and SIGTERM set `shuttingDown` first | `src/shared/utils/initializeWorker.mjs:67`, `src/shared/utils/initializeWorker.mjs:70` |
+| New `### Poller lease` subsection (D-08) | No lease description on the page | 13 lines: claim, holder vs standby, 60 s TTL, `prev_events` and `last_season_observed` in the row, holder-guarded `persistPollerState()`, `WORKER_ENABLED=false` gives 403; links to `/docs/database` and `/docs/infrastructure` | `src/update/lease.mjs:20`, `src/update/lease.mjs:86`, `src/app/api/h1/update/route.js:81` |
+| `page.mdx:190` and `:200` (section 3 intro) | "`GET /api/h1/update?key=...` on every worker tick", "persists it to both table families" | Bearer-header GET: key check (401), opt-out 403, lease claim with early standby answer, then `updateStatus()`, the closing pass, `updateSeason()`, warnings, `after()` push check, heartbeat | `src/app/api/h1/update/route.js:66`, `src/app/api/h1/update/route.js:93`, `src/app/api/h1/update/route.js:199` |
+| `page.mdx` section 3 steps. Extra drift | Calls named `queryUpsert*`; event progress before `h1_status`; event progress and statistic failures "logged, do not throw"; `getSeasonFromStatus` reads `defend_event` | Real names `upsertSeason`, `upsertEvent`, `upsertStatus`, `upsertStatistic`, `upsertEventProgress`; order season, events, status, statistic, event progress, confirm; statistic writes throw, only event progress goes to `warnings`; the season comes from `campaign_status` and `statistics` only; return value includes `time` and `warnings` | `src/update/status.mjs:73`, `src/update/status.mjs:84`, `src/update/status.mjs:99`, `src/shared/utils/getSeason.mjs:18` |
+| `page.mdx:441` (section 4 "On-demand invocation") | "`updateSeason()` is not called on a schedule"; two callers | Sub-section "Where `updateSeason` runs" (every poll, closing pass, on demand); "On-demand invocation" lists `getCampaignOrSeed` (`/archives`, `/api/h1/campaign`), `/api/h1/rebroadcast`, `backfillAndRetry` via `backfillSeason` (the four `/api/v1/h1/*` routes), `reseedSeason` (admin Refresh) | `src/db/queries/getCampaignOrSeed.mjs:27`, `src/app/api/h1/rebroadcast/route.js:126`, `src/shared/utils/api/backfillSeason.mjs:15`, `src/features/archives/reseedSeason.mjs:55` |
+| `page.mdx:460-462` (closing pass) | "module-level state (`lastSeasonObserved`)"; "resets on worker restart, so a restart ... will miss one closing snapshot" | Previous season comes from the lease row; the pass runs once when the season increases; `persistPollerState()` writes the new season; it survives restarts and handovers; the restart edge case is removed | `src/app/api/h1/update/route.js:137`, `src/app/api/h1/update/route.js:155`, `src/update/lease.mjs:86` |
+| `page.mdx` section 4 steps and section 5. Extra drift | `updateSeason` metadata "season_duration"; steps listed in the wrong order; return value without `time` and `warnings`; section 5 omits `worker_heartbeat` and the `/api/v1/h1/*` readers | `updateSeason` writes `h1_season` (`introduction_order`, `points_max`), `h1_status` (frames in or after `protectedBucket` skipped) and `h1_event`; `season_duration` comes from `updateStatus` only; section 5 names `worker_heartbeat` as the non-war-record sixth table | `src/update/season.mjs:71`, `src/update/season.mjs:86`, `src/update/status.mjs:46` |
+| `page.mdx` section 6. Extra drift | "typically every few seconds"; function names `queryUpsert*`; history of `snapshotTimers.mjs` | `UPDATE_INTERVAL` seconds on the lease holder; `upsertStatus`, `upsertStatistic`, `upsertEventProgress`; the sample matches the source (`Number.isFinite` guard); the removed-module history is dropped | `src/shared/utils/bucketing.mjs:11`, `src/db/queries/upsertStatus.mjs:28` |
+| `page.mdx` section 7. Extra drift | `getApiURL()` with three environment URLs; `fetchInvalidHttps`; "throws in two cases" | One constant `HD1_API_URL`; internal `fetchWithUntrustedCert`; three throw cases; `fetchSeason` throws `Invalid season` | `src/update/fetch.mjs:8`, `src/update/fetch.mjs:10`, `src/update/fetch.mjs:50` |
+| Extra check: the update route ignores `X-Worker-Startup` | The old comments say the header triggers "a one-time startup pass" | The page says the header is sent on the first poll and that the route declares its name but does not act on it. Nothing in `src/` reads the header; recorded for Andrei, no code change | `src/app/api/h1/update/route.js:26`, `public/workers/cronLogic.js:33` |
+| Extra check: secret values (T-02-12) | none found | The samples use `${key}` and `<key>` placeholders; no UUID-shaped value on the page | `public/workers/cronLogic.js:32` |
+
+Fail-first output of `node scripts/check-mermaid-fences.mjs` before any page edit (exit 1):
+
+```
+OK src/app/docs/architecture/page.mdx fence@46
+OK src/app/docs/data-flow/page.mdx fence@19
+OK src/app/docs/data-flow/page.mdx fence@100
+OK src/app/docs/infrastructure/page.mdx fence@13
+OK src/app/docs/infrastructure/page.mdx fence@129
+OK src/app/docs/infrastructure/page.mdx fence@205
+FAIL src/app/docs/database/page.mdx fence@73 Parse error on line 97:
+OK src/app/docs/database/page.mdx fence@231
+OK src/app/docs/testing/page.mdx fence@24
+checked 9 fences in 5 files
+```
+
+Lane commit: 12c795317abfe681283b85108903b6bb77b40089
+
+Page data-flow: CHECKED
