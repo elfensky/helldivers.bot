@@ -58,7 +58,9 @@ reaches `develop` through its own PR.
   `deploymentId` and the GlitchTip release still change on every staging build.
 - **`metrics` is a CI-owned standalone branch** — never merge it to or from `develop`/`main`, never
   delete it as stale.
-- Use the `tryCatch` wrapper (`src/shared/utils/tryCatch.mjs`); no bare try/catch blocks.
+- Use the `tryCatch` wrapper (`src/shared/utils/tryCatch.mjs`); no bare try/catch blocks. Exception:
+  `getLocalStorage()` (`src/shared/utils/storage.mjs`) is sync and reports nothing, because a browser
+  without `localStorage` is an expected condition.
 - API routes answer via `errorResponse`/`successResponse` (`src/shared/utils/api/responses.mjs`) and
   measure execution time with `roundedPerformanceTime` (`src/shared/utils/time.mjs`).
 - All external/upstream data is validated with Zod schemas (`src/validators/`) before any database write.

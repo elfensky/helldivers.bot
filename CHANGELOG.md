@@ -51,6 +51,13 @@
 - A failed sourcemap upload to GlitchTip now fails the build. Before, the Sentry build step only
   logged the error, deleted the maps and exited 0, so `Pin Production` could pin a release with no
   browser maps. `next.config.mjs` sets an `errorHandler` that rethrows the error (#661).
+- The live dashboard updates in a browser without `localStorage` (null, or a getter that throws).
+  `clearReloadGuard()` threw on every poll there, so no poll result reached the page.
+  `guardedReload()` and `clearReloadGuard()` now read storage through `getLocalStorage()`
+  (`src/shared/utils/storage.mjs`). Without storage, `guardedReload()` does not reload: the circuit
+  breaker cannot count across page loads, and a stale tab is safer than a reload loop. `readOptOut()`
+  no longer reports a missing `localStorage` to GlitchTip, an expected condition (HELLDIVERSBOT-6D,
+  #671).
 
 ## 0.98.1
 

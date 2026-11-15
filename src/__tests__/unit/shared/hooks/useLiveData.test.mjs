@@ -1,5 +1,13 @@
 // @vitest-environment jsdom
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+    describe,
+    test,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    onTestFinished,
+} from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // useLiveData uses a module-level singleton store. Every test re-imports the
@@ -507,6 +515,34 @@ describe('useLiveData — localStorage cache fallback', () => {
 
         resolveFetch?.(makeFetchResponse({ data: {}, mapState: {} }));
         await flushAll();
+    });
+
+    test('a null localStorage does not stop the poll (#671)', async () => {
+        // The matching-version branch clears the reload guard, which used to throw here.
+        onTestFinished(() => {
+            vi.unstubAllGlobals();
+            vi.unstubAllEnvs();
+        });
+        vi.stubGlobal('localStorage', null);
+        vi.stubEnv('NEXT_PUBLIC_APP_VERSION', '1.0.0');
+        globalThis.fetch = vi.fn(() =>
+            Promise.resolve(
+                makeFetchResponse({
+                    data: { campaign: 7 },
+                    mapState: {},
+                    appVersion: '1.0.0',
+                }),
+            ),
+        );
+        const { useLiveData } = await loadHookFresh();
+
+        const { result } = renderHook(() => useLiveData(null, null));
+        await act(async () => {
+            await flushAll();
+        });
+
+        expect(result.current.status).toBe('live');
+        expect(result.current.data).toEqual({ campaign: 7 });
     });
 });
 
