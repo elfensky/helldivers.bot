@@ -20,7 +20,7 @@ const BODY = `
     web_noti["Web Notification<br/><small>tab hidden + leader + permission</small>"]
 
     %% Server write flow
-    hd1_api --> worker
+    hd1_api -->|"lease holder fetches"| post_update
     worker --> post_update
     post_update --> update_status
 

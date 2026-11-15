@@ -34,13 +34,16 @@ export const notificationFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Dedicated Worker Thread that polls the official Helldivers 1 API every ~20 seconds. Calls POST /api/h1/update via HTTP to the main Next.js process.',
+                        'Dedicated Worker Thread. Every replica runs it, and it calls POST /api/h1/update via HTTP to the main Next.js process every UPDATE_INTERVAL seconds. Only the poller lease holder polls the official Helldivers 1 API.',
                 },
                 {
                     type: 'table',
                     headers: ['Setting', 'Value'],
                     rows: [
-                        ['Poll interval', 'UPDATE_INTERVAL env (default 20s)'],
+                        [
+                            'Poll interval',
+                            'UPDATE_INTERVAL env (required; 20 in both stacks)',
+                        ],
                         ['Method', 'setTimeout (prevents overlap)'],
                         ['Auth', 'Bearer token (UPDATE_KEY)'],
                     ],

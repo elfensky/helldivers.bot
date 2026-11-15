@@ -22,7 +22,7 @@ export const inAppFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Official Helldivers 1 API. Updates approximately every second, but the worker polls less frequently to avoid overload.',
+                        'Official Helldivers 1 API. Updates approximately every second. Only the poller lease holder fetches it, once per UPDATE_INTERVAL seconds.',
                 },
             ],
         },

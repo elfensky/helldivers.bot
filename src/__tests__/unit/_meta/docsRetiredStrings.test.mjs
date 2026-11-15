@@ -67,6 +67,8 @@ describe('docs pages carry no retired claims (Final check sweeps)', () => {
         const g1 = 'explicit client approval|pwa--offline';
         const g2 =
             "season_duration\\[\\]|upsert by event_id|\\(event_id, bucket\\)|'bucket', 'DateTime'|\\(app\\)\\/page\\.jsx|worker --> hd1";
-        expect(hits(new RegExp(`${g1}|${g2}`))).toEqual([]);
+        const g3 =
+            'hd1_api --> worker|Thread that polls|default 20s|worker polls less frequently|src\\/app\\/site\\.webmanifest';
+        expect(hits(new RegExp(`${g1}|${g2}|${g3}`))).toEqual([]);
     });
 });
