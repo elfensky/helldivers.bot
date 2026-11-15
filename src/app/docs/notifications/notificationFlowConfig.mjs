@@ -57,13 +57,13 @@ export const notificationFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'API route that runs updateStatus() and updateSeason(). After successful DB writes, triggers push notification check (fire-and-forget). Clients poll for fresh data independently.',
+                        'API route that runs updateStatus() and updateSeason() on the poller lease holder; a replica without the lease answers standby and writes nothing. After successful DB writes, triggers push notification check (fire-and-forget). Clients poll for fresh data independently.',
                 },
                 { type: 'heading', content: 'Sequence' },
                 {
                     type: 'text',
                     content:
-                        '1. Validate bearer token\n2. updateStatus() \u2192 DB writes\n3. updateSeason() \u2192 snapshot sync\n4. checkAndNotify() (async, non-blocking)',
+                        '1. Validate bearer token\n2. claimLease() (a standby replica stops here)\n3. updateStatus() \u2192 DB writes\n4. updateSeason() \u2192 snapshot sync\n5. checkAndNotify() (async, non-blocking)',
                 },
             ],
         },
@@ -218,7 +218,7 @@ export const notificationFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Central data store for all game state. The worker writes campaign status and snapshots via the Update Route. The Live Endpoint reads current campaign data for client polling.',
+                        'Central data store for all game state. The Update Route writes campaign status and snapshots on the replica that holds the poller lease. The Live Endpoint reads current campaign data for client polling.',
                 },
                 {
                     type: 'table',
