@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-11-15T03:01:26.727Z"
+stopped_at: Completed 02-08-PLAN.md
+last_updated: "2026-11-15T03:19:55.364Z"
 last_activity: 2026-11-15
 last_activity_desc: Phase 02 execution started
-state_head: fee74e90a40f4f493dad16a5eab6b963d68645e4
+state_head: 6226396b3fb123f0c7be5b247fec43ac07cb6235
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 14
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 10 of 14
+Plan: 11 of 14
 Status: Ready to execute
 Last activity: 2026-11-15 — Phase 02 execution started
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P06 | 9 min | 3 tasks | 4 files |
 | Phase 02 P15 | 5 min | 3 tasks | 1 files |
 | Phase 02 P07 | 10 min | 3 tasks | 4 files |
+| Phase 02 P08 | 45 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-05: PR #665 merged; five diagrams rendered in Chrome 157 under mermaid 12.3.0 (Verdict RENDERED); DOCS-03 drift on notifications diagrams (POST label) left unchanged by D-07
 - [Phase 02]: 02-06: the page documents X-Worker-Startup as sent but not acted on by the update route (nothing in src/ reads it); the fence check uses only installed jsdom and mermaid
 - [Phase 02]: 02-07: api_rate_limit gets its own section 8 on /docs/database; the testing page keeps no mermaid fence (layout stated as one rule)
+- [Phase 02]: 02-08: the infrastructure page cites no CI compose file name (the retired-name gate regex matches it); observed timings (release ~10 min, staging roll 5-6 min) are stated as observed
 
 ### Pending Todos
 
@@ -124,8 +126,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T03:01:26.703Z
-Stopped at: Completed 02-07-PLAN.md
+Last session: 2026-11-15T03:19:55.248Z
+Stopped at: Completed 02-08-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
