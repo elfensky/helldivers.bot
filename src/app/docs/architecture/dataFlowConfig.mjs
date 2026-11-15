@@ -31,8 +31,8 @@ export const dataFlowConfig = createFlowConfig({
             'h1_event',
         ],
         seed: ['seed_files', 'seed_script', 'h1_season', 'h1_status', 'h1_event'],
-        read_live: ['h1_status', 'h1_event', 'h1_season', 'fe_live'],
-        read_archives: ['h1_status', 'h1_event', 'h1_event_progress', 'fe_archives'],
+        read_live: ['h1_status', 'h1_statistic', 'h1_event', 'h1_season', 'fe_live'],
+        read_archives: ['h1_status', 'h1_statistic', 'h1_event', 'fe_archives'],
         read_rebroadcast: [
             'h1_season',
             'h1_status',
@@ -106,7 +106,7 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Static JSON files that bootstrap the app. Same shape as get_snapshots response \u2014 processed through the same normalization pipeline.',
+                        'Static JSON files that bootstrap the app. Same shape as get_snapshots response \u2014 written to the same normalized tables with the same bucket math.',
                 },
                 {
                     type: 'tags',
@@ -177,7 +177,7 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Populates the database from static JSON files. Processes each season file through the same normalization pipeline used by live updates.',
+                        'Populates the database from static JSON files. Writes h1_season, h1_status and h1_event with the bucket math that live updates use, as an inlined copy because the script cannot import @/* aliases.',
                 },
                 {
                     type: 'text',
@@ -319,7 +319,7 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'One row per (type, event_id, bucket). Tracks how event points change over time; points_max is constant and lives on h1_event. Used by archives to show event progression charts.',
+                        'One row per (type, event_id, bucket). Tracks how event points change over time; points_max is constant and lives on h1_event. The app only writes this table; the offline scripts in scripts/analysis read it.',
                 },
                 {
                     type: 'tags',
@@ -328,7 +328,7 @@ export const dataFlowConfig = createFlowConfig({
                             text: 'bucket-upsert by (type, event_id, bucket)',
                             cls: 'tag-upsert',
                         },
-                        { text: 'Archives progression', cls: 'tag-read' },
+                        { text: 'read by analysis scripts', cls: 'tag-read' },
                     ],
                 },
                 {
@@ -351,11 +351,16 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Reads the latest h1_status bucket for each faction in the active season, plus active events and season arrays. Renders galaxy map, stat cards, and player counts.',
+                        'Reads the latest h1_status and h1_statistic bucket for each faction in the active season, plus active events and season arrays. Renders galaxy map, stat cards, and player counts.',
                 },
                 {
                     type: 'tags',
-                    items: [{ text: 'reads h1_status (latest)', cls: 'tag-read' }],
+                    items: [
+                        {
+                            text: 'reads h1_status + h1_statistic (latest)',
+                            cls: 'tag-read',
+                        },
+                    ],
                 },
             ],
         },
@@ -366,13 +371,13 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Reads full h1_status timeseries + all h1_event records + h1_event_progress for any season. Missing seasons backfilled on demand from the official API.',
+                        'Reads the full h1_status timeseries, the h1_statistic player counts and all h1_event records for any season. Missing seasons backfilled on demand from the official API.',
                 },
                 {
                     type: 'tags',
                     items: [
                         {
-                            text: 'reads h1_status + h1_event + h1_event_progress',
+                            text: 'reads h1_status + h1_statistic + h1_event',
                             cls: 'tag-read',
                         },
                     ],
