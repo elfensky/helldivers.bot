@@ -62,5 +62,5 @@ jobs:
                   git push --force origin chore/seed-refresh
                   gh pr create --base develop --head chore/seed-refresh \
                     --title 'chore(seed): refresh historical season data' \
-                    --body 'Automated weekly run of `prisma/seed/fetch-seasons.mjs`. Push the version bump + CHANGELOG commit onto this branch, then rebase-merge.' \
+                    --body 'Automated weekly run of `prisma/seed/fetch-seasons.mjs`. Push a CHANGELOG commit (under `## Unreleased`) onto this branch, then rebase-merge.' \
                     || echo 'PR already open — branch updated.'

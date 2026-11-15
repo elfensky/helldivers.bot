@@ -1,12 +1,8 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { randomGlyph } from '@/shared/utils/glitchGlyph.mjs';
 
-const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const TICK_MS = 50;
-
-function randomChar() {
-    return CHARSET[Math.floor(Math.random() * CHARSET.length)];
-}
 
 /**
  * Get word boundaries: [{ start, end }, ...] for each word in text.
@@ -125,7 +121,7 @@ export default function GlitchText({
                                 c.display !== ' ' &&
                                 c.display !== ''
                             ) ?
-                                { display: randomChar(), style: 'cyberstan' }
+                                { display: randomGlyph(), style: 'cyberstan' }
                             :   c,
                         ),
                     );
@@ -183,9 +179,7 @@ export default function GlitchText({
                             if (roll < 0.25)
                                 return { display: tc || ac, style: 'normal' };
                             if (roll < 0.5) return { display: ac || tc, style: 'alt' };
-                            if (roll < 0.8)
-                                return { display: randomChar(), style: 'cyberstan' };
-                            return { display: randomChar(), style: 'normal' };
+                            return { display: randomGlyph(), style: 'cyberstan' };
                         }),
                     );
                 }, TICK_MS);
@@ -197,7 +191,7 @@ export default function GlitchText({
                     setChars((prev) =>
                         prev.map((c) =>
                             c.style !== 'normal' && c.display !== '' ?
-                                { display: randomChar(), style: 'cyberstan' }
+                                { display: randomGlyph(), style: 'cyberstan' }
                             :   c,
                         ),
                     );

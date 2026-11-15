@@ -31,17 +31,15 @@
 # (staging.helldivers.bot -> http://app:3000) live in the Cloudflare Zero Trust
 # dashboard, not in this file. Routing changes are made there.
 #
-# Migrations are NOT a service here — Swarm ignores `depends_on`. Run the
-# migrate image as a one-shot BEFORE deploying. It is multi-arch (each arch
-# built on its own runner), so it runs from any LAN host, a Pi included.
-# See deploy/README.md.
+# Swarm ignores `depends_on`, so the app migrates itself: every new task
+# applies pending migrations, and the seed when its data changed, under an
+# advisory lock before it serves (src/update/migrateOnStart.mjs,
+# deploy/README.md § Migrations).
 #
 # The `image:` line below is written by CI (bump-staging-tag in
 # build-staging.yml) on the CI-owned branch deploy/staging, which is what Git
-# Sync deploys — on develop this line is stale and not what runs. A range that
-# carries a migration is NOT pinned automatically: migrate by hand, then
-# dispatch build-staging.yml on develop with migrated=true. Rollback: re-run
-# the Bump Staging Tag job of the run that deployed the good version.
+# Sync deploys — on develop this line is stale and not what runs. Rollback:
+# re-run the Bump Staging Tag job of the run that deployed the good version.
 
 networks:
     internal:

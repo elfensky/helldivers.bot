@@ -26,19 +26,19 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **DEPS-03**: Repository settings: `allow_auto_merge` on; squash and rebase merge buttons disabled so only merge commits are possible on any PR
 - [ ] **DEPS-04**: A branch ruleset on `develop` requires the CI status checks (names matched to `check-ci.yml` job ids) and does **not** require linear history
 - [ ] **DEPS-05**: A workflow enables auto-merge (`gh pr merge --auto --merge`) on Dependabot PRs classified minor/patch by `dependabot/fetch-metadata`; major bumps are left for manual review; verified by observing one real Dependabot PR merge unattended
-- [ ] **DEPS-06**: CLAUDE.md § Git Workflow states the exemption: Dependabot merges into `develop` carry no version bump / CHANGELOG move; the next real release folds them in. `check-version.yml` does not block Dependabot PRs
+- [ ] **DEPS-06**: AGENTS.md § This repo's own rules states the exemption: Dependabot merges into `develop` carry no version bump / CHANGELOG move; the next real release folds them in. `check-version.yml` does not block Dependabot PRs
 
 ### Housekeeping (HOUSE)
 
-- [ ] **HOUSE-01**: #466 — unit tests are co-located as `*.test.*` next to their modules; `src/__tests__/` keeps only `_meta`, contract and integration tests; `mirrorTree.test.mjs` is replaced by a co-location guard; `.dockerignore` / `output: 'standalone'` / `pageExtensions` verified to exclude tests from the image; CLAUDE.md § Test Layout rewritten. Lands before any feature phase adds tests
+- [ ] **HOUSE-01**: #466 — unit tests are co-located as `*.test.*` next to their modules; `src/__tests__/` keeps only `_meta`, contract and integration tests; `mirrorTree.test.mjs` is replaced by a co-location guard; `.dockerignore` / `output: 'standalone'` / `pageExtensions` verified to exclude tests from the image; AGENTS.md's test-placement rule rewritten. Lands before any feature phase adds tests
 - [ ] **HOUSE-02**: #389 — Rich Results, Schema.org validator, Search Console and SERP previews for `/`, `/archives`, `/docs/about` verified on production; findings fixed or recorded (checks absorbed into SEO-05)
 - [ ] **HOUSE-03**: #502 — once GlitchTip symbolication is proven on ≥1 release, sourcemaps are uploaded at build time and stripped from the shipped image (~24 MB saved); verified by image size and a symbolicated production stack trace
 - [ ] **HOUSE-04**: #501 — the seed-refresh workflow's PR path is verified end-to-end at the next season transition (or via a controlled simulation if the transition hasn't happened by the phase's end); issue records the run
-- [ ] **HOUSE-05**: `docs/roadmap.md` is retired to a short pointer at `.planning/ROADMAP.md`; one source of truth for execution order
+- [x] **HOUSE-05**: `docs/roadmap.md` is deleted and its live items carried into `.planning/`; `.planning/ROADMAP.md` is the one roadmap file and the one source of truth for execution order (done 2026-11-02; re-scoped from "retired to a short pointer": a pointer file would be a second roadmap file under the one-roadmap standard)
 
 ### Documentation Accuracy (DOCS)
 
-- [ ] **DOCS-01**: CLAUDE.md § Architecture describes the lease/`worker_heartbeat` model, `WORKER_ENABLED`, and the multi-replica web tier — no mention of module-level `lastSeasonObserved` state
+- [ ] **DOCS-01**: AGENTS.md § Architecture invariants describes the lease/`worker_heartbeat` model, `WORKER_ENABLED`, and the multi-replica web tier — poller state in the lease row, not module memory
 - [ ] **DOCS-02**: Public `/docs` pages (`architecture`, `data-flow`, `infrastructure`, `database`, `testing`) match the code — lease, replica topology, CI/CD workflow names, test layout — verified page-by-page against `.planning/codebase/`
 - [ ] **DOCS-03**: A final docs pass after all feature tracks ship covers Loadout Builder, Archive Analytics, staging, and the SSE outcome, so docs describe what shipped
 
@@ -55,7 +55,7 @@ Goal: rank highly for Helldivers 1 queries ("helldivers 1 galactic war status/ma
 - [ ] **SEO-07**: Google Search Console is wired into the workflow: verification token in metadata, sitemap submitted, an agent-accessible path (GSC API or an MCP server) to pull performance (queries/impressions/CTR/position) and coverage; a recurring review turns findings into GitHub issues, and the first review's fixes ship in this milestone
 - [ ] **SEO-08**: Lighthouse SEO ≥ 95 and Performance/Accessibility ≥ 90 on `/`, `/archives`, `/docs` measured against production (the `scheduled-pagespeed.yml` report on the `metrics` branch is the record); Core Web Vitals pass in GSC's report
 - [ ] **SEO-09**: Umami (umami.drunik.be) is fully wired: `UMAMI_SITE_ID`/`UMAMI_SITE_URL` present in production and staging runtime env, tracker loads via the `/stats.js` proxy and events flow through `/api/send`→`/api/umami` (verified by a real event in the Umami dashboard), `umami.identify()` on login, and `umamiTrackEvent` called via `after()` on every public API route (`/api/v1/**`, `/api/h1/campaign`, `/api/h1/rebroadcast`) — currently zero routes do
-- [ ] **SEO-10**: Every interactive element carries `data-umami-event` (or `useTrack`), enforced by a lint rule or test rather than review; Umami event names follow `category-action` and the category list in CLAUDE.md is complete
+- [ ] **SEO-10**: Every interactive element carries `data-umami-event` (or `useTrack`), enforced by a lint rule or test rather than review; Umami event names follow `category-action` and the category list in AGENTS.md is complete
 
 ### Loadout Builder (LOAD) — milestone #19
 
@@ -84,6 +84,7 @@ Goal: rank highly for Helldivers 1 queries ("helldivers 1 galactic war status/ma
 - [ ] **ARCH-08**: #453 — war narrative phrasing variety + sequential decorrelation + `defendWon` grammar fix
 - [ ] **ARCH-09**: #247 — event progress surfaced in the region tab and/or persistent active-event toasts (option chosen on the issue)
 - [ ] **ARCH-10**: Closed-season aggregates are cached (not recomputed per request); every new Recharts chart is verified in a production build (`npm run build && npm run start`) because of the React-Compiler/`ResponsiveContainer` production-only bug
+- [ ] **ARCH-11**: #469 — the archives map hides each faction until its introduction point in the season (from `h1_season.introduction_order`; season 160: Bugs day 1, Illuminate day 2, Cyborgs day 3); the gate sits in the archives-only caller `computeMapStateAtEvent`, not in the shared `computeMapState` contract, and the live map is unchanged. Prep: plan — the risk is in the blast radius, not the logic
 
 ### Accessibility & Design (A11Y) — milestone #10
 
@@ -126,7 +127,7 @@ Goal: rank highly for Helldivers 1 queries ("helldivers 1 galactic war status/ma
 
 ### SSE (SSE) — #298
 
-- [ ] **SSE-01**: Throwaway spike (branch discarded) answers the four gating questions — proxy/CrowdSec/idle-timeout survival, backgrounded/sleeping/offline behavior, per-tab vs leader stream, measured latency win over 10s polling — with answers written on #298
+- [ ] **SSE-01**: Throwaway, time-boxed spike (`superpowers:prototype`, branch discarded) answers the four gating questions — proxy/CrowdSec/idle-timeout survival, backgrounded/sleeping/offline behavior, per-tab vs leader stream, measured latency win over 10s polling — with answers written on #298
 - [ ] **SSE-02**: If the spike says yes: SSE replaces polling with Postgres `LISTEN/NOTIFY` fan-out across replicas, `useLiveData`'s public return shape preserved, reconnect-and-catch-up contract, verified on staging. If the spike says no: #298 closed with the findings
 
 ## v2 Requirements
@@ -168,7 +169,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOCS-02 | Phase 2 | Pending |
 | HOUSE-03 | Phase 2 | Pending |
 | HOUSE-04 | Phase 2 | Pending |
-| HOUSE-05 | Phase 2 | Pending |
+| HOUSE-05 | Phase 2 | Complete |
 | HOUSE-01 | Phase 3 | Pending |
 | DEPS-01 | Phase 4 | Pending |
 | DEPS-02 | Phase 4 | Pending |
@@ -214,6 +215,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-08 | Phase 12 | Pending |
 | ARCH-09 | Phase 12 | Pending |
 | ARCH-10 | Phase 12 | Pending |
+| ARCH-11 | Phase 11 | Pending |
 | A11Y-01 | Phase 13 | Pending |
 | A11Y-02 | Phase 13 | Pending |
 | A11Y-03 | Phase 13 | Pending |
@@ -239,10 +241,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 **Coverage:**
 
-- v1 requirements: 79 total
-- Mapped to phases: 79
+- v1 requirements: 80 total
+- Mapped to phases: 80
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-28*
-*Last updated: 2026-08-29 after roadmap revision (18 phases, full coverage — SEO & Analytics Foundation inserted as Phase 5, HOUSE-02 absorbed into it)*
+*Last updated: 2026-11-02 — HOUSE-05 done (`docs/roadmap.md` deleted), ARCH-11 (#469) added in Phase 11 (D-18)*

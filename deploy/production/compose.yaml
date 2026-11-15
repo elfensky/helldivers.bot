@@ -36,11 +36,10 @@
 # --ref <branch> -f tag=vX.Y.Z` pins an existing one: the first pin from
 # develop, a rollback (the previous tag) from main.
 #
-# Migrations are NOT a service here — Swarm ignores `depends_on`. Before the
-# first deploy of a release that carries a migration (any prisma/ change but
-# Markdown since the pinned tag),
-# run ghcr.io/elfensky/helldiversbot-migrate:vX.Y.Z by hand against the
-# production database. See deploy/README.md § Production.
+# Swarm ignores `depends_on`, so the app migrates itself: every new task
+# applies pending migrations, and the seed when its data changed, under an
+# advisory lock before it serves (src/update/migrateOnStart.mjs,
+# deploy/README.md § Migrations).
 
 networks:
     internal:

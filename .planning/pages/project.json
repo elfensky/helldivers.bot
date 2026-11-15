@@ -1,0 +1,342 @@
+{
+  "format": 1,
+  "kind": "repo",
+  "id": "personal-helldivers-bot",
+  "slug": "helldivers-bot",
+  "domain": "personal",
+  "title": "helldivers.bot",
+  "repo": "elfensky/helldivers.bot",
+  "description": "A Helldivers dashboard and API with operational and feature improvements.",
+  "status": "active",
+  "icon": "🪖",
+  "logo": "logo.webp",
+  "next_action": "Phase 2: Docs Accuracy & Operational Housekeeping",
+  "commit": "baedce5517026883bf27556ba63ce897db4fd106",
+  "plan_date": "2026-11-09",
+  "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/ROADMAP.md",
+  "prose": "## Blockers\n\n- HOUSE-03 (sourcemap stripping): v0.95.2 uploaded sourcemaps and GlitchTip symbolicates 0.95.2 events (turbopack frames resolve to source paths in the recount), so #502 can proceed in Phase 2\n- [M7] Production `/opengraph-image` serves the static fallback on every request (sharp rejection on x64 production, not reproduced on arm64) — #503\n- [M7] Hydration #418 still fires on `/` for real browsers on 0.95.2 — #496, #526\n- [M7] Code review WR-01..11 recorded open in `milestones/M7-phases/01-stability-fixes-release/01-REVIEW-DISPOSITION.md`; WR-08 (shared-cache HTML with session-dependent admin widget) and WR-07 (unconditional Umami proxy rewrite) deserve Phase 2 triage first\n- SITE-03 and ARCH-08 touch the same narrative/vernacular copy — Phase 14 depends on Phase 12 so the second track consumes the first's vocabulary source instead of forking it\n- ICE-06/ICE-07 and STAGE-01..04 are gated on external factors (official API behavior, TLS pinning, homelab hardware) — not schedulable by effort alone\n\n## Decisions\n\nDecisions are logged in PROJECT.md Key Decisions table.\nRecent decisions affecting current work:\n\n- Roadmap: HOUSE-01 (test co-location) is a standalone Phase 3 that must land before any phase adding tests (5, 7, 8, 9, 10, 11, 12, 13, 15, 17)\n- Roadmap: SEO & Analytics Foundation (Phase 5) is inserted right after Test Co-location and Dependency Cleanup, before every feature track — ranking compounds with time. It absorbs HOUSE-02's Rich Results/Schema.org/Search Console checks into SEO-05, and depends on STAB-02's OG fallback (M7) and Phase 3 (tests)\n- Roadmap: LOAD-01/02/03 (catalogs + hash codec) is a standalone Phase 7 — the milestone's one-way door — before any Loadout UI\n- Roadmap: New public pages shipped by Loadout Builder Core (Phase 8) and Archive Analytics (Phases 11, 12) register in the sitemap/llms.txt/metadata registry per the SEO-02/04 convention established in Phase 5\n- Roadmap: SSE (Phase 17) is spike-gated and scheduled after staging (Phase 16) so it can test against real multi-replica topology; \"don't implement\" is a valid outcome\n- Roadmap: Final Documentation Pass (Phase 18) also runs SEO-07's recurring Search Console review; findings become GitHub issues rather than inline fixes\n- [Phase 02]: docs/roadmap.md deleted, not a pointer (supersedes D-19/D-20): .planning/ROADMAP.md is the one roadmap file; live items carried into ROADMAP.md § Carried over; plan 02-03 done outside execute-phase (2026-11-02)\n\n## Sources\n\nSTATE.md and ROADMAP.md at baedce55 (2026-11-09): [STATE.md](https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/STATE.md), [ROADMAP.md](https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/ROADMAP.md).\n",
+  "milestones": [
+    {
+      "id": "m1",
+      "no": "M1",
+      "title": "The first site caches the war and draws the map",
+      "summary": "The first site caches the Helldivers 1 API in Postgres, serves it again in the game's format, and shows the map, stats and timeline.",
+      "state": "done",
+      "finished": "2025-12-09",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/milestones/M1-ROADMAP.md",
+      "items": [
+        {
+          "name": "Base app",
+          "state": "done",
+          "date": "2025-05-19"
+        },
+        {
+          "name": "Rebroadcast API",
+          "state": "done",
+          "date": "2025-05-20"
+        },
+        {
+          "name": "Map, stats and timeline",
+          "state": "done",
+          "date": "2025-06-24"
+        },
+        {
+          "name": "Landing page",
+          "state": "done",
+          "date": "2025-12-09"
+        }
+      ]
+    },
+    {
+      "id": "m2",
+      "no": "M2",
+      "title": "The rebuilt dashboard works on every screen",
+      "summary": "The relaunched site makes the live war dashboard its homepage and works on phone, tablet and desktop, with notifications and accounts.",
+      "state": "done",
+      "finished": "2026-04-08",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/milestones/M2-ROADMAP.md",
+      "items": [
+        {
+          "name": "Relaunch",
+          "state": "done",
+          "date": "2026-03-27"
+        },
+        {
+          "name": "Responsive redesign",
+          "state": "done",
+          "date": "2026-04-04"
+        },
+        {
+          "name": "Live updates and notifications",
+          "state": "done",
+          "date": "2026-04-08"
+        },
+        {
+          "name": "Accounts",
+          "state": "done",
+          "date": "2026-04-08"
+        }
+      ]
+    },
+    {
+      "id": "m3",
+      "no": "M3",
+      "title": "The archive holds every season in five tables",
+      "summary": "Every season sits in a normalized five-table schema with bucket upserts, and the archives and the new /stats page read it.",
+      "state": "done",
+      "finished": "2026-06-21",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/milestones/M3-ROADMAP.md",
+      "items": [
+        {
+          "name": "Archives redesign",
+          "state": "done",
+          "date": "2026-04-15"
+        },
+        {
+          "name": "Normalized schema",
+          "state": "done",
+          "date": "2026-04-16"
+        },
+        {
+          "name": "Hardening",
+          "state": "done",
+          "date": "2026-05-22"
+        },
+        {
+          "name": "Cross-season stats",
+          "state": "done",
+          "date": "2026-06-21"
+        }
+      ]
+    },
+    {
+      "id": "m4",
+      "no": "M4",
+      "title": "Developers can use a public API",
+      "summary": "Developers query versioned `/api/v1/h1` endpoints with API keys, rate limits and an OpenAPI document, released to `main` as v0.59.0.",
+      "state": "done",
+      "finished": "2026-06-23",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/milestones/M4-ROADMAP.md",
+      "items": [
+        {
+          "name": "Versioned endpoints",
+          "state": "done",
+          "date": "2026-06-21"
+        },
+        {
+          "name": "Limits and docs",
+          "state": "done",
+          "date": "2026-06-23"
+        }
+      ]
+    },
+    {
+      "id": "m5",
+      "no": "M5",
+      "title": "The archives tell each season's story",
+      "summary": "The archives and `/stats` explain each season through combat telemetry, engagement, a written war narrative and faction markers.",
+      "state": "done",
+      "finished": "2026-07-27",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/milestones/M5-ROADMAP.md",
+      "items": [
+        {
+          "name": "Season stories",
+          "state": "done",
+          "date": "2026-06-29"
+        },
+        {
+          "name": "Test rigour",
+          "state": "done",
+          "date": "2026-07-27"
+        }
+      ]
+    },
+    {
+      "id": "m6",
+      "no": "M6",
+      "title": "The dashboard predicts the next events",
+      "summary": "The dashboard forecasts the next wave, the assault timing and the counterattack clock, and the develop backlog ships from v0.90.4 on.",
+      "state": "done",
+      "finished": "2026-08-13",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/milestones/M6-ROADMAP.md",
+      "items": [
+        {
+          "name": "Event predictions",
+          "state": "done",
+          "date": "2026-08-04"
+        },
+        {
+          "name": "Release and CI",
+          "state": "done",
+          "date": "2026-08-13"
+        }
+      ]
+    },
+    {
+      "id": "m7",
+      "no": "M7",
+      "title": "Production is stable on the Hetzner swarm",
+      "summary": "The known production bug classes are fixed or tracked, and production runs on the Hetzner swarm, released as v0.96.4.",
+      "state": "done",
+      "finished": "2026-10-25",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/milestones/M7-ROADMAP.md",
+      "items": [
+        {
+          "name": "Stability Fixes & Release",
+          "state": "done",
+          "done": 9,
+          "total": 9,
+          "date": "2026-10-21",
+          "link": "https://github.com/elfensky/helldivers.bot/tree/baedce5517026883bf27556ba63ce897db4fd106/.planning/milestones/M7-phases/01-stability-fixes-release"
+        },
+        {
+          "name": "Production on the Hetzner Swarm",
+          "state": "done",
+          "date": "2026-10-25",
+          "link": "https://github.com/elfensky/helldivers.bot/tree/baedce5517026883bf27556ba63ce897db4fd106/.planning/milestones/M7-phases/01.1-production-on-the-hetzner-swarm"
+        }
+      ]
+    },
+    {
+      "id": "m8",
+      "no": "M8",
+      "title": "The site is documented, tested and findable",
+      "summary": "The docs match the code, tests sit beside their modules, dependency updates merge themselves, and search and analytics are wired in.",
+      "state": "inprogress",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/ROADMAP.md",
+      "items": [
+        {
+          "name": "Docs Accuracy & Operational Housekeeping",
+          "state": "inprogress",
+          "done": 1,
+          "total": 12,
+          "link": "https://github.com/elfensky/helldivers.bot/tree/baedce5517026883bf27556ba63ce897db4fd106/.planning/phases/02-docs-accuracy-operational-housekeeping"
+        },
+        {
+          "name": "Test Co-location",
+          "state": "todo"
+        },
+        {
+          "name": "Dependency Cleanup & Auto-merge Automation",
+          "state": "todo"
+        },
+        {
+          "name": "SEO & Analytics Foundation",
+          "state": "todo"
+        },
+        {
+          "name": "Icebox Quick Closures",
+          "state": "todo"
+        }
+      ]
+    },
+    {
+      "id": "m9",
+      "no": "M9",
+      "title": "Players can build and share loadouts",
+      "summary": "A player builds a loadout, sees its stats and shares it as a link with its own preview image, up to a full four-player squad.",
+      "state": "todo",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/ROADMAP.md",
+      "items": [
+        {
+          "name": "Loadout Foundation (Catalogs + Codec)",
+          "state": "todo"
+        },
+        {
+          "name": "Loadout Builder Core",
+          "state": "todo"
+        },
+        {
+          "name": "Loadout Enhancements & Squad Mode",
+          "state": "todo"
+        }
+      ]
+    },
+    {
+      "id": "m10",
+      "no": "M10",
+      "title": "Players can explore season analytics",
+      "summary": "Players read season-level analytics, stories and comparisons across all 160 seasons, and charts hide when a season has no telemetry.",
+      "state": "todo",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/ROADMAP.md",
+      "items": [
+        {
+          "name": "Archive Analytics Spec Refresh",
+          "state": "todo"
+        },
+        {
+          "name": "Archive Analytics Feature Build",
+          "state": "todo"
+        },
+        {
+          "name": "Archive Analytics — Comparison, Narrative & Caching",
+          "state": "todo"
+        }
+      ]
+    },
+    {
+      "id": "m11",
+      "no": "M11",
+      "title": "The site is accessible and polished",
+      "summary": "The site meets WCAG contrast and ARIA rules, admins can broadcast, and the map gains depth; the two Icebox spikes reach a decision.",
+      "state": "todo",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/ROADMAP.md",
+      "items": [
+        {
+          "name": "Accessibility & Design Polish",
+          "state": "todo"
+        },
+        {
+          "name": "Site Features & Easter Eggs",
+          "state": "todo"
+        },
+        {
+          "name": "Map Visuals & Icebox Investigative Spikes",
+          "state": "todo"
+        }
+      ]
+    },
+    {
+      "id": "m12",
+      "no": "M12",
+      "title": "Staging runs on the Pi and live updates are decided",
+      "summary": "A push to `develop` deploys to staging on the Pi swarm, a spike decides on SSE against polling, and the public docs describe what shipped.",
+      "state": "todo",
+      "page": true,
+      "source": "https://github.com/elfensky/helldivers.bot/blob/baedce5517026883bf27556ba63ce897db4fd106/.planning/ROADMAP.md",
+      "items": [
+        {
+          "name": "Staging on the Pi Swarm",
+          "state": "todo"
+        },
+        {
+          "name": "SSE Spike & Conditional Implementation",
+          "state": "todo"
+        },
+        {
+          "name": "Final Documentation Pass",
+          "state": "todo"
+        }
+      ]
+    }
+  ],
+  "forwards": [
+    "phase-1-stability-release",
+    "phase-1-1-production-migration",
+    "phase-2-documentation-and-operations",
+    "phase-3-test-co-location",
+    "v0-96-2"
+  ],
+  "architecture": true
+}

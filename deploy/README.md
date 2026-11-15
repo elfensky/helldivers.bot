@@ -87,15 +87,17 @@ The app reads both as files via the `*_FILE` convention
 
 ## Known gaps
 
-1. **Migrations are still run by hand.** `helldiversbot-migrate:staging` is multi-arch — amd64 and
-   arm64 are each built on a runner of their own arch, because `prisma generate` SIGILLs under QEMU
-   arm64 — so it runs from any LAN host, a Pi included. `bump-staging-tag` deliberately skips any
-   build whose range since the deployed pin changes `prisma/` (see § How it is deployed): run the
-   migrate image, then `gh workflow run build-staging.yml --ref develop -f migrated=true` to pin.
+1. **Migrations run on app start, so a broken migration stalls the rollout.** Each new task
+   applies pending migrations, and the seed when its data changed, under an advisory lock
+   (`../src/update/migrateOnStart.mjs`) before it serves. A failure keeps the NEW task in Starting
+   while the old tasks serve. It logs `[migrate] failed: …`, sends a GlitchTip event with stage
+   `migrate-on-start`, and retries after 30 s, 60 s, 2 min, then every 5 min. Triage with
+   `docker service ps <stack>_app` (tasks stuck in Starting) and
+   `docker service logs <stack>_app | grep '\[migrate\]'`.
 2. **No self-hosted runner** in the LAN (elfensky/helldivers.bot#474). With Git Sync as the
-   writer a runner is no longer needed to *deploy*; it is needed only to run migrations against
-   the LAN database and to take the maintenance banner up/down around a deploy — the shape in
-   the vault's `50-ci-cd`. Until it exists, migrations are a manual one-shot.
+   writer a runner is no longer needed to *deploy*, and the app migrates itself. A runner is
+   needed only to take the maintenance banner up/down around a deploy — the shape in
+   the vault's `50-ci-cd`.
 3. **Kuma maintenance banner** (`../.github/scripts/kuma-maintenance.mjs`) unverified —
    Socket.IO event shapes vary by version. Unused until a runner exists.
 4. **A network partition can briefly yield two holders.** A node cut off from the managers keeps
@@ -112,10 +114,9 @@ merge to develop
   → Build: Staging
        build :staging + :sha-<commit> app image (multi-arch)
        bump-staging-tag: pin :sha-<commit> in deploy/staging/compose.yaml, force-push deploy/staging
-         (skipped with a warning when prisma/ changed since the deployed pin — migrate by hand,
-          then dispatch with migrated=true)
   → Arcane Git Sync (polls deploy/staging every 5 min) sees the commit → redeploys the stack
        start-first + image healthcheck + rollback on failure
+       new tasks apply pending migrations and the seed before they serve
 ```
 
 ## Production
@@ -178,10 +179,14 @@ commit. `develop` and `main` carry `:production-unpinned` and say nothing about 
 
 ### Migrations
 
-The migrate image is a one-shot, not a service. Before the first deploy of a release that carries
-a migration (any `prisma/` change but Markdown since the pinned tag), run it by hand against the
-production database, from a host on the private network:
-`docker run --rm -e POSTGRES_URL ghcr.io/elfensky/helldiversbot-migrate:vX.Y.Z`, with
-`POSTGRES_URL` set in the shell, never on the command line. A tag push pins at once and Git Sync
-applies the pin within its poll interval, so turn auto-sync off on the Git Sync row before such a
-tag is pushed, migrate once the release build is green, then sync.
+No manual step, on staging or production: every new task applies pending migrations, and the seed
+when its data changed, before it serves (`../src/update/migrateOnStart.mjs`, § Known gaps item 1
+for triage). The rules that stay:
+
+- Every migration stays backward compatible for one release (expand/contract). Start-first runs the
+  old and the new version side by side.
+- Rollback is a forward migration. Prisma has no down migrations.
+
+The migrate image stays as the manual and emergency tool, for example a migration run while no app
+task is up: `docker run --rm -e POSTGRES_URL ghcr.io/elfensky/helldiversbot-migrate:vX.Y.Z`, with
+`POSTGRES_URL` set in the shell, never on the command line.

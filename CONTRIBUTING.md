@@ -31,29 +31,35 @@ develop ──────●──●──●──●──●──── (s
 
 ## Workflow
 
-Every change — feature, bugfix or chore — lands on `develop` by a PR from its own worktree
-under `.worktrees/`. The main checkout stays on `develop` and only ever pulls. Commands and the
-full rule: [AGENTS.md § Worktrees](AGENTS.md#worktrees--one-lane-always).
+Every change — feature, bugfix or chore — lands on `develop` by a PR from its own session
+worktree. The main checkout stays on `develop` and only ever pulls. The full rule lives in the
+developer handbook (`~/vault/knowledge/developer/developer.md`), chapter
+`~/vault/knowledge/developer/stack/git-and-prs.md` § Worktrees.
 
 1. Create a worktree + branch from `origin/develop`
-2. Make changes, commit with conventional commits (`feat:`, `fix:`, `chore:`), bump the version as the last commit
+2. Make changes, commit with conventional commits (`feat:`, `fix:`, `chore:`), add a note under `## Unreleased` in `CHANGELOG.md`; no version bump
 3. Push and open a pull request to `develop`
 4. Rebase-merge when CI passes (`gh pr merge --rebase --delete-branch`)
 5. Changes deploy to staging
 
 ## Release Process
 
-PR `develop` → `main` (merge commit), tag `vX.Y.Z` on the merge commit, push the tag, then merge
-`main` back into `develop` by PR. The tag triggers the production Docker build. Full steps:
-[AGENTS.md § Git Workflow](AGENTS.md#git-workflow), rule 3.
+1. Cut the version: a PR into `develop` that bumps `"version"` in `package.json` and moves the
+   `## Unreleased` notes in `CHANGELOG.md` into a new `## X.Y.Z` section. Rebase-merge it like any
+   work PR.
+2. PR `develop` → `main` (merge commit). `Check: Version Bump` fails if the version equals `main`'s.
+3. Tag `vX.Y.Z` on the merge commit and push the tag. The tag triggers the production Docker build.
+
+There is no merge-back into `develop`. Full rules: [AGENTS.md § Branches](AGENTS.md#branches) and
+§ This repo's own rules, "The version cut".
 
 ## Hotfix Process
 
 1. Worktree on `hotfix/<semver>` from `origin/main`
-2. Fix, commit with tests
+2. Fix, commit with tests, bump `"version"` and add its `## X.Y.Z` notes in `CHANGELOG.md`
 3. PR to `main`, merge
 4. Tag and push (triggers production build)
-5. Merge `main` back into `develop` by PR
+5. Bring the fix to `develop` through its own PR (cherry-pick onto a branch from `develop`)
 
 ## Versioning
 

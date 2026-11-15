@@ -184,6 +184,11 @@ jobs:
                   # means it is also the only one. It fails anyway (see the
                   # /etc/hosts pin above).
                   UPDATE_INTERVAL: '3600'
+                  # The standalone server.js changes its cwd to its own folder, which has
+                  # no Prisma CLI and no prisma/ tree. The steps above already applied the
+                  # migrations and the seed, so this boot finds nothing pending, runs the
+                  # seed check once and stores the hash.
+                  MIGRATE_ROOT: ${{ github.workspace }}
 
             - name: Run smoke tests against the built app
               run: npm run test:smoke

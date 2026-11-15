@@ -2,6 +2,94 @@
 
 ## Unreleased
 
+## 0.98.1
+
+### Changed
+
+- Versioning is "accumulate, then cut" (#618): PRs into `develop` raise no version and add their
+  notes here; the cut is its own PR into `develop`, then the release PR. `Check: Version Bump` runs
+  only on PRs into `main`. Staging images carry `<version>-dev.<sha7>` through a new `APP_VERSION`
+  build arg, so the stale-tab reload, `deploymentId` and the GlitchTip release change on every
+  staging build. The release-notes step matches `## X.Y.Z` and `## [X.Y.Z] - date` headings exactly.
+- The Cyberstan glitch letters are now sextant blocks (U+1FB00–1FB3B) from Noto Sans Symbols 2
+  (SIL OFL 1.1, self-hosted by `next/font`, loaded on first use). They replace the Collective
+  Consciousness font, whose author and licence could not be found (#620). The archives glitch and
+  the Ministry flicker share one glyph picker.
+- Insignia, a commercial Adobe/Linotype font served without a licence, is removed. Space Grotesk
+  (Google Fonts, self-hosted by `next/font`) is now the display and heading font (#620).
+- `docs/website-standard.md` records the website-standard scope: the EAA is out of scope, the
+  operator is a private, non-commercial person, the reason every page hydrates, and the credits for
+  the fonts, artwork and brand marks (#620).
+- AGENTS.md rewritten from the developer-handbook template (271 → 117 lines): shared standards now
+  live in the handbook, the file keeps only repo-specific rules, invariants and the cockpit pointer.
+  `.planning/architecture/` notes added; CONTRIBUTING.md links repointed at the surviving anchors.
+- The hosted roadmap at projects.static.lav.ren/helldivers-bot/ is now built from `.planning/`, with the
+  architecture notes as pages; AGENTS.md says how to republish it.
+- Dependabot also updates the actions pinned in the composite actions under `.github/actions/`, and
+  opens a major GitHub Actions update as its own PR instead of inside the minor/patch group.
+- `.example.env` lists every key the app, the seed, the scripts and the smoke tests read, with the
+  source of each value and the `<KEY>_FILE` convention. Its `WORKER_ENABLED` note describes the lease.
+
+## 0.98.0
+
+### Added
+
+- The `seed_state` table stores the hash of the seed inputs from the last
+  successful seed. The migration `20261026000000_seed_state` applies itself on
+  the next start.
+- `pg` is a direct dependency. It was already installed through
+  `@prisma/adapter-pg`.
+
+### Changed
+
+- Every new app task applies pending Prisma migrations, and the seed when the
+  seed data changed, before it serves (#599). Replicas take turns through a
+  Postgres advisory lock. A failure logs `[migrate] failed`, reports to
+  GlitchTip and retries after 30 s, 60 s, 2 min, then every 5 min, while the
+  old tasks keep serving. Staging and production need no manual migrate step.
+- The app image carries the migrate tooling in `/app/migrate` (`MIGRATE_ROOT`).
+  Its health check start period is 900 s.
+- `build-staging.yml` pins every green build, including builds that carry a
+  migration. Its manual-pin dispatch input is gone.
+- The compose files have no migrate service. The CI smoke stack boots the app
+  against an empty database.
+- `npm run dev` applies pending migrations on start.
+
+### Security
+
+- The migrate tooling in the app image and the migrate image installs from the
+  project lockfile: every version, transitive ones included, is pinned and
+  integrity-checked, where it used to float inside Prisma's ranges at build
+  time. `/app/migrate` is root-owned, so the app user cannot change it, and
+  `CHECKPOINT_DISABLE=1` stops the Prisma CLI's update check on every start.
+
+## 0.97.4
+
+### Security
+
+- The staging build runs only for CI on a push to this repository's
+  `develop`. `workflow_run`'s `branches: [develop]` matches the branch name
+  only, so a fork PR from a branch called `develop` that passed CI was built
+  with the workflow's write tokens and pinned to `deploy/staging`.
+  `detect-migration` and `build-app` now also check the event (`push`) and
+  the head repository (code-scanning alert 18). This replaces #570, which only
+  limited manual runs.
+
+## 0.97.3
+
+### Changed
+
+- `.planning/ROADMAP.md` is the one roadmap file. `docs/roadmap.md` is
+  deleted (HOUSE-05). #469 is scheduled as ARCH-11 in Phase 11. The other live
+  items (prediction unblock gates, feature-reach table, prep ladder, Phase 11
+  notes) moved to ROADMAP.md § Carried over, with a permalink to the last full
+  version of the old file.
+- AGENTS.md has the Life cockpit block, with the one-roadmap rule.
+- `.gitignore` ignores every GSD runtime path under `.planning/`
+  (`estimation-calibration.json`, `intel/`, `research/.cache/`, `ui-reviews/`)
+  and `.uat-shots/`. `.planning/debug/` stays tracked: GSD debug sessions are
+  records.
+
 ## 0.97.2
 
 ### Security

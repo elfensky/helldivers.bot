@@ -75,8 +75,10 @@ describe('formatDayLabel', () => {
     });
 
     it('returns "YESTERDAY" for yesterday', () => {
+        // UTC, like formatDayLabel: a local setDate(-1) crosses a DST change
+        // and lands on the wrong UTC day for a few hours after it.
         const d = new Date();
-        d.setDate(d.getDate() - 1);
+        d.setUTCDate(d.getUTCDate() - 1);
         const yesterdayStr = d.toISOString().slice(0, 10);
         expect(formatDayLabel(yesterdayStr)).toBe('YESTERDAY');
     });

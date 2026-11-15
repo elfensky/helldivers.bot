@@ -23,6 +23,52 @@ describe('GlitchText', () => {
         expect(container.querySelectorAll('.glitch-char').length).toBe(0);
     });
 
+    it('scrambles into sextant glyphs (U+1FB00–1FB3B) during takeover', () => {
+        const { container } = render(
+            // Many words: the first word batch settles at 0 ms, the rest scramble.
+            <GlitchText
+                text="ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT"
+                phase="takeover"
+                className="test"
+            />,
+        );
+        act(() => {
+            vi.advanceTimersByTime(60);
+        });
+        const glyphs = [...container.querySelectorAll('.glitch-char')];
+        expect(glyphs.length).toBeGreaterThan(0);
+        for (const g of glyphs) {
+            expect([...g.textContent]).toHaveLength(1);
+            const cp = g.textContent.codePointAt(0);
+            expect(cp).toBeGreaterThanOrEqual(0x1fb00);
+            expect(cp).toBeLessThanOrEqual(0x1fb3b);
+        }
+    });
+
+    it('draws every fight-phase glyph inside a .glitch-char span', () => {
+        const { container } = render(
+            <GlitchText
+                text="ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT"
+                altText="NINE TEN ELEVEN TWELVE"
+                phase="fight"
+                className="test"
+            />,
+        );
+        // Several ticks: each re-rolls every character.
+        act(() => {
+            vi.advanceTimersByTime(500);
+        });
+        const isSextant = (ch) =>
+            ch.codePointAt(0) >= 0x1fb00 && ch.codePointAt(0) <= 0x1fb3b;
+        const all = [...container.textContent].filter(isSextant).length;
+        const spans = container.querySelectorAll('.glitch-char');
+        const inSpans = [...spans]
+            .flatMap((g) => [...g.textContent])
+            .filter(isSextant).length;
+        expect(all).toBeGreaterThan(0);
+        expect(inSpans).toBe(all);
+    });
+
     it('renders base text initially (SSR-safe)', () => {
         const { container } = render(
             <GlitchText text="TEST" active={true} className="test" />,

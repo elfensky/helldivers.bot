@@ -4,15 +4,15 @@
 #
 # WHAT THIS FILE DOES
 #
-# Spins up the full production-shaped stack (postgres + migrate + app) using
-# images built from the local working tree, NOT pulled from GHCR. Used by
+# Spins up the production-shaped stack (postgres + app) using the app image
+# built from the local working tree, NOT pulled from GHCR. Used by
 # .github/workflows/check-docker-smoke.yml to catch the class of bugs that
-# only manifest at image build / container runtime — e.g. the v0.47.0 migrate
-# crash where `isValidSeason.mjs` imported `@/shared/...` and raw Node could
-# not resolve the jsconfig alias. That regression passed `npm run build`,
-# `npm run typecheck`, and `npm run test:unit` locally because every one of
-# those tools honors the jsconfig path alias. Only running the actual migrate
-# container caught it.
+# only manifest at image build / container runtime. The app boots against an
+# EMPTY database, so the smoke run proves migrate-on-start and the full seed:
+# the path every staging and production task takes (#599). The raw-Node
+# resolution regression class (v0.47.0, `isValidSeason.mjs` importing
+# `@/shared/...`, invisible to build, typecheck and unit tests) stays covered
+# because the app image runs the seed from /app/migrate.
 #
 # WHY A SEPARATE COMPOSE FILE (not an override of docker-compose.yml)
 #
@@ -26,7 +26,7 @@
 #
 # WHY POSTGRES IS BUNDLED IN HERE (and not a GHA service container)
 #
-# Compose service-name DNS — the migrate and app containers reach the database
+# Compose service-name DNS — the app container reaches the database
 # at `postgres:5432`. That keeps the connection string identical to what
 # .env.development would use locally with docker compose, and avoids the
 # host-port-mapping dance of GHA services (which expose on localhost:5432 of
@@ -40,7 +40,7 @@ services:
             POSTGRES_USER: ci
             POSTGRES_PASSWORD: ci
             POSTGRES_DB: ci
-        # No published ports — the migrate and app containers reach postgres
+        # No published ports — the app container reaches postgres
         # via compose's internal network DNS. Keeping postgres unpublished
         # avoids port conflicts on the CI runner and reduces the attack surface.
         healthcheck:
@@ -49,20 +49,6 @@ services:
             timeout: 3s
             retries: 20
             start_period: 5s
-
-    migrate:
-        build:
-            context: .
-            dockerfile: Dockerfile.migrate
-        environment:
-            POSTGRES_URL: postgresql://ci:ci@postgres:5432/ci?sslmode=disable
-        depends_on:
-            postgres:
-                condition: service_healthy
-        # No restart policy — this is a one-shot container that runs
-        # `prisma migrate deploy && node prisma/seed/seed.mjs`, exits 0 on
-        # success, non-zero on failure. The app's depends_on gate uses
-        # service_completed_successfully to wait for exit 0.
 
     helldiversbot:
         build:
@@ -93,8 +79,6 @@ services:
         depends_on:
             postgres:
                 condition: service_healthy
-            migrate:
-                condition: service_completed_successfully
         healthcheck:
             # Same probe shape as docker-compose.yml's production config,
             # but with tighter intervals because CI doesn't need a 60s
@@ -110,4 +94,5 @@ services:
             interval: 5s
             timeout: 5s
             retries: 30
-            start_period: 10s
+            # The app migrates and seeds the empty database before it answers.
+            start_period: 300s

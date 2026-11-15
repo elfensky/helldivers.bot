@@ -1,0 +1,229 @@
+{
+  "format": 1,
+  "purpose": "helldivers.bot is a Next.js 16 App Router monolith around a normalized Postgres schema, fed by an in-process worker thread.",
+  "state": "implemented",
+  "checked": "2026-11-09",
+  "commit": "8f831f68b831926122aec0fefc515bd0def40bb1",
+  "eli14": "The app is a single restaurant kitchen. One stove (the Postgres lease row) decides which of the many identical kitchens cooks right now, so the meal is cooked once. Only a cook who takes more than a minute can overlap with the next kitchen's cook. Whatever the stove cooks is chopped into fixed-size time buckets and stored in five normalized baskets; the counter, the menu board, and the takeaway API all read from those baskets, never from a raw tape.",
+  "prose": "## Rules\n\n- One lease holder at a time across replicas via the 60 s `worker_heartbeat` lease (a poll slower\n  than 60 s can overlap with the next holder's poll); handover state\n  (`prevEvents`, `lastSeasonObserved`) lives in the lease row, never in module memory.\n- No raw-cache tables: the rebroadcast and public APIs reconstruct wire format from the normalized\n  `h1_*` tables on read.\n- Timeseries writes are bucket-upserts by `season + enemy + bucket` (event progress by\n  `type + event_id + bucket`), not an append-only log.\n- All upstream data is Zod-validated before any database write.\n- Live views filter to active events through `computeLiveMap` only.\n- All dates render with `timeZone: 'UTC'`, except the forecast times of `NextWaveCard`, which show\n  the visitor's local time.\n\n## Sources\n\n- `.planning/codebase/ARCHITECTURE.md`, `STRUCTURE.md` (map refreshed 2026-08-28) checked against\n  `src/`, `prisma/schema.prisma` at `1755207f` on 2026-11-05.\n- `AGENTS.md` § Architecture invariants and each component note re-checked against the code at\n  `8f831f68` on 2026-11-09 (no file under `src/`, `prisma/`, `public/` or `deploy/` changed since\n  `1755207f`).\n\nThe architecture notes at fa1a0836: [helldivers-bot-architecture.md](https://github.com/elfensky/helldivers.bot/blob/fa1a083647bd7515fcec49a9d0dc27d8ce04266c/.planning/architecture/helldivers-bot-architecture.md).\n",
+  "parts": [
+    {
+      "id": "api-consumer",
+      "name": "API consumer",
+      "role": "Reads the public v1 API",
+      "kind": "outside",
+      "lane": "callers",
+      "row": 1,
+      "col": 1,
+      "does": "An external consumer of the public versioned v1 API. It needs an API key and has a rate limit."
+    },
+    {
+      "id": "visitor",
+      "name": "Visitor",
+      "role": "Uses the web app",
+      "kind": "person",
+      "lane": "callers",
+      "row": 1,
+      "col": 2,
+      "does": "Opens the live dashboard and the archives, signs in when auth is on, and can enable notifications."
+    },
+    {
+      "id": "dashboard",
+      "name": "Dashboard",
+      "role": "Live home page",
+      "kind": "component",
+      "lane": "system",
+      "row": 1,
+      "col": 2,
+      "does": "The live home page: galaxy map, stat grid, event cards and timeline, fed by a poll of the live route every 10 s.",
+      "state": "implemented",
+      "checked": "2026-11-09",
+      "commit": "8f831f68b831926122aec0fefc515bd0def40bb1",
+      "page": true
+    },
+    {
+      "id": "notifications-pwa",
+      "name": "Notifications and PWA",
+      "role": "Event alerts, installable app",
+      "kind": "component",
+      "lane": "system",
+      "row": 1,
+      "col": 3,
+      "does": "Event-transition toasts, Web Notifications and web-push, the installable PWA, and the stale-version reload.",
+      "state": "implemented",
+      "checked": "2026-11-09",
+      "commit": "8f831f68b831926122aec0fefc515bd0def40bb1",
+      "page": true
+    },
+    {
+      "id": "api",
+      "name": "API",
+      "role": "Serves the stored war record",
+      "kind": "component",
+      "lane": "system",
+      "row": 2,
+      "col": 2,
+      "does": "Serves the stored war record: internal update and live routes, a key-gated v1 API, and an HD1-format rebroadcast.",
+      "state": "implemented",
+      "checked": "2026-11-09",
+      "commit": "8f831f68b831926122aec0fefc515bd0def40bb1",
+      "page": true
+    },
+    {
+      "id": "archives",
+      "name": "Archives",
+      "role": "Shows past seasons",
+      "kind": "component",
+      "lane": "system",
+      "row": 2,
+      "col": 3,
+      "does": "Shows every past season. A season missing from the database is fetched from the HD1 API on its first request.",
+      "state": "implemented",
+      "checked": "2026-11-09",
+      "commit": "8f831f68b831926122aec0fefc515bd0def40bb1",
+      "page": true
+    },
+    {
+      "id": "auth-admin",
+      "name": "Auth and admin",
+      "role": "Optional sign-in, keys, admin",
+      "kind": "component",
+      "lane": "system",
+      "row": 3,
+      "col": 1,
+      "does": "Optional BetterAuth sign-in, public API keys and the admin section. Auth is off by default.",
+      "state": "implemented",
+      "checked": "2026-11-09",
+      "commit": "8f831f68b831926122aec0fefc515bd0def40bb1",
+      "page": true
+    },
+    {
+      "id": "update-pipeline",
+      "name": "Update pipeline",
+      "role": "Polls and stores war data",
+      "kind": "component",
+      "lane": "system",
+      "row": 3,
+      "col": 3,
+      "does": "Polls the official HD1 API about every 20 s, validates the data and bucket-upserts it, with one lease holder across replicas.",
+      "state": "implemented",
+      "checked": "2026-11-09",
+      "commit": "8f831f68b831926122aec0fefc515bd0def40bb1",
+      "page": true
+    },
+    {
+      "id": "oauth",
+      "name": "OAuth providers",
+      "role": "Discord, GitHub, Google sign-in",
+      "kind": "outside",
+      "lane": "outside",
+      "row": 1,
+      "col": 1,
+      "does": "Discord, GitHub and Google. BetterAuth signs a user in through them when auth is on."
+    },
+    {
+      "id": "postgres",
+      "name": "Postgres",
+      "role": "Holds the normalized schema",
+      "kind": "outside",
+      "lane": "outside",
+      "row": 1,
+      "col": 2,
+      "does": "Holds the normalized h1 tables, the worker_heartbeat lease row, and the auth, API key and push tables."
+    },
+    {
+      "id": "hd1-api",
+      "name": "HD1 API",
+      "role": "Official Helldivers 1 API",
+      "kind": "outside",
+      "lane": "outside",
+      "row": 1,
+      "col": 3,
+      "does": "The official Helldivers 1 API. It serves the campaign status and the season snapshots that the app polls."
+    }
+  ],
+  "links": [
+    {
+      "from": "visitor",
+      "to": "dashboard",
+      "kind": "call",
+      "label": "opens live view"
+    },
+    {
+      "from": "visitor",
+      "to": "archives",
+      "kind": "call",
+      "label": "opens a season"
+    },
+    {
+      "from": "visitor",
+      "to": "auth-admin",
+      "kind": "call",
+      "label": "signs in"
+    },
+    {
+      "from": "api-consumer",
+      "to": "api",
+      "kind": "call",
+      "label": "reads v1 API"
+    },
+    {
+      "from": "dashboard",
+      "to": "api",
+      "kind": "call",
+      "label": "polls every 10 s"
+    },
+    {
+      "from": "archives",
+      "to": "update-pipeline",
+      "kind": "call",
+      "label": "backfills"
+    },
+    {
+      "from": "api",
+      "to": "update-pipeline",
+      "kind": "call",
+      "label": "backfills"
+    },
+    {
+      "from": "update-pipeline",
+      "to": "hd1-api",
+      "kind": "call",
+      "label": "polls"
+    },
+    {
+      "from": "update-pipeline",
+      "to": "postgres",
+      "kind": "data",
+      "label": "upserts"
+    },
+    {
+      "from": "update-pipeline",
+      "to": "notifications-pwa",
+      "kind": "call",
+      "label": "runs push check"
+    },
+    {
+      "from": "api",
+      "to": "postgres",
+      "kind": "data"
+    },
+    {
+      "from": "archives",
+      "to": "postgres",
+      "kind": "data",
+      "label": "reads seasons"
+    },
+    {
+      "from": "auth-admin",
+      "to": "postgres",
+      "kind": "data"
+    },
+    {
+      "from": "auth-admin",
+      "to": "oauth",
+      "kind": "call",
+      "label": "OAuth sign-in"
+    }
+  ]
+}

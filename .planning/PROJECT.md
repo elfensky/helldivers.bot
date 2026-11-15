@@ -8,6 +8,12 @@ A Next.js 16 app that caches the official Helldivers 1 API, stores the full hist
 
 The live dashboard and API are **stable and correct** — the poller never loses data across season transitions or replica handovers, and production error volume stays at zero known classes.
 
+## Current Milestone: M8 The site is documented, tested and findable
+
+**Goal:** The docs match the code, tests sit beside their modules, dependency updates merge themselves, and search and analytics are wired in (Phases 2–6).
+
+`.planning/ROADMAP.md` § Milestones lists all twelve milestones: M1–M7 shipped, M9–M12 planned.
+
 ## Requirements
 
 ### Validated
@@ -27,8 +33,8 @@ The live dashboard and API are **stable and correct** — the poller never loses
 - ✓ Test suite: ~190 Vitest unit tests in a mirrored tree, smoke tests, visual regression baselines — existing
 - ✓ Public `/docs` site (architecture, database, data-flow, infrastructure, api, testing, notifications, authentication, hd1-api, predict, brandkit…) — existing
 
-- ✓ Stability release: the five Engineering Health bug classes (#496 hydration, #503 OG 500s, #485 toggle, #476 Space Mono, #459 null slot) fixed or guarded and released as v0.95.2; the 48 h GlitchTip re-count on the new deployment id found #496/#503/#485 RESIDUAL, tracked in the open issues plus #565/#566/#567 — Phase 1
-- ✓ Release cadence restored: `develop` released to `main` as v0.95.2 (2026-10-14), merged back; the develop/main gap is 2 versions — Phase 1
+- ✓ Stability release: the five Engineering Health bug classes (#496 hydration, #503 OG 500s, #485 toggle, #476 Space Mono, #459 null slot) fixed or guarded and released as v0.95.2; the 48 h GlitchTip re-count on the new deployment id found #496/#503/#485 RESIDUAL, tracked in the open issues plus #565/#566/#567 — M7, Phase 1
+- ✓ Release cadence restored: `develop` released to `main` as v0.95.2 (2026-10-14), merged back; the develop/main gap is 2 versions — M7, Phase 1
 
 ### Active
 
@@ -39,39 +45,39 @@ The live dashboard and API are **stable and correct** — the poller never loses
 - [ ] **Steady state = Dependabot auto-merge:** minor/patch groups auto-merge when CI is green; majors stay manual. Requires repo `allow_auto_merge`, a branch ruleset on `develop` requiring the CI checks, and a workflow that enables auto-merge on Dependabot PRs — must respect the `--no-ff` + version-bump/CHANGELOG-on-merge rule (or explicitly exempt deps PRs and record why)
 - [ ] **SEO — rank highly for Helldivers 1 queries:** llms.txt, registry-driven sitemap/robots via the Metadata API, `createPageMetadata` helper, typed JSON-LD (WebSite/WebApplication/VideoGame/BreadcrumbList/FAQPage/Dataset/Event) validated in Rich Results, keyword-to-page map with server-rendered copy, indexable per-season archive URLs, Google Search Console wired in (verification, sitemap, API/MCP access, recurring review → issues), Lighthouse SEO ≥ 95 — patterns copied from `../euraikaweb`
 - [ ] **Umami fully wired** (umami.drunik.be): runtime env present in prod + staging, tracker via `/stats.js` proxy verified end-to-end, `identify()` on login, server-side `umamiTrackEvent` on every public API route (currently none), `data-umami-event` coverage enforced by lint/test
-- [ ] Docs kept accurate: CLAUDE.md § Architecture and the public `/docs` pages (`src/app/docs/**`, esp. `architecture`, `data-flow`, `infrastructure`, `database`) rewritten to describe the lease/`worker_heartbeat` model, multi-replica web tier, and current CI/CD — the codebase map found concrete drift
-- [ ] Housekeeping (Track A): #466 co-locate unit tests (do before feature work adds more test files), #469 archives map hides un-introduced factions, #389 post-deploy SEO verification, #502 stop shipping sourcemaps once symbolication is proven, #501 verify seed-refresh workflow at season 160's end
+- [ ] Docs kept accurate: AGENTS.md § Architecture invariants and the public `/docs` pages (`src/app/docs/**`, esp. `architecture`, `data-flow`, `infrastructure`, `database`) rewritten to describe the lease/`worker_heartbeat` model, multi-replica web tier, and current CI/CD — the codebase map found concrete drift
+- [ ] Housekeeping (Track A): #466 co-locate unit tests (do before feature work adds more test files), #469 archives map hides un-introduced factions (→ ARCH-11, Phase 11), #389 post-deploy SEO verification, #502 stop shipping sourcemaps once symbolication is proven, #501 verify seed-refresh workflow at season 160's end
 - [ ] Accessibility & Design Polish (milestone #10): #42 WCAG design tokens → #148 ARIA patterns (FactionTabs, BottomNav, Alerts, Map) → #124 design polish (scope first)
 - [ ] Loadout Builder (milestone #19, 13 issues, umbrella #162): static catalogs #339/#340 → hash codec #341 (must hold 4 loadouts from day one) → page #342 → stats #343, guides #344, favorites #345/#346, nav+OG #347/#348 → a11y pass #349 → squad mode #350 (committed)
 - [ ] Archive Analytics (milestone #16): spec refresh of #179/#180/#270 against the real schema first; then Core Analytics #179 → Storytelling #180 → War Playback #270; independents #453, #462, #269, #247. Build all, hide when empty (telemetry covers 4/160 seasons)
 - [ ] Site Features & Easter Eggs (milestone #18): #238 admin custom notifications, #392 Ministry of Truth, #471 faction vernacular (shares vocabulary with #453), #27 user dashboard improvements (scope first)
 - [ ] Staging on the Pi swarm (#474): hardware is up and reachable — finish the deploy job, stack file, Kuma banner, secrets, Cloudflare Tunnel; validate end-to-end from a `develop` push
-- [ ] SSE rewrite (#298): throwaway spike answering the four questions in `docs/roadmap.md` § Track F; implement only if the spike says yes, otherwise close with the findings — last of all tracks
+- [ ] SSE rewrite (#298): throwaway spike answering the four gating questions in SSE-01 (Phase 17); implement only if the spike says yes, otherwise close with the findings — last of all tracks
 - [ ] Icebox (milestone #12, 11 shelved issues incl. #444): each one explored and decided — implemented if it earns its place, otherwise closed with a written reason on the issue. No issue is left in limbo
-- [ ] `docs/roadmap.md` reconciled or retired in favour of `.planning/` so there is one source of truth for execution order
+- [x] `docs/roadmap.md` retired in favour of `.planning/` so there is one source of truth for execution order — deleted 2026-11-02, live items carried into `.planning/ROADMAP.md` (Phase 2, HOUSE-05)
 
 ### Out of Scope
 
 - Forcing a verdict on data-gated prediction issues #481/#484/#487/#477 — blocked on the game reaching ~S165–S172+; they stay **open and parked** in Engineering Health by decision, and "done" tolerates exactly these four
 - `npm audit fix --force` for the `deepmerge-ts` chain — it would downgrade Prisma 7 → 6.12; wait for an upstream non-breaking fix via Dependabot
-- Closing milestone #17 Engineering Health — it is a permanent catch-all by decision, never closed at 0 open issues
+- Closing milestone #17 Engineering Health — it is a permanent catch-all by decision, never closed at 0 open issues; new bugs land there by default
 - New player-facing features not already tracked as GitHub issues — the backlog is the scope; new ideas get an issue first
-- Squash/rebase/fast-forward merges anywhere — CLAUDE.md § Git Workflow is a hard rule, and auto-merge must be designed around it, not through it
+- Squash/fast-forward merges anywhere — AGENTS.md § Branches (rebase-only work PRs, merge commit only on the release PR) is a hard rule, and auto-merge must be designed around it, not through it
 
 ## Context
 
-- **Brownfield, mature.** ~0.93.1 on `develop`, v0.90.14 on `main`, 160 seasons of data, production at helldivers.bot behind a reverse proxy + CrowdSec, monitored by GlitchTip (MCP available in-session) and Umami.
+- **Brownfield, mature.** 0.98.0 on `develop`, v0.97.2 released on `main` (latest tag), 160 seasons of data, production at helldivers.bot behind a reverse proxy + CrowdSec, monitored by GlitchTip (MCP available in-session) and Umami.
 - **Codebase map:** `.planning/codebase/` (7 docs, 2026-08-28). Key findings: no file over 500 LOC by a wide margin, no function over 100 lines; documented architecture drifted after #517 (lease model); `NotificationToggle` has an unguarded `'loading'` terminal state (#485); `opengraph-image.jsx` has no automated render coverage for edge-case map states (#503).
-- **Execution order doc:** `docs/roadmap.md` (last reconciled 2026-08-07) — its session slicing and prep ladder (none / plan / brainstorm / spec-refresh) are worth carrying into GSD phases. Stale items: "Dependabot is clear" (now 7 alerts), #495/#497 closed, #506/#516/#517 landed unplanned.
+- **Execution order:** `.planning/ROADMAP.md` is the one roadmap file. `docs/roadmap.md` was deleted on 2026-11-02 (HOUSE-05); its live items sit in ARCH-11 and § Carried over, and its last full version is at commit `bb01517d`.
 - **Prediction work** has a living handoff at `docs/superpowers/predictions-handoff.md` — read before touching anything prediction-related.
-- **Project rules that constrain every phase:** CLAUDE.md — KISS, never commit to `main`/`develop` directly, worktrees for features, `--no-ff` merges with version bump + CHANGELOG move in the merge commit, all four checks (`lint`, `typecheck`, `test:unit`, `build`) green before merge, mirrored test tree enforced by `_meta/mirrorTree.test.mjs`, Umami tracking on every interactive element, DevTools verification for CSS changes.
+- **Project rules that constrain every phase:** `AGENTS.md` (CLAUDE.md is a symlink to it) — § This repo's own rules and § Architecture invariants hold the repo-specific rules; every shared standard lives in the developer handbook (`~/vault/knowledge/developer/developer.md`), not restated here.
 - **Parallel sessions share the main checkout** — branches move underneath; prefer worktrees and check the branch before committing.
 
 ## Constraints
 
-- **Tech stack**: Next.js 16 App Router, React 19 + Compiler, Prisma 7 + `@prisma/adapter-pg`, Tailwind v4 tokens, Vitest 4, Node 24 (mise) — locked; read `node_modules/next/dist/docs/` before writing Next code, the version has breaking changes
+- **Tech stack**: Next.js 16 App Router, React 19 + Compiler, Prisma 7 + `@prisma/adapter-pg`, Tailwind v4 tokens, Vitest 5, Node 26 (mise) — locked; read `node_modules/next/dist/docs/` before writing Next code, the version has breaking changes
 - **Process**: GitHub Issues are the source of truth for *what*; every finished issue is closed with an implementation comment; every merge to `develop` bumps version + moves CHANGELOG
-- **Release**: production deploys only on `vX.Y.Z` tags on `main`; forgetting the tag means no deploy; merge `main` back into `develop` after each release
+- **Release**: production deploys only on `vX.Y.Z` tags on `main`; forgetting the tag means no deploy; no merge-back: `develop` takes rebase merges only and `main` does not require an up-to-date branch (#621)
 - **Data**: telemetry (`h1_statistic`) exists for seasons 157+ only — telemetry-backed UI hides when empty rather than rendering zeros; two-season comparisons drop rows with mixed coverage
 - **Browser floor**: `browserslist` in `package.json` (Firefox ≥115, Chrome ≥109, Safari ≥15.6) — enforced by `eslint-plugin-compat`; `Map.groupBy`/`Object.groupBy` are lint errors
 - **Security**: never `npm audit fix --force`; sourcemaps leave the image only once GlitchTip symbolication is proven (#502)
@@ -86,11 +92,11 @@ The live dashboard and API are **stable and correct** — the poller never loses
 | Data-gated predictions (#481/#484/#487/#477) stay open and parked | The gate is season count, not effort; closing would hide real future work | — Pending |
 | Dependabot auto-merge for minor/patch, manual for majors | Matches the desired "just update deps every so often" steady state; majors (e.g. TypeScript 7) need a human | — Pending |
 | Release `develop` early — gap is already >5 versions | Roadmap's own cadence rule; smaller releases make GlitchTip re-counts attributable | v0.95.2 released 2026-10-14; gap now 2 versions |
-| Keep `/docs` + CLAUDE.md as the portfolio showcase (no new "how it's built" page) | Accurate docs already exist and are public; drift is the problem, not absence | — Pending |
+| Keep `/docs` + AGENTS.md as the portfolio showcase (no new "how it's built" page) | Accurate docs already exist and are public; drift is the problem, not absence | — Pending |
 | Hash codec (#341) designed for squad mode from day one | Shared URLs cannot be migrated; a second format later would break every link in the wild | — Pending |
 | SSE (#298) is spike-gated and last | Highest blast radius on the board against polling that works; "don't do it" is a valid spike outcome | — Pending |
 | SEO is a first-class track, sequenced right after stability + housekeeping | Ranking compounds with time; every later feature page inherits the registry-driven sitemap/metadata/llms.txt so SEO can't drift again | — Pending |
-| Roadmap execution order lives in `.planning/` from now on | Two "when" documents drift (docs/roadmap.md already has); one wins | — Pending |
+| Roadmap execution order lives in `.planning/` from now on | Two "when" documents drift (docs/roadmap.md already has); one wins | ✓ Done in Phase 2 (HOUSE-05): `docs/roadmap.md` deleted 2026-11-02 |
 | STAB-01 and STAB-06 re-scoped to the measured outcome (2026-10-21) | The release fixed the symptoms but the hydration and OG classes persist on 0.95.2; waiting on zero events would block 17 phases behind two root causes with no known fix | Phase 1 closed with one verification override; residual work tracked in #496/#526/#503/#485/#565-567 |
 | GlitchTip re-counts filter on `release:<version>`, not `dpl` | GlitchTip does not index the `dpl` tag; `release` comes from the same APP_VERSION and frame URLs carry `?dpl=` for confirmation. Counts are lifetime per grouping, so new groupings are the per-release signal | Recorded in 01-GLITCHTIP-RECOUNT.md |
 
@@ -112,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-21 after Phase 1 (Stability Fixes & Release)*
+*Last updated: 2026-11-09 after the milestone split (M7 archived, M8 current)*
