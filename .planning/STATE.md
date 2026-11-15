@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-17-PLAN.md
-last_updated: "2026-11-15T19:46:54.339Z"
+stopped_at: Completed 02-23-PLAN.md
+last_updated: "2026-11-15T19:54:46.346Z"
 last_activity: 2026-11-15
-last_activity_desc: "Plan 02-17 executed: notifications docs corrected, sweep 3 group G3 added (lane docs/02-gap-closure at af0f6846)"
-state_head: b983ca4298974f7a4f153ec846503ca8624a31f1
+last_activity_desc: "Plan 02-23 executed: fence check covers every docs page, testing docs corrected (lane docs/02-gap-closure at c7b03a8c)"
+state_head: 953a63933105df2549211b98571e9b0eb72648be
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 24
-  completed_plans: 16
+  completed_plans: 17
   percent: 0
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 16 of 24 summarized (02-01 superseded); gap-closure plans 02-16 and 02-17 done on lane `docs/02-gap-closure` (head af0f6846); 02-23, 02-24, 02-18, 02-25 follow
+Plan: 17 of 24 summarized (02-01 superseded); gap-closure plans 02-16, 02-17 and 02-23 done on lane `docs/02-gap-closure` (head c7b03a8c); 02-24, 02-18, 02-25 follow
 Status: Executing gap closure — `02-VERIFICATION.md` found gaps (4/5, DOCS-02 partial); the docs fixes ship in patch release 0.99.1 (D-33)
-Last activity: 2026-11-15 — plan 02-17 executed (notifications docs re-checked and corrected)
+Last activity: 2026-11-15 — plan 02-23 executed (fence check over every docs page, testing docs re-checked and corrected)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P12 | 5 min | 3 tasks | 2 files |
 | Phase 02 P16 | 8 min | 3 tasks | 7 files |
 | Phase 02 P17 | 6 min | 2 tasks | 6 files |
+| Phase 02 P23 | 7 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,7 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-16: the architecture PWA caching clause names exactly the Serwist 9.5.13 strategy classes with one sentence each; the Notifications link carries no fragment
 - [Phase 02]: 02-16: h1_event_progress is written by the poller and read only by scripts/analysis; the architecture diagram no longer draws it into the archives
 - [Phase 02]: 02-17: the notifications page makes no claim about service-worker registration (no register option or registration call in the repo); open question for plan 02-19's browser check
+- [Phase 02]: 02-23: the fence check discovers every docs page.mdx (14 fences in 16 files); IN-04 found no bad flows entry, and three declared nodes have no details panel (intro_order, points_max, computeMapState); jsconfig.json maps @test-utils to a missing file (reported, left)
 
 ### Pending Todos
 
@@ -137,8 +139,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T19:46:54.311Z
-Stopped at: Completed 02-17-PLAN.md
+Last session: 2026-11-15T19:54:36.825Z
+Stopped at: Completed 02-23-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
