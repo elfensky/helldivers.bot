@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-23-PLAN.md
-last_updated: "2026-11-15T19:54:46.346Z"
+stopped_at: Completed 02-24-PLAN.md
+last_updated: "2026-11-15T20:02:20.343Z"
 last_activity: 2026-11-15
-last_activity_desc: "Plan 02-23 executed: fence check covers every docs page, testing docs corrected (lane docs/02-gap-closure at c7b03a8c)"
-state_head: 953a63933105df2549211b98571e9b0eb72648be
+last_activity_desc: "Plan 02-24 executed: /docs/data-flow re-checked statement by statement and corrected (lane docs/02-gap-closure at 1894d747)"
+state_head: 5abe4ae69623122a8ce38489af9a963a6b70c48d
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 24
-  completed_plans: 17
+  completed_plans: 18
   percent: 0
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 17 of 24 summarized (02-01 superseded); gap-closure plans 02-16, 02-17 and 02-23 done on lane `docs/02-gap-closure` (head c7b03a8c); 02-24, 02-18, 02-25 follow
+Plan: 18 of 24 summarized (02-01 superseded); gap-closure plans 02-16, 02-17, 02-23 and 02-24 done on lane `docs/02-gap-closure` (head 1894d747); 02-18, 02-25 follow
 Status: Executing gap closure — `02-VERIFICATION.md` found gaps (4/5, DOCS-02 partial); the docs fixes ship in patch release 0.99.1 (D-33)
-Last activity: 2026-11-15 — plan 02-23 executed (fence check over every docs page, testing docs re-checked and corrected)
+Last activity: 2026-11-15 — plan 02-24 executed (/docs/data-flow re-checked statement by statement, ten fixes, CHECKED re-issued)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P16 | 8 min | 3 tasks | 7 files |
 | Phase 02 P17 | 6 min | 2 tasks | 6 files |
 | Phase 02 P23 | 7 min | 2 tasks | 7 files |
+| Phase 02 P24 | 7 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,7 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-16: h1_event_progress is written by the poller and read only by scripts/analysis; the architecture diagram no longer draws it into the archives
 - [Phase 02]: 02-17: the notifications page makes no claim about service-worker registration (no register option or registration call in the repo); open question for plan 02-19's browser check
 - [Phase 02]: 02-23: the fence check discovers every docs page.mdx (14 fences in 16 files); IN-04 found no bad flows entry, and three declared nodes have no details panel (intro_order, points_max, computeMapState); jsconfig.json maps @test-utils to a missing file (reported, left)
+- [Phase 02]: 02-24: /docs/data-flow re-check found no D-08 drift; ten wording and excerpt fixes landed in one lane commit (1894d747), CHECKED re-issued at that commit
 
 ### Pending Todos
 
@@ -139,8 +141,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T19:54:36.825Z
-Stopped at: Completed 02-23-PLAN.md
+Last session: 2026-11-15T20:02:20.312Z
+Stopped at: Completed 02-24-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
