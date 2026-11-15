@@ -36,6 +36,13 @@
   workflows, the startup with migrate-on-start and the full environment table, including the
   `*_FILE` convention. It no longer lists `POSTGRES_SSL` or the OpenAPI spec step.
 
+### Fixed
+
+- An open tab no longer reloads into a rolling update. `useLiveData` reloads on a version mismatch
+  only after the mismatch has lasted 60 s (`VERSION_RELOAD_DELAY_MS`) with no poll answered by the
+  old build. Before, the first poll that reached a new replica reloaded the tab while the old
+  replica still answered, so some chunk requests got 404 and the page did not hydrate (#672).
+
 ## 0.98.1
 
 ### Changed
