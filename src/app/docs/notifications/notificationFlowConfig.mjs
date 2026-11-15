@@ -172,7 +172,7 @@ export const notificationFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Server-side change detection that runs after each update cycle (fire-and-forget). Keeps previous events in memory and sends web-push notifications on transitions.',
+                        'Server-side change detection that runs after each update cycle (fire-and-forget). Compares against the previous event snapshot in the lease row (worker_heartbeat.prev_events) and sends web-push notifications on transitions.',
                 },
                 {
                     type: 'table',
@@ -181,7 +181,7 @@ export const notificationFlowConfig = createFlowConfig({
                         ['Concurrency', 'Max 50 simultaneous pushes'],
                         ['Cleanup', 'Removes 410/404 subscriptions'],
                         ['Blocking', 'Non-blocking (async)'],
-                        ['Reset', 'On server restart (ok)'],
+                        ['Baseline', 'Lease row, survives restarts'],
                     ],
                 },
             ],
