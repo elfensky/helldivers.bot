@@ -25,7 +25,7 @@ const BODY = `
     api_live --> db
     worker -->|"setTimeout loop"| api_update
     api_update --> db
-    worker --> hd1
+    api_update --> hd1
 
     %% Styles matching wiki color conventions
     classDef frontend fill:#1c1b1b,stroke:#a855f7,color:#c084fc

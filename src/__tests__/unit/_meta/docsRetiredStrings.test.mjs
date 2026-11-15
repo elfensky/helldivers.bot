@@ -64,6 +64,9 @@ describe('docs pages carry no retired claims (Final check sweeps)', () => {
     });
 
     it('sweep 3: claims retired by the gap closure (plans 02-16 to 02-18)', () => {
-        expect(hits(/explicit client approval|pwa--offline/)).toEqual([]);
+        const g1 = 'explicit client approval|pwa--offline';
+        const g2 =
+            "season_duration\\[\\]|upsert by event_id|\\(event_id, bucket\\)|'bucket', 'DateTime'|\\(app\\)\\/page\\.jsx|worker --> hd1";
+        expect(hits(new RegExp(`${g1}|${g2}`))).toEqual([]);
     });
 });
