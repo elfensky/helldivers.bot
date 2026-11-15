@@ -223,5 +223,9 @@ export default process.env.SENTRY_AUTH_TOKEN ?
         // The SDK turns browser sourcemaps on when this wrapper runs, uploads them,
         // then deletes them from .next/static (#502).
         sourcemaps: { deleteSourcemapsAfterUpload: true },
+        // Fail closed: a failed upload stops the build, so Pin Production cannot ship a build without its maps (#661).
+        errorHandler: (err) => {
+            throw err;
+        },
     })
 :   finalConfig;

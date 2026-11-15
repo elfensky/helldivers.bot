@@ -46,6 +46,9 @@
   only after the mismatch has lasted 60 s (`VERSION_RELOAD_DELAY_MS`) with no poll answered by the
   old build. Before, the first poll that reached a new replica reloaded the tab while the old
   replica still answered, so some chunk requests got 404 and the page did not hydrate (#672).
+- A failed sourcemap upload to GlitchTip now fails the build. Before, the Sentry build step only
+  logged the error, deleted the maps and exited 0, so `Pin Production` could pin a release with no
+  browser maps. `next.config.mjs` sets an `errorHandler` that rethrows the error (#661).
 
 ## 0.98.1
 
