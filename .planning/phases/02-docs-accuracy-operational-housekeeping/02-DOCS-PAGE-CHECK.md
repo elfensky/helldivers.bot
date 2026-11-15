@@ -128,3 +128,55 @@ checked 9 fences in 5 files
 Lane commit: 12c795317abfe681283b85108903b6bb77b40089
 
 Page data-flow: CHECKED
+
+## /docs/database
+
+| Item | Stale statement | Fix | Code evidence |
+|------|-----------------|-----|---------------|
+| `src/app/docs/database/page.mdx:130,174-178,188-192` (ER fence), `:523` (`### Review`), `:578` (`## 7. App Configuration Model`), `User.reviews` row | `Review` and `App` entities, relation and model sections | Removed from the ER fence, the User relation table and the sections; the later `##` sections renumbered (7 Worker Health, 8 Rate Limiting, 9 Index and Constraint Summary, no gap) | `prisma/migrations/20260416091157_drop_unused_tables/migration.sql:9`, `prisma/schema.prisma:70` |
+| `page.mdx:194-201` (ER) and `:596-611` (`### worker_heartbeat`) | Six columns; "one row per worker type, e.g. `cron`"; "upserted by `cron.js`" | Ten columns incl. `holder_id`, `lease_until`, `prev_events`, `last_season_observed`; one row `cron_api_poller`; 60 s TTL; `started_at` resets on holder change; written by `claimLease` and the route heartbeat; link to the Data Flow section "Poller lease" | `prisma/schema.prisma:247`, `src/update/lease.mjs:19`, `src/update/lease.mjs:20`, `src/app/api/h1/update/route.js:49` |
+| ER fence and new `## 8. Rate Limiting` / `### api_rate_limit`, index table | `api_rate_limit` missing | Entity with `key`, `route_group`, `window_start` (Int), `count`; section with the composite `@@id` and `@@index([window_start])`; two index rows; hourly purge by the lease holder | `prisma/schema.prisma:284`, `src/shared/utils/api/rateLimit.mjs:36`, `src/app/api/h1/update/route.js:98` |
+| 19 `PostgreSQL Type` cells | `TIMESTAMPTZ` | `TIMESTAMP(3)`; new `### Timestamp type` states naive UTC and `AT TIME ZONE 'UTC'` in raw SQL. All 19 cells were replaced; two of them (`Review`) left with the model and `worker_heartbeat` gained `lease_until` as `TIMESTAMP(3)` | `src/update/lease.mjs:46`, `src/update/lease.mjs:55` |
+| `page.mdx:41,51` (`prisma.config.mjs` sample and sentence) | `import 'dotenv/config'`, "loads `.env`" | The file's lines 1-3 verbatim; the CLI loads `.env.development`, then falls back to `.env`; in Docker `POSTGRES_URL` comes from the environment | `prisma.config.mjs:2`, `prisma/schema.prisma:14` |
+| `page.mdx:57-67` (runtime client sample). Extra drift | `connectionString: process.env.POSTGRES_URL` inline | Sample matches `getConnectionString()`, which throws when `POSTGRES_URL` is unset | `src/db/db.js:4`, `src/db/db.js:12` |
+| `page.mdx:170` (ER `Settings` attribute). Extra drift | `PK-FK`: mermaid 12 rejects it (fence@73, parse error on line 97) | `PK, FK` | `src/app/docs/database/page.mdx:183`, `prisma/schema.prisma:94` |
+| `h1_*` and `push_subscription` models | none found | Re-read against the schema: fields, types, indexes and relations match | `prisma/schema.prisma:117`, `prisma/schema.prisma:225` |
+
+Fail-first output of `node scripts/check-mermaid-fences.mjs` before any page edit (exit 1):
+
+```
+OK src/app/docs/architecture/page.mdx fence@46
+OK src/app/docs/data-flow/page.mdx fence@19
+OK src/app/docs/data-flow/page.mdx fence@104
+OK src/app/docs/infrastructure/page.mdx fence@13
+OK src/app/docs/infrastructure/page.mdx fence@129
+OK src/app/docs/infrastructure/page.mdx fence@205
+FAIL src/app/docs/database/page.mdx fence@73 Parse error on line 97:
+OK src/app/docs/database/page.mdx fence@231
+OK src/app/docs/testing/page.mdx fence@24
+checked 9 fences in 5 files
+```
+
+Lane commit: 3387d4be5c01216f99b4c392ad9c7f93792fb23e
+
+Page database: CHECKED
+
+## /docs/testing
+
+| Item | Stale statement | Fix | Code evidence |
+|------|-----------------|-----|---------------|
+| `src/app/docs/testing/page.mdx:11` | "Audience: project owner and AI assistants" | Removed | `AGENTS.md:67` |
+| `page.mdx:22` | "following conventions from the euraika/aegis projects" | Removed; the overview now lists the three configs, including `vitest.visual.config.mjs` (`vitest.visual.config.mjs:12`) | `.github/workflows/check-ci.yml:24` |
+| `page.mdx:24-62` (mermaid directory fence), `:66-90` (tree), missing rule | Non-existent dirs `queries/`, `routes/`, `utils/`; no mirror rule | One paragraph under `## Directory Structure`: unit tests mirror the source tree under `src/__tests__/unit/`, enforced by `mirrorTree.test.mjs`; smoke, visual and utils named. The fence is gone, so the page has no mermaid fence | `src/__tests__/unit/_meta/mirrorTree.test.mjs:11`, `AGENTS.md:67` |
+| `page.mdx:224-232` (`## Test Naming Conventions`) | Naming table (no `.jsx`, no qualifier, no escape hatches) | Section removed; nothing linked to it | `src/__tests__/unit/_meta/mirrorTree.test.mjs:11` |
+| `page.mdx:103-112` (scripts table) | "`npm test` runs unit then smoke"; `test:smoke` and `test:all` missing | `npm test` and `test:unit` are `vitest run`; `test:smoke`, `test:e2e` (alias), `test:all` (unit, then smoke), `test:visual`, `test:visual:update` (`package.json:15-22`) | `src/__tests__/smoke/smoke.test.mjs:1` |
+| `page.mdx:114` | "Never start the dev server from Claude — ask the user" | Removed; neutral note on `TEST_SERVER_URL` (default `http://localhost:3000`), fail with no server, `SMOKE_ALLOW_SKIP=1` | `src/__tests__/smoke/smoke.test.mjs:11` |
+| `page.mdx:137` (coverage excludes) | "malformed enum files" | The three globs of `vitest.config.mjs`, plus the include glob | `vitest.config.mjs:30` |
+| `page.mdx:143-188` (global mocks). Extra drift | "All models from the schema"; "Sentry never fires"; `vi.clearAllMocks()` in `beforeEach` | Models the app uses (list in `vitest.setup.mjs`); "error reporter"; `next/cache` and `next/server` added, `LiveDataContext` and `react-slot-counter` named; `beforeEach` runs `vi.resetAllMocks()` (`vitest.setup.mjs:305`, `next/cache` mock at `vitest.setup.mjs:200`) | `src/__tests__/utils/index.mjs:12`, `src/__tests__/smoke/smoke.test.mjs:1` |
+| `page.mdx:261` (smoke base URL). Extra drift | Fixed `http://localhost:3000` | `TEST_SERVER_URL`, default `http://localhost:3000`; no server fails; `SMOKE_ALLOW_SKIP=1` skips | `src/__tests__/smoke/smoke.test.mjs:1`, `src/__tests__/smoke/smoke.test.mjs:11` |
+| `page.mdx:282` (CI reference) | `.github/workflows/ci.yml` | `.github/workflows/check-ci.yml`, job `Visual Regression`; runs on PR and push to `main` and `develop` | `.github/workflows/check-ci.yml:24`, `.github/workflows/check-ci.yml:8` |
+| `page.mdx:271` and the rest of the visual section, utilities, API route pattern, gitignore | none found | `:271` (image tag `v1.64.1-noble`) matches the script and the job; the five baselines, the utilities exports, the healthcheck example and the gitignore entries match the files | `scripts/visual-tests.sh:12`, `.github/workflows/check-ci.yml:33`, `src/__tests__/utils/index.mjs:42` |
+
+Lane commit: 3387d4be5c01216f99b4c392ad9c7f93792fb23e
+
+Page testing: CHECKED
