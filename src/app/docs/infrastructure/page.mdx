@@ -488,6 +488,9 @@ export default process.env.SENTRY_AUTH_TOKEN ?
         project: process.env.SENTRY_PROJECT,
         sentryUrl: process.env.SENTRY_URL,
         sourcemaps: { deleteSourcemapsAfterUpload: true },
+        errorHandler: (err) => {
+            throw err;
+        },
     })
 :   finalConfig;
 ```
@@ -496,6 +499,7 @@ export default process.env.SENTRY_AUTH_TOKEN ?
 - **Builds without the token** skip the wrapper. They emit no browser maps.
 - **Server maps** in `.next/standalone` stay in the image. The app does not serve them over HTTP.
 - **No `silent` option.** It hid two upload failures in 2026-07 and 2026-08 (#496). Upload errors must print in the build log.
+- **A failed upload fails the build.** The `errorHandler` rethrows each Sentry step error (release creation, upload, finalize), so `next build` exits non-zero. The `Build App Image` leg fails, and `Pin Production` cannot pin a build without its maps (#661).
 
 The `authToken`, `org`, `project`, and `sentryUrl` env vars are only used during builds.
 
