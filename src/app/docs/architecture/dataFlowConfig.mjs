@@ -197,7 +197,7 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Every normalized table FKs back to this via season (Int). Inlines introduction_order[] and points_max[] arrays (formerly separate tables) plus season_duration[].',
+                        'h1_status, h1_statistic and h1_event FK back to this via season (Int); h1_event_progress links to h1_event instead. Inlines the introduction_order[] and points_max[] arrays (formerly separate tables) plus the season_duration scalar (Int).',
                 },
                 {
                     type: 'table',
@@ -207,7 +207,7 @@ export const dataFlowConfig = createFlowConfig({
                         ['last_updated', 'DateTime?'],
                         ['introduction_order', 'Int[]'],
                         ['points_max', 'Int[]'],
-                        ['season_duration', 'Int[]'],
+                        ['season_duration', 'Int'],
                     ],
                 },
             ],
@@ -237,10 +237,10 @@ export const dataFlowConfig = createFlowConfig({
                     rows: [
                         ['season', 'Int FK'],
                         ['enemy', 'Int (0/1/2)'],
-                        ['bucket', 'DateTime'],
-                        ['points / points_max', 'Int'],
+                        ['bucket', 'Int (window start)'],
+                        ['time', 'Int'],
+                        ['points / points_taken', 'Int'],
                         ['status', 'String'],
-                        ['players', 'Int'],
                     ],
                 },
             ],
@@ -270,7 +270,8 @@ export const dataFlowConfig = createFlowConfig({
                     rows: [
                         ['season', 'Int FK'],
                         ['enemy', 'Int (0/1/2)'],
-                        ['bucket', 'DateTime'],
+                        ['bucket', 'Int (window start)'],
+                        ['players', 'Int'],
                         ['kills / deaths', 'BigInt'],
                         ['missions', 'Int'],
                         ['shots / hits', 'BigInt'],
@@ -291,7 +292,7 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'tags',
                     items: [
-                        { text: 'upsert by event_id', cls: 'tag-upsert' },
+                        { text: 'upsert by (type, event_id)', cls: 'tag-upsert' },
                         { text: 'Event Alerts + Timeline', cls: 'tag-read' },
                     ],
                 },
@@ -300,7 +301,7 @@ export const dataFlowConfig = createFlowConfig({
                     headers: ['Field', 'Type'],
                     rows: [
                         ['type', '"attack" | "defend"'],
-                        ['event_id', 'Int @unique'],
+                        ['event_id', 'Int (unique with type)'],
                         ['season', 'Int FK'],
                         ['region', 'Int'],
                         ['enemy', 'Int'],
@@ -318,13 +319,13 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'One row per (event_id, bucket). Tracks how event points change over time. Used by archives to show event progression charts.',
+                        'One row per (type, event_id, bucket). Tracks how event points change over time; points_max is constant and lives on h1_event. Used by archives to show event progression charts.',
                 },
                 {
                     type: 'tags',
                     items: [
                         {
-                            text: 'bucket-upsert by (event_id, bucket)',
+                            text: 'bucket-upsert by (type, event_id, bucket)',
                             cls: 'tag-upsert',
                         },
                         { text: 'Archives progression', cls: 'tag-read' },
@@ -334,10 +335,11 @@ export const dataFlowConfig = createFlowConfig({
                     type: 'table',
                     headers: ['Field', 'Type'],
                     rows: [
-                        ['event_id', 'Int FK'],
-                        ['bucket', 'DateTime'],
+                        ['type', '"attack" | "defend"'],
+                        ['event_id', 'Int'],
+                        ['type + event_id', 'FK \u2192 h1_event'],
+                        ['bucket', 'Int (window start)'],
                         ['points', 'Int'],
-                        ['points_max', 'Int'],
                     ],
                 },
             ],

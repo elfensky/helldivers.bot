@@ -18,7 +18,7 @@ export const overviewConfig = createFlowConfig({
     details: {
         dash: {
             title: 'Dashboard',
-            subtitle: 'src/app/(app)/page.jsx',
+            subtitle: 'src/app/page.jsx',
             sections: [
                 {
                     type: 'text',
@@ -100,7 +100,7 @@ export const overviewConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'BetterAuth catch-all route handling Discord and GitHub OAuth flows, session management, and account operations. Optional — returns 503 when BETTER_AUTH_SECRET is absent.',
+                        'BetterAuth catch-all route handling Discord, GitHub and Google OAuth flows, session management, and account operations. Optional — returns 503 when BETTER_AUTH_SECRET is absent.',
                 },
             ],
         },
