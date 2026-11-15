@@ -70,11 +70,7 @@ Verdict: RENDERED
 - Re-run commit: `709126df159c180b050756887257a0b2be1d02d3` (develop head with #671 and #677). `git diff 96e34c9 283a276d` over the five definition files and `src/shared/components/MermaidDiagram` is empty, and #677 does not touch them either (`git diff 96e34c9 709126df` over the same paths is empty), so the node IDs above are unchanged. The five diagrams were matched on the `flowchart-<nodeId>-<n>` suffix of `g.node[id]` inside each diagram's own svg (`mermaid-data-flow-1`, `mermaid-docs-overview-1`, `mermaid-notification-flow-1`, `mermaid-inapp-flow-1`, `mermaid-push-flow-1`): the same 14, 11, 10, 12 and 7 IDs, all found.
 - Tool and browser: chrome-devtools MCP, run by the execute-phase orchestrator in an isolated Chrome 157.0.0.0 (macOS) at 1440×900, between 2026-11-15T12:54:47Z and 12:55:06Z. The appVersion was read before and after the render and did not change. Console: no messages at all on all three pages. The later release cut commit only adds CHANGELOG.md to this build; the D-23 pre-flight proves the render sources are the same.
 
-Staging version: 0.99.0-dev.709126d
-
-/docs/architecture desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
-/docs desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
-/docs/notifications desktop staging: PASS (svg 3/3, missing nodes 0, render errors 0)
+The plan 02-15 render on 0.99.0-dev.709126d passed all three pages; the gap-closure re-check below replaces it.
 
 ### Gap-closure re-check (plan 02-20)
 
@@ -88,3 +84,14 @@ Staging version: 0.99.0-dev.709126d
   - `/docs/notifications` `notification-flow` (`notificationFlowDefinition.mjs`, 11): worker, update, pushcheck, live, pushapi, sw, hook, detect, toast, webnoti, db (inline in an edge line)
   - `/docs/notifications` `inapp-flow` (`inAppFlowDefinition.mjs`, 12): hd1_api, worker, post_update, update_status, poll, live_api, get_campaign, hook, rerender, detect_changes, sonner_toast, web_noti
   - `/docs/notifications` `push-flow` (`pushFlowDefinition.mjs`, 7): post_update, check_notify, detect_changes, query_subs, web_push, sw_push, show_noti
+- Tool and browser: chrome-devtools MCP, run by the execute-phase orchestrator on 2026-11-15 at about 22:06 CET in an isolated Chrome context without a login, Chrome 157.0.0.0 (macOS), viewport 1440×900. The appVersion was read from `/api/h1/live` inside the staging page: 0.99.0-dev.6701906. `/docs/architecture` was loaded and then reloaded with the cache ignored; `/docs` and `/docs/notifications` were navigated with a cache-busting query. The check waited until every `.diagram-canvas svg` had `g.node` elements, then read the svg count, the node ids above without a `g.node` whose id matches `flowchart-<nodeId>-\d+$` inside that diagram's svg, and the edge `path` `data-id` values.
+- `g.node` counts per svg: data-flow 14, docs-overview 11, notification-flow 11, inapp-flow 12, push-flow 7.
+- Console: `list_console_messages` (error, warn) since each navigation returned no message on any of the three pages, so 0 matches for `[MermaidDiagram] render failed:`.
+- Edge results (desktop): `/docs` holds an edge `data-id` with `L_api_update_hd1_` and none with `L_worker_hd1_`. The in-app flow on `/docs/notifications` holds `L_hd1_api_post_update_` and no `L_hd1_api_worker_`. PASS.
+- Steps that did not run: none.
+
+Staging version: 0.99.0-dev.6701906
+
+/docs/architecture desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
+/docs desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
+/docs/notifications desktop staging: PASS (svg 3/3, missing nodes 0, render errors 0)

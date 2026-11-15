@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-19-PLAN.md
-last_updated: "2026-11-15T20:53:14.398Z"
+stopped_at: Completed 02-20-PLAN.md
+last_updated: "2026-11-15T21:08:15.003Z"
 last_activity: 2026-11-15
-last_activity_desc: "Plan 02-25 executed: /docs/infrastructure overview fence routes the worker through the update route, page re-checked and corrected (lane docs/02-gap-closure at cb68f18f)"
-state_head: 9f28a0c12a41d75ae0254baf5094622b154e31d0
+last_activity_desc: "Plan 02-20 executed: staging render of the three diagram pages PASS on 0.99.0-dev.6701906 (contains M 67019064), review dispositions closed (open: 0)"
+state_head: ef1d65cf34a6e51657144fa5a6a82b8996152049
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 24
-  completed_plans: 21
+  completed_plans: 22
   percent: 0
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 21 of 24 summarized (02-01 superseded); gap-closure plans 02-16, 02-17, 02-23, 02-24, 02-18, 02-25 and 02-19 done; the lane landed on develop as PR #687 (head 67019064), lane removed; 02-20 follows. develop is frozen until the v0.99.1 tag (Andrei, 21:40)
+Plan: 22 of 24 summarized (02-01 superseded); gap-closure plans 02-16, 02-17, 02-23, 02-24, 02-18, 02-25, 02-19 and 02-20 done; the lane landed on develop as PR #687 (head 67019064), lane removed; staging 0.99.0-dev.6701906 rendered all three pages (PASS), review record closed (open: 0); 02-21 (release 0.99.1) follows. develop is frozen until the v0.99.1 tag (Andrei, 21:40)
 Status: Executing gap closure — `02-VERIFICATION.md` found gaps (4/5, DOCS-02 partial); the docs fixes ship in patch release 0.99.1 (D-33)
-Last activity: 2026-11-15 — plan 02-19 executed (dev render RENDERED, PR #687 merged into develop)
+Last activity: 2026-11-15 — plan 02-20 executed (staging render PASS on 0.99.0-dev.6701906, review dispositions closed)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -67,6 +67,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P18 | 12 min | 2 tasks | 4 files |
 | Phase 02 P25 | 17 min | 2 tasks | 2 files |
 | Phase 02 P19 | n/a (two continuations) | 3 tasks | 2 files |
+| Phase 02 P20 | ~20min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,7 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-18: a skipped Sentry upload (empty project, empty org or zero maps) passes the build and ships without uploaded maps; /docs/infrastructure says so and issue #686 tracks the CI guard; /docs/database re-check fixed nine statements in lane commit 4ac3350c
 - [Phase 02]: 02-25: CI secret ids and the Umami host are described by role on /docs/infrastructure (D-06); the plan 02-08 row that said none were present was wrong
 - [Phase 02]: 02-19: develop frozen until the v0.99.1 tag (Andrei, 2026-11-15 21:40); 0.99.1 stays docs-only (D-33); PR #680 waits until after the tag. Gap closure landed as PR #687, develop head 67019064
+- [Phase 02]: IN-04 recorded as fixed with a Partly fixed: Source cell (node-to-panel direction unchecked); IN-02 skipped with its reason
 
 ### Pending Todos
 
@@ -147,8 +149,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T20:53:14.205Z
-Stopped at: Completed 02-19-PLAN.md
+Last session: 2026-11-15T21:08:14.971Z
+Stopped at: Completed 02-20-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
