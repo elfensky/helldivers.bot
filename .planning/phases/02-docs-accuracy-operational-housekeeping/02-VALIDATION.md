@@ -3,9 +3,9 @@ phase: "02"
 slug: "docs-accuracy-operational-housekeeping"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: validated
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-11-14"
 ---
 
@@ -39,19 +39,17 @@ created: "2026-11-14"
 
 ## Per-Task Verification Map
 
-Task IDs are filled by the planner. The rows below are the per-requirement checks every plan maps to.
+Repeatable checks run in CI `Test & Build` (`npm run test:unit` and the build in the verify action). One-time evidence rows are under Manual-Only. Develop at audit: 74b69088 (PR #685).
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | TBD | DOCS-01 | — | N/A | grep guard | `grep -c WORKER_ENABLED AGENTS.md` ≥ 1; `grep -c -- '--delete-branch' AGENTS.md` = 0 | ✅ | ⬜ pending |
-| TBD | TBD | TBD | DOCS-01 | — | 403 guard on `/api/h1/update` kept | grep + unit | `grep -n '~15s' src/app/api/h1/update/route.js` empty; `grep -n "errorResponse(403" src/app/api/h1/update/route.js` 1 hit; `npm run lint && npm run test:unit` | ✅ | ⬜ pending |
-| TBD | TBD | TBD | DOCS-01 | — | N/A | grep | `grep -n 'dedicated 1-replica worker\|runs 3 app replicas\|must 403 rather' .planning/codebase/*.md` empty | ✅ | ⬜ pending |
-| TBD | TBD | TBD | DOCS-02 | — | N/A | build | `npm run build` (ESLint does not cover `.mdx`) | ✅ | ⬜ pending |
-| TBD | TBD | TBD | DOCS-02 | — | N/A | grep sweep | `02-RESEARCH.md` § Code Examples 3 (baselines 46 and 11 lines at 0.98.0; target 0) | ✅ | ⬜ pending |
-| TBD | TBD | TBD | DOCS-02 | — | N/A | script | `node scripts/check-mermaid-fences.mjs` exit 0 | ❌ W0 | ⬜ pending |
-| TBD | TBD | TBD | HOUSE-03 | — | Browser source maps not served from production | grep | `grep -n productionBrowserSourceMaps next.config.mjs` empty; `grep -n deleteSourcemapsAfterUpload next.config.mjs` 1 hit | ✅ | ⬜ pending |
-| TBD | TBD | TBD | HOUSE-03 | — | N/A | CI log | `gh run view <id> --log \| grep -c 'Successfully uploaded source maps to Sentry'` = 2 | after merge | ⬜ pending |
-| TBD | TBD | TBD | HOUSE-05 | — | N/A | file | `test ! -e docs/roadmap.md` | ✅ | ✅ green |
+| 02-02-T1, 02-02-T3 | 02-02 | 5 | DOCS-01 | — | 403 guard on `/api/h1/update` kept | unit | `npx vitest run src/__tests__/unit/app/api/h1/update/route.test.mjs` (403 when `WORKER_ENABLED=false`, standby 200) | ✅ | ✅ green |
+| 02-05..02-08 T3 | 02-05..02-08 | 6–9 | DOCS-02 | — | N/A | build | `npm run build` (compiles the MDX; ESLint does not cover `.mdx`) | ✅ | ✅ green |
+| 02-06-T1 | 02-06 | 7 | DOCS-02 | — | N/A | unit (child process) | `npx vitest run src/__tests__/unit/_meta/mermaidFences.test.mjs` (runs `scripts/check-mermaid-fences.mjs`, exit 0) | ✅ | ✅ green |
+| 02-05-T1 | 02-05 | 6 | DOCS-02 | — | N/A | contract (jsdom) | `npx vitest run src/__tests__/unit/app/docs/diagrams.contract.test.mjs` (5 diagrams × LR/TD parse, config node keys present) | ✅ | ✅ green |
+| 02-11-T2 | 02-11 | 10 | DOCS-02 | — | N/A | unit (sweep) | `npx vitest run src/__tests__/unit/_meta/docsRetiredStrings.test.mjs` (Final check regexes, 02-DOCS-PAGE-CHECK.md) | ✅ | ✅ green |
+| 02-10-T1, 02-11-T2 | 02-10, 02-11 | 4, 10 | HOUSE-03 | T-02-SC | Browser maps uploaded then deleted; a failed upload fails the build (#679) | unit (mocked wrapper) | `npx vitest run src/__tests__/unit/_meta/nextConfigSentry.test.mjs` | ✅ | ✅ green |
+| 02-03-T2, 02-03-T3 | 02-03 | 6 | HOUSE-05 | — | N/A | file | `test ! -e docs/roadmap.md` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -59,10 +57,10 @@ Task IDs are filled by the planner. The rows below are the per-requirement check
 
 ## Wave 0 Requirements
 
-- [ ] `scripts/check-mermaid-fences.mjs` — DOCS-02 fence parse (D-23); tested script in `02-RESEARCH.md` § Code Examples 1
-- [ ] Lane `npm ci` + `npx prisma generate` — typecheck, unit tests and build need the generated client
+- [x] `scripts/check-mermaid-fences.mjs` — DOCS-02 fence parse (D-23); added in 02-06 (PR #666), in CI through `mermaidFences.test.mjs` (PR #685)
+- [x] Lane `npm ci` + `npx prisma generate` — done in every code lane
 - [x] Decision on the D-15 (1) event source: staging gets the production DSN (CONTEXT.md D-30, 2026-11-14)
-- [ ] `SENTRY_DSN` live on staging before D-15 step (1) (D-30)
+- [x] `SENTRY_DSN` live on staging before D-15 step (1) (D-30) — 02-14, PR #659
 
 Existing checks to keep green: `src/__tests__/unit/_meta/mirrorTree.test.mjs`, `src/__tests__/unit/_meta/exampleEnv.test.mjs`, `src/__tests__/unit/app/docs/_diagram.test.mjs`.
 
@@ -70,25 +68,37 @@ Existing checks to keep green: `src/__tests__/unit/_meta/mirrorTree.test.mjs`, `
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| The 5 rendered diagrams render | DOCS-02 | Needs a browser | `02-RESEARCH.md` § Code Examples 2; record the result in the PR |
-| Each docs page matches the code | DOCS-02 | Review against the code (D-12) | Page-by-page check of the seven docs surfaces at tag vV2 (the release-2 commit), recorded one line per page in the phase verification (`02-11-PLAN.md` backstop truth) |
-| Static `.map` files gone from the image | HOUSE-03 | Needs Docker export of the pulled image | `02-RESEARCH.md` § HOUSE-03 export commands: `static` `.map` = 0, `server` = 48 |
-| Production `.map` answers 404 | HOUSE-03 | Needs release 2 live | `02-RESEARCH.md` § HOUSE-03 D-15 (3) |
-| Symbolicated GlitchTip events | HOUSE-03 | Needs the GlitchTip connector (not authorized at planning) | D-15 (1) and (4) |
-| #642 merged, #501 closed with the run recorded | HOUSE-04 | GitHub state after a human approval | `gh pr view 642 --json state` = `MERGED`; `gh issue view 501 --json state,comments` |
-| Staging seeds season 161 | HOUSE-04 | Staging log after the pin moves | `[migrate] seed data changed, seeding` in the staging app log |
+| Behavior | Requirement | Why Manual | Evidence |
+|----------|-------------|------------|----------|
+| AGENTS.md lease facts and merge line; four code comments; codebase maps describe the lease | DOCS-01 | Doc text, checked by review (D-12) | 02-DOCS-PAGE-CHECK.md (AGENTS.md and codebase-map sections, CHECKED) |
+| The 5 rendered diagrams render (SVG count, node elements) | DOCS-02 | Needs a browser | 02-MERMAID-RENDER.md `Verdict: RENDERED`; staging PASS lines on `0.99.0-dev.709126d` |
+| Each docs page matches the code | DOCS-02 | Review against the code (D-12) | 02-DOCS-PAGE-CHECK.md: nine CHECKED lines, `Final check: PASS` on develop 709126df |
+| Upload line on both release legs | HOUSE-03 | Per-release CI log read | 02-RELEASE-RECORD.md § Release 2 (amd64 1, arm64 1, errors 0) |
+| Static `.map` files gone from the image | HOUSE-03 | Needs a Docker export of the pulled image | 02-SOURCEMAP-MEASUREMENT.md `Verdict: STRIPPED` (142 → 0, server 48) |
+| Production `.map` answers 404 | HOUSE-03 | Needs the live release | 02-PRODUCTION-CHECK.md § D-15 (3) |
+| Symbolicated GlitchTip events (staging and production) | HOUSE-03 | Needs a real event and GlitchTip | 02-SYMBOLICATION-PROOF.md `Verdict: SYMBOLICATED` (HELLDIVERSBOT-7D); 02-PRODUCTION-CHECK.md `Verdict: PRODUCTION SYMBOLICATED` (HELLDIVERSBOT-6C); #502 closed |
+| Staging DSN live | HOUSE-03 | One-time staging probe | 02-14-SUMMARY.md (tunnel probe 400, was 503) |
+| #642 merged, #501 closed with the run recorded | HOUSE-04 | GitHub state | #642 MERGED, #501 CLOSED, gaps issue #658 (02-04-SUMMARY.md) |
+| Staging seeds season 161 | HOUSE-04 | Staging log after the pin moves | 02-RELEASE-RECORD.md § Seed refresh (`[migrate] seed data changed, seeding`); mechanism under unit test (`update/migrateOnStart.test.mjs`, `_meta/seedSkip.test.mjs`) |
+| Human checkpoints 02-04-T2, 02-05-T2, 02-09-T2, 02-11-T1, 02-12-T2, 02-15-T2 | — | Need a human, a browser or GlitchTip | The records named above |
 
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 300s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies (33 of 39 tasks automated; the 6 others are human checkpoints)
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 300s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-11-15 (validate-phase: 4 gaps filled by PR #685; the rest Manual-Only by Andrei's choice)
+
+## Validation Audit 2026-11-15
+
+| Metric | Count |
+|---|---|
+| Gaps found | 4 |
+| Resolved | 4 |
+| Escalated | 0 |
