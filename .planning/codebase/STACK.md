@@ -13,7 +13,7 @@
 ## Runtime
 
 **Environment:**
-- Node.js 24, pinned via `mise` (`mise.toml`: `[tools] node = "24"`) — ships npm 11 natively
+- Node.js 26, pinned via `mise` (`mise.toml`: `[tools] node = "26"`) — ships npm 11 natively
 
 **Package Manager:**
 - npm (lockfile: `package-lock.json` present)
@@ -76,14 +76,14 @@
 ## Platform Requirements
 
 **Development:**
-- Node 24 (mise-pinned; untrusted mise silently falls back to Homebrew's version — verify with `node --version`)
+- Node 26 (mise-pinned; untrusted mise silently falls back to Homebrew's version — verify with `node --version`)
 - Local Postgres or Docker (`host.docker.internal`) reachable via `POSTGRES_URL`
 - Dev server assumed already running on `:3000`
 
 **Production:**
 - Docker images: `Dockerfile.app` (main app, `output: 'standalone'` server at `.next/standalone/server.js`), `Dockerfile.migrate` (one-shot `prisma migrate deploy && seed.mjs` container)
-- Deployed behind a service VIP with a Postgres-backed leader-election lease (only one instance polls the HD1 API); `WORKER_ENABLED="false"` on scaled web replicas, one dedicated 1-replica worker service
-- Images published to `ghcr.io/elfensky/helldiversbot` (and `-migrate` variant), pulled by `docker-compose.yml` (staging in `deploy/staging/`)
+- Deployed behind a service VIP with a Postgres-backed lease: every replica runs the cron thread and only the `worker_heartbeat` lease holder polls the HD1 API (`src/update/lease.mjs`); `WORKER_ENABLED="false"` is an optional per-replica opt-out; both stacks run 2 app replicas; no dedicated worker service exists
+- Images published to `ghcr.io/elfensky/helldiversbot` (and `-migrate` variant), pulled by the Swarm stacks `deploy/production/compose.yaml` and `deploy/staging/compose.yaml`, applied by Arcane Git Sync
 - `docker-compose.ci.yml` builds from local source (not GHCR) for smoke-testing full boot path in CI
 
 ---

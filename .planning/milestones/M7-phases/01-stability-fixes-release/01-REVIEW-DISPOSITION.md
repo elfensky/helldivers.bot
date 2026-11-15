@@ -21,8 +21,8 @@ One row per finding in `01-REVIEW.md`. `open` means seen, not yet acted on. The 
 | WR-04 | warning | src/features/notifications/NotificationToggle.jsx:53-59, 70-74 | open | A non-2xx response from `/api/notifications/subscribe` is treated as success |
 | WR-05 | warning | src/features/notifications/NotificationToggle.jsx:113-129 | open | The 5 s `serviceWorker.ready` timeout reports a GlitchTip warning for users who are not broken |
 | WR-06 | warning | src/app/layout.css:47-48,99-100, src/app/layout.jsx:24-34 | open | STAB-04 fixed `--font-mono` only; Inter and Space Grotesk are loaded but never applied |
-| WR-07 | warning | next.config.mjs:60-74 | open | Unconditional rewrites turn every deployment into an open proxy for a hardcoded Umami host |
-| WR-08 | warning | next.config.mjs:167-199, src/app/layout.jsx:87-91,237 | open | Shared-cache headers are set on HTML whose content depends on the session |
+| WR-07 | warning | next.config.mjs:60-74 | deferred → #662 | Unconditional rewrites turn every deployment into an open proxy for a hardcoded Umami host |
+| WR-08 | warning | next.config.mjs:167-199, src/app/layout.jsx:87-91,237 | deferred → #663 | Shared-cache headers are set on HTML whose content depends on the session |
 | WR-09 | warning | scripts/hydration-sweep.mjs:47-71 | open | hydration-sweep can report a clean sweep when it should not |
 | WR-10 | warning | src/shared/utils/game/getWarOutcome.mjs:53-55,68-69,84-86 | open | The getWarOutcome null guard covers only faction `.status`, not events or snapshots; the sort ignores nulls |
 | WR-11 | warning | scripts/generate-og-fallback.mjs:19-21,65,75,84,103 | open | generate-og-fallback.mjs claims deterministic output but depends on the machine, and writes to a cwd-relative path |

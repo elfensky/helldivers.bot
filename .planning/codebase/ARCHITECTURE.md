@@ -122,12 +122,12 @@
 ### Primary poll → persist path
 
 1. Worker thread fires a poll (`public/workers/cronLogic.js:26` `doWork()`), `fetch`ing `GET /api/h1/update` with `Authorization: Bearer <UPDATE_KEY>`.
-2. Route validates the key with `crypto.timingSafeEqual` and checks `isWorkerEnabled()` (`src/app/api/h1/update/route.js:64-79`) — a web-only replica must 403 rather than run stale-state logic.
-3. `claimLease()` (`src/update/lease.mjs:42`) does a single `INSERT ... ON CONFLICT DO UPDATE` against `worker_heartbeat`, guarded by a `WHERE` clause that only lets the current holder or an expired lease through. Non-holders get `null` back and the route responds `{ role: 'standby' }` immediately (`route.js:89-90`) — no further work happens on a standby replica.
-4. Holder: `updateStatus()` (`src/update/status.mjs`) fetches `get_campaign_status`, Zod-validates, computes the poll's bucket via `computeBucket()` (`src/shared/utils/bucketing.mjs`), and upserts into `h1_status` / `h1_statistic` via `src/db/queries/upsertStatus.mjs` / `upsertStatistic.mjs`.
-5. Season-transition closing pass: if the lease's `lastSeasonObserved` is lower than the just-fetched season, `updateSeason(lastSeasonObserved)` runs once against the outgoing season to capture HD1's delayed closing snapshot (`route.js:119-143`). Non-fatal on error.
+2. Route validates the key with `crypto.timingSafeEqual` and checks `isWorkerEnabled()` (`src/app/api/h1/update/route.js:62-82`) — a replica started with `WORKER_ENABLED=false` opted out and answers 403 (`worker disabled on this instance`); the reason is the explicit opt-out, not stale in-process state.
+3. `claimLease()` (`src/update/lease.mjs:45`) does a single `INSERT ... ON CONFLICT DO UPDATE` against `worker_heartbeat`, guarded by a `WHERE` clause that only lets the current holder or an expired lease through. Non-holders get `null` back and the route responds `{ role: 'standby' }` immediately (`route.js:92-93`) — no further work happens on a standby replica.
+4. Holder: `updateStatus()` (`src/update/status.mjs`) fetches `get_campaign_status`, Zod-validates, computes the poll's bucket via `computeBucket()` (`src/shared/utils/bucketing.mjs`), and upserts `h1_season`, `h1_event`, `h1_status`, `h1_statistic` and `h1_event_progress` through the five `upsert*` queries in `src/db/queries/` (`status.mjs:8-12`).
+5. Season-transition closing pass: if the lease's `lastSeasonObserved` is lower than the just-fetched season, `updateSeason(lastSeasonObserved)` runs once against the outgoing season to capture HD1's delayed closing snapshot (`route.js:130-153`). Non-fatal on error.
 6. `persistPollerState(HOLDER_ID, { lastSeasonObserved })` writes the new season back into the lease row so the next poll (possibly on a different holder) knows the boundary.
-7. `updateSeason(statusData.season, { protectedBucket })` (`src/update/season.mjs`) fetches `get_snapshots`, Zod-validates, and bucket-upserts `h1_event`, `h1_event_progress`, `h1_season` (season anchor with inlined arrays), and `h1_statistic` — passing `protectedBucket` so a stale snapshot bucket can't clobber the fresher `updateStatus()` write for the same bucket.
+7. `updateSeason(statusData.season, { protectedBucket })` (`src/update/season.mjs`) fetches `get_snapshots`, Zod-validates, and bucket-upserts `h1_event`, `h1_season` (season anchor with inlined arrays) and `h1_status` only; it writes neither `h1_statistic` nor `h1_event_progress` (`season.mjs:10-12`) — passing `protectedBucket` so a stale snapshot bucket can't clobber the fresher `updateStatus()` write for the same bucket.
 8. Non-fatal per-call warnings from either updater are logged and reported to GlitchTip (not thrown) so partial degradation stays visible without failing the poll.
 9. `after(async () => { checkAndNotify(prevEvents) })` runs post-response: diffs the new event snapshot against the lease-stored `prevEvents`, fires web-push via `src/update/pushNotifier.mjs`, and persists the new snapshot back to the lease row — deferred so push delivery doesn't block the poll's response time.
 10. `writeHeartbeat()` updates `worker_heartbeat.last_beat` / `poll_duration_ms` / `last_error`, guarded to only update the current holder's own row.
@@ -149,7 +149,7 @@
 
 **State Management:**
 - Server-side cross-replica state (poller identity, `prevEvents`, `lastSeasonObserved`) lives entirely in the `worker_heartbeat` Postgres row — no in-process module state survives a replica restart or handover.
-- Module-level state exists only within a single process's lifetime as a convenience (e.g. `lastRateLimitCleanup` throttle in `route.js:38`), never as the source of truth for cross-replica correctness.
+- Module-level state exists only within a single process's lifetime as a convenience (e.g. `lastRateLimitCleanup` throttle in `route.js:40`), never as the source of truth for cross-replica correctness.
 - Client-side: `useLiveData` singleton per tab; `usePersistedState` hook for localStorage-backed UI preferences; Sonner `<Toaster>` co-located inside `LiveToasts` (not root layout) to share one module-level `ToastState` — instantiating it from a server component would create a second, disconnected toast state.
 
 ## Key Abstractions
@@ -178,7 +178,7 @@
 
 **Worker thread bootstrap:**
 - Location: `public/workers/cron.js`
-- Triggers: spawned by the Next.js server process on startup (guarded by `isWorkerEnabled()` so a web-only replica doesn't spawn it)
+- Triggers: spawned by the Next.js server process on startup (`src/instrumentation.node.js` calls `initializeWorker()` after `migrateOrWait()`; a replica with `WORKER_ENABLED=false` does not spawn it)
 - Responsibilities: connect `parentPort` to `makeDoWork()` from `cronLogic.js`, start the self-scheduling poll loop
 
 **`GET /api/h1/update`:**
