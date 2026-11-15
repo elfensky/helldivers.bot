@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.98.1
+
 ### Changed
 
 - Versioning is "accumulate, then cut" (#618): PRs into `develop` raise no version and add their
