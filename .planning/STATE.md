@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-11-PLAN.md
-last_updated: "2026-11-15T13:22:44.765Z"
+stopped_at: Completed 02-12-PLAN.md
+last_updated: "2026-11-15T13:27:55.381Z"
 last_activity: 2026-11-15
-last_activity_desc: "Plan 02-11 complete, release 0.99.0 live in production (13 of 14 plans summarized)"
-state_head: 31a892128dc39329d65f479937e0436763cd0235
+last_activity_desc: Plan 02-12 complete, #502 closed (14 of 14 plans summarized)
+state_head: dd418569cc8cb314915f7d8144bc215c0f19bfcd
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
   percent: 0
 ---
 
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 13 of 14 summarized (02-01 superseded); 02-11 (release 2) done, 02-12 is next
-Status: Ready for 02-12 — release 0.99.0 (tag v0.99.0, strip route) is live in production since 2026-11-15T13:20:28Z; the map probe shows no `sourceMappingURL` and a 404 for the `.js.map` files; D-15 (3) and (4) belong to 02-12
-Last activity: 2026-11-15 — release 2 (v0.99.0) live: cut #682, notes #683, release PR #684; carries the strip, the docs, #671 and #677
+Plan: 14 of 14 summarized (02-01 superseded); 02-12 (production check) done, the phase is ready for verification
+Status: Ready for phase verification — release 0.99.0 (tag v0.99.0, strip route) is live in production; D-15 (3) and (4) pass (`Verdict: PRODUCTION SYMBOLICATED`), the corrected docs are live and #502 is closed
+Last activity: 2026-11-15 — plan 02-12 complete: production serves no maps, a production event on 0.99.0 is symbolicated, #502 closed
 
-Progress: [█████████░] 93%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [█████████░] 93%
 | Phase 02 P08 | 45 min | 3 tasks | 2 files |
 | Phase 02 P09 | n/a (paused at checkpoint) | 3 tasks | 1 files |
 | Phase 02 P11 | 50 min | 3 tasks | 3 files |
+| Phase 02 P12 | 5 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,7 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-08: the infrastructure page cites no CI compose file name (the retired-name gate regex matches it); observed timings (release ~10 min, staging roll 5-6 min) are stated as observed
 - [Phase 02]: 02-09: one deliberate real staging browser error was allowed as a one-time exception to D-30 (Andrei, 2026-11-15); HELLDIVERSBOT-7D symbolicated, Verdict: SYMBOLICATED, strip may enter release 2
 - [Phase 02]: Release 2 route strip (Andrei, 2026-11-15); release 0.99.0 also carries #671 and #677 by Andrei's decision
+- [Phase 02]: 02-12: #502 closed on four passing D-15 steps (staging symbolication, image strip, production map 404, production event resolved to src/)
 
 ### Pending Todos
 
@@ -130,8 +132,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T13:22:44.739Z
-Stopped at: Completed 02-11-PLAN.md
+Last session: 2026-11-15T13:27:55.355Z
+Stopped at: Completed 02-12-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
