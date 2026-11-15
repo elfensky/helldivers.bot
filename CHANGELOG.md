@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Season 161 is in the seed data (`prisma/seed/seasons/season-161.json`), from the weekly seed
+  refresh (#642). The next app start seeds it, because the seed hash changes.
+
 ## 0.98.1
 
 ### Changed
