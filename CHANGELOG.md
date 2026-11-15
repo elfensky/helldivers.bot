@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.99.0
+
 ### Added
 
 - Season 161 is in the seed data (`prisma/seed/seasons/season-161.json`), from the weekly seed
