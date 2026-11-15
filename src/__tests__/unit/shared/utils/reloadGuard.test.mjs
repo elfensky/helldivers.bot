@@ -67,6 +67,36 @@ describe('guardedReload', () => {
     });
 });
 
+// #671: without storage the circuit breaker cannot count, so no reload runs.
+describe.each([
+    // Android WebViews with DOM storage off (HELLDIVERSBOT-6D).
+    ['is null', () => vi.stubGlobal('localStorage', null)],
+    // Chrome when the visitor blocks site data.
+    [
+        'getter throws',
+        () => {
+            vi.stubGlobal('localStorage', null); // records the original for unstubAllGlobals
+            Object.defineProperty(globalThis, 'localStorage', {
+                configurable: true,
+                get() {
+                    throw new DOMException('Access is denied', 'SecurityError');
+                },
+            });
+        },
+    ],
+])('when localStorage %s', (_, removeStorage) => {
+    beforeEach(removeStorage);
+
+    test('guardedReload does not throw and does not reload', () => {
+        expect(() => guardedReload('chunk')).not.toThrow();
+        expect(mockReload).not.toHaveBeenCalled();
+    });
+
+    test('clearReloadGuard does not throw', () => {
+        expect(() => clearReloadGuard()).not.toThrow();
+    });
+});
+
 describe('clearReloadGuard', () => {
     test('removes the guard key', () => {
         storage.set(GUARD_KEY, `version:${Date.now()}:1`);

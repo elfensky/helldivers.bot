@@ -2,20 +2,24 @@
 
 import { useEffect, useState } from 'react';
 
+import { getLocalStorage } from '@/shared/utils/storage.mjs';
 import { tryCatch } from '@/shared/utils/tryCatch.mjs';
 
 export const OPT_OUT_KEY = 'umami.disabled';
 
 /**
  * Reads the flag; any non-empty value counts, as in the tracker. Wrapped in a
- * promise because `tryCatch` only takes promises.
+ * promise because `tryCatch` only takes promises. A browser without storage
+ * is expected and gets no report; a read that throws is reported at warning.
  *
  * @returns {Promise<boolean | null>} Whether the visitor opted out; `null` when
- *   storage threw (never `false`, so callers can fail closed).
+ *   there is no storage or it threw (never `false`, so callers can fail closed).
  */
 export async function readOptOut() {
+    const storage = getLocalStorage();
+    if (!storage) return null;
     const { data, error } = await tryCatch(
-        Promise.resolve().then(() => Boolean(localStorage.getItem(OPT_OUT_KEY))),
+        Promise.resolve().then(() => Boolean(storage.getItem(OPT_OUT_KEY))),
     );
     return error ? null : data;
 }
