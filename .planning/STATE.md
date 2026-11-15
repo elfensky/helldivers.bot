@@ -5,11 +5,11 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-08-PLAN.md
-last_updated: "2026-11-15T03:19:55.364Z"
+stopped_at: "Phase 2 paused: 02-09 at Task 2 checkpoint (no staging error event yet); 02-11, 02-12 wait"
+last_updated: "2026-11-15T03:21:47.588Z"
 last_activity: 2026-11-15
-last_activity_desc: Phase 02 execution started
-state_head: 6226396b3fb123f0c7be5b247fec43ac07cb6235
+last_activity_desc: Phase 02 paused at 02-09 Task 2 (11 of 14 plans summarized)
+state_head: c576eb534b65a0c96669882522f07fafe287fd29
 progress:
   total_phases: 5
   completed_phases: 0
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 11 of 14
-Status: Ready to execute
-Last activity: 2026-11-15 — Phase 02 execution started
+Plan: 11 of 14 summarized (02-01 superseded); 02-09 paused at Task 2, then 02-11 (release 2) and 02-12
+Status: Paused at a checkpoint — 02-09 needs a natural staging browser error in GlitchTip (D-30: no synthetic event); 02-11 also needs Andrei's release-route decision
+Last activity: 2026-11-15 — release 1 (v0.98.1) live, #642 landed, staging DSN, sourcemap strip and the docs plans merged (PRs #656, #657, #642, #659, #660, #664–#668)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████████░░] 79%
 
 ## Performance Metrics
 
@@ -126,9 +126,9 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T03:19:55.248Z
-Stopped at: Completed 02-08-PLAN.md
-Resume file: None
+Last session: 2026-11-15T03:21:47.556Z
+Stopped at: Phase 2 paused: 02-09 at Task 2 checkpoint (no staging error event yet); 02-11, 02-12 wait
+Resume file: .planning/phases/02-docs-accuracy-operational-housekeeping/02-09-PLAN.md
 
 ## Operator Next Steps
 
