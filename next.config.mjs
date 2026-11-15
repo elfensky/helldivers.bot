@@ -14,7 +14,6 @@ const nextConfig = {
     pageExtensions: ['js', 'jsx', 'mdx'],
     reactCompiler: true,
     output: 'standalone',
-    productionBrowserSourceMaps: true,
     images: {
         remotePatterns: [
             {
@@ -221,5 +220,8 @@ export default process.env.SENTRY_AUTH_TOKEN ?
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,
         sentryUrl: process.env.SENTRY_URL,
+        // The SDK turns browser sourcemaps on when this wrapper runs, uploads them,
+        // then deletes them from .next/static (#502).
+        sourcemaps: { deleteSourcemapsAfterUpload: true },
     })
 :   finalConfig;
