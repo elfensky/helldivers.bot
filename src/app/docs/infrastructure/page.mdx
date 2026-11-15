@@ -366,19 +366,26 @@ Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.lav.ren`), `UM
 
 ### next.config.mjs Sentry settings
 
-The `withSentryConfig` wrapper (imported from `@sentry/nextjs/config`) controls build-time behavior:
+The `withSentryConfig` wrapper (imported from `@sentry/nextjs/config`) controls build-time behavior. It runs only when `SENTRY_AUTH_TOKEN` is set:
 
 ```js
-export default withSentryConfig(withMDX(nextConfig), {
-    silent: true,
-    authToken: process.env.SENTRY_AUTH_TOKEN,
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
-    sentryUrl: process.env.SENTRY_URL,
-});
+export default process.env.SENTRY_AUTH_TOKEN ?
+    withSentryConfig(finalConfig, {
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        sentryUrl: process.env.SENTRY_URL,
+        sourcemaps: { deleteSourcemapsAfterUpload: true },
+    })
+:   finalConfig;
 ```
 
-Source maps are uploaded to GlitchTip at build time for readable stack traces. The `authToken`, `org`, `project`, and `sentryUrl` env vars are only used during builds.
+- **Builds with the token** (Build: Staging, Build: Release) generate the browser source maps and upload them to GlitchTip as debug-ID bundles. Then they delete the maps and their `sourceMappingURL` comments from `.next/static`. The image ships no browser maps.
+- **Builds without the token** skip the wrapper. They emit no browser maps.
+- **Server maps** in `.next/standalone` stay in the image. The app does not serve them over HTTP.
+- **No `silent` option.** It hid two upload failures in 2026-07 and 2026-08 (#496). Upload errors must print in the build log.
+
+The `authToken`, `org`, `project`, and `sentryUrl` env vars are only used during builds.
 
 ---
 
