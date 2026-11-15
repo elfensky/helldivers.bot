@@ -20,7 +20,8 @@ graph LR
         DEPLOY --> |"seed hash changed"| SEED["seed.mjs"]
         SEED --> WORKER["Worker Thread"]
         DEPLOY --> |"seed unchanged"| WORKER
-        WORKER --> |"setTimeout loop"| POLL["Poll Official API"]
+        WORKER --> |"setTimeout loop"| UPDATE["Update route /api/h1/update"]
+        UPDATE --> |"lease holder only"| POLL["Poll Official API"]
     end
 
     style App fill:#0f1a0f,stroke:#22c55e,color:#4ade80
