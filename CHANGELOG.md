@@ -5,6 +5,20 @@
 ### Changed
 
 - Unit tests now cover the Sentry sourcemap options, the docs mermaid fences, the rendered diagram definitions and the retired docs claims (Phase 2 validation).
+- `scripts/check-mermaid-fences.mjs` checks every `src/app/docs/**/page.mdx` by default.
+
+### Fixed
+
+- The `/docs` pages now match the code on the points the phase verification found. A new service
+  worker activates at once. The `h1_*` panels on `/docs/architecture` use the schema types. The
+  overview and notification diagrams show that only the poller lease holder calls the official API.
+  The Dashboard path, the manifest path (`public/site.webmanifest`) and the OAuth lists (Discord,
+  GitHub and Google) are correct. `/docs/infrastructure` says which Sentry upload failures stop a
+  build. The statement-by-statement re-checks of `/docs/architecture`, `/docs`,
+  `/docs/notifications`, `/docs/testing`, `/docs/data-flow`, `/docs/database` and
+  `/docs/infrastructure` fixed further drift: the `updateSeason` and `confirmSeason` details, the
+  standby answer, the lease claim, the Caching Strategy table, the workflow gates, the Dockerfile
+  cache mounts and the environment variable table.
 
 ## 0.99.0
 
