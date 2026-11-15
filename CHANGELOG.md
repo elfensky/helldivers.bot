@@ -12,6 +12,10 @@
 - Images no longer ship browser sourcemaps. The Sentry build step uploads them to GlitchTip, then
   deletes them (`sourcemaps.deleteSourcemapsAfterUpload`). Builds without `SENTRY_AUTH_TOKEN` emit
   none (#502). `/docs/infrastructure` documents the config.
+- `AGENTS.md` states the poller lease facts: every replica runs the cron thread, one lease holder
+  polls, a standby answers 200, and `WORKER_ENABLED=false` is optional. Its merge line keeps lane
+  worktrees (`gh pr merge <n> --rebase`, then `git push origin --delete <branch>`). The comments in
+  the update route, `initializeWorker` and `cron.js` match, and the codebase maps are corrected.
 
 ## 0.98.1
 
