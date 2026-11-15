@@ -46,5 +46,10 @@ Release 1: LIVE
 | Check: CI on M | run 43658272253, success |
 | Build: Staging on M | run 43658436778, success, finished 2026-11-15T00:33:04Z |
 | deploy/staging | pin commit e77db444e227f022260467a203bfb6f8c8cbce32 (2026-11-15T00:32:56Z) pins `sha-6812b2b31b0c3a14f0898368922e64a500af6bf7` |
-| staging version `0.98.1-dev.6812b2b` first seen | not yet at 00:33:11Z (page still showed `0-98-1-dev-9e539e5`); Arcane Git Sync has not rolled the pin |
+| staging version `0.98.1-dev.6812b2b` first seen | 2026-11-15T00:38:33Z (orchestrator poll of `/api/h1/live` every 45 s; the 00:37:48Z poll still showed `0.98.1-dev.9e539e5`) |
+| first staging app task on the pin | task `zgl32pyzvt9z4qkjzuiwv7i1r`, node staging01, created 2026-11-15T00:37:49Z |
+| `[migrate]` lines of that task | `2026-11-15T00:38:01.871507669Z [migrate] seed data changed, seeding` then `2026-11-15T00:38:02.717259569Z [migrate] up to date (2105 ms)` |
+| second app task on the pin | task `kpcjq4jagcwz414xa24x23p58`, node staging02, created 00:38:05Z; `2026-11-15T00:38:15.434008324Z [migrate] seed unchanged, skipped`, then `[migrate] up to date (1274 ms)`. Expected: the first task applied the new seed under the advisory lock |
+| tasks before the pin | the tasks on `sha-9e539e56` (about 00:13Z) logged `seed unchanged, skipped`, so the seed change came with M |
+| evidence route | Andrei signed in to Arcane in his Chrome; the orchestrator read the logs of service `helldiversbot_app` (environment staging01) through Arcane's log websocket in that session, with Andrei's authorization. Both `[migrate]` lines of the first task are later than the 00:27:38Z merge |
 | remote branch `chore/seed-refresh` | deleted (D-27); lane worktree and local branch removed |
