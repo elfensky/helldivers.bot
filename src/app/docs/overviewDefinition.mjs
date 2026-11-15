@@ -16,7 +16,7 @@ const BODY = `
     end
 
     subgraph Data["DATA LAYER"]
-        worker["Worker Thread<br/><small>Polls every 10-20s</small>"]
+        worker["Worker Thread<br/><small>Calls every UPDATE_INTERVAL s</small>"]
         db[("PostgreSQL<br/><small>Prisma 7</small>")]
         hd1["Official HD1 API<br/><small>api.helldiversgame.com</small>"]
     end
