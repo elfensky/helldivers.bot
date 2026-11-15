@@ -29,6 +29,9 @@ import { guardedReload, clearReloadGuard } from '@/shared/utils/reloadGuard.mjs'
 // and naturally abandoned, avoiding hydration mismatches from stale caches.
 const CACHE_KEY = 'hd1-live-cache-v1';
 const POLL_INTERVAL = 10_000;
+// A rolling update serves both builds for ~20-35 s. A reload inside that window gets the
+// new HTML, but some of its chunk requests reach the old replica and answer 404.
+export const VERSION_RELOAD_DELAY_MS = 60_000;
 
 function loadCachedState() {
     try {
@@ -80,6 +83,7 @@ let leaderChannel = null;
 let leaderTimeout = null;
 let visibilityHandler = null;
 let emitScheduled = false;
+let versionMismatchSince = null;
 
 /**
  * Notify all React subscribers with the current store value.
@@ -125,9 +129,14 @@ async function poll() {
 
         if (payload.appVersion) {
             if (payload.appVersion !== process.env.NEXT_PUBLIC_APP_VERSION) {
-                guardedReload('version');
+                // Reload only once no poll has reached the old build for the whole delay.
+                versionMismatchSince ??= Date.now();
+                if (Date.now() - versionMismatchSince >= VERSION_RELOAD_DELAY_MS) {
+                    guardedReload('version');
+                }
                 return;
             }
+            versionMismatchSince = null;
             clearReloadGuard();
         }
 
