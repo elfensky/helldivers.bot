@@ -38,7 +38,9 @@ generator client {
 ### Connection configuration (`prisma.config.mjs`)
 
 ```js
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.development' });
+dotenv.config(); // fallback to .env (production/Docker)
 import { defineConfig, env } from 'prisma/config';
 
 export default defineConfig({
@@ -48,7 +50,7 @@ export default defineConfig({
 });
 ```
 
-This file is read by the Prisma CLI for migrations and introspection. The `dotenv/config` import loads `.env` for local CLI usage; in Docker, `POSTGRES_URL` is injected as a real environment variable.
+This file is read by the Prisma CLI for migrations and introspection. The CLI loads `.env.development` first, then falls back to `.env`. In Docker, `POSTGRES_URL` comes from the environment.
 
 ### Runtime client (`src/db/db.js`)
 
@@ -58,13 +60,25 @@ Prisma 7 requires a JavaScript driver adapter instead of the Rust query engine. 
 import { PrismaClient } from '@/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+const getConnectionString = () => {
+    if (!process.env.POSTGRES_URL) {
+        throw new Error('POSTGRES_URL is not set');
+    }
+
+    return process.env.POSTGRES_URL;
+};
+
 const prismaClientSingleton = () => {
-    const adapter = new PrismaPg({ connectionString: process.env.POSTGRES_URL });
+    const adapter = new PrismaPg({ connectionString: getConnectionString() });
     return new PrismaClient({ adapter });
 };
 ```
 
 The singleton pattern caches the client on `globalThis.prismaGlobal` to survive Next.js hot reloads in development.
+
+### Timestamp type
+
+Every `DateTime` field maps to PostgreSQL `TIMESTAMP(3)`, a timestamp without a time zone (millisecond precision). The app writes and reads UTC, so the stored values are naive UTC. Raw SQL that compares with a column must use `now() AT TIME ZONE 'UTC'`, not a bare `now()` (see `src/update/lease.mjs`).
 
 ---
 
@@ -127,7 +141,6 @@ erDiagram
     User ||--o{ Account : "accounts"
     User ||--o{ Session : "sessions"
     User ||--o| Settings : "settings"
-    User ||--o{ Review : "reviews"
     User ||--o{ ApiKey : "apiKeys"
 
     User {
@@ -167,14 +180,8 @@ erDiagram
     }
 
     Settings {
-        String userId PK-FK
+        String userId PK, FK
         Json   settings
-    }
-
-    Review {
-        String  id        PK
-        String  authorId  FK
-        Boolean published
     }
 
     ApiKey {
@@ -185,19 +192,17 @@ erDiagram
         DateTime lastUsedAt "nullable"
     }
 
-    App {
-        String id             PK
-        String version
-        Int    active_season
-    }
-
     worker_heartbeat {
-        String   worker_type PK
+        String   worker_type          PK
         DateTime last_beat
-        Int      poll_duration_ms "nullable"
-        String   last_error "nullable"
+        Int      poll_duration_ms     "nullable"
+        String   last_error           "nullable"
         DateTime started_at
         DateTime updated_at
+        String   holder_id            "nullable"
+        DateTime lease_until          "nullable"
+        Json     prev_events          "nullable"
+        Int      last_season_observed "nullable"
     }
 
     app_instance {
@@ -221,6 +226,13 @@ erDiagram
         String   keys_p256dh
         String   keys_auth
         DateTime created_at
+    }
+
+    api_rate_limit {
+        String key          PK
+        String route_group  PK
+        Int    window_start PK
+        Int    count
     }
 ```
 
@@ -259,7 +271,7 @@ The root anchor for all game data. Every normalised game table points back to th
 | Field                | Prisma Type | PostgreSQL Type | Constraints / Notes                                                                                                                                                           |
 | -------------------- | ----------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                 | `String`    | `TEXT`          | `@id @default(uuid(7))` — surrogate PK, UUIDv7                                                                                                                                |
-| `last_updated`       | `DateTime?` | `TIMESTAMPTZ`   | Nullable. `null` means the season row was pre-seeded but has not yet received a successful data update. Set to the current timestamp at the end of a successful update cycle. |
+| `last_updated`       | `DateTime?` | `TIMESTAMP(3)` | Nullable. `null` means the season row was pre-seeded but has not yet received a successful data update. Set to the current timestamp at the end of a successful update cycle. |
 | `season`             | `Int`       | `INTEGER`       | `@unique` — the game season number. Used as the FK target by all child tables.                                                                                                |
 | `introduction_order` | `Int[]`     | `INTEGER[]`     | `@default([])` — faction reveal order, indexed by faction (enemy 0, 1, 2). The **value** is a 0-based rank: `0` = the faction the war started against, `1`/`2` = mid-war arrivals, `255` = never introduced. |
 | `points_max`         | `Int[]`     | `INTEGER[]`     | `@default([])` — maximum liberation points per faction. Indexed by faction (enemy 0, 1, 2).                                                                                   |
@@ -432,8 +444,8 @@ Central user record. Extended beyond the BetterAuth baseline with `username`, `r
 | `image`         | `String?`   | `TEXT`          | Avatar URL from OAuth provider or Gravatar fallback                    |
 | `role`          | `String`    | `TEXT`          | `@default("user")` — application role string, not an enum              |
 | `banned`        | `Boolean`   | `BOOLEAN`       | `@default(false)` — banned users have sessions revoked on next request |
-| `createdAt`     | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                      |
-| `updatedAt`     | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                                           |
+| `createdAt`     | `DateTime`  | `TIMESTAMP(3)` | `@default(now())`                                                      |
+| `updatedAt`     | `DateTime`  | `TIMESTAMP(3)` | `@updatedAt`                                                           |
 
 **Relations:**
 
@@ -442,7 +454,6 @@ Central user record. Extended beyond the BetterAuth baseline with `username`, `r
 | `accounts` | `Account[]` | OAuth provider accounts         |
 | `sessions` | `Session[]` | Active sessions                 |
 | `settings` | `Settings?` | One-to-one application settings |
-| `reviews`  | `Review[]`  | Blog-style review posts         |
 | `apiKeys`  | `ApiKey[]`  | API access keys                 |
 
 ---
@@ -459,13 +470,13 @@ BetterAuth OAuth account record. Links a user to an OAuth provider. Multiple pro
 | `providerId`            | `String`    | `TEXT`          | Provider name, e.g., `"discord"`, `"github"` (replaces old `provider`)    |
 | `accessToken`           | `String?`   | `TEXT`          | `@db.Text` — OAuth access token                                           |
 | `refreshToken`          | `String?`   | `TEXT`          | `@db.Text` — OAuth refresh token                                          |
-| `accessTokenExpiresAt`  | `DateTime?` | `TIMESTAMPTZ`   | Access token expiry (replaces old integer `expires_at`)                   |
-| `refreshTokenExpiresAt` | `DateTime?` | `TIMESTAMPTZ`   | Refresh token expiry                                                      |
+| `accessTokenExpiresAt`  | `DateTime?` | `TIMESTAMP(3)` | Access token expiry (replaces old integer `expires_at`)                   |
+| `refreshTokenExpiresAt` | `DateTime?` | `TIMESTAMP(3)` | Refresh token expiry                                                      |
 | `idToken`               | `String?`   | `TEXT`          | `@db.Text` — OIDC identity token                                          |
 | `scope`                 | `String?`   | `TEXT`          | OAuth scopes granted                                                      |
 | `password`              | `String?`   | `TEXT`          | Unused — present for BetterAuth email/password auth (not configured)      |
-| `createdAt`             | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                         |
-| `updatedAt`             | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                                              |
+| `createdAt`             | `DateTime`  | `TIMESTAMP(3)` | `@default(now())`                                                         |
+| `updatedAt`             | `DateTime`  | `TIMESTAMP(3)` | `@updatedAt`                                                              |
 
 **Indexes:** `@@index([userId])`
 
@@ -482,11 +493,11 @@ BetterAuth database session. Each row represents an active session with metadata
 | `id`        | `String`    | `TEXT`          | `@id @default(uuid(7))`                                        |
 | `token`     | `String`    | `TEXT`          | `@unique` — opaque session token (replaces old `sessionToken`) |
 | `userId`    | `String`    | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                            |
-| `expiresAt` | `DateTime`  | `TIMESTAMPTZ`   | Session expiry (replaces old `expires`)                        |
+| `expiresAt` | `DateTime`  | `TIMESTAMP(3)` | Session expiry (replaces old `expires`)                        |
 | `ipAddress` | `String?`   | `TEXT`          | Client IP at session creation                                  |
 | `userAgent` | `String?`   | `TEXT`          | Client user agent at session creation                          |
-| `createdAt` | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                              |
-| `updatedAt` | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                                   |
+| `createdAt` | `DateTime`  | `TIMESTAMP(3)` | `@default(now())`                                              |
+| `updatedAt` | `DateTime`  | `TIMESTAMP(3)` | `@updatedAt`                                                   |
 
 **Indexes:** `@@index([userId])`
 
@@ -501,9 +512,9 @@ BetterAuth verification tokens for email verification and other confirmation flo
 | `id`         | `String`    | `TEXT`          | `@id @default(uuid(7))`                         |
 | `identifier` | `String`    | `TEXT`          | Typically the user's email address              |
 | `value`      | `String`    | `TEXT`          | Verification token value (replaces old `token`) |
-| `expiresAt`  | `DateTime`  | `TIMESTAMPTZ`   | Token expiry                                    |
-| `createdAt`  | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                               |
-| `updatedAt`  | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                    |
+| `expiresAt`  | `DateTime`  | `TIMESTAMP(3)` | Token expiry                                    |
+| `createdAt`  | `DateTime`  | `TIMESTAMP(3)` | `@default(now())`                               |
+| `updatedAt`  | `DateTime`  | `TIMESTAMP(3)` | `@updatedAt`                                    |
 
 **Constraints:** `@@unique([identifier, value])` — composite uniqueness on identifier + value pair.
 
@@ -520,22 +531,6 @@ One-to-one with `User`. Stores all user preferences as a single JSON blob. Uses 
 
 ---
 
-### Review
-
-Blog-style user-submitted content. Currently unpublished by default, suggesting a moderation workflow.
-
-| Field       | Prisma Type | PostgreSQL Type | Constraints / Notes                                  |
-| ----------- | ----------- | --------------- | ---------------------------------------------------- |
-| `id`        | `String`    | `TEXT`          | `@id @default(uuid(7))`                              |
-| `createdAt` | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                    |
-| `updatedAt` | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt`                                         |
-| `title`     | `String`    | `TEXT`          | Required                                             |
-| `content`   | `String?`   | `TEXT`          | Optional body                                        |
-| `published` | `Boolean`   | `BOOLEAN`       | `@default(false)` — requires explicit publish action |
-| `authorId`  | `String`    | `TEXT`          | FK → `User.id`                                       |
-
----
-
 ### ApiKey
 
 Application API keys for external consumers. A random UUID is generated as the key, SHA-256 hashed for storage. The plaintext key is shown once at creation and never stored, making the `visible` field the only partially-readable remnant.
@@ -547,7 +542,7 @@ Application API keys for external consumers. A random UUID is generated as the k
 | `visible`     | `String`    | `TEXT`          | Last 4 characters of the key, for display in the dashboard (e.g., `"...a3f2"`)               |
 | `userId`      | `String`    | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                                                          |
 | `description` | `String`    | `TEXT`          | User-provided label for the key                                                              |
-| `createdAt`   | `DateTime`  | `TIMESTAMPTZ`   | `@default(now())`                                                                            |
+| `createdAt`   | `DateTime`  | `TIMESTAMP(3)` | `@default(now())`                                                                            |
 | `enabled`     | `Boolean`   | `BOOLEAN`       | `@default(true)` — keys can be disabled without deletion                                     |
 | `lastUsedAt`  | `DateTime?` | `TIMESTAMP(3)`  | Nullable. Last successful authentication. `validateApiKey` writes it in `after()`, at most once a minute per key |
 
@@ -575,40 +570,28 @@ Stores Web Push API subscriptions for server-initiated push notifications. Subsc
 
 ---
 
-## 7. App Configuration Model
-
-### App
-
-A single-row configuration table for application-level state. Intended to have exactly one row at runtime.
-
-| Field           | Prisma Type | PostgreSQL Type | Constraints / Notes                                     |
-| --------------- | ----------- | --------------- | ------------------------------------------------------- |
-| `id`            | `String`    | `TEXT`          | `@id @default(uuid(7))`                                 |
-| `version`       | `String`    | `TEXT`          | Application version string                              |
-| `active_season` | `Int`       | `INTEGER`       | `@default(0)` — the currently active game season number |
-
-Several fields are commented out in the schema (`is_db_initialized`, `last_updated_status`, `last_updated_season`, `settings`), indicating planned but deferred functionality.
-
----
-
-## 8. Worker Health
+## 7. Worker Health
 
 ### worker_heartbeat
 
-Single-row-per-worker health tracking table. The worker thread upserts its row on every poll cycle, enabling health checks and diagnostics. The `worker_type` string serves as both PK and discriminator (e.g., `"cron"`).
+The poller lease. The table holds one row, with `worker_type = 'cron_api_poller'` (`WORKER_TYPE` in `src/update/lease.mjs`). Every replica runs the worker thread, and every poll first tries to claim this row with one atomic upsert. `holder_id` and `lease_until` name the replica that polls: the claim succeeds only for the current holder or after `lease_until` has passed, and the TTL is 60 s (`LEASE_TTL_S`). A replica that does not win the claim answers standby and stops. `started_at` resets when the holder changes. `prev_events` and `last_season_observed` carry the poller state across handovers, so a new holder neither misses nor repeats an event transition or the closing snapshot of a season. See [Data Flow](/docs/data-flow) section "Poller lease" for the sequence.
 
-| Field              | Prisma Type | PostgreSQL Type | Constraints / Notes                                                   |
-| ------------------ | ----------- | --------------- | --------------------------------------------------------------------- |
-| `worker_type`      | `String`    | `TEXT`          | `@id` — worker name, e.g., `"cron"`. One row per worker type.         |
-| `last_beat`        | `DateTime`  | `TIMESTAMPTZ`   | Timestamp of the most recent successful poll cycle                    |
-| `poll_duration_ms` | `Int?`      | `INTEGER`       | Nullable. Duration of the last poll in milliseconds                   |
-| `last_error`       | `String?`   | `TEXT`          | Nullable. Error message from the last failed poll, cleared on success |
-| `started_at`       | `DateTime`  | `TIMESTAMPTZ`   | Timestamp when the worker process started                             |
-| `updated_at`       | `DateTime`  | `TIMESTAMPTZ`   | `@updatedAt` — Prisma-managed timestamp                               |
+| Field                  | Prisma Type | PostgreSQL Type | Constraints / Notes                                                                                   |
+| ---------------------- | ----------- | --------------- | ----------------------------------------------------------------------------------------------------- |
+| `worker_type`          | `String`    | `TEXT`          | `@id` — worker name; the one row is `cron_api_poller`                                                 |
+| `last_beat`            | `DateTime`  | `TIMESTAMP(3)`  | Timestamp of the most recent poll by the holder                                                       |
+| `poll_duration_ms`     | `Int?`      | `INTEGER`       | Nullable. Duration of the last poll in milliseconds                                                   |
+| `last_error`           | `String?`   | `TEXT`          | Nullable. Error message (first 500 characters) from the last failed poll, cleared on success          |
+| `started_at`           | `DateTime`  | `TIMESTAMP(3)`  | When the current holder took the lease                                                                |
+| `updated_at`           | `DateTime`  | `TIMESTAMP(3)`  | `@updatedAt` — Prisma-managed timestamp                                                               |
+| `holder_id`            | `String?`   | `TEXT`          | Nullable. `HOLDER_ID` (`host:pid:nonce`) of the replica that holds the lease                          |
+| `lease_until`          | `DateTime?` | `TIMESTAMP(3)`  | Nullable. The lease is free once this time has passed; each holder poll renews it by 60 s             |
+| `prev_events`          | `Json?`     | `JSONB`         | Nullable. Last event snapshot, the baseline for push-notification transitions                         |
+| `last_season_observed` | `Int?`      | `INTEGER`       | Nullable. Last season the poller saw; a higher value triggers the closing pass for the previous season |
 
 **Relationships:** None (standalone table, not linked to game data or users).
 
-**Used by:** `public/workers/cron.js` (upserts on each poll cycle), health check endpoints.
+**Used by:** `src/update/lease.mjs` (claim and holder-guarded state writes), `src/app/api/h1/update/route.js` (heartbeat fields), `src/features/admin/actions.mjs` (System Overview).
 
 ### app_instance
 
@@ -636,6 +619,28 @@ One row (id 1): the sha256 of the seed inputs (`prisma/seed/seed.mjs` plus every
 | `applied_at` | `DateTime`  | `TIMESTAMP(3)`  | When the hash was stored (UTC)                  |
 
 **Used by:** `src/update/migrateOnStart.mjs`.
+
+---
+
+## 8. Rate Limiting
+
+### api_rate_limit
+
+Fixed-window request counters for the public API. One row per `(key, route_group, window_start)`. `checkRateLimit()` in `src/shared/utils/api/rateLimit.mjs` increments the row with one atomic upsert per request and compares the count with the limit of the route group. The lease holder purges expired windows at most once an hour.
+
+| Field          | Prisma Type | PostgreSQL Type | Constraints / Notes                                                              |
+| -------------- | ----------- | --------------- | -------------------------------------------------------------------------------- |
+| `key`          | `String`    | `TEXT`          | Identity bucket: client IP or API key id                                         |
+| `route_group`  | `String`    | `TEXT`          | Rate-limit group name (see `src/config/policy.mjs`)                              |
+| `window_start` | `Int`       | `INTEGER`       | Unix seconds at the start of the fixed window. An integer, not a timestamp       |
+| `count`        | `Int`       | `INTEGER`       | `@default(0)` — requests counted in this window                                  |
+
+**Constraints and indexes:**
+
+| Type      | Fields                                | Notes                                         |
+| --------- | ------------------------------------- | --------------------------------------------- |
+| `@@id`    | `[key, route_group, window_start]`    | Composite primary key; the upsert conflicts on it |
+| `@@index` | `[window_start]`                      | Finds expired windows for the purge           |
 
 ---
 
@@ -668,9 +673,11 @@ This table enumerates every uniqueness constraint and index across the schema.
 | `ApiKey`            | `@unique`       | `hash`                     | SHA-256 hash lookup                          |
 | `push_subscription` | `@unique`       | `endpoint`                 | One subscription per push endpoint           |
 | `push_subscription` | `@@index`       | `[endpoint]`               |                                              |
-| `worker_heartbeat`  | `@id`           | `worker_type`              | One row per worker type                      |
+| `worker_heartbeat`  | `@id`           | `worker_type`              | One lease row (`cron_api_poller`)            |
 | `app_instance`      | `@id`           | `id`                       | One row per running process (HOLDER_ID)      |
 | `seed_state`        | `@id`           | `id`                       | One row (id 1)                               |
+| `api_rate_limit`    | `@@id`          | `[key, route_group, window_start]` | One counter per identity, route group and window |
+| `api_rate_limit`    | `@@index`       | `[window_start]`           | Purge of expired windows                     |
 
 ---
 
