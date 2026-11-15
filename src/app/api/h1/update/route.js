@@ -32,10 +32,11 @@ export const WORKER_STARTUP_HEADER = 'x-worker-startup';
 // this process — see src/update/lease.mjs (#517). A holder that just took
 // over inherits them, so a transition across a handover is not missed.
 
-// Throttle for the rate-limit window cleanup. The worker polls every ~15s, so
-// we run the purge at most hourly (tracked here, not per-restart) to keep the
-// api_rate_limit table tiny without a DELETE on every poll. The 0 default makes
-// it fire on the first poll after boot. The same hourly pass prunes app_instance.
+// Throttle for the rate-limit window cleanup. The worker polls every
+// UPDATE_INTERVAL seconds (20 on both stacks), so we run the purge at most
+// hourly (tracked here, not per-restart) to keep the api_rate_limit table tiny
+// without a DELETE on every poll. The 0 default makes it fire on the first poll
+// after boot. The same hourly pass prunes app_instance.
 let lastRateLimitCleanup = 0;
 const RATE_LIMIT_CLEANUP_INTERVAL_MS = 3_600_000;
 
@@ -73,9 +74,10 @@ export async function GET(request) {
     const expected = crypto.createHash('sha256').update(secret).digest();
     if (!crypto.timingSafeEqual(actual, expected)) return errorResponse(401, start);
 
-    // A web-only replica must never run the update: prevEvents and
-    // lastSeasonObserved live in this process, so a poll landing here would
-    // diff against stale state and re-send push notifications (#516).
+    // A replica started with WORKER_ENABLED=false opted out and never runs the
+    // update. The poller state lives in the lease row (see above and
+    // src/update/lease.mjs, #517), so this guard is an operator choice, not a
+    // correctness need.
     if (!isWorkerEnabled())
         return errorResponse(403, start, 'worker disabled on this instance');
 
