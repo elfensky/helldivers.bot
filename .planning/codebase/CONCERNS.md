@@ -32,20 +32,11 @@
 
 ## Architecture vs. Documentation Drift
 
-**Worker poller state: CLAUDE.md describes module-level state that code no longer has (#517 landed after this doc's architecture section was last written):**
-- CLAUDE.md's Architecture section says: *"`src/app/api/h1/update/route.js` tracks the season from the previous poll in module-level state (`lastSeasonObserved`)... module state resets on worker restart (the only edge case being a restart during the tiny transition window, recoverable via the admin refresh button)."*
-- Actual code (as of `2c4a5d29`/`c69af9b4`/`b5788406`, merged into `develop` per recent history): that state has moved into Postgres, in the `worker_heartbeat` row, via `src/update/lease.mjs`. `claimLease()` returns `{ prevEvents, lastSeasonObserved }` read from the DB row; `persistPollerState()` writes them back. `src/app/api/h1/update/route.js` no longer holds this in a module-level variable — it's lease-scoped and DB-backed specifically so a poller handover doesn't lose it (see the comment block at `src/app/api/h1/update/route.js:29-33`, which directly contradicts CLAUDE.md's older description).
-- Impact: CLAUDE.md's stated edge case ("restart during the transition window" causing data loss, "recoverable via admin refresh button") is now stale — the lease design was built specifically to eliminate that edge case across restarts and multi-replica deploys. `CLAUDE.md`'s Architecture — Stack section needs a rewrite of the "Season transition closing pass" and "Worker thread" bullets to describe the lease/`worker_heartbeat` model instead of "module-level state."
-- The remaining true module-level mutable state in the update path is narrower than CLAUDE.md implies: `lastRateLimitCleanup` (`src/app/api/h1/update/route.js:38`, a simple throttle timestamp, low risk) and `configured` in `src/update/pushNotifier.mjs:10` (a one-time init guard, also low risk). Neither carries cross-poll application state anymore — that's now all in `worker_heartbeat`.
-- This is exactly the kind of architecture-documentation gap `/gsd-map-codebase` exists to catch; CLAUDE.md should be updated in a follow-up chore alongside or after this mapping pass.
+**Worker poller state: CLAUDE.md describes module-level state that code no longer has (#517 landed after this doc's architecture section was last written):** Resolved in Phase 2 (DOCS-01, plan 02-02): AGENTS.md § Architecture invariants describes the `worker_heartbeat` lease model.
 
 ## Tech Debt
 
-**Seed-refresh workflow unverified end-to-end — #501 (chore, testing, infrastructure):**
-- Issue: the scheduled season-close backfill path (`.github/workflows/scheduled-seed-refresh.yml`, `src/update/season.mjs`) has not been observed running through its full PR-opening path against a real season transition.
-- Files: `.github/workflows/scheduled-seed-refresh.yml`, `src/update/season.mjs` (136 lines).
-- Impact: unverified automation is a silent-failure risk — if it breaks, nothing alerts until someone notices archives are missing a season.
-- Fix approach: issue is explicitly gated on "when season 160 ends" — needs a live season transition to validate, not something fixable in isolation today.
+**Seed-refresh workflow unverified end-to-end — #501 (chore, testing, infrastructure):** Verified in Phase 2 (HOUSE-04, plan 02-04) on the real season-161 run (#642); #501 closed; the workflow gaps are tracked in #658.
 
 **Sourcemaps shipped in production image — #502 (chore, infrastructure):** Fixed in Phase 2 (HOUSE-03, plan 02-10): token builds upload the browser maps, then delete them from `.next/static`; #502 closes after the four D-15 steps (plans 02-09 and 02-12).
 
