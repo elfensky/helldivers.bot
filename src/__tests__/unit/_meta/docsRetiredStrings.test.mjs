@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 // The retired-claim sweeps from 02-DOCS-PAGE-CHECK.md § Final check. Their
 // regexes must match 0 lines on the docs pages. DOCS-03 may rewrite these
 // pages, so update the list here when a claim is rewritten, not the regex.
+// Sweep 3 holds the claims that the phase verification found
+// (02-VERIFICATION.md) and grows per gap-closure plan.
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -17,7 +19,11 @@ const PAGE_DIRS = [
     'src/app/docs/testing',
     'src/app/docs/notifications',
 ];
-const PAGE_FILES = ['src/app/docs/page.mdx', 'src/app/docs/overviewConfig.mjs'];
+const PAGE_FILES = [
+    'src/app/docs/page.mdx',
+    'src/app/docs/overviewConfig.mjs',
+    'src/app/docs/overviewDefinition.mjs',
+];
 
 function filesUnder(dir, out = []) {
     for (const name of readdirSync(dir)) {
@@ -55,5 +61,9 @@ describe('docs pages carry no retired claims (Final check sweeps)', () => {
 
     it('sweep 2: fixed-interval and in-memory state claims', () => {
         expect(hits(/~15 ?s|every ~15|in memory/)).toEqual([]);
+    });
+
+    it('sweep 3: claims retired by the gap closure (plans 02-16 to 02-18)', () => {
+        expect(hits(/explicit client approval|pwa--offline/)).toEqual([]);
     });
 });
