@@ -147,7 +147,7 @@ Phase 1.1 moved production to the Hetzner swarm and released v0.96.4.
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
   5. `docs/roadmap.md` is deleted and its live items are carried into `.planning/` (ARCH-11 and § Carried over), leaving `.planning/ROADMAP.md` as the one roadmap file (HOUSE-05, done 2026-11-02)
 
-**Plans**: 14/14 plans executed (re-planned 2026-11-14 per 02-CONTEXT.md D-29; 02-01 superseded by 02-13)
+**Plans**: 14/24 plans executed (re-planned 2026-11-14 per 02-CONTEXT.md D-29; 02-01 superseded by 02-13; gap closure 02-16 to 02-25 added 2026-11-15 per 02-VERIFICATION.md gaps_found and D-33; 02-23 split from 02-17; 02-24 split from 02-23 and 02-25 from 02-18 for context size)
 
 Plans:
 **Wave 1**
@@ -199,6 +199,46 @@ Plans:
 **Wave 12** *(blocked on Wave 11 completion)*
 
 - [x] 02-12-PLAN.md — D-15 (3) and (4) in production, docs live, #502 closed, `.claude/CLAUDE.md` checked at phase end (HOUSE-03, DOCS-01, DOCS-02)
+
+**Wave 13** *(gap closure; blocked on Wave 12 completion and 02-VERIFICATION.md gaps_found)*
+
+- [ ] 02-16-PLAN.md — Lane `docs/02-gap-closure`; architecture and overview: service-worker sentence and link, h1_* panels (WR-02), `api_update --> hd1`, Dashboard path, three OAuth providers (WR-04); sweep 3 guard; statement-by-statement re-check and record (DOCS-02)
+
+**Wave 14** *(blocked on Wave 13 completion; same lane)*
+
+- [ ] 02-17-PLAN.md — Notifications: lease holder polls HD1, required interval, in-app HD1 edge, manifest path (WR-03); lease lines and the five statement classes re-checked and recorded (DOCS-02)
+
+**Wave 15** *(blocked on Wave 14 completion; same lane)*
+
+- [ ] 02-23-PLAN.md — Fence check over every docs page (WR-05); IN-01, IN-03, IN-04 (flows against nodes and details); testing re-checked statement by statement, CHECKED re-issued only after the full pass (DOCS-02)
+
+**Wave 16** *(blocked on Wave 15 completion; same lane)*
+
+- [ ] 02-24-PLAN.md — Data-flow: D-08 items as the tracer, then every statement and `js` excerpt re-checked, CHECKED re-issued only after the full pass (DOCS-02)
+
+**Wave 17** *(blocked on Wave 16 completion; same lane)*
+
+- [ ] 02-18-PLAN.md — Infrastructure build-failure claim scoped to the Sentry source plus a CI-guard issue (WR-01, D-33: no workflow change); database OAuth providers and the database page re-checked statement by statement (DOCS-02)
+
+**Wave 18** *(blocked on Wave 17 completion; same lane)*
+
+- [ ] 02-25-PLAN.md — Infrastructure: overview fence routes the worker through the update route (tracer), then the page re-checked statement by statement (DOCS-02)
+
+**Wave 19** *(blocked on Wave 18 completion)*
+
+- [ ] 02-19-PLAN.md — D-23 dev render of the five diagrams at a browser checkpoint, then the one gap-closure PR into develop (DOCS-02)
+
+**Wave 20** *(blocked on Wave 19 completion)*
+
+- [ ] 02-20-PLAN.md — D-23 staging render at a browser checkpoint; every review finding WR-01..IN-04 gets its final disposition (DOCS-02)
+
+**Wave 21** *(blocked on Wave 20 completion)*
+
+- [ ] 02-21-PLAN.md — Release 0.99.1 (D-33): release gate and final check on develop, Andrei's freeze and sign-off, cut, upload pre-flight, release PR, tag, per-leg read, pin (DOCS-02)
+
+**Wave 22** *(blocked on Wave 21 completion)*
+
+- [ ] 02-22-PLAN.md — Production 0.99.1: corrected docs live, maps still 404, D-23 production render at a browser checkpoint; DOCS-02 complete with DOCS-01, HOUSE-03, HOUSE-04, HOUSE-05 on their verification evidence (DOCS-02)
 
 Superseded: 02-01-PLAN.md (release 0.95.7; `status: superseded`, D-29)
 
@@ -497,7 +537,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 |-------|----------------|--------|-----------|
 | 1. Stability Fixes & Release | 9/9 | Complete    | 2026-10-21 |
 | 1.1. Production on the Hetzner Swarm (INSERTED) | - | Complete    | 2026-10-25 |
-| 2. Docs Accuracy & Operational Housekeeping | 14/14 | In Progress | - |
+| 2. Docs Accuracy & Operational Housekeeping | 14/24 | In Progress | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
 | 5. SEO & Analytics Foundation | 0/TBD | Not started | - |

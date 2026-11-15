@@ -201,6 +201,12 @@ its replacement.
   release decision. `.github/workflows/build-release.yml` does not change in this phase. One new
   issue (milestone Engineering Health) records the residual risk and proposes a CI step that fails
   a build leg when its upload line is missing.
+- **D-33:** (Andrei, 2026-11-15, gap closure after `02-VERIFICATION.md` gaps_found) The docs
+  corrections from the verification gaps reach production in a docs-only patch release 0.99.1,
+  through the D-21 path (version cut PR into `develop`, release PR `develop` → `main`, tag `v0.99.1`,
+  `pin-production`). The phase closes only when production reports 0.99.1 and the corrected
+  statements are live. WR-01 is a doc fix only: per D-32, `build-release.yml` and
+  `build-staging.yml` do not change.
 - **D-22:** Work PRs into `develop` raise no version and add their notes under `## Unreleased`
   (`AGENTS.md:50-56`). `Check: Version Bump` runs only on PRs into `main`
   (`.github/workflows/check-version.yml:3-10`). `.planning/`-only PRs carry no note.
