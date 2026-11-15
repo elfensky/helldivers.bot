@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Unit tests now cover the Sentry sourcemap options, the docs mermaid fences, the rendered diagram definitions and the retired docs claims (Phase 2 validation).
+
 ## 0.99.0
 
 ### Added
