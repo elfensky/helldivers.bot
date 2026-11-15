@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-16-PLAN.md
-last_updated: "2026-11-15T19:40:34.200Z"
+stopped_at: Completed 02-17-PLAN.md
+last_updated: "2026-11-15T19:46:54.339Z"
 last_activity: 2026-11-15
-last_activity_desc: "Plan 02-16 executed: architecture and overview docs corrected, sweep 3 added (lane docs/02-gap-closure at 5087ee61)"
-state_head: 22dd599162d56eaa3b1a86ecc70d6aa30bf50557
+last_activity_desc: "Plan 02-17 executed: notifications docs corrected, sweep 3 group G3 added (lane docs/02-gap-closure at af0f6846)"
+state_head: b983ca4298974f7a4f153ec846503ca8624a31f1
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 24
-  completed_plans: 15
+  completed_plans: 16
   percent: 0
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 15 of 24 summarized (02-01 superseded); gap-closure plan 02-16 done on lane `docs/02-gap-closure` (head 5087ee61); 02-17 to 02-25 follow
+Plan: 16 of 24 summarized (02-01 superseded); gap-closure plans 02-16 and 02-17 done on lane `docs/02-gap-closure` (head af0f6846); 02-23, 02-24, 02-18, 02-25 follow
 Status: Executing gap closure — `02-VERIFICATION.md` found gaps (4/5, DOCS-02 partial); the docs fixes ship in patch release 0.99.1 (D-33)
-Last activity: 2026-11-15 — plan 02-16 executed (architecture and overview docs re-checked and corrected)
+Last activity: 2026-11-15 — plan 02-17 executed (notifications docs re-checked and corrected)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -61,6 +61,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P11 | 50 min | 3 tasks | 3 files |
 | Phase 02 P12 | 5 min | 3 tasks | 2 files |
 | Phase 02 P16 | 8 min | 3 tasks | 7 files |
+| Phase 02 P17 | 6 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,7 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-12: #502 closed on four passing D-15 steps (staging symbolication, image strip, production map 404, production event resolved to src/)
 - [Phase 02]: 02-16: the architecture PWA caching clause names exactly the Serwist 9.5.13 strategy classes with one sentence each; the Notifications link carries no fragment
 - [Phase 02]: 02-16: h1_event_progress is written by the poller and read only by scripts/analysis; the architecture diagram no longer draws it into the archives
+- [Phase 02]: 02-17: the notifications page makes no claim about service-worker registration (no register option or registration call in the repo); open question for plan 02-19's browser check
 
 ### Pending Todos
 
@@ -135,8 +137,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T19:40:34.171Z
-Stopped at: Completed 02-16-PLAN.md
+Last session: 2026-11-15T19:46:54.311Z
+Stopped at: Completed 02-17-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
