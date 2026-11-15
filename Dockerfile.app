@@ -123,6 +123,12 @@ RUN \
       require('fs').writeFileSync('package.json', JSON.stringify({ name: 'migrate', version: '1.0.0', private: true, type: 'module', dependencies: deps, overrides: p.overrides }))" && \
     npm install --no-audit --no-fund && \
     POSTGRES_URL=postgresql://dummy npx prisma generate && \
+    # `migrate deploy` and the seed need neither PGlite (`prisma dev`) nor the query
+    # compilers of other providers; --version fails the build if the CLI start needs them (#673).
+    rm -rf node_modules/@electric-sql node_modules/@prisma/query-plan-executor && \
+    find node_modules/prisma/build node_modules/@prisma/client/runtime -type f \
+        \( -name '*cockroachdb*' -o -name '*mysql*' -o -name '*sqlite*' -o -name '*sqlserver*' \) -delete && \
+    POSTGRES_URL=postgresql://dummy CHECKPOINT_DISABLE=1 node node_modules/prisma/build/index.js --version && \
     rm /tmp/project-package.json && \
     npm cache clean --force && \
     rm -rf /root/.npm /tmp/*

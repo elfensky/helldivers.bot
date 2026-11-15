@@ -1,5 +1,13 @@
 // @vitest-environment jsdom
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+    describe,
+    test,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    onTestFinished,
+} from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
 // useLiveData uses a module-level singleton store. Every test re-imports the
@@ -508,6 +516,34 @@ describe('useLiveData — localStorage cache fallback', () => {
         resolveFetch?.(makeFetchResponse({ data: {}, mapState: {} }));
         await flushAll();
     });
+
+    test('a null localStorage does not stop the poll (#671)', async () => {
+        // The matching-version branch clears the reload guard, which used to throw here.
+        onTestFinished(() => {
+            vi.unstubAllGlobals();
+            vi.unstubAllEnvs();
+        });
+        vi.stubGlobal('localStorage', null);
+        vi.stubEnv('NEXT_PUBLIC_APP_VERSION', '1.0.0');
+        globalThis.fetch = vi.fn(() =>
+            Promise.resolve(
+                makeFetchResponse({
+                    data: { campaign: 7 },
+                    mapState: {},
+                    appVersion: '1.0.0',
+                }),
+            ),
+        );
+        const { useLiveData } = await loadHookFresh();
+
+        const { result } = renderHook(() => useLiveData(null, null));
+        await act(async () => {
+            await flushAll();
+        });
+
+        expect(result.current.status).toBe('live');
+        expect(result.current.data).toEqual({ campaign: 7 });
+    });
 });
 
 describe('useLiveData — BroadcastChannel leader election', () => {
@@ -647,5 +683,61 @@ describe('useLiveData — initial fallback chain', () => {
         expect(result.current.data).toEqual({ live: true });
         expect(result.current.mapState).toEqual({ 0: 'bugs' });
         expect(result.current.status).toBe('live');
+    });
+});
+
+describe('useLiveData — version reload waits for the rollout', () => {
+    async function mountWithVersions(versionAt) {
+        const guardedReload = vi.fn();
+        vi.doMock('@/shared/utils/reloadGuard.mjs', () => ({
+            guardedReload,
+            clearReloadGuard: vi.fn(),
+        }));
+        vi.stubEnv('NEXT_PUBLIC_APP_VERSION', '1.0.0');
+        let n = 0;
+        globalThis.fetch = vi.fn(() =>
+            Promise.resolve(
+                makeFetchResponse({ data: {}, mapState: {}, appVersion: versionAt(n++) }),
+            ),
+        );
+        const { useLiveData } = await loadHookFresh();
+        renderHook(() => useLiveData(null, null));
+        await act(async () => {
+            await flushAll();
+        });
+        return guardedReload;
+    }
+
+    async function advancePolls(count) {
+        for (let i = 0; i < count; i += 1) {
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL);
+                await flushAll();
+            });
+        }
+    }
+
+    afterEach(() => {
+        vi.doUnmock('@/shared/utils/reloadGuard.mjs');
+        vi.unstubAllEnvs();
+    });
+
+    test('reloads only after the mismatch lasts VERSION_RELOAD_DELAY_MS', async () => {
+        const guardedReload = await mountWithVersions(() => '2.0.0');
+        await advancePolls(5); // polls at 0..50 s: still inside the delay
+        expect(guardedReload).not.toHaveBeenCalled();
+        await advancePolls(1); // 60 s after the first mismatch
+        expect(guardedReload).toHaveBeenCalledExactlyOnceWith('version');
+    });
+
+    test('a poll that reaches the old build restarts the delay', async () => {
+        // Polls 0-3 see the new build, poll 4 (40 s) an old replica, then the new build again.
+        const guardedReload = await mountWithVersions((n) =>
+            n === 4 ? '1.0.0' : '2.0.0',
+        );
+        await advancePolls(10); // up to 100 s: the delay restarted at 50 s
+        expect(guardedReload).not.toHaveBeenCalled();
+        await advancePolls(1); // 110 s = 50 s + VERSION_RELOAD_DELAY_MS
+        expect(guardedReload).toHaveBeenCalledExactlyOnceWith('version');
     });
 });

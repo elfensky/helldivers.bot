@@ -77,7 +77,7 @@ The dashboard uses client-side polling to fetch live campaign data.
 
 ### Version Detection & Auto-Reload
 
-The polling endpoint includes an `appVersion` field in its JSON response. `useLiveData` compares the server's version against the build-time `NEXT_PUBLIC_APP_VERSION` baked into the client bundle. On mismatch (i.e., the server was redeployed with a new version), the client triggers `guardedReload('version')` — a hard page reload protected by a localStorage-backed circuit breaker (30s TTL, max 3 attempts) to prevent infinite loops. Detection happens within ~10 seconds of a deployment.
+The polling endpoint includes an `appVersion` field in its JSON response. `useLiveData` compares the server's version against the build-time `NEXT_PUBLIC_APP_VERSION` baked into the client bundle. On mismatch (i.e., the server was redeployed with a new version), the client triggers `guardedReload('version')` — a hard page reload protected by a localStorage-backed circuit breaker (30s TTL, max 3 attempts) to prevent infinite loops. A browser without `localStorage` gets no reload, because the circuit breaker cannot count there. The reload waits until the mismatch has lasted 60 seconds (`VERSION_RELOAD_DELAY_MS`) with no poll answered by the old build. A rolling update serves both builds for about 20–35 seconds, and a reload inside that window can get the new HTML while some of its chunk requests reach the old replica and fail with 404. The tab reloads about 60–70 seconds after the first new replica answers.
 
 This is one of three detection layers — see `src/shared/utils/reloadGuard.mjs` for the shared guard utility.
 
@@ -112,7 +112,7 @@ Events are matched by both `event_id` and `type` (defend/attack).
 ### Client vs Server
 
 - **Client-side** (`LiveToasts.jsx`): Compares `prevData` from `useLiveData` hook. Fires Sonner toasts and Web Notifications.
-- **Server-side** (`pushNotifier.mjs`): Keeps previous events in memory. Fires push notifications. Resets on server restart (acceptable — misses one transition at most).
+- **Server-side** (`pushNotifier.mjs`): Compares against the previous event snapshot stored in the lease row (`worker_heartbeat.prev_events`). The update route passes it in and writes the new snapshot back after each check, so a restart or a poller handover neither misses nor repeats a push. Fires push notifications.
 
 ### First-Message Baseline
 

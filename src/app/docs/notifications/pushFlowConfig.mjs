@@ -33,7 +33,7 @@ export const pushFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Non-blocking function that keeps previous events in memory. Resets on server restart (acceptable \u2014 misses one transition at most).',
+                        'Non-blocking function that compares against the previous event snapshot in the lease row (worker_heartbeat.prev_events), so restarts and handovers neither miss nor repeat a push.',
                 },
             ],
         },

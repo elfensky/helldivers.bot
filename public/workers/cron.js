@@ -10,7 +10,8 @@
  * - Reports success/failure back to the parent thread for logging
  *
  * Lifecycle:
- * 1. Spawned by src/instrumentation.js during application startup
+ * 1. Spawned by initializeWorker(), which src/instrumentation.node.js calls at server
+ *    start after migrateOrWait()
  * 2. Receives initial configuration (key, interval, port) from parent thread
  * 3. Enters infinite polling loop until application shutdown
  *

@@ -76,8 +76,8 @@
 
 **Hosting:**
 - Docker images published to GitHub Container Registry: `ghcr.io/elfensky/helldiversbot` and `ghcr.io/elfensky/helldiversbot-migrate`
-- Deployment orchestration: Docker Swarm (deploy configs under `deploy/staging/`, `docker-compose.yml` for staging pull-based compose)
-- Production runs 3 app replicas behind a service VIP with a Postgres-backed leader-election lease deciding which single instance polls the HD1 API (`WORKER_ENABLED` env var toggles the poller per replica)
+- Deployment orchestration: both stacks are Docker Swarm stacks applied by Arcane Git Sync (`deploy/production/compose.yaml` on the Hetzner swarm, `deploy/staging/compose.yaml` on the Pi swarm); `docker-compose.yml` is a single-host compose
+- Each stack runs 2 app replicas behind a service VIP; the Postgres `worker_heartbeat` lease picks the one instance that polls the HD1 API, and `WORKER_ENABLED=false` only opts a replica out
 
 **CI Pipeline:**
 - GitHub Actions, workflows in `.github/workflows/`:

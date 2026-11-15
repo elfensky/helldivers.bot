@@ -7,10 +7,14 @@ import AnalyticsOptOut, {
     OPT_OUT_KEY as KEY,
     readOptOut,
 } from '@/shared/components/AnalyticsOptOut';
+import { reportError } from '@/shared/utils/observability.mjs';
+
+vi.mock('@/shared/utils/observability.mjs', () => ({ reportError: vi.fn() }));
 
 describe('AnalyticsOptOut', () => {
     beforeEach(() => {
         localStorage.clear();
+        vi.mocked(reportError).mockClear();
     });
 
     afterEach(() => {
@@ -68,6 +72,15 @@ describe('AnalyticsOptOut', () => {
         expect(await screen.findByText(/blocks local storage/)).toBeInTheDocument();
         expect(screen.queryByRole('button')).toBeNull();
         await expect(readOptOut()).resolves.toBeNull();
+    });
+
+    test('a null localStorage fails closed without an error report (#671)', async () => {
+        vi.stubGlobal('localStorage', null);
+        render(<AnalyticsOptOut />);
+        expect(await screen.findByText(/blocks local storage/)).toBeInTheDocument();
+        await expect(readOptOut()).resolves.toBeNull();
+        // An expected condition: HELLDIVERSBOT-6D was this report, 88 times.
+        expect(reportError).not.toHaveBeenCalled();
     });
 
     test('shows the blocked-storage message when the save fails', async () => {

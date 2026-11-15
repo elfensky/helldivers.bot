@@ -84,6 +84,14 @@ export async function updateStatus() {
     // 7. Bucket-upsert h1_statistic for all 3 factions (stats timeseries)
     for (let enemy = 0; enemy < 3; enemy++) {
         const stats = fetchedData.statistics[enemy];
+        // An accidental is a death, so this can only be corrupt upstream data
+        // (S159 Illuminate: 1.86B accidentals, 284k deaths). Store it anyway — no data loss.
+        if (stats.accidentals > stats.deaths) {
+            warnings.push({
+                stage: 'statistics.implausible',
+                message: `season ${season} enemy ${enemy}: accidentals ${stats.accidentals} > deaths ${stats.deaths}`,
+            });
+        }
         const { error: statError } = await tryCatch(
             upsertStatistic(season, enemy, fetchedData.time, stats),
         );

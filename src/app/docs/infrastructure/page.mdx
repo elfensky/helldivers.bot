@@ -1,14 +1,14 @@
 export const metadata = {
     title: 'Infrastructure | Helldivers Bot',
     description:
-        'Docker strategy, CI/CD pipelines, initialization flow, and environment variables for helldivers.bot.',
+        'Deployment topology, Docker images, CI/CD workflows, startup sequence, and environment variables for helldivers.bot.',
     alternates: { canonical: '/docs/infrastructure' },
     openGraph: { url: '/docs/infrastructure' },
 };
 
 # Infrastructure
 
-Technical reference for the helldivers.bot infrastructure layer. Audience: project owner and AI assistants.
+Technical reference for the helldivers.bot infrastructure layer: where the app runs, how a change reaches it, how the images are built, how the app starts, and which environment variables it reads.
 
 ```mermaid
 graph LR
@@ -28,13 +28,83 @@ graph LR
 
 ---
 
+## Deployment topology
+
+Two Docker Swarm stacks run the app. Both stacks have the same shape and the same stack name, `helldiversbot`.
+
+|                       | Production                                                             | Staging                                                                |
+| --------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Cluster               | Docker Swarm on Hetzner                                                | Docker Swarm on three Raspberry Pi nodes                               |
+| `app` service         | 2 replicas                                                             | 2 replicas                                                             |
+| `cloudflared` service | 2 replicas                                                             | 2 replicas                                                             |
+| Database              | One Postgres database outside the stack, shared by both `app` replicas | One Postgres database outside the stack, shared by both `app` replicas |
+| `UPDATE_INTERVAL`     | 20 seconds                                                             | 20 seconds                                                             |
+| Image pin             | `ghcr.io/elfensky/helldiversbot:vX.Y.Z`                                | `ghcr.io/elfensky/helldiversbot:sha-<commit>`                          |
+| Deployed from branch  | `deploy/production`                                                    | `deploy/staging`                                                       |
+
+Each stack has a `compose.yaml` under `deploy/`. Arcane Git Sync reads that file from the CI-owned branch and applies it. The stack is read-only in the Arcane interface, and nobody runs `docker stack deploy` by hand. A rollback is a re-pin on the git side. The `image:` line on `develop` is not what runs, because CI writes the real pin on the deploy branch.
+
+### Ingress
+
+Each stack has its own Cloudflare Tunnel. The `cloudflared` replicas dial out to Cloudflare, so the stacks publish no ports. Both replicas register as connectors on the same tunnel. They reach the app at `http://app:3000` on the `internal` overlay network. Swarm spreads new connections over the healthy `app` replicas. The hostname routing is set in the Cloudflare Zero Trust dashboard, not in the compose files.
+
+### One poller across replicas
+
+Every `app` replica runs the cron thread. Each poll first claims the single `worker_heartbeat` lease row (`src/update/lease.mjs`). Postgres serializes the claim, so one replica holds the lease and polls the official API. The other replicas answer `200 {role:'standby'}`. A dead holder is replaced within the 60 s lease TTL, with no election. The poller state (`prev_events`, `last_season_observed`) lives in the same row, so a handover neither misses nor repeats a transition.
+
+The lease, not the placement, picks the poller. For this reason:
+
+- Any replica count is safe, and `docker service scale` needs no other change.
+- No separate worker service exists.
+- `WORKER_ENABLED=false` is an optional opt-out for one replica. It is not needed to scale.
+
+### Updates and rollover
+
+Both stacks use `order: start-first`. A new task starts and must pass the image health check before an old task stops. The old and the new build therefore serve side by side for a short time. A request for a `/_next/static` chunk of the new build can reach an old replica and get a plain-text `404`. A later request that reaches a new replica gets the `200`, and Cloudflare caches it with `cache-control: public, max-age=31536000, immutable`. This was observed on a staging rollover.
+
+Every task also applies pending migrations before it serves (see Migrate on start in Section 1). A migration must stay backward compatible for one release, because of the side-by-side window.
+
+### Release path
+
+```text
+v1.2.3 tag on main
+  -> Build: Release
+       Test & Build (verify the tagged commit)
+       Build App Image (amd64) + Build App Image (arm64)  -> Publish App Manifest
+       Build Migrate Image (amd64) + (arm64)              -> Publish Migrate Manifest
+       Create GitHub Release (body from CHANGELOG.md)
+       Pin Production -> force-pushes deploy/production
+  -> Arcane Git Sync applies deploy/production
+```
+
+1. A `vX.Y.Z` tag on `main` starts Build: Release.
+2. Build: Release builds the app image in two native legs, amd64 on `ubuntu-latest` and arm64 on `ubuntu-24.04-arm`. Publish App Manifest joins the legs as `:<tag>`, `:production` and `:latest`. The migrate image follows the same steps.
+3. Pin Production writes the tag into `deploy/production/compose.yaml` and force-pushes it to the CI-owned branch `deploy/production`.
+4. Arcane Git Sync applies that branch. No manual step is left. Production reported the new version about 10 minutes after the run started (observed for `v0.98.1`).
+
+Rollback is a manual dispatch of Build: Release with the tag of an earlier release. A dispatch skips the builds and runs only Pin Production.
+
+### Staging path
+
+1. A merge to `develop` runs Check: CI. When Check: CI succeeds, Build: Staging starts.
+2. Build: Staging stamps the version as `<version>-dev.<sha7>` through the `APP_VERSION` build argument. For this reason every staging build is a distinct version for the stale-tab reload and for the error tracker.
+3. Build: Staging builds the app image in the same two native legs and joins them as `:staging` and `:sha-<commit>`. It builds the migrate image only when migration-related files changed.
+4. Bump Staging Tag writes `sha-<commit>` into `deploy/staging/compose.yaml` and force-pushes it to `deploy/staging`.
+5. Arcane Git Sync polls that branch and applies the pin. A staging roll took about 5 to 6 minutes after the pin commit (observed).
+
+### Single-host compose
+
+`docker-compose.yml` in the repository root is a single-host compose file for local or self-hosted use. It is not the production deployment, and it is not what either Swarm stack runs. See the `docker-compose.yml` subsection of Section 1.
+
+---
+
 ## Section 1: Docker Strategy
 
 The project uses two Dockerfiles. One image serves and migrates: the app image applies pending migrations on start. `Dockerfile.migrate` builds the manual and emergency image.
 
 ### Dockerfile.migrate
 
-**Image:** `ghcr.io/elfensky/helldiversbot-migrate:staging`
+**Images:** `ghcr.io/elfensky/helldiversbot-migrate:staging` (Build: Staging) and `:<tag>`, `:production`, `:latest` (Build: Release)
 
 **Purpose:** Manual and emergency one-shot. It runs `prisma migrate deploy` and the seed once and exits. It never stays alive. The app image runs the same two steps on start.
 
@@ -42,72 +112,85 @@ The project uses two Dockerfiles. One image serves and migrates: the app image a
 
 1. Base image: `node:26-alpine`
 2. Install `tini` via `apk` (init system for zombie process prevention)
-3. Upgrade npm to `11.7.0`
-4. `WORKDIR /app`
-5. Copy `package.json`, `package-lock.json`, `prisma/`, and `prisma.config.mjs`
-6. Extract the Prisma version from `package.json` at build time and install only that version — no full `npm ci`
-7. Run `npx prisma generate` to produce the client
+3. `WORKDIR /app`
+4. Copy the project `package.json` to `/tmp` as a version reference, so npm never reads it as the manifest. Copy `package-lock.json`, `prisma/`, `prisma.config.mjs`, and the two modules the seed imports (`src/validators/isValidSeason.mjs`, `src/shared/enums/events.mjs`)
+5. Write a minimal `package.json` in `/app` with the project's ranges for five packages only (`prisma`, `@prisma/client`, `@prisma/adapter-pg`, `dotenv`, `zod`) and the project's `overrides`. Run `npm install` next to the project lockfile, so every version, transitive ones included, keeps the locked version and integrity hash. No full `npm ci`
+6. Run `npx prisma generate` to produce the client, then remove the `/tmp` reference and the npm cache in the same layer
+7. `USER node`
 8. Entrypoint: `/sbin/tini --`
 9. CMD: `npx prisma migrate deploy && node --experimental-strip-types prisma/seed/seed.mjs` — runs migrations first, then seeds historical season data from JSON files in `prisma/seed/seasons/`. The seed uses upserts and is idempotent (safe to re-run on every deploy). It compares each file's season against the seasons already in `h1_season` and upserts only the missing ones, so a deploy that adds one season file writes one season rather than re-running all of them (set `FORCE_SEED=true` on the migrate container to re-upsert everything — only `true`, `1` or `yes` count, so `false` correctly means off). If no season files exist, the seed exits gracefully.
 
 The `seasons/*.json` files are produced by `prisma/seed/fetch-seasons.mjs` — a one-shot refresh script developers run on their workstations to pull the latest state from the official HD1 API. Developers then commit the updated files to git. The fetch script **never captures the currently-active season** (its `get_snapshots` response is a mid-war partial by definition), so `--to` defaults to `currentSeason - 1` and is clamped to that maximum even if specified higher. Refresh the files periodically via `node prisma/seed/fetch-seasons.mjs --force` to keep disk data in parity with the API's occasional "closing frame" writes after a season ends. See `prisma/seed/readme.md` for the full workflow.
 
-The Prisma version extraction uses a shell one-liner:
+The minimal manifest comes from the project manifest with a one-line Node script:
 
 ```dockerfile
-COPY package.json package-lock.json ./
-COPY prisma ./prisma/
-COPY prisma.config.mjs ./
-RUN PRISMA_VERSION=$(node -p "require('./package.json').devDependencies?.prisma || require('./package.json').dependencies?.prisma") && \
-    ADAPTER_PG_VERSION=$(node -p "require('./package.json').dependencies?.['@prisma/adapter-pg'] || ''") && \
-    DOTENV_VERSION=$(node -p "require('./package.json').dependencies?.dotenv || ''") && \
-    npm install prisma@$PRISMA_VERSION @prisma/client@$PRISMA_VERSION @prisma/adapter-pg@$ADAPTER_PG_VERSION dotenv@$DOTENV_VERSION && \
-    npx prisma generate
+COPY package.json /tmp/project-package.json
+COPY package-lock.json ./
+RUN node -e "const p = require('/tmp/project-package.json'), all = { ...p.dependencies, ...p.devDependencies }; \
+      const deps = Object.fromEntries(['prisma', '@prisma/client', '@prisma/adapter-pg', 'dotenv', 'zod'].map((n) => [n, all[n]])); \
+      require('fs').writeFileSync('package.json', JSON.stringify({ name: 'migrate', version: '1.0.0', private: true, type: 'module', dependencies: deps, overrides: p.overrides }))" && \
+    npm install --no-audit --no-fund && \
+    POSTGRES_URL=postgresql://dummy npx prisma generate
 ```
 
-Prisma 7 CLI no longer auto-loads `.env` files. The `prisma.config.mjs` file imports `dotenv/config` to handle local env loading; in Docker, `POSTGRES_URL` is injected via `docker-compose`'s `env_file`.
+Prisma 7 CLI no longer auto-loads `.env` files. The `prisma.config.mjs` file imports `dotenv/config` to handle local env loading; in Docker, `POSTGRES_URL` comes from the environment. The Swarm stacks set `POSTGRES_URL_FILE` and read the value from a secret (see the `*_FILE` convention in Section 5).
 
 This keeps the migrate image small — it carries only the Prisma CLI, not the entire application dependency tree.
 
 ### Dockerfile.app
 
-**Image:** `ghcr.io/elfensky/helldiversbot:staging`
+**Images:** `ghcr.io/elfensky/helldiversbot:staging` and `:sha-<commit>` (Build: Staging); `:<tag>`, `:production` and `:latest` (Build: Release). Both are multi-arch manifests of an amd64 and an arm64 image.
 
 **Purpose:** Runs the Next.js standalone server. Before it serves, it applies pending migrations, and the seed when its data changed (see Migrate on start).
 
 **Build stages:**
 
-| Stage     | Base             | What it does                                                                                      |
-| --------- | ---------------- | ------------------------------------------------------------------------------------------------- |
-| `base`    | `node:26`        | Debian (glibc) build base, so Sharp's prebuilt glibc binary matches the runtime                   |
-| `deps`    | `base`           | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent                               |
-| `builder` | `base`           | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build` |
-| `migrate-tools` | `node:26-slim` | Mirrors `Dockerfile.migrate` (Prisma CLI, schema engine, seed, generated client); copied to `/app/migrate` |
-| `runner`  | `node:26-slim`   | Copies only `.next/standalone`, `.next/static`, `public` and `/app/migrate`; runs as non-root user |
+| Stage           | Base           | What it does                                                                                                 |
+| --------------- | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| `base`          | `node:26`      | Debian (glibc) build base, so Sharp's prebuilt glibc binary matches the runtime                              |
+| `deps`          | `base`         | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent                                          |
+| `builder`       | `base`         | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build`            |
+| `migrate-tools` | `node:26-slim` | Mirrors `Dockerfile.migrate` (Prisma CLI, schema engine, seed, generated client), then deletes PGlite and the query compilers of other providers; copied to `/app/migrate` |
+| `runner`        | `node:26-slim` | Copies only `.next/standalone`, `.next/static`, `public` and `/app/migrate`; runs as a non-root numeric user |
+
+**Build inputs (builder stage):**
+
+- Build arguments: `NEXT_PUBLIC_DEPLOY_ENV`, `APP_VERSION`, `NEXT_PUBLIC_SENTRY_DSN` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Next.js inlines the `NEXT_PUBLIC_*` values into the client bundle, so they must exist before `npm run build`. All four are public values.
+- `APP_VERSION` replaces the `package.json` version in `next.config.mjs`. Build: Staging passes `<version>-dev.<sha7>`. Build: Release passes nothing, so the `package.json` version stays.
+- Build secrets: `sentry_auth_token`, `sentry_url`, `sentry_org` and `sentry_project` are BuildKit secrets, not build arguments. A build argument lands in the provenance attestation that is published next to the image. A secret exists only for the one `RUN` that reads it. See "next.config.mjs Sentry settings" in Section 4 for what the build does with them.
+- The `RUN` uses cache mounts for the npm download cache and for `.next/cache`. The cache lives in BuildKit storage and never in the image.
 
 **Runner stage details:**
 
-- `ARG NODE_ENV=production` — overridable at build time; staging CI passes `NODE_ENV=staging`
-- Creates system group `nodejs` (gid 1001) and user `nextjs` (uid 1001)
-- All copied files are `--chown=nextjs:nodejs`
-- `USER nextjs` is set before the entrypoint
+- `ARG NODE_ENV=production` — overridable at build time. Build: Staging and Build: Release both pass `NODE_ENV=production`.
+- The base is `node:26-slim` (Debian, glibc). The slim image has a shell and `apt`, so its surface is larger; the app does not call a shell.
+- Runs as the numeric user `65532:65532` (`USER 65532:65532`). A numeric id needs no `/etc/passwd` lookup.
+- All copied files are `--chown=65532:65532`, so `.next` stays writable for the image optimizer's runtime cache. `/app/migrate` stays root-owned: the app user can read and run the tooling, not change it.
 - OCI labels: `org.opencontainers.image.source`, `org.opencontainers.image.licenses`, `org.opencontainers.image.title`, `version`, `description`
-- Entrypoint: `/sbin/tini --`
-- CMD: `node server.js` (the Next.js standalone output file)
-- `EXPOSE 3000`, `ENV PORT=3000`, `ENV HOSTNAME="0.0.0.0"`
+- No init wrapper and no `ENTRYPOINT` of its own. The `node:26-slim` entrypoint script runs the command. The migrate image above keeps its init wrapper.
+- CMD: `["node", "server.js"]` (the Next.js standalone output file)
+- `EXPOSE 3000`, `ENV PORT=3000`, `ENV HOSTNAME="0.0.0.0"`, `ENV MIGRATE_ROOT=/app/migrate`, `ENV CHECKPOINT_DISABLE=1` (the Prisma CLI runs on every start and makes no update check)
 - Healthcheck (Dockerfile-level): a Node `fetch` of `/api/healthcheck` every 30s, timeout 5s, start period 900s, 3 retries. Failures inside the start period do not count, and the first healthy answer ends it. Each call also refreshes the replica's `app_instance` row after the response (at most once per 20 s per process); a failed write never changes the 200/503 answer
+- Server source maps in `.next/standalone` stay in the image. The app does not serve them over HTTP.
 
 ### docker-compose.yml
 
-```
-helldiversbot (helldiversbot:staging)
+```text
+helldiversbot
+  image: ghcr.io/elfensky/helldiversbot:staging
+  platform: linux/amd64
   env_file: .env.development
   ports: 127.0.0.1:50001:3000
   restart: unless-stopped
   healthcheck: Node fetch of /api/healthcheck every 60s, timeout 10s, 3 retries, 300s start_period
 ```
 
+This file runs one container on one host. It uses the `:staging` image, reads its variables from a local env file, and has no replicas, no `cloudflared` and no database. The compose healthcheck replaces the image healthcheck. Neither Swarm stack uses it; see Deployment topology.
+
 The port binding `127.0.0.1:50001:3000` deliberately limits exposure to the host loopback interface. External traffic must arrive through a reverse proxy (e.g., nginx or Caddy) on the host.
+
+Check: Docker Smoke uses a separate compose file. It builds the app image from the working tree and starts it with a Postgres container.
 
 ### Migrate on start
 
@@ -126,77 +209,96 @@ Every app process runs `migrateOrWait()` (`src/update/migrateOnStart.mjs`) from 
 
 ## Section 2: CI/CD Pipelines
 
+Every change reaches `develop` and `main` through a pull request. Two workflows build and publish images. Nine others check code, clean the registry, or refresh data.
+
 ```mermaid
 graph LR
     subgraph Staging["STAGING PIPELINE"]
-        PUSH["Push to develop"] --> CI["CI<br/><small>lint · typecheck · test · build</small>"]
-        CI -->|"green only"| CHANGES["Detect changes"]
-        CHANGES --> BUILD_APP["Build App Image<br/><small>ghcr.io/.../helldiversbot:staging</small>"]
-        CHANGES -->|"migration files changed"| BUILD_MIG["Build Migrate Image<br/><small>ghcr.io/.../helldiversbot-migrate:staging</small>"]
-        BUILD_APP --> CLEANUP["Cleanup untagged images"]
-        BUILD_MIG --> CLEANUP
+        PUSH["Merge to develop"] --> CI["Check: CI<br/><small>lint · typecheck · test · build · smoke</small>"]
+        CI -->|"green only"| DETECT["Detect Migration Changes"]
+        CI -->|"green only"| BUILD_APP["Build App Image<br/><small>amd64 and arm64 legs</small>"]
+        DETECT -->|"migration files changed"| BUILD_MIG["Build Migrate Image<br/><small>amd64 and arm64 legs</small>"]
+        BUILD_APP --> MERGE_APP["Publish App Manifest<br/><small>:staging and :sha-commit</small>"]
+        BUILD_MIG --> MERGE_MIG["Publish Migrate Manifest<br/><small>:staging</small>"]
+        MERGE_APP --> BUMP["Bump Staging Tag<br/><small>force-push deploy/staging</small>"]
+        BUMP --> ARC_S["Arcane Git Sync"]
     end
 
     subgraph Production["PRODUCTION PIPELINE"]
-        TAG["Push version tag<br/><small>v*.*.* on main</small>"] --> BUILD_PROD["Build App Image<br/><small>:tag, :production, :latest</small>"]
-        BUILD_PROD --> RELEASE["Create GitHub Release"]
+        TAG["Push version tag<br/><small>v*.*.* on main</small>"] --> VERIFY["Test and Build<br/><small>the tagged commit</small>"]
+        VERIFY --> BUILD_PROD["Build App Image<br/><small>amd64 and arm64 legs</small>"]
+        VERIFY --> BUILD_MIGP["Build Migrate Image<br/><small>amd64 and arm64 legs</small>"]
+        BUILD_PROD --> MERGE_PROD["Publish App Manifest<br/><small>:tag, :production, :latest</small>"]
+        BUILD_MIGP --> MERGE_MIGP["Publish Migrate Manifest"]
+        MERGE_PROD --> RELEASE["Create GitHub Release"]
+        MERGE_MIGP --> RELEASE
+        MERGE_PROD --> PIN["Pin Production<br/><small>force-push deploy/production</small>"]
+        MERGE_MIGP --> PIN
+        PIN --> ARC_P["Arcane Git Sync"]
     end
 
     style Staging fill:#1c1917,stroke:#f59e0b,color:#fbbf24
     style Production fill:#0f1a0f,stroke:#22c55e,color:#4ade80
 ```
 
-### Staging (`staging.docker.yml`)
+### All workflows
 
-**Trigger:** Successful completion of the `CI` workflow on `develop` (`workflow_run`), or manual `workflow_dispatch`.
+The repository has 11 workflow files in `.github/workflows/` and two composite actions, `.github/actions/verify` (lint, typecheck, unit tests, build) and `.github/actions/docker-publish` (Buildx build and push to GHCR).
 
-This pipeline used to trigger on the push itself, which meant it raced CI — the image built, published and deployed while lint, typecheck and tests were still running, so a red CI was a note attached to an already-shipped build. `develop` accepts direct merges without a PR, so the required-status-check that guards `main` never applies here; this gate is the only one.
+| File                         | `name:`                      | Trigger                                                                                  | Purpose                                                                                                                       |
+| ---------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `build-release.yml`          | Build: Release               | Push of a `v*.*.*` tag; manual dispatch with an existing tag                             | Verify the tag, build and publish the app and migrate images, create the GitHub Release, pin `deploy/production`              |
+| `build-staging.yml`          | Build: Staging               | Check: CI completes on `develop` (`workflow_run`); manual dispatch                       | Build and publish the staging images, pin `deploy/staging`, remove untagged images                                            |
+| `check-ci.yml`               | Check: CI                    | Pull request or push on `main` and `develop`                                             | Job `Test & Build`: lint, typecheck, unit tests, build, then smoke tests. Job `Visual Regression`: committed visual baselines |
+| `check-codeql.yml`           | Check: CodeQL                | Pull request or push on `main` and `develop`; Mondays 06:00 UTC                          | CodeQL analysis (job `Analyze`)                                                                                               |
+| `check-dependencies.yml`     | Check: Dependencies          | Pull request on `main` and `develop`                                                     | Dependency review (job `Review Dependencies`)                                                                                 |
+| `check-docker-smoke.yml`     | Check: Docker Smoke          | Pull request on `main`                                                                   | Build the app image from the working tree, start it with an empty Postgres, run the smoke tests                               |
+| `check-migrate-arm64.yml`    | Check: Migrate Image (arm64) | Pull request on `develop` and `main` that touches the migrate image inputs               | Build `Dockerfile.migrate` for `linux/arm64` and run it                                                                       |
+| `check-version.yml`          | Check: Version Bump          | Pull request on `main` that touches `src/**`, `prisma/**`, `public/**` or `package.json` | Fail when the `package.json` version equals the version on `main`; skipped for Dependabot                                     |
+| `cleanup-ghcr.yml`           | Cleanup: GHCR                | Mondays 04:17 UTC; manual dispatch (dry run by default)                                  | Keep the newest 3 `sha-*` and the newest 3 `v*` images per package; delete untagged leftovers; never delete floating tags     |
+| `scheduled-pagespeed.yml`    | Scheduled: Pagespeed         | Mondays 00:00 UTC, Fridays 06:00 UTC; manual dispatch                                    | Render a PageSpeed Insights SVG for `https://helldivers.bot` and commit it to the standalone `metrics` branch                 |
+| `scheduled-seed-refresh.yml` | Scheduled: Seed Refresh      | Mondays 03:00 UTC; manual dispatch                                                       | Run `prisma/seed/fetch-seasons.mjs`; when new completed seasons appear, push `chore/seed-refresh` and open a PR on `develop`  |
 
-Two consequences worth knowing. `workflow_run` resolves the workflow file from the **default branch** (`develop`), so edits to it only take effect once merged there. And every `checkout` pins `github.event.workflow_run.head_sha` — the commit CI actually tested — because a `workflow_run` checkout otherwise defaults to the branch tip, which may have moved on.
+The `name:` of Check: CI is load-bearing. `build-staging.yml` matches its `workflow_run` trigger on that name, not on the file name. The two change together.
 
-**Jobs:** A `detect-migration` job detects which files were modified. `build-app` always runs. `build-migrate` only runs when migration-related files changed (or on manual `workflow_dispatch`). A `cleanup` job runs after both builds complete (or are skipped).
+Every image build runs one leg per architecture on a runner of that architecture: amd64 on `ubuntu-latest`, arm64 on `ubuntu-24.04-arm`. QEMU emulation is not used, because `prisma generate` fails under emulated aarch64. Each leg pushes a per-architecture tag. A Publish Manifest job joins the two tags and checks that both platforms exist.
 
-| Job                | Dockerfile           | Tag pushed                                       | Condition                                                                                                        |
-| ------------------ | -------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `detect-migration` | ---                  | ---                                              | Always runs; outputs `migrate` boolean from `git diff HEAD^ HEAD`                                                |
-| `build-migrate`    | `Dockerfile.migrate` | `ghcr.io/elfensky/helldiversbot-migrate:staging` | Only when `prisma/**`, `prisma.config.mjs`, `package.json`, `package-lock.json`, or `Dockerfile.migrate` changed |
-| `build-app`        | `Dockerfile.app`     | `ghcr.io/elfensky/helldiversbot:staging`         | Always                                                                                                           |
+### Staging (`build-staging.yml`)
 
-Both build jobs pass `NODE_ENV=staging` as a build arg.
+**Trigger:** Successful completion of Check: CI on a push to `develop` (`workflow_run`), or manual `workflow_dispatch`.
 
-**Registry auth:** `secrets.GITHUB_TOKEN` — the default token with `contents: write` and `packages: write` permissions declared at the workflow level.
+The build starts only after Check: CI is green, so a red CI never ships an image. `workflow_run` resolves the workflow file from the default branch (`develop`), so an edit takes effect only after it is merged there. Every checkout pins `TESTED_SHA`, the commit that Check: CI tested, because a `workflow_run` checkout otherwise defaults to the branch tip, which may have moved on. A second run queues behind the first (`cancel-in-progress: false`), because Bump Staging Tag force-pushes `deploy/staging`.
 
-**Cleanup job:** Uses `snok/container-retention-policy@v3.0.1`. Deletes untagged versions of both `helldiversbot` and `helldiversbot-migrate` packages that are older than 30 minutes. This keeps GHCR from accumulating dangling layers from every push. Authenticated via `secrets.GHCR_CLEANUP_TOKEN` — a **classic** PAT with the `delete:packages` scope (the action rejects fine-grained tokens, and the default `GITHUB_TOKEN` can't delete user-account packages).
+| Job                      | Condition                                                                                                                                             | Result                                                                                                                                                     |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Detect Migration Changes | Always                                                                                                                                                | Compares the commit pinned on `deploy/staging` with the tested commit; outputs whether migrate inputs changed                                              |
+| Build Migrate Image      | Prisma files, `prisma.config.mjs`, `package.json`, `package-lock.json` or `Dockerfile.migrate` changed; or the image is missing; or a manual dispatch | `helldiversbot-migrate:staging` after Publish Migrate Manifest                                                                                             |
+| Build App Image          | Always                                                                                                                                                | Two legs, with `NODE_ENV=production`, `NEXT_PUBLIC_DEPLOY_ENV=staging` and `APP_VERSION=<version>-dev.<sha7>`; the Sentry credentials are BuildKit secrets |
+| Publish App Manifest     | After both legs                                                                                                                                       | `helldiversbot:staging` and `helldiversbot:sha-<commit>`                                                                                                   |
+| Bump Staging Tag         | After Publish App Manifest                                                                                                                            | Writes `sha-<commit>` into `deploy/staging/compose.yaml` and force-pushes `deploy/staging`                                                                 |
+| Cleanup Untagged Images  | After the builds, unless the app build was skipped                                                                                                    | Deletes untagged versions older than 30 minutes with `snok/container-retention-policy`                                                                     |
 
-### Production (`release.docker.yml`)
+**Registry auth:** `secrets.GITHUB_TOKEN` with `packages: write`. The cleanup job uses `secrets.GHCR_CLEANUP_TOKEN`, a classic personal access token with `delete:packages`. The default token cannot delete user-account packages.
 
-**Trigger:** Version tags matching the pattern `v*.*.*` (e.g. `v1.2.3`)
+### Production (`build-release.yml`)
 
-**Jobs:** A `verify` job runs lint, typecheck, unit tests and build against the tagged commit; `build-app` and `build-migrate` both `needs: verify`, and `github-release` needs both.
+**Trigger:** Version tags matching `v*.*.*`, or a manual dispatch with an existing tag. A dispatch skips the builds and runs only Pin Production (see Rollback in Deployment topology).
 
-`main`'s branch protection already requires the `Test & Build` check to merge, so release code has normally passed. *Normally* is the gap: a tag can be pushed at any commit — an older one, a hotfix merged with an admin override, a hand-moved tag — and `ci.yml` does not run on tags at all. The `verify` job makes the tag itself the unit that gets checked.
+| Job                      | Needs                          | Result                                                                                                                |
+| ------------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Test & Build             | ---                            | Runs the `verify` composite action against the tagged commit                                                          |
+| Build App Image          | Test & Build                   | Two legs, with `NODE_ENV=production` and `NEXT_PUBLIC_DEPLOY_ENV=production`                                          |
+| Publish App Manifest     | Build App Image                | `helldiversbot:<tag>`, `:production`, `:latest`                                                                       |
+| Build Migrate Image      | Test & Build                   | Two legs; always built, because every tag needs a versioned migrate image                                             |
+| Publish Migrate Manifest | Build Migrate Image            | `helldiversbot-migrate:<tag>`, `:production`, `:latest`                                                               |
+| Create GitHub Release    | Both manifests                 | The release body is the `CHANGELOG.md` section of the version, extracted with `awk`, plus the image pull commands     |
+| Pin Production           | Both manifests (or a dispatch) | Checks that both images exist, writes the tag into `deploy/production/compose.yaml`, force-pushes `deploy/production` |
 
-It duplicates `ci.yml`'s steps rather than sharing them through a `workflow_call` reusable workflow. That would rename the check from `Test & Build` to `<caller> / Test & Build`, and `main`'s required status check matches that exact string — every PR to `main` would block forever waiting for a check that no longer reports.
+`main` requires the `Test & Build` check to merge, so release code has normally passed. A tag can still point at any commit, and Check: CI does not run on tags. For this reason Build: Release repeats the same gate on the tagged commit. It shares the steps through a composite action, not a reusable workflow, because a reusable workflow renames the check to `<caller> / Test & Build` and the required status check matches the exact name.
 
-**Tags pushed:**
+**Version:** the image tags come from the tag name. Build: Release passes no `APP_VERSION`, so the app reports the `package.json` version.
 
-```
-ghcr.io/elfensky/helldiversbot:{git-tag}
-ghcr.io/elfensky/helldiversbot:production
-ghcr.io/elfensky/helldiversbot:latest
-```
-
-**Version extraction:** The workflow reads the version from `package.json` via `jq -r '.version' package.json` and injects it into the image via the `VERSION` ARG (used by the Dockerfile label `version="${VERSION}"`).
-
-**Registry auth:** `secrets.GITHUB_TOKEN` — the workflow's `permissions: contents: write` + `packages: write` grant it enough access to push images to GHCR and create the GitHub Release, so no personal access token is needed.
-
-**GitHub Release:** Created by `softprops/action-gh-release@v2`. The release body is sourced from `RELEASE.md` at the repository root.
-
-### Metrics (`metrics.yml`)
-
-**Trigger:** Scheduled (Mondays at 00:00 UTC, Fridays at 06:00 UTC), or manual dispatch.
-
-**Job:** Generates a PageSpeed Insights badge SVG using `lowlighter/metrics@latest` targeting `https://helldivers.bot`. The resulting `metrics.plugin.pagespeed.svg` is committed back to the repository. Requires `secrets.PAGESPEED_TOKEN`.
+**Registry auth:** `secrets.GITHUB_TOKEN` with `packages: write`. The release job has `contents: write` to create the GitHub Release, so no personal access token is needed.
 
 ---
 
@@ -204,63 +306,68 @@ ghcr.io/elfensky/helldiversbot:latest
 
 ```mermaid
 graph TD
-    REG["register()"] -->|"NEXT_RUNTIME=nodejs"| SENTRY["Sentry.init()"]
+    REG["register()"] -->|"SENTRY_DSN set"| SENTRY["load sentry.server.config"]
     REG -->|"NEXT_RUNTIME=nodejs"| INIT["initializeHelldivers1Api()"]
+    SENTRY --> INIT
     INIT --> ENV["initializeEnvironmentVariables()"]
-    ENV -->|"POSTGRES_URL missing"| CRASH1["💥 Process crash"]
-    ENV -->|"All core vars present"| OAS["initializeOpenApiSpec()"]
-    OAS -->|"Spec invalid"| CRASH2["💥 Process crash"]
-    OAS -->|"Spec valid"| WORKER["initializeWorker()"]
+    ENV -->|"required variable missing"| CRASH1["💥 Process crash"]
+    ENV -->|"core vars present"| MIG["migrateOrWait()<br/><small>advisory lock · migrate · seed</small>"]
+    MIG -->|"failure: log, report, retry"| MIG
+    MIG --> WORKER["initializeWorker()"]
+    WORKER -->|"WORKER_ENABLED=false"| WEB["Web only<br/><small>no worker thread</small>"]
     WORKER -->|"Worker spawned"| POLL["Worker polling loop<br/><small>setTimeout(doWork, interval)</small>"]
     WORKER -->|"Spawn failed"| CRASH3["💥 Process crash"]
+    POLL -->|"thread exits outside shutdown"| CRASH4["💥 exit code 1"]
 
     style REG fill:#1e293b,stroke:#3b82f6,color:#60a5fa
     style CRASH1 fill:#2d1b1b,stroke:#ef4444,color:#f87171
-    style CRASH2 fill:#2d1b1b,stroke:#ef4444,color:#f87171
     style CRASH3 fill:#2d1b1b,stroke:#ef4444,color:#f87171
+    style CRASH4 fill:#2d1b1b,stroke:#ef4444,color:#f87171
     style POLL fill:#0f1a0f,stroke:#22c55e,color:#4ade80
 ```
 
-**Entry point:** `src/instrumentation.js` — Next.js calls `register()` automatically on server startup via the instrumentation hook.
+**Entry point:** `src/instrumentation.js` — Next.js calls `register()` automatically on server startup via the instrumentation hook. The Node.js steps live in `src/instrumentation.node.js`.
 
 ### Full flow
 
 ```
 register()   [src/instrumentation.js]
 │
-├── NEXT_RUNTIME === 'nodejs'
-│   └── import sentry.server.config.js     → Sentry.init() for server runtime
-│
 └── NEXT_RUNTIME === 'nodejs'
-    └── initializeHelldivers1Api()
+    ├── SENTRY_DSN set → import sentry.server.config.js     → Sentry.init() for server runtime
+    │
+    └── initializeHelldivers1Api()   [src/instrumentation.node.js]
         │
         ├── Step 1: initializeEnvironmentVariables()   [src/shared/utils/initializeEnv.mjs]
-        │   ├── checkDatabase()    → POSTGRES_URL                              ← REQUIRED, throws
-        │   ├── checkUpdates()     → UPDATE_KEY, UPDATE_INTERVAL               ← REQUIRED, throws (PORT optional)
-        │   ├── checkAnalytics()   → UMAMI_SITE_ID, SENTRY_DSN, SENTRY_AUTH_TOKEN  ← OPTIONAL, warns
-        │   ├── checkAuth()        → BETTER_AUTH_SECRET + 5 auth vars          ← OPTIONAL, warns (partial = throws)
+        │   ├── hydrateFileSecrets()  → <KEY>_FILE populates <KEY>     [src/shared/utils/hydrateFileSecrets.mjs]
+        │   ├── validateDatabase()    → POSTGRES_URL                              ← REQUIRED, throws
+        │   ├── validateUpdates()     → UPDATE_KEY, UPDATE_INTERVAL               ← REQUIRED, throws (PORT optional)
+        │   ├── checkAnalytics()      → UMAMI_SITE_ID, SENTRY_DSN, SENTRY_AUTH_TOKEN  ← OPTIONAL, warns
+        │   ├── checkAuth()           → BETTER_AUTH_SECRET + 7 auth vars          ← OPTIONAL, warns (partial = throws)
         │   └── Returns { auth: boolean, analytics: boolean }
         │
-        ├── Step 2: initializeOpenApiSpec()            [src/utils/initialize.openapi.mjs]
-        │   ├── development: generates public/openapi.json from the OpenAPI registry, validates JSON
-        │   ├── production:  reads existing public/openapi.json, validates it parses as JSON
-        │   ├── staging:     falls through to false (neither branch matches NODE_ENV=staging)
-        │   └── false → throw (crashes the process)
+        ├── Step 2: migrateOrWait()                    [src/update/migrateOnStart.mjs]
+        │   ├── skipped under Vitest (VITEST set or NODE_ENV=test)
+        │   ├── takes the advisory lock, runs prisma migrate deploy, then the seed when its data changed
+        │   └── never throws: a failure logs, reports and retries after 30 s, 60 s, 2 min, then every 5 min
         │
         └── Step 3: initializeWorker()                 [src/shared/utils/initializeWorker.mjs]
+            ├── WORKER_ENABLED=false (also 0, no, off) → logs, returns true, spawns no thread
             ├── Resolves worker path:
             │   ├── development: path.resolve(process.cwd(), 'public/workers/cron.js')
             │   └── production:  path.resolve('/app/public/workers/cron.js')
             ├── new Worker(workerPath)
             ├── worker.postMessage({ key, interval, port })
-            ├── Attaches message/error/exit handlers
+            ├── Attaches message/error/exit handlers; an exit outside a shutdown calls process.exit(1)
             ├── Registers SIGINT/SIGTERM handlers that terminate the worker before exit
             └── false → throw (crashes the process)
 ```
 
 ### Failure behavior
 
-Every initialization step fails hard: any error or falsy return causes a `throw new Error(...)` inside the `register()` function. Since Next.js does not catch errors thrown from `register()`, this crashes the process. There is no graceful degradation. The intent is that Docker's `restart: unless-stopped` will restart the container, giving the underlying problem (missing env var, bad database, missing OpenAPI spec) a chance to be resolved.
+Three failures crash the process. An environment error from Step 1 throws. A falsy return from `initializeWorker()` throws. A worker thread that exits outside a shutdown calls `process.exit(1)`, because the container health check is a database ping and a dead thread would otherwise leave a healthy task that never polls. Since Next.js does not catch errors thrown from `register()`, a throw ends the process. The orchestrator restarts the container: `restart: unless-stopped` in `docker-compose.yml`, the Swarm restart policy in the stacks. The underlying problem (missing env var, bad database) then gets a chance to be resolved.
+
+A migration failure does not crash the process. `migrateOrWait()` retries, and Next holds requests until `register()` resolves (see Migrate on start in Section 1).
 
 ### onRequestError export
 
@@ -296,17 +403,22 @@ The project uses the Sentry SDK (`@sentry/nextjs`) but targets a **self-hosted G
         process.env.NEXT_PUBLIC_DEPLOY_ENV ||
         process.env.DEPLOY_ENV ||
         process.env.NODE_ENV,
+    release: process.env.NEXT_PUBLIC_APP_VERSION,  // the version tag on every event
     dataCollection: {                   // server value; keeps the v10 scope
         httpBodies: ['incomingRequest'],
         databaseQueryData: false,
         stackFrameVariables: false,
     },
-    tracesSampleRate: 1.0,              // 100% of requests traced
+    tracesSampleRate: 1.0,              // server: 100% of requests traced; client: see below
     debug: false,
 }
 ```
 
-Client-only additions: `autoSessionTracking: false` (GlitchTip doesn't support sessions), `tunnel: '/api/glitchtip'` (ad blocker bypass), `dataCollection: { httpBodies: [] }` (the browser sends no HTTP bodies).
+Trace sampling differs by runtime. The server (`sentry.server.config.js`) samples 100% of requests. The client (`src/instrumentation-client.js`) samples 10% in production and 100% in every other environment.
+
+Client-only additions: `tunnel: '/api/glitchtip'` (ad blocker bypass), `dataCollection: { httpBodies: [] }` (the browser sends no HTTP bodies), and a `beforeSend` hook that calls `guardedReload('chunk')` when the event is a chunk-load error from a stale tab.
+
+The server config also sets `serverName` from `SENTRY_SERVER_NAME`. Without it the SDK uses the container hostname, which changes on every redeploy.
 
 Server init lives in `sentry.server.config.js` and is loaded from `src/instrumentation.js` only when `SENTRY_DSN` is set — no production gate, so localhost reports too. Client init lives in `src/instrumentation-client.js` and runs on every page load whenever `NEXT_PUBLIC_SENTRY_DSN` is set.
 
@@ -366,19 +478,30 @@ Env vars: `UMAMI_SITE_URL` (domain without protocol, e.g., `umami.lav.ren`), `UM
 
 ### next.config.mjs Sentry settings
 
-The `withSentryConfig` wrapper (imported from `@sentry/nextjs/config`) controls build-time behavior:
+The `withSentryConfig` wrapper (imported from `@sentry/nextjs/config`) controls build-time behavior. It runs only when `SENTRY_AUTH_TOKEN` is set:
 
 ```js
-export default withSentryConfig(withMDX(nextConfig), {
-    silent: true,
-    authToken: process.env.SENTRY_AUTH_TOKEN,
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
-    sentryUrl: process.env.SENTRY_URL,
-});
+export default process.env.SENTRY_AUTH_TOKEN ?
+    withSentryConfig(finalConfig, {
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        sentryUrl: process.env.SENTRY_URL,
+        sourcemaps: { deleteSourcemapsAfterUpload: true },
+        errorHandler: (err) => {
+            throw err;
+        },
+    })
+:   finalConfig;
 ```
 
-Source maps are uploaded to GlitchTip at build time for readable stack traces. The `authToken`, `org`, `project`, and `sentryUrl` env vars are only used during builds.
+- **Builds with the token** (Build: Staging, Build: Release) generate the browser source maps and upload them to GlitchTip as debug-ID bundles. Then they delete the maps and their `sourceMappingURL` comments from `.next/static`. The image ships no browser maps.
+- **Builds without the token** skip the wrapper. They emit no browser maps.
+- **Server maps** in `.next/standalone` stay in the image. The app does not serve them over HTTP.
+- **No `silent` option.** It hid two upload failures in 2026-07 and 2026-08 (#496). Upload errors must print in the build log.
+- **A failed upload fails the build.** The `errorHandler` rethrows each Sentry step error (release creation, upload, finalize), so `next build` exits non-zero. The `Build App Image` leg fails, and `Pin Production` cannot pin a build without its maps (#661).
+
+The `authToken`, `org`, `project`, and `sentryUrl` env vars are only used during builds.
 
 ---
 
@@ -392,42 +515,67 @@ Variables are checked at startup by `initializeEnvironmentVariables()` in `src/s
 - **Auth:** `BETTER_AUTH_SECRET` absent → all auth disabled (warn). `BETTER_AUTH_SECRET` present but other auth vars missing → throws (partial config is a misconfiguration).
 - **Analytics:** Missing → warns. `SENTRY_DSN` set without `SENTRY_AUTH_TOKEN` → warns about degraded source maps.
 
+### The `*_FILE` convention
+
+A key that the running server reads can also come from a file. Set `<NAME>_FILE` to a file path, and `hydrateFileSecrets()` (`src/shared/utils/hydrateFileSecrets.mjs`) reads the file and sets `<NAME>` from its trimmed content. A `<NAME>` that is already set wins over the file. An unreadable file logs a warning and is skipped, and the normal validation then reports the missing variable. The Swarm stacks use this with `POSTGRES_URL_FILE` and `UPDATE_KEY_FILE`, which point at mounted Swarm secrets.
+
+The convention has three limits:
+
+- `SENTRY_DSN` stays a plain variable. `src/instrumentation.js` reads it before the file values load.
+- Build-time keys (`NEXT_PUBLIC_*`, the `SENTRY_*` upload keys) cannot come from a file, because the hydration step never runs during a build.
+- The standalone scripts and the tests at the end of the table cannot use it either.
+
 ### Full variable reference
 
-| Variable                       | Required         | Category       | Description                                                                                                                                                                                     |
-| ------------------------------ | ---------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POSTGRES_URL`                 | **Yes**          | Database       | PostgreSQL connection string                                                                                                                                                                    |
-| `UPDATE_KEY`                   | **Yes**          | Updates        | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests                                                                                                     |
-| `UPDATE_INTERVAL`              | **Yes**          | Updates        | Polling interval in seconds (e.g., `"20"`); passed to the worker thread                                                                                                                         |
-| `PORT`                         | No               | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                                                                                                            |
-| `NEXT_PUBLIC_SITE_URL`         | No               | Site           | Public site origin (e.g. `https://helldivers.bot`); inlined at build time so self-hosters can serve under their own domain. Defaults to `https://helldivers.bot` (`src/config/site.mjs`).       |
-| `UMAMI_SITE_ID`                | No               | Analytics      | Umami website tracking ID; if absent, Umami script not loaded and server-side tracking skipped                                                                                                  |
-| `UMAMI_SITE_URL`               | No               | Analytics      | Umami instance URL; used in server-side fetch calls                                                                                                                                             |
-| `SENTRY_DSN`                   | No               | Error tracking | Sentry DSN for server-side error reporting (points to GlitchTip); if absent, error tracking disabled                                                                                            |
-| `NEXT_PUBLIC_SENTRY_DSN`       | No               | Error tracking | Sentry DSN for client-side error reporting (same DSN, exposed to browser)                                                                                                                       |
-| `SENTRY_AUTH_TOKEN`            | No               | Error tracking | GlitchTip API token for source map uploads; if absent, `withSentryConfig` build plugin skipped                                                                                                  |
-| `SENTRY_URL`                   | No               | Error tracking | GlitchTip instance URL; used by `withSentryConfig` for source map uploads                                                                                                                       |
-| `SENTRY_ORG`                   | No               | Error tracking | GlitchTip organization slug; used for source map uploads                                                                                                                                        |
-| `SENTRY_PROJECT`               | No               | Error tracking | GlitchTip project slug; used for source map uploads                                                                                                                                             |
-| `GLITCHTIP_HEARTBEAT_URL`      | No               | Error tracking | GlitchTip uptime heartbeat endpoint; worker POSTs after each successful update                                                                                                                  |
-| `NEXT_PUBLIC_DEPLOY_ENV`       | No               | Error tracking | Inlined at `next build`; CI sets `staging` or `production`. Sentry environment tag (falls back to `DEPLOY_ENV`, then `NODE_ENV`). Only `production` makes `robots.txt` allow crawling.          |
-| `DEPLOY_ENV`                   | No               | Error tracking | Server-only fallback for the Sentry environment tag when rebuilding to update `NEXT_PUBLIC_DEPLOY_ENV` isn't an option.                                                                         |
-| `BETTER_AUTH_SECRET`           | No (all-or-none) | Auth           | BetterAuth session encryption secret; 128+ chars recommended. If absent, all auth features disabled. If present, all other auth vars are required                                               |
-| `BETTER_AUTH_URL`              | If auth          | Auth           | Base URL for BetterAuth (e.g., `http://localhost:3000`; production: `https://helldivers.bot`)                                                                                                   |
-| `AUTH_DISCORD_ID`              | If auth          | Auth           | Discord OAuth application client ID                                                                                                                                                             |
-| `AUTH_DISCORD_SECRET`          | If auth          | Auth           | Discord OAuth application client secret                                                                                                                                                         |
-| `AUTH_GITHUB_ID`               | If auth          | Auth           | GitHub OAuth application client ID                                                                                                                                                              |
-| `AUTH_GITHUB_SECRET`           | If auth          | Auth           | GitHub OAuth application client secret                                                                                                                                                          |
-| `AUTH_GOOGLE_ID`               | If auth          | Auth           | Google OAuth application client ID                                                                                                                                                              |
-| `AUTH_GOOGLE_SECRET`           | If auth          | Auth           | Google OAuth application client secret                                                                                                                                                          |
-| `VAPID_PUBLIC_KEY`             | No (all-or-none) | Push           | Web Push VAPID public key; if absent, push notifications disabled                                                                                                                               |
-| `VAPID_PRIVATE_KEY`            | No               | Push           | Web Push VAPID private key                                                                                                                                                                      |
-| `VAPID_SUBJECT`                | No               | Push           | VAPID contact identifier (`mailto:` email)                                                                                                                                                      |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No               | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`)                                                                                                                                 |
-| `POSTGRES_SSL`                 | No               | Database       | Set to `"false"` for local dev without SSL; defaults to SSL enabled                                                                                                                             |
-| `MIGRATE_ROOT`                 | No               | Docker         | Folder with the Prisma CLI and the `prisma/` tree for migrate-on-start; defaults to the process cwd, the image sets `/app/migrate`                                                              |
-| `NODE_ENV`                     | No               | App            | `development` or `production`; affects OpenAPI spec behavior and worker path resolution. No longer used as the Sentry environment tag — see `NEXT_PUBLIC_DEPLOY_ENV` above.                     |
-| `NEXT_RUNTIME`                 | Internal         | Next.js        | Set automatically by Next.js; controls which Sentry config and init steps run                                                                                                                   |
+Every key below is in `.example.env`. That file is the source for the descriptions.
+
+| Variable                       | Required         | Category       | Description                                                                                                                                                                                                               |
+| ------------------------------ | ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_URL`                 | **Yes**          | Database       | PostgreSQL connection string                                                                                                                                                                                              |
+| `UPDATE_KEY`                   | **Yes**          | Updates        | Bearer token for `/api/h1/update` — used by the worker to authenticate its polling requests                                                                                                                               |
+| `UPDATE_INTERVAL`              | **Yes**          | Updates        | Polling interval in seconds (e.g., `"20"`); passed to the worker thread                                                                                                                                                   |
+| `WORKER_ENABLED`               | No               | Updates        | `"false"` makes this replica web-only: no worker thread starts and its update route answers 403. Not needed to scale: every replica runs the worker and the `worker_heartbeat` lease lets one of them poll                |
+| `PORT`                         | No               | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                                                                                                                                      |
+| `BUCKET_SIZE`                  | No               | Updates        | Bucket size in seconds for the `h1_status`, `h1_statistic` and `h1_event_progress` upserts; default `900` (15 min). A smaller value gives finer archives and more storage. Changing it mixes granularities in the history |
+| `NEXT_PUBLIC_SITE_URL`         | No               | Site           | Public site origin (e.g. `https://helldivers.bot`); inlined at build time so self-hosters can serve under their own domain. Defaults to `https://helldivers.bot` (`src/config/site.mjs`).                                 |
+| `UMAMI_SITE_ID`                | No               | Analytics      | Umami website tracking ID; if absent, Umami script not loaded and server-side tracking skipped                                                                                                                            |
+| `UMAMI_SITE_URL`               | No               | Analytics      | Umami instance domain, without protocol or port; used in server-side fetch calls                                                                                                                                          |
+| `SENTRY_DSN`                   | No               | Error tracking | Sentry DSN for server-side error reporting (points to GlitchTip); if absent, error tracking disabled                                                                                                                      |
+| `NEXT_PUBLIC_SENTRY_DSN`       | No               | Error tracking | Sentry DSN for client-side error reporting (same DSN, exposed to browser); a build argument, inlined at build time                                                                                                        |
+| `SENTRY_AUTH_TOKEN`            | No               | Error tracking | GlitchTip API token for source map uploads; if absent, `withSentryConfig` build plugin skipped                                                                                                                            |
+| `SENTRY_URL`                   | No               | Error tracking | GlitchTip instance URL; used by `withSentryConfig` for source map uploads                                                                                                                                                 |
+| `SENTRY_ORG`                   | No               | Error tracking | GlitchTip organization slug (the slug, not the display name); used for source map uploads                                                                                                                                 |
+| `SENTRY_PROJECT`               | No               | Error tracking | GlitchTip project slug (the slug, not the display name); used for source map uploads                                                                                                                                      |
+| `SENTRY_SERVER_NAME`           | No               | Error tracking | `server_name` tag on server events and the replica name in the lease. Unset falls back to the container hostname, which is new on every redeploy. Swarm sets it to the node hostname and task slot                        |
+| `GLITCHTIP_HEARTBEAT_URL`      | No               | Error tracking | GlitchTip uptime heartbeat endpoint; worker POSTs after each successful update                                                                                                                                            |
+| `NEXT_PUBLIC_DEPLOY_ENV`       | No               | Error tracking | Inlined at `next build`; CI sets `staging` or `production`. Sentry environment tag (falls back to `DEPLOY_ENV`, then `NODE_ENV`). Only `production` makes `robots.txt` allow crawling.                                    |
+| `DEPLOY_ENV`                   | No               | Error tracking | Server-only fallback for the Sentry environment tag when rebuilding to update `NEXT_PUBLIC_DEPLOY_ENV` isn't an option.                                                                                                   |
+| `BETTER_AUTH_SECRET`           | No (all-or-none) | Auth           | BetterAuth session encryption secret; 128+ chars recommended. If absent, all auth features disabled. If present, all other auth vars are required                                                                         |
+| `BETTER_AUTH_URL`              | If auth          | Auth           | Base URL for BetterAuth (e.g., `http://localhost:3000`; production: `https://helldivers.bot`)                                                                                                                             |
+| `AUTH_DISCORD_ID`              | If auth          | Auth           | Discord OAuth application client ID                                                                                                                                                                                       |
+| `AUTH_DISCORD_SECRET`          | If auth          | Auth           | Discord OAuth application client secret                                                                                                                                                                                   |
+| `AUTH_GITHUB_ID`               | If auth          | Auth           | GitHub OAuth application client ID                                                                                                                                                                                        |
+| `AUTH_GITHUB_SECRET`           | If auth          | Auth           | GitHub OAuth application client secret                                                                                                                                                                                    |
+| `AUTH_GOOGLE_ID`               | If auth          | Auth           | Google OAuth application client ID                                                                                                                                                                                        |
+| `AUTH_GOOGLE_SECRET`           | If auth          | Auth           | Google OAuth application client secret                                                                                                                                                                                    |
+| `VAPID_PUBLIC_KEY`             | No (all-or-none) | Push           | Web Push VAPID public key; if absent, push notifications disabled                                                                                                                                                         |
+| `VAPID_PRIVATE_KEY`            | No               | Push           | Web Push VAPID private key                                                                                                                                                                                                |
+| `VAPID_SUBJECT`                | No               | Push           | VAPID contact identifier (`mailto:` email)                                                                                                                                                                                |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No               | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`); a build argument, inlined at build time                                                                                                                  |
+| `MIGRATE_ROOT`                 | No               | Docker         | Folder with the Prisma CLI and the `prisma/` tree for migrate-on-start; defaults to the process cwd, the image sets `/app/migrate`                                                                                        |
+| `FORCE_SEED`                   | No               | Docker         | Makes the seed re-upsert every season file even when all are in the database. Only `true`, `1` or `yes` enable it; anything else, including `false`, leaves it off                                                        |
+| `LEGACY_POSTGRES_URL`          | No               | Scripts        | Restored `pg_dump` of the pre-cleanup schema; read by `scripts/backfill-h1-tables.mjs` only                                                                                                                               |
+| `SEED_TEST_API_KEY_HASH`       | No               | Tests          | SHA-256 hex digest of the smoke-test API key. The seed stores it, and the seed also runs on app start, so it creates a full-access key: never set it in a deployed environment                                            |
+| `SEED_TEST_API_KEY`            | No               | Tests          | Plaintext key behind that digest; the smoke tests send it. CI sets both; never reuse them                                                                                                                                 |
+| `TEST_SERVER_URL`              | No               | Tests          | Server the smoke tests call; default `http://localhost:3000`                                                                                                                                                              |
+| `SMOKE_ALLOW_SKIP`             | No               | Tests          | `1` or `true` turns an unreachable smoke-test server into a skip (local use only)                                                                                                                                         |
+
+Two more variables are not in `.example.env`. Node and Next.js set them, and nobody sets them by hand:
+
+- `NODE_ENV` is `development` for `npm run dev` and `production` in the images. It picks the worker path (`public/workers/cron.js` from the working directory in development, `/app/public/workers/cron.js` otherwise) and is the last fallback for the Sentry environment tag.
+- `NEXT_RUNTIME` is set by Next.js and decides which Sentry config and init steps run.
+
+`NEXT_PUBLIC_APP_VERSION` is generated by `next.config.mjs` at build time from `APP_VERSION` or the `package.json` version. Do not set it.
 
 ### Connection string formats
 
@@ -443,7 +591,7 @@ Inside Docker, the app container reaches the host's PostgreSQL via the special D
 postgresql://user:pass@host.docker.internal:5432/dbname
 ```
 
-The `.docker.env` file (not checked into version control) holds the Docker-specific values and is referenced by both services in `docker-compose.yml`.
+`docker-compose.yml` reads its values from a local env file that is not checked into version control. The Swarm stacks pass the connection string as a secret through `POSTGRES_URL_FILE`.
 
 ---
 
@@ -453,9 +601,9 @@ The app is an installable Progressive Web App. PWA assets are static files that 
 
 ### Web App Manifest
 
-Source: `src/app/site.webmanifest` (auto-served by Next.js from the app directory)
+Source: `public/site.webmanifest` (a static file, served at `/site.webmanifest`)
 
-Linked in `<head>` via `metadata.manifest` in `src/app/layout.jsx`. Contains `start_url`, `scope`, `orientation: portrait`, and two icons with `purpose: "any maskable"`.
+Linked in `<head>` via `metadata.manifest` in `src/app/layout.jsx`. Contains `start_url`, `scope`, `orientation: portrait`, `display: standalone`, theme and background colors, and two icons in `public/favicons/` with `purpose: "any maskable"`.
 
 ### iOS Splash Screens
 
@@ -471,18 +619,22 @@ npx pwa-asset-generator public/images/logo_square.png public/splash \
 
 ### Cache Headers (next.config.mjs)
 
-Static assets served from `public/` have cache headers configured in `next.config.mjs`:
+`headers()` in `next.config.mjs` sets these headers:
 
-| Asset Type | `max-age` | `immutable` |
-| ---------- | --------- | ----------- |
-| Favicons   | 1 day     | Yes         |
-| Fonts      | 1 year    | Yes         |
-| Icons      | 7 days    | Yes         |
-| Images     | 7 days    | Yes         |
-| SVGs       | 7 days    | Yes         |
-| Workers    | 1 day     | Yes         |
+| Path                                                                        | `Cache-Control`                                  |
+| --------------------------------------------------------------------------- | ------------------------------------------------ |
+| `/favicons/*`                                                               | `public, max-age=86400, immutable` (1 day)       |
+| `/fonts/*`                                                                  | `public, max-age=31536000, immutable` (1 year)   |
+| `/icons/*`                                                                  | `public, max-age=31536000, immutable` (1 year)   |
+| `/images/*`                                                                 | `public, max-age=31536000, immutable` (1 year)   |
+| `/svgs/*`                                                                   | `public, max-age=31536000, immutable` (1 year)   |
+| `/workers/*`                                                                | `public, max-age=86400, immutable` (1 day)       |
+| `/sw.js`                                                                    | `no-cache, no-store, must-revalidate`            |
+| HTML page routes (not the paths above, `/api/*`, `/_next/*` or `/profile*`) | `public, s-maxage=30, stale-while-revalidate=60` |
 
-The service worker (`public/sw.js`) has a 1-day `max-age`, ensuring browsers check for new versions daily. The SW itself handles cache versioning via the `CACHE_NAME` constant.
+The service worker is built from `src/sw.js` into `public/sw.js` by `serwist build`, which `npm run build` runs after `next build`. The built file is git-ignored. It is never HTTP-cached, so a browser detects a new version on every navigation. `skipWaiting` and `clientsClaim` in `src/sw.js` then activate it. The `s-maxage` header on page routes lets Cloudflare collapse concurrent visitors into one origin request per 30 seconds. Browsers still revalidate normally.
+
+Every path also gets `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and a `Strict-Transport-Security` header.
 
 ---
 

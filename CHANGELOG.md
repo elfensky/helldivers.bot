@@ -2,10 +2,78 @@
 
 ## Unreleased
 
+## 0.99.0
+
+### Added
+
+- Season 161 is in the seed data (`prisma/seed/seasons/season-161.json`), from the weekly seed
+  refresh (#642). The next app start seeds it, because the seed hash changes.
+- `scripts/check-mermaid-fences.mjs`, an offline mermaid parse check for the docs text fences
+  (`node scripts/check-mermaid-fences.mjs [file.mdx ...]`). It fails on a fence mermaid cannot parse
+  and on zero fences.
+
+### Changed
+
+- The app image is about 37 MB smaller (compressed). The `migrate-tools` stage of `Dockerfile.app`
+  deletes PGlite (`prisma dev`), `@prisma/query-plan-executor` and the CockroachDB, MySQL, SQLite
+  and SQL Server query compilers, which `migrate deploy` and the seed never load. A
+  `prisma --version` step fails the build if the CLI start needs a deleted module (#673).
+- Images no longer ship browser sourcemaps. The Sentry build step uploads them to GlitchTip, then
+  deletes them (`sourcemaps.deleteSourcemapsAfterUpload`). Builds without `SENTRY_AUTH_TOKEN` emit
+  none (#502). `/docs/infrastructure` documents the config.
+- `AGENTS.md` states the poller lease facts: every replica runs the cron thread, one lease holder
+  polls, a standby answers 200, and `WORKER_ENABLED=false` is optional. Its merge line keeps lane
+  worktrees (`gh pr merge <n> --rebase`, then `git push origin --delete <branch>`). The comments in
+  the update route, `initializeWorker` and `cron.js` match, and the codebase maps are corrected.
+- The `/docs/architecture` diagram shows the `worker_heartbeat` poller lease, the real poll cadence
+  (`UPDATE_INTERVAL`) and the seed path (`prisma/seed/seed.mjs`). `/docs` and `/docs/notifications`
+  describe the GET update route and the push baseline in the lease row.
+- `/docs/data-flow` describes the lease-era worker pipeline: migrate-on-start before the worker, the
+  Bearer poll, the poller lease, `updateSeason` on every poll and on demand, and the closing pass
+  that reads its season from the lease row.
+- `/docs/database` matches `prisma/schema.prisma`: no `Review` or `App`, the `worker_heartbeat` lease
+  columns, the `api_rate_limit` table, and `TIMESTAMP(3)` in place of `TIMESTAMPTZ`. The
+  `prisma.config.mjs` sample is current, and the ER diagram parses under mermaid 12.
+- `/docs/testing` states the test layout as one rule (unit tests mirror the source tree, enforced by
+  `mirrorTree.test.mjs`) and matches the scripts, coverage excludes, smoke environment variables and
+  the CI job.
+- `/docs/infrastructure` describes the two lease-coordinated Swarm stacks, the pin-based release
+  path (a tag, Build: Release, `Pin Production`, Arcane Git Sync), the current images, all 11
+  workflows, the startup with migrate-on-start and the full environment table, including the
+  `*_FILE` convention. It no longer lists `POSTGRES_SSL` or the OpenAPI spec step.
+
+### Fixed
+
+- An open tab no longer reloads into a rolling update. `useLiveData` reloads on a version mismatch
+  only after the mismatch has lasted 60 s (`VERSION_RELOAD_DELAY_MS`) with no poll answered by the
+  old build. Before, the first poll that reached a new replica reloaded the tab while the old
+  replica still answered, so some chunk requests got 404 and the page did not hydrate (#672).
+- A failed sourcemap upload to GlitchTip now fails the build. Before, the Sentry build step only
+  logged the error, deleted the maps and exited 0, so `Pin Production` could pin a release with no
+  browser maps. `next.config.mjs` sets an `errorHandler` that rethrows the error (#661).
+- The live dashboard updates in a browser without `localStorage` (null, or a getter that throws).
+  `clearReloadGuard()` threw on every poll there, so no poll result reached the page.
+  `guardedReload()` and `clearReloadGuard()` now read storage through `getLocalStorage()`
+  (`src/shared/utils/storage.mjs`). Without storage, `guardedReload()` does not reload: the circuit
+  breaker cannot count across page loads, and a stale tab is safer than a reload loop. `readOptOut()`
+  no longer reports a missing `localStorage` to GlitchTip, an expected condition (HELLDIVERSBOT-6D,
+  #671).
+- S159 is no longer at 1144% on the `/stats` Friendly Fire chart. In one 15-minute bucket
+  (2026-07-20 08:00 UTC) the official API's S159 Illuminate counters jumped by 1,862,270,850
+  accidentals, 98,775,169 kills, 86,132,550 shots and 662,147 hits, over a normal 17 missions and 73
+  deaths. The migration `20261115120000_fix_s159_illuminate_statistics` subtracts that step from
+  the rows that carry it. S159 now reads 0.55% friendly fire and 47.25% accuracy, in line with its
+  neighbours. The S159 archive's death tooltip, its "By the numbers" line and the all-time Shots
+  per Planet figure are corrected with it.
+- The poller reports a `statistics.implausible` warning to the log and to GlitchTip when the official
+  API sends a faction with more accidentals than deaths. It still stores the row.
+
 ## 0.98.1
 
 ### Changed
 
+- Staging reports server and browser errors to GlitchTip with `environment: staging`. The plain
+  `SENTRY_DSN` in `deploy/staging/compose.yaml` is the same project as production.
 - Versioning is "accumulate, then cut" (#618): PRs into `develop` raise no version and add their
   notes here; the cut is its own PR into `develop`, then the release PR. `Check: Version Bump` runs
   only on PRs into `main`. Staging images carry `<version>-dev.<sha7>` through a new `APP_VERSION`

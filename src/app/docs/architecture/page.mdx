@@ -31,7 +31,7 @@ A single normalized schema (`h1_season`, `h1_status`, `h1_statistic`, `h1_event`
 
 ### Worker Thread
 
-A dedicated thread polls the official API every 5-15 seconds using `setTimeout` (not `setInterval`) to prevent overlapping requests. Validates with Zod before any database writes.
+Every app replica runs a worker thread that calls the update route every `UPDATE_INTERVAL` seconds using `setTimeout` (not `setInterval`) to prevent overlapping requests. Each call claims the `worker_heartbeat` lease first, so exactly one replica polls the official API and the others stand by. Validates with Zod before any database writes.
 
 ### Confirm Pattern
 

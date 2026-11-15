@@ -1,9 +1,8 @@
 /**
- * True unless WORKER_ENABLED is explicitly "false". Lets a horizontally scaled
- * web tier run with the poller switched off: the update path keeps state in
- * memory (prevEvents, lastSeasonObserved), so exactly one instance may poll —
- * see #516. Deployments run N web replicas with WORKER_ENABLED=false and one
- * worker replica with it on (deploy/staging/compose.yaml).
+ * True unless WORKER_ENABLED is explicitly "false". An optional per-replica
+ * opt-out: the replica then serves web only. Every replica may run the worker,
+ * because the worker_heartbeat lease (src/update/lease.mjs) lets exactly one
+ * holder poll. No deployment needs a separate worker replica.
  * @returns {boolean}
  */
 export function isWorkerEnabled() {
