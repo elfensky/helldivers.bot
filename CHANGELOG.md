@@ -6,6 +6,9 @@
 
 - Season 161 is in the seed data (`prisma/seed/seasons/season-161.json`), from the weekly seed
   refresh (#642). The next app start seeds it, because the seed hash changes.
+- `scripts/check-mermaid-fences.mjs`, an offline mermaid parse check for the docs text fences
+  (`node scripts/check-mermaid-fences.mjs [file.mdx ...]`). It fails on a fence mermaid cannot parse
+  and on zero fences.
 
 ### Changed
 
@@ -19,6 +22,9 @@
 - The `/docs/architecture` diagram shows the `worker_heartbeat` poller lease, the real poll cadence
   (`UPDATE_INTERVAL`) and the seed path (`prisma/seed/seed.mjs`). `/docs` and `/docs/notifications`
   describe the GET update route and the push baseline in the lease row.
+- `/docs/data-flow` describes the lease-era worker pipeline: migrate-on-start before the worker, the
+  Bearer poll, the poller lease, `updateSeason` on every poll and on demand, and the closing pass
+  that reads its season from the lease row.
 
 ## 0.98.1
 
