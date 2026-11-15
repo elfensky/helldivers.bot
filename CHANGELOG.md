@@ -12,6 +12,10 @@
 
 ### Changed
 
+- The app image is about 37 MB smaller (compressed). The `migrate-tools` stage of `Dockerfile.app`
+  deletes PGlite (`prisma dev`), `@prisma/query-plan-executor` and the CockroachDB, MySQL, SQLite
+  and SQL Server query compilers, which `migrate deploy` and the seed never load. A
+  `prisma --version` step fails the build if the CLI start needs a deleted module (#673).
 - Images no longer ship browser sourcemaps. The Sentry build step uploads them to GlitchTip, then
   deletes them (`sourcemaps.deleteSourcemapsAfterUpload`). Builds without `SENTRY_AUTH_TOKEN` emit
   none (#502). `/docs/infrastructure` documents the config.
