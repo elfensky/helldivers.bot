@@ -1,8 +1,9 @@
 /**
- * True unless WORKER_ENABLED is explicitly "false". An optional per-replica
- * opt-out: the replica then serves web only. Every replica may run the worker,
- * because the worker_heartbeat lease (src/update/lease.mjs) lets exactly one
- * holder poll. No deployment needs a separate worker replica.
+ * True unless WORKER_ENABLED is false, 0, no or off (case-insensitive).
+ * An optional per-replica opt-out: the replica then serves web only. Every
+ * replica may run the worker, because the worker_heartbeat lease
+ * (src/update/lease.mjs) lets exactly one holder poll. No deployment needs a
+ * separate worker replica.
  * @returns {boolean}
  */
 export function isWorkerEnabled() {
