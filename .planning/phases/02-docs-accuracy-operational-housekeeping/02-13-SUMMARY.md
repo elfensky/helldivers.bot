@@ -44,7 +44,7 @@ completed: 2026-11-15
 
 # Phase 2 Plan 13: Release 1 Summary
 
-**Release 0.98.1 (develop as planned, migrate-on-start #599 alone) went through cut PR #656, release PR #657 and tag v0.98.1; production reported 0.98.1 about 14 minutes after the tag push.**
+**Release 0.98.1 (develop as planned, migrate-on-start #599 alone) went through cut PR #656, release PR #657 and tag v0.98.1; production reported 0.98.1 about 10 minutes after the tag push (run started 00:10:17Z).**
 
 ## Accomplishments
 
@@ -88,7 +88,7 @@ None.
 
 ## Issues Encountered
 
-None. Time-to-live from tag push (00:08Z approx.) to production 0.98.1: about 12 minutes, well inside the 30 min limit.
+None. Time from the Build: Release start (00:10:17Z) to production 0.98.1 (00:19:36Z to 00:20:36Z): about 10 minutes, well inside the 30 min limit.
 
 ## Next Phase Readiness
 
