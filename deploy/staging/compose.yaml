@@ -77,6 +77,8 @@ services:
             # server_name tag in GlitchTip changes on every redeploy instead of
             # naming the node the task landed on.
             SENTRY_SERVER_NAME: '{{.Node.Hostname}}-{{.Task.Slot}}'
+            # Plain, not a *_FILE: src/instrumentation.js reads it before the file values load.
+            SENTRY_DSN: 'https://8afca5d3e7344a42b31eb9d8dd85cc89@glitchtip.lav.ren/1'
             # The app reads secrets from files via the `*_FILE` convention
             # (src/shared/utils/hydrateFileSecrets.mjs): if POSTGRES_URL_FILE is set,
             # it populates POSTGRES_URL from that file before Prisma reads it.

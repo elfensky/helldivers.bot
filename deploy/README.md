@@ -33,8 +33,8 @@ green `develop` build (`bump-staging-tag` in `../.github/workflows/build-staging
   Kill the holder's task and the row moves to another replica within ~1 min, carrying
   `prev_events` / `last_season_observed` with it. Staging sets no `VAPID_*`, so push dedup is not
   observable here — what staging proves is single-holder polling and handover.
-- Auth/Umami/Sentry unset on purpose: the app degrades gracefully and OAuth callbacks need a
-  real hostname anyway.
+- Auth and Umami are unset on purpose: the app degrades gracefully and OAuth callbacks need a
+  real hostname anyway. Sentry reports to the production GlitchTip with `environment: staging`.
 
 ## How it is deployed — Arcane Git Sync
 
