@@ -216,7 +216,7 @@ When offline, the app loads precached assets and displays last known war data:
 
 ### PWA Metadata
 
-The web app manifest (`src/app/site.webmanifest`) and layout metadata enable full PWA installability:
+The web app manifest (`public/site.webmanifest`) and layout metadata enable full PWA installability:
 
 - `display: standalone` — app launches without browser chrome
 - `orientation: portrait` — locked to portrait (mobile-first dashboard)
@@ -252,4 +252,4 @@ The web app manifest (`src/app/site.webmanifest`) and layout metadata enable ful
 | `src/shared/components/StatusDot.jsx`               | Tri-state connection indicator                                |
 | `src/update/pushNotifier.mjs`                       | Server-side push fan-out                                      |
 | `src/app/api/notifications/subscribe/route.js`      | Push subscription CRUD                                        |
-| `src/app/site.webmanifest`                          | PWA manifest (install, icons, orientation)                    |
+| `public/site.webmanifest`                           | PWA manifest (install, icons, orientation)                    |
