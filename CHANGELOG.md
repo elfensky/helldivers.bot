@@ -31,6 +31,10 @@
 - `/docs/testing` states the test layout as one rule (unit tests mirror the source tree, enforced by
   `mirrorTree.test.mjs`) and matches the scripts, coverage excludes, smoke environment variables and
   the CI job.
+- `/docs/infrastructure` describes the two lease-coordinated Swarm stacks, the pin-based release
+  path (a tag, Build: Release, `Pin Production`, Arcane Git Sync), the current images, all 11
+  workflows, the startup with migrate-on-start and the full environment table, including the
+  `*_FILE` convention. It no longer lists `POSTGRES_SSL` or the OpenAPI spec step.
 
 ## 0.98.1
 
