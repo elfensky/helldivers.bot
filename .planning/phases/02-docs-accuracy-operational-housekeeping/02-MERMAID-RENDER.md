@@ -50,9 +50,11 @@ Verdict: RENDERED
   - `/docs/notifications` `notification-flow` (`notificationFlowDefinition.mjs`, 10): worker, update, pushcheck, live, pushapi, sw, hook, detect, toast, webnoti
   - `/docs/notifications` `inapp-flow` (`inAppFlowDefinition.mjs`, 12): hd1_api, worker, post_update, update_status, poll, live_api, get_campaign, hook, rerender, detect_changes, sonner_toast, web_noti
   - `/docs/notifications` `push-flow` (`pushFlowDefinition.mjs`, 7): post_update, check_notify, detect_changes, query_subs, web_push, sw_push, show_noti
-- Tool and browser: chrome-devtools MCP, run by the execute-phase orchestrator in an isolated Chrome 157.0.0.0 (macOS) at 1440×900, between 2026-11-15T02:48:15Z and 02:48:39Z. The appVersion was read before and after the render and did not change. Console: 0 messages containing `[MermaidDiagram] render failed:` on all three pages. The only console error per page was one `Failed to load resource: net::ERR_NAME_NOT_RESOLVED` (the Cloudflare Insights beacon, blocked by this network's DNS filter; unrelated to the diagrams). Every step of the checkpoint ran.
+- Earlier measurement (2026-11-15T02:48Z, build 0.98.1-dev.c46001d): all three pages passed (svg 1/1, 1/1, 3/3, missing nodes 0, render errors 0). It was re-run on the release cut commit because #672 changed a prose paragraph of /docs/notifications after c46001d.
+- Re-run commit C: `96e34c9520051f347b404d898ea67eda02107e1e` (cut PR #682, 0.99.0). `git diff c46001d 96e34c9` over the five definition files and `src/shared/components/MermaidDiagram` is empty, so the node IDs above are unchanged. The five diagrams were matched on the `flowchart-<nodeId>-<n>` suffix of `g.node[id]` inside each diagram's own svg (`mermaid-data-flow-1`, `mermaid-docs-overview-1`, `mermaid-notification-flow-1`, `mermaid-inapp-flow-1`, `mermaid-push-flow-1`): the same 14, 11, 10, 12 and 7 IDs, all found.
+- Tool and browser: chrome-devtools MCP, run by the execute-phase orchestrator in an isolated Chrome 157.0.0.0 (macOS) at 1440×900, between 2026-11-15T12:39:29Z and 12:40:12Z. The appVersion was read before and after the render and did not change. Console: no messages at all on all three pages (0 containing `[MermaidDiagram] render failed:`). Every step of the checkpoint ran.
 
-Staging version: 0.98.1-dev.c46001d
+Staging version: 0.99.0-dev.96e34c9
 
 /docs/architecture desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
 /docs desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
