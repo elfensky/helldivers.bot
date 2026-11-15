@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: "Phase 2 paused: 02-09 at Task 2 checkpoint (no staging error event yet); 02-11, 02-12 wait"
-last_updated: "2026-11-15T03:21:47.588Z"
+stopped_at: Completed 02-09-PLAN.md
+last_updated: "2026-11-15T11:54:57.873Z"
 last_activity: 2026-11-15
-last_activity_desc: Phase 02 paused at 02-09 Task 2 (11 of 14 plans summarized)
-state_head: c576eb534b65a0c96669882522f07fafe287fd29
+last_activity_desc: Plan 02-09 complete, Verdict: SYMBOLICATED (12 of 14 plans summarized)
+state_head: 16482fd873021e0416535d0efda9cf13a8243b0d
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 14
-  completed_plans: 11
+  completed_plans: 12
   percent: 0
 ---
 
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 11 of 14 summarized (02-01 superseded); 02-09 paused at Task 2, then 02-11 (release 2) and 02-12
-Status: Paused at a checkpoint — 02-09 needs a natural staging browser error in GlitchTip (D-30: no synthetic event); 02-11 also needs Andrei's release-route decision
+Plan: 12 of 14 summarized (02-01 superseded); 02-09 done, then 02-11 (release 2) and 02-12
+Status: Ready for 02-11 — 02-09 proved symbolication on staging (HELLDIVERSBOT-7D, Verdict: SYMBOLICATED), so the strip may enter release 2; D-15 (1) and (2) are on #502
 Last activity: 2026-11-15 — release 1 (v0.98.1) live, #642 landed, staging DSN, sourcemap strip and the docs plans merged (PRs #656, #657, #642, #659, #660, #664–#668)
 
-Progress: [████████░░] 79%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [████████░░] 79%
 | Phase 02 P15 | 5 min | 3 tasks | 1 files |
 | Phase 02 P07 | 10 min | 3 tasks | 4 files |
 | Phase 02 P08 | 45 min | 3 tasks | 2 files |
+| Phase 02 P09 | n/a (paused at checkpoint) | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-06: the page documents X-Worker-Startup as sent but not acted on by the update route (nothing in src/ reads it); the fence check uses only installed jsdom and mermaid
 - [Phase 02]: 02-07: api_rate_limit gets its own section 8 on /docs/database; the testing page keeps no mermaid fence (layout stated as one rule)
 - [Phase 02]: 02-08: the infrastructure page cites no CI compose file name (the retired-name gate regex matches it); observed timings (release ~10 min, staging roll 5-6 min) are stated as observed
+- [Phase 02]: 02-09: one deliberate real staging browser error was allowed as a one-time exception to D-30 (Andrei, 2026-11-15); HELLDIVERSBOT-7D symbolicated, Verdict: SYMBOLICATED, strip may enter release 2
 
 ### Pending Todos
 
@@ -126,11 +128,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T03:21:47.556Z
-Stopped at: Phase 2 paused: 02-09 at Task 2 checkpoint (no staging error event yet); 02-11, 02-12 wait
-Resume file: .planning/phases/02-docs-accuracy-operational-housekeeping/02-09-PLAN.md
+Last session: 2026-11-15T11:54:57.806Z
+Stopped at: Completed 02-09-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
 - Run `/gsd-execute-phase 2`. Plans 02-13 (release 1) and 02-04 (#642) must finish before 2026-11-16 03:00 UTC (D-31)
-- Before plan 02-09, authorize the GlitchTip connector (D-15, D-24); browser and GlitchTip steps are blocking checkpoints
+- Plan 02-09 is done. Plan 02-11 cuts release 2 with the strip (the proof file holds `Verdict: SYMBOLICATED`); it also needs Andrei's release-route decision at its Task 1
