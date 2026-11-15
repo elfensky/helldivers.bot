@@ -86,7 +86,7 @@ Earlier closing line (lane commit 0f2a2432): CHECKED. It missed the drift in § 
 
 Lane commit: 0f2a2432d907e3ccb75f1e95fdf7a6d347e0c7cb
 
-Page notifications: CHECKED
+Earlier closing line (lane commit 0f2a2432): CHECKED. It missed the drift in § Gap closure: /docs/notifications.
 
 ## /docs/data-flow
 
@@ -306,3 +306,35 @@ Plan 02-16 re-read `page.mdx`, `overviewConfig.mjs` and `overviewDefinition.mjs`
 Lane commit: 5087ee615207218dc4354202a9d435731c3d85cf
 
 Page overview: CHECKED
+
+## Gap closure: /docs/notifications
+
+Plan 02-17 re-read the seven notifications files (`page.mdx`, the three config and definition pairs, `pushFlowConfig.mjs` and `pushFlowDefinition.mjs`) at the lane commit below, for every lease line and every statement of the five classes. The notifications page is an extra site of DOCS-02 (D-07), so drift outside those two groups is recorded and left (02-VERIFICATION.md truth 2; 02-REVIEW.md WR-03).
+
+| Item | Stale statement | Fix | Code evidence |
+|------|-----------------|-----|---------------|
+| `src/app/docs/notifications/notificationFlowConfig.mjs:37,44` (`worker` panel, WR-03) | "Dedicated Worker Thread that polls the official Helldivers 1 API every ~20 seconds"; Poll interval row "UPDATE_INTERVAL env (default 20s)" | "Every replica runs it, and it calls POST /api/h1/update ... every UPDATE_INTERVAL seconds. Only the poller lease holder polls the official Helldivers 1 API."; row "UPDATE_INTERVAL env (required; 20 in both stacks)" | `public/workers/cronLogic.js:30`, `src/update/lease.mjs:45`, `src/config/server.mjs:37`, `src/shared/utils/initializeWorker.mjs:30`, `deploy/production/compose.yaml:79`, `deploy/staging/compose.yaml:74` |
+| `src/app/docs/notifications/inAppFlowDefinition.mjs:23` | Edge `hd1_api --> worker`: the worker thread only calls the update route | Edge `hd1_api -->\|"lease holder fetches"\| post_update`; `worker --> post_update` stays; the 12 node ids are unchanged | `src/app/api/h1/update/route.js:87`, `src/update/fetch.mjs:8` |
+| `src/app/docs/notifications/inAppFlowConfig.mjs:25` (`hd1_api` panel) | "the worker polls less frequently to avoid overload" | "Only the poller lease holder fetches it, once per UPDATE_INTERVAL seconds." | `src/app/api/h1/update/route.js:93`, `deploy/production/compose.yaml:79` |
+| `src/app/docs/notifications/page.mdx:220,256` | The web app manifest is at `src/app/site.webmanifest` | `public/site.webmanifest`; the file under `src/app/` does not exist | `public/site.webmanifest:1`, `src/app/layout.jsx:66` |
+| `src/app/docs/notifications/page.mdx:202-207` (§ Caching Strategy), class: service worker caching | One row "Static assets: Stale-while-revalidate": the `/_next/static` scripts and the site's own audio and video are cache-first | Two rows: cache-first for `/_next/static` scripts, the site's own audio and video; stale-while-revalidate for the site's own images, fonts, other scripts and stylesheets. The NetworkOnly and network-first rows stay. Same groups as the plan 02-16 clause on /docs/architecture (Serwist 9.5.13) | `src/sw.js:12`, `src/sw.js:15` |
+| `src/app/docs/notifications/page.mdx:192`, class: service worker lifecycle. Extra drift | "Serwist handles registration automatically via the `register: true` config option" | Sentence removed. No `register` option exists in `serwist.config.js`, and no code under `src/` registers the worker. Replaced by the header that `next.config.mjs` sends for `/sw.js`, which is why the browser checks for a new version on each navigation | `serwist.config.js:8`, `next.config.mjs:151`, `src/sw.js:6`, `src/sw.js:7` |
+| `src/app/docs/notifications/notificationFlowConfig.mjs:60,66` (`update` panel), `:221` (`db` panel), `inAppFlowConfig.mjs:47` (`post_update` panel). Lease lines | The update route is described as running for every call; the sequence has no lease step; the `db` panel says "The worker writes campaign status and snapshots" | The lease holder runs the updates; a replica without the lease answers standby; the sequence gains step 2 `claimLease()`; the `db` panel names the Update Route on the lease holder as the writer | `src/app/api/h1/update/route.js:87`, `src/app/api/h1/update/route.js:93`, `src/update/lease.mjs:45` |
+| Class: worker versus lease-holder polling | Every statement on the seven files | Fixed above; `pushcheck`, `check_notify` and the page's "Client vs Server" text already say the baseline is the lease-row snapshot and match the code | `src/update/pushNotifier.mjs:118`, `src/app/api/h1/update/route.js:200`, `prisma/schema.prisma:249` |
+| Class: file paths | Every path the seven files name | Checked with `git ls-files`: the update, live and subscribe routes, `src/sw.js`, `serwist.config.js`, `public/workers/cron.js`, `src/update/pushNotifier.mjs`, the hook, guard and toast files and `src/db/queries` all exist; the manifest path is fixed above | `src/app/api/notifications/subscribe/route.js:42`, `src/shared/utils/reloadGuard.mjs:4`, `src/features/notifications/LiveToasts.jsx:4` |
+| Class: auth providers | none named in the seven files | Checked, no statement to correct | `src/auth.js:29` |
+| Class: scalar versus array types | `prevEvents` and the event arrays | Checked, no drift: `prevEvents` is an object array or null, and the column is `Json?` | `src/update/pushNotifier.mjs:115`, `prisma/schema.prisma:249` |
+| Checked, no drift | 10 s poll, visibility poll, leader election, 30 s TTL and 3 attempts, 60 s reload delay, `Object.freeze(INITIAL_STORE)`, first-message baseline, 50 concurrent pushes, 410 and 404 cleanup, Zod 2048 and 256 limits, same-origin icon and badge, `no-store` on the live endpoint, `skipWaiting` and `clientsClaim` | All match | `src/shared/hooks/useLiveData.mjs:31`, `src/shared/hooks/useLiveData.mjs:34`, `src/shared/utils/reloadGuard.mjs:5`, `src/update/pushNotifier.mjs:9`, `src/app/api/notifications/subscribe/route.js:12`, `src/sw.js:60`, `src/app/api/h1/live/route.js:25` |
+| Kept deferral (D-07, Phase 18 DOCS-03) | The four `POST /api/h1/update` labels (`src/app/docs/notifications/notificationFlowConfig.mjs:37`, `src/app/docs/notifications/inAppFlowDefinition.mjs:7`, `src/app/docs/notifications/inAppFlowConfig.mjs:36`, `src/app/docs/notifications/pushFlowDefinition.mjs:4`). The route answers GET | Left as is. The new `worker` text keeps the label | `public/workers/cronLogic.js:30`, `src/app/api/h1/update/route.js:63` |
+| Kept deferral (D-07, plan 02-05 decision) | The `polls every ~20s` node labels in `notificationFlowDefinition.mjs:5` and `inAppFlowDefinition.mjs:6` | Left as is: correct for the deployed value, and the worker does poll the update route | `deploy/production/compose.yaml:79`, `deploy/staging/compose.yaml:74` |
+| Out of scope, DOCS-03 (unchanged) | `page.mdx:226` says `themeColor: #282828` | The layout sets `#1c1b1b` | `src/app/layout.jsx:58` |
+| Out of scope, DOCS-03 (unchanged) | `page.mdx:214` names the offline cache key `hd1-live-cache` | The key is `hd1-live-cache-v1`; the `hook` panel already says so | `src/shared/hooks/useLiveData.mjs:30` |
+| Out of scope, DOCS-03 (unchanged) | `page.mdx:132` and the `toast` panel: toasts sit bottom-right | Desktop is bottom-right; mobile is top-center | `src/features/notifications/LiveToasts.jsx:147` |
+| Out of scope, DOCS-03 (unchanged) | Panels and page name `computeMapState()` for the live endpoint | The route calls `computeLiveMapState`, a wrapper | `src/app/api/h1/live/route.js:8` |
+| Open question for plan 02-19 | Where the service worker gets registered | The repo shows no registration call and no `register` option; the page now makes no claim. Only a browser check can show whether the worker registers | `src/features/notifications/NotificationToggle.jsx:47` |
+| Why plan 02-05 missed it | Its check fixed the in-memory baseline wording and recorded the POST and `~20s` labels as deferred | It did not read the worker and HD1 panels against the update route and the lease, the manifest path against the tree, or the caching and registration sentences against `src/sw.js` and the config | `src/sw.js:6`, `src/update/lease.mjs:45` |
+| Extra check: private infrastructure detail (D-06, T-02-61) | none found | No IPv4 address, host name, node label or secret name in the seven files and the edits; the edits name repo paths and env var names only | `src/app/docs/notifications/notificationFlowConfig.mjs:37`, `src/app/docs/notifications/page.mdx:256` |
+
+Lane commit: af0f68468405149f07a25c1b03613cdfb96ac83a
+
+Page notifications: CHECKED
