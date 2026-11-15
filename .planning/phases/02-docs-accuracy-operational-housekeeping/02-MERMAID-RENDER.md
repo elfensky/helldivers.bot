@@ -50,4 +50,10 @@ Verdict: RENDERED
   - `/docs/notifications` `notification-flow` (`notificationFlowDefinition.mjs`, 10): worker, update, pushcheck, live, pushapi, sw, hook, detect, toast, webnoti
   - `/docs/notifications` `inapp-flow` (`inAppFlowDefinition.mjs`, 12): hd1_api, worker, post_update, update_status, poll, live_api, get_campaign, hook, rerender, detect_changes, sonner_toast, web_noti
   - `/docs/notifications` `push-flow` (`pushFlowDefinition.mjs`, 7): post_update, check_notify, detect_changes, query_subs, web_push, sw_push, show_noti
-- Browser render: Task 2 checkpoint (not yet run).
+- Tool and browser: chrome-devtools MCP, run by the execute-phase orchestrator in an isolated Chrome 157.0.0.0 (macOS) at 1440×900, between 2026-11-15T02:48:15Z and 02:48:39Z. The appVersion was read before and after the render and did not change. Console: 0 messages containing `[MermaidDiagram] render failed:` on all three pages. The only console error per page was one `Failed to load resource: net::ERR_NAME_NOT_RESOLVED` (the Cloudflare Insights beacon, blocked by this network's DNS filter; unrelated to the diagrams). Every step of the checkpoint ran.
+
+Staging version: 0.98.1-dev.c46001d
+
+/docs/architecture desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
+/docs desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
+/docs/notifications desktop staging: PASS (svg 3/3, missing nodes 0, render errors 0)
