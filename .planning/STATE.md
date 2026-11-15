@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-24-PLAN.md
-last_updated: "2026-11-15T20:02:20.343Z"
+stopped_at: Completed 02-18-PLAN.md
+last_updated: "2026-11-15T20:11:06.510Z"
 last_activity: 2026-11-15
-last_activity_desc: "Plan 02-24 executed: /docs/data-flow re-checked statement by statement and corrected (lane docs/02-gap-closure at 1894d747)"
-state_head: 5abe4ae69623122a8ce38489af9a963a6b70c48d
+last_activity_desc: "Plan 02-18 executed: Sentry bullets scoped to the plugin (issue #686), /docs/database re-checked and corrected (lane docs/02-gap-closure at 4ac3350c)"
+state_head: 62037d39cffb3159560a2ea10caf15cc2c4225e1
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 24
-  completed_plans: 18
+  completed_plans: 19
   percent: 0
 ---
 
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 18 of 24 summarized (02-01 superseded); gap-closure plans 02-16, 02-17, 02-23 and 02-24 done on lane `docs/02-gap-closure` (head 1894d747); 02-18, 02-25 follow
+Plan: 19 of 24 summarized (02-01 superseded); gap-closure plans 02-16, 02-17, 02-23, 02-24 and 02-18 done on lane `docs/02-gap-closure` (head 4ac3350c); 02-25 follows
 Status: Executing gap closure — `02-VERIFICATION.md` found gaps (4/5, DOCS-02 partial); the docs fixes ship in patch release 0.99.1 (D-33)
-Last activity: 2026-11-15 — plan 02-24 executed (/docs/data-flow re-checked statement by statement, ten fixes, CHECKED re-issued)
+Last activity: 2026-11-15 — plan 02-18 executed (Sentry bullets scoped, issue #686, /docs/database re-checked, CHECKED re-issued)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -64,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P17 | 6 min | 2 tasks | 6 files |
 | Phase 02 P23 | 7 min | 2 tasks | 7 files |
 | Phase 02 P24 | 7 min | 2 tasks | 2 files |
+| Phase 02 P18 | 12 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,7 @@ Recent decisions affecting current work:
 - [Phase 02]: 02-17: the notifications page makes no claim about service-worker registration (no register option or registration call in the repo); open question for plan 02-19's browser check
 - [Phase 02]: 02-23: the fence check discovers every docs page.mdx (14 fences in 16 files); IN-04 found no bad flows entry, and three declared nodes have no details panel (intro_order, points_max, computeMapState); jsconfig.json maps @test-utils to a missing file (reported, left)
 - [Phase 02]: 02-24: /docs/data-flow re-check found no D-08 drift; ten wording and excerpt fixes landed in one lane commit (1894d747), CHECKED re-issued at that commit
+- [Phase 02]: 02-18: a skipped Sentry upload (empty project, empty org or zero maps) passes the build and ships without uploaded maps; /docs/infrastructure says so and issue #686 tracks the CI guard; /docs/database re-check fixed nine statements in lane commit 4ac3350c
 
 ### Pending Todos
 
@@ -141,8 +143,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T20:02:20.312Z
-Stopped at: Completed 02-24-PLAN.md
+Last session: 2026-11-15T20:11:06.480Z
+Stopped at: Completed 02-18-PLAN.md
 Resume file: None
 
 ## Operator Next Steps

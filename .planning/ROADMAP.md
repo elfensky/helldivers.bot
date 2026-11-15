@@ -147,7 +147,7 @@ Phase 1.1 moved production to the Hetzner swarm and released v0.96.4.
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
   5. `docs/roadmap.md` is deleted and its live items are carried into `.planning/` (ARCH-11 and § Carried over), leaving `.planning/ROADMAP.md` as the one roadmap file (HOUSE-05, done 2026-11-02)
 
-**Plans**: 18/24 plans executed (re-planned 2026-11-14 per 02-CONTEXT.md D-29; 02-01 superseded by 02-13; gap closure 02-16 to 02-25 added 2026-11-15 per 02-VERIFICATION.md gaps_found and D-33; 02-23 split from 02-17; 02-24 split from 02-23 and 02-25 from 02-18 for context size)
+**Plans**: 19/24 plans executed (re-planned 2026-11-14 per 02-CONTEXT.md D-29; 02-01 superseded by 02-13; gap closure 02-16 to 02-25 added 2026-11-15 per 02-VERIFICATION.md gaps_found and D-33; 02-23 split from 02-17; 02-24 split from 02-23 and 02-25 from 02-18 for context size)
 
 Plans:
 **Wave 1**
@@ -218,7 +218,7 @@ Plans:
 
 **Wave 17** *(blocked on Wave 16 completion; same lane)*
 
-- [ ] 02-18-PLAN.md — Infrastructure build-failure claim scoped to the Sentry source plus a CI-guard issue (WR-01, D-33: no workflow change); database OAuth providers and the database page re-checked statement by statement (DOCS-02)
+- [x] 02-18-PLAN.md — Infrastructure build-failure claim scoped to the Sentry source plus a CI-guard issue (WR-01, D-33: no workflow change); database OAuth providers and the database page re-checked statement by statement (DOCS-02)
 
 **Wave 18** *(blocked on Wave 17 completion; same lane)*
 
@@ -537,7 +537,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 |-------|----------------|--------|-----------|
 | 1. Stability Fixes & Release | 9/9 | Complete    | 2026-10-21 |
 | 1.1. Production on the Hetzner Swarm (INSERTED) | - | Complete    | 2026-10-25 |
-| 2. Docs Accuracy & Operational Housekeeping | 18/24 | In Progress | - |
+| 2. Docs Accuracy & Operational Housekeeping | 19/24 | In Progress | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
 | 5. SEO & Analytics Foundation | 0/TBD | Not started | - |

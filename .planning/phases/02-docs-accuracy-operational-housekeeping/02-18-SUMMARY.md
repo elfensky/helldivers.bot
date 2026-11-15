@@ -113,7 +113,7 @@ status: complete
   - the Prisma client is cached in every environment, not only in development
   - `providerId` examples omitted `"google"`
 - Sweep 3 now holds G4 (`cannot pin a build without its maps|Discord and GitHub`): 0 hit lines. `src/app/docs/authentication/page.mdx` lines 12, 22 and 191 still name two providers: out of scope, DOCS-03 (D-07), recorded.
-- Record: `## Gap closure: /docs/database` with 28 rows and the only `Page database: CHECKED` line; the plan 02-07 closing line is prose; the nine CHECKED lines are each present once. A range check confirmed every cited `path:line` is inside its file.
+- Record: `## Gap closure: /docs/database` with 27 rows and the only `Page database: CHECKED` line; the plan 02-07 closing line is prose; the nine CHECKED lines are each present once. A range check confirmed every cited `path:line` is inside its file.
 
 ## Task Commits
 
