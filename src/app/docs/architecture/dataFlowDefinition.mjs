@@ -47,11 +47,12 @@ const BODY = `
 
     %% DB → Frontend
     h1_status -->|"latest bucket"| fe_live
+    h1_statistic -->|"latest bucket"| fe_live
     h1_event -->|"active events"| fe_live
     h1_season -->|"arrays"| fe_live
     h1_status -->|"full history"| fe_archives
     h1_event -->|"all events"| fe_archives
-    h1_event_progress -->|"progression"| fe_archives
+    h1_statistic -->|"players"| fe_archives
     h1_season -->|"reconstruct"| fe_rebroadcast
     h1_status -->|"reconstruct"| fe_rebroadcast
     h1_statistic -->|"reconstruct"| fe_rebroadcast
