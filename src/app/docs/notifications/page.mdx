@@ -189,7 +189,7 @@ The app is a Progressive Web App with offline support powered by Serwist (`@serw
 
 ### Service Worker Updates
 
-The service worker uses `skipWaiting: true` and `clientsClaim: true` — new versions activate immediately on install without user interaction. Serwist handles registration automatically via the `register: true` config option.
+The service worker (`src/sw.js`) uses `skipWaiting: true` and `clientsClaim: true` — new versions activate immediately on install without user interaction. `next.config.mjs` serves `/sw.js` with `Cache-Control: no-cache, no-store, must-revalidate`, so the browser checks for a new version on every navigation.
 
 ### Caching Strategy
 
@@ -199,11 +199,12 @@ Serwist manages two layers of caching:
 
 **Runtime caching:** Serwist's `defaultCache` from `@serwist/next/worker` provides Next.js-optimized strategies:
 
-| Request Type          | Strategy               | Rationale                                   |
-| --------------------- | ---------------------- | ------------------------------------------- |
-| API routes (`/api/*`) | NetworkOnly (explicit) | Live data must never be served from cache   |
-| Navigation            | Network-first          | HTML must match current build               |
-| Static assets         | Stale-while-revalidate | Serve fast from cache, update in background |
+| Request Type                                                | Strategy               | Rationale                                   |
+| ----------------------------------------------------------- | ---------------------- | ------------------------------------------- |
+| API routes (`/api/*`)                                       | NetworkOnly (explicit) | Live data must never be served from cache   |
+| Navigation                                                  | Network-first          | HTML must match current build               |
+| `/_next/static` scripts, the site's own audio and video     | Cache-first            | Serve from cache, fetch only on a miss      |
+| The site's own images, fonts, other scripts and stylesheets | Stale-while-revalidate | Serve fast from cache, update in background |
 
 ### Offline Behavior
 

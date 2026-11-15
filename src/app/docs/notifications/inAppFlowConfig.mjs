@@ -44,7 +44,7 @@ export const inAppFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Validates bearer token, then runs updateStatus() and updateSeason(). Also triggers checkAndNotify() for push notifications (fire-and-forget).',
+                        'Validates bearer token and claims the poller lease (a replica without it answers standby and stops), then runs updateStatus() and updateSeason(). Also triggers checkAndNotify() for push notifications (fire-and-forget).',
                 },
             ],
         },
