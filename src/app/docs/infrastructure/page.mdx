@@ -89,7 +89,7 @@ Rollback is a manual dispatch of Build: Release with the tag of an earlier relea
 
 1. A merge to `develop` runs Check: CI. When Check: CI succeeds, Build: Staging starts.
 2. Build: Staging stamps the version as `<version>-dev.<sha7>` through the `APP_VERSION` build argument. For this reason every staging build is a distinct version for the stale-tab reload and for the error tracker.
-3. Build: Staging builds the app image in the same two native legs and joins them as `:staging` and `:sha-<commit>`. It builds the migrate image only when migration-related files changed.
+3. Build: Staging builds the app image in the same two native legs and joins them as `:staging` and `:sha-<commit>`. It builds the migrate image only when migration-related files changed, when the `:staging` migrate image is missing, or on a manual dispatch.
 4. Bump Staging Tag writes `sha-<commit>` into `deploy/staging/compose.yaml` and force-pushes it to `deploy/staging`.
 5. Arcane Git Sync polls that branch and applies the pin. A staging roll took about 5 to 6 minutes after the pin commit (observed).
 
@@ -135,7 +135,7 @@ RUN node -e "const p = require('/tmp/project-package.json'), all = { ...p.depend
     POSTGRES_URL=postgresql://dummy npx prisma generate
 ```
 
-Prisma 7 CLI no longer auto-loads `.env` files. The `prisma.config.mjs` file imports `dotenv/config` to handle local env loading; in Docker, `POSTGRES_URL` comes from the environment. The Swarm stacks set `POSTGRES_URL_FILE` and read the value from a secret (see the `*_FILE` convention in Section 5).
+Prisma 7 CLI no longer auto-loads `.env` files. The `prisma.config.mjs` file loads `dotenv` (`.env.development`, then `.env`) for local env loading; in Docker, `POSTGRES_URL` comes from the environment. The Swarm stacks set `POSTGRES_URL_FILE` and read the value from a secret (see the `*_FILE` convention in Section 5).
 
 This keeps the migrate image small — it carries only the Prisma CLI, not the entire application dependency tree.
 
@@ -160,14 +160,14 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 - Build arguments: `NEXT_PUBLIC_DEPLOY_ENV`, `APP_VERSION`, `NEXT_PUBLIC_SENTRY_DSN` and `NEXT_PUBLIC_VAPID_PUBLIC_KEY`. Next.js inlines the `NEXT_PUBLIC_*` values into the client bundle, so they must exist before `npm run build`. All four are public values.
 - `APP_VERSION` replaces the `package.json` version in `next.config.mjs`. Build: Staging passes `<version>-dev.<sha7>`. Build: Release passes nothing, so the `package.json` version stays.
 - Build secrets: `sentry_auth_token`, `sentry_url`, `sentry_org` and `sentry_project` are BuildKit secrets, not build arguments. A build argument lands in the provenance attestation that is published next to the image. A secret exists only for the one `RUN` that reads it. See "next.config.mjs Sentry settings" in Section 4 for what the build does with them.
-- The `RUN` uses cache mounts for the npm download cache and for `.next/cache`. The cache lives in BuildKit storage and never in the image.
+- The `npm ci` step of the `deps` stage mounts a cache for the npm downloads, and the `npm run build` step mounts one for `.next/cache`. Both caches live in BuildKit storage and never in the image.
 
 **Runner stage details:**
 
 - `ARG NODE_ENV=production` — overridable at build time. Build: Staging and Build: Release both pass `NODE_ENV=production`.
 - The base is `node:26-slim` (Debian, glibc). The slim image has a shell and `apt`, so its surface is larger; the app does not call a shell.
 - Runs as the numeric user `65532:65532` (`USER 65532:65532`). A numeric id needs no `/etc/passwd` lookup.
-- All copied files are `--chown=65532:65532`, so `.next` stays writable for the image optimizer's runtime cache. `/app/migrate` stays root-owned: the app user can read and run the tooling, not change it.
+- The standalone output, `.next/static` and `public` are copied with `--chown=65532:65532`, so `.next` stays writable for the image optimizer's runtime cache. `/app/migrate` stays root-owned: the app user can read and run the tooling, not change it.
 - OCI labels: `org.opencontainers.image.source`, `org.opencontainers.image.licenses`, `org.opencontainers.image.title`, `version`, `description`
 - No init wrapper and no `ENTRYPOINT` of its own. The `node:26-slim` entrypoint script runs the command. The migrate image above keeps its init wrapper.
 - CMD: `["node", "server.js"]` (the Next.js standalone output file)
@@ -195,7 +195,7 @@ Check: Docker Smoke uses a separate compose file. It builds the app image from t
 
 ### Migrate on start
 
-Every app process runs `migrateOrWait()` (`src/update/migrateOnStart.mjs`) from `instrumentation.js`, before the worker starts and before Next serves a request.
+Every app process runs `migrateOrWait()` (`src/update/migrateOnStart.mjs`) from `src/instrumentation.node.js`, which `instrumentation.js` loads. It runs before the worker starts and before Next serves a request.
 
 - A dedicated `pg` session takes `pg_advisory_lock(599000001)`. Replicas take turns, so Prisma's own fixed 10 s migrate lock never contends.
 - The session runs `prisma migrate deploy`, then the seed. The session ends afterwards, which releases the lock on success and on failure.
@@ -272,9 +272,9 @@ The build starts only after Check: CI is green, so a red CI never ships an image
 
 | Job                      | Condition                                                                                                                                             | Result                                                                                                                                                     |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Detect Migration Changes | Always                                                                                                                                                | Compares the commit pinned on `deploy/staging` with the tested commit; outputs whether migrate inputs changed                                              |
+| Detect Migration Changes | Check: CI succeeded on a push to this repository's `develop`, or a manual dispatch | Compares the commit pinned on `deploy/staging` with the tested commit; outputs whether migrate inputs changed                                              |
 | Build Migrate Image      | Prisma files, `prisma.config.mjs`, `package.json`, `package-lock.json` or `Dockerfile.migrate` changed; or the image is missing; or a manual dispatch | `helldiversbot-migrate:staging` after Publish Migrate Manifest                                                                                             |
-| Build App Image          | Always                                                                                                                                                | Two legs, with `NODE_ENV=production`, `NEXT_PUBLIC_DEPLOY_ENV=staging` and `APP_VERSION=<version>-dev.<sha7>`; the Sentry credentials are BuildKit secrets |
+| Build App Image          | Check: CI succeeded on a push to this repository's `develop`, or a manual dispatch | Two legs, with `NODE_ENV=production`, `NEXT_PUBLIC_DEPLOY_ENV=staging` and `APP_VERSION=<version>-dev.<sha7>`; the Sentry credentials are BuildKit secrets |
 | Publish App Manifest     | After both legs                                                                                                                                       | `helldiversbot:staging` and `helldiversbot:sha-<commit>`                                                                                                   |
 | Bump Staging Tag         | After Publish App Manifest                                                                                                                            | Writes `sha-<commit>` into `deploy/staging/compose.yaml` and force-pushes `deploy/staging`                                                                 |
 | Cleanup Untagged Images  | After the builds, unless the app build was skipped                                                                                                    | Deletes untagged versions older than 30 minutes with `snok/container-retention-policy`                                                                     |
@@ -307,7 +307,7 @@ The build starts only after Check: CI is green, so a red CI never ships an image
 
 ```mermaid
 graph TD
-    REG["register()"] -->|"SENTRY_DSN set"| SENTRY["load sentry.server.config"]
+    REG["register()"] -->|"nodejs runtime, SENTRY_DSN set"| SENTRY["load sentry.server.config"]
     REG -->|"NEXT_RUNTIME=nodejs"| INIT["initializeHelldivers1Api()"]
     SENTRY --> INIT
     INIT --> ENV["initializeEnvironmentVariables()"]
@@ -421,11 +421,11 @@ Client-only additions: `tunnel: '/api/glitchtip'` (ad blocker bypass), `dataColl
 
 The server config also sets `serverName` from `SENTRY_SERVER_NAME`. Without it the SDK uses the container hostname, which changes on every redeploy.
 
-Server init lives in `sentry.server.config.js` and is loaded from `src/instrumentation.js` only when `SENTRY_DSN` is set — no production gate, so localhost reports too. Client init lives in `src/instrumentation-client.js` and runs on every page load whenever `NEXT_PUBLIC_SENTRY_DSN` is set.
+Server init lives in `sentry.server.config.js` and is loaded from `src/instrumentation.js` only under the Node.js runtime and only when `SENTRY_DSN` is set — no production gate, so localhost reports too. Client init lives in `src/instrumentation-client.js` and runs on every page load whenever `NEXT_PUBLIC_SENTRY_DSN` is set.
 
 ### Client tunnel
 
-The `/api/glitchtip` route proxies Sentry envelope payloads to GlitchTip's ingest endpoint. This prevents ad blockers from blocking error reports since the SDK sends to the app's own domain. The tunnel extracts the DSN's public key and forwards to `https://<host>/api/<project>/envelope/?sentry_key=<key>&sentry_version=7`.
+The `/api/glitchtip` route proxies Sentry envelope payloads to GlitchTip's ingest endpoint. This prevents ad blockers from blocking error reports since the SDK sends to the app's own domain. The tunnel extracts the DSN's public key and forwards to the DSN's own origin at `/api/<project>/envelope/?sentry_key=<key>&sentry_version=7`.
 
 ### Error boundaries
 
@@ -433,7 +433,7 @@ Three levels of error isolation:
 
 1. **`global-error.jsx`** — last-resort boundary wrapping the entire React tree. Renders its own `<html>`/`<body>` since the root layout is unavailable. Reuses the shared `RouteError` component.
 2. **Route-level `error.jsx`** — at root (`src/app/error.jsx`) and archives (`src/app/archives/error.jsx`). Thin wrappers around `RouteError` that catch errors within the layout.
-3. **`ComponentErrorBoundary`** — React class component wrapping Galaxy Map, Regions, Stats, Dashboard, and Timeline. Shows inline "failed to load" + retry button. Layout containers stay outside boundaries to preserve CSS grid/flex structure on error.
+3. **`ComponentErrorBoundary`** — React class component wrapping Dashboard, Event Log, Galaxy Map, Regions, and Stats. Shows inline "failed to load" + retry button. Layout containers stay outside boundaries to preserve CSS grid/flex structure on error.
 
 Each boundary calls the shared `reportError(error, { boundary })` helper (`src/shared/utils/observability.mjs`) so the user-visible failure reaches GlitchTip with the boundary name as context. `ComponentErrorBoundary` also passes the React `componentStack` for attribution. The same helper is used at every API-route 5xx path; calling it with a falsy error is a no-op so wiring it next to existing `errorResponse(5xx, ...)` sites is safe.
 
@@ -453,13 +453,13 @@ export function reportError(error, context = {}) {
 
 Call sites pass a `route` and `stage` tag for API routes (e.g. `{ route: '/api/h1/update', stage: 'season' }`) or a `boundary` tag for React error boundaries. The `level` field maps to Sentry severity — used at `update/route.js` to mark the closing-pass season-fetch as a warning instead of an error since the code path is explicitly non-fatal.
 
-The tunnel route (`/api/glitchtip`) is deliberately not wired with `reportError`; capturing there would self-loop when GlitchTip itself is the failing upstream.
+The tunnel route (`/api/glitchtip`) has no explicit `reportError` call. Its upstream `fetch` goes through `tryCatch`, so a caught upstream failure still reaches the server SDK as a `warning`.
 
-Caught errors flowing through `src/shared/utils/tryCatch.mjs` — the project's canonical error-handling pattern, used at ~30+ call sites — are also auto-reported with `source: 'tryCatch'` and `level: 'warning'`. The explicit `reportError(...)` calls at 5xx sites still fire at the default `error` level. Sentry groups by stack-trace fingerprint so duplicate events for the same throw roll up into one issue, while the severity tag keeps caught-and-recovered errors visually distinct from user-visible failures in the inbox.
+Caught errors flowing through `src/shared/utils/tryCatch.mjs` — the project's canonical error-handling pattern, used across more than 40 source files — are also auto-reported with `source: 'tryCatch'` and `level: 'warning'`. The explicit `reportError(...)` calls at 5xx sites still fire at the default `error` level. Sentry groups by stack-trace fingerprint so duplicate events for the same throw roll up into one issue, while the severity tag keeps caught-and-recovered errors visually distinct from user-visible failures in the inbox.
 
 ### Service worker error bridge
 
-The service worker at `src/sw.js` runs in a separate worker context with no DOM, so it can't import the Sentry browser SDK directly. The `push` and `notificationclick` handlers are wrapped with try/catch (synchronous) and `.catch()` (on the async chains inside `event.waitUntil`); failures `postMessage` a structured `{ type: 'sw-error', error: { message, name, stack }, context }` envelope to all controlled clients via `self.clients.matchAll()`. The receiving end lives in `src/shared/utils/swErrorBridge.mjs` — registered from `instrumentation-client.js`, it reconstructs the Error and calls `reportError(err, { source: 'sw', ...context })`. When no clients are open (push received with all tabs closed) the SW falls back to `console.error`, visible from `chrome://serviceworker-internals` during triage. Errors are re-thrown after the postMessage so the SW event loop still sees the rejection — original behavior preserved.
+The service worker at `src/sw.js` runs in a separate worker context with no DOM, so it can't import the Sentry browser SDK directly. The `push` and `notificationclick` handlers are wrapped with try/catch (synchronous) and `.catch()` (on the async chains inside `event.waitUntil`); failures `postMessage` a structured `{ type: 'sw-error', error: { message, name, stack }, context }` envelope to every open window client, controlled or not, via `self.clients.matchAll({ includeUncontrolled: true })`. The receiving end lives in `src/shared/utils/swErrorBridge.mjs` — registered from `instrumentation-client.js`, it reconstructs the Error and calls `reportError(err, { source: 'sw', ...context })`. When no clients are open (push received with all tabs closed) the SW falls back to `console.error`, visible from `chrome://serviceworker-internals` during triage. Errors are re-thrown after the postMessage so the SW event loop still sees the rejection — original behavior preserved.
 
 ### Worker uptime heartbeat
 
@@ -519,7 +519,7 @@ Variables are checked at startup by `initializeEnvironmentVariables()` in `src/s
 
 ### The `*_FILE` convention
 
-A key that the running server reads can also come from a file. Set `<NAME>_FILE` to a file path, and `hydrateFileSecrets()` (`src/shared/utils/hydrateFileSecrets.mjs`) reads the file and sets `<NAME>` from its trimmed content. A `<NAME>` that is already set wins over the file. An unreadable file logs a warning and is skipped, and the normal validation then reports the missing variable. The Swarm stacks use this with `POSTGRES_URL_FILE` and `UPDATE_KEY_FILE`, which point at mounted Swarm secrets.
+A key that the running server reads can also come from a file. Set `<NAME>_FILE` to a file path, and `hydrateFileSecrets()` (`src/shared/utils/hydrateFileSecrets.mjs`) reads the file and sets `<NAME>` from its trimmed content. A `<NAME>` that is already set wins over the file. An unreadable file logs a warning and is skipped, and the normal validation then reports the missing variable. Both Swarm stacks use this with `POSTGRES_URL_FILE` and `UPDATE_KEY_FILE`, which point at mounted Swarm secrets. The production stack also uses it for the Web Push private key, the auth secrets and the heartbeat URL.
 
 The convention has three limits:
 
@@ -540,8 +540,8 @@ Every key below is in `.example.env`. That file is the source for the descriptio
 | `PORT`                         | No               | Updates        | Server port; defaults to `3000`; passed to the worker so it knows which port to poll                                                                                                                                      |
 | `BUCKET_SIZE`                  | No               | Updates        | Bucket size in seconds for the `h1_status`, `h1_statistic` and `h1_event_progress` upserts; default `900` (15 min). A smaller value gives finer archives and more storage. Changing it mixes granularities in the history |
 | `NEXT_PUBLIC_SITE_URL`         | No               | Site           | Public site origin (e.g. `https://helldivers.bot`); inlined at build time so self-hosters can serve under their own domain. Defaults to `https://helldivers.bot` (`src/config/site.mjs`).                                 |
-| `UMAMI_SITE_ID`                | No               | Analytics      | Umami website tracking ID; if absent, Umami script not loaded and server-side tracking skipped                                                                                                                            |
-| `UMAMI_SITE_URL`               | No               | Analytics      | Umami instance domain, without protocol or port; used in server-side fetch calls                                                                                                                                          |
+| `UMAMI_SITE_ID`                | No               | Analytics      | Umami website tracking ID; if absent, the Umami script is not loaded. Server-side events go out in production only                                                                                                                            |
+| `UMAMI_SITE_URL`               | No               | Analytics      | Umami instance domain, without protocol or port; used in server-side fetch calls. If absent, `/stats.js` and `/recorder.js` answer 404                                                                                                                                          |
 | `SENTRY_DSN`                   | No               | Error tracking | Sentry DSN for server-side error reporting (points to GlitchTip); if absent, error tracking disabled                                                                                                                      |
 | `NEXT_PUBLIC_SENTRY_DSN`       | No               | Error tracking | Sentry DSN for client-side error reporting (same DSN, exposed to browser); a build argument, inlined at build time                                                                                                        |
 | `SENTRY_AUTH_TOKEN`            | No               | Error tracking | GlitchTip API token for source map uploads; if absent, `withSentryConfig` build plugin skipped                                                                                                                            |
@@ -560,9 +560,9 @@ Every key below is in `.example.env`. That file is the source for the descriptio
 | `AUTH_GITHUB_SECRET`           | If auth          | Auth           | GitHub OAuth application client secret                                                                                                                                                                                    |
 | `AUTH_GOOGLE_ID`               | If auth          | Auth           | Google OAuth application client ID                                                                                                                                                                                        |
 | `AUTH_GOOGLE_SECRET`           | If auth          | Auth           | Google OAuth application client secret                                                                                                                                                                                    |
-| `VAPID_PUBLIC_KEY`             | No (all-or-none) | Push           | Web Push VAPID public key; if absent, push notifications disabled                                                                                                                                                         |
-| `VAPID_PRIVATE_KEY`            | No               | Push           | Web Push VAPID private key                                                                                                                                                                                                |
-| `VAPID_SUBJECT`                | No               | Push           | VAPID contact identifier (`mailto:` email)                                                                                                                                                                                |
+| `VAPID_PUBLIC_KEY`             | No (all-or-none) | Push           | Web Push VAPID public key; push stays disabled unless this key, the private key and the subject are all set                                                                                                                                                         |
+| `VAPID_PRIVATE_KEY`            | No (all-or-none) | Push           | Web Push VAPID private key                                                                                                                                                                                                |
+| `VAPID_SUBJECT`                | No (all-or-none) | Push           | VAPID contact identifier (`mailto:` email)                                                                                                                                                                                |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No               | Push           | Client-side VAPID public key (same value as `VAPID_PUBLIC_KEY`); a build argument, inlined at build time                                                                                                                  |
 | `MIGRATE_ROOT`                 | No               | Docker         | Folder with the Prisma CLI and the `prisma/` tree for migrate-on-start; defaults to the process cwd, the image sets `/app/migrate`                                                                                        |
 | `FORCE_SEED`                   | No               | Docker         | Makes the seed re-upsert every season file even when all are in the database. Only `true`, `1` or `yes` enable it; anything else, including `false`, leaves it off                                                        |
@@ -632,7 +632,7 @@ npx pwa-asset-generator public/images/logo_square.png public/splash \
 | `/svgs/*`                                                                   | `public, max-age=31536000, immutable` (1 year)   |
 | `/workers/*`                                                                | `public, max-age=86400, immutable` (1 day)       |
 | `/sw.js`                                                                    | `no-cache, no-store, must-revalidate`            |
-| HTML page routes (not the paths above, `/api/*`, `/_next/*` or `/profile*`) | `public, s-maxage=30, stale-while-revalidate=60` |
+| HTML page routes (not the paths above, `/api/*`, `/_next/*`, `/profile*`, `/stats.js`, `/recorder.js` or `/opengraph-image`) | `public, s-maxage=30, stale-while-revalidate=60` |
 
 The service worker is built from `src/sw.js` into `public/sw.js` by `serwist build`, which `npm run build` runs after `next build`. The built file is git-ignored. It is never HTTP-cached, so a browser detects a new version on every navigation. `skipWaiting` and `clientsClaim` in `src/sw.js` then activate it. The `s-maxage` header on page routes lets Cloudflare collapse concurrent visitors into one origin request per 30 seconds. Browsers still revalidate normally.
 
