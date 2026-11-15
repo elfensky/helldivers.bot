@@ -210,6 +210,32 @@ describe('updateStatus', () => {
         }
     });
 
+    it('warns but still stores statistics with more accidentals than deaths', async () => {
+        setupHappyPath();
+        const corrupt = structuredClone(mockFetchedData);
+        corrupt.statistics[0] = {
+            ...corrupt.statistics[0],
+            deaths: 100,
+            accidentals: 25,
+        };
+        corrupt.statistics[2] = {
+            ...corrupt.statistics[2],
+            deaths: 284289,
+            accidentals: 1862326958,
+        };
+        fetchStatus.mockResolvedValue(corrupt);
+
+        const result = await updateStatus();
+
+        expect(upsertStatistic).toHaveBeenCalledTimes(3);
+        expect(result.warnings).toEqual([
+            {
+                stage: 'statistics.implausible',
+                message: 'season 5 enemy 2: accidentals 1862326958 > deaths 284289',
+            },
+        ]);
+    });
+
     // 10. h1_event_progress upserted for active defend event + attack events
     it('upserts h1_event_progress for defend and attack events in current season', async () => {
         setupHappyPath();
