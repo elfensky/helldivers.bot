@@ -25,6 +25,12 @@
 - `/docs/data-flow` describes the lease-era worker pipeline: migrate-on-start before the worker, the
   Bearer poll, the poller lease, `updateSeason` on every poll and on demand, and the closing pass
   that reads its season from the lease row.
+- `/docs/database` matches `prisma/schema.prisma`: no `Review` or `App`, the `worker_heartbeat` lease
+  columns, the `api_rate_limit` table, and `TIMESTAMP(3)` in place of `TIMESTAMPTZ`. The
+  `prisma.config.mjs` sample is current, and the ER diagram parses under mermaid 12.
+- `/docs/testing` states the test layout as one rule (unit tests mirror the source tree, enforced by
+  `mirrorTree.test.mjs`) and matches the scripts, coverage excludes, smoke environment variables and
+  the CI job.
 
 ## 0.98.1
 
