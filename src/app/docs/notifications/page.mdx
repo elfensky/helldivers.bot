@@ -153,7 +153,7 @@ Server-initiated notifications that work when the browser is closed:
 ### Subscription Flow
 
 1. User clicks "Enable notifications" (`NotificationToggle` component — enables both web notifications and push in one action)
-2. Service worker registers, `pushManager.subscribe()` creates a subscription
+2. `subscribeToPush` waits for `navigator.serviceWorker.ready` (the worker that `ServiceWorkerRegister` registered on page load), then `pushManager.subscribe()` creates a subscription
 3. `POST /api/notifications/subscribe` stores it in `push_subscription` table
 4. Validated with Zod: endpoint URL max 2048 chars, keys base64 max 256 chars
 
@@ -180,37 +180,42 @@ The admin section on the profile page (`/profile`) has a Debug section with two 
 
 - **Push events**: Parses payload, validates `icon`/`badge` same-origin, passes `tag`/`renotify` to `showNotification()`
 - **Notification clicks**: Focuses existing tab or opens new one
-- **Caching**: Serwist `defaultCache` provides Next.js-optimized runtime caching strategies
+- **Caching**: the precache serves build chunks, Serwist `defaultCache` handles runtime caching (see [Caching Strategy](#caching-strategy))
 - **API exclusion**: Explicit `NetworkOnly` route for `/api/*` — live data is never cached
 
 ## PWA & Offline
 
 The app is a Progressive Web App with offline support powered by Serwist (`@serwist/next`).
 
-### Service Worker Updates
+### Service Worker Registration and Updates
 
-The service worker uses `skipWaiting: true` and `clientsClaim: true` — new versions activate immediately on install without user interaction. Serwist handles registration automatically via the `register: true` config option.
+`ServiceWorkerRegister` (`src/shared/components/ServiceWorkerRegister.jsx`, in the root layout) registers `/sw.js` in production builds. `serwist build` (configurator mode) builds the worker but does not register it. `SerwistProvider` from `@serwist/next/react` is not used: by default it adds an unguarded `location.reload()` on `online`, registers a module worker, and sends every client navigation to the worker, which then fetches the page a second time. A failed registration is reported to GlitchTip at `warning`. A `SecurityError` (site data blocked) is expected and is not reported. `next dev` registers nothing.
+
+The service worker uses `skipWaiting: true` and `clientsClaim: true`: a new version activates at once on install and takes control of open tabs, without a reload. `/sw.js` is never HTTP-cached, so the browser finds a new version on the next navigation.
 
 ### Caching Strategy
 
 Serwist manages two layers of caching:
 
-**Precaching (build-time):** Serwist generates a precache manifest at build time with content hashes for all build output. Changed files get new hashes — cache busting is automatic on every deploy. No manual version bumps needed.
+**Precaching (build-time):** Serwist generates a precache manifest at build time for the build output and `public/`. Chunk file names carry content hashes, so a deploy replaces only the changed files. No manual version bumps needed. Next appends `?dpl=<deploymentId>` to chunk URLs and the manifest lists them without it, so `src/sw.js` adds `dpl` to `ignoreURLParametersMatching`. The precache serves its entries cache-first. It holds no page: `/` renders the session (header, admin widget), and a cache-first copy would freeze it.
 
 **Runtime caching:** Serwist's `defaultCache` from `@serwist/next/worker` provides Next.js-optimized strategies:
 
-| Request Type          | Strategy               | Rationale                                   |
-| --------------------- | ---------------------- | ------------------------------------------- |
-| API routes (`/api/*`) | NetworkOnly (explicit) | Live data must never be served from cache   |
-| Navigation            | Network-first          | HTML must match current build               |
-| Static assets         | Stale-while-revalidate | Serve fast from cache, update in background |
+| Request Type                      | Strategy                 | Rationale                                                 |
+| --------------------------------- | ------------------------ | --------------------------------------------------------- |
+| API routes (`/api/*`)             | NetworkOnly (explicit)   | Live data must never be served from cache                 |
+| Build chunks (JS, CSS)            | Precache, cache-first    | Content-hashed: a chunk URL never changes its content     |
+| Pages and RSC payloads            | Network-first            | Online HTML matches the current build; offline, last copy |
+| `public/` files (icons, etc.)     | Precache, cache-first    | Each file gets a revision hash at build time              |
+| Optimized images (`/_next/image`) | Stale-while-revalidate   | Serve fast from cache, update in background               |
+| Fonts (`?dpl=` on the URL)        | Network-first (`others`) | `defaultCache`'s `$`-anchored font regex misses the query |
 
 ### Offline Behavior
 
-When offline, the app loads precached assets and displays last known war data:
+When offline, a page visited before loads and shows the last known war data:
 
-1. **Shell**: SW serves precached HTML + assets → app renders visually complete
-2. **Data**: `useLiveData` hook falls back to `localStorage` (`hd1-live-cache`)
+1. **Shell**: the SW serves the page's last copy from the runtime cache and its chunks from the precache, so the page renders and hydrates. A page never visited online has no offline copy.
+2. **Data**: `useLiveData` hook falls back to `localStorage` (`hd1-live-cache-v1`)
 3. **Status**: StatusDot shows red "offline" indicator (via `navigator.onLine` check)
 4. **Timestamps**: "Last updated X ago" via `formatTimeAgo` shows data age
 
@@ -242,6 +247,7 @@ The web app manifest (`src/app/site.webmanifest`) and layout metadata enable ful
 | --------------------------------------------------- | ------------------------------------------------------------- |
 | `src/sw.js`                                         | Serwist SW source (precache + push handlers)                  |
 | `serwist.config.js`                                 | Serwist build config (configurator mode)                      |
+| `src/shared/components/ServiceWorkerRegister.jsx`   | Registers `/sw.js` (production builds only)                   |
 | `src/app/api/h1/live/route.js`                      | Polling endpoint (getCampaign + computeMapState + appVersion) |
 | `src/shared/hooks/useLiveData.mjs`                  | Polling hook + BroadcastChannel leader + version detection    |
 | `src/shared/utils/reloadGuard.mjs`                  | Version mismatch reload guard (circuit breaker)               |

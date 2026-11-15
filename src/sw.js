@@ -3,6 +3,11 @@ import { Serwist, NetworkOnly } from 'serwist';
 
 const serwist = new Serwist({
     precacheEntries: self.__SW_MANIFEST,
+    // Next appends `?dpl=<deploymentId>` to every chunk URL, and the manifest
+    // lists them without it. Without `dpl` here no chunk matches the precache,
+    // and defaultCache's `$`-anchored regexes miss them too. The default list
+    // is replaced, not extended, so it is repeated.
+    precacheOptions: { ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^dpl$/] },
     skipWaiting: true,
     clientsClaim: true,
     runtimeCaching: [

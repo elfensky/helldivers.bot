@@ -1,12 +1,9 @@
-import { spawnSync } from 'node:child_process';
 import { serwist } from '@serwist/next/config';
 
-const revision =
-    spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf-8' }).stdout?.trim() ??
-    crypto.randomUUID();
-
+// No precache entry for `/`: the precache serves its entries cache-first, and
+// `/` renders the session (header, admin widget). Pages go to the runtime
+// NetworkFirst cache instead, so offline they show the last copy seen online.
 export default serwist({
     swSrc: 'src/sw.js',
     swDest: 'public/sw.js',
-    additionalPrecacheEntries: [{ url: '/', revision }],
 });

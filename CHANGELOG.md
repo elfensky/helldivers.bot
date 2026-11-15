@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Fixed
+
+- Push notifications and the offline shell work again. No page had registered the service worker
+  since the Serwist migration (abe570f9, 2026-04-07), so `navigator.serviceWorker.ready` never
+  resolved and push subscribe hung. `ServiceWorkerRegister` in the root layout registers `/sw.js` in
+  production builds. The precache now matches chunk URLs that end in `?dpl=<deploymentId>`
+  (`ignoreURLParametersMatching` in `src/sw.js`). It no longer holds `/`, which renders the session
+  and would have been served cache-first. `/docs/architecture` and `/docs/notifications` describe
+  the result (#670).
+
 ## 0.99.0
 
 ### Added
