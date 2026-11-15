@@ -53,3 +53,11 @@ Release 1: LIVE
 | tasks before the pin | the tasks on `sha-9e539e56` (about 00:13Z) logged `seed unchanged, skipped`, so the seed change came with M |
 | evidence route | Andrei signed in to Arcane in his Chrome; the orchestrator read the logs of service `helldiversbot_app` (environment staging01) through Arcane's log websocket in that session, with Andrei's authorization. Both `[migrate]` lines of the first task are later than the 00:27:38Z merge |
 | remote branch `chore/seed-refresh` | deleted (D-27); lane worktree and local branch removed |
+
+## Release 2 route
+
+Release 2 route: strip
+
+Decided by Andrei on 2026-11-15 after he saw both verdicts: `Verdict: SYMBOLICATED` (`02-SYMBOLICATION-PROOF.md`: HELLDIVERSBOT-7D, event 4ec0654f36334c9e88a5830f8843ac73, release 0.98.1-dev.acecf2b, raw `/_next/static/chunks/3kqjs_c4-s7d6.js:2:355` maps to `src/shared/components/AnalyticsOptOut.jsx:18`) and `Verdict: STRIPPED` (`02-SOURCEMAP-MEASUREMENT.md`: static maps 142 to 0, sourceMappingURL lines 131 to 0, debugId lines 131 to 131, server maps 48 to 48). He chose `strip` after a guard for D-32 (issue #661). Version: 0.99.0 (the `## Unreleased` section holds `### Added`).
+
+D-32's residual risk is closed by #679 (PR #679, merge commit 7697b38bb4c900b6b2947e45ca6841c016f2c07e, closes #661): `withSentryConfig` has `errorHandler: (err) => { throw err; }`, so a failed release creation, upload or finalize fails `next build`, the `Build App Image (<arch>)` leg fails, and Pin Production cannot run. The per-leg upload read in Task 3 stays as written.
