@@ -71,4 +71,4 @@ graph LR
 
 ### PWA & Service Worker
 
-The app runs as an installable Progressive Web App with a Serwist-powered service worker (`src/sw.js`). The SW uses network-first for HTML documents and stale-while-revalidate for static assets, ensuring the app shell loads offline while HTML always matches current build chunks. Version updates are controlled — new SWs wait for explicit client approval before activating. See [Notifications](/docs/notifications#pwa--offline) for the full update lifecycle and caching details.
+The app runs as an installable Progressive Web App with a service worker that Serwist builds from `src/sw.js` into `public/sw.js`. `ServiceWorkerRegister` in the root layout registers it in production builds. Build chunks come from the precache (cache-first, content-hashed). Pages and RSC payloads are network-first, so online HTML always matches the current build, and offline a page visited before still loads. A new worker activates at once (`skipWaiting`, `clientsClaim`) and does not reload the page: the only reloads are the `guardedReload()` paths. See [Notifications](/docs/notifications#pwa--offline) for the update lifecycle and caching details.

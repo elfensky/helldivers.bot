@@ -9,6 +9,7 @@ import Footer from '@/shared/components/Footer/Footer';
 import BottomNav from '@/shared/components/BottomNav/BottomNav';
 import PreferenceTracker from '@/shared/components/PreferenceTracker';
 import RecorderScript from '@/shared/components/RecorderScript';
+import ServiceWorkerRegister from '@/shared/components/ServiceWorkerRegister';
 import LiveDataProvider from '@/shared/providers/LiveDataProvider';
 import MinistryProvider from '@/features/ministry/MinistryProvider';
 import MinistryTriggerWidget from '@/features/admin/MinistryTriggerWidget';
@@ -247,6 +248,7 @@ export default async function RootLayout({ children }) {
                         <MinistryTriggerWidget isAdmin={isAdmin} />
                     </MinistryProvider>
                 </LiveDataProvider>
+                <ServiceWorkerRegister />
                 {isProduction && process.env.UMAMI_SITE_ID ?
                     <>
                         <Script
