@@ -61,3 +61,48 @@ Release 2 route: strip
 Decided by Andrei on 2026-11-15 after he saw both verdicts: `Verdict: SYMBOLICATED` (`02-SYMBOLICATION-PROOF.md`: HELLDIVERSBOT-7D, event 4ec0654f36334c9e88a5830f8843ac73, release 0.98.1-dev.acecf2b, raw `/_next/static/chunks/3kqjs_c4-s7d6.js:2:355` maps to `src/shared/components/AnalyticsOptOut.jsx:18`) and `Verdict: STRIPPED` (`02-SOURCEMAP-MEASUREMENT.md`: static maps 142 to 0, sourceMappingURL lines 131 to 0, debugId lines 131 to 131, server maps 48 to 48). He chose `strip` after a guard for D-32 (issue #661). Version: 0.99.0 (the `## Unreleased` section holds `### Added`).
 
 D-32's residual risk is closed by #679 (PR #679, merge commit 7697b38bb4c900b6b2947e45ca6841c016f2c07e, closes #661): `withSentryConfig` has `errorHandler: (err) => { throw err; }`, so a failed release creation, upload or finalize fails `next build`, the `Build App Image (<arch>)` leg fails, and Pin Production cannot run. The per-leg upload read in Task 3 stays as written.
+
+## Release 2
+
+Release 2 route: strip (see `## Release 2 route`). Scope change, by Andrei's decisions on 2026-11-15: release 2 also carries #674, #675, #679, #681, #671 and #677. Merge freeze on develop from the cut until the tag existed.
+
+| Item | Value |
+|------|-------|
+| version | 0.99.0 |
+| cut PR | #682 (https://github.com/elfensky/helldivers.bot/pull/682), rebase-merged as 96e34c9520051f347b404d898ea67eda02107e1e |
+| later develop commits in the release | #671 (283a276d, live polling without `localStorage`) and #677 (head 709126df, S159 Illuminate statistics fix with a data migration) |
+| R (final check, parent of the release commit) | 709126df159c180b050756887257a0b2be1d02d3 |
+| notes PR | #683 (https://github.com/elfensky/helldivers.bot/pull/683), rebase-merged; moves the #677 notes into `## 0.99.0`; no version bump |
+| C (released develop commit) | d2f6f5379e51ab93957a0b8449a8c84bf9a8b469 (`C^` is R) |
+| release PR | #684 (https://github.com/elfensky/helldivers.bot/pull/684), merge commit, head `develop` kept; every check passed |
+| merge sha | c139d9aff053d7b564a11802fc08f1a9f685a557 |
+| tag | v0.99.0 (annotated, on the merge sha) |
+| staging pre-flight run (C) | 43717003849 (https://github.com/elfensky/helldivers.bot/actions/runs/43717003849), success; upload lines amd64 1, arm64 1; `Couldn't finish all operations` 0, `Error [SentryError]` 0 |
+| staging pin and version | `deploy/staging` pinned `sha-d2f6f5379e51ab93957a0b8449a8c84bf9a8b469` at 2026-11-15T13:06:43Z; staging reported `0.99.0-dev.d2f6f53` at 13:08:41Z (the 13:08:01Z poll still showed `0.99.0-dev.709126d`) |
+| run id | 43717947582 |
+| run URL | https://github.com/elfensky/helldivers.bot/actions/runs/43717947582 |
+| upload lines amd64 | 1 (errors 0) |
+| upload lines arm64 | 1 (errors 0) |
+| per-leg read | Both `Build App Image` legs finished and Pin Production ran inside the same 60 s poll window (about 13:19Z), so both legs were read after the pin. Both read 1 and 0 errors. The #679 guard fails a leg whose upload errors, so a missing line could not have reached the pin |
+| jobs | all nine `Build: Release` jobs concluded `success` |
+| Pin Production | success |
+| pin commit | d1bd44bea4f1489f6e58c191109bba8335885e07 (`chore(deploy): production → v0.99.0 [skip ci]`, 2026-11-15T13:19:08Z); `deploy/production/compose.yaml` pins `ghcr.io/elfensky/helldiversbot:v0.99.0` |
+| first seen | 2026-11-15T13:20:28Z (the 55 s poll printed 0.98.1 at 13:19:33Z and 0.99.0 at 13:20:28Z) |
+| map probe | Chunk `/_next/static/chunks/04o2_8fpjurm0.js` (HTTP 200): 0 `sourceMappingURL` comments, 3 `debugId` comments. Its `.js.map` returns 404, as does `004_lzqyoo2h6.js.map`. The release-1 probe name `43shl_15f_d1y.js.map` returns 404 (it returned 200 in release 1). The strip removed the maps and the comments |
+
+S159 statistics fix (#677), public evidence from the `/stats` page HTML (Friendly Fire Index and Accuracy Trend series, season 159):
+
+| Host | Friendly Fire Index S159 | Accuracy S159 | Read at |
+|------|--------------------------|---------------|---------|
+| https://staging.helldivers.bot/stats | 0.5500499506584483 | 47.248243503464444 | 2026-11-15T13:10Z, on `0.99.0-dev.d2f6f53` |
+| https://helldivers.bot/stats | 1144.0937740140168 | 37.97399558608109 | 2026-11-15T13:10Z, still on 0.98.1 |
+| https://helldivers.bot/stats | 0.5500499506584483 | 47.248243503464444 | 2026-11-15T13:21Z, on 0.99.0 |
+
+The values match the CHANGELOG claim (0.55% friendly fire, 47.25% accuracy). The `[migrate]` log lines of production's first start were not read: the executor does not touch the production host and has no log route. The corrected `/stats` values show that the migration applied.
+
+Notes:
+
+- The release gate check (first step of Task 2) exited 0 before the first merge, PR or tag push.
+- The Task 2 verify for the staging run uses `head -1` over runs with `headSha` C. After the release PR merged, a second `Build: Staging` run for C (43717847477, 13:13:09Z) appeared with conclusion `skipped`, so that command picks the skipped run. The check was repeated on the run that built the image, 43717003849 (success), and listed both legs.
+
+Release 2: LIVE
