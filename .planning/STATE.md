@@ -5,16 +5,16 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Completed 02-10-PLAN.md
-last_updated: "2026-11-15T01:49:59.648Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-11-15T02:00:37.767Z"
 last_activity: 2026-11-15
 last_activity_desc: Phase 02 execution started
-state_head: 2df5fd51d6ac6c6911a58b0ab6a43e550b59c4b0
+state_head: bdca8b3eef247bb27957d4ebd6c59ac85be63cb3
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 14
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-11-09)
 ## Current Position
 
 Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
-Plan: 5 of 14
+Plan: 6 of 14
 Status: Ready to execute
 Last activity: 2026-11-15 — Phase 02 execution started
 
@@ -51,6 +51,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P04 | 58 min | 3 tasks | 1 files |
 | Phase 02 P14 | 21 min | 2 tasks | 3 files |
 | Phase 02 P10 | 14 min | 3 tasks | 6 files |
+| Phase 02 P02 | 9 min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,7 @@ Recent decisions affecting current work:
 - [Phase 02]: Release 1 is v0.98.1 (patch cut): live in production 2026-11-15; the D-15 (3) map probe takes the URL from the chunk's sourceMappingURL comment, not <chunk>.js.map
 - [Phase 02]: 02-04: #642 runs were started by a push from a user account; no approval needed. Staging seed evidence read through Arcane in Andrei's session. Gaps issue is #658.
 - [Phase 02]: 02-10: sourcemap strip merged (PR #660, S=ca7e661c); staging build uploaded in both legs; image Verdict STRIPPED; D-32 issue #661
+- [Phase 02]: 02-02: both page-check sections cite the map lane commit, because the check diffs all covered files from the cited commit
 
 ### Pending Todos
 
@@ -115,8 +117,8 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-11-15T01:49:59.434Z
-Stopped at: Completed 02-10-PLAN.md
+Last session: 2026-11-15T02:00:37.743Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
