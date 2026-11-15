@@ -499,7 +499,8 @@ export default process.env.SENTRY_AUTH_TOKEN ?
 - **Builds without the token** skip the wrapper. They emit no browser maps.
 - **Server maps** in `.next/standalone` stay in the image. The app does not serve them over HTTP.
 - **No `silent` option.** It hid two upload failures in 2026-07 and 2026-08 (#496). Upload errors must print in the build log.
-- **A failed upload fails the build.** The `errorHandler` rethrows each Sentry step error (release creation, upload, finalize), so `next build` exits non-zero. The `Build App Image` leg fails, and `Pin Production` cannot pin a build without its maps (#661).
+- **A failed upload fails the build.** The `errorHandler` rethrows each error that the Sentry plugin raises (release creation, upload, finalize), so `next build` exits non-zero and the `Build App Image` leg fails (#661).
+- **A skipped upload does not fail the build.** With an empty `SENTRY_AUTH_TOKEN` the wrapper does not run (see above). With the token set, the plugin only logs a warning and continues when `SENTRY_PROJECT` is empty, when `SENTRY_ORG` is empty for a token that does not carry the organization, or when it finds no source maps. Such a build passes and ships without uploaded maps, and `Pin Production` can pin it. The deletion step still removes the maps from `.next/static`. #686 tracks a CI guard.
 
 The `authToken`, `org`, `project`, and `sentryUrl` env vars are only used during builds.
 
