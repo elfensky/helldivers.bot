@@ -35,3 +35,19 @@ Every step of the checkpoint ran.
 Lane commit: 0f2a2432d907e3ccb75f1e95fdf7a6d347e0c7cb
 
 Verdict: RENDERED
+
+## Staging (plan 02-15)
+
+- 02-05 merge commit M: `c46001d04fa64d0e6c138351f965eb833bece007` (PR #665, rebase-merged on develop)
+- Build: Staging run for M: 43668279968 (conclusion success)
+- Build: Staging run for the later develop head `810197fc` (plan 02-06): 43669207015, in progress at 2026-11-15T02:47Z. Staging may roll to `0.98.1-dev.810197f`; that build also contains M.
+- Build on staging at Task 1: 0.98.1-dev.c46001d (read from `/api/h1/live` at 2026-11-15T02:47Z; `git merge-base --is-ancestor M c46001d` holds, the sha is M itself)
+- Served text (curl, cache-busted): `/docs/architecture` holds `Poller lease` (1 match); `/docs/notifications` holds `prev_events` (2 matches) and 0 matches for `in memory` (case-insensitive).
+- Node-ID rule for the render check: Mermaid 12.3.0 writes rendered node ids as `mermaid-<diagram>-<n>-flowchart-<nodeId>-<n>`; the check matches the `flowchart-<nodeId>-<n>` suffix on `g.node[id]` inside each diagram's own svg, as `MermaidDiagram.jsx:17` does.
+- Node IDs per diagram at `c46001d` (`git show c46001d:<path>`):
+  - `/docs/architecture` (`dataFlowDefinition.mjs`, 14): api_status, api_snapshot, seed_files, worker, lease, seed_script, h1_season, h1_status, h1_statistic, h1_event, h1_event_progress, fe_live, fe_archives, fe_rebroadcast
+  - `/docs` (`overviewDefinition.mjs`, 11): dash, archives, profile, docs, api_live, api_rb, api_update, auth_api, worker, db, hd1
+  - `/docs/notifications` `notification-flow` (`notificationFlowDefinition.mjs`, 10): worker, update, pushcheck, live, pushapi, sw, hook, detect, toast, webnoti
+  - `/docs/notifications` `inapp-flow` (`inAppFlowDefinition.mjs`, 12): hd1_api, worker, post_update, update_status, poll, live_api, get_campaign, hook, rerender, detect_changes, sonner_toast, web_noti
+  - `/docs/notifications` `push-flow` (`pushFlowDefinition.mjs`, 7): post_update, check_notify, detect_changes, query_subs, web_push, sw_push, show_noti
+- Browser render: Task 2 checkpoint (not yet run).
