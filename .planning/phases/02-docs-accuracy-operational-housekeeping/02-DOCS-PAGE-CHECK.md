@@ -40,3 +40,50 @@ AGENTS.md: CHECKED
 Lane commit: 50fe508c7254cc5d7556b3da4b68f40a1f091d71
 
 Codebase maps: CHECKED
+
+## /docs/architecture
+
+| Item | Stale statement | Fix | Code evidence |
+|------|-----------------|-----|---------------|
+| `src/app/docs/architecture/page.mdx:34` | "A dedicated thread polls the official API every 5-15 seconds" | Every app replica runs a worker thread that calls the update route every `UPDATE_INTERVAL` seconds; each call claims the `worker_heartbeat` lease first; one replica polls, the others stand by | `public/workers/cron.js:34`, `src/app/api/h1/update/route.js:93`, `src/update/lease.mjs:45` |
+| `src/app/docs/architecture/dataFlowConfig.mjs` worker detail (was `:125-150`) | "Both API endpoints polled every ~15s"; the update cycle had no lease step; tag `~15s loop` | `UPDATE_INTERVAL` wording and tag; the cycle starts with "Claim or renew the poller lease (a standby replica stops here)" | `public/workers/cron.js:34`, `src/app/api/h1/update/route.js:93` |
+| `dataFlowConfig.mjs` and `dataFlowDefinition.mjs` (new node) | No lease node: the diagram showed one worker polling alone | Node `lease` in the Processing subgraph, edge `worker -->\|"claim / renew"\| lease`, `details.lease` with the 60 s TTL, and `lease` in `flows.live` and `flows.snapshot` | `src/update/lease.mjs:20`, `src/update/lease.mjs:45`, `src/app/api/h1/update/route.js:93` |
+| `dataFlowConfig.mjs:6,65,69,90` and `dataFlowDefinition.mjs:30-31` | Label `Live Polling (~15s)`, "Polled every ~15 seconds", tags `~15s poll`, edge labels `~15s` and `~15s + on demand` | `Live Polling`; `UPDATE_INTERVAL`, `UPDATE_INTERVAL poll` and `UPDATE_INTERVAL + on demand`. Both stacks set 20 s | `deploy/production/compose.yaml:79`, `deploy/staging/compose.yaml:74` |
+| `dataFlowConfig.mjs` `flows.snapshot` (was `:24-31`) | Lists `h1_statistic` and `h1_event_progress` | Lists `api_snapshot`, `worker`, `lease`, `h1_season`, `h1_status`, `h1_event`: `updateSeason` writes those three tables only | `src/update/season.mjs:10`, `src/update/season.mjs:12` |
+| `dataFlowConfig.mjs:153` (`seed_script`) | Subtitle `prisma db seed`; "Runs on first deploy"; tag `first deploy only` | Subtitle `prisma/seed/seed.mjs`; runs as `node --experimental-strip-types prisma/seed/seed.mjs`; `migrateOrWait` runs it under an advisory lock when the seed hash changed; tag `when seed data changed` | `src/update/migrateOnStart.mjs:35`, `src/update/migrateOnStart.mjs:112` |
+| `dataFlowDefinition.mjs:12` and the `seed_files` label | Seed label `prisma db seed / startup`; seed files "Bootstrap (first deploy)"; edge `once` | Label `prisma/seed/seed.mjs` with "on start, when seed data changed"; "Bootstrap (seed data)"; edge `when changed` | `src/update/migrateOnStart.mjs:35`, `src/update/migrateOnStart.mjs:83` |
+| `dataFlowConfig.mjs:121` (seed file list) | List ends at `season-155.json` | List ends at `season-161.json`, the highest file in `prisma/seed/seasons/` after plan 02-04 | `src/update/migrateOnStart.mjs:84` |
+| Extra check: private infrastructure detail (D-06) | none found | No IPv4 address, host name, node label or secret name in the five architecture-page files. The env var names `UPDATE_INTERVAL` and `UPDATE_KEY` are documented in the public docs already | `src/app/docs/architecture/dataFlowConfig.mjs:6`, `src/app/docs/architecture/dataFlowDefinition.mjs:12` |
+
+Lane commit: 0f2a2432d907e3ccb75f1e95fdf7a6d347e0c7cb
+
+Page architecture: CHECKED
+
+## /docs (overview)
+
+| Item | Stale statement | Fix | Code evidence |
+|------|-----------------|-----|---------------|
+| `src/app/docs/page.mdx:32` | Update Flow described as "worker pipeline, two-table strategy, and snapshot throttling" | "worker pipeline, poller lease, and bucketed upserts" | `src/update/lease.mjs:45`, `src/update/season.mjs:10` |
+| `src/app/docs/overviewConfig.mjs:92` (`api_update`) | "Internal POST endpoint called by the worker thread" | Internal GET endpoint (Bearer `UPDATE_KEY`); only the lease holder does the work; other replicas answer standby; POST answers 405 | `src/app/api/h1/update/route.js:63`, `src/app/api/h1/update/route.js:223` |
+| `src/app/docs/overviewConfig.mjs` `worker` panel. Extra drift | "polling the official HD1 API every 10-20 seconds" | Calls the update route every `UPDATE_INTERVAL` seconds; every replica runs it; only the lease holder polls | `public/workers/cron.js:34`, `deploy/production/compose.yaml:79` |
+| `src/app/docs/overviewConfig.mjs` `db` panel. Extra drift | "Two-table strategy: rebroadcast_* tables store raw API JSON" | Normalized `h1_*` tables hold the war record; `worker_heartbeat` holds the poller lease; there are no raw-cache tables | `src/update/lease.mjs:45`, `src/update/season.mjs:12` |
+| `src/app/docs/overviewConfig.mjs` `api_rb` panel. Extra drift | "Returns cached raw JSON from the rebroadcast tables" | Reconstructs the official wire format from the normalized `h1_*` tables | `src/update/season.mjs:10`, `src/update/season.mjs:12` |
+| `src/app/docs/overviewDefinition.mjs:19`. Extra drift | Node label "Polls every 10-20s" | "Calls every UPDATE_INTERVAL s" | `deploy/staging/compose.yaml:74` |
+
+Lane commit: 0f2a2432d907e3ccb75f1e95fdf7a6d347e0c7cb
+
+Page overview: CHECKED
+
+## /docs/notifications
+
+| Item | Stale statement | Fix | Code evidence |
+|------|-----------------|-----|---------------|
+| `src/app/docs/notifications/page.mdx:115` | "Keeps previous events in memory ... Resets on server restart (acceptable — misses one transition at most)" | The previous event snapshot is stored in the lease row (`worker_heartbeat.prev_events`); the update route passes it in and writes the new snapshot back after each check; a restart or a handover neither misses nor repeats a push. The restart caveat is removed | `src/app/api/h1/update/route.js:200`, `src/app/api/h1/update/route.js:206`, `src/update/pushNotifier.mjs:118` |
+| `src/app/docs/notifications/notificationFlowConfig.mjs:175` (`pushcheck` panel) | "Keeps previous events in memory"; table row `Reset: On server restart (ok)` | "Compares against the previous event snapshot in the lease row (worker_heartbeat.prev_events)"; row `Baseline: Lease row, survives restarts` | `src/update/pushNotifier.mjs:146`, `src/app/api/h1/update/route.js:206` |
+| `src/app/docs/notifications/pushFlowConfig.mjs:36` | "keeps previous events in memory. Resets on server restart" | The same fact in one sentence: the baseline is the lease-row snapshot, so restarts and handovers neither miss nor repeat a push | `src/update/pushNotifier.mjs:115`, `src/app/api/h1/update/route.js:206` |
+| Out of scope, DOCS-03 (unchanged) | The three notifications diagrams label the update route `POST /api/h1/update` (`src/app/docs/notifications/inAppFlowDefinition.mjs:7`, `src/app/docs/notifications/pushFlowDefinition.mjs:4`, `src/app/docs/notifications/inAppFlowConfig.mjs:36`, `src/app/docs/notifications/notificationFlowConfig.mjs:37`). The worker calls it with GET | Left as is: D-07 limits this plan to the lease lines | `public/workers/cronLogic.js:30`, `src/app/api/h1/update/route.js:63` |
+| Out of scope, DOCS-03 (unchanged) | "polls every ~20s" in `src/app/docs/notifications/notificationFlowDefinition.mjs:5` and `src/app/docs/notifications/inAppFlowDefinition.mjs:6`; "polls ... every ~20 seconds" in `notificationFlowConfig.mjs:37` | Left as is: the cadence is `UPDATE_INTERVAL` (20 s on both stacks), and the "~20s" label is correct for the deployed value | `deploy/production/compose.yaml:79`, `deploy/staging/compose.yaml:74` |
+
+Lane commit: 0f2a2432d907e3ccb75f1e95fdf7a6d347e0c7cb
+
+Page notifications: CHECKED

@@ -147,7 +147,7 @@ Phase 1.1 moved production to the Hetzner swarm and released v0.96.4.
   4. The seed-refresh workflow's PR path is verified end-to-end (a real season transition, or a controlled simulation), with the run recorded on #501 (HOUSE-04)
   5. `docs/roadmap.md` is deleted and its live items are carried into `.planning/` (ARCH-11 and § Carried over), leaving `.planning/ROADMAP.md` as the one roadmap file (HOUSE-05, done 2026-11-02)
 
-**Plans**: 6/14 plans executed (re-planned 2026-11-14 per 02-CONTEXT.md D-29; 02-01 superseded by 02-13)
+**Plans**: 7/14 plans executed (re-planned 2026-11-14 per 02-CONTEXT.md D-29; 02-01 superseded by 02-13)
 
 Plans:
 **Wave 1**
@@ -177,7 +177,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 02-05-PLAN.md — Rendered-diagram pages (architecture, overview, notifications) with a browser render check at a checkpoint before the PR (DOCS-02; D-23)
+- [x] 02-05-PLAN.md — Rendered-diagram pages (architecture, overview, notifications) with a browser render check at a checkpoint before the PR (DOCS-02; D-23)
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
@@ -497,7 +497,7 @@ Phases 2 and 4 are parallelizable with Phase 3 (Test Co-location) — none of th
 |-------|----------------|--------|-----------|
 | 1. Stability Fixes & Release | 9/9 | Complete    | 2026-10-21 |
 | 1.1. Production on the Hetzner Swarm (INSERTED) | - | Complete    | 2026-10-25 |
-| 2. Docs Accuracy & Operational Housekeeping | 6/14 | In Progress | - |
+| 2. Docs Accuracy & Operational Housekeeping | 7/14 | In Progress | - |
 | 3. Test Co-location | 0/TBD | Not started | - |
 | 4. Dependency Cleanup & Auto-merge Automation | 0/TBD | Not started | - |
 | 5. SEO & Analytics Foundation | 0/TBD | Not started | - |
