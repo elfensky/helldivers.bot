@@ -69,7 +69,7 @@ describe('docs pages carry no retired claims (Final check sweeps)', () => {
             "season_duration\\[\\]|upsert by event_id|\\(event_id, bucket\\)|'bucket', 'DateTime'|\\(app\\)\\/page\\.jsx|worker --> hd1";
         const g3 =
             'hd1_api --> worker|Thread that polls|default 20s|worker polls less frequently|src\\/app\\/site\\.webmanifest';
-        const g4 = 'cannot pin a build without its maps';
+        const g4 = 'cannot pin a build without its maps|Discord and GitHub';
         expect(hits(new RegExp(`${g1}|${g2}|${g3}|${g4}`))).toEqual([]);
     });
 });

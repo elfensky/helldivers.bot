@@ -74,7 +74,7 @@ const prismaClientSingleton = () => {
 };
 ```
 
-The singleton pattern caches the client on `globalThis.prismaGlobal` to survive Next.js hot reloads in development.
+The singleton pattern caches the client on `globalThis.prismaGlobal` in every environment, so Next.js hot reloads in development reuse it.
 
 ### Timestamp type
 
@@ -250,10 +250,10 @@ graph TD
     end
 
     subgraph Read["READ PATH"]
-        LIVE_Q["/api/h1/live"] --> SEASON_R["h1_season + h1_event + h1_status"]
+        LIVE_Q["/api/h1/live"] --> SEASON_R["h1_season + h1_event<br/>h1_status + h1_statistic"]
         RB_Q["/api/h1/rebroadcast"] --> SEASON_R2["Reconstructed on demand<br/>from h1_* tables"]
         CAMP_Q["/api/h1/campaign"] --> SEASON_R
-        ARCHIVE["/archives"] --> ALL["All h1_* tables"]
+        ARCHIVE["/archives"] --> SEASON_R
     end
 
     style Write fill:#0f1a0f,stroke:#22c55e,color:#4ade80
@@ -266,13 +266,13 @@ graph TD
 
 ### h1_season
 
-The root anchor for all game data. Every normalised game table points back to this row via `season` (the integer game season number, not the surrogate `id`). Season-level metadata (`introduction_order`, `points_max`, `season_duration`) is inlined directly on this model rather than stored in separate tables.
+The root anchor for all game data. `h1_status`, `h1_statistic` and `h1_event` point back to this row via `season` (the integer game season number, not the surrogate `id`); `h1_event_progress` points to `h1_event` instead. Season-level metadata (`introduction_order`, `points_max`, `season_duration`) is inlined directly on this model rather than stored in separate tables.
 
 | Field                | Prisma Type | PostgreSQL Type | Constraints / Notes                                                                                                                                                           |
 | -------------------- | ----------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                 | `String`    | `TEXT`          | `@id @default(uuid(7))` — surrogate PK, UUIDv7                                                                                                                                |
-| `last_updated`       | `DateTime?` | `TIMESTAMP(3)` | Nullable. `null` means the season row was pre-seeded but has not yet received a successful data update. Set to the current timestamp at the end of a successful update cycle. |
-| `season`             | `Int`       | `INTEGER`       | `@unique` — the game season number. Used as the FK target by all child tables.                                                                                                |
+| `last_updated`       | `DateTime?` | `TIMESTAMP(3)` | Nullable. `null` means an update created the row but has not yet finished all its writes, for example when an import died partway; readers treat such a row as missing. Set to the current timestamp by the confirm step at the end of a successful update, and the seed stamps the rows it writes. A later update never clears it. |
+| `season`             | `Int`       | `INTEGER`       | `@unique` — the game season number. Used as the FK target by `h1_status`, `h1_statistic` and `h1_event`.                                                                                                |
 | `introduction_order` | `Int[]`     | `INTEGER[]`     | `@default([])` — faction reveal order, indexed by faction (enemy 0, 1, 2). The **value** is a 0-based rank: `0` = the faction the war started against, `1`/`2` = mid-war arrivals, `255` = never introduced. |
 | `points_max`         | `Int[]`     | `INTEGER[]`     | `@default([])` — maximum liberation points per faction. Indexed by faction (enemy 0, 1, 2).                                                                                   |
 | `season_duration`    | `Int`       | `INTEGER`       | `@default(0)` — total duration of the season in seconds.                                                                                                                      |
@@ -292,7 +292,7 @@ The root anchor for all game data. Every normalised game table points back to th
 | `OneSeasonToManyStatistic` | `h1_statistic` | one-to-many |
 | `OneSeasonToManyEvents`    | `h1_event`     | one-to-many |
 
-**Design note:** Child tables reference `season` (Int) rather than the surrogate `id` (UUID). This keeps foreign keys human-readable, avoids UUID joins in queries that filter by season number, and matches the season integer used in the official API response.
+**Design note:** The direct child tables reference `season` (Int) rather than the surrogate `id` (UUID). This keeps foreign keys human-readable, avoids UUID joins in queries that filter by season number, and matches the season integer used in the official API response.
 
 ---
 
@@ -428,7 +428,7 @@ The rebroadcast endpoint now reconstructs the official API response format on de
 
 ## 5. Auth and User Models
 
-These models implement [BetterAuth](https://www.better-auth.com/) with the Prisma adapter, plus application-specific extensions. Authentication is OAuth-only (Discord and GitHub providers). See [Authentication](/docs/authentication) for architecture details.
+These models implement [BetterAuth](https://www.better-auth.com/) with the Prisma adapter, plus application-specific extensions. Authentication is OAuth-only (Discord, GitHub and Google providers). See [Authentication](/docs/authentication) for architecture details.
 
 ### User
 
@@ -443,7 +443,7 @@ Central user record. Extended beyond the BetterAuth baseline with `username`, `r
 | `emailVerified` | `Boolean`   | `BOOLEAN`       | `@default(false)` — whether the user's email is confirmed              |
 | `image`         | `String?`   | `TEXT`          | Avatar URL from OAuth provider or Gravatar fallback                    |
 | `role`          | `String`    | `TEXT`          | `@default("user")` — application role string, not an enum              |
-| `banned`        | `Boolean`   | `BOOLEAN`       | `@default(false)` — banned users have sessions revoked on next request |
+| `banned`        | `Boolean`   | `BOOLEAN`       | `@default(false)` — a banned user's sessions are revoked on the next `/profile` request |
 | `createdAt`     | `DateTime`  | `TIMESTAMP(3)` | `@default(now())`                                                      |
 | `updatedAt`     | `DateTime`  | `TIMESTAMP(3)` | `@updatedAt`                                                           |
 
@@ -460,14 +460,14 @@ Central user record. Extended beyond the BetterAuth baseline with `username`, `r
 
 ### Account
 
-BetterAuth OAuth account record. Links a user to an OAuth provider. Multiple providers per user are supported (e.g., both Discord and GitHub linked to one account).
+BetterAuth OAuth account record. Links a user to an OAuth provider. Multiple providers per user are supported (e.g., any of Discord, GitHub and Google linked to one account).
 
 | Field                   | Prisma Type | PostgreSQL Type | Constraints / Notes                                                       |
 | ----------------------- | ----------- | --------------- | ------------------------------------------------------------------------- |
 | `id`                    | `String`    | `TEXT`          | `@id @default(uuid(7))`                                                   |
 | `userId`                | `String`    | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                                       |
 | `accountId`             | `String`    | `TEXT`          | Provider's identifier for this account (replaces old `providerAccountId`) |
-| `providerId`            | `String`    | `TEXT`          | Provider name, e.g., `"discord"`, `"github"` (replaces old `provider`)    |
+| `providerId`            | `String`    | `TEXT`          | Provider name, e.g., `"discord"`, `"github"`, `"google"` (replaces old `provider`)    |
 | `accessToken`           | `String?`   | `TEXT`          | `@db.Text` — OAuth access token                                           |
 | `refreshToken`          | `String?`   | `TEXT`          | `@db.Text` — OAuth refresh token                                          |
 | `accessTokenExpiresAt`  | `DateTime?` | `TIMESTAMP(3)` | Access token expiry (replaces old integer `expires_at`)                   |
@@ -480,7 +480,7 @@ BetterAuth OAuth account record. Links a user to an OAuth provider. Multiple pro
 
 **Indexes:** `@@index([userId])`
 
-> Unlike the previous NextAuth.js schema, `userId` no longer has a `@unique` constraint. BetterAuth allows multiple OAuth accounts per user, enabling users to link both Discord and GitHub.
+> Unlike the previous NextAuth.js schema, `userId` no longer has a `@unique` constraint. BetterAuth allows multiple OAuth accounts per user, enabling users to link more than one of Discord, GitHub and Google.
 
 ---
 
@@ -538,7 +538,7 @@ Application API keys for external consumers. A random UUID is generated as the k
 | Field         | Prisma Type | PostgreSQL Type | Constraints / Notes                                                                          |
 | ------------- | ----------- | --------------- | -------------------------------------------------------------------------------------------- |
 | `id`          | `String`    | `TEXT`          | `@id @default(uuid(7))` — surrogate PK                                                       |
-| `hash`        | `String`    | `TEXT`          | `@unique` — SHA-256 hash of the API key. Used for constant-time lookup on incoming requests. |
+| `hash`        | `String`    | `TEXT`          | `@unique` — SHA-256 hash of the API key. Used for the indexed lookup on incoming requests. |
 | `visible`     | `String`    | `TEXT`          | Last 4 characters of the key, for display in the dashboard (e.g., `"...a3f2"`)               |
 | `userId`      | `String`    | `TEXT`          | FK → `User.id`, `onDelete: Cascade`                                                          |
 | `description` | `String`    | `TEXT`          | User-provided label for the key                                                              |
@@ -546,7 +546,7 @@ Application API keys for external consumers. A random UUID is generated as the k
 | `enabled`     | `Boolean`   | `BOOLEAN`       | `@default(true)` — keys can be disabled without deletion                                     |
 | `lastUsedAt`  | `DateTime?` | `TIMESTAMP(3)`  | Nullable. Last successful authentication. `validateApiKey` writes it in `after()`, at most once a minute per key |
 
-> **Security note:** SHA-256 is used as a one-way hash for key lookup. The key space is a random UUID (128 bits of entropy), which provides the actual security. The hash allows O(1) database lookups without storing the raw key. Validation logic is in `src/shared/utils/api/validateApiKey.mjs`.
+> **Security note:** SHA-256 is used as a one-way hash for key lookup. The key space is a random UUID (128 bits of entropy), which provides the actual security. The hash allows an indexed database lookup without storing the raw key. Validation logic is in `src/shared/utils/api/validateApiKey.mjs`.
 
 ---
 
@@ -574,7 +574,7 @@ Stores Web Push API subscriptions for server-initiated push notifications. Subsc
 
 ### worker_heartbeat
 
-The poller lease. The table holds one row, with `worker_type = 'cron_api_poller'` (`WORKER_TYPE` in `src/update/lease.mjs`). Every replica runs the worker thread, and every poll first tries to claim this row with one atomic upsert. `holder_id` and `lease_until` name the replica that polls: the claim succeeds only for the current holder or after `lease_until` has passed, and the TTL is 60 s (`LEASE_TTL_S`). A replica that does not win the claim answers standby and stops. `started_at` resets when the holder changes. `prev_events` and `last_season_observed` carry the poller state across handovers, so a new holder neither misses nor repeats an event transition or the closing snapshot of a season. See [Data Flow](/docs/data-flow) section "Poller lease" for the sequence.
+The poller lease. The table holds one row, with `worker_type = 'cron_api_poller'` (`WORKER_TYPE` in `src/update/lease.mjs`). Every replica runs the worker thread, and every poll first tries to claim this row with one atomic upsert. `holder_id` and `lease_until` name the replica that polls: the claim succeeds only for the current holder, after `lease_until` has passed, or while `lease_until` is unset, and the TTL is 60 s (`LEASE_TTL_S`). A replica that does not win the claim answers standby and stops. `started_at` resets when the holder changes. `prev_events` and `last_season_observed` carry the poller state across handovers, so a new holder neither misses nor repeats an event transition or the closing snapshot of a season. See [Data Flow](/docs/data-flow) section "Poller lease" for the sequence.
 
 | Field                  | Prisma Type | PostgreSQL Type | Constraints / Notes                                                                                   |
 | ---------------------- | ----------- | --------------- | ----------------------------------------------------------------------------------------------------- |
