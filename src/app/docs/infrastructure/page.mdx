@@ -151,7 +151,7 @@ This keeps the migrate image small — it carries only the Prisma CLI, not the e
 | `base`          | `node:26`      | Debian (glibc) build base, so Sharp's prebuilt glibc binary matches the runtime                              |
 | `deps`          | `base`         | Runs `npm ci` from lockfile; fails explicitly if lockfile is absent                                          |
 | `builder`       | `base`         | Copies `node_modules` from `deps`, copies source, runs `npx prisma generate` then `npm run build`            |
-| `migrate-tools` | `node:26-slim` | Mirrors `Dockerfile.migrate` (Prisma CLI, schema engine, seed, generated client); copied to `/app/migrate`   |
+| `migrate-tools` | `node:26-slim` | Mirrors `Dockerfile.migrate` (Prisma CLI, schema engine, seed, generated client), then deletes PGlite and the query compilers of other providers; copied to `/app/migrate` |
 | `runner`        | `node:26-slim` | Copies only `.next/standalone`, `.next/static`, `public` and `/app/migrate`; runs as a non-root numeric user |
 
 **Build inputs (builder stage):**
