@@ -50,5 +50,11 @@ describe.each(DIAGRAMS)('rendered $name diagram', ({ definition, config }) => {
         );
 
         expect(missing).toEqual([]);
+
+        const flowIds = Object.values(config.flows).flat();
+        expect(flowIds.filter((id) => !declaresNode(source, id))).toEqual([]);
+        expect(flowIds.filter((id) => !Object.keys(config.details).includes(id))).toEqual(
+            [],
+        );
     });
 });

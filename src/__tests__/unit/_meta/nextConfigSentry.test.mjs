@@ -48,11 +48,14 @@ describe('next.config.mjs Sentry wrapper', () => {
         expect(result.config).not.toHaveProperty('productionBrowserSourceMaps');
     });
 
-    it('skips the Sentry wrapper when no auth token is set', async () => {
-        vi.stubEnv('SENTRY_AUTH_TOKEN', undefined);
-        const result = await loadConfig();
+    it.each([undefined, ''])(
+        'skips the Sentry wrapper when the auth token is %j',
+        async (token) => {
+            vi.stubEnv('SENTRY_AUTH_TOKEN', token);
+            const result = await loadConfig();
 
-        expect(withSentryConfig).not.toHaveBeenCalled();
-        expect(result).toHaveProperty('mdx', true);
-    });
+            expect(withSentryConfig).not.toHaveBeenCalled();
+            expect(result).toHaveProperty('mdx', true);
+        },
+    );
 });

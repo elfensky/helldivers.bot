@@ -13,8 +13,7 @@
  *
  * Usage:
  *   node scripts/check-mermaid-fences.mjs [file.mdx ...]
- *   Default files: src/app/docs/{architecture,data-flow,infrastructure,
- *   database,testing}/page.mdx
+ *   Default files: every page.mdx under src/app/docs, sorted.
  *
  * Output: one `OK <file> fence@<line>` or `FAIL <file> fence@<line> <error>`
  * line per fence, then `checked <N> fences in <M> files`.
@@ -24,16 +23,14 @@
  * file exits non-zero through the uncaught error.
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 
-const DEFAULT_FILES = [
-    'architecture',
-    'data-flow',
-    'infrastructure',
-    'database',
-    'testing',
-].map((page) => `src/app/docs/${page}/page.mdx`);
+const DOCS_DIR = 'src/app/docs';
+const DEFAULT_FILES = readdirSync(DOCS_DIR, { recursive: true })
+    .filter((f) => f.split('/').pop() === 'page.mdx')
+    .map((f) => `${DOCS_DIR}/${f}`)
+    .sort();
 
 const dom = new JSDOM('<!DOCTYPE html><body></body>');
 globalThis.window = dom.window;
