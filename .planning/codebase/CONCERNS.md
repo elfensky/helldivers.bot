@@ -47,10 +47,7 @@
 - Impact: unverified automation is a silent-failure risk — if it breaks, nothing alerts until someone notices archives are missing a season.
 - Fix approach: issue is explicitly gated on "when season 160 ends" — needs a live season transition to validate, not something fixable in isolation today.
 
-**Sourcemaps shipped in production image — #502 (chore, infrastructure):**
-- Issue: production Docker image currently ships JS sourcemaps to support GlitchTip stack-trace symbolication.
-- Impact: sourcemaps expose original source structure/paths to anyone with the built bundle; acceptable short-term trade-off but flagged for removal once GlitchTip's alternative symbolication path (upload-then-strip) is proven stable.
-- Fix approach: switch to uploading sourcemaps to GlitchTip at build time and stripping them from the shipped image, per the issue.
+**Sourcemaps shipped in production image — #502 (chore, infrastructure):** Fixed in Phase 2 (HOUSE-03, plan 02-10): token builds upload the browser maps, then delete them from `.next/static`; #502 closes after the four D-15 steps (plans 02-09 and 02-12).
 
 **Test tree not co-located with source (#466, chore, testing):**
 - Current state: `src/__tests__/unit/` contains 190 test files, fully mirroring the source tree per the documented convention (`src/__tests__/unit/_meta/mirrorTree.test.mjs` enforces this). Zero co-located tests exist outside `__tests__/` today (`find src -name "*.test.*" -not -path "*__tests__*"` returns none).

@@ -7,6 +7,12 @@
 - Season 161 is in the seed data (`prisma/seed/seasons/season-161.json`), from the weekly seed
   refresh (#642). The next app start seeds it, because the seed hash changes.
 
+### Changed
+
+- Images no longer ship browser sourcemaps. The Sentry build step uploads them to GlitchTip, then
+  deletes them (`sourcemaps.deleteSourcemapsAfterUpload`). Builds without `SENTRY_AUTH_TOKEN` emit
+  none (#502). `/docs/infrastructure` documents the config.
+
 ## 0.98.1
 
 ### Changed

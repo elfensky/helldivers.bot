@@ -28,7 +28,7 @@ One row per finding in `01-REVIEW.md`. `open` means seen, not yet acted on. The 
 | WR-11 | warning | scripts/generate-og-fallback.mjs:19-21,65,75,84,103 | open | generate-og-fallback.mjs claims deterministic output but depends on the machine, and writes to a cwd-relative path |
 | IN-01 | info | src/shared/utils/game/getWarOutcome.mjs:1-42 | open | The getWarOutcome JSDoc is attached to the `import`, not to the function |
 | IN-02 | info | src/__tests__/unit/features/archives/buildWarNarrative.test.mjs:306-310,424-425 | open | Stale comments in the buildWarNarrative test |
-| IN-03 | info | next.config.mjs:1,15 | open | next.config.mjs details |
+| IN-03 | info | next.config.mjs:1,15 | resolved (02-10) | The `productionBrowserSourceMaps` key at next.config.mjs:17 is removed and the SDK deletes the maps after upload (`sourcemaps.deleteSourcemapsAfterUpload`) |
 | IN-04 | info | scripts/hydration-sweep.mjs:32-35 | open | The comment in hydration-sweep mislabels the React error codes |
 | IN-05 | info | src/features/notifications/NotificationToggle.jsx:165,180,185,231,242; 94-98 | open | Arbitrary-value classes instead of theme tokens, and a late-failure telemetry gap |
 | IN-06 | info | src/app/opengraph-image.jsx:31,39 | open | The OG route no longer has any origin-side cache |
