@@ -315,6 +315,8 @@ for (let enemy = 0; enemy < 3; enemy++) {
 
 For each faction, the pipeline upserts a row in `h1_statistic` with the per-faction statistics fields. Same bucket-upsert pattern. A write error throws.
 
+An accidental is a death, so a faction with more `accidentals` than `deaths` has corrupt upstream statistics (S159 Illuminate reported 1.86 billion accidentals against 284,289 deaths). The pipeline still stores the row and adds a `statistics.implausible` entry to `warnings`.
+
 **Step 8 — Event progress (bucket-upsert)**
 
 ```js
@@ -324,7 +326,7 @@ await tryCatch(upsertEventProgress(season, type, event, fetchedData.time));
 
 For the defend event and each attack event, `upsertEventProgress()` records the event's `points` at the poll's bucket. Within the same bucket window, the existing row is updated with the latest value. At a bucket boundary, a new row is inserted. It skips an event that belongs to another season.
 
-This is the one non-fatal step. A failure is pushed to a `warnings` array and the pipeline carries on.
+A failure here is non-fatal. It is pushed to the `warnings` array and the pipeline carries on.
 
 **Step 9 — Confirm season**
 
@@ -340,7 +342,7 @@ await tryCatch(upsertSeason(season, true));
 return { ms, season, time, confirmSeason, warnings };
 ```
 
-`ms` is the execution time in milliseconds, `time` is the API's poll time, `confirmSeason` is the updated `h1_season` record, and `warnings` holds the non-fatal failures from step 8. The route logs each warning and reports it to the error tracker at warning level.
+`ms` is the execution time in milliseconds, `time` is the API's poll time, `confirmSeason` is the updated `h1_season` record, and `warnings` holds the implausible statistics from step 7 and the non-fatal failures from step 8. The route logs each warning and reports it to the error tracker at warning level.
 
 ### Confirm pattern
 
@@ -357,7 +359,7 @@ The invariant this enforces: a season row with `last_updated !== null` has a com
 
 Every async operation is wrapped in `tryCatch()`, which returns `{ data, error }` instead of throwing. Errors surface as explicit `if (someError) throw new Error(...)` checks after each step, with a `cause` field that identifies the exact source file and operation where the code sets one. This makes stack traces actionable without relying on implicit propagation.
 
-The exception is event progress (Step 8), which collects failures into `warnings` instead of throwing. The pipeline completes and confirms the season even if an individual event-progress write fails.
+The exceptions go into `warnings` instead of throwing: implausible statistics (Step 7) and event-progress failures (Step 8). The pipeline completes and confirms the season even if an individual event-progress write fails.
 
 ---
 
