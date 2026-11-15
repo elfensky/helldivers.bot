@@ -9,7 +9,7 @@ requires:
     provides: "02-18 (lane docs/02-gap-closure at 4ac3350c, Sentry bullets and #686 reference)"
 provides:
   - "/docs/infrastructure overview fence routes the worker through the update route; only the lease holder polls the official API (WR-03)"
-  - "/docs/infrastructure re-checked statement by statement at lane commit cb68f18f: 22 drift fixes in the page"
+  - "/docs/infrastructure re-checked statement by statement at lane commit cb68f18f: 19 further drift fixes in the page"
   - "Page-check record section '## Gap closure: /docs/infrastructure' closed by the only Page infrastructure CHECKED line"
 affects: [02-19, 02-20, 02-21, 02-22]
 
@@ -75,7 +75,7 @@ status: complete
 
 # Phase 2 Plan 25: Infrastructure page re-check Summary
 
-**The /docs/infrastructure overview fence no longer draws the worker thread into the official-API node: the worker calls `/api/h1/update` and only the lease holder polls, and the page was re-read against the workflows, Dockerfiles, compose files and config with 22 further drift fixes.**
+**The /docs/infrastructure overview fence no longer draws the worker thread into the official-API node: the worker calls `/api/h1/update` and only the lease holder polls, and the page was re-read against the workflows, Dockerfiles, compose files and config with 19 further drift fixes.**
 
 ## Performance
 
@@ -97,7 +97,7 @@ status: complete
   - headers: the HTML cache row also excludes `/stats.js`, `/recorder.js` and `/opengraph-image`
   - D-06: the page named the Umami host (three places), the cleanup token's secret name and the four BuildKit secret ids; they are now described by role
 - The plan 02-18 Sentry bullets were re-read against `@sentry/bundler-plugins` 11.10.0 (rethrow at `build-plugin-manager.js:102`, skip branches at 539, 545, 551, 455) and hold; the `#686` reference is still on the page.
-- Record: `## Gap closure: /docs/infrastructure` with 37 rows (the two prior changes, 20 fixes, 4 classes, 9 parts, the plan 02-08 miss, the D-06 check) and the only `Page infrastructure: CHECKED` line, bound to lane commit `cb68f18f`. The plan 02-08 closing line is prose. The `## Final check (develop 709126df...)` section is unchanged. The nine CHECKED lines are each present once. Every cited `path:line` is inside its file.
+- Record: `## Gap closure: /docs/infrastructure` with 37 rows (the two prior changes, 19 fixes, 5 classes, 9 parts, the plan 02-08 miss, the D-06 check) and the only `Page infrastructure: CHECKED` line, bound to lane commit `cb68f18f`. The plan 02-08 closing line is prose. The `## Final check (develop 709126df...)` section is unchanged. The nine CHECKED lines are each present once. Every cited `path:line` is inside its file.
 
 ## Task Commits
 
@@ -108,7 +108,7 @@ status: complete
 
 ## Files Created/Modified
 
-- `src/app/docs/infrastructure/page.mdx` - fence edges and 22 text fixes (lane)
+- `src/app/docs/infrastructure/page.mdx` - fence edges and 19 text fixes (lane)
 - `.planning/phases/02-docs-accuracy-operational-housekeeping/02-DOCS-PAGE-CHECK.md` - new gap-closure section; the plan 02-08 closing line is prose
 
 ## Decisions Made
