@@ -75,3 +75,16 @@ Staging version: 0.99.0-dev.709126d
 /docs/architecture desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
 /docs desktop staging: PASS (svg 1/1, missing nodes 0, render errors 0)
 /docs/notifications desktop staging: PASS (svg 3/3, missing nodes 0, render errors 0)
+
+### Gap-closure re-check (plan 02-20)
+
+- Gap-closure merge commit M: `67019064edfb0455271186be442887ec65a278a2` (PR #687, rebase-merged on develop as 14 commits, range `74b69088..67019064`; M is the develop head after the merge)
+- Build: Staging run for M: 43760663110 (conclusion success). `Check: CI` run 43760452648 for M also ended success.
+- Build on staging at Task 1: 0.99.0-dev.6701906 (read from `/api/h1/live` at 2026-11-15T22:03:45+01:00; `git merge-base --is-ancestor M 6701906` holds, the sha is M itself). The previous build was 0.99.0-dev.74b6908.
+- Served text (curl, cache-busted, all three pages answer 200): `/docs/architecture` holds `activates as soon as it installs` (2 matches) and 0 matches for `explicit client approval`; `/docs` holds `Discord, GitHub and Google` (1 match); `/docs/notifications` holds `Only the poller lease holder polls the official Helldivers 1 API` (1 match) and 0 matches for `Thread that polls`.
+- Node IDs per diagram at `6701906` (`git show 6701906:<path>`; node lines plus inline edge-declared ids; unchanged from `c46001d`):
+  - `/docs/architecture` (`dataFlowDefinition.mjs`, 14): api_status, api_snapshot, seed_files, worker, lease, seed_script, h1_season, h1_status, h1_statistic, h1_event, h1_event_progress, fe_live, fe_archives, fe_rebroadcast
+  - `/docs` (`overviewDefinition.mjs`, 11): dash, archives, profile, docs, api_live, api_rb, api_update, auth_api, worker, db, hd1
+  - `/docs/notifications` `notification-flow` (`notificationFlowDefinition.mjs`, 11): worker, update, pushcheck, live, pushapi, sw, hook, detect, toast, webnoti, db (inline in an edge line)
+  - `/docs/notifications` `inapp-flow` (`inAppFlowDefinition.mjs`, 12): hd1_api, worker, post_update, update_status, poll, live_api, get_campaign, hook, rerender, detect_changes, sonner_toast, web_noti
+  - `/docs/notifications` `push-flow` (`pushFlowDefinition.mjs`, 7): post_update, check_notify, detect_changes, query_subs, web_push, sw_push, show_noti
