@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>helldivers.bot — the S159 friendly-fire spike: cause and fix</title>
+<meta name="description" content="Why S159 showed 1144% friendly fire on helldivers.bot/stats: one corrupt 15-minute step in the official API's Illuminate counters, not an integer overflow, and the data migration that removes it.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f7f6f2; --fg: #1d1d1b; --muted: #5d5c57; --line: #d8d6ce; --card: #ffffff;
+    --bad: #a3271f; --good: #1f6b3a; --accent: #8b2d2d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141413; --fg: #ecebe6; --muted: #a3a29b; --line: #34332f; --card: #1d1d1b;
+      --bad: #f0857c; --good: #7cc896; --accent: #e08f8f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 52rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 .4rem; }
+  h2 { font-size: 1.2rem; margin: 2.2rem 0 .6rem; border-bottom: 1px solid var(--line); padding-bottom: .3rem; }
+  p.meta { color: var(--muted); margin: 0 0 1.6rem; font-size: .92rem; }
+  ul { padding-left: 1.2rem; }
+  li { margin: .25rem 0; }
+  code { font: .9em ui-monospace, "SF Mono", Menlo, monospace; }
+  .cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); padding: 1rem 1.1rem; }
+  .card h3 { margin: 0 0 .4rem; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .card p { margin: .3rem 0; }
+  table { border-collapse: collapse; width: 100%; margin: .6rem 0 1rem; background: var(--card); font-variant-numeric: tabular-nums; }
+  th, td { border: 1px solid var(--line); padding: .4rem .6rem; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { font-size: .85rem; color: var(--muted); font-weight: 600; }
+  tr.hl td { font-weight: 600; }
+  .bad { color: var(--bad); }
+  .good { color: var(--good); }
+  .note { color: var(--muted); font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>The S159 friendly-fire spike: cause and fix</h1>
+  <p class="meta">helldivers.bot · evidence of 2026-11-15 · fix in
+    <a href="https://github.com/elfensky/helldivers.bot/pull/677">elfensky/helldivers.bot#677</a></p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Technical summary</h3>
+      <p>The S159 Illuminate counters in <code>h1_statistic</code> hold one corrupt step. It came from the official
+        HD1 API and was stored unchanged. It is not an integer overflow. The data migration
+        <code>20261115120000_fix_s159_illuminate_statistics</code> subtracts the step. S159 then reads 0.55% friendly
+        fire.</p>
+    </div>
+    <div class="card">
+      <h3>In plain words</h3>
+      <p>Think of a car's mileage counter. An overflow is the counter rolling past 999,999 back to 0. Here, one
+        15-minute trip added a billion kilometres. The trip itself was normal: 17 missions and 73 deaths. The counter
+        is big enough. One trip report was false, and the fix removes that one trip.</p>
+    </div>
+  </div>
+
+  <h2>What the charts showed</h2>
+  <p>The Friendly Fire Index on <code>/stats</code> is accidentals ÷ kills × 100, from the last bucket of each faction,
+    summed per season. The Accuracy Trend is hits ÷ shots × 100.</p>
+  <table>
+    <thead><tr><th>Season</th><th>Friendly fire, stored</th><th>Friendly fire, fixed</th><th>Accuracy, stored</th><th>Accuracy, fixed</th></tr></thead>
+    <tbody>
+      <tr><td>S157</td><td>0.56%</td><td>0.56%</td><td>47.50%</td><td>47.50%</td></tr>
+      <tr><td>S158</td><td>0.61%</td><td>0.61%</td><td>47.32%</td><td>47.32%</td></tr>
+      <tr class="hl"><td>S159</td><td class="bad">1144.09%</td><td class="good">0.55%</td><td class="bad">37.97%</td><td class="good">47.25%</td></tr>
+      <tr><td>S160</td><td>0.57%</td><td>0.57%</td><td>47.32%</td><td>47.32%</td></tr>
+      <tr><td>S161</td><td>0.54%</td><td>0.54%</td><td>46.83%</td><td>46.83%</td></tr>
+      <tr><td>S162 (live)</td><td>0.53%</td><td>0.53%</td><td>48.01%</td><td>48.01%</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The corrupt step</h2>
+  <p>In the bucket of 2026-07-20 08:00 UTC, four S159 Illuminate counters jumped. Missions and deaths stayed normal.
+    The last column is the season's own per-mission rate, applied to the step's 17 missions.</p>
+  <table>
+    <thead><tr><th>Counter</th><th>Change in the step</th><th>Normal for 17 missions</th></tr></thead>
+    <tbody>
+      <tr><td>Missions</td><td>17</td><td>17</td></tr>
+      <tr><td>Deaths</td><td>73</td><td>about 66</td></tr>
+      <tr class="hl"><td>Kills</td><td class="bad">98,775,169</td><td>about 1,800</td></tr>
+      <tr class="hl"><td>Shots</td><td class="bad">86,132,550</td><td>about 17,600</td></tr>
+      <tr class="hl"><td>Hits</td><td class="bad">662,147</td><td>about 7,700</td></tr>
+      <tr class="hl"><td>Accidentals</td><td class="bad">1,862,270,850</td><td>about 13</td></tr>
+    </tbody>
+  </table>
+  <p>At the end of the season the row could not be real:</p>
+  <ul>
+    <li>Accidentals (1,862,326,958) were about 6,550 times the deaths (284,289). An accidental is a death, and in other
+      rows accidentals are about 20–26% of deaths.</li>
+    <li>Kills (106,504,454) were higher than hits (33,583,085). In other rows, kills are 20–50% of hits.</li>
+  </ul>
+
+  <h2>Why it is not an integer overflow</h2>
+  <ul>
+    <li>JavaScript numbers hold integers exactly up to 2<sup>53</sup> − 1 (about 9 × 10<sup>15</sup>). The largest value
+      is about 4.8 million times below that limit. A precision loss rounds the last digits; it does not add
+      1.86 billion.</li>
+    <li>The five counter columns have been <code>bigint</code> since migration <code>20250722163100_bigint</code>. The
+      value is also below the old int32 limit (2,147,483,647).</li>
+    <li>An overflow sends one counter negative, or close to 4.29 billion. Here four counters rose together and stayed
+      high.</li>
+  </ul>
+
+  <h2>Where the values came from</h2>
+  <ul>
+    <li>The bot stores the official API's 11 statistics fields unchanged, and does no arithmetic on them.</li>
+    <li>Two databases hold the same final values: production, and a local development database. The local one wrote
+      its final S159 row at a later poll time (1784674885, production 1784674801), so it most likely polled on its
+      own.</li>
+    <li>The official API keeps no statistics history, so the original report cannot be read again.</li>
+    <li>The step looks like one false mission report that the game server added to its totals. This cause is
+      unconfirmed.</li>
+  </ul>
+
+  <h2>The fix</h2>
+  <ul>
+    <li><strong>Data migration.</strong> It subtracts the step from every S159 Illuminate row that carries it. The guard
+      is <code>accidentals &gt;= 1862270850</code>; rows before the jump hold fewer than 60,000. A database without the
+      corrupt rows does not change. Once fixed, the Illuminate row reads 0.73% friendly fire and 43.6% accuracy, close
+      to S160 Illuminate (0.71% and 43.5%).</li>
+    <li><strong>Ingest warning.</strong> The poller adds a <code>statistics.implausible</code> warning when a faction
+      has more accidentals than deaths. The route logs it and reports it to GlitchTip at warning level. The row is
+      still stored.</li>
+    <li><strong>Also corrected:</strong> the S159 archive's death tooltip ("1.9B accidental / 1.5M total deaths"), its
+      "By the numbers" line, and the all-time Shots per Planet figure.</li>
+    <li><strong>Rollout.</strong> Staging applies the migration on its first start after the merge into
+      <code>develop</code>. Production applies it at the next release.</li>
+  </ul>
+
+  <h2>Limits</h2>
+  <ul>
+    <li>The step's real share goes with it: about 0.02% of each S159 Illuminate total.</li>
+    <li>A corrupt counter stays corrupt until the season ends, so the warning repeats on every poll. GlitchTip groups
+      the repeats into one issue.</li>
+  </ul>
+  <p class="note">Sources: <code>/stats</code> and <code>/archives?season=159</code> payloads on helldivers.bot, the
+    official HD1 API (<code>get_campaign_status</code>, <code>get_snapshots</code>), and a read-only query of the
+    S159 Illuminate series (3,388 rows).</p>
+</main>
+</body>
+</html>
