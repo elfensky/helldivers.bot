@@ -11,6 +11,8 @@
 
 ### Changed
 
+- Staging reports server and browser errors to GlitchTip with `environment: staging`. The plain
+  `SENTRY_DSN` in `deploy/staging/compose.yaml` is the same project as production.
 - Versioning is "accumulate, then cut" (#618): PRs into `develop` raise no version and add their
   notes here; the cut is its own PR into `develop`, then the release PR. `Check: Version Bump` runs
   only on PRs into `main`. Staging images carry `<version>-dev.<sha7>` through a new `APP_VERSION`
