@@ -128,3 +128,7 @@ The `PR already open` fallback (`scheduled-seed-refresh.yml:66`) has not run for
 ## Next
 
 Ready for the next plan of phase 2.
+
+## Self-Check: PASSED
+
+Found: the SUMMARY, the release record, GSD-tree commits f612f32c, 2f82f018, 31e78c94, develop commits fcc88f75 and 6812b2b3.
