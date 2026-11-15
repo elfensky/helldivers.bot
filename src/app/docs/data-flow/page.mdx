@@ -510,7 +510,7 @@ These tables store normalized, relational data keyed on `season`. They accumulat
 
 ### Bucket-upsert pattern
 
-All timeseries tables (`h1_status`, `h1_statistic`, `h1_event_progress`) use a tumbling-window bucket-upsert pattern. Each poll computes `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` via `computeBucket()` from `src/shared/utils/bucketing.mjs`. Within an active bucket window, subsequent polls UPDATE the existing row. At a bucket boundary, a new row is INSERTed. `BUCKET_SIZE` is configurable via env var (default 900 = 15 min). The bucket math is deterministic and keeps no state in memory.
+All timeseries tables (`h1_status`, `h1_statistic`, `h1_event_progress`) use a tumbling-window bucket-upsert pattern. Each poll computes `bucket = floor(poll_time / BUCKET_SIZE) * BUCKET_SIZE` via `computeBucket()` from `src/shared/utils/bucketing.mjs`. Within an active bucket window, subsequent polls UPDATE the existing row. At a bucket boundary, a new row is INSERTed. `BUCKET_SIZE` is configurable via env var (default 900 = 15 min). The bucket math is deterministic and stateless.
 
 ---
 
