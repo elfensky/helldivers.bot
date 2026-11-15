@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Fixed
+
+- S159 is no longer at 1144% on the `/stats` Friendly Fire chart. In one 15-minute bucket
+  (2026-07-20 08:00 UTC) the official API's S159 Illuminate counters jumped by 1,862,270,850
+  accidentals, 98,775,169 kills, 86,132,550 shots and 662,147 hits, over a normal 17 missions and 73
+  deaths. The migration `20261115120000_fix_s159_illuminate_statistics` subtracts that step from
+  the rows that carry it. S159 now reads 0.55% friendly fire and 47.25% accuracy, in line with its
+  neighbours. The S159 archive's death tooltip, its "By the numbers" line and the all-time Shots
+  per Planet figure are corrected with it.
+- The poller reports a `statistics.implausible` warning to the log and to GlitchTip when the official
+  API sends a faction with more accidentals than deaths. It still stores the row.
+
 ## 0.99.0
 
 ### Added
