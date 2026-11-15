@@ -155,8 +155,8 @@ worker.postMessage({ key: key, interval: interval, port: port });
 Every replica runs the cron thread, but only one replica polls the official API at a time. The coordination is one row in `worker_heartbeat` (`worker_type = 'cron_api_poller'`, see [Database Schema](/docs/database)).
 
 - Each poll starts with `claimLease()` in `src/update/lease.mjs`: one atomic `INSERT ... ON CONFLICT DO UPDATE ... WHERE` on that row.
-- The claim succeeds when this replica already holds the row, or when `lease_until` has passed. A successful claim renews `lease_until` by 60 s (`LEASE_TTL_S`).
-- The holder does the work. Any other replica gets `200 { role: 'standby' }` straight away and touches nothing.
+- The claim succeeds when this replica already holds the row, or when `lease_until` is unset or has passed. A successful claim renews `lease_until` by 60 s (`LEASE_TTL_S`).
+- The holder does the work. Any other replica gets a `200` with `role: 'standby'` in the response data straight away and touches nothing.
 - A holder that stops renewing loses the lease after at most 60 s. The next replica to poll takes it over. There is no election and no manual step.
 - `prev_events` (the push-notification baseline) and `last_season_observed` (for the closing pass) live in the same row. A new holder inherits them, so a handover neither misses nor repeats a transition.
 - `persistPollerState()` writes them back only while the caller is still the holder, so a replica whose lease expired mid-poll cannot overwrite the new holder.
@@ -165,7 +165,7 @@ Every replica runs the cron thread, but only one replica polls the official API 
 
 ### Worker message loop
 
-`cron.js` is a thin shell. It listens for exactly one message from the parent and, on receipt, starts the polling loop that `makeDoWork()` builds in `cronLogic.js`:
+`cron.js` is a thin shell. The parent sends it one initialization message. On receipt, the shell starts the polling loop that `makeDoWork()` builds in `cronLogic.js`:
 
 ```js
 parentPort.on('message', (msg) => {
@@ -190,7 +190,7 @@ The route declares the matching header name (`WORKER_STARTUP_HEADER` in `src/app
 
 After each attempt, success or failure, the worker reports back to the parent:
 
-- Success: `{ data: responseJson, time: new Date().toString() }`
+- Success: `{ data, time: new Date().toString() }`, where `data` is the parsed JSON body of the response
 - Error: `{ error: err.toString(), time: new Date().toString() }`
 
 Errors do not stop the worker. The loop continues unconditionally.
@@ -233,7 +233,7 @@ process.on('SIGINT', async () => {
 
 Source: `src/update/status.mjs` — `updateStatus()`
 
-This function runs inside `GET /api/h1/update`, which the worker calls on every tick with an `Authorization: Bearer <key>` header. The route compares the key with a timing-safe check (401 on a mismatch) and answers 403 on a replica that opted out with `WORKER_ENABLED=false`. It then calls `claimLease()` and answers `200 { role: 'standby' }` early on a replica that does not hold the lease (see Poller lease in section 2). Only the holder reaches `updateStatus()`. The function fetches the current campaign state and persists it to the `h1_*` tables.
+This function runs inside `GET /api/h1/update`, which the worker calls on every tick with an `Authorization: Bearer <key>` header. The route compares the key with a timing-safe check (401 on a mismatch) and answers 403 on a replica that opted out with `WORKER_ENABLED=false`. It then calls `claimLease()` and answers `200` with `role: 'standby'` early on a replica that does not hold the lease (see Poller lease in section 2). Only the holder reaches `updateStatus()`. The function fetches the current campaign state and persists it to the `h1_*` tables.
 
 After `updateStatus()` the route runs the season closing pass when the season changed (see Season transition closing pass in section 4), then `updateSeason()` for the active season, reports the non-fatal warnings both pipelines returned, and starts the push-notification check after the response. It records the poll in the heartbeat row last.
 
@@ -270,7 +270,7 @@ const season = getSeasonFromStatus(fetchedData);
 await tryCatch(upsertSeason(season, false, { introOrder, pointsMax, seasonDuration }));
 ```
 
-A row for this season is created in `h1_season` with `last_updated` left as `null` and the season-level metadata (`introduction_order`, `points_max`, `season_duration`) inlined directly on the row. The `false` parameter signals that this is the initial, unconfirmed creation. See the Confirm Pattern section below.
+A row for this season is created in `h1_season` with `last_updated` left as `null` (a row that already exists keeps its value) and the season-level metadata (`introduction_order`, `points_max`, `season_duration`) inlined directly on the row. The `false` parameter signals that this is the initial, unconfirmed creation. See the Confirm pattern section below.
 
 **Step 5 — Upsert events**
 
@@ -334,7 +334,7 @@ A failure here is non-fatal. It is pushed to the `warnings` array and the pipeli
 await tryCatch(upsertSeason(season, true));
 ```
 
-`last_updated` is set only now, after all child writes have succeeded. See the Confirm Pattern section below.
+`last_updated` is set only now, after all child writes have succeeded. See the Confirm pattern section below.
 
 **Return value**
 
@@ -342,7 +342,7 @@ await tryCatch(upsertSeason(season, true));
 return { ms, season, time, confirmSeason, warnings };
 ```
 
-`ms` is the execution time in milliseconds, `time` is the API's poll time, `confirmSeason` is the updated `h1_season` record, and `warnings` holds the implausible statistics from step 7 and the non-fatal failures from step 8. The route logs each warning and reports it to the error tracker at warning level.
+`ms` is the execution time in milliseconds, `time` is the API's poll time, `confirmSeason` is the result of the confirming `upsertSeason` call (`{ ms, query }`, with the updated `h1_season` row in `query`), and `warnings` holds the implausible statistics from step 7 and the non-fatal failures from step 8. The route logs each warning and reports it to the error tracker at warning level.
 
 ### Confirm pattern
 
@@ -350,10 +350,10 @@ return { ms, season, time, confirmSeason, warnings };
 
 | Call                           | Parameter | Effect                                                             |
 | ------------------------------ | --------- | ------------------------------------------------------------------ |
-| `upsertSeason(season, false)`  | `false`   | Creates or touches the season row; leaves `last_updated` as `null` |
+| `upsertSeason(season, false)`  | `false`   | Creates the season row with `last_updated` as `null`; an existing row keeps its `last_updated` |
 | `upsertSeason(season, true)`   | `true`    | Sets `last_updated` to the current timestamp                       |
 
-The invariant this enforces: a season row with `last_updated !== null` has a complete, consistent set of child records. Any season row where `last_updated` is `null` was either just created and is mid-pipeline, or a previous pipeline run failed partway through. Consumers of the `h1_*` tables can filter on `last_updated IS NOT NULL` to read only confirmed seasons.
+The invariant this enforces: a season row with `last_updated !== null` has a complete, consistent set of child records. A season row where `last_updated` is `null` was either just created and is mid-pipeline, or a previous pipeline run failed partway through before it was ever confirmed. Consumers of the `h1_*` tables can filter on `last_updated IS NOT NULL` to read only confirmed seasons.
 
 ### Error handling
 
@@ -371,11 +371,11 @@ This function fetches the full historical snapshot data for a given season numbe
 
 ### Step-by-step
 
-**Step 0 — Guard and timing**
+**Step 0 — Timing and guard**
 
 ```js
-if (!season) throw new Error('season is missing');
 const start = performance.now();
+if (!season) throw new Error('season is missing');
 ```
 
 Season is required. If absent, the function throws before attempting any I/O.
@@ -472,7 +472,7 @@ These callers invoke `updateSeason()` reactively:
 - `getCampaignOrSeed(season)` — reads `h1_*` first and calls `updateSeason(season)` on a miss. The `/archives` page and `GET /api/h1/campaign?season=N` both use it.
 - `POST /api/h1/rebroadcast` with `action=get_snapshots` — reconstructs the response from `h1_*` tables; calls `updateSeason(season)` if the season data is absent.
 - `backfillAndRetry()` in `src/shared/utils/api/backfillSeason.mjs` — calls `backfillSeason()`, which calls `updateSeason(season)`. The four `/api/v1/h1/*` routes (`status`, `map`, `season`, `stats`) use it, after a rate-limit check, when a read finds no data for a past season. The `current` season is never backfilled.
-- `reseedSeason(season)` in `src/features/archives/reseedSeason.mjs` — the admin Refresh button on `/archives`. When the season is the latest one it passes `protectedBucket`.
+- `reseedSeason(season)` in `src/features/archives/reseedSeason.mjs` — the admin Refresh button on `/archives`. When the season is the latest confirmed one in the database, or a newer one, it passes `protectedBucket`.
 
 After `updateSeason()` returns, the handler re-queries the database and returns the result. This means a cold request for an unknown season incurs one extra round-trip to the official API before responding.
 
@@ -484,7 +484,7 @@ The `/archives` history page also fetches seasons on demand, through `getCampaig
 2. `updateSeason(season)` calls `fetchSeason(season)` (official API) and upserts into `h1_season` (with inlined metadata), `h1_event`, and `h1_status`
 3. `getCampaign(season)` is re-queried and now returns the seeded data
 
-The season selector on `/archives` is derived from the current season number (`Array.from({length: activeSeason - 1}, ...)`), not from a database query. This ensures all past seasons are always selectable regardless of what exists in the DB.
+The season selector on `/archives` is derived from the active season number (`Array.from({length: activeSeason - 1}, ...)`, where `activeSeason` comes from `getCampaign()`), not from a query for the seasons that exist. This ensures all past seasons are always selectable regardless of which ones the database holds.
 
 ### Season transition closing pass
 
@@ -496,7 +496,7 @@ The closing pass is non-fatal on error (the current season's update is more crit
 
 ## 5. Table Strategy
 
-All data is stored in normalized relational tables using the `h1_*` prefix. There are five tables total. A sixth table, `worker_heartbeat`, holds the poller lease (see Poller lease in section 2); it is not part of the war record.
+All data is stored in normalized relational tables using the `h1_*` prefix. There are five tables in the family. Outside it, the `worker_heartbeat` table holds the poller lease (see Poller lease in section 2); it is not part of the war record.
 
 ### H1 tables
 
