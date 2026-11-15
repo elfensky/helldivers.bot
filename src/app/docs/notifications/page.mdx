@@ -112,7 +112,7 @@ Events are matched by both `event_id` and `type` (defend/attack).
 ### Client vs Server
 
 - **Client-side** (`LiveToasts.jsx`): Compares `prevData` from `useLiveData` hook. Fires Sonner toasts and Web Notifications.
-- **Server-side** (`pushNotifier.mjs`): Keeps previous events in memory. Fires push notifications. Resets on server restart (acceptable — misses one transition at most).
+- **Server-side** (`pushNotifier.mjs`): Compares against the previous event snapshot stored in the lease row (`worker_heartbeat.prev_events`). The update route passes it in and writes the new snapshot back after each check, so a restart or a poller handover neither misses nor repeats a push. Fires push notifications.
 
 ### First-Message Baseline
 

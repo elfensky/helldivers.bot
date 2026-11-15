@@ -78,7 +78,7 @@ export const overviewConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Proxies the official Helldivers 1 API for external consumers. Returns cached raw JSON from the rebroadcast tables. Requires API key authentication.',
+                        'Proxies the official Helldivers 1 API for external consumers. Reconstructs the official wire format from the normalized h1_* tables. Requires API key authentication.',
                 },
             ],
         },
@@ -89,7 +89,7 @@ export const overviewConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Internal POST endpoint called by the worker thread. Runs updateStatus() and updateSeason(), then triggers push notification check. Protected by bearer token (UPDATE_KEY).',
+                        'Internal GET endpoint (Bearer UPDATE_KEY) that the worker thread calls. Only the poller lease holder does the work; other replicas answer standby. POST answers 405. Runs updateStatus() and updateSeason(), then the push notification check.',
                 },
             ],
         },
@@ -111,7 +111,7 @@ export const overviewConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Dedicated Worker Thread polling the official HD1 API every 10-20 seconds using setTimeout (not setInterval) to prevent overlapping requests. Validates with Zod before triggering the update route.',
+                        'Dedicated Worker Thread calling the update route every UPDATE_INTERVAL seconds using setTimeout (not setInterval) to prevent overlapping requests. Every replica runs it; only the poller lease holder polls the official HD1 API.',
                 },
             ],
         },
@@ -122,7 +122,7 @@ export const overviewConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Two-table strategy: rebroadcast_* tables store raw API JSON, h1_* tables store normalized historical data. Both coexist — raw for fidelity, normalized for queries.',
+                        'Normalized h1_* tables hold the full war record (h1_season, h1_status, h1_statistic, h1_event, h1_event_progress). The worker_heartbeat table holds the poller lease. There are no raw-cache tables.',
                 },
             ],
         },
