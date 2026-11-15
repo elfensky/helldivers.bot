@@ -4,12 +4,13 @@ const BODY = `
     subgraph Sources["DATA SOURCES"]
         api_status["get_campaign_status<br/><small>Live war state + stats</small>"]
         api_snapshot["get_snapshots<br/><small>Historical snapshots (current + backfill)</small>"]
-        seed_files["prisma/seed/seasons/*.json<br/><small>Bootstrap (first deploy)</small>"]
+        seed_files["prisma/seed/seasons/*.json<br/><small>Bootstrap (seed data)</small>"]
     end
 
     subgraph Processing["PROCESSING"]
         worker["Worker Thread<br/><small>cron.js — setTimeout loop<br/>poll > validate > bucket-upsert</small>"]
-        seed_script["Seed Script<br/><small>prisma db seed / startup</small>"]
+        lease["Poller lease<br/><small>worker_heartbeat · one holder polls, others standby</small>"]
+        seed_script["Seed Script<br/><small>prisma/seed/seed.mjs<br/>on start, when seed data changed</small>"]
     end
 
     subgraph Normalized["NORMALIZED TABLES (5)"]
@@ -27,9 +28,12 @@ const BODY = `
     end
 
     %% Sources → Processing
-    api_status -->|"~15s"| worker
-    api_snapshot -->|"~15s + on demand"| worker
-    seed_files -->|"once"| seed_script
+    api_status -->|"UPDATE_INTERVAL"| worker
+    api_snapshot -->|"UPDATE_INTERVAL + on demand"| worker
+    seed_files -->|"when changed"| seed_script
+
+    %% Processing
+    worker -->|"claim / renew"| lease
 
     %% Processing → Normalized
     worker --> h1_season
@@ -61,7 +65,7 @@ const BODY = `
     classDef frontend fill:#1c1b1b,stroke:#06b6d4,color:#22d3ee
 
     class api_status,api_snapshot api
-    class worker processing
+    class worker,lease processing
     class h1_season,h1_status,h1_statistic,h1_event,h1_event_progress norm
     class seed_files,seed_script seed
     class fe_live,fe_archives,fe_rebroadcast frontend
