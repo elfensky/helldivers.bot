@@ -3,7 +3,7 @@ import { createFlowConfig } from '@/app/docs/_diagram.mjs';
 export const dataFlowConfig = createFlowConfig({
     views: [
         { key: 'all', label: 'All Flows' },
-        { key: 'live', label: 'Live Polling (~15s)' },
+        { key: 'live', label: 'Live Polling' },
         { key: 'snapshot', label: 'Snapshot Sync' },
         { key: 'seed', label: 'Seed (Bootstrap)' },
         { key: 'read_live', label: 'Frontend: Live' },
@@ -15,21 +15,14 @@ export const dataFlowConfig = createFlowConfig({
         live: [
             'api_status',
             'worker',
+            'lease',
             'h1_season',
             'h1_status',
             'h1_statistic',
             'h1_event',
             'h1_event_progress',
         ],
-        snapshot: [
-            'api_snapshot',
-            'worker',
-            'h1_season',
-            'h1_status',
-            'h1_statistic',
-            'h1_event',
-            'h1_event_progress',
-        ],
+        snapshot: ['api_snapshot', 'worker', 'lease', 'h1_season', 'h1_status', 'h1_event'],
         seed: ['seed_files', 'seed_script', 'h1_season', 'h1_status', 'h1_event'],
         read_live: ['h1_status', 'h1_event', 'h1_season', 'fe_live'],
         read_archives: ['h1_status', 'h1_event', 'h1_event_progress', 'fe_archives'],
@@ -62,11 +55,11 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Returns the live state of the current war. Polled every ~15 seconds.',
+                        'Returns the live state of the current war. Polled every UPDATE_INTERVAL seconds by the lease holder.',
                 },
                 {
                     type: 'tags',
-                    items: [{ text: '~15s poll', cls: 'tag-interval' }],
+                    items: [{ text: 'UPDATE_INTERVAL poll', cls: 'tag-interval' }],
                 },
                 { type: 'heading', content: 'Response shape' },
                 {
@@ -87,7 +80,7 @@ export const dataFlowConfig = createFlowConfig({
                 },
                 {
                     type: 'tags',
-                    items: [{ text: '~15s poll + on demand', cls: 'tag-interval' }],
+                    items: [{ text: 'UPDATE_INTERVAL poll + on demand', cls: 'tag-interval' }],
                 },
                 { type: 'heading', content: 'Response shape' },
                 {
@@ -104,11 +97,11 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Static JSON files that bootstrap the app on first deploy. Same shape as get_snapshots response \u2014 processed through the same normalization pipeline.',
+                        'Static JSON files that bootstrap the app. Same shape as get_snapshots response \u2014 processed through the same normalization pipeline.',
                 },
                 {
                     type: 'tags',
-                    items: [{ text: 'first deploy only', cls: 'tag-once' }],
+                    items: [{ text: 'when seed data changed', cls: 'tag-once' }],
                 },
                 {
                     type: 'text',
@@ -118,7 +111,7 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'code',
                     content:
-                        'prisma/seed/seasons/\n  season-001.json\n  season-002.json\n  ...\n  season-155.json',
+                        'prisma/seed/seasons/\n  season-001.json\n  season-002.json\n  ...\n  season-161.json',
                 },
             ],
         },
@@ -129,17 +122,17 @@ export const dataFlowConfig = createFlowConfig({
                 {
                     type: 'text',
                     content:
-                        'Uses setTimeout (not setInterval) to prevent overlapping requests. Both API endpoints polled every ~15s.',
+                        'Uses setTimeout (not setInterval) to prevent overlapping requests. Every replica runs the thread and calls the update route every UPDATE_INTERVAL seconds; only the poller lease holder polls the two API endpoints.',
                 },
                 {
                     type: 'tags',
-                    items: [{ text: '~15s loop', cls: 'tag-interval' }],
+                    items: [{ text: 'UPDATE_INTERVAL loop', cls: 'tag-interval' }],
                 },
                 { type: 'heading', content: 'Update cycle' },
                 {
                     type: 'text',
                     content:
-                        '1. Fetch API response\n2. Validate with Zod schemas\n3. Bucket-upsert into h1_* tables\n4. Schedule next poll via setTimeout',
+                        '1. Claim or renew the poller lease (a standby replica stops here)\n2. Fetch API response\n3. Validate with Zod schemas\n4. Bucket-upsert into h1_* tables\n5. Schedule next poll via setTimeout',
                 },
                 {
                     type: 'text',
@@ -148,18 +141,43 @@ export const dataFlowConfig = createFlowConfig({
                 },
             ],
         },
-        seed_script: {
-            title: 'Seed Script',
-            subtitle: 'prisma db seed',
+        lease: {
+            title: 'Poller lease',
+            subtitle: 'worker_heartbeat \u00b7 src/update/lease.mjs',
             sections: [
                 {
                     type: 'text',
                     content:
-                        'Runs on first deploy to populate the database from static JSON files. Processes each season file through the same normalization pipeline used by live updates.',
+                        "Every replica runs the worker thread. Each poll first claims the single worker_heartbeat row with an atomic conditional upsert. The holder polls the API. The other replicas answer 200 { role: 'standby' } and stop. A dead holder is replaced after the 60 s TTL, with no election.",
                 },
                 {
                     type: 'tags',
-                    items: [{ text: 'first deploy only', cls: 'tag-once' }],
+                    items: [{ text: '60 s TTL', cls: 'tag-interval' }],
+                },
+                {
+                    type: 'text',
+                    content:
+                        'The row also holds prev_events and last_season_observed. A new holder inherits them, so a handover neither misses nor repeats an event transition.',
+                },
+            ],
+        },
+        seed_script: {
+            title: 'Seed Script',
+            subtitle: 'prisma/seed/seed.mjs',
+            sections: [
+                {
+                    type: 'text',
+                    content:
+                        'Populates the database from static JSON files. Processes each season file through the same normalization pipeline used by live updates.',
+                },
+                {
+                    type: 'text',
+                    content:
+                        'Runs as node --experimental-strip-types prisma/seed/seed.mjs. On app start, migrateOrWait runs it under a Postgres advisory lock when the hash of the seed inputs changed.',
+                },
+                {
+                    type: 'tags',
+                    items: [{ text: 'when seed data changed', cls: 'tag-once' }],
                 },
             ],
         },
