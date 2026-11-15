@@ -41,9 +41,11 @@ composite action in `.github/actions/verify/`. Env vars are documented in `.exam
 `develop` integrates, `main` releases on a `v*.*.*` tag push (the tag triggers the production build).
 The `develop` ruleset requires a PR with checks `Test & Build`, `Visual Regression`,
 `Review Dependencies` and allows only the `rebase` merge method. Merge work PRs with
-`gh pr merge --rebase --delete-branch`. A release PR `develop` → `main` uses a merge commit and gets
-tagged `vX.Y.Z`. There is no merge-back (#621): `main` does not require an up-to-date branch, so the
-next release PR merges without `main`'s merge commit on `develop`. A fix made directly on `main`
+`gh pr merge <n> --rebase`, then delete the branch with `git push origin --delete <branch>` once
+`gh pr view <n> --json state` reports `MERGED` (gh's own branch-delete flag removes a lane worktree that
+has the branch checked out). A release PR `develop` → `main` uses a merge commit, never deletes its head
+branch `develop`, and gets tagged `vX.Y.Z`. There is no merge-back (#621): `main` does not require an
+up-to-date branch, so the next release PR merges without `main`'s merge commit on `develop`. A fix made directly on `main`
 reaches `develop` through its own PR.
 
 ## This repo's own rules
@@ -80,7 +82,10 @@ reaches `develop` through its own PR.
   `setTimeout` self-scheduling loop — never `setInterval`), but only the holder of the `worker_heartbeat`
   lease (`src/update/lease.mjs`) polls the HD1 API; handover state (`prevEvents`,
   `lastSeasonObserved`) lives in the lease row, not in module memory. Do not add in-process cron or
-  module-level poller caches.
+  module-level poller caches. Every replica spawns the cron thread at start (`src/instrumentation.node.js`
+  → `initializeWorker()`); each poll first claims the lease (60 s, `LEASE_TTL_S`), and a replica that
+  does not hold it answers `200 {role:'standby'}`. `WORKER_ENABLED=false` is an optional per-replica
+  opt-out, not a requirement for scaling; both stacks run 2 app replicas.
 - **Normalized schema + bucket-upsert.** The h1 data lives in `h1_season`, `h1_status`, `h1_statistic`,
   `h1_event`, `h1_event_progress` (`prisma/schema.prisma`) — no raw-cache tables. Polls are grouped into
   `BUCKET_SIZE` time buckets and upserted by `season + enemy + bucket` (`src/shared/utils/bucketing.mjs`).
