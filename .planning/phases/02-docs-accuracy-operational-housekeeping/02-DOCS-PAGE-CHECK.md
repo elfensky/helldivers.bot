@@ -214,3 +214,35 @@ Line numbers in the "Stale statement" column are the lines of the page at `devel
 Lane commit: c6bcfdb34b7d763c0364eb27b69c9d6cecf1afbc
 
 Page infrastructure: CHECKED
+
+## Final check (develop 12704b0c15bf9b5ca12f0866182e39d8ab30b4e9)
+
+R is the develop head after the sweep-fix PR #681 (rebase merge). Date: 2026-11-15. The lane is `chore-release-2`, rebased on R, with `npm ci` done.
+
+| Check | Command (run under `bash` at R) | Hit lines |
+|-------|---------------------------------|-----------|
+| Sweep 1 (retired strings) | `/usr/bin/grep -rnE 'TIMESTAMPTZ\|initializeOpenApiSpec\|\?key=\|staging\.docker\.yml\|release\.docker\.yml\|metrics\.yml\|[^-a-z]ci\.yml\|euraika\|aegis\|POSTGRES_SSL\|SKIP_MIGRATIONS\|5-15 seconds\|silent: true\|snapshot throttling\|AI assistants\|distroless\|uid 1001\|RELEASE\.md\|softprops\|prisma db seed' $PAGES` | 0 |
+| Sweep 2 (fixed interval, state) | `/usr/bin/grep -rnE '~15 ?s\|every ~15\|in memory' $PAGES` | 0 |
+| AGENTS.md sweep | `/usr/bin/grep -nE 'module-level state\|~15 seconds\|~15s\|--delete-b[r]anch' AGENTS.md` | 0 |
+| Fence script | `node scripts/check-mermaid-fences.mjs` | exit 0, `checked 8 fences in 5 files` |
+
+`$PAGES` is `src/app/docs/architecture src/app/docs/data-flow src/app/docs/infrastructure src/app/docs/database src/app/docs/testing src/app/docs/notifications src/app/docs/page.mdx src/app/docs/overviewConfig.mjs`.
+
+Sweep 2 found one hit before the fix: `src/app/docs/data-flow/page.mdx:513` ("keeps no state in memory"). The sentence was correct. PR #681 reworded it to "The bucket math is deterministic and stateless." and added no CHANGELOG note, because the unreleased `/docs/data-flow` note covers the page.
+
+Checked pages and files, each with its own `CHECKED` line above: AGENTS.md, the codebase maps, and the pages architecture, overview, notifications, data-flow, database, testing and infrastructure.
+
+### Intended changes since the CHECKED lane commit c6bcfdb3
+
+Four hunks changed the checked pages or their code evidence after c6bcfdb3. Each was read against the code at R.
+
+| Change | Where | Evidence |
+|--------|-------|----------|
+| #679 `errorHandler` rethrows Sentry step errors; the infrastructure page shows the option and states that a failed upload fails the build | `src/app/docs/infrastructure/page.mdx` (Sentry block and bullet) | `next.config.mjs:226-229` |
+| #673 migrate-tools stage deletes PGlite and the query compilers of other providers; the stage-table row says so | `src/app/docs/infrastructure/page.mdx:154` | `Dockerfile.app:126-128` |
+| #672 version reload waits 60 s after the first mismatch; the notifications paragraph states the delay (no mermaid fence) | `src/app/docs/notifications/page.mdx:80` | `src/shared/hooks/useLiveData.mjs:34`, `src/shared/hooks/useLiveData.mjs:134` |
+| #681 sweep fix: "keeps no state in memory" became "stateless" | `src/app/docs/data-flow/page.mdx:513` | `src/shared/utils/bucketing.mjs` (pure `computeBucket()`) |
+
+This check is the release gate; phase verification owns the D-12 page-by-page read at tag v0.99.0.
+
+Final check: PASS
