@@ -22,7 +22,14 @@ export const dataFlowConfig = createFlowConfig({
             'h1_event',
             'h1_event_progress',
         ],
-        snapshot: ['api_snapshot', 'worker', 'lease', 'h1_season', 'h1_status', 'h1_event'],
+        snapshot: [
+            'api_snapshot',
+            'worker',
+            'lease',
+            'h1_season',
+            'h1_status',
+            'h1_event',
+        ],
         seed: ['seed_files', 'seed_script', 'h1_season', 'h1_status', 'h1_event'],
         read_live: ['h1_status', 'h1_event', 'h1_season', 'fe_live'],
         read_archives: ['h1_status', 'h1_event', 'h1_event_progress', 'fe_archives'],
@@ -80,7 +87,9 @@ export const dataFlowConfig = createFlowConfig({
                 },
                 {
                     type: 'tags',
-                    items: [{ text: 'UPDATE_INTERVAL poll + on demand', cls: 'tag-interval' }],
+                    items: [
+                        { text: 'UPDATE_INTERVAL poll + on demand', cls: 'tag-interval' },
+                    ],
                 },
                 { type: 'heading', content: 'Response shape' },
                 {
