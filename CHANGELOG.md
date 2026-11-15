@@ -16,6 +16,9 @@
   polls, a standby answers 200, and `WORKER_ENABLED=false` is optional. Its merge line keeps lane
   worktrees (`gh pr merge <n> --rebase`, then `git push origin --delete <branch>`). The comments in
   the update route, `initializeWorker` and `cron.js` match, and the codebase maps are corrected.
+- The `/docs/architecture` diagram shows the `worker_heartbeat` poller lease, the real poll cadence
+  (`UPDATE_INTERVAL`) and the seed path (`prisma/seed/seed.mjs`). `/docs` and `/docs/notifications`
+  describe the GET update route and the push baseline in the lease row.
 
 ## 0.98.1
 
