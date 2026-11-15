@@ -215,9 +215,9 @@ Lane commit: c6bcfdb34b7d763c0364eb27b69c9d6cecf1afbc
 
 Page infrastructure: CHECKED
 
-## Final check (develop 12704b0c15bf9b5ca12f0866182e39d8ab30b4e9)
+## Final check (develop 709126df159c180b050756887257a0b2be1d02d3)
 
-R is the develop head after the sweep-fix PR #681 (rebase merge). Date: 2026-11-15. The lane is `chore-release-2`, rebased on R, with `npm ci` done.
+R is the develop head after the cut PR #682 (0.99.0), the live-polling fix #671 and the S159 statistics fix #677 (rebase merges). Date: 2026-11-15. The lane is `chore-release-2`, detached at R, with `npm ci` done. An earlier run of the same four checks passed on the head after PR #681 (12704b0c); Andrei then decided to include #671 and #677 in 0.99.0, so the check was repeated on the new head.
 
 | Check | Command (run under `bash` at R) | Hit lines |
 |-------|---------------------------------|-----------|
@@ -234,7 +234,7 @@ Checked pages and files, each with its own `CHECKED` line above: AGENTS.md, the 
 
 ### Intended changes since the CHECKED lane commit c6bcfdb3
 
-Four hunks changed the checked pages or their code evidence after c6bcfdb3. Each was read against the code at R.
+Ten hunks changed the checked pages or their code evidence after c6bcfdb3. Each was read against the code at R.
 
 | Change | Where | Evidence |
 |--------|-------|----------|
@@ -242,6 +242,12 @@ Four hunks changed the checked pages or their code evidence after c6bcfdb3. Each
 | #673 migrate-tools stage deletes PGlite and the query compilers of other providers; the stage-table row says so | `src/app/docs/infrastructure/page.mdx:154` | `Dockerfile.app:126-128` |
 | #672 version reload waits 60 s after the first mismatch; the notifications paragraph states the delay (no mermaid fence) | `src/app/docs/notifications/page.mdx:80` | `src/shared/hooks/useLiveData.mjs:34`, `src/shared/hooks/useLiveData.mjs:134` |
 | #681 sweep fix: "keeps no state in memory" became "stateless" | `src/app/docs/data-flow/page.mdx:513` | `src/shared/utils/bucketing.mjs` (pure `computeBucket()`) |
+| #671 the version-reload paragraph states that a browser without `localStorage` gets no reload | `src/app/docs/notifications/page.mdx:80` | `src/shared/utils/reloadGuard.mjs:16-17` (`if (!storage) return;`), `src/shared/utils/storage.mjs:11` |
+| #671 the `tryCatch` bullet of AGENTS.md names `getLocalStorage()` as the sync exception that reports nothing | `AGENTS.md:61-63` | `src/shared/utils/storage.mjs:11-17` (sync, returns null, no report) |
+| #677 data-flow step 7: a faction with more `accidentals` than `deaths` is stored and adds a `statistics.implausible` warning | `src/app/docs/data-flow/page.mdx:318` | `src/update/status.mjs:87-94` (warning pushed before `upsertStatistic`; the row is still written); the S159 Illuminate figures (1.86 billion accidentals, 284,289 deaths) match `docs/reports/2026-11-15-s159-friendly-fire.html` and `prisma/migrations/20261115120000_fix_s159_illuminate_statistics/migration.sql` |
+| #677 data-flow step 8 wording: "the one non-fatal step" became "A failure here is non-fatal" | `src/app/docs/data-flow/page.mdx:329` | `src/update/status.mjs:116-121` |
+| #677 data-flow return value: `warnings` holds the implausible statistics of step 7 and the non-fatal failures of step 8 | `src/app/docs/data-flow/page.mdx:345` | `src/update/status.mjs:144-150` |
+| #677 data-flow error handling: the exceptions that go into `warnings` are implausible statistics (step 7) and event-progress failures (step 8) | `src/app/docs/data-flow/page.mdx:362` | `src/update/status.mjs:89-94`, `src/update/status.mjs:116-133` |
 
 This check is the release gate; phase verification owns the D-12 page-by-page read at tag v0.99.0.
 
