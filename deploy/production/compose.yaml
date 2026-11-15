@@ -71,7 +71,7 @@ secrets:
 services:
     app:
         # Rewritten by CI to :vX.Y.Z — see the header.
-        image: ghcr.io/elfensky/helldiversbot:production-unpinned
+        image: ghcr.io/elfensky/helldiversbot:v0.99.0
         networks: [internal]
         environment:
             NODE_ENV: production
