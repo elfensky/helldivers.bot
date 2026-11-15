@@ -2,13 +2,16 @@
 
 Browser render of the five diagrams that three docs pages draw with live Mermaid. `next build` does not run client-side Mermaid and a render failure only logs to the console, so only a browser proves these diagrams. Plan 02-15 appends the staging lines (production build).
 
+The plan 02-05 dev render (lane commit 0f2a2432) passed all six lines; this gap-closure render replaces it.
+
 - Mermaid version: 12.3.0 (`node_modules/mermaid/package.json` in the lane)
-- Server: lane dev server `http://127.0.0.1:3100` (`next dev`, `WORKER_ENABLED=false`, `VITEST=1`, stub env, no database)
-- Tool: chrome-devtools MCP, run by the execute-phase orchestrator on 2026-11-15, 02:12Z to 02:21Z
-- Browser: isolated Chrome 157.0.0.0 (macOS), real CDP clicks on accessibility uids
+- Server: lane dev server `http://127.0.0.1:3100` (`next dev`, `WORKER_ENABLED=false`, `VITEST=1`, stub env, no database), stopped after the render
+- Tool: chrome-devtools MCP, run by the execute-phase orchestrator on 2026-11-15 (plan 02-19 Task 2), isolated Chrome context without a login
+- Browser: Chrome 157.0.0.0 (macOS)
 - Viewports: 1440×900 (desktop) and 768×1024 (768px)
-- Node-ID rule: Mermaid 12.3.0 writes node ids as `mermaid-<diagram>-<n>-flowchart-<nodeId>-<n>`. The check matched the `flowchart-<nodeId>-<n>` suffix on `g.node[id]` inside each diagram's own svg (`mermaid-data-flow-*`, `mermaid-docs-overview-*`, `mermaid-notification-flow-*`, `mermaid-inapp-flow-*`, `mermaid-push-flow-*`). This is the rule `src/shared/components/MermaidDiagram/MermaidDiagram.jsx:17` uses. All 14 + 11 + 10 + 12 + 7 listed node IDs were found at both widths.
-- At 768 px the architecture svg viewBox was 1053×1542 (taller than wide), so the TD `mobileDefinition` layout was in use.
+- Method per page and viewport: `resize_page`, reload with the cache ignored, wait until every `.diagram-canvas svg` has `g.node` elements, then `evaluate_script` for the svg count, the node ids without a matching `g.node`, and the edge `path` `data-id` values; `list_console_messages` (error, warn) since that navigation, searched for `[MermaidDiagram] render failed:`.
+- Node-ID rule: Mermaid 12.3.0 writes node ids as `mermaid-<diagram>-<n>-flowchart-<nodeId>-<n>`. The check matched the `flowchart-<nodeId>-\d+$` suffix on `g.node[id]` inside each diagram's own svg (`mermaid-data-flow-*`, `mermaid-docs-overview-*`, `mermaid-notification-flow-*`, `mermaid-inapp-flow-*`, `mermaid-push-flow-*`). This is the rule `src/shared/components/MermaidDiagram/MermaidDiagram.jsx:17` uses.
+- `g.node` counts per svg (both viewports): data-flow 14, docs-overview 11, notification-flow 11 (10 listed ids plus the inline `db`), inapp-flow 12, push-flow 7.
 
 ## Dev lines
 
@@ -21,18 +24,30 @@ Browser render of the five diagrams that three docs pages draw with live Mermaid
 
 ## Console
 
-Every page and width: 0 messages that contain `[MermaidDiagram] render failed:`. The only error and warning lines were `GET /api/h1/live` 500 and `[useLiveData] poll failed: HTTP 500`. The lane server has no database, so these are expected and unrelated to the diagrams.
+Every page and width: 0 messages that contain `[MermaidDiagram] render failed:`. The only error and warning lines were `Failed to load resource` 500 and `[useLiveData] poll failed: HTTP 500` pairs. The lane server has no database, so `/api/h1/live` answers 500 as expected; this is unrelated to the diagrams.
 
-## Detail panels (desktop)
+## Edge results (desktop)
 
-1. /docs/architecture, node `lease`: heading `POLLER LEASE`; subtitle `worker_heartbeat · src/update/lease.mjs`; text "Every replica runs the worker thread. Each poll first claims the single worker_heartbeat row with an atomic conditional upsert. The holder polls the API. The other replicas answer 200 { role: 'standby' } and stop. A dead holder is replaced after the 60 s TTL, with no election."; tag `60 s TTL`; second paragraph "The row also holds prev_events and last_season_observed. A new holder inherits them, so a handover neither misses nor repeats an event transition."
-2. /docs/architecture flow highlights: view `Live Polling` highlights `lease` (and `worker`, `h1_statistic`, `h1_event_progress`). View `Snapshot Sync` highlights `lease` (and `worker`, `api_snapshot`) and dims `h1_statistic` and `h1_event_progress`. Read from the `diagram-highlighted` and `diagram-dimmed` classes on `g.node`. The first `Live Polling` click hit a stale uid and did not apply; it was repeated after a fresh snapshot.
-3. /docs, node `api_update` (button "/api/h1/update Worker trigger"): heading `UPDATE ROUTE`; subtitle `src/app/api/h1/update/route.js`; text "Internal GET endpoint (Bearer UPDATE_KEY) that the worker thread calls. Only the poller lease holder does the work; other replicas answer standby. POST answers 405. Runs updateStatus() and updateSeason(), then the push notification check."
-4. /docs/notifications, diagram `notification-flow`, node `pushcheck` (button "Push Notifier checkAndNotify()"): heading `PUSH NOTIFIER`; subtitle `src/update/pushNotifier.mjs`; text "Server-side change detection that runs after each update cycle (fire-and-forget). Compares against the previous event snapshot in the lease row (worker_heartbeat.prev_events) and sends web-push notifications on transitions." followed by a Feature/Detail table.
+Mermaid 12.3 puts `L_<from>_<to>_<n>` in the path `data-id` (the path `id` is `<svg id>-L_...`), so edge ids carry node names and the edges are measurable.
+
+- /docs (`mermaid-docs-overview-*`): edge ids are L_dash_api_live_0, L_api_live_db_0, L_worker_api_update_0, L_api_update_db_0, L_api_update_hd1_0. `L_api_update_hd1_` present, `L_worker_hd1_` absent. PASS.
+- In-app flow (`mermaid-inapp-flow-*`): `L_hd1_api_post_update_0` present, `L_hd1_api_worker_` absent. The only other worker edge is L_worker_post_update_0. PASS.
+- Notification flow: the only worker edge is L_worker_update_0; it has no hd1 edge.
+- Extra edges (plan 02-16 deviation, architecture svg `mermaid-data-flow-*`): `L_h1_statistic_fe_live_0` present, `L_h1_statistic_fe_archives_0` present, `L_h1_event_progress_fe_archives_` absent. Frontend edges found: L_h1_status_fe_live_0, L_h1_statistic_fe_live_0, L_h1_event_fe_live_0, L_h1_season_fe_live_0, L_h1_status_fe_archives_0, L_h1_event_fe_archives_0, L_h1_statistic_fe_archives_0, L_h1_season_fe_rebroadcast_0, L_h1_status_fe_rebroadcast_0, L_h1_statistic_fe_rebroadcast_0, L_h1_event_fe_rebroadcast_0. Total edges 23. PASS.
+
+## Detail panels (desktop; clicked the `g.node`, read `.diagram-detail-panel.open` innerText, tables as Field/Type rows)
+
+1. /docs/architecture, node `h1_season`: "H1_SEASON / Root anchor for all game data / h1_status, h1_statistic and h1_event FK back to this via season (Int); h1_event_progress links to h1_event instead. Inlines the introduction_order[] and points_max[] arrays (formerly separate tables) plus the season_duration scalar (Int)." Fields: season Int @unique; last_updated DateTime?; introduction_order Int[]; points_max Int[]; season_duration Int.
+2. /docs/architecture, node `h1_status`: "H1_STATUS / Bucketed campaign timeseries / One row per (season, enemy, bucket). Stores campaign progress (points, status) at each time bucket. Both API paths write here — unified source for live dashboard and archives." Tags: bucket-upsert by (season, enemy, bucket), Live Dashboard + Archives. Fields: season Int FK; enemy Int (0/1/2); bucket Int (window start); time Int; points / points_taken Int; status String. No `players` row.
+3. /docs/architecture, node `h1_event_progress`: "H1_EVENT_PROGRESS / Bucketed event progression / One row per (type, event_id, bucket). Tracks how event points change over time; points_max is constant and lives on h1_event. The app only writes this table; the offline scripts in scripts/analysis read it." Tags: bucket-upsert by (type, event_id, bucket), read by analysis scripts. Fields: type "attack" | "defend"; event_id Int; type + event_id FK → h1_event; bucket Int (window start); points Int. No `points_max` row.
+4. /docs, node `dash`: "DASHBOARD / src/app/page.jsx / Live campaign dashboard with galaxy map, faction stats, event cards, and timeline. Polls /api/h1/live every 10 seconds via the useLiveData hook."
+5. /docs, node `auth_api`: "AUTH API / src/app/api/auth/[...all]/route.js / BetterAuth catch-all route handling Discord, GitHub and Google OAuth flows, session management, and account operations. Optional — returns 503 when BETTER_AUTH_SECRET is absent."
+6. /docs/notifications, `notification-flow`, node `worker`: "WORKER THREAD / public/workers/cron.js / Dedicated Worker Thread. Every replica runs it, and it calls POST /api/h1/update via HTTP to the main Next.js process every UPDATE_INTERVAL seconds. Only the poller lease holder polls the official Helldivers 1 API." Settings: Poll interval — UPDATE_INTERVAL env (required; 20 in both stacks); Method — setTimeout (prevents overlap); Auth — Bearer token (UPDATE_KEY).
+7. /docs/notifications, `inapp-flow`, node `hd1_api`: "OFFICIAL HD1 API / External data source / Official Helldivers 1 API. Updates approximately every second. Only the poller lease holder fetches it, once per UPDATE_INTERVAL seconds."
 
 Every step of the checkpoint ran.
 
-Lane commit: 0f2a2432d907e3ccb75f1e95fdf7a6d347e0c7cb
+Lane commit: 3ac800a53840bb7595925f1dc20217912e817f9d
 
 Verdict: RENDERED
 
