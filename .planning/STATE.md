@@ -5,15 +5,17 @@ milestone_name: The site is documented, tested and findable
 current_phase: 02
 current_phase_name: Docs Accuracy & Operational Housekeeping
 status: executing
-stopped_at: Phase 2 context refreshed (assumptions mode)
-last_updated: "2026-11-09T11:32:39.887Z"
-last_activity: 2026-11-09
+stopped_at: Completed 02-20-PLAN.md
+last_updated: "2026-11-15T21:08:15.003Z"
+last_activity: 2026-11-15
+last_activity_desc: "Plan 02-20 executed: staging render of the three diagram pages PASS on 0.99.0-dev.6701906 (contains M 67019064), review dispositions closed (open: 0)"
+state_head: ef1d65cf34a6e51657144fa5a6a82b8996152049
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 12
-  completed_plans: 1
-  percent: 8
+  total_plans: 24
+  completed_plans: 22
+  percent: 0
 ---
 
 # Project State
@@ -23,16 +25,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-09)
 
 **Core value:** The live dashboard and API are stable and correct — the poller never loses data across season transitions or replica handovers, and production error volume stays at zero known classes.
-**Current focus:** Phase 2 — Docs Accuracy & Operational Housekeeping
+**Current focus:** Phase 02 — Docs Accuracy & Operational Housekeeping
 
 ## Current Position
 
-Phase: 02 (Docs Accuracy & Operational Housekeeping) — READY TO EXECUTE
-Plan: 02-03 done; plans 02-01, 02-09, 02-11 and 02-12 need a re-plan first
-Status: Ready to execute
-Last activity: 2026-11-09 — Milestone M7 archived; M8 is current (roadmap split into M1–M12)
+Phase: 02 (Docs Accuracy & Operational Housekeeping) — EXECUTING
+Plan: 22 of 24 summarized (02-01 superseded); gap-closure plans 02-16, 02-17, 02-23, 02-24, 02-18, 02-25, 02-19 and 02-20 done; the lane landed on develop as PR #687 (head 67019064), lane removed; staging 0.99.0-dev.6701906 rendered all three pages (PASS), review record closed (open: 0); 02-21 (release 0.99.1) follows. develop is frozen until the v0.99.1 tag (Andrei, 21:40)
+Status: Executing gap closure — `02-VERIFICATION.md` found gaps (4/5, DOCS-02 partial); the docs fixes ship in patch release 0.99.1 (D-33)
+Last activity: 2026-11-15 — plan 02-20 executed (staging render PASS on 0.99.0-dev.6701906, review dispositions closed)
 
-Progress: [█░░░░░░░░░] 8%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -45,6 +47,27 @@ Progress: [█░░░░░░░░░] 8%
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
+| Phase 02 P13 | 20 min | 2 tasks | 4 files |
+| Phase 02 P04 | 58 min | 3 tasks | 1 files |
+| Phase 02 P14 | 21 min | 2 tasks | 3 files |
+| Phase 02 P10 | 14 min | 3 tasks | 6 files |
+| Phase 02 P02 | 9 min | 3 tasks | 11 files |
+| Phase 02 P05 | 15 min | 3 tasks | 12 files |
+| Phase 02 P06 | 9 min | 3 tasks | 4 files |
+| Phase 02 P15 | 5 min | 3 tasks | 1 files |
+| Phase 02 P07 | 10 min | 3 tasks | 4 files |
+| Phase 02 P08 | 45 min | 3 tasks | 2 files |
+| Phase 02 P09 | n/a (paused at checkpoint) | 3 tasks | 1 files |
+| Phase 02 P11 | 50 min | 3 tasks | 3 files |
+| Phase 02 P12 | 5 min | 3 tasks | 2 files |
+| Phase 02 P16 | 8 min | 3 tasks | 7 files |
+| Phase 02 P17 | 6 min | 2 tasks | 6 files |
+| Phase 02 P23 | 7 min | 2 tasks | 7 files |
+| Phase 02 P24 | 7 min | 2 tasks | 2 files |
+| Phase 02 P18 | 12 min | 2 tasks | 4 files |
+| Phase 02 P25 | 17 min | 2 tasks | 2 files |
+| Phase 02 P19 | n/a (two continuations) | 3 tasks | 2 files |
+| Phase 02 P20 | ~20min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -60,6 +83,26 @@ Recent decisions affecting current work:
 - Roadmap: SSE (Phase 17) is spike-gated and scheduled after staging (Phase 16) so it can test against real multi-replica topology; "don't implement" is a valid outcome
 - Roadmap: Final Documentation Pass (Phase 18) also runs SEO-07's recurring Search Console review; findings become GitHub issues rather than inline fixes
 - [Phase 02]: docs/roadmap.md deleted, not a pointer (supersedes D-19/D-20): .planning/ROADMAP.md is the one roadmap file; live items carried into ROADMAP.md § Carried over; plan 02-03 done outside execute-phase (2026-11-02)
+- [Phase 02]: Release 1 is v0.98.1 (patch cut): live in production 2026-11-15; the D-15 (3) map probe takes the URL from the chunk's sourceMappingURL comment, not <chunk>.js.map
+- [Phase 02]: 02-04: #642 runs were started by a push from a user account; no approval needed. Staging seed evidence read through Arcane in Andrei's session. Gaps issue is #658.
+- [Phase 02]: 02-10: sourcemap strip merged (PR #660, S=ca7e661c); staging build uploaded in both legs; image Verdict STRIPPED; D-32 issue #661
+- [Phase 02]: 02-02: both page-check sections cite the map lane commit, because the check diffs all covered files from the cited commit
+- [Phase 02]: 02-05: PR #665 merged; five diagrams rendered in Chrome 157 under mermaid 12.3.0 (Verdict RENDERED); DOCS-03 drift on notifications diagrams (POST label) left unchanged by D-07
+- [Phase 02]: 02-06: the page documents X-Worker-Startup as sent but not acted on by the update route (nothing in src/ reads it); the fence check uses only installed jsdom and mermaid
+- [Phase 02]: 02-07: api_rate_limit gets its own section 8 on /docs/database; the testing page keeps no mermaid fence (layout stated as one rule)
+- [Phase 02]: 02-08: the infrastructure page cites no CI compose file name (the retired-name gate regex matches it); observed timings (release ~10 min, staging roll 5-6 min) are stated as observed
+- [Phase 02]: 02-09: one deliberate real staging browser error was allowed as a one-time exception to D-30 (Andrei, 2026-11-15); HELLDIVERSBOT-7D symbolicated, Verdict: SYMBOLICATED, strip may enter release 2
+- [Phase 02]: Release 2 route strip (Andrei, 2026-11-15); release 0.99.0 also carries #671 and #677 by Andrei's decision
+- [Phase 02]: 02-12: #502 closed on four passing D-15 steps (staging symbolication, image strip, production map 404, production event resolved to src/)
+- [Phase 02]: 02-16: the architecture PWA caching clause names exactly the Serwist 9.5.13 strategy classes with one sentence each; the Notifications link carries no fragment
+- [Phase 02]: 02-16: h1_event_progress is written by the poller and read only by scripts/analysis; the architecture diagram no longer draws it into the archives
+- [Phase 02]: 02-17: the notifications page makes no claim about service-worker registration (no register option or registration call in the repo); open question for plan 02-19's browser check
+- [Phase 02]: 02-23: the fence check discovers every docs page.mdx (14 fences in 16 files); IN-04 found no bad flows entry, and three declared nodes have no details panel (intro_order, points_max, computeMapState); jsconfig.json maps @test-utils to a missing file (reported, left)
+- [Phase 02]: 02-24: /docs/data-flow re-check found no D-08 drift; ten wording and excerpt fixes landed in one lane commit (1894d747), CHECKED re-issued at that commit
+- [Phase 02]: 02-18: a skipped Sentry upload (empty project, empty org or zero maps) passes the build and ships without uploaded maps; /docs/infrastructure says so and issue #686 tracks the CI guard; /docs/database re-check fixed nine statements in lane commit 4ac3350c
+- [Phase 02]: 02-25: CI secret ids and the Umami host are described by role on /docs/infrastructure (D-06); the plan 02-08 row that said none were present was wrong
+- [Phase 02]: 02-19: develop frozen until the v0.99.1 tag (Andrei, 2026-11-15 21:40); 0.99.1 stays docs-only (D-33); PR #680 waits until after the tag. Gap closure landed as PR #687, develop head 67019064
+- [Phase 02]: IN-04 recorded as fixed with a Partly fixed: Source cell (node-to-panel direction unchecked); IN-02 skipped with its reason
 
 ### Pending Todos
 
@@ -78,7 +121,7 @@ None yet.
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 260829-219 | Wire SENTRY_DSN into the staging Swarm stack so staging reports to GlitchTip | 2026-08-29 | d8323eef | [260829-219-wire-sentry-dsn-into-the-staging-swarm-s](./quick/260829-219-wire-sentry-dsn-into-the-staging-swarm-s/) |
+| 260829-219 | Wire SENTRY_DSN into the staging Swarm stack so staging reports to GlitchTip (its commits 22030b72 and d8323eef never reached `develop`; plan 02-14 does it, D-30) | 2026-08-29 | d8323eef | [260829-219-wire-sentry-dsn-into-the-staging-swarm-s](./quick/260829-219-wire-sentry-dsn-into-the-staging-swarm-s/) |
 | 261013-hu0 | Finish PR 532 (Umami replay) and prepare the repo for GSD | 2026-10-13 | 6a41c266 | [261013-hu0-finish-pr-532-umami-replay-and-prepare-t](./quick/261013-hu0-finish-pr-532-umami-replay-and-prepare-t/) |
 | 261013-luq | Fix review findings WR-01..06 from 261013-hu0-REVIEW.md | 2026-10-13 | 91f9d470 | [261013-luq-fix-review-findings-wr-01-06-from-261013](./quick/261013-luq-fix-review-findings-wr-01-06-from-261013/) |
 | 261020-tlt | Resolve all open Dependabot security alerts with a targeted dependency bump | 2026-10-20 | 4ad6fb84 | [261020-tlt-resolve-all-open-dependabot-security-ale](./quick/261020-tlt-resolve-all-open-dependabot-security-ale/) |
@@ -106,10 +149,11 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-10-23T09:01:15.039Z
-Stopped at: Phase 2 context refreshed (assumptions mode)
-Resume file: .planning/phases/02-docs-accuracy-operational-housekeeping/02-CONTEXT.md
+Last session: 2026-11-15T21:08:14.971Z
+Stopped at: Completed 02-20-PLAN.md
+Resume file: None
 
 ## Operator Next Steps
 
-- Re-plan Phase 2 plans 02-01, 02-09, 02-11 and 02-12 (they assume a manual production pull), then execute Phase 2
+- Run `/gsd-execute-phase 2`. Plans 02-13 (release 1) and 02-04 (#642) must finish before 2026-11-16 03:00 UTC (D-31)
+- Plan 02-09 is done. Plan 02-11 cuts release 2 with the strip (the proof file holds `Verdict: SYMBOLICATED`); it also needs Andrei's release-route decision at its Task 1
