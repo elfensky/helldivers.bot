@@ -6,7 +6,7 @@ Staging runs on the Pi swarm (this page, top to bottom); production runs on the 
 **Status: live, deployed by Git Sync.** `staging/compose.yaml` is the stack on the 3-Pi swarm;
 Arcane applies it from the CI-owned branch `deploy/staging`, which CI force-pushes after every
 green `develop` build (`bump-staging-tag` in `../.github/workflows/build-staging.yml`). Manual fallback if Arcane is down:
-`docker stack deploy -c deploy/staging/compose.yaml helldiversbot`.
+`docker stack deploy -c deploy/staging/compose.yaml helldiversbot-staging`.
 
 ## What's live (2026-08-25)
 
@@ -17,8 +17,8 @@ green `develop` build (`bump-staging-tag` in `../.github/workflows/build-staging
   not in this repo.
 - No published ports. The old LAN `:50001` is gone.
 
-- Swarm stack `helldiversbot`: `helldiversbot_app` ×2 (soft-spread across nodes) and
-  `helldiversbot_cloudflared` ×2, image pinned to `:sha-<commit>` by CI (multi-arch, pulls
+- Swarm stack `helldiversbot-staging`: `helldiversbot-staging_app` ×2 (soft-spread across nodes) and
+  `helldiversbot-staging_cloudflared` ×2, image pinned to `:sha-<commit>` by CI (multi-arch, pulls
   anonymously from GHCR — the packages are public, no registry auth needed). Load balancing is the
   Swarm service VIP: cloudflared targets `http://app:3000` and Swarm spreads new connections across
   the replicas (per connection, not per request — cloudflared pools keep-alives).
@@ -48,11 +48,11 @@ single node, which rejects `external:` secrets outright (`unsupported external s
 docker/compose `pkg/compose/create.go`). Swarm → Stacks runs `docker stack deploy` and resolves
 external secrets correctly — verified.
 
-Stack settings: name `helldiversbot`, repo `https://github.com/elfensky/helldivers.bot`, branch
+Stack settings: name `helldiversbot-staging`, repo `https://github.com/elfensky/helldivers.bot`, branch
 `deploy/staging`, compose path `deploy/staging/compose.yaml`, environment = the swarm (all three nodes are
 managers, so any of them shows the same cluster).
 
-The stack name is the Swarm namespace, so it must stay `helldiversbot` — changing it deploys a
+The stack name is the Swarm namespace, so it must stay `helldiversbot-staging` — changing it deploys a
 second copy alongside the first rather than renaming anything.
 
 The repo is **public**, so Git Sync needs no token — and nothing secret may enter the compose file.
