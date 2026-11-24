@@ -41,9 +41,8 @@ composite action in `.github/actions/verify/`. Env vars are documented in `.exam
 `develop` integrates, `main` releases on a `v*.*.*` tag push (the tag triggers the production build).
 The `develop` ruleset requires a PR with checks `Test & Build`, `Visual Regression`,
 `Review Dependencies` and allows only the `rebase` merge method. Merge work PRs with
-`gh pr merge <n> --rebase`, then delete the branch with `git push origin --delete <branch>` once
-`gh pr view <n> --json state` reports `MERGED` (gh's own branch-delete flag removes a lane worktree that
-has the branch checked out). A release PR `develop` → `main` uses a merge commit, never deletes its head
+`gh pr merge <n> --rebase`. GitHub deletes the merged branch (never pass gh's own branch-delete flag: it
+removes a lane worktree that has the branch checked out). A release PR `develop` → `main` uses a merge commit, never deletes its head
 branch `develop`, and gets tagged `vX.Y.Z`. There is no merge-back (#621): `main` does not require an
 up-to-date branch, so the next release PR merges without `main`'s merge commit on `develop`. A fix made directly on `main`
 reaches `develop` through its own PR.

@@ -39,7 +39,7 @@ developer handbook (`~/vault/knowledge/developer/developer.md`), chapter
 1. Create a worktree + branch from `origin/develop`
 2. Make changes, commit with conventional commits (`feat:`, `fix:`, `chore:`), add a note under `## Unreleased` in `CHANGELOG.md`; no version bump
 3. Push and open a pull request to `develop`
-4. Rebase-merge when CI passes (`gh pr merge --rebase --delete-branch`)
+4. Rebase-merge when CI passes (`gh pr merge --rebase`; GitHub deletes the branch)
 5. Changes deploy to staging
 
 ## Release Process
