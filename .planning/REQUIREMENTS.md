@@ -34,7 +34,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **HOUSE-02**: #389 — Rich Results, Schema.org validator, Search Console and SERP previews for `/`, `/archives`, `/docs/about` verified on production; findings fixed or recorded (checks absorbed into SEO-05)
 - [ ] **HOUSE-03**: #502 — once GlitchTip symbolication is proven on ≥1 release, sourcemaps are uploaded at build time and stripped from the shipped image (~24 MB saved); verified by image size and a symbolicated production stack trace
 - [ ] **HOUSE-04**: #501 — the seed-refresh workflow's PR path is verified end-to-end at the next season transition (or via a controlled simulation if the transition hasn't happened by the phase's end); issue records the run
-- [x] **HOUSE-05**: `docs/roadmap.md` is deleted and its live items carried into `.planning/`; `.planning/ROADMAP.md` is the one roadmap file and the one source of truth for execution order (done 2026-11-02; re-scoped from "retired to a short pointer": a pointer file would be a second roadmap file under the one-roadmap standard)
+- [ ] **HOUSE-05**: `docs/roadmap.md` is deleted and its live items carried into `.planning/`; `.planning/ROADMAP.md` is the one roadmap file and the one source of truth for execution order (done 2026-11-02; re-scoped from "retired to a short pointer": a pointer file would be a second roadmap file under the one-roadmap standard)
 
 ### Documentation Accuracy (DOCS)
 
@@ -165,11 +165,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAB-05 | Phase 1 | Complete |
 | STAB-06 | Phase 1 | Complete |
 | STAB-07 | Phase 1 | Complete |
-| DOCS-01 | Phase 2 | Pending |
-| DOCS-02 | Phase 2 | Pending |
-| HOUSE-03 | Phase 2 | Pending |
-| HOUSE-04 | Phase 2 | Pending |
-| HOUSE-05 | Phase 2 | Complete |
+| DOCS-01 | Phase 2 | Gaps Found |
+| DOCS-02 | Phase 2 | Gaps Found |
+| HOUSE-03 | Phase 2 | Gaps Found |
+| HOUSE-04 | Phase 2 | Gaps Found |
+| HOUSE-05 | Phase 2 | Gaps Found |
 | HOUSE-01 | Phase 3 | Pending |
 | DEPS-01 | Phase 4 | Pending |
 | DEPS-02 | Phase 4 | Pending |
